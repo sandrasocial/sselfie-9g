@@ -152,4 +152,42 @@ describe("maya calendar asset generation", () => {
     expect(mockGenerateText).toHaveBeenCalled()
     expect(asset.url).toBe("/p/sandra/calendar-v2")
   })
+
+  it("keeps the primary calendar pipeline when Maya returns structured fields", async () => {
+    mockGenerateText.mockResolvedValue({
+      text: JSON.stringify(
+        Array.from({ length: 9 }, (_, i) => ({
+          id: `post-${i + 1}`,
+          dayLabel: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Bonus A", "Bonus B"][i],
+          postType: ["Reel", "Carousel", "Post"][i % 3],
+          hook: { text: "Stop overthinking your content week" },
+          direction: ["Tell the real story behind the shift", "Name one moment they will recognize"],
+          cta: { label: "Comment PLAN" },
+          caption: [
+            "Paragraph one that sounds grounded and specific.",
+            "Paragraph two that gives the next step without fluff.",
+          ],
+          hashtags: ["#personalbrand", "#contentstrategy", "#instagramtips"],
+          hasImage: false,
+        })),
+      ),
+    })
+
+    const { createMayaGeneratedAsset } = await import("@/lib/maya/asset-generation")
+
+    const asset = await createMayaGeneratedAsset({
+      userId: "42",
+      assetType: "calendar",
+      instruction: "Create a content calendar for my offer this week",
+    })
+
+    expect(mockGenerateInstagramCaption).not.toHaveBeenCalled()
+    expect(asset.previewData?.kind).toBe("calendar")
+    if (asset.previewData?.kind === "calendar") {
+      expect(asset.previewData.posts[0]?.hook).toBe("Stop overthinking your content week")
+    }
+    expect(asset.previewHtml).toContain("Comment PLAN")
+    expect(asset.previewHtml).toContain("Paragraph one that sounds grounded and specific")
+    expect(asset.previewHtml).toContain("personalbrand contentstrategy instagramtips")
+  })
 })

@@ -9,6 +9,7 @@ const HTML_TAG_REGEX = /<[^>]*>/g
 const LIST_PREFIX_REGEX = /^\s*[-*+]\s+/gm
 const ORDERED_LIST_PREFIX_REGEX = /^\s*\d+\.\s+/gm
 const REPEATED_PUNCTUATION_REGEX = /([!?.,])\1{1,}/g
+const TEXTISH_OBJECT_KEYS = ["text", "label", "title", "value", "name", "caption", "cta", "direction", "hook", "hashtags", "content"] as const
 
 const BANNED_PHRASES = [
   "unlock",
@@ -54,24 +55,51 @@ function stripOfferNoise(value: string): string {
     .trim()
 }
 
-export function sanitizeUserFacingText(value: string, maxLength = 240): string {
-  if (!value) return ""
+function collectTextFragments(value: unknown, depth = 0): string[] {
+  if (depth > 3 || value === null || value === undefined) return []
+  if (typeof value === "string") return [value]
+  if (typeof value === "number" || typeof value === "boolean") return [String(value)]
+
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => collectTextFragments(entry, depth + 1))
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>
+    const preferred = TEXTISH_OBJECT_KEYS.flatMap((key) => collectTextFragments(record[key], depth + 1))
+    if (preferred.length > 0) return preferred
+    return Object.values(record).flatMap((entry) => collectTextFragments(entry, depth + 1))
+  }
+
+  return []
+}
+
+function normalizeSanitizerInput(value: unknown): string {
+  return collectTextFragments(value)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .join(" ")
+}
+
+export function sanitizeUserFacingText(value: unknown, maxLength = 240): string {
+  const normalizedInput = normalizeSanitizerInput(value)
+  if (!normalizedInput) return ""
 
   const cleaned = normalizeWhitespace(
-    stripOfferNoise(removeMarkdownAndArtifacts(stripEmojis(value))).replace(REPEATED_PUNCTUATION_REGEX, "$1"),
+    stripOfferNoise(removeMarkdownAndArtifacts(stripEmojis(normalizedInput))).replace(REPEATED_PUNCTUATION_REGEX, "$1"),
   )
 
   return trimToLength(cleaned, maxLength)
 }
 
-export function sanitizeHeadline(value: string): string {
+export function sanitizeHeadline(value: unknown): string {
   const cleaned = sanitizeUserFacingText(value, MAX_HEADLINE_LENGTH)
   if (!cleaned) return "Build your next offer with Maya"
   const sentence = cleaned.replace(/[.!?]+$/g, "")
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }
 
-export function sanitizePageTitle(assetType: MayaGeneratedAssetType, value: string): string {
+export function sanitizePageTitle(assetType: MayaGeneratedAssetType, value: unknown): string {
   const cleaned = sanitizeUserFacingText(value, MAX_TITLE_LENGTH)
   if (!cleaned) {
     if (assetType === "calendar") return "Content Calendar"
@@ -81,14 +109,14 @@ export function sanitizePageTitle(assetType: MayaGeneratedAssetType, value: stri
   return cleaned
 }
 
-export function sanitizePreview(value: string): string {
+export function sanitizePreview(value: unknown): string {
   const cleaned = sanitizeUserFacingText(value, MAX_PREVIEW_LENGTH)
   if (!cleaned) return "Draft generated."
   return cleaned
 }
 
-export function containsBannedPhrase(value: string): boolean {
-  const normalized = value.toLowerCase()
+export function containsBannedPhrase(value: unknown): boolean {
+  const normalized = normalizeSanitizerInput(value).toLowerCase()
   return BANNED_PHRASES.some((phrase) => normalized.includes(phrase))
 }
 
@@ -109,11 +137,11 @@ export function clampProofBullets(values: string[], maxItems = 3): string[] {
   return result
 }
 
-export function hasMarkdownArtifacts(value: string): boolean {
-  return /[#*`\[\]{}_]/.test(value)
+export function hasMarkdownArtifacts(value: unknown): boolean {
+  return /[#*`\[\]{}_]/.test(normalizeSanitizerInput(value))
 }
 
-export function sanitizeCtaLabel(value: string): string {
+export function sanitizeCtaLabel(value: unknown): string {
   const cleaned = sanitizeUserFacingText(value, 44)
   if (!cleaned) return "Join Studio"
 
@@ -126,7 +154,7 @@ export function sanitizeCtaLabel(value: string): string {
 }
 
 export function sanitizeCtaHref(value: string, fallbackHref: string): string {
-  const trimmed = String(value || "").trim()
+  const trimmed = normalizeSanitizerInput(value).trim()
   if (/^https?:\/\//i.test(trimmed)) return trimmed
   if (trimmed.startsWith("/")) return trimmed
   return fallbackHref

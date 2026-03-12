@@ -212,4 +212,40 @@ describe("POST /api/maya/chat inline feed routing", () => {
       }),
     )
   })
+
+  it("uses JSONB array checks when probing selfie library availability", async () => {
+    const seenQueries: string[] = []
+    mockSql.mockImplementation((strings: TemplateStringsArray) => {
+      seenQueries.push(Array.from(strings).join("__VALUE__"))
+      return Promise.resolve([])
+    })
+
+    const { POST } = await import("@/app/api/maya/chat/route")
+
+    const response = await POST(
+      new Request("http://localhost/api/maya/chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-chat-type": "maya",
+        },
+        body: JSON.stringify({
+          chatType: "maya",
+          messages: [
+            {
+              id: "user-message-1",
+              role: "user",
+              parts: [{ type: "text", text: "Create a feed plan for next week" }],
+            },
+          ],
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    const libraryQuery = seenQueries.find((query) => query.includes("FROM user_image_libraries"))
+    expect(libraryQuery).toBeDefined()
+    expect(libraryQuery).toContain("jsonb_array_length")
+    expect(libraryQuery).not.toMatch(/\barray_length\(/)
+  })
 })

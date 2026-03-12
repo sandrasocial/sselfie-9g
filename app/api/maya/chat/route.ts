@@ -386,10 +386,10 @@ export async function POST(req: Request) {
             FROM user_image_libraries
             WHERE user_id::text = ${dbUserId}
               AND (
-                (selfies IS NOT NULL AND array_length(selfies, 1) > 0)
-                OR (products IS NOT NULL AND array_length(products, 1) > 0)
-                OR (people IS NOT NULL AND array_length(people, 1) > 0)
-                OR (vibes IS NOT NULL AND array_length(vibes, 1) > 0)
+                (jsonb_typeof(selfies) = 'array' AND jsonb_array_length(selfies) > 0)
+                OR (jsonb_typeof(products) = 'array' AND jsonb_array_length(products) > 0)
+                OR (jsonb_typeof(people) = 'array' AND jsonb_array_length(people) > 0)
+                OR (jsonb_typeof(vibes) = 'array' AND jsonb_array_length(vibes) > 0)
               )
             LIMIT 1
           `,
