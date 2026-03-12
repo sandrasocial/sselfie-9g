@@ -184,9 +184,30 @@ export async function reconcileFeedPosts(input?: {
         } else {
           stillProcessing++
         }
-      } catch (e) {
+      } catch (e: any) {
         errors++
         console.error("[v0] [RECONCILE] Error reconciling feed post:", { postId, predictionId, error: e })
+
+        // If Replicate returns 404 (prediction not found / expired) or the post is very old
+        // (> 24 hours), mark it as failed so it doesn't stay stuck forever.
+        const isNotFound = e?.status === 404 || e?.message?.includes("not found") || e?.message?.includes("404")
+        const postAge = Date.now() - new Date(post.updated_at).getTime()
+        const isStale = postAge > 24 * 60 * 60 * 1000 // older than 24h
+
+        if (isNotFound || isStale) {
+          try {
+            await sql`
+              UPDATE feed_posts
+              SET generation_status = 'failed', updated_at = NOW()
+              WHERE id = ${postId}
+                AND generation_status IN ('pending', 'generating')
+                AND image_url IS NULL
+            `
+            failed++
+          } catch (markErr) {
+            console.error("[v0] [RECONCILE] Failed to mark stale post as failed:", { postId, markErr })
+          }
+        }
       }
 
       // Small spacing to reduce burst rate on Replicate status checks.
