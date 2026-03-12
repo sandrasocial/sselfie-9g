@@ -66,6 +66,30 @@ async function runStaticChecks() {
     detail: "Calendar/page preview markers must render via MayaGeneratedAssetCard instead of plain text fallback.",
   })
 
+  const studioTabRouting = await readFile(resolve(process.cwd(), "lib/studio/tab-routing.ts"), "utf8")
+  checks.push({
+    label: "studio return routing stays Maya-first",
+    status:
+      studioTabRouting.includes('buildStudioTabPath("maya")') &&
+      studioTabRouting.includes("DEFAULT_STUDIO_AUTH_REDIRECT") &&
+      studioTabRouting.includes("resolvePostAuthRedirect")
+        ? "pass"
+        : "fail",
+    detail: "Post-auth and portal returns should still land on a valid Studio tab after shell and routing changes.",
+  })
+
+  const feedbackButton = await readFile(resolve(process.cwd(), "components/feedback/feedback-button.tsx"), "utf8")
+  checks.push({
+    label: "feedback button respects bottom nav safe area",
+    status:
+      feedbackButton.includes("--sselfie-bottom-nav-height") &&
+      feedbackButton.includes("env(safe-area-inset-bottom") &&
+      feedbackButton.includes("z-40")
+        ? "pass"
+        : "fail",
+    detail: "The floating feedback button must stay above the bottom nav instead of overlapping the Maya input on mobile.",
+  })
+
   return checks
 }
 
@@ -85,6 +109,18 @@ async function main() {
       "tests/maya-generated-asset-card.test.tsx",
       "tests/maya-chat-interface-inline-feed.test.tsx",
       "tests/maya-layout-hygiene.test.ts",
+      "tests/maya-mobile-shell-hygiene.test.ts",
+      "tests/maya-calendar-asset-generation.test.ts",
+    ]),
+    runCommand("studio shell and routing regression tests", "pnpm", [
+      "exec",
+      "vitest",
+      "run",
+      "tests/maya-auto-select-mode.test.ts",
+      "tests/studio-tab-routing.test.ts",
+      "tests/ui-z-index-hygiene.test.ts",
+      "tests/gallery-empty-state.test.tsx",
+      "tests/feedback-button.test.tsx",
     ]),
   ]
 

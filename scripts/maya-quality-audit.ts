@@ -77,6 +77,10 @@ const COMMANDS: Array<{ label: string; args: string[] }> = [
     args: ["-s", "audit:prompt-authority"],
   },
   {
+    label: "maya ui health",
+    args: ["-s", "audit:maya-ui-health"],
+  },
+  {
     label: "maya inline tool regression tests",
     args: [
       "-s",
@@ -185,9 +189,9 @@ async function main() {
   }
 
   lines.push("")
-  lines.push("## Prompt And Route Findings")
+  lines.push("## Prompt, Route, And UI Findings")
   if (findings.length === 0) {
-    lines.push("- No Maya voice or route drift detected.")
+    lines.push("- No Maya voice, route, or UI contract drift detected.")
   } else {
     for (const finding of findings.slice(0, 25)) {
       lines.push(`- ${finding.type} :: ${finding.file}:${finding.line} :: ${finding.detail}`)

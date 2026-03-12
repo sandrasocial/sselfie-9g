@@ -82,13 +82,41 @@ async function main() {
     { name: "Stripe", dependency: "stripe", env: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
     { name: "Supabase Auth", dependency: "@supabase/supabase-js", env: ["NEXT_PUBLIC_SUPABASE_URL"] },
     { name: "Replicate", dependency: "replicate", env: ["REPLICATE_API_TOKEN"] },
-    { name: "Upstash Redis", dependency: "@upstash/redis", env: ["UPSTASH_REDIS_REST_URL"] },
+    {
+      name: "Upstash Redis",
+      dependency: "@upstash/redis",
+      envGroups: [
+        {
+          label: "Upstash Redis URL",
+          anyOf: [
+            "UPSTASH_KV_REST_API_URL",
+            "UPSTASH_KV_KV_REST_API_URL",
+            "UPSTASH_REDIS_REST_URL",
+            "UPSTASH_KV_REST_URL",
+          ],
+        },
+        {
+          label: "Upstash Redis token",
+          anyOf: [
+            "UPSTASH_KV_REST_API_TOKEN",
+            "UPSTASH_KV_KV_REST_API_TOKEN",
+            "UPSTASH_REDIS_REST_TOKEN",
+            "UPSTASH_KV_REST_TOKEN",
+          ],
+        },
+      ],
+    },
     { name: "Resend", dependency: "resend", env: ["RESEND_API_KEY"] },
     { name: "Neon Postgres", dependency: "@neondatabase/serverless", env: ["DATABASE_URL"] },
     { name: "Vercel Blob", dependency: "@vercel/blob", env: ["BLOB_READ_WRITE_TOKEN"] },
   ].map((integration) => {
     const hasDep = Boolean(allDeps[integration.dependency])
-    const envState = integration.env.map((e) => (process.env[e] ? `${e}:set` : `${e}:missing`))
+    const envState = integration.envGroups?.length
+      ? integration.envGroups.map((group) => {
+          const matched = group.anyOf.find((envName) => Boolean(process.env[envName]))
+          return matched ? `${matched}:set` : `${group.label}:missing`
+        })
+      : integration.env.map((e) => (process.env[e] ? `${e}:set` : `${e}:missing`))
     return { ...integration, hasDep, envState }
   })
 
