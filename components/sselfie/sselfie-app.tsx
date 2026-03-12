@@ -1249,8 +1249,11 @@ export default function SselfieApp({
           <div className={`${DesignClasses.radius.xl} ${DesignClasses.shadows.container}`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(60px)', border: '1px solid rgba(195,190,182,0.15)' }}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
-                {(isNewUser ? tabs.filter((t) => t.id === "maya" || t.id === "account") : tabs).map((tab) => {
+                {tabs.map((tab) => {
                   const isActive = activeTab === tab.id
+                  // Gated tabs are visible to all users but show a lock indicator for free users
+                  // who haven't generated their first photo yet. Showing them creates aspiration.
+                  const isGated = isNewUser && ["studio", "gallery", "feed-planner", "academy"].includes(tab.id)
 
                   return (
                     <button
@@ -1258,8 +1261,8 @@ export default function SselfieApp({
                       onClick={() => handleTabChange(tab.id)}
                       className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 ${DesignClasses.radius.lg} transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
                         isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
-                      }`}
-                      aria-label={`Navigate to ${tab.label}`}
+                      } ${isGated ? "opacity-50" : ""}`}
+                      aria-label={isGated ? `${tab.label} — unlocks after your first photo` : `Navigate to ${tab.label}`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       {isActive && (
@@ -1271,7 +1274,7 @@ export default function SselfieApp({
                         }`}
                         style={isActive ? { background: "rgba(175,170,162,0.18)", border: "1px solid rgba(195,190,182,0.25)" } : { background: "rgba(175,170,162,0.06)", border: "1px solid rgba(195,190,182,0.12)" }}
                       >
-                        {tab.label}
+                        {tab.label}{isGated ? <span className="ml-0.5 text-[8px] opacity-60">🔒</span> : null}
                       </span>
                     </button>
                   )
@@ -1280,7 +1283,7 @@ export default function SselfieApp({
             </div>
             {isNewUser && (
               <p className="text-xs text-center py-1" style={{ color: '#8a8780' }}>
-                Feed Planner, Gallery &amp; Academy unlock after your first photo
+                Gallery, Feed &amp; Academy unlock after your first photo
               </p>
             )}
           </div>

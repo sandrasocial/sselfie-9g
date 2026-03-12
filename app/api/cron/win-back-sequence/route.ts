@@ -23,6 +23,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { generateWinBackDay3Email } from "@/lib/email/templates/win-back-day3"
 import { generateWinBackDay7Email } from "@/lib/email/templates/win-back-day7"
 import { generateWinBackDay14Email } from "@/lib/email/templates/win-back-day14"
+import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
 import { logAdminError } from "@/lib/admin-error-log"
 
 
@@ -276,17 +277,92 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    const totalSent = results.day3.sent + results.day7.sent + results.day14.sent
-    const totalFailed = results.day3.failed + results.day7.failed + results.day14.failed
+    // Dormant member re-engagement: active Studio members who haven't generated in 7 days.
+    // Idempotency: once per 14-day window (email_logs guard with email_type = 'dormant-member-reengagement').
+    const dormantMembers = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name,
+        uc.balance AS credit_balance
+      FROM users u
+      INNER JOIN subscriptions s ON s.user_id = u.id::varchar
+      LEFT JOIN user_credits uc ON uc.user_id = u.id
+      WHERE s.status = 'active'
+        AND s.product_type = 'sselfie_studio_membership'
+        AND s.is_test_mode = false
+        AND u.email IS NOT NULL
+        AND u.email != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM generated_images gi
+          WHERE gi.user_id = u.id
+            AND gi.created_at > NOW() - INTERVAL '7 days'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ai_images ai
+          WHERE ai.user_id = u.id
+            AND (ai.image_url IS NOT NULL AND ai.image_url <> '')
+            AND ai.created_at > NOW() - INTERVAL '7 days'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type = 'dormant-member-reengagement'
+            AND el.sent_at > NOW() - INTERVAL '14 days'
+        )
+      ORDER BY u.created_at DESC
+      LIMIT 30
+    `
+
+    const dormantResults = { found: dormantMembers.length, sent: 0, failed: 0 }
+    console.log(`[win-back] Found ${dormantMembers.length} dormant Studio members for re-engagement`)
+
+    for (const member of dormantMembers as any[]) {
+      try {
+        const firstName = member.display_name?.split(" ")[0] || undefined
+        const emailContent = generateDormantMemberReengagementEmail({
+          firstName,
+          creditBalance: member.credit_balance || null,
+        })
+
+        const result = await sendEmail({
+          to: member.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "dormant-member-reengagement",
+          replyTo: "hello@sselfie.ai",
+          tags: ["retention", "dormant-member"],
+        })
+
+        if (result.success) {
+          dormantResults.sent++
+          console.log(`[win-back] ✅ Dormant re-engagement sent to ${member.email}`)
+        } else {
+          dormantResults.failed++
+          results.errors.push({ email: member.email, touch: "dormant-reengagement", error: result.error || "unknown" })
+          console.error(`[win-back] ❌ Dormant re-engagement failed for ${member.email}:`, result.error)
+        }
+      } catch (err: any) {
+        dormantResults.failed++
+        results.errors.push({ email: member.email, touch: "dormant-reengagement", error: err.message || "unknown" })
+        console.error(`[win-back] ❌ Dormant re-engagement exception for ${member.email}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    const totalSent = results.day3.sent + results.day7.sent + results.day14.sent + dormantResults.sent
+    const totalFailed = results.day3.failed + results.day7.failed + results.day14.failed + dormantResults.failed
 
     console.log(
-      `[win-back] ✅ Complete — Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found}`,
+      `[win-back] ✅ Complete — Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found} | Dormant: ${dormantResults.sent}/${dormantResults.found}`,
     )
 
     await cronLogger.success({
       day3: results.day3,
       day7: results.day7,
       day14: results.day14,
+      dormant: dormantResults,
       totalSent,
       totalFailed,
     })

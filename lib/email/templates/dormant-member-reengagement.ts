@@ -1,0 +1,47 @@
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+
+export function generateDormantMemberReengagementEmail(input: {
+  firstName?: string
+  creditBalance?: number
+}) {
+  const firstName = input.firstName?.trim() || "friend"
+  const creditBalance = typeof input.creditBalance === "number" && input.creditBalance > 0
+    ? input.creditBalance
+    : null
+
+  const studioUrl = `${SITE_URL}/studio?tab=maya&utm_source=email&utm_medium=lifecycle&utm_campaign=dormant_member_reengagement`
+
+  const creditsLine = creditBalance !== null
+    ? `You still have ${creditBalance} credits waiting in your Studio.`
+    : "Your credits are waiting in your Studio."
+
+  const subject = `${firstName}, Maya\u2019s been waiting for you`
+
+  const html = `
+    <div style="font-family: Inter, Arial, sans-serif; color: #1c1917; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
+      <p style="margin:0 0 12px 0;">Hey ${firstName},</p>
+      <p style="margin:0 0 16px 0;">${creditsLine}</p>
+      <p style="margin:0 0 16px 0;">It\u2019s only been a week, but a lot can happen in a week on social media. If you\u2019ve got a post to make, a photo to create, or just want to see what Maya comes up with \u2014 she\u2019s ready.</p>
+      <p style="margin:0 0 24px 0;">No agenda. Just open the chat and see what she makes.</p>
+      <p style="margin:0 0 20px 0;">
+        <a href="${studioUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.05em;">
+          Open Maya
+        </a>
+      </p>
+      <p style="margin:0;font-size:12px;color:#78716c;">You\u2019re a Studio member. This is your space \u2014 use it.</p>
+    </div>
+  `
+
+  const text = [
+    `Hey ${firstName},`,
+    "",
+    creditsLine,
+    "",
+    "It\u2019s only been a week, but a lot can happen in a week on social media.",
+    "If you\u2019ve got a post to make, a photo to create, or just want to see what Maya comes up with \u2014 she\u2019s ready.",
+    "",
+    `Open Maya: ${studioUrl}`,
+  ].join("\n")
+
+  return { subject, html, text }
+}
