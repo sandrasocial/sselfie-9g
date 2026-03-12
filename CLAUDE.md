@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-03-11 — Read this at the start of every session*
+*Last updated: 2026-03-12 — Read this at the start of every session*
 
 ---
 
@@ -83,6 +83,13 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 - Feed stays in Feed Planner until Maya feed ownership is rebuilt cleanly.
 - No new `chat_type` values without DB migration + load/save/new-chat/test coverage.
 - Landing pages, workbooks, and pro-photoshoot flows stay retired/hidden until rebuilt.
+
+**⚠️ CRITICAL: Maya Feed Tab ≠ Feed Planner — DO NOT CONFUSE THESE**
+| System | Status | What it is |
+|--------|--------|-----------|
+| **Feed Planner** (`app/feed-planner/`, `app/api/feed-planner/*`, `app/api/feed/*`) | ✅ LIVE — DO NOT DELETE | Paid Blueprint product. 13 paying users depend on it. Full 9-post grid, captions, strategy. |
+| **Maya Feed Tab** (`components/sselfie/maya/maya-feed-tab.tsx`, `app/api/maya/feed*`) | ❌ DEAD — disabled via `isFeedTabDisabled = true` | A separate in-Maya feed tab. Hardcoded disabled. Routes are orphaned. Safe to delete. |
+| **`lib/maya/feed-generation-handler.ts`** | ⚠️ SHARED — DO NOT DELETE | Used by BOTH the dead Maya tab AND the live Feed Planner hooks (`use-feed-actions.ts`). Cannot be removed until Feed Planner is refactored. |
 
 **What shipped (commit `b950f1db`):**
 - `MY MODEL / SELFIE` toggle visible to all Photos tab users (was membership-gated)
@@ -276,6 +283,45 @@ The clean branch has 5 tabs (Maya, Gallery, Feed Planner, Academy, Account).
 ### Pricing (Once Vision Is Live)
 "The only AI that already knows your brand — and gets smarter every time you use it."
 That's not a tool. That's a business relationship. Target: €197/month minimum. Not €97. Not €27.
+
+---
+
+## Dead Code Map — Approved for Deletion (2026-03-12)
+*Read this before touching any "cleanup" task. Many items look dead but are not.*
+
+### ✅ Safe to delete — confirmed dead
+| Item | Why dead | Risk |
+|------|----------|------|
+| `components/sselfie/maya/maya-feed-tab.tsx` | Feed tab hardcoded disabled (`isFeedTabDisabled = true`). Tab not shown. | Low — remove component + import in maya-chat-screen.tsx |
+| `app/api/maya/feed/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/api/maya/feed-chat/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/api/maya/feed-progress/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/api/maya/generate-feed/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/api/maya/generate-feed-prompt/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/api/maya/generate-all-feed-prompts/` | Only called by the disabled Maya Feed Tab | Low |
+| `app/brand-engine/`, `app/apply/brand-engine/`, `app/brand-engine/vip/` | Brand Engine retired offer, no routes/redirects | Low |
+| `app/freebie/` | Routes redirect to paid pages; page files themselves are dead | Low — keep redirects in vercel.json, delete page files |
+| `app/checkout-upgrade/` | Duplicate checkout entry, no active links | Medium — verify no active links first |
+| `app/bio/` | Bio page — unclear where in user journey, no active links found | Medium — verify first |
+| `lib/feed-chat/history.ts` | No callers found anywhere in codebase | Low |
+| `lib/maya/feed-generation-handler.ts` imports only used by maya-feed-tab.tsx | Safe ONLY AFTER maya-feed-tab.tsx is deleted AND feed-planner hooks are refactored | **HIGH RISK — do not delete yet** |
+
+### ⚠️ Looks dead but is NOT — do not delete
+| Item | Why it looks dead | Why it's actually live |
+|------|-------------------|----------------------|
+| `app/api/feed/*` (11 routes) | Not under `feed-planner/` so looks orphaned | Actively called by `components/feed-planner/*` — core Feed Planner data layer |
+| `lib/maya/feed-generation-handler.ts` | Associated with disabled Maya Feed Tab | `FeedStrategy` type + `createFeedFromStrategyHandler` used by `lib/feed-planner/hooks/` |
+| `lib/feed-planner-v2/` | Looks like a parallel/unfinished system | Used in 4 active feed routes via `use_feed_planner_v2` per-user flag |
+| `app/feed-planner/` entire directory | Might be confused with the dead Maya Feed Tab | LIVE product — 13 paying Blueprint users depend on this |
+| `app/api/feed-planner/*` (12 routes) | Separate from `app/api/feed/*` so might look redundant | Both systems active — feed-planner routes handle higher-level logic |
+
+### 🔒 Never delete — business-critical
+- `app/feed-planner/` — entire directory — **13 paying users, recurring revenue**
+- `app/api/feed-planner/` — entire directory
+- `app/api/feed/` — entire directory
+- `lib/feed-planner/` — entire directory
+- `components/feed-planner/` — entire directory
+- `lib/maya/feed-generation-handler.ts` — until Feed Planner refactor is done
 
 ---
 
