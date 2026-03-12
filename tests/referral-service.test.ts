@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockSql = vi.fn()
 const mockAddCredits = vi.fn()
+const mockSendReferralBonusNotification = vi.fn()
 
 vi.mock("@/lib/db/client", () => ({
   sql: mockSql,
@@ -11,10 +12,19 @@ vi.mock("@/lib/credits", () => ({
   addCredits: mockAddCredits,
 }))
 
+vi.mock("@/lib/referrals/notifications", () => ({
+  sendReferralBonusNotification: mockSendReferralBonusNotification,
+}))
+
 describe("referral service", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     delete process.env.REFERRAL_BONUSES_ENABLED
+    mockSendReferralBonusNotification.mockResolvedValue({
+      success: true,
+      status: "sent",
+      emailType: "referral-bonus-test",
+    })
   })
 
   it("tracks a referred signup, grants the referred bonus by default, and is idempotent per referred user", async () => {
@@ -45,6 +55,11 @@ describe("referral service", () => {
       "bonus",
       "Welcome reward for signing up with referral",
     )
+
+    expect(mockSendReferralBonusNotification).toHaveBeenCalledWith({
+      referralId: 9,
+      kind: "referred",
+    })
 
     expect(mockSql).toHaveBeenCalledWith(
       expect.arrayContaining(["\n      INSERT INTO referrals (referrer_id, referred_id, referral_code, status)\n      VALUES (", ", ", ", ", ", 'pending')\n      RETURNING id\n    "]),
@@ -88,6 +103,11 @@ describe("referral service", () => {
       "bonus",
       "Referral reward for referred user's first paid purchase",
     )
+
+    expect(mockSendReferralBonusNotification).toHaveBeenCalledWith({
+      referralId: 42,
+      kind: "referrer",
+    })
   })
 
   it("skips completion when the referral was already rewarded", async () => {

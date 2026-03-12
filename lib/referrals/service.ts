@@ -1,5 +1,6 @@
 import { addCredits } from "@/lib/credits"
 import { sql } from "@/lib/db/client"
+import { sendReferralBonusNotification } from "@/lib/referrals/notifications"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 
 type TrackReferralSignupParams = {
@@ -190,6 +191,14 @@ export async function completeReferralForPurchase(
     WHERE id = ${referralId}
   `
 
+  if (!params.isTestMode && rewardAmount >= REFERRER_PURCHASE_BONUS) {
+    try {
+      await sendReferralBonusNotification({ referralId, kind: "referrer" })
+    } catch (notificationError) {
+      console.error("[v0] Failed to send referrer bonus notification:", notificationError)
+    }
+  }
+
   return { success: true, status: "completed", referrerId, referralId }
 }
 
@@ -222,6 +231,12 @@ async function maybeGrantReferredSignupBonus(
     SET credits_awarded_referred = ${REFERRED_SIGNUP_BONUS}
     WHERE id = ${referralId}
   `
+
+  try {
+    await sendReferralBonusNotification({ referralId, kind: "referred" })
+  } catch (notificationError) {
+    console.error("[v0] Failed to send referred bonus notification:", notificationError)
+  }
 
   return true
 }
