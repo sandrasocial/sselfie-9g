@@ -4,6 +4,7 @@ import { toSegmentSyncEmailLogEntry } from "@/lib/audience/segment-sync-log"
 import { syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { drainResendSyncQueue } from "@/lib/resend/auto-sync-user"
 
 export const maxDuration = 300
 
@@ -41,6 +42,14 @@ export async function GET(request: Request) {
     }
 
     console.log("[v0] [CRON] Starting periodic audience segment sync...")
+
+    // Drain the persistent Resend sync retry queue first.
+    // Any user whose signup sync failed (all 3 attempts) is queued here and
+    // retried weekly until resolved or abandoned after 10 total attempts.
+    const queueResult = await drainResendSyncQueue()
+    if (queueResult.retried > 0) {
+      console.log(`[v0] [CRON] Sync queue: retried=${queueResult.retried} resolved=${queueResult.resolved} abandoned=${queueResult.abandoned}`)
+    }
 
     // Fetch all contacts from Resend
     const allContacts = await getAllResendContacts()
