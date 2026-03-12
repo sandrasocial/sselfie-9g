@@ -14,6 +14,7 @@ export interface NeonUser {
   gender?: string | null
   trigger_word?: string | null
   profile_image_url?: string
+  referral_code?: string | null
   stack_auth_id?: string
   supabase_user_id?: string
   created_at: string

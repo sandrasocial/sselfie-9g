@@ -10,6 +10,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import {
+  buildReferralCallbackUrl,
+  buildReferralLoginHref,
+  getReferralCodeFromBrowser,
+  persistReferralCode,
+} from "@/lib/referrals/routing"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function SignUpPage() {
@@ -37,8 +43,10 @@ export default function SignUpPage() {
       checkoutDefaultReturnTo,
     )
     const next = urlParams.get("next")
+    const referralCode = getReferralCodeFromBrowser(urlParams)
+    const utmSource = urlParams.get("utm_source")
 
-    return { checkoutParam, returnTo, next }
+    return { checkoutParam, returnTo, next, referralCode, utmSource }
   }
 
   // Check if user exists when email is entered (debounced)
@@ -74,8 +82,9 @@ export default function SignUpPage() {
   }, [email])
 
   useEffect(() => {
-    const { returnTo } = getRoutingContext()
-    setLoginHref(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
+    const { returnTo, referralCode } = getRoutingContext()
+    setLoginHref(buildReferralLoginHref({ returnTo, referralCode }))
+    persistReferralCode(referralCode)
   }, [])
 
   // Handle login for existing users (password-only flow)
@@ -127,10 +136,14 @@ export default function SignUpPage() {
 
     try {
       // Check if we're on localhost for development, otherwise use current origin
+      const { referralCode, utmSource } = getRoutingContext()
       const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost"
       const redirectUrl = isLocalhost
-        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000/auth/callback"
-        : `${window.location.origin}/auth/callback`
+        ? buildReferralCallbackUrl(
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000",
+            { referralCode, utmSource },
+          )
+        : buildReferralCallbackUrl(window.location.origin, { referralCode, utmSource })
 
       // Sign up user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -174,13 +187,30 @@ export default function SignUpPage() {
 
       if (!signInError && signInData.session) {
         // Success! Redirect to Studio (Maya by default for first-time flow)
-        const { checkoutParam, returnTo, next } = getRoutingContext()
+        const { checkoutParam, returnTo, next, referralCode } = getRoutingContext()
         let redirectTo = sanitizeRedirect(next, returnTo)
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
         } else if (checkoutParam === "brand_strategy_pack") {
           redirectTo = "/checkout/brand-strategy-pack"
         }
+
+        if (referralCode) {
+          try {
+            const trackResponse = await fetch("/api/referrals/track", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ referralCode }),
+            })
+
+            if (!trackResponse.ok) {
+              console.log("[Sign Up] Referral tracking failed:", await trackResponse.text())
+            }
+          } catch (referralError) {
+            console.error("[Sign Up] Referral tracking error:", referralError)
+          }
+        }
+
         console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", redirectTo)
         router.push(redirectTo)
         return

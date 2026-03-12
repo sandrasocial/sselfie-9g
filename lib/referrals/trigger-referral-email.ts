@@ -8,6 +8,7 @@
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateReferralInviteEmail } from "@/lib/email/templates/referral-invite"
+import { buildReferralLink, ensureUserReferralCode } from "@/lib/referrals/codes"
 
 
 export async function triggerReferralEmailIfNeeded(userId: string): Promise<void> {
@@ -53,53 +54,14 @@ export async function triggerReferralEmailIfNeeded(userId: string): Promise<void
     }
 
     const user = userInfo[0]
-    let referralLink = user.referral_code
-      ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/?ref=${user.referral_code}`
-      : null
+    let referralLink = null
 
-    if (!referralLink) {
-      // Generate referral code if user doesn't have one
-      try {
-        // Generate code directly in database
-        const emailPrefix = user.email?.split("@")[0].toUpperCase().slice(0, 3) || "SSE"
-        let referralCode: string
-        let isUnique = false
-        let attempts = 0
-        const maxAttempts = 10
-
-        while (!isUnique && attempts < maxAttempts) {
-          const randomNum = Math.floor(100000 + Math.random() * 900000)
-          referralCode = `${emailPrefix}${randomNum}`
-
-          const existing = await sql`
-            SELECT id FROM referrals WHERE referral_code = ${referralCode} LIMIT 1
-          `
-
-          if (existing.length === 0) {
-            isUnique = true
-          } else {
-            attempts++
-          }
-        }
-
-        if (!isUnique) {
-          const { randomUUID } = await import("crypto")
-          const uuid = randomUUID().replace(/-/g, "").toUpperCase().slice(0, 12)
-          referralCode = `REF${uuid}`
-        }
-
-        // Save referral code
-        await sql`
-          UPDATE users 
-          SET referral_code = ${referralCode}
-          WHERE id = ${userId}
-        `
-
-        referralLink = `${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/?ref=${referralCode}`
-      } catch (error) {
-        console.log(`[v0] Could not generate referral code for user ${userId}`)
-        return
-      }
+    try {
+      const referralCode = await ensureUserReferralCode(userId, user.email, user.referral_code)
+      referralLink = buildReferralLink(referralCode)
+    } catch (error) {
+      console.log(`[v0] Could not generate referral code for user ${userId}`)
+      return
     }
 
     // Send referral invite email

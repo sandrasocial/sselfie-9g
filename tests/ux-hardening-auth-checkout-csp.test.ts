@@ -14,8 +14,8 @@ describe("post-phase4 ux hardening", () => {
     const loginPage = readFile("app/auth/login/page.tsx")
     const signUpPage = readFile("app/auth/sign-up/page.tsx")
 
-    expect(loginPage).toContain("/auth/sign-up?returnTo=")
-    expect(signUpPage).toContain("/auth/login?returnTo=")
+    expect(loginPage).toContain("buildReferralSignUpHref")
+    expect(signUpPage).toContain("buildReferralLoginHref")
   })
 
   it("gates checkout-upgrade on server auth before rendering Stripe checkout", () => {

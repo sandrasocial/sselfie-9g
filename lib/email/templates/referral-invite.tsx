@@ -9,10 +9,8 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
   text: string
   subject: string
 } {
-  const { recipientName, referrerName, referralLink } = params
+  const { recipientName, referralLink } = params
   const displayName = recipientName || "there"
-  const referrerDisplay = referrerName || "a friend"
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
   const html = `
 <!DOCTYPE html>
@@ -20,7 +18,7 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your friend thinks you'd love SSELFIE</title>
+  <title>Your SSELFIE invite link is ready</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -30,7 +28,7 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
           <tr>
             <td style="padding: 40px 30px 20px 30px; text-align: center;">
               <h1 style="margin: 0 0 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 32px; color: #1c1917; font-weight: 300;">
-                ${referrerDisplay} thinks you'd love SSELFIE
+                Your invite link is ready
               </h1>
               <p style="margin: 0; font-size: 16px; line-height: 24px; color: #292524;">
                 Hi ${displayName},
@@ -40,14 +38,14 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
           <tr>
             <td style="padding: 20px 30px 40px 30px; text-align: center;">
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                ${referrerDisplay} sent you a special invitation to try SSELFIE Studio — and you're getting 25 free credits just for signing up.
+                Share this with a friend who needs a simple way to create content that still feels like them.
               </p>
               <p style="margin: 0 0 24px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                SSELFIE helps you create professional photos that look like you, powered by AI. No photoshoots, no stress — just authentic content that feels like you.
+                They get 25 credits when they sign up. You get 50 when they make their first paid purchase.
               </p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${referralLink}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  Claim Your 25 Free Credits →
+                  Open Your Invite Link →
                 </a>
               </div>
               <p style="margin: 40px 0 0; font-size: 14px; line-height: 20px; color: #57534e;">
@@ -67,11 +65,13 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
   const text = `
 Hi ${displayName},
 
-${referrerDisplay} sent you a special invitation to try SSELFIE Studio — and you're getting 25 free credits just for signing up.
+Your invite link is ready.
 
-SSELFIE helps you create professional photos that look like you, powered by AI. No photoshoots, no stress — just authentic content that feels like you.
+Share it with a friend who needs a simple way to create content that still feels like them.
 
-Claim Your 25 Free Credits →: ${referralLink}
+They get 25 credits when they sign up. You get 50 when they make their first paid purchase.
+
+Open your invite link → ${referralLink}
 
 You've got this,
 Sandra
@@ -80,6 +80,6 @@ Sandra
   return {
     html,
     text,
-    subject: `${referrerDisplay} thinks you'd love SSELFIE — here's 25 free credits!`,
+    subject: "Your SSELFIE invite link is ready",
   }
 }

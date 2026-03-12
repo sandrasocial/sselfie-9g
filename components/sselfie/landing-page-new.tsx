@@ -13,8 +13,9 @@ import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
 import TestimonialCarousel from "@/components/testimonials/testimonial-carousel"
 import { formatPriceFromCents, getProductById } from "@/lib/products"
+import { appendReferralParam, buildReferralLoginHref, persistReferralCode } from "@/lib/referrals/routing"
 
-export default function LandingPageNew() {
+export default function LandingPageNew({ referralCode }: { referralCode?: string | null }) {
   const [activeScene, setActiveScene] = useState(0)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [showStickyFooter, setShowStickyFooter] = useState(false)
@@ -24,12 +25,18 @@ export default function LandingPageNew() {
   const membershipProduct = getProductById("sselfie_studio_membership")
   const selfieGuidePrice = selfieGuideProduct ? formatPriceFromCents(selfieGuideProduct.priceInCents) : "$17"
   const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "$97"
+  const loginHref = buildReferralLoginHref({ returnTo: "/studio", referralCode })
+  const selfieGuideHref = appendReferralParam("/selfie-guide", referralCode)
 
   const totalScenes = 9
 
   useEffect(() => {
     trackLandingView()
   }, [])
+
+  useEffect(() => {
+    persistReferralCode(referralCode)
+  }, [referralCode])
 
   // Track pricing section view
   useEffect(() => {
@@ -154,9 +161,9 @@ export default function LandingPageNew() {
           </Link>
         </div>
         <Link
-          href="/auth/login"
+          href={loginHref}
           className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-[#a8a49c] hover:text-[#c8c4bb] transition-colors py-2"
-          onClick={() => trackCTAClick("nav", "Login", "/auth/login")}
+          onClick={() => trackCTAClick("nav", "Login", loginHref)}
         >
           Login
         </Link>
@@ -223,7 +230,7 @@ export default function LandingPageNew() {
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <Link
-                href="/selfie-guide"
+                href={selfieGuideHref}
                 onClick={() => {
                   trackSelfieGuideEntryClick("hero")
                 }}
@@ -397,7 +404,7 @@ export default function LandingPageNew() {
               </div>
               <div className="fade-up mt-6">
                 <a
-                  href="/selfie-guide"
+                  href={selfieGuideHref}
                   onClick={(e) => {
                     e.preventDefault()
                     trackSelfieGuideEntryClick("how-it-works")
@@ -688,7 +695,7 @@ export default function LandingPageNew() {
                     <p>• Instant access right after payment</p>
                   </div>
                   <Link
-                    href="/selfie-guide"
+                    href={selfieGuideHref}
                     onClick={() => {
                       trackSelfieGuideEntryClick("pricing")
                     }}
@@ -819,7 +826,7 @@ export default function LandingPageNew() {
                 You don&apos;t need perfect photos. You just need to show up.
               </h2>
               <a
-                href="/selfie-guide"
+                href={selfieGuideHref}
                 onClick={(e) => {
                   e.preventDefault()
                   trackSelfieGuideEntryClick("closing")

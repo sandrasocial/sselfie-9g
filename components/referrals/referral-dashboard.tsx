@@ -105,7 +105,7 @@ export function ReferralDashboard() {
       </div>
 
       <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.secondary}`}>
-        Share your link — they get 25 credits, you get 50!
+        Share your link. They get 25 credits when they sign up. You get 50 when they make their first paid purchase.
       </p>
 
       {referralLink && (

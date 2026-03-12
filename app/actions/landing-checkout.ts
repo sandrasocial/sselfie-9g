@@ -1,13 +1,16 @@
 "use server"
 
+import { cookies } from "next/headers"
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
+import { normalizeReferralCode, REFERRAL_COOKIE_NAME } from "@/lib/referrals/routing"
 
 type LandingCheckoutOptions = {
   source?: string
+  referralCode?: string | null
   returnTo?: string
 }
 
@@ -29,6 +32,10 @@ export async function createLandingCheckoutSession(
   const isSubscription = product.type === "sselfie_studio_membership"
   const allowManualPromotionCodes = !isSubscription
   const checkoutSource = options?.source?.trim() || "landing_page"
+  const cookieStore = await cookies()
+  const referralCode =
+    normalizeReferralCode(options?.referralCode || null) ||
+    normalizeReferralCode(cookieStore.get(REFERRAL_COOKIE_NAME)?.value || null)
 
   const actualPrice = product.priceInCents
 
@@ -143,6 +150,7 @@ export async function createLandingCheckoutSession(
           product_type: product.type,
           credits: product.credits?.toString() || "0",
           source: checkoutSource,
+          ...(referralCode && { referral_code: referralCode }),
           ...(options?.returnTo && { return_to: options.returnTo }),
         },
       },
@@ -152,6 +160,7 @@ export async function createLandingCheckoutSession(
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: checkoutSource,
+      ...(referralCode && { referral_code: referralCode }),
       ...(customerEmail && { customer_email: customerEmail }),
       ...(promoCode && { promo_code: promoCode }),
       ...(options?.returnTo && { return_to: options.returnTo }),

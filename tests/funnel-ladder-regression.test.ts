@@ -14,7 +14,7 @@ describe("public funnel ladder regression", () => {
     const contents = read("components/sselfie/landing-page-new.tsx")
 
     expect(contents).toContain('trackSelfieGuideEntryClick("hero")')
-    expect(contents).toContain('href="/selfie-guide"')
+    expect(contents).toContain('appendReferralParam("/selfie-guide", referralCode)')
     expect(contents).not.toContain('trackCTAClick("hero", "Try it for free", "/auth/sign-up")')
     expect(contents).not.toContain('href="/checkout/credits"')
     expect(contents).not.toContain("Starter Photoshoot")

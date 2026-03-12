@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
+import { normalizeReferralCode } from "@/lib/referrals/routing"
+import { isReferralSignupEligible, trackReferralSignup } from "@/lib/referrals/service"
 import { syncUserWithNeon } from "@/lib/user-sync"
 import { NextResponse } from "next/server"
 
@@ -132,36 +134,20 @@ export async function GET(request: Request) {
         }
       }
 
-      // Track referral if referral code is present in URL or stored in session
-      const referralCode = requestUrl.searchParams.get("ref")
+      // Track referral if referral code is present in the callback URL.
+      const referralCode = normalizeReferralCode(requestUrl.searchParams.get("ref"))
       if (referralCode && neonUser?.id) {
         try {
-          
-          // Check if this is a new user (created in last 5 minutes) to avoid tracking on every login
-          const userCreated = await sql`
-            SELECT created_at FROM users WHERE id = ${neonUser.id} LIMIT 1
-          `
-          
-          if (userCreated.length > 0) {
-            const createdAt = new Date(userCreated[0].created_at)
-            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-            
-            // Only track if user was just created (within last 5 minutes)
-            if (createdAt > fiveMinutesAgo) {
-              const trackResponse = await fetch(`${origin}/api/referrals/track`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  referralCode,
-                  referredUserId: neonUser.id,
-                }),
-              })
-              
-              if (trackResponse.ok) {
-                console.log(`[v0] ✅ Referral tracked for new user ${neonUser.id} with code ${referralCode}`)
-              } else {
-                console.log(`[v0] ⚠️ Failed to track referral (non-critical):`, await trackResponse.text())
-              }
+          if (isReferralSignupEligible(neonUser.created_at)) {
+            const result = await trackReferralSignup({
+              referralCode,
+              referredUserId: neonUser.id,
+            })
+
+            if (result.success) {
+              console.log(`[v0] ✅ Referral tracked for new user ${neonUser.id} with code ${referralCode}`)
+            } else {
+              console.log(`[v0] ⚠️ Failed to track referral (non-critical):`, result.status)
             }
           }
         } catch (referralError) {

@@ -1,94 +1,61 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db/client"
-import { addCredits } from "@/lib/credits"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { isReferralSignupEligible, trackReferralSignup } from "@/lib/referrals/service"
 
 
 /**
  * POST /api/referrals/track
  * 
- * Tracks a referral when a new user signs up with a referral code
- * Body: { referralCode: string, referredUserId: string }
+ * Tracks a referral for the authenticated user
+ * Body: { referralCode: string }
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { referralCode, referredUserId } = body
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!referralCode || !referredUserId) {
-      return NextResponse.json({ error: "Missing referralCode or referredUserId" }, { status: 400 })
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Find referrer by referral code
-    const referrer = await sql`
-      SELECT id, email, display_name FROM users WHERE referral_code = ${referralCode} LIMIT 1
-    `
+    const neonUser = await getUserByAuthId(user.id)
+    if (!neonUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
 
-    if (referrer.length === 0) {
+    if (!isReferralSignupEligible(neonUser.created_at)) {
+      return NextResponse.json(
+        { error: "Referral tracking is only available right after signup" },
+        { status: 409 },
+      )
+    }
+
+    const body = await request.json()
+    const { referralCode } = body
+
+    if (!referralCode) {
+      return NextResponse.json({ error: "Missing referralCode" }, { status: 400 })
+    }
+
+    const result = await trackReferralSignup({
+      referralCode,
+      referredUserId: neonUser.id,
+    })
+
+    if (!result.success && result.status === "invalid_code") {
       return NextResponse.json({ error: "Invalid referral code" }, { status: 404 })
     }
 
-    const referrerId = referrer[0].id
-
-    // Prevent self-referral
-    if (referrerId === referredUserId) {
+    if (!result.success && result.status === "self_referral") {
       return NextResponse.json({ error: "Cannot refer yourself" }, { status: 400 })
     }
-
-    // Check if referral already exists
-    const existing = await sql`
-      SELECT id FROM referrals 
-      WHERE referrer_id = ${referrerId} AND referred_id = ${referredUserId} 
-      LIMIT 1
-    `
-
-    if (existing.length > 0) {
-      return NextResponse.json({ error: "Referral already tracked" }, { status: 400 })
-    }
-
-    // Create referral record
-    await sql`
-      INSERT INTO referrals (referrer_id, referred_id, referral_code, status)
-      VALUES (${referrerId}, ${referredUserId}, ${referralCode}, 'pending')
-    `
-
-    // Grant welcome credits to referred user immediately (25 credits)
-    // Only if referral bonuses are enabled
-    const referralBonusesEnabled = process.env.REFERRAL_BONUSES_ENABLED === "true"
-    
-    if (referralBonusesEnabled) {
-      try {
-        const welcomeResult = await addCredits(
-          referredUserId,
-          25,
-          "bonus",
-          "Welcome reward for signing up with referral",
-        )
-
-        if (welcomeResult.success) {
-          // Update referral record with welcome credits
-          await sql`
-            UPDATE referrals
-            SET credits_awarded_referred = 25
-            WHERE referrer_id = ${referrerId} AND referred_id = ${referredUserId}
-          `
-          console.log(`[v0] ✅ Welcome credits (25) granted to referred user ${referredUserId}`)
-        } else {
-          console.error(`[v0] ⚠️ Failed to grant welcome credits: ${welcomeResult.error}`)
-        }
-      } catch (creditError: any) {
-        console.error(`[v0] ⚠️ Error granting welcome credits (non-critical):`, creditError.message)
-        // Don't fail referral tracking if credit grant fails
-      }
-    } else {
-      console.log(`[v0] ⚠️ Referral bonuses disabled - skipping welcome credits grant`)
-    }
-
-    console.log(`[v0] ✅ Referral tracked: ${referrerId} → ${referredUserId} (code: ${referralCode})`)
+    console.log(`[v0] ✅ Referral ${result.status}: ${result.referrerId} → ${neonUser.id}`)
 
     return NextResponse.json({
       success: true,
-      referrerId,
-      welcomeCreditsGranted: true,
+      status: result.status,
+      referrerId: result.referrerId,
+      welcomeCreditsGranted: result.welcomeCreditsGranted,
     })
   } catch (error) {
     console.error("[v0] Error tracking referral:", error)

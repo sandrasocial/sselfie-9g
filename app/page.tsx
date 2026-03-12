@@ -3,6 +3,7 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import LandingPage from "@/components/sselfie/landing-page-new"
+import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export const dynamic = "force-dynamic"
@@ -16,6 +17,7 @@ export default async function Home({
     redirect?: string
     next?: string
     tab?: string
+    ref?: string
   }>
 }) {
   const params = await searchParams
@@ -29,13 +31,14 @@ export default async function Home({
   const requestedRedirect =
     redirectParam || (requestedTab ? `/studio?tab=${encodeURIComponent(requestedTab)}` : "")
   const safeRedirect = sanitizeRedirect(requestedRedirect || null, "/studio")
+  const referralCode = normalizeReferralCode(typeof params.ref === "string" ? params.ref : null)
 
   const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   // If Supabase isn't configured (V0 preview), just show landing page
   if (!supabaseConfigured) {
     console.log("[v0] Supabase not configured - showing landing page")
-    return <LandingPage />
+    return <LandingPage referralCode={referralCode} />
   }
 
   let supabase
@@ -44,7 +47,7 @@ export default async function Home({
   } catch (error) {
     console.error("[v0] Error creating Supabase client:", error)
     // If Supabase client creation fails, just show landing page
-    return <LandingPage />
+    return <LandingPage referralCode={referralCode} />
   }
 
   let user = null
@@ -60,7 +63,7 @@ export default async function Home({
   } catch (error) {
     console.error("[v0] Auth check failed or timed out:", error)
     // If auth check fails, just show landing page
-    return <LandingPage />
+    return <LandingPage referralCode={referralCode} />
   }
 
   if (user) {
@@ -108,5 +111,5 @@ export default async function Home({
     }
   }
 
-  return <LandingPage />
+  return <LandingPage referralCode={referralCode} />
 }

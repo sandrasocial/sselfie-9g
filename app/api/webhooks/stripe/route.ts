@@ -28,6 +28,44 @@ import { hasStudioMembership } from "@/lib/subscription"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { ensurePaidSelfieGuideSubscriber } from "@/lib/freebie/selfie-guide-access"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import {
+  completeReferralForPurchase,
+  isReferralPurchaseEligible,
+  isReferralSignupEligible,
+  trackReferralSignup,
+} from "@/lib/referrals/service"
+import { normalizeReferralCode } from "@/lib/referrals/routing"
+
+async function maybeTrackCheckoutReferralSignup(
+  referredUserId: string | null | undefined,
+  referralCode: string | null | undefined,
+  source: string,
+): Promise<void> {
+  const normalizedReferralCode = normalizeReferralCode(referralCode)
+
+  if (!referredUserId || !normalizedReferralCode) {
+    return
+  }
+
+  const [userRecord] = await sql`
+    SELECT created_at
+    FROM users
+    WHERE id = ${referredUserId}
+    LIMIT 1
+  `
+
+  if (!isReferralSignupEligible(userRecord?.created_at || null)) {
+    console.log(`[v0] Skipping referral signup tracking from ${source}: user is not newly created`)
+    return
+  }
+
+  const trackingResult = await trackReferralSignup({
+    referralCode: normalizedReferralCode,
+    referredUserId,
+  })
+
+  console.log(`[v0] Referral signup tracking result from ${source}:`, trackingResult.status)
+}
 
 
 export async function POST(request: NextRequest) {
@@ -300,6 +338,7 @@ export async function POST(request: NextRequest) {
 
         if (session.mode === "payment") {
           let userId = session.metadata.user_id
+          let referralPurchaseUserId = userId || null
           const credits = Number.parseInt(session.metadata.credits || "0")
           const productType = session.metadata.product_type
           const customerEmail = session.customer_details?.email || session.customer_email
@@ -491,6 +530,7 @@ export async function POST(request: NextRequest) {
 
             if (users.length > 0) {
               userId = users[0].id
+              referralPurchaseUserId = userId
               console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
 
               if (source === "app" && productType === "credit_topup") {
@@ -608,6 +648,7 @@ export async function POST(request: NextRequest) {
 
                   const neonUser = await getOrCreateNeonUser(existingUser.id, customerEmail, null)
                   userId = neonUser.id
+                  referralPurchaseUserId = userId
                   console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
                 } else {
                   console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
@@ -656,6 +697,7 @@ export async function POST(request: NextRequest) {
                   console.log(`[v0] Step 5: Creating Neon user record...`)
                   const neonUser = await getOrCreateNeonUser(createData.user.id, customerEmail, null)
                   userId = neonUser.id
+                  referralPurchaseUserId = userId
                   console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
 
                   await sql`
@@ -1968,6 +2010,7 @@ export async function POST(request: NextRequest) {
                   `
                   if (userByEmail.length > 0) {
                     userId = userByEmail[0].id
+                    referralPurchaseUserId = userId
                     console.log(`[v0] Resolved user_id from email: ${userId}`)
                   }
                 } catch (userLookupError: any) {
@@ -2013,6 +2056,7 @@ export async function POST(request: NextRequest) {
               
               // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
               if (userId && isPaymentPaid) {
+                referralPurchaseUserId = userId
                 try {
                   // Fix: Use session.id for $0 payments (no payment intent)
                   const paymentIdForCredits = paymentIntentId || session.id
@@ -2478,6 +2522,35 @@ export async function POST(request: NextRequest) {
               }
             }
           }
+
+          try {
+            await maybeTrackCheckoutReferralSignup(
+              referralPurchaseUserId,
+              session.metadata?.referral_code,
+              `checkout.session.completed:${productType || "unknown"}`,
+            )
+          } catch (referralError: any) {
+            console.error(`[v0] Failed to track referral signup after ${productType} checkout:`, referralError.message)
+          }
+
+          if (
+            isPaymentPaid &&
+            isReferralPurchaseEligible(session.amount_total) &&
+            referralPurchaseUserId &&
+            productType &&
+            productType !== "sselfie_studio_membership"
+          ) {
+            try {
+              const referralResult = await completeReferralForPurchase({
+                referredUserId: referralPurchaseUserId,
+                paymentSource: `stripe_webhook:${productType}`,
+                isTestMode: !event.livemode,
+              })
+              console.log(`[v0] Referral completion result after ${productType} purchase:`, referralResult.status)
+            } catch (referralError: any) {
+              console.error(`[v0] Failed to complete referral after ${productType} purchase:`, referralError.message)
+            }
+          }
         } else if (session.mode === "subscription") {
           let userId = session.metadata.user_id
           const customerEmail = session.customer_details?.email || session.customer_email
@@ -2910,6 +2983,18 @@ export async function POST(request: NextRequest) {
               }
             }
           }
+          try {
+            await maybeTrackCheckoutReferralSignup(
+              userId,
+              session.metadata?.referral_code,
+              `checkout.session.completed:subscription:${productType || "unknown"}`,
+            )
+          } catch (referralError: any) {
+            console.error(
+              `[v0] Failed to track referral signup after subscription checkout for ${customerEmail || userId}:`,
+              referralError.message,
+            )
+          }
         }
         break
       }
@@ -3231,6 +3316,21 @@ export async function POST(request: NextRequest) {
         
         const paidAt = new Date(invoice.status_transitions.paid_at * 1000)
         console.log(`[v0] Payment confirmed at: ${paidAt.toISOString()}`)
+
+        if (isReferralPurchaseEligible(invoice.amount_paid)) {
+          try {
+            const referralResult = await completeReferralForPurchase({
+              referredUserId: String(sub.user_id),
+              paymentSource: "stripe_webhook:subscription",
+              isTestMode,
+            })
+            console.log(`[v0] Referral completion result after subscription payment:`, referralResult.status)
+          } catch (referralError: any) {
+            console.error(`[v0] Failed to complete referral after subscription payment:`, referralError.message)
+          }
+        } else {
+          console.log(`[v0] Skipping referral completion for invoice ${invoice.id}: amount_paid=${invoice.amount_paid}`)
+        }
 
         // Skip granting credits for test mode payments
         if (!event.livemode) {
