@@ -3012,9 +3012,9 @@ export async function POST(request: NextRequest) {
               WHERE email = ${customerEmail}
                 AND pending_welcome_modal IS NULL
             `
-            console.log(\`[v0] ✅ Set pending_welcome_modal=\${productType} for \${customerEmail}\`)
+            console.log(`[v0] ✅ Set pending_welcome_modal=${productType} for ${customerEmail}`)
           } catch (wmErr: any) {
-            console.error(\`[v0] ⚠️ Failed to set pending_welcome_modal:\`, wmErr.message)
+            console.error(`[v0] ⚠️ Failed to set pending_welcome_modal:`, wmErr.message)
           }
         }
 
