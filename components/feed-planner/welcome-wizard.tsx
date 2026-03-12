@@ -161,9 +161,16 @@ export default function WelcomeWizard({
         <p className="text-sm font-light text-white/65">
           Create a complete 9-post feed in minutes. Let&apos;s walk through how it works.
         </p>
+        <Button
+          onClick={handleComplete}
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 py-5 text-sm font-medium uppercase tracking-[0.2em] text-black shadow-lg transition-colors hover:bg-white"
+        >
+          Generate my first feed now →
+        </Button>
+        <p className="text-center text-xs text-white/35">Or continue the walkthrough below</p>
       </div>
     )
-  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle])
+  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle, handleComplete])
 
   // Max 3 steps (A-02 / §1.4): Welcome → How it works → You're ready
   const totalSteps = 3

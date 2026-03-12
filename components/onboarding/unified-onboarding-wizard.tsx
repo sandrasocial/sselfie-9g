@@ -346,9 +346,9 @@ export default function UnifiedOnboardingWizard({
     // Optional step
     if (step.isOptional) return true
     
-    // Selfie upload step
+    // Selfie upload step — optional, user can always skip to continue
     if (step.isSelfieUpload) {
-      return Array.isArray(formData.selfieImages) && formData.selfieImages.length > 0
+      return true
     }
     
     // Visual selector step
@@ -401,10 +401,11 @@ export default function UnifiedOnboardingWizard({
       properties: { step: totalSteps, total_steps: totalSteps },
     }).catch(() => {})
 
-    // Verify selfies are uploaded before proceeding
-    const hasSelfies = Array.isArray(formData.selfieImages) && formData.selfieImages.length > 0
-    if (!hasSelfies) {
-      alert("Please upload at least one selfie before completing the wizard")
+    // Only 3 core fields are required: businessType, idealAudience, feedStyle.
+    // Selfie upload is optional — users can add selfies from Maya later.
+    const missingCore = !formData.businessType?.trim() || !formData.idealAudience?.trim() || !formData.feedStyle?.trim()
+    if (missingCore) {
+      alert("Please fill in your brand focus, audience, and choose a feed style to continue.")
       return
     }
 

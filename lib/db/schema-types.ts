@@ -32,6 +32,7 @@ export interface User {
   brand_style: string | null
   photo_goals: string | null
   onboarding_completed: boolean
+  pending_welcome_modal: string | null
   created_at: string
   updated_at: string
   last_login_at: string | null

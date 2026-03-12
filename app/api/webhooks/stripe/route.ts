@@ -2996,6 +2996,23 @@ export async function POST(request: NextRequest) {
             )
           }
         }
+
+        // Set pending_welcome_modal so the app can show a post-purchase modal on next load.
+        // Skips credit_topup (already-active user topping up) and test-mode purchases.
+        if (isPaymentPaid && customerEmail && productType && productType !== "credit_topup" && event.livemode) {
+          try {
+            await sql`
+              UPDATE users
+              SET pending_welcome_modal = ${productType}
+              WHERE email = ${customerEmail}
+                AND pending_welcome_modal IS NULL
+            `
+            console.log(\`[v0] ✅ Set pending_welcome_modal=\${productType} for \${customerEmail}\`)
+          } catch (wmErr: any) {
+            console.error(\`[v0] ⚠️ Failed to set pending_welcome_modal:\`, wmErr.message)
+          }
+        }
+
         break
       }
 

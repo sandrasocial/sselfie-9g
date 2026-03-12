@@ -17,6 +17,7 @@ import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
+import { PostPurchaseWelcomeModal } from "@/components/sselfie/post-purchase-welcome-modal"
 import { CreditRenewalBanner } from "@/components/credits/credit-renewal-banner"
 import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
@@ -380,6 +381,13 @@ export default function SselfieApp({
   const [currentTierForUpgrade] = useState<"one_time_session" | "sselfie_studio_membership">(
     "sselfie_studio_membership",
   )
+  const [pendingWelcomeDismissed, setPendingWelcomeDismissed] = useState(false)
+  const { data: pendingWelcomeData } = useSWR(
+    "/api/user/pending-welcome",
+    simpleFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 300000 },
+  )
+  const pendingWelcomeProduct: string | null = pendingWelcomeData?.pending ?? null
 
   useEffect(() => {
     if (!tabFromSearchParams) return
@@ -1300,6 +1308,14 @@ export default function SselfieApp({
           These modals have built-in detection to prevent conflicts */}
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
+
+      {/* Post-purchase welcome modal: shown once after any paid checkout */}
+      {pendingWelcomeProduct && !pendingWelcomeDismissed && (
+        <PostPurchaseWelcomeModal
+          productType={pendingWelcomeProduct}
+          onDismiss={() => setPendingWelcomeDismissed(true)}
+        />
+      )}
 
       {/* Hide feedback button when on maya chat screen or feed planner */}
       {activeTab !== "maya" && activeTab !== "feed-planner" && (
