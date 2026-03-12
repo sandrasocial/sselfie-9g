@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,14 +61,14 @@ Format as a conversational tip from Maya, not a list.`
       mode: "classic",
       feature: "instagram-tips",
       userId: neonUser.id,
-      builder: "openai/gpt-4o-mini",
+      builder: getMayaModelForTask("instagram_tips"),
       prompt: `${systemPrompt}\n\n${userPrompt}`,
       input: { postType, position, niche, targetAudience, brandVoice },
       startedAt,
     })
 
     const { text: tips } = await generateText({
-      model: "openai/gpt-4o-mini",
+      model: createMayaOpenRouterModel("instagram_tips"),
       system: systemPrompt,
       prompt: userPrompt,
     })

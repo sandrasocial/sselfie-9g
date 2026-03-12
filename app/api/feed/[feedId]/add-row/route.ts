@@ -4,6 +4,7 @@ import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateObject } from "ai"
 import { z } from "zod"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 
 export const maxDuration = 300
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: { feedId:
     // Generate 3 new posts using AI
     console.log("[v0] [ADD-ROW] Generating 3 new post concepts...")
     const { object: newPosts } = await generateObject({
-      model: "anthropic/claude-sonnet-4.5",
+      model: createMayaOpenRouterModel("feed_add_row"),
       schema: z.object({
         posts: z
           .array(

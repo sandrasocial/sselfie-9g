@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { generateText } from "ai"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 
 export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
@@ -136,7 +137,7 @@ Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's
       mode: "classic",
       feature: "generate-highlights",
       userId: neonUser.id,
-      builder: "anthropic/claude-sonnet-4",
+      builder: getMayaModelForTask("feed_highlights"),
       prompt: `${systemPrompt}\n\n${prompt}`,
       input: { feedId: feedIdInt, postCount: feedPosts.length, brandPillars: brandPillars.length },
       startedAt,
@@ -145,7 +146,7 @@ Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's
     let highlightsText: string
     try {
       const result = await generateText({
-        model: "anthropic/claude-sonnet-4",
+        model: createMayaOpenRouterModel("feed_highlights"),
         system: systemPrompt,
         prompt,
         temperature: 0.7,

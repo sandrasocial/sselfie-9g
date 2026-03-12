@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 
 export async function POST(
@@ -119,7 +120,7 @@ export async function POST(
       : `\n\nThis caption is for Post ${post.position} of 9.`
 
     const { text: enhancedCaption } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
+      model: createMayaOpenRouterModel("feed_enhance_caption"),
       system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
       prompt: `You're Maya, a warm and friendly creative partner who helps people create engaging Instagram captions.
 
@@ -179,4 +180,3 @@ Just write the enhanced, longer version with simple everyday language. No explan
     return NextResponse.json({ error: "Failed to enhance caption" }, { status: 500 })
   }
 }
-

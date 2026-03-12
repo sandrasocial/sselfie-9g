@@ -2415,8 +2415,9 @@ You must apply this skill pack for prompt composition while preserving Maya's co
       preferFeedPlannerContext: useFeedPlannerContext,
     })
     const selectedModel = getMayaModelForTask(mayaTask)
-    const primaryModel = getMayaGatewayModel(mayaTask)
-    const openRouterFallbackModel = createMayaOpenRouterFallbackModel(mayaTask)
+    const openRouterPrimaryModel = createMayaOpenRouterFallbackModel(mayaTask)
+    const primaryModel = openRouterPrimaryModel || getMayaGatewayModel(mayaTask)
+    const gatewayFallbackModel = openRouterPrimaryModel ? getMayaGatewayModel(mayaTask) : null
     const maxTokens = getMayaMaxTokensForTask(mayaTask)
     console.log("[Maya Chat] Model routing:", {
       chatType,
@@ -2427,8 +2428,8 @@ You must apply this skill pack for prompt composition while preserving Maya's co
       skillSource: mayaSkillSelection.source,
       task: mayaTask,
       selectedModel,
-      primaryProvider: "anthropic-gateway",
-      hasOpenRouterFallback: !!openRouterFallbackModel,
+      primaryProvider: openRouterPrimaryModel ? "openrouter" : "anthropic-gateway",
+      hasGatewayFallback: !!gatewayFallbackModel,
     })
 
     let result
@@ -2442,18 +2443,18 @@ You must apply this skill pack for prompt composition while preserving Maya's co
       } as any)
     } catch (streamError) {
       console.error("[v0] Primary model call failed:", streamError)
-      if (openRouterFallbackModel) {
+      if (gatewayFallbackModel) {
         try {
           result = streamText({
-            model: openRouterFallbackModel,
+            model: gatewayFallbackModel,
             system: systemPrompt,
             messages: modelMessages,
             maxTokens,
             temperature: 0.7,
           } as any)
-          console.log("[Maya Chat] OpenRouter fallback activated for chat")
+          console.log("[Maya Chat] Gateway fallback activated for chat")
         } catch (fallbackError) {
-          console.error("[v0] OpenRouter fallback failed:", fallbackError)
+          console.error("[v0] Gateway fallback failed:", fallbackError)
         }
       }
 

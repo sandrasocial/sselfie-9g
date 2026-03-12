@@ -1,4 +1,5 @@
 import { generateText } from "ai"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 interface InstagramStrategyParams {
   userId: string
@@ -172,7 +173,7 @@ Return your response as structured JSON matching the InstagramStrategy interface
 
   try {
     const { text } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
+      model: createMayaOpenRouterModel("instagram_strategy"),
       system: `You are an Instagram Growth Strategist with deep expertise in:
 - Personal brand storytelling
 - Instagram algorithm (2025)

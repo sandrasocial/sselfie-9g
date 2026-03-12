@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { generateInstagramStrategy } from "@/lib/feed-planner/instagram-strategy-agent"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 
 /**
@@ -145,14 +145,14 @@ Tailor everything to the brand's niche and personal branding approach.`
         mode: "classic",
         feature: "feed-strategy",
         userId: neonUser.id,
-        builder: "anthropic/claude-sonnet-4",
+        builder: getMayaModelForTask("feed_strategy_document"),
         prompt: `${strategySystemPrompt}\n\n${strategyPrompt}`,
         input: { feedId, posts: feedPosts.length },
         startedAt,
       })
 
       const { text: strategyMarkdown } = await generateText({
-        model: "anthropic/claude-sonnet-4",
+        model: createMayaOpenRouterModel("feed_strategy_document"),
         system: strategySystemPrompt,
         prompt: strategyPrompt,
         temperature: 0.7,

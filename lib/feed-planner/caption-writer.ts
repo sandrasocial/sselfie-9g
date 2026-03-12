@@ -1,5 +1,6 @@
 import { generateText } from "ai"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 interface CaptionWriterParams {
   postPosition: number
@@ -367,7 +368,7 @@ ${researchContext}
 OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes. Sound like you're texting a friend, not writing a professional post.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4", // Upgraded to Sonnet 4 for better quality and uniqueness
+    model: createMayaOpenRouterModel("instagram_caption"),
     system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
     prompt: captionPrompt,
     maxOutputTokens: 2000,
@@ -395,7 +396,7 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
   const bodyWordCount = countWords(stripHashtags(caption))
   if (bodyWordCount < 70) {
     const { text: revised } = await generateText({
-      model: "anthropic/claude-sonnet-4",
+      model: createMayaOpenRouterModel("instagram_caption"),
       system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
       prompt: `Rewrite this caption so it sounds human, story-led, and naturally detailed.
 
@@ -457,7 +458,7 @@ Research the latest Instagram bio best practices and trending formats in the ${n
 Write a bio that makes someone instantly want to follow.`
 
   const { text: bio } = await generateText({
-    model: "anthropic/claude-haiku-4.5", // Using claude-haiku-4.5 to avoid AI Gateway contention with Maya
+    model: createMayaOpenRouterModel("instagram_bio"),
     system: `You are an expert Instagram Bio Writer specializing in profile optimization and follower attraction.
 
 Your expertise:

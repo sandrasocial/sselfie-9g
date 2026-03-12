@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { put } from "@vercel/blob"
 import { generateText } from "ai"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 
 /**
@@ -65,14 +65,14 @@ Just return the text, nothing else.`
       mode: "classic",
       feature: "highlight-overlay",
       userId: neonUser.id,
-      builder: "anthropic/claude-haiku-4.5",
+      builder: getMayaModelForTask("feed_highlight_overlay"),
       prompt: `${systemPrompt}\n\n${prompt}`,
       input: { feedId, title },
       startedAt,
     })
 
     const { text: overlayText } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
+      model: createMayaOpenRouterModel("feed_highlight_overlay"),
       system: systemPrompt,
       prompt,
       maxOutputTokens: 20,
@@ -87,9 +87,6 @@ Just return the text, nothing else.`
     if (!imageResponse.ok) {
       throw new Error("Failed to fetch image")
     }
-
-    const imageBlob = await imageResponse.blob()
-    const imageBuffer = await imageBlob.arrayBuffer()
 
     // Create canvas to add text overlay
     // We'll do this server-side using a canvas library or return instructions

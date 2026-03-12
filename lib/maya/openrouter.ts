@@ -10,6 +10,17 @@ export type MayaRoutingTask =
   | "feed_prompt"
   | "feed_prompt_locked_aesthetic"
   | "feed_prompt_batch"
+  | "feed_strategy_document"
+  | "feed_highlights"
+  | "feed_highlight_overlay"
+  | "feed_profile_design"
+  | "feed_add_row"
+  | "feed_enhance_caption"
+  | "feed_enhance_goal"
+  | "instagram_strategy"
+  | "instagram_caption"
+  | "instagram_bio"
+  | "instagram_tips"
 
 const TASK_MODEL_MAP: Record<MayaRoutingTask, string> = {
   chat_default: "anthropic/claude-haiku-4.5",
@@ -20,6 +31,17 @@ const TASK_MODEL_MAP: Record<MayaRoutingTask, string> = {
   feed_prompt: "anthropic/claude-sonnet-4.5",
   feed_prompt_locked_aesthetic: "anthropic/claude-sonnet-4.5",
   feed_prompt_batch: "anthropic/claude-sonnet-4.5",
+  feed_strategy_document: "anthropic/claude-sonnet-4",
+  feed_highlights: "anthropic/claude-sonnet-4",
+  feed_highlight_overlay: "anthropic/claude-haiku-4.5",
+  feed_profile_design: "anthropic/claude-sonnet-4",
+  feed_add_row: "anthropic/claude-sonnet-4.5",
+  feed_enhance_caption: "anthropic/claude-haiku-4.5",
+  feed_enhance_goal: "anthropic/claude-haiku-4.5",
+  instagram_strategy: "anthropic/claude-haiku-4.5",
+  instagram_caption: "anthropic/claude-sonnet-4",
+  instagram_bio: "anthropic/claude-haiku-4.5",
+  instagram_tips: "openai/gpt-4o-mini",
 }
 
 const TASK_MAX_TOKENS_MAP: Record<MayaRoutingTask, number> = {
@@ -31,6 +53,17 @@ const TASK_MAX_TOKENS_MAP: Record<MayaRoutingTask, number> = {
   feed_prompt: 4096,
   feed_prompt_locked_aesthetic: 4096,
   feed_prompt_batch: 4096,
+  feed_strategy_document: 4096,
+  feed_highlights: 4096,
+  feed_highlight_overlay: 256,
+  feed_profile_design: 2048,
+  feed_add_row: 2048,
+  feed_enhance_caption: 2048,
+  feed_enhance_goal: 1024,
+  instagram_strategy: 4096,
+  instagram_caption: 2000,
+  instagram_bio: 1000,
+  instagram_tips: 1200,
 }
 
 export function getMayaModelForTask(task: MayaRoutingTask): string {
@@ -48,8 +81,11 @@ function isTruthy(value?: string | null): boolean {
 }
 
 export function isMayaOpenRouterPrimaryEnabled(envValue?: string | null): boolean {
-  if (envValue !== undefined) return isTruthy(envValue)
-  return isTruthy(process.env.FEATURE_MAYA_OPENROUTER_PRIMARY)
+  const resolved = envValue !== undefined ? envValue : process.env.FEATURE_MAYA_OPENROUTER_PRIMARY
+  if (resolved === undefined || resolved === null || resolved.trim() === "") {
+    return true
+  }
+  return isTruthy(resolved)
 }
 
 export function resolveMayaChatTask(input: {

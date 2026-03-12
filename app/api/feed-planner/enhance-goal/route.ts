@@ -3,6 +3,7 @@ import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
 import { withAuth } from "@/lib/auth/with-auth"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 async function handleEnhanceGoal({
   request,
@@ -91,14 +92,14 @@ Just write the better version, no explanations.`
       mode: "classic",
       feature: "enhance-goal",
       userId: user.id,
-      builder: "anthropic/claude-haiku-4.5",
+      builder: getMayaModelForTask("feed_enhance_goal"),
       prompt,
       input: { goalText, hasBrandProfile: Boolean(brandProfile) },
       startedAt,
     })
 
     const { text: enhancedGoal } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
+      model: createMayaOpenRouterModel("feed_enhance_goal"),
       prompt,
     })
 

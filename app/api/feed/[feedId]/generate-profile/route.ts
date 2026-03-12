@@ -7,6 +7,7 @@ import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateObject } from "ai"
 import { z } from "zod"
 import { generatePrompt } from "@/lib/generation/prompt"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
 
       // Maya's AI-powered profile design with her fashion expertise
       const { object: profileDesign } = await generateObject({
-        model: "anthropic/claude-sonnet-4",
+        model: createMayaOpenRouterModel("feed_profile_design"),
         schema: z.object({
           styleDirection: z.string().describe("Maya's specific styling direction for this profile image"),
           composition: z.string().describe("Maya's composition and framing expertise"),
