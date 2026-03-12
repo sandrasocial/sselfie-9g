@@ -1,20 +1,24 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { sql } from "@/lib/db/client"
-import { hasStudioMembership } from "@/lib/subscription"
+import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
-
-type PurchaseRow = {
-  id: number
-  course_id: string
-  purchased_at: string | null
-}
-
-const academyProducts = Object.values(ACADEMY_PRODUCTS)
 
 function priceFromCents(cents: number) {
   return cents / 100
+}
+
+function resolveAccessUrl(productId: string) {
+  if (productId in ACADEMY_PRODUCTS) {
+    return `/academy/products/${productId}`
+  }
+  if (productId === "selfie_guide" || productId === "selfie_guide_bundle") {
+    return "/selfie-guide"
+  }
+  if (productId === "brand_strategy_pack") {
+    return "/brand-strategy"
+  }
+  return "/academy"
 }
 
 export async function GET() {
@@ -34,38 +38,31 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const purchases = (await sql`
-      SELECT id, course_id, purchased_at
-      FROM academy_course_purchases
-      WHERE user_id = ${neonUser.id}
-        AND status = 'active'
-    `) as PurchaseRow[]
+    const entitlementState = await getAcademyEntitlementState(neonUser.id)
+    const accessibleSet = new Set(entitlementState.accessibleProductIds)
+    const explicitSet = new Set(entitlementState.explicitProductIds)
 
-    const membershipActive = await hasStudioMembership(neonUser.id)
-
-    const purchaseMap = new Map(purchases.map((row) => [row.course_id, row]))
-    const ownedProductIds = membershipActive
-      ? academyProducts.map((product) => product.id)
-      : purchases.map((row) => row.course_id)
-
-    const purchasesResponse = ownedProductIds
-      .map((productId) => {
-        const product = academyProducts.find((candidate) => candidate.id === productId)
-        if (!product) return null
-
-        const purchaseRow = purchaseMap.get(productId)
+    const purchasesResponse = entitlementState.products
+      .filter((product) => accessibleSet.has(product.id))
+      .map((product) => {
+        const miniProduct = (ACADEMY_PRODUCTS as Record<string, any>)[product.id]
         const upsell =
-          product.upsellTo && product.upsellTo !== "membership"
-            ? academyProducts.find((candidate) => candidate.id === product.upsellTo) || null
+          miniProduct?.upsellTo && miniProduct.upsellTo !== "membership"
+            ? (ACADEMY_PRODUCTS as Record<string, any>)[miniProduct.upsellTo] || null
             : null
 
         return {
           id: product.id,
-          name: product.name,
-          tagline: product.tagline,
-          price: priceFromCents(product.price),
-          purchasedAt: purchaseRow?.purchased_at ?? null,
-          accessUrl: `/academy/products/${product.id}`,
+          name: product.title,
+          tagline: miniProduct?.tagline || "",
+          price: miniProduct?.price ? priceFromCents(miniProduct.price) : 0,
+          purchasedAt: null,
+          accessUrl: resolveAccessUrl(product.id),
+          accessSource: explicitSet.has(product.id)
+            ? entitlementState.membershipActive
+              ? "purchase_and_membership"
+              : "purchase"
+            : "membership",
           upsellProduct: upsell
             ? {
                 id: upsell.id,
@@ -76,21 +73,25 @@ export async function GET() {
             : null,
         }
       })
-      .filter(Boolean)
 
-    const availableProducts = academyProducts
-      .filter((product) => !ownedProductIds.includes(product.id))
-      .map((product) => ({
-        id: product.id,
-        name: product.name,
-        tagline: product.tagline,
-        price: priceFromCents(product.price),
-        owned: false,
-      }))
+    const availableProducts = entitlementState.membershipActive
+      ? []
+      : entitlementState.products
+          .filter((product) => product.active && product.purchasable && !accessibleSet.has(product.id))
+          .map((product) => {
+            const miniProduct = (ACADEMY_PRODUCTS as Record<string, any>)[product.id]
+            return {
+              id: product.id,
+              name: product.title,
+              tagline: miniProduct?.tagline || "",
+              price: miniProduct?.price ? priceFromCents(miniProduct.price) : 0,
+              owned: false,
+            }
+          })
 
     return NextResponse.json({
       purchases: purchasesResponse,
-      hasStudioMembership: membershipActive,
+      hasStudioMembership: entitlementState.membershipActive,
       availableProducts,
     })
   } catch (error) {

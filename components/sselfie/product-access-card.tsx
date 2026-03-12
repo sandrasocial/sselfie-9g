@@ -8,7 +8,13 @@ import { useRouter } from "next/navigation"
  * "You have access" badge, CTA (Obsidian, minimal, underline on hover).
  * Copy from docs/in-app-funnel/02-content-copy-2026-02-25.md Section 1.
  */
-export type ProductAccessId = "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
+export type ProductAccessId =
+  | "what_to_say"
+  | "show_up"
+  | "get_paid"
+  | "ai_photo_prompts"
+  | "selfie_guide"
+  | "brand_strategy_pack"
 
 export interface ProductAccessCardProps {
   productId: ProductAccessId
@@ -27,6 +33,8 @@ const DEEP_LINKS: Record<ProductAccessId, string> = {
   show_up: "/academy/products/show_up",
   get_paid: "/academy/products/get_paid",
   ai_photo_prompts: "/academy/products/ai_photo_prompts",
+  selfie_guide: "/selfie-guide",
+  brand_strategy_pack: "/brand-strategy",
 }
 
 export default function ProductAccessCard({

@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe"
 import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
 type CheckoutRequestBody = {
   productId?: AcademyProductId
@@ -34,6 +35,14 @@ export async function POST(request: Request) {
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const isStudioMember = await hasActiveStudioMembership(neonUser.id)
+    if (isStudioMember) {
+      return NextResponse.json(
+        { error: "Studio members already have Academy access for this product." },
+        { status: 403 },
+      )
     }
 
     const configuredSiteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || "").trim()

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCoursesForMembership } from "@/lib/data/academy"
-import { getUserProductAccess, hasStudioMembership } from "@/lib/subscription"
+import { getUserProductAccess } from "@/lib/subscription"
+import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
 export async function GET() {
   try {
@@ -33,7 +34,7 @@ export async function GET() {
     console.log("[v0] Fetching courses for Neon user:", neonUser.id)
     console.log("[v0] Neon user email:", neonUser.email)
 
-    const hasAccess = await hasStudioMembership(neonUser.id)
+    const hasAccess = await hasActiveStudioMembership(neonUser.id)
     const productType = await getUserProductAccess(neonUser.id)
 
     console.log("[v0] User has Academy access:", hasAccess, "Product type:", productType)
@@ -44,8 +45,7 @@ export async function GET() {
       neonUserEmail: neonUser.email,
       hasAccess,
       productType,
-      expectedProductType: "sselfie_studio_membership",
-      accessGranted: hasAccess && productType === "sselfie_studio_membership",
+      accessGranted: hasAccess,
     })
 
     if (!hasAccess) {
@@ -66,8 +66,8 @@ export async function GET() {
     return NextResponse.json({
       courses,
       hasAccess: true,
-      productType,
-      userTier: productType || "free",
+      productType: productType || "sselfie_studio_membership",
+      userTier: "sselfie_studio_membership",
     })
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)

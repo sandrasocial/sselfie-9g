@@ -27,6 +27,7 @@ import {
 import { hasStudioMembership } from "@/lib/subscription"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { ensurePaidSelfieGuideSubscriber } from "@/lib/freebie/selfie-guide-access"
+import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
   completeReferralForPurchase,
@@ -930,6 +931,16 @@ export async function POST(request: NextRequest) {
               )
             `
 
+            await upsertPurchaseEntitlement({
+              userId: academyUserId,
+              productId,
+              sourceRef: paymentIntentId || session.id,
+              metadata: {
+                source: "stripe_webhook:academy_mini_product",
+                stripe_session_id: session.id,
+              },
+            })
+
             if (academyCustomerEmail) {
               const upsellMap: Record<string, { name: string; price: string; productId: string }> = {
                 what_to_say: { name: "Show Up", price: "EUR 27", productId: "show_up" },
@@ -1422,6 +1433,16 @@ export async function POST(request: NextRequest) {
                 ON CONFLICT (user_id, tag) DO NOTHING
               `
 
+              await upsertPurchaseEntitlement({
+                userId: String(userId),
+                productId: "brand_strategy_pack",
+                sourceRef: paymentIdForStorage,
+                metadata: {
+                  source: "stripe_webhook:brand_strategy_pack",
+                  stripe_session_id: session.id,
+                },
+              })
+
               // Generate setup token for the post-payment questionnaire
               const brandStrategySetupToken = randomUUID()
               try {
@@ -1626,6 +1647,16 @@ export async function POST(request: NextRequest) {
                 ON CONFLICT (user_id, tag) DO NOTHING
               `
 
+              await upsertPurchaseEntitlement({
+                userId: String(userId),
+                productId: "selfie_guide",
+                sourceRef: paymentIdForStorage,
+                metadata: {
+                  source: "stripe_webhook:selfie_guide",
+                  stripe_session_id: session.id,
+                },
+              })
+
               if (boughtBrandStrategyBump && customerEmail) {
                 try {
                   const brandStrategyPaymentId = paymentIntentId
@@ -1720,6 +1751,17 @@ export async function POST(request: NextRequest) {
                     )
                     ON CONFLICT (user_id, tag) DO NOTHING
                   `
+
+                  await upsertPurchaseEntitlement({
+                    userId: String(userId),
+                    productId: "brand_strategy_pack",
+                    sourceRef: brandStrategyPaymentId,
+                    metadata: {
+                      source: "stripe_webhook:selfie_guide_order_bump",
+                      stripe_session_id: session.id,
+                      source_product_type: "selfie_guide",
+                    },
+                  })
 
                   const brandStrategySetupToken = randomUUID()
                   await sql`

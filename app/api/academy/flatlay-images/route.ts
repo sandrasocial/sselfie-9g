@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasStudioMembership } from "@/lib/subscription"
 import { createServerClient } from "@/lib/supabase/server"
+import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
 
 export async function GET() {
@@ -29,7 +29,7 @@ export async function GET() {
 
     console.log("[v0] Neon user ID:", neonUser.id)
 
-    const hasAccess = await hasStudioMembership(neonUser.id)
+    const hasAccess = await hasActiveStudioMembership(neonUser.id)
 
     if (!hasAccess) {
       console.log("[v0] User does not have Studio Membership")

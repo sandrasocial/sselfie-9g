@@ -48,7 +48,7 @@ const getFriendlyTierName = (tier: string): string => {
 
 /** Copy for "You Have Access" cards (docs/in-app-funnel/02-content-copy §1). Only products we show in-app with deep links. */
 const PRODUCT_ACCESS_COPY: Record<
-  "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts",
+  "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts" | "selfie_guide" | "brand_strategy_pack",
   { subText: string; ctaLabel: string }
 > = {
   what_to_say: {
@@ -66,6 +66,14 @@ const PRODUCT_ACCESS_COPY: Record<
   ai_photo_prompts: {
     subText: "50 done-for-you prompts across 10 brand scenarios.",
     ctaLabel: "Open prompts",
+  },
+  selfie_guide: {
+    subText: "Your full selfie training and challenge flow.",
+    ctaLabel: "Open guide",
+  },
+  brand_strategy_pack: {
+    subText: "Your personalized brand strategy output.",
+    ctaLabel: "Open strategy",
   },
 }
 

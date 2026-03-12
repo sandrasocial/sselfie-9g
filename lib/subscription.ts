@@ -24,6 +24,13 @@ type PickPreferredSubscriptionOptions = {
   liveOnly?: boolean
 }
 
+const MEMBERSHIP_PRODUCT_TYPES: ProductType[] = ["sselfie_studio_membership", "brand_studio_membership", "pro"]
+
+function isMembershipProduct(productType: string | null | undefined): boolean {
+  if (!productType) return false
+  return MEMBERSHIP_PRODUCT_TYPES.includes(productType as ProductType)
+}
+
 function createdAtMillis(value: Date | string | null | undefined): number {
   if (!value) return 0
   const parsed = new Date(value).getTime()
@@ -67,9 +74,13 @@ export function pickPreferredSubscription(
     return null
   }
 
-  const orderedActive = activeCandidates.sort(
-    (a, b) => createdAtMillis(b.created_at ?? null) - createdAtMillis(a.created_at ?? null),
-  )
+  const orderedActive = activeCandidates.sort((a, b) => {
+    const membershipDelta = Number(isMembershipProduct(b.product_type)) - Number(isMembershipProduct(a.product_type))
+    if (membershipDelta !== 0) {
+      return membershipDelta
+    }
+    return createdAtMillis(b.created_at ?? null) - createdAtMillis(a.created_at ?? null)
+  })
 
   if (options.liveOnly) {
     const liveActive = orderedActive.find((candidate) => candidate.is_test_mode !== true)
@@ -122,8 +133,7 @@ export async function getUserSubscription(userId: string) {
 export async function hasStudioMembership(userId: string): Promise<boolean> {
   try {
     const subscription = await getUserSubscription(userId)
-    const hasAccess = ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(subscription?.product_type || "")
-    return hasAccess
+    return isMembershipProduct(subscription?.product_type)
   } catch (error) {
     console.error("[v0] [hasStudioMembership] Error checking studio membership:", error)
     return false

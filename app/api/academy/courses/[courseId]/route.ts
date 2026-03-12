@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCourseWithLessons, getUserCourseProgress, enrollUserInCourse } from "@/lib/data/academy"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
 export async function GET(req: NextRequest, { params }: { params: { courseId: string } }) {
   try {
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { courseId: st
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const hasAccess = await hasStudioMembership(neonUser.id)
+    const hasAccess = await hasActiveStudioMembership(neonUser.id)
 
     if (!hasAccess) {
       console.log("[v0] User does not have Academy access")
