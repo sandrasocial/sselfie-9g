@@ -87,10 +87,13 @@ export async function GET(request: Request) {
       day7: { found: 0, sent: 0, failed: 0, skipped: 0 },
       firstGenNudge: { found: 0, sent: 0, failed: 0 },
       postActivation: { found: 0, sent: 0, failed: 0 },
+      freeWelcome: { found: 0, sent: 0, failed: 0 },
       errors: [] as Array<{ email: string; day: number | string; error: string }>,
     }
 
-    // Onboarding Email Sequence Automation - Day 0 emails: subscription created in last 2 hours
+    // Onboarding Email Sequence Automation - Day 0 emails: subscription created in last 24 hours.
+    // 24h window (not 2h) so Studio members are caught regardless of what time they subscribed.
+    // Idempotency is handled by the email_logs LEFT JOIN — if the row exists we skip.
     const day0Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -103,13 +106,13 @@ export async function GET(request: Request) {
         AND el.email_type = 'onboarding-day-0'
         AND (
           el.status IN ('sent', 'delivered')
-          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '24 hours')
         )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW()
-        AND s.created_at > NOW() - INTERVAL '2 hours'
+        AND s.created_at > NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -309,8 +312,11 @@ export async function GET(request: Request) {
       }
     }
 
-    // Behavioral nudge: users created 24–48h ago who have bonus credits but zero image generations.
-    // Fires regardless of subscription status — targets free users who never activated.
+    // Behavioral nudge: users created 24–48h ago who have zero image generations.
+    // Fires regardless of subscription status — targets any user (free or paid) who has
+    // not yet made their first photo. No longer gated on credit_transactions bonus rows,
+    // since free signups may receive bonus credits through a direct balance update rather
+    // than via a credit_transactions row.
     // Idempotency: email_logs guard with email_type = 'welcome-first-generation-nudge'.
     const firstGenNudgeUsers = await sql`
       SELECT DISTINCT
@@ -321,10 +327,6 @@ export async function GET(request: Request) {
       WHERE u.created_at BETWEEN NOW() - INTERVAL '48 hours' AND NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
         AND u.email != ''
-        AND EXISTS (
-          SELECT 1 FROM credit_transactions ct
-          WHERE ct.user_id = u.id AND ct.transaction_type = 'bonus'
-        )
         AND NOT EXISTS (
           SELECT 1 FROM generated_images gi WHERE gi.user_id = u.id
         )
@@ -455,8 +457,75 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent
-    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed
+    // Free user Day 0 welcome: new signups (0–24h) who are not Studio members and have not
+    // already received a purchase-confirmation email (Selfie Guide, Blueprint, etc.).
+    // This closes the gap where free signups received no email after March 9 cleanup.
+    // Idempotency: email_logs guard with email_type = 'free-user-welcome-day0'.
+    const freeWelcomeUsers = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name
+      FROM users u
+      WHERE u.created_at >= NOW() - INTERVAL '24 hours'
+        AND u.email IS NOT NULL
+        AND u.email != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM subscriptions s
+          WHERE s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status = 'active'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type IN (
+              'free-user-welcome-day0',
+              'selfie-guide-activation-day0',
+              'selfie_guide_delivery',
+              'paid-blueprint-delivery',
+              'onboarding-day-0'
+            )
+        )
+      ORDER BY u.created_at DESC
+    `
+
+    results.freeWelcome.found = freeWelcomeUsers.length
+    console.log(`[v0] [CRON] Found ${freeWelcomeUsers.length} free users for Day 0 welcome email`)
+
+    for (const user of freeWelcomeUsers as any[]) {
+      try {
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateWelcomeFirstGenerationFollowupEmail({ firstName })
+
+        const result = await sendEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "free-user-welcome-day0",
+          replyTo: "hello@sselfie.ai",
+          tags: ["lifecycle", "free-welcome-day0"],
+        })
+
+        if (result.success) {
+          results.freeWelcome.sent++
+          console.log(`[v0] [CRON] ✅ Free user Day 0 welcome sent to ${user.email}`)
+        } else {
+          results.freeWelcome.failed++
+          results.errors.push({ email: user.email, day: "free-welcome-day0", error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Free user Day 0 welcome failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.freeWelcome.failed++
+        results.errors.push({ email: user.email, day: "free-welcome-day0", error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Free user Day 0 welcome exception for ${user.email}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent + results.freeWelcome.sent
+    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed + results.freeWelcome.failed
     const totalSkipped = results.day0.skipped + results.day2.skipped + results.day7.skipped
 
     console.log(
@@ -477,6 +546,8 @@ export async function GET(request: Request) {
       firstGenNudgeFailed: results.firstGenNudge.failed,
       postActivationSent: results.postActivation.sent,
       postActivationFailed: results.postActivation.failed,
+      freeWelcomeSent: results.freeWelcome.sent,
+      freeWelcomeFailed: results.freeWelcome.failed,
       totalSent,
       totalFailed,
       totalSkipped,
@@ -491,6 +562,7 @@ export async function GET(request: Request) {
         day7: results.day7,
         firstGenNudge: results.firstGenNudge,
         postActivation: results.postActivation,
+        freeWelcome: results.freeWelcome,
         totalSent,
         totalFailed,
         totalSkipped,
