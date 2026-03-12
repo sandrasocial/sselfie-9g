@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   brand_style TEXT,
   photo_goals TEXT,
   onboarding_completed BOOLEAN DEFAULT false,
+  pending_welcome_modal TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   last_login_at TIMESTAMPTZ

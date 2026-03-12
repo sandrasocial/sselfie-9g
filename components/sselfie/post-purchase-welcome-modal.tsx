@@ -25,7 +25,7 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
   },
   brand_strategy_pack: {
     heading: "Your Brand Strategy is generating.",
-    body: "Maya's working on it now. You'll get your full strategy in a few minutes.",
+    body: "Maya\u2019s working on it now. You\u2019ll get your full strategy in a few minutes.",
     cta: "See my strategy",
   },
   one_time_session: {
@@ -35,12 +35,25 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
   },
 }
 
+// Maps product type to the in-app tab the CTA should navigate to.
+// selfie_guide and brand_strategy_pack open external URLs via window.location.
+const PRODUCT_TAB_DESTINATION: Record<string, string | null> = {
+  sselfie_studio_membership: "maya",
+  one_time_session: "maya",
+  paid_blueprint: "feed-planner",
+  selfie_guide: null,       // navigates to external guide URL
+  selfie_guide_bundle: null, // navigates to external guide URL
+  brand_strategy_pack: null, // navigates to /strategy page
+}
+
 interface PostPurchaseWelcomeModalProps {
   productType: string
   onDismiss: () => void
+  /** Called with the target tab id when the CTA should change the active Studio tab */
+  onNavigate?: (tabId: string) => void
 }
 
-export function PostPurchaseWelcomeModal({ productType, onDismiss }: PostPurchaseWelcomeModalProps) {
+export function PostPurchaseWelcomeModal({ productType, onDismiss, onNavigate }: PostPurchaseWelcomeModalProps) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -55,12 +68,30 @@ export function PostPurchaseWelcomeModal({ productType, onDismiss }: PostPurchas
     cta: "Get started",
   }
 
-  const handleDismiss = async () => {
+  const clearFlag = async () => {
     try {
       await fetch("/api/user/pending-welcome", { method: "DELETE" })
     } catch {
       // non-critical — flag will persist until next clear
     }
+  }
+
+  const handleCta = async () => {
+    await clearFlag()
+    const tabDest = PRODUCT_TAB_DESTINATION[productType]
+    if (tabDest && onNavigate) {
+      onNavigate(tabDest)
+    } else if (productType === "selfie_guide" || productType === "selfie_guide_bundle") {
+      // Guide lives on a separate page — navigate there
+      window.location.href = "/selfie-guide"
+    } else if (productType === "brand_strategy_pack") {
+      window.location.href = "/studio?tab=maya"
+    }
+    onDismiss()
+  }
+
+  const handleDismiss = async () => {
+    await clearFlag()
     onDismiss()
   }
 
@@ -82,7 +113,7 @@ export function PostPurchaseWelcomeModal({ productType, onDismiss }: PostPurchas
 
         <div className="space-y-3">
           <button
-            onClick={handleDismiss}
+            onClick={handleCta}
             className="w-full bg-[#c8c4bb] text-[#0d0c0b] px-6 py-3 rounded-full font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] hover:bg-[#f0ede8] transition-all"
           >
             {copy.cta}

@@ -1262,7 +1262,7 @@ export default function SselfieApp({
                       className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 ${DesignClasses.radius.lg} transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
                         isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                       } ${isGated ? "opacity-50" : ""}`}
-                      aria-label={isGated ? `${tab.label} — unlocks after your first photo` : `Navigate to ${tab.label}`}
+                      aria-label={isGated ? `${tab.label} — unlocks as you create with Maya` : `Navigate to ${tab.label}`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       {isActive && (
@@ -1283,7 +1283,7 @@ export default function SselfieApp({
             </div>
             {isNewUser && (
               <p className="text-xs text-center py-1" style={{ color: '#8a8780' }}>
-                Gallery, Feed &amp; Academy unlock after your first photo
+                Create with Maya to unlock Gallery, Feed &amp; Academy
               </p>
             )}
           </div>
@@ -1317,6 +1317,10 @@ export default function SselfieApp({
         <PostPurchaseWelcomeModal
           productType={pendingWelcomeProduct}
           onDismiss={() => setPendingWelcomeDismissed(true)}
+          onNavigate={(tabId) => {
+            setActiveTab(tabId as StudioTab)
+            setPendingWelcomeDismissed(true)
+          }}
         />
       )}
 

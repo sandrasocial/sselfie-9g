@@ -58,13 +58,16 @@ export async function createLandingCheckoutSession(
           ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
           : product.type === "selfie_guide_bundle"
             ? "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE"
-          : product.type === "selfie_guide"
-            ? "STRIPE_PRICE_SELFIE_GUIDE"
-            : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+            : product.type === "selfie_guide"
+              ? "STRIPE_PRICE_SELFIE_GUIDE"
+              : product.type === "sselfie_studio_membership_annual"
+                ? "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID"
+                : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
   } else if (product.type === "sselfie_studio_membership_annual") {
+    // Requires STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID in Vercel env (value: price_1TA699EVJvME7vkwTyp3CUOl)
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID

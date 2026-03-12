@@ -129,7 +129,6 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.display_name?.split(" ")[0],
         }))
-        const day0Emails = day0Users.map((user: any) => user.email)
 
         const emailContent = generateOnboardingDay0Email({
           firstName: FIRST_NAME_PLACEHOLDER,
@@ -203,7 +202,6 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.display_name?.split(" ")[0],
         }))
-        const day2Emails = day2Users.map((user: any) => user.email)
 
         const emailContent = generateOnboardingDay2Email({
           firstName: FIRST_NAME_PLACEHOLDER,
@@ -277,7 +275,6 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.display_name?.split(" ")[0],
         }))
-        const day7Emails = day7Users.map((user: any) => user.email)
 
         const emailContent = generateOnboardingDay7Email({
           firstName: FIRST_NAME_PLACEHOLDER,
@@ -391,10 +388,10 @@ export async function GET(request: Request) {
         u.email,
         u.display_name,
         (
-          SELECT gi.output_url FROM generated_images gi
+          SELECT gi.selected_url FROM generated_images gi
           WHERE gi.user_id = u.id
-            AND gi.output_url IS NOT NULL
-            AND gi.output_url <> ''
+            AND gi.selected_url IS NOT NULL
+            AND gi.selected_url <> ''
           ORDER BY gi.created_at ASC
           LIMIT 1
         ) AS first_image_url

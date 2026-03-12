@@ -19,7 +19,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const [dismissed, setDismissed] = useState(false)
   const [showBuyDialog, setShowBuyDialog] = useState(false)
 
-  // Check if user is free or paid (only show for paid users)
+  // Show for both free and paid users when credits reach 0 — free users at 0 are at peak upgrade intent.
   const { data: blueprintData } = useSWR("/api/blueprint/state", fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000, // Cache for 1 minute
