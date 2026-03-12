@@ -37,6 +37,14 @@ export async function autoSyncUserToResend(
     return { success: false, error: "Email required" }
   }
 
+  // Block test/fake emails from ever entering the Resend audience
+  const TEST_EMAIL_PATTERN =
+    /(@example\.|@test\.|@test\.local|@playwright\.test|sselfie-smoke\.test|sselfie-studio\.internal|@yopmail\.|@mailinator\.|@guerrillamail\.|@trashmail\.|@tempmail\.|@sharklasers\.|@spam4\.|codex-|codex\.|stripe@example|test@sselfie)/i
+  if (TEST_EMAIL_PATTERN.test(email)) {
+    console.log(`[RESEND-SYNC] Skipping test email: ${email}`)
+    return { success: false, error: "Test email blocked" }
+  }
+
   const { source = "app_signup", isStudioMember = false, subscriptionProduct } = options
 
   const tags: Array<{ name: string; value: string }> = [{ name: "source", value: source }]
