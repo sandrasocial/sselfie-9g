@@ -55,7 +55,9 @@ describe("remaining funnel leak regression", () => {
     const oneTimeContents = read("app/checkout/one-time/page.tsx")
     const failurePageContents = read("app/checkout/failure/page.tsx")
 
-    expect(membershipContents).toContain('/checkout/failure?product=sselfie_studio_membership')
+    // Failure route uses dynamic product id (monthly or annual)
+    expect(membershipContents).toContain('/checkout/failure?product=')
+    expect(membershipContents).toContain('"sselfie_studio_membership"')
     expect(membershipContents).not.toContain("/auth/sign-up?checkout=studio_membership")
 
     expect(oneTimeContents).toContain('/checkout/failure?product=one_time_session')

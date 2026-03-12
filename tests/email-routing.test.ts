@@ -4,9 +4,7 @@ import path from "path"
 
 const ROOT = process.cwd()
 
-const broadcastOnlyRoutes = [
-  "app/api/cron/onboarding-sequence/route.ts",
-]
+const broadcastOnlyRoutes: string[] = []
 
 const removedLegacyRoutes = [
   "archived/email/cron/blueprint-discovery-funnel/route.ts",
@@ -53,6 +51,14 @@ describe("Email routing separation", () => {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).toContain("sendEmail(")
     }
+  })
+
+  it("onboarding sequence uses both broadcast and transactional sends", () => {
+    const contents = fs.readFileSync(path.join(ROOT, "app/api/cron/onboarding-sequence/route.ts"), "utf8")
+    // Marketing batch sends (e.g. D0 activation, D2 nurture)
+    expect(contents).toContain("enqueueAndProcessMarketingRun")
+    // Transactional behavioral sends (e.g. first-gen nudge, post-activation upgrade)
+    expect(contents).toContain("sendEmail(")
   })
 
   it("nurture sequence does not query the removed users.name column", () => {

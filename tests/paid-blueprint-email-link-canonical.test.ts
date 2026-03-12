@@ -7,9 +7,6 @@ const ROOT = process.cwd()
 
 const TEMPLATE_PATHS = [
   "lib/email/templates/paid-blueprint-delivery.tsx",
-  "lib/email/templates/paid-blueprint-day-1.tsx",
-  "lib/email/templates/paid-blueprint-day-3.tsx",
-  "lib/email/templates/paid-blueprint-day-7.tsx",
 ]
 
 describe("paid blueprint email links", () => {

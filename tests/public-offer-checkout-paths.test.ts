@@ -34,7 +34,10 @@ describe("public offer checkout paths", () => {
   it("keeps membership on the direct landing checkout path", () => {
     const membershipContents = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
 
-    expect(membershipContents).toContain('createLandingCheckoutSession("sselfie_studio_membership"')
+    // Supports both monthly and annual billing intervals
+    expect(membershipContents).toContain('createLandingCheckoutSession(')
+    expect(membershipContents).toContain('"sselfie_studio_membership"')
+    expect(membershipContents).toContain('"sselfie_studio_membership_annual"')
     expect(membershipContents).toContain('export const dynamic = "force-dynamic"')
     expect(membershipContents).toContain('if (error?.digest?.startsWith("NEXT_REDIRECT"))')
   })

@@ -77,12 +77,12 @@ describe("shouldShowWelcomeFirstGenerationFlow", () => {
     ).toBe(false)
   })
 
-  it("hides when user is older than 24h", () => {
+  it("hides when user is older than 7 days", () => {
     const now = new Date("2026-02-19T12:00:00.000Z")
     expect(
       shouldShowWelcomeFirstGenerationFlow({
         enabled: true,
-        userCreatedAt: "2026-02-18T10:59:59.000Z",
+        userCreatedAt: "2026-02-11T11:59:59.000Z", // 8 days old — outside 7-day window
         hasAnyGeneration: false,
         hasBonusCredits: true,
         hasNoImageSpend: true,
