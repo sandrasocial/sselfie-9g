@@ -92,7 +92,7 @@ export function SuccessContent({
 }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
-  const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
+  const isBrandEnginePurchase = false // Brand Engine retired — no new purchases
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
   const isBrandStrategyPurchase = purchaseType === "brand_strategy_pack"
   const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/brand-strategy")

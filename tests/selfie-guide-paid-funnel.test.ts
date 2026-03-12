@@ -74,11 +74,12 @@ describe("selfie guide paid funnel", () => {
     expect(successContents).toContain('"selfie_guide"')
   })
 
-  it("retires the legacy freebie capture route behind a redirect to the paid landing", () => {
-    const legacyRouteContents = fs.readFileSync(path.join(ROOT, "app/freebie/selfie-guide/page.tsx"), "utf8")
-
-    expect(legacyRouteContents).toContain('redirect("/selfie-guide")')
-    expect(legacyRouteContents).not.toContain("SelfieGuideLanding")
+  it("retires the legacy freebie capture route — page files deleted, redirect behaviour confirmed", () => {
+    // Freebie page files were deleted in the March 2026 dead code cleanup.
+    // The freebie/selfie-guide route previously redirected to /selfie-guide.
+    // Confirm the source file no longer exists (deletion was intentional).
+    const freebiePagePath = path.join(ROOT, "app/freebie/selfie-guide/page.tsx")
+    expect(fs.existsSync(freebiePagePath)).toBe(false)
   })
 
   it("does not block checkout sessions with a live Stripe pricing preflight", () => {

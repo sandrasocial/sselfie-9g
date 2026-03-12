@@ -10,7 +10,6 @@ import MayaConceptCards from "./maya/maya-concept-cards"
 import MayaQuickPrompts from "./maya/maya-quick-prompts"
 import MayaSettingsPanel from "./maya/maya-settings-panel"
 import MayaChatInterface from "./maya/maya-chat-interface"
-import MayaFeedTab from "./maya/maya-feed-tab"
 import UnifiedLoading from "./unified-loading"
 import { useMayaSettings } from "./maya/hooks/use-maya-settings"
 import { useMayaMode } from "./maya/hooks/use-maya-mode"
@@ -172,7 +171,6 @@ export default function MayaChatScreen({
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const isLandingPagesUiEnabled = false
-  const isFeedTabDisabled = true
   const isTabScopedChatEnabled = isMayaTabScopedChatEnabled(
     process.env.NEXT_PUBLIC_FEATURE_MAYA_TAB_SCOPED_CHAT,
   )
@@ -250,13 +248,10 @@ export default function MayaChatScreen({
       if (hash === "#maya/training" || hash === "#training") {
         return "training"
       }
-      if (!isFeedTabDisabled && (hash === "#maya/feed" || hash === "#feed")) {
-        return "feed"
-      }
       // Check localStorage for persisted tab selection
       const savedTab = localStorage.getItem("mayaActiveTab")
-      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || (!isFeedTabDisabled && savedTab === "feed")) {
-        return savedTab as "photos" | "videos" | "prompts" | "training" | "feed"
+      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training") {
+        return savedTab as "photos" | "videos" | "prompts" | "training"
       }
     }
     return "photos" // Default to Photos tab
@@ -282,15 +277,6 @@ export default function MayaChatScreen({
     ? Math.round(creditBalance).toLocaleString()
     : "0"
 
-  useEffect(() => {
-    if (!isFeedTabDisabled) return
-    if (activeMayaTab !== "feed") return
-    setActiveMayaTab("photos")
-    if (typeof window !== "undefined") {
-      localStorage.setItem("mayaActiveTab", "photos")
-      window.history.replaceState(null, "", "#maya")
-    }
-  }, [activeMayaTab, isFeedTabDisabled])
 
   useEffect(() => {
     const node = inputBarRef.current
@@ -768,8 +754,6 @@ export default function MayaChatScreen({
   }, [])
 
   useEffect(() => {
-    const shouldHandleInlineFeed = isFeedTabDisabled || activeMayaTab !== "feed"
-    if (!shouldHandleInlineFeed) return
     if (messages.length === 0) return
     if (isCreatingFeed) return
     if (pendingFeedRequest) return
@@ -825,13 +809,10 @@ export default function MayaChatScreen({
     isCreatingFeed,
     pendingFeedRequest,
     activeMayaTab,
-    isFeedTabDisabled,
     getMessageText,
   ])
 
   useEffect(() => {
-    const shouldHandleInlineFeed = isFeedTabDisabled || activeMayaTab !== "feed"
-    if (!shouldHandleInlineFeed) return
     if (!pendingFeedRequest) return
     if (status === "streaming" || status === "submitted") return
 
@@ -931,7 +912,6 @@ export default function MayaChatScreen({
     messages,
     status,
     activeMayaTab,
-    isFeedTabDisabled,
     getMessageText,
     sanitizeInlineFeedMessage,
     toast,
@@ -1346,7 +1326,7 @@ export default function MayaChatScreen({
       resolvePhaseTwoTools()
     }
 
-    // Feed trigger detection moved to MayaFeedTab component
+    // Feed trigger detection handled inline in message processing
     // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
   }, [
     messages,
@@ -3735,9 +3715,6 @@ export default function MayaChatScreen({
           onSettings={() => setShowSettings(true)}
           activeTab={activeMayaTab}
           onTabChange={(tab) => {
-            if (isFeedTabDisabled && tab === "feed") {
-              return
-            }
             setActiveMayaTab(tab)
             // Persist to localStorage
             if (typeof window !== "undefined") {
@@ -3755,7 +3732,7 @@ export default function MayaChatScreen({
           }}
           photosCount={undefined} // Can be added later if needed
           videosCount={undefined} // Can be added later if needed
-          disableFeedTab={isFeedTabDisabled}
+          disableFeedTab={true}
         />
       </div>
 
@@ -4490,55 +4467,6 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {/* Tab Content - Feed Tab */}
-      {!isFeedTabDisabled && activeMayaTab === "feed" && (
-        <>
-          {/* CRITICAL FIX: Show loading indicator during chat load, but don't block UI */}
-          {isLoadingChat && messages.length === 0 && (
-            <div className="flex-1 flex items-center justify-center min-h-[400px]">
-              <UnifiedLoading message="Loading feed..." variant="section" />
-            </div>
-          )}
-          <MayaFeedTab
-              messages={messages}
-              filteredMessages={filteredMessages}
-              setMessages={setMessages}
-              proMode={proMode}
-              isTyping={isTyping}
-              status={status}
-              isGeneratingConcepts={isGeneratingConcepts}
-              isGeneratingPro={isGeneratingPro}
-              isCreatingFeed={isCreatingFeed}
-          setIsCreatingFeed={setIsCreatingFeed}
-              contentFilter={contentFilter}
-              messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
-              messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-              showScrollButton={showScrollButton}
-              isAtBottomRef={isAtBottomRef}
-              scrollToBottom={scrollToBottom}
-              chatId={chatId ?? undefined}
-              uploadedImages={uploadedImages}
-              setCreditBalance={setCreditBalance}
-              onImageGenerated={onImageGenerated}
-              isAdmin={isAdmin}
-              imageLibrary={imageLibrary}
-              selectedGuideId={selectedGuideId}
-              selectedGuideCategory={selectedGuideCategory}
-              onSaveToGuide={handleSaveToGuide}
-              userId={userId}
-              user={user}
-              promptSuggestions={promptSuggestions}
-          styleStrength={styleStrength}
-          promptAccuracy={promptAccuracy}
-          aspectRatio={aspectRatio}
-          realismStrength={realismStrength}
-          onCreateFeed={createFeedFromStrategy}
-          currentPrompts={currentPrompts}
-          handleSendMessage={handleSendMessage}
-                  isEmpty={isEmpty}
-                />
-        </>
-      )}
 
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
