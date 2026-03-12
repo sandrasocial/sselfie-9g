@@ -1,4 +1,7 @@
 const DAY_IN_MS = 24 * 60 * 60 * 1000
+// Show the guided welcome flow for up to 7 days — users who don't open on day 1
+// should still get the first-generation path on return visits.
+const WELCOME_FLOW_WINDOW_MS = 7 * DAY_IN_MS
 
 export function isWelcomeFlowEnabled(envValue: string | undefined): boolean {
   // Default ON when not explicitly disabled — prevents silent activation failure
@@ -41,7 +44,7 @@ export function shouldShowWelcomeFirstGenerationFlow(input: WelcomeFlowDecisionI
     const ageMs = now.getTime() - createdAt.getTime()
     if (ageMs < 0) return false
 
-    return ageMs <= DAY_IN_MS
+    return ageMs <= WELCOME_FLOW_WINDOW_MS
   }
 
   return true

@@ -6,6 +6,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { generateOnboardingDay0Email } from "@/lib/email/templates/onboarding-day-0"
 import { generateOnboardingDay2Email } from "@/lib/email/templates/onboarding-day-2"
 import { generateOnboardingDay7Email } from "@/lib/email/templates/onboarding-day-7"
+import { generateWelcomeFirstGenerationFollowupEmail } from "@/lib/email/templates/welcome-first-generation-followup"
 import { logAdminError } from "@/lib/admin-error-log"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
@@ -83,7 +84,8 @@ export async function GET(request: Request) {
       day0: { found: 0, sent: 0, failed: 0, skipped: 0 },
       day2: { found: 0, sent: 0, failed: 0, skipped: 0 },
       day7: { found: 0, sent: 0, failed: 0, skipped: 0 },
-      errors: [] as Array<{ email: string; day: number; error: string }>,
+      firstGenNudge: { found: 0, sent: 0, failed: 0 },
+      errors: [] as Array<{ email: string; day: number | string; error: string }>,
     }
 
     // Onboarding Email Sequence Automation - Day 0 emails: subscription created in last 2 hours
@@ -308,8 +310,78 @@ export async function GET(request: Request) {
       }
     }
 
-    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent
-    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed
+    // Behavioral nudge: users created 24–48h ago who have bonus credits but zero image generations.
+    // Fires regardless of subscription status — targets free users who never activated.
+    // Idempotency: email_logs guard with email_type = 'welcome-first-generation-nudge'.
+    const firstGenNudgeUsers = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name
+      FROM users u
+      WHERE u.created_at BETWEEN NOW() - INTERVAL '48 hours' AND NOW() - INTERVAL '24 hours'
+        AND u.email IS NOT NULL
+        AND u.email != ''
+        AND EXISTS (
+          SELECT 1 FROM credit_transactions ct
+          WHERE ct.user_id = u.id AND ct.transaction_type = 'bonus'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM generated_images gi WHERE gi.user_id = u.id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ai_images ai
+          WHERE ai.user_id = u.id
+            AND (
+              (ai.image_url IS NOT NULL AND ai.image_url <> '')
+              OR ai.generation_status IN ('completed', 'succeeded', 'ready')
+            )
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type = 'welcome-first-generation-nudge'
+        )
+      ORDER BY u.created_at DESC
+    `
+
+    results.firstGenNudge.found = firstGenNudgeUsers.length
+    console.log(`[v0] [CRON] Found ${firstGenNudgeUsers.length} users for first-generation nudge email`)
+
+    for (const user of firstGenNudgeUsers as any[]) {
+      try {
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateWelcomeFirstGenerationFollowupEmail({ firstName })
+
+        const result = await sendEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "welcome-first-generation-nudge",
+          replyTo: "hello@sselfie.ai",
+          tags: ["lifecycle", "first-gen-nudge"],
+        })
+
+        if (result.success) {
+          results.firstGenNudge.sent++
+          console.log(`[v0] [CRON] ✅ First-gen nudge sent to ${user.email}`)
+        } else {
+          results.firstGenNudge.failed++
+          results.errors.push({ email: user.email, day: "first-gen-nudge", error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ First-gen nudge failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.firstGenNudge.failed++
+        results.errors.push({ email: user.email, day: "first-gen-nudge", error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ First-gen nudge exception for ${user.email}:`, err)
+      }
+      // Rate-limit: 150ms between sends to respect Resend limits
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent
+    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed
     const totalSkipped = results.day0.skipped + results.day2.skipped + results.day7.skipped
 
     console.log(
@@ -326,6 +398,8 @@ export async function GET(request: Request) {
       day7Sent: results.day7.sent,
       day7Failed: results.day7.failed,
       day7Skipped: results.day7.skipped,
+      firstGenNudgeSent: results.firstGenNudge.sent,
+      firstGenNudgeFailed: results.firstGenNudge.failed,
       totalSent,
       totalFailed,
       totalSkipped,
@@ -338,6 +412,7 @@ export async function GET(request: Request) {
         day0: results.day0,
         day2: results.day2,
         day7: results.day7,
+        firstGenNudge: results.firstGenNudge,
         totalSent,
         totalFailed,
         totalSkipped,

@@ -107,6 +107,8 @@ type MonthlyDropsResponse = {
 type WelcomeFirstGenerationState = {
   enabled?: boolean
   eligible?: boolean
+  hasBonusCredits?: boolean
+  hasNoImageSpend?: boolean
 }
 
 const simpleFetcher = async <T,>(url: string): Promise<T> => {
@@ -4132,19 +4134,25 @@ export default function MayaChatScreen({
                         ? hasPhotoMomentum
                           ? "Ready for your next photo"
                           : "Your selfies are ready"
-                        : "Let’s link your selfies first"
+                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
+                          ? "Ready to see what your brand looks like?"
+                          : "Let’s link your selfies first"
                     }
                     subtitle={
                       hasLinkedSelfies
                         ? hasPhotoMomentum
                           ? "You already have momentum. Tell me what to create and I’ll build the next photo with your linked look."
                           : "Perfect start. I can use your linked selfies right now for your first photo."
-                        : "Add 1-3 selfies once, and I’ll reuse them across new photos in this chat."
+                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
+                          ? "Drop in a selfie and I’ll create your first brand photo in 2 minutes. Or start now with the base model — no upload needed."
+                          : "Add 1-3 selfies once, and I’ll reuse them across new photos in this chat."
                     }
                     uploadHint={
                       hasLinkedSelfies
                         ? undefined
-                        : "Tap Add Image in the input bar to link selfies."
+                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
+                          ? undefined
+                          : "Tap Add Image in the input bar to link selfies."
                     }
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
@@ -4164,21 +4172,37 @@ export default function MayaChatScreen({
                               onClick: () => handleSendMessage("Create a content calendar draft for this week"),
                             },
                           ]
-                        : [
-                            {
-                              label: "Add my selfies",
-                              onClick: () => handlePhaseTwoUploadZone("selfies"),
-                              variant: "primary" as const,
-                            },
-                            {
-                              label: "Use base model now",
-                              onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
-                            },
-                            {
-                              label: "Train my model",
-                              onClick: () => setMayaTabAndHash("training"),
-                            },
-                          ]),
+                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
+                          ? [
+                              {
+                                label: "Use base model now",
+                                onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
+                                variant: "primary" as const,
+                              },
+                              {
+                                label: "Add my selfies",
+                                onClick: () => handlePhaseTwoUploadZone("selfies"),
+                              },
+                              {
+                                label: "Train my model",
+                                onClick: () => setMayaTabAndHash("training"),
+                              },
+                            ]
+                          : [
+                              {
+                                label: "Add my selfies",
+                                onClick: () => handlePhaseTwoUploadZone("selfies"),
+                                variant: "primary" as const,
+                              },
+                              {
+                                label: "Use base model now",
+                                onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
+                              },
+                              {
+                                label: "Train my model",
+                                onClick: () => setMayaTabAndHash("training"),
+                              },
+                            ]),
                     ]}
                   />
                   <MayaQuickPrompts

@@ -30,22 +30,23 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const isFreeUser = entitlementType === "free"
 
   useEffect(() => {
-    // Only show for paid users (not free users)
-    // Free users have their own upsell modal (FreeModeUpsellModal) in feed planner
-    if (!isPaidUser || isFreeUser) {
+    // Show for paid users AND free users when credits reach 0.
+    // Free users reaching 0 credits are at peak upgrade intent — catch them here.
+    const isKnownUser = isPaidUser || isFreeUser
+    if (!isKnownUser) {
       setShowModal(false)
       return
     }
 
     // Show modal when credits reach exactly 0 and haven't been dismissed
-    if (credits === 0 && !dismissed && !showModal && isPaidUser) {
+    if (credits === 0 && !dismissed && !showModal) {
       setShowModal(true)
     }
-    
-    // Hide modal if credits increase
+
+    // Hide modal if credits increase (e.g. after top-up)
     if (credits > 0 && showModal) {
       setShowModal(false)
-      setDismissed(false) // Reset dismissal when credits are added
+      setDismissed(false)
     }
   }, [credits, dismissed, showModal, isPaidUser, isFreeUser])
 
@@ -74,9 +75,6 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
     onClose?.()
   }
 
-  // Don't show for free users (they have their own upsell modal)
-  if (!isPaidUser || isFreeUser) return null
-  
   if (!showModal || credits > 0) return null
 
   return (
