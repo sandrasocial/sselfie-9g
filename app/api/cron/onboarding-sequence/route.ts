@@ -7,6 +7,7 @@ import { generateOnboardingDay0Email } from "@/lib/email/templates/onboarding-da
 import { generateOnboardingDay2Email } from "@/lib/email/templates/onboarding-day-2"
 import { generateOnboardingDay7Email } from "@/lib/email/templates/onboarding-day-7"
 import { generateWelcomeFirstGenerationFollowupEmail } from "@/lib/email/templates/welcome-first-generation-followup"
+import { generatePostActivationUpgradeEmail } from "@/lib/email/templates/post-activation-upgrade"
 import { logAdminError } from "@/lib/admin-error-log"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
       day2: { found: 0, sent: 0, failed: 0, skipped: 0 },
       day7: { found: 0, sent: 0, failed: 0, skipped: 0 },
       firstGenNudge: { found: 0, sent: 0, failed: 0 },
+      postActivation: { found: 0, sent: 0, failed: 0 },
       errors: [] as Array<{ email: string; day: number | string; error: string }>,
     }
 
@@ -380,8 +382,84 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent
-    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed
+    // Post-activation upgrade email: users who generated their first image 20-28h ago
+    // but don't yet have a Studio subscription.
+    // Idempotency: email_logs guard with email_type = 'post-activation-upgrade'.
+    const postActivationUsers = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name,
+        (
+          SELECT gi.output_url FROM generated_images gi
+          WHERE gi.user_id = u.id
+            AND gi.output_url IS NOT NULL
+            AND gi.output_url <> ''
+          ORDER BY gi.created_at ASC
+          LIMIT 1
+        ) AS first_image_url
+      FROM users u
+      WHERE u.email IS NOT NULL
+        AND u.email != ''
+        AND EXISTS (
+          SELECT 1 FROM generated_images gi
+          WHERE gi.user_id = u.id
+            AND gi.created_at BETWEEN NOW() - INTERVAL '28 hours' AND NOW() - INTERVAL '20 hours'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM subscriptions s
+          WHERE s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status = 'active'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type = 'post-activation-upgrade'
+        )
+      ORDER BY u.created_at DESC
+      LIMIT 50
+    `
+
+    results.postActivation.found = postActivationUsers.length
+    console.log(`[v0] [CRON] Found ${postActivationUsers.length} users for post-activation upgrade email`)
+
+    for (const user of postActivationUsers as any[]) {
+      try {
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generatePostActivationUpgradeEmail({
+          firstName,
+          generatedImageUrl: user.first_image_url || null,
+        })
+
+        const result = await sendEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "post-activation-upgrade",
+          replyTo: "hello@sselfie.ai",
+          tags: ["lifecycle", "post-activation-upgrade"],
+        })
+
+        if (result.success) {
+          results.postActivation.sent++
+          console.log(`[v0] [CRON] ✅ Post-activation upgrade sent to ${user.email}`)
+        } else {
+          results.postActivation.failed++
+          results.errors.push({ email: user.email, day: "post-activation", error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Post-activation upgrade failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.postActivation.failed++
+        results.errors.push({ email: user.email, day: "post-activation", error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Post-activation upgrade exception for ${user.email}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent
+    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed
     const totalSkipped = results.day0.skipped + results.day2.skipped + results.day7.skipped
 
     console.log(
@@ -400,6 +478,8 @@ export async function GET(request: Request) {
       day7Skipped: results.day7.skipped,
       firstGenNudgeSent: results.firstGenNudge.sent,
       firstGenNudgeFailed: results.firstGenNudge.failed,
+      postActivationSent: results.postActivation.sent,
+      postActivationFailed: results.postActivation.failed,
       totalSent,
       totalFailed,
       totalSkipped,
@@ -413,6 +493,7 @@ export async function GET(request: Request) {
         day2: results.day2,
         day7: results.day7,
         firstGenNudge: results.firstGenNudge,
+        postActivation: results.postActivation,
         totalSent,
         totalFailed,
         totalSkipped,

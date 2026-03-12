@@ -22,6 +22,7 @@ export interface PricingProduct {
   type:
     | "one_time_session"
     | "sselfie_studio_membership"
+    | "sselfie_studio_membership_annual"
     | "credit_topup"
     | "paid_blueprint"
     | "brand_strategy_pack"
@@ -97,10 +98,20 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "Creator Studio",
     displayName: "Creator Studio",
     description: "Your complete AI content team for less than one photoshoot.",
-    priceInCents: 9700, // $97/month
+    priceInCents: 9700, // €97/month
     type: "sselfie_studio_membership",
-    credits: 200, // ~100 Pro photos OR ~200 Classic photos per month
+    credits: 200,
     popular: true,
+  },
+  {
+    id: "sselfie_studio_membership_annual",
+    name: "Creator Studio — Annual",
+    displayName: "Creator Studio (Annual)",
+    description: "Your complete AI content team. Pay annually and save 2 months.",
+    priceInCents: 97000, // €970/year (~€80.83/month — save €194 vs monthly)
+    type: "sselfie_studio_membership_annual",
+    credits: 200,
+    popular: false,
   },
   {
     id: "paid_blueprint",

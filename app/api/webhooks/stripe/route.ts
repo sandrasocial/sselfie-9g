@@ -189,7 +189,12 @@ export async function POST(request: NextRequest) {
               email: customerEmail,
             })
 
-            const productType = session.metadata.product_type
+            // Normalise annual product type to monthly for all downstream credit/subscription logic.
+            // The annual product still grants the same 200 monthly credits via the subscription.
+            const rawProductType = session.metadata.product_type
+            const productType = rawProductType === "sselfie_studio_membership_annual"
+              ? "sselfie_studio_membership"
+              : rawProductType
             let productTag = "unknown"
 
             if (productType === "one_time_session") {

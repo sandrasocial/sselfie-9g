@@ -29,7 +29,7 @@ export async function createLandingCheckoutSession(
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-  const isSubscription = product.type === "sselfie_studio_membership"
+  const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
   const allowManualPromotionCodes = !isSubscription
   const checkoutSource = options?.source?.trim() || "landing_page"
   const cookieStore = await cookies()
@@ -64,6 +64,8 @@ export async function createLandingCheckoutSession(
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  } else if (product.type === "sselfie_studio_membership_annual") {
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
   } else if (product.type === "paid_blueprint") {
