@@ -14,6 +14,9 @@ import {
   supportsFeedCardsInChat,
 } from "@/lib/maya/chat-type"
 
+function normalizeMessageContent(value: unknown): string {
+  return typeof value === "string" ? value : ""
+}
 
 /**
  * Helper function to detect if description is a full strategy document
@@ -783,11 +786,12 @@ export async function GET(request: NextRequest) {
       const parsedStylingDetails = feedCards
 
       // Extract inspiration image from content if present (backward compatibility)
-      const inspirationImageMatch = msg.content?.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+      const messageContent = normalizeMessageContent(msg.content)
+      const inspirationImageMatch = messageContent.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
       const imageUrl = inspirationImageMatch ? inspirationImageMatch[1] : null
       const rawTextContent = imageUrl 
-        ? msg.content?.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim() || ""
-        : msg.content || ""
+        ? messageContent.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+        : messageContent
       const toolMarkers = parseMayaToolMarkers(rawTextContent)
       const videoCardParts = buildVideoCardToolParts(rawTextContent)
       const textContent = stripMayaToolMarkers(rawTextContent)

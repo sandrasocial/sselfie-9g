@@ -152,4 +152,34 @@ describe("GET /api/maya/load-chat inline feed hydration", () => {
     expect(feedPart.output.posts).toHaveLength(1)
     expect(feedPart.output.posts[0].visualDirection).toBe("Editorial portrait")
   })
+
+  it("ignores non-string legacy message content instead of crashing hydration", async () => {
+    mockGetChatMessages.mockResolvedValue([
+      {
+        id: 101,
+        chat_id: 123,
+        role: "assistant",
+        content: { text: "legacy object payload" },
+        concept_cards: null,
+        feed_cards: [{ feedId: 44 }],
+        styling_details: null,
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    const { GET } = await import("@/app/api/maya/load-chat/route")
+
+    const response = await GET(
+      new Request("http://localhost/api/maya/load-chat?chatId=123&chatType=maya") as any,
+    )
+
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    const assistantMessage = payload.messages[0]
+    const feedParts = assistantMessage.parts.filter((part: any) => part.type === "tool-generateFeed")
+
+    expect(feedParts).toHaveLength(1)
+    expect(mockParseMayaToolMarkers).toHaveBeenCalledWith("")
+    expect(mockStripMayaToolMarkers).toHaveBeenCalledWith("")
+  })
 })
