@@ -708,9 +708,7 @@ Parallel execution stream completed on `main` (`b8e7bec2`) + production deploy (
 - /api/cron/resolve-pending-payments
 - /api/cron/reconcile-credits
 - /api/cron/cron-health-check
-- /api/cron/reconcile-feed-posts
-- /api/cron/reconcile-ai-images
-- /api/cron/reconcile-pro-photoshoot-grids
+- /api/cron/reconcile-generation-assets
 - /api/cron/reconcile-generations
 - /api/cron/reconcile-subscriptions
 - E-02 status: fixed/verified. `.env.local` and Vercel production both use `RESEND_AUDIENCE_ID=762d7ab8-7a72-40d1-8f26-9ddfcff52e73` (no mismatch found)

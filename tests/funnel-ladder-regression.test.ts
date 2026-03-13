@@ -25,10 +25,7 @@ describe("public funnel ladder regression", () => {
     const bioContents = read("app/bio/page.tsx")
     const whyStudioContents = read("app/why-studio/page.tsx")
 
-    expect(bioContents).toContain('href="/selfie-guide"')
-    expect(bioContents).toContain("Selfie Guide")
-    expect(bioContents).not.toContain("Starter Photoshoot")
-    expect(bioContents).not.toContain("Get Free Brand Blueprint")
+    expect(bioContents).toContain('redirect("/selfie-guide")')
 
     expect(whyStudioContents).toContain('href="/selfie-guide"')
     expect(whyStudioContents).toContain("Selfie Guide")

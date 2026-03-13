@@ -26,7 +26,7 @@
 - Purpose: identity and continuity.
 - Key behavior: preserve return intent and enter canonical shell.
 
-### `/checkout/*`, `/checkout`, `/checkout/success`, `/checkout-upgrade`
+### `/checkout/*`, `/checkout`, `/checkout/success`
 - Purpose: complete payment and continue in-app.
 - Key behavior: post-success route should land in real app surface (`/studio`).
 

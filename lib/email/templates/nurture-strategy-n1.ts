@@ -6,6 +6,7 @@ export interface NurtureStrategyEmailProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const STRATEGY_FALLBACK_URL = `${SITE_URL}/brand-strategy`
+const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN1Email({
   firstName,
@@ -43,6 +44,7 @@ export function generateNurtureStrategyN1Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Your strategy is personalised to you - your business, your audience, your vibe. It's not generic. Maya built it from what you told her.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Go back and read it properly. Highlight the things that feel true. Cross out anything that doesn't.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">That's step one.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If you have a friend building her brand too, share your invite link here: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.7;">Sandra</p>
               <p style="margin:0;font-size:14px;line-height:1.7;color:#57534e;">P.S. If anything in your strategy felt off or confusing, just reply to this email. I actually read these.</p>
             </td>
@@ -73,6 +75,8 @@ Your strategy is personalised to you - your business, your audience, your vibe. 
 Go back and read it properly. Highlight the things that feel true. Cross out anything that doesn't.
 
 That's step one.
+
+If you have a friend building her brand too, share your invite link here: ${REFERRAL_URL}
 
 Sandra
 

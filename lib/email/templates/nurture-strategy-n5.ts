@@ -6,6 +6,7 @@ export interface NurtureStrategyEmailProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const MEMBERSHIP_URL = `${SITE_URL}/checkout/membership`
+const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN5Email({
   firstName,
@@ -39,6 +40,7 @@ export function generateNurtureStrategyN5Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And doing that alone is hard. Not impossible. But hard.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system, an AI that knows their brand, and a community of women building the same thing.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If that's you - the door is open.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And if you know someone who needs this, share your invite link: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
               <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Creator Studio -></a></p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If it's not the right time - no pressure at all. Your guide is yours. Use it. Build with it. Come back when you're ready.</p>
               <p style="margin:0;font-size:16px;line-height:1.7;">I'll be here.<br/><br/>Sandra</p>
@@ -66,6 +68,8 @@ And doing that alone is hard. Not impossible. But hard.
 Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system, an AI that knows their brand, and a community of women building the same thing.
 
 If that's you - the door is open.
+
+And if you know someone who needs this, share your invite link: ${REFERRAL_URL}
 
 Join Creator Studio -> ${MEMBERSHIP_URL}
 

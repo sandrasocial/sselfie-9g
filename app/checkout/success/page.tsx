@@ -23,6 +23,13 @@ export default async function CheckoutSuccessPage({
             <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
               LOADING
             </div>
+            <p className="text-sm text-[#8a8780]">
+              This usually takes 5-10 seconds. If it takes longer,{" "}
+              <a href="mailto:support@sselfie.ai" className="underline text-[#a8a49c] hover:text-[#f0ede8]">
+                contact support
+              </a>
+              .
+            </p>
           </div>
         </div>
       }

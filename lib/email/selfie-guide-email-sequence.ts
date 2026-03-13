@@ -8,9 +8,9 @@ export const SELFIE_GUIDE_EMAIL_TOUCHES: EmailTouchDefinition[] = [
 ]
 
 export const FREEBIE_STRATEGY_EMAIL_TOUCHES: EmailTouchDefinition[] = [
-  { days: 2, emailType: "nurture-freebie-n1" },
-  { days: 5, emailType: "nurture-freebie-n2" },
-  { days: 9, emailType: "nurture-freebie-n3" },
-  { days: 14, emailType: "nurture-freebie-n4" },
-  { days: 20, emailType: "nurture-freebie-n5" },
+  { days: 2, emailType: "nurture-strategy-n1" },
+  { days: 5, emailType: "nurture-strategy-n2" },
+  { days: 9, emailType: "nurture-strategy-n3" },
+  { days: 14, emailType: "nurture-strategy-n4" },
+  { days: 20, emailType: "nurture-strategy-n5" },
 ]

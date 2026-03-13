@@ -80,7 +80,7 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
 
     if (subscriptionResult.length > 0 && subscriptionResult[0].product_type === "sselfie_studio_membership") {
       console.log("[v0] [CREDITS] User has active studio membership - generous credit allocation")
-      return false // Studio members still use credits, but get 150/month
+      return false // Studio members still use credits, but get 200/month
     }
 
     return false

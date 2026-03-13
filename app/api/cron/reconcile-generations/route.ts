@@ -615,7 +615,7 @@ async function reconcileLegacyGenerationTrackers(limit: number) {
  * Background reconciliation so users don't lose generations if they close the tab:
  * - Persist Replicate outputs to Vercel Blob for:
  *   - generated_images rows that still store prediction IDs (studio + maya classic)
- * - Feed planner reconciliation is handled by /api/cron/reconcile-feed-posts to avoid duplicate Replicate polling.
+ * - Feed planner reconciliation is handled by /api/cron/reconcile-generation-assets to avoid duplicate Replicate polling.
  * - Optionally: clean up legacy generation_trackers (best-effort)
  */
 export async function GET(request: NextRequest) {

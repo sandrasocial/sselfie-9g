@@ -6,6 +6,7 @@ export interface NurtureStrategyEmailProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const MEMBERSHIP_URL = `${SITE_URL}/checkout/membership`
+const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN3Email({
   firstName,
@@ -40,6 +41,7 @@ export function generateNurtureStrategyN3Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You get Maya trained on your brand, a full content system that works with how you actually post, AI photo generation so you never run out of visuals, and monthly drops with new tools and templates.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">$97/month. Cancel anytime.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Know someone who'd love this? Share your invite link here: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
               <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Take a look -></a></p>
               <p style="margin:0;font-size:16px;line-height:1.7;">Not pushing you. Just wanted you to know it exists.<br/><br/>Sandra</p>
             </td>
@@ -68,6 +70,8 @@ You get Maya trained on your brand, a full content system that works with how yo
 $97/month. Cancel anytime.
 
 I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.
+
+Know someone who'd love this? Share your invite link here: ${REFERRAL_URL}
 
 Take a look -> ${MEMBERSHIP_URL}
 

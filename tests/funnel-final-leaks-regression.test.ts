@@ -10,6 +10,23 @@ function read(relativePath: string) {
 }
 
 describe("remaining funnel leak regression", () => {
+  it("keeps core funnel leak fixes in place", () => {
+    const sequenceContents = read("lib/email/selfie-guide-email-sequence.ts")
+    const appContents = read("components/sselfie/sselfie-app.tsx")
+    const sitemapContents = read("app/sitemap.ts")
+
+    expect(sequenceContents).toContain('"nurture-strategy-n1"')
+    expect(sequenceContents).toContain('"nurture-strategy-n5"')
+    expect(sequenceContents).not.toContain("nurture-freebie-n")
+
+    expect(appContents).toContain('what_to_say: "academy"')
+    expect(appContents).toContain('show_up: "academy"')
+    expect(appContents).toContain('get_paid: "academy"')
+
+    expect(sitemapContents).toContain('"/brand-strategy"')
+    expect(sitemapContents).toContain('"/why-studio"')
+  })
+
   it("uses a session-aware brand strategy setup handoff after checkout", () => {
     const checkoutContents = read("app/checkout/page.tsx")
     const successContents = read("components/checkout/success-content.tsx")

@@ -6,6 +6,7 @@ export interface NurtureStrategyEmailProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const MEMBERSHIP_URL = `${SITE_URL}/checkout/membership`
+const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN4Email({
   firstName,
@@ -39,6 +40,7 @@ export function generateNurtureStrategyN4Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">I know what it's like to feel invisible. I know what it's like to think your window has passed.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">It hasn't.</p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.7;">If you're ready to stop figuring it out alone, Studio is where you come.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If a friend comes to mind, send her your invite link: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
               <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Creator Studio -></a></p>
               <p style="margin:0;font-size:16px;line-height:1.7;">$97/month. Cancel any time. I'm in there every day.<br/><br/>Sandra</p>
             </td>
@@ -65,6 +67,8 @@ I know what it's like to feel invisible. I know what it's like to think your win
 It hasn't.
 
 If you're ready to stop figuring it out alone, Studio is where you come.
+
+If a friend comes to mind, send her your invite link: ${REFERRAL_URL}
 
 Join Creator Studio -> ${MEMBERSHIP_URL}
 

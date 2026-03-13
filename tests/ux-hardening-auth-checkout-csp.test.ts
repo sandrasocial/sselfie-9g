@@ -18,11 +18,10 @@ describe("post-phase4 ux hardening", () => {
     expect(signUpPage).toContain("buildReferralLoginHref")
   })
 
-  it("gates checkout-upgrade on server auth before rendering Stripe checkout", () => {
+  it("routes legacy checkout-upgrade to membership checkout", () => {
     const checkoutUpgradePage = readFile("app/checkout-upgrade/page.tsx")
 
-    expect(checkoutUpgradePage).toContain("createServerClient")
-    expect(checkoutUpgradePage).toContain('redirect("/auth/login?returnTo=%2Fcheckout-upgrade")')
+    expect(checkoutUpgradePage).toContain('redirect(`/checkout/membership${query}`)')
   })
 
   it("allows google fonts in CSP style/font directives", () => {

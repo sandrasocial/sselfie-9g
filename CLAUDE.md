@@ -301,8 +301,8 @@ That's not a tool. That's a business relationship. Target: €197/month minimum.
 | `app/api/maya/generate-all-feed-prompts/` | Only called by the disabled Maya Feed Tab | Low |
 | `app/brand-engine/`, `app/apply/brand-engine/`, `app/brand-engine/vip/` | Brand Engine retired offer, no routes/redirects | Low |
 | `app/freebie/` | Routes redirect to paid pages; page files themselves are dead | Low — keep redirects in vercel.json, delete page files |
-| `app/checkout-upgrade/` | Duplicate checkout entry, no active links | Medium — verify no active links first |
-| `app/bio/` | Bio page — unclear where in user journey, no active links found | Medium — verify first |
+| `app/checkout-upgrade/` | Legacy entry now redirects to `/checkout/membership` | ✅ Completed |
+| `app/bio/` | Legacy page now redirects to `/selfie-guide` | ✅ Completed |
 | `lib/feed-chat/history.ts` | No callers found anywhere in codebase | Low |
 | `lib/maya/feed-generation-handler.ts` imports only used by maya-feed-tab.tsx | Safe ONLY AFTER maya-feed-tab.tsx is deleted AND feed-planner hooks are refactored | **HIGH RISK — do not delete yet** |
 

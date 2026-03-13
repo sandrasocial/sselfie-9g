@@ -23,7 +23,7 @@ This SOP is optimized for draft-first operations and low admin overhead.
 - Launch queue: `/admin/brand-engine-applications`
 - KPI + audits: `/admin/analytics`
 - Marketing reliability: `/admin/marketing`
-- Daily launch digest cron: `/api/cron/brand-engine-launch-digest`
+- Daily launch digest cron: archived (Brand Engine digest cron retired)
 - Weekly ARPU/churn cron: `/api/cron/arpu-churn-weekly`
 - Weekly delivery-load cron: `/api/cron/cohort-delivery-load-weekly`
 

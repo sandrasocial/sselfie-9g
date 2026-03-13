@@ -81,9 +81,9 @@ interface SselfieAppProps {
 }
 
 const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy" | "account"> = {
-  what_to_say: "feed-planner",
-  show_up: "maya",
-  get_paid: "account",
+  what_to_say: "academy",
+  show_up: "academy",
+  get_paid: "academy",
   ai_photo_prompts: "maya",
   editing_masterclass: "academy",
   branded_by_sselfie: "academy",

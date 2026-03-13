@@ -111,8 +111,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 bg-[#0d0c0b]" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,164,156,0.08) 0%, #0d0c0b 70%)" }}>
-      <div className="w-full max-w-sm">
+    <div
+      className="flex min-h-screen w-full items-center justify-center p-6 bg-[#0d0c0b]"
+      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,164,156,0.08) 0%, #0d0c0b 70%)" }}
+    >
+      <div className="w-full max-w-5xl grid gap-6 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] items-stretch">
         <Card className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl">
           <CardHeader className="pb-6">
             <div className="mb-2">
@@ -179,6 +182,33 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        <aside className="hidden lg:flex flex-col justify-between rounded-2xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.06)] p-8">
+          <div>
+            <p className="font-['Inter'] text-[10px] uppercase tracking-[0.35em] text-[#8a8780] mb-4">Trusted by creators</p>
+            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8] leading-tight mb-6">
+              180K+ creators follow Sandra&apos;s methods.
+            </h2>
+            <p className="font-['Inter'] text-sm text-[#8a8780] leading-relaxed">
+              Built on grit and consistency, not big budgets. The same playbook now powers your studio.
+            </p>
+          </div>
+
+          <div className="space-y-4 mt-8">
+            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
+              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
+                &ldquo;I got my first on-brand photos in one evening. It finally feels like me.&rdquo;
+              </p>
+              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Studio Member</p>
+            </blockquote>
+            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
+              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
+                &ldquo;No stock-photo energy. My content now actually looks like my brand.&rdquo;
+              </p>
+              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Selfie Guide Buyer</p>
+            </blockquote>
+          </div>
+        </aside>
       </div>
     </div>
   )

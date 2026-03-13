@@ -29,7 +29,7 @@
 - **Automation layer**: Codex Desktop automations were rebuilt on 2026-03-10 into 7 engine loops: Product Health, User Journey, Maya Quality, Brand Consistency, Growth Intelligence, Code Stability, and Revenue Intelligence. Legacy report-only automations were archived out of the active folder. The User Journey Engine now runs a repo-owned Playwright smoke (`pnpm automation:journey-smoke`) before deeper diagnosis and a filtered activation check (`node scripts/product-qa-digest.mjs`) for `signup -> first Maya output`. The Maya Quality Engine runs `pnpm audit:maya-quality`, and the Brand Consistency Engine runs `pnpm audit:brand-consistency`. Source of truth: `docs/automation/SSELFIE_AUTOMATION_CORE_2026-03-10.md`.
 - **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
-- **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.
+- **Reconciliation pipelines**: `reconcile-generation-assets`, `reconcile-generations`, `reconcile-subscriptions` — keep running and logging cleanly.
 - **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
 
 ## File map (anchor points for future work)

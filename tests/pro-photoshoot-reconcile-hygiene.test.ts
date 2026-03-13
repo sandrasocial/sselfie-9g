@@ -29,9 +29,9 @@ describe("pro photoshoot reconciliation hygiene", () => {
     })
   })
 
-  it("runs the pro photoshoot reconcile cron every five minutes", () => {
+  it("runs the consolidated generation reconcile cron every five minutes", () => {
     const vercelConfig = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8"))
-    const cron = vercelConfig.crons.find((entry: { path: string }) => entry.path === "/api/cron/reconcile-pro-photoshoot-grids")
+    const cron = vercelConfig.crons.find((entry: { path: string }) => entry.path === "/api/cron/reconcile-generation-assets")
 
     expect(cron?.schedule).toBe("*/5 * * * *")
   })
