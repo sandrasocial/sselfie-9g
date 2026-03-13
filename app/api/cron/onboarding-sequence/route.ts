@@ -322,7 +322,8 @@ export async function GET(request: Request) {
       SELECT DISTINCT
         u.id,
         u.email,
-        u.display_name
+        u.display_name,
+        u.created_at
       FROM users u
       WHERE u.created_at BETWEEN NOW() - INTERVAL '48 hours' AND NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
@@ -389,6 +390,7 @@ export async function GET(request: Request) {
         u.id,
         u.email,
         u.display_name,
+        u.created_at,
         (
           SELECT gi.selected_url FROM generated_images gi
           WHERE gi.user_id = u.id
@@ -465,7 +467,8 @@ export async function GET(request: Request) {
       SELECT DISTINCT
         u.id,
         u.email,
-        u.display_name
+        u.display_name,
+        u.created_at
       FROM users u
       WHERE u.created_at >= NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
