@@ -13,7 +13,7 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
  * GET /api/cron/reconcile-generation-assets
  *
  * Consolidated reconciliation runner for generation assets.
- * - Runs pro photoshoot reconciliation every invocation (*/5 in vercel.json)
+ * - Runs pro photoshoot reconciliation every invocation (every 5 minutes in vercel.json)
  * - Runs feed + ai image reconciliation every 15 minutes by default
  * - Supports manual full sweep via ?full=1
  */
