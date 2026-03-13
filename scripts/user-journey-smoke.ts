@@ -13,6 +13,18 @@ type FlowResult = {
   detail: string
 }
 
+async function resolveMembershipToggleIfPresent(page: any) {
+  const isMembershipLanding = /\/checkout\/membership(?:\?|$)/.test(page.url())
+  if (!isMembershipLanding) return false
+
+  const continueButton = page.getByRole("button", { name: /continue to checkout/i })
+  if ((await continueButton.count()) === 0) return false
+
+  await continueButton.click()
+  await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+  return true
+}
+
 async function resolveCheckoutFromCta(input: {
   landingPath: string
   ctaHref: string
@@ -116,7 +128,7 @@ async function resolveCheckoutFromCta(input: {
   }
 }
 
-async function resolveDirectCheckout(input: {
+export async function resolveDirectCheckout(input: {
   path: string
   name: string
 }): Promise<FlowResult> {
@@ -129,7 +141,12 @@ async function resolveDirectCheckout(input: {
       waitUntil: "domcontentloaded",
       timeout: NAV_TIMEOUT_MS,
     })
-    await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+    try {
+      await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+    } catch (error) {
+      const resolvedFromToggle = await resolveMembershipToggleIfPresent(page)
+      if (!resolvedFromToggle) throw error
+    }
 
     const finalUrl = page.url()
     if (/\/auth\/|\/sign-?in|\/sign-?up/i.test(finalUrl)) {
@@ -244,7 +261,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("[user-journey-smoke] failed", error)
-  process.exitCode = 1
-})
+if (process.env.NODE_ENV !== "test") {
+  main().catch((error) => {
+    console.error("[user-journey-smoke] failed", error)
+    process.exitCode = 1
+  })
+}
