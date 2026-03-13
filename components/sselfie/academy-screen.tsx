@@ -7,10 +7,9 @@ import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import ProductAccessCard from "./product-access-card"
-import type { ProductAccessId } from "./product-access-card"
 import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from "next/navigation"
 import { parseAcademyViewParam } from "@/lib/academy/view-routing"
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
@@ -20,13 +19,18 @@ const fetcher = async (url: string) => {
     const res = await fetch(url, { credentials: "include" })
     console.log("[v0] Academy fetch response status:", res.status, "for", url)
 
+    const data = await res.json().catch(() => ({}))
+
+    if (res.status === 401 || res.status === 403) {
+      console.log("[v0] Academy access-controlled response:", res.status, data)
+      return data
+    }
+
     if (!res.ok) {
-      const errorText = await res.text()
-      console.error("[v0] Academy fetch error:", res.status, errorText)
+      console.error("[v0] Academy fetch error:", res.status, data)
       throw new Error(`Failed to fetch: ${res.status}`)
     }
 
-    const data = await res.json()
     console.log("[v0] Academy data received from", url, ":", data)
     return data
   } catch (error) {
@@ -46,11 +50,7 @@ const getFriendlyTierName = (tier: string): string => {
   return tierMap[tier.toLowerCase()] || tier
 }
 
-/** Copy for "You Have Access" cards (docs/in-app-funnel/02-content-copy §1). Only products we show in-app with deep links. */
-const PRODUCT_ACCESS_COPY: Record<
-  "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts" | "selfie_guide" | "brand_strategy_pack",
-  { subText: string; ctaLabel: string }
-> = {
+const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }> = {
   what_to_say: {
     subText: "Your caption framework and messaging workbook.",
     ctaLabel: "Open workbook",
@@ -77,7 +77,17 @@ const PRODUCT_ACCESS_COPY: Record<
   },
 }
 
-const PRODUCT_IDS_WITH_ACCESS: Set<string> = new Set(Object.keys(PRODUCT_ACCESS_COPY))
+function getProductAccessCopy(product: any) {
+  const override = PRODUCT_ACCESS_COPY[product.id]
+  if (override) {
+    return override
+  }
+
+  return {
+    subText: product.tagline || product.description || "Ready in your library.",
+    ctaLabel: product.deliveryKind === "direct_private" ? "Open now" : "Open product",
+  }
+}
 
 const academyPrimaryActionClass =
   "rounded-full bg-[color:var(--color-porcelain)] px-8 py-4 text-sm tracking-[0.18em] uppercase text-[#0d0c0b] transition-colors hover:bg-[#f0ede8] disabled:opacity-50"
@@ -92,8 +102,7 @@ const academySearchShellClass = "stone-chip rounded-xl p-4"
 
 const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
 
-const academyPromoCardClass =
-  "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
+const academyPromoCardClass = "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
 
 const academyFeatureCardClass =
   "stone-panel rounded-2xl p-8 text-left transition-all hover:bg-[rgba(175,170,162,0.16)] sm:p-10"
@@ -103,7 +112,7 @@ const academyStatCardClass = "stone-panel rounded-[18px] p-3 text-center sm:p-4"
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
   const initialAcademyView = parseAcademyViewParam(
-    searchParams.get("academy_view") ?? searchParams.get("academyView"),
+    searchParams.get("academy_view") ?? searchParams.get("academyView")
   )
   const [selectedView, setSelectedView] = useState<AcademyView>(initialAcademyView ?? "overview")
   const [searchQuery, setSearchQuery] = useState("")
@@ -129,61 +138,63 @@ export default function AcademyScreen() {
     error: coursesError,
     isLoading: coursesLoading,
   } = useSWR("/api/academy/courses", fetcher, {
-    onSuccess: (data) => console.log("[v0] Courses data loaded successfully:", data),
-    onError: (error) => console.error("[v0] Courses SWR error:", error),
+    onSuccess: data => console.log("[v0] Courses data loaded successfully:", data),
+    onError: error => console.error("[v0] Courses SWR error:", error),
   })
   const {
     data: templatesData,
     error: templatesError,
     isLoading: templatesLoading,
   } = useSWR("/api/academy/templates", fetcher, {
-    onSuccess: (data) => console.log("[v0] Templates data loaded successfully:", data),
-    onError: (error) => console.error("[v0] Templates SWR error:", error),
+    onSuccess: data => console.log("[v0] Templates data loaded successfully:", data),
+    onError: error => console.error("[v0] Templates SWR error:", error),
   })
   const {
     data: monthlyDropsData,
     error: monthlyDropsError,
     isLoading: monthlyDropsLoading,
   } = useSWR("/api/academy/monthly-drops", fetcher, {
-    onSuccess: (data) => console.log("[v0] Monthly drops data loaded successfully:", data),
-    onError: (error) => console.error("[v0] Monthly drops SWR error:", error),
+    onSuccess: data => console.log("[v0] Monthly drops data loaded successfully:", data),
+    onError: error => console.error("[v0] Monthly drops SWR error:", error),
   })
   const {
     data: flatlayImagesData,
     error: flatlayImagesError,
     isLoading: flatlayImagesLoading,
   } = useSWR("/api/academy/flatlay-images", fetcher, {
-    onSuccess: (data) => console.log("[v0] Flatlay images data loaded successfully:", data),
-    onError: (error) => console.error("[v0] Flatlay images SWR error:", error),
+    onSuccess: data => console.log("[v0] Flatlay images data loaded successfully:", data),
+    onError: error => console.error("[v0] Flatlay images SWR error:", error),
   })
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
 
-  const { data: creditsData } = useSWR("/api/user/credits", fetcher, {
-    onSuccess: (data) => setCreditBalance(data?.balance || 0),
+  useSWR("/api/user/credits", fetcher, {
+    onSuccess: data => setCreditBalance(data?.balance || 0),
   })
   const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
 
-  const hasAccess = coursesData?.hasAccess ?? false
-  const productType = coursesData?.productType || userInfoData?.product_type || "one_time_session"
-  const isOneTimeUser = productType === "one_time_session"
-
-  const userTier = (coursesData?.userTier || userInfoData?.plan || "starter") as string
+  const templatesHasAccess = templatesData?.hasAccess ?? false
+  const monthlyDropsHasAccess = monthlyDropsData?.hasAccess ?? false
+  const flatlayImagesHasAccess = flatlayImagesData?.hasAccess ?? false
+  const hasStudioMembership = myProductsData?.hasStudioMembership ?? false
+  const userTier = (coursesData?.userTier ||
+    (hasStudioMembership ? "sselfie_studio_membership" : userInfoData?.plan || "starter")) as string
   const allCourses = coursesData?.courses || []
   const templates = templatesData?.templates || []
   const monthlyDrops = monthlyDropsData?.monthlyDrops || []
   const flatlayImages = flatlayImagesData?.flatlayImages || []
   const myCourses = myCoursesData?.courses || []
-  const inProgressCourses = myCourses.filter((c: any) => c.progress_percentage > 0 && c.progress_percentage < 100)
+  const inProgressCourses = myCourses.filter(
+    (c: any) => c.progress_percentage > 0 && c.progress_percentage < 100
+  )
 
-  /** Owned Academy mini-products that have in-app "You Have Access" copy and deep links */
-  const ownedForAccess = (myProductsData?.purchases ?? []).filter((p: { id: string }) =>
-    PRODUCT_IDS_WITH_ACCESS.has(p.id),
-  ) as Array<{ id: string; name: string }>
+  const ownedForAccess = (myProductsData?.products ?? []).filter(
+    (product: { hasAccess: boolean }) => product.hasAccess
+  )
   /** Products the user can still buy (not owned); from my-products API */
   const availableProducts = myProductsData?.availableProducts ?? []
   /** Show "Get More" section when user does not have Studio and there are products to buy */
-  const showGetMore = !hasAccess && availableProducts.length > 0
+  const showGetMore = !hasStudioMembership && availableProducts.length > 0
 
   if (flatlayImages.length > 0) {
     console.log("[v0] Flatlay images data received:", flatlayImages)
@@ -221,7 +232,7 @@ export default function AcademyScreen() {
   const handleResourceDownload = async (
     resourceId: string,
     resourceUrl: string,
-    resourceType: "template" | "monthly_drop" | "flatlay_image",
+    resourceType: "template" | "monthly_drop" | "flatlay_image"
   ) => {
     console.log("[v0] handleResourceDownload called:", { resourceId, resourceUrl, resourceType })
 
@@ -292,7 +303,7 @@ export default function AcademyScreen() {
   console.log("[v0] All templates:", templates)
   console.log(
     "[v0] Templates with categories:",
-    templates.map((t: any) => ({ id: t.id, title: t.title, category: t.category })),
+    templates.map((t: any) => ({ id: t.id, title: t.title, category: t.category }))
   )
   console.log("[v0] Selected template category:", selectedTemplateCategory)
 
@@ -300,8 +311,10 @@ export default function AcademyScreen() {
     const matchesSearch =
       searchQuery === "" ||
       template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (template.description && template.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    const matchesCategory = selectedTemplateCategory === "all" || template.category === selectedTemplateCategory
+      (template.description &&
+        template.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesCategory =
+      selectedTemplateCategory === "all" || template.category === selectedTemplateCategory
 
     console.log(
       "[v0] Template:",
@@ -311,7 +324,7 @@ export default function AcademyScreen() {
       "Matches category:",
       matchesCategory,
       "Selected:",
-      selectedTemplateCategory,
+      selectedTemplateCategory
     )
 
     return matchesSearch && matchesCategory
@@ -320,7 +333,7 @@ export default function AcademyScreen() {
   console.log("[v0] Filtered templates count:", filteredTemplates.length)
   console.log(
     "[v0] Filtered templates:",
-    filteredTemplates.map((t: any) => ({ id: t.id, title: t.title, category: t.category })),
+    filteredTemplates.map((t: any) => ({ id: t.id, title: t.title, category: t.category }))
   )
 
   const filteredMonthlyDrops = monthlyDrops.filter((drop: any) => {
@@ -351,17 +364,20 @@ export default function AcademyScreen() {
     {
       value: "all",
       label: "All Templates",
-      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
     },
     {
       value: "social-media",
       label: "Social Media",
-      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
     },
     {
       value: "email-marketing",
       label: "Email Marketing",
-      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg",
     },
     {
       value: "branding",
@@ -372,7 +388,8 @@ export default function AcademyScreen() {
     {
       value: "content-creation",
       label: "Content Creation",
-      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-GJFGAsjbFNigSGQs5jVo1Y9u3agBq6.jpeg",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-GJFGAsjbFNigSGQs5jVo1Y9u3agBq6.jpeg",
     },
     {
       value: "business",
@@ -383,7 +400,8 @@ export default function AcademyScreen() {
     {
       value: "education",
       label: "Education",
-      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2843%29-L0w1kYOCCcM1XOPiqyzHcJ1CW9YU5T.jpeg",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2843%29-L0w1kYOCCcM1XOPiqyzHcJ1CW9YU5T.jpeg",
     },
     {
       value: "other",
@@ -398,14 +416,17 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading templates..." />
     }
 
-    if (templatesError || !hasAccess) {
+    if (templatesError || !templatesHasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">
+                Studio Membership Required
+              </h3>
               <p className="text-sm text-white/70 leading-relaxed">
-                Access exclusive templates, monthly drops, and flatlay images with a Studio Membership
+                Access exclusive templates, monthly drops, and flatlay images with a Studio
+                Membership
               </p>
             </div>
             <button
@@ -424,10 +445,7 @@ export default function AcademyScreen() {
       return (
         <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
           <div className="pt-8">
-            <button
-              onClick={() => setSelectedView("overview")}
-              className={academyBackLinkClass}
-            >
+            <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
               ← Back
             </button>
           </div>
@@ -441,8 +459,8 @@ export default function AcademyScreen() {
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {templateCategories
-              .filter((cat) => cat.value !== "all")
-              .map((category) => (
+              .filter(cat => cat.value !== "all")
+              .map(category => (
                 <button
                   key={category.value}
                   onClick={() => {
@@ -485,7 +503,8 @@ export default function AcademyScreen() {
 
         <div className="space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
-            {templateCategories.find((cat) => cat.value === selectedTemplateCategory)?.label || "Templates"}
+            {templateCategories.find(cat => cat.value === selectedTemplateCategory)?.label ||
+              "Templates"}
           </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
             Download professional templates for your brand
@@ -497,14 +516,16 @@ export default function AcademyScreen() {
             type="text"
             placeholder="Search templates..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredTemplates.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">No templates found in this category. Try adjusting your search.</p>
+            <p className="text-white/70 text-sm">
+              No templates found in this category. Try adjusting your search.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -529,12 +550,14 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading monthly drops..." />
     }
 
-    if (monthlyDropsError || !hasAccess) {
+    if (monthlyDropsError || !monthlyDropsHasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">
+                Studio Membership Required
+              </h3>
               <p className="text-sm text-white/70 leading-relaxed">
                 Get exclusive monthly content drops with a Studio Membership
               </p>
@@ -554,16 +577,15 @@ export default function AcademyScreen() {
     return (
       <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
-          <button
-            onClick={() => setSelectedView("overview")}
-            className={academyBackLinkClass}
-          >
+          <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Monthly Drops</h1>
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+            Monthly Drops
+          </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
             Exclusive monthly resources and content drops for Studio Members
           </p>
@@ -574,14 +596,16 @@ export default function AcademyScreen() {
             type="text"
             placeholder="Search monthly drops..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredMonthlyDrops.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">No monthly drops found. Try adjusting your search.</p>
+            <p className="text-white/70 text-sm">
+              No monthly drops found. Try adjusting your search.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -606,12 +630,14 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading flatlay images..." />
     }
 
-    if (flatlayImagesError || !hasAccess) {
+    if (flatlayImagesError || !flatlayImagesHasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">
+                Studio Membership Required
+              </h3>
               <p className="text-sm text-white/70 leading-relaxed">
                 Access professional flatlay images with a Studio Membership
               </p>
@@ -631,16 +657,15 @@ export default function AcademyScreen() {
     return (
       <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
-          <button
-            onClick={() => setSelectedView("overview")}
-            className={academyBackLinkClass}
-          >
+          <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Flatlay Images</h1>
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+            Flatlay Images
+          </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
             Professional flatlay images for your content and brand aesthetic
           </p>
@@ -651,14 +676,16 @@ export default function AcademyScreen() {
             type="text"
             placeholder="Search flatlay images..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredFlatlayImages.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">No flatlay images found. Try adjusting your search.</p>
+            <p className="text-white/70 text-sm">
+              No flatlay images found. Try adjusting your search.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -692,10 +719,7 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={academyPromoCardClass}>
             <p className="text-sm text-white/70">We couldn&apos;t load the courses right now</p>
-            <button
-              onClick={() => window.location.reload()}
-              className={academyCompactActionClass}
-            >
+            <button onClick={() => window.location.reload()} className={academyCompactActionClass}>
               Try Again
             </button>
           </div>
@@ -706,10 +730,7 @@ export default function AcademyScreen() {
     return (
       <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
-          <button
-            onClick={() => setSelectedView("overview")}
-            className={academyBackLinkClass}
-          >
+          <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
           </button>
         </div>
@@ -726,7 +747,7 @@ export default function AcademyScreen() {
             type="text"
             placeholder="Search courses..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
@@ -827,7 +848,9 @@ export default function AcademyScreen() {
 
           <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--glass-border)] shadow-2xl shadow-black/30 duration-300">
             <div className="flex-shrink-0 flex items-center justify-between border-b border-[color:var(--glass-divider)] px-6 py-4">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">
+                Menu
+              </h3>
               <button
                 onClick={() => setShowNavMenu(false)}
                 className="stone-chip inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] tracking-[0.12em] uppercase text-white/70 transition-colors hover:bg-[rgba(175,170,162,0.16)]"
@@ -838,7 +861,9 @@ export default function AcademyScreen() {
             </div>
 
             <div className="flex-shrink-0 border-b border-[color:var(--glass-divider)] px-6 py-6">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/50 mb-2">Your Credits</div>
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/50 mb-2">
+                Your Credits
+              </div>
               <div className="text-3xl font-serif font-extralight text-white tabular-nums">
                 {creditBalance.toFixed(1)}
               </div>
@@ -849,7 +874,9 @@ export default function AcademyScreen() {
                 onClick={() => handleNavigation("studio")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Studio</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">
+                  Studio
+                </span>
                 <span className="text-sm font-medium text-white/70">Studio</span>
               </button>
               <button
@@ -897,7 +924,9 @@ export default function AcademyScreen() {
                 onClick={() => handleNavigation("profile")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Profile</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">
+                  Profile
+                </span>
                 <span className="text-sm font-medium text-white/70">Profile</span>
               </button>
               <button
@@ -941,160 +970,189 @@ export default function AcademyScreen() {
           <div className="relative z-10 -mt-8 px-4 sm:px-6">
             <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
               <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Your Plan</div>
-                <div className="font-serif text-base text-white sm:text-lg">{getFriendlyTierName(userTier)}</div>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
+                  Your Plan
+                </div>
+                <div className="font-serif text-base text-white sm:text-lg">
+                  {getFriendlyTierName(userTier)}
+                </div>
               </div>
               <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Completed</div>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
+                  Completed
+                </div>
                 <div className="font-serif text-base text-white sm:text-lg">
                   {completedCoursesCount}/{totalEnrolledCourses}
                 </div>
               </div>
               <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Learning</div>
-                <div className="font-serif text-base text-white sm:text-lg">{inProgressCourses.length}</div>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
+                  Learning
+                </div>
+                <div className="font-serif text-base text-white sm:text-lg">
+                  {inProgressCourses.length}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="mt-8 space-y-6 px-4 pb-8 sm:px-6 sm:pb-10">
-          {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
-          {ownedForAccess.length > 0 && (
-            <section className="pt-6 pb-3">
-              <h2
-                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
-                style={{ letterSpacing: "0.2em" }}
-              >
-                YOU HAVE ACCESS
-              </h2>
-              <div
-                className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
-                style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  WebkitOverflowScrolling: "touch",
-                  scrollSnapType: "x proximity",
-                }}
-              >
-                {ownedForAccess.map((p: { id: string; name: string }) => {
-                  const id = p.id as ProductAccessId
-                  const copy = PRODUCT_ACCESS_COPY[id]
-                  if (!copy) return null
-                  return (
-                    <div key={p.id} className="scroll-snap-align-start flex-shrink-0">
-                      <ProductAccessCard
-                        productId={id}
-                        name={p.name}
-                        subText={copy.subText}
-                        ctaLabel={copy.ctaLabel}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* Get More — non-Studio users: mini-product grid */}
-          {showGetMore && (
-            <section className="pt-6 pb-3">
-              <h2
-                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
-                style={{ letterSpacing: "0.2em" }}
-              >
-                GET MORE COURSES & RESOURCES
-              </h2>
-              <div className="grid grid-cols-2 gap-4 max-w-[360px]">
-                {availableProducts.map((p: { id: string; name: string; price: number }) => (
-                  <MiniProductCard
-                    key={p.id}
-                    productId={p.id}
-                    name={p.name}
-                    price={p.price}
-                    currency="€"
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <button
-            onClick={() => setSelectedView("courses")}
-            className={`w-full ${academyFeatureCardClass}`}
-          >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Browse Courses</h2>
-            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-              Explore our complete library of courses designed to help you master professional photography and personal
-              branding
-            </p>
-            <div className="text-xs tracking-wider uppercase text-white/70">See All Courses →</div>
-          </button>
-
-          <button
-            onClick={() => setSelectedView("templates")}
-            className={`w-full ${academyFeatureCardClass}`}
-          >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Templates</h2>
-            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-              Download professional templates for Canva, PDFs, and more to elevate your brand
-            </p>
-            <div className="text-xs tracking-wider uppercase text-white/70">Browse Templates →</div>
-          </button>
-
-          <button
-            onClick={() => setSelectedView("monthly-drops")}
-            className={`w-full ${academyFeatureCardClass}`}
-          >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Monthly Drops</h2>
-            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-              Exclusive monthly resources and content drops for Studio Members
-            </p>
-            <div className="text-xs tracking-wider uppercase text-white/70">View Monthly Drops →</div>
-          </button>
-
-          <button
-            onClick={() => setSelectedView("flatlay-images")}
-            className={`w-full ${academyFeatureCardClass}`}
-          >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Flatlay Images</h2>
-            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-              Professional flatlay images to elevate your content and brand aesthetic
-            </p>
-            <div className="text-xs tracking-wider uppercase text-white/70">Browse Flatlay Images →</div>
-          </button>
-
-          {(inProgressCourses[0] || allCourses[0]) && (
-            <div className="stone-panel-strong rounded-2xl p-8 text-white sm:p-10">
-              <div className="space-y-6">
-                <div>
-                  <div className="stone-chip mb-4 inline-block rounded-full px-3 py-1 text-xs uppercase tracking-wider text-white/70">
-                    {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
-                  </div>
-                  <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
-                    {(inProgressCourses[0] || allCourses[0])?.title}
-                  </h2>
-                  <p className="text-white/50 text-sm leading-relaxed">
-                    {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons • {(() => {
-                      const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
-                      if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
-                        return "0m"
-                      }
-                      const hours = Math.floor(Number(duration) / 60)
-                      const mins = Number(duration) % 60
-                      return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-                    })()}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
-                  className={`w-full ${academyPrimaryActionClass}`}
+            {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
+            {ownedForAccess.length > 0 && (
+              <section className="pt-6 pb-3">
+                <h2
+                  className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
+                  style={{ letterSpacing: "0.2em" }}
                 >
-                  {inProgressCourses[0] ? "Continue" : "Start Learning"}
-                </button>
+                  YOU HAVE ACCESS
+                </h2>
+                <div
+                  className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
+                    scrollSnapType: "x proximity",
+                  }}
+                >
+                  {ownedForAccess.map((product: any) => {
+                    const copy = getProductAccessCopy(product)
+                    return (
+                      <div key={product.id} className="scroll-snap-align-start flex-shrink-0">
+                        <ProductAccessCard
+                          productId={product.id}
+                          name={product.name}
+                          subText={copy.subText}
+                          ctaLabel={copy.ctaLabel}
+                          href={product.accessUrl}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Get More — non-Studio users: mini-product grid */}
+            {showGetMore && (
+              <section className="pt-6 pb-3">
+                <h2
+                  className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
+                  style={{ letterSpacing: "0.2em" }}
+                >
+                  GET MORE COURSES & RESOURCES
+                </h2>
+                <div className="grid grid-cols-2 gap-4 max-w-[360px]">
+                  {availableProducts.map(
+                    (p: { id: string; name: string; price: number; purchaseUrl: string }) => (
+                      <MiniProductCard
+                        key={p.id}
+                        productId={p.id}
+                        name={p.name}
+                        price={p.price ?? 0}
+                        href={p.purchaseUrl}
+                        currency="€"
+                      />
+                    )
+                  )}
+                </div>
+              </section>
+            )}
+
+            <button
+              onClick={() => setSelectedView("courses")}
+              className={`w-full ${academyFeatureCardClass}`}
+            >
+              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
+                Browse Courses
+              </h2>
+              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
+                Explore our complete library of courses designed to help you master professional
+                photography and personal branding
+              </p>
+              <div className="text-xs tracking-wider uppercase text-white/70">
+                See All Courses →
               </div>
-            </div>
-          )}
+            </button>
+
+            <button
+              onClick={() => setSelectedView("templates")}
+              className={`w-full ${academyFeatureCardClass}`}
+            >
+              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
+                Templates
+              </h2>
+              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
+                Download professional templates for Canva, PDFs, and more to elevate your brand
+              </p>
+              <div className="text-xs tracking-wider uppercase text-white/70">
+                Browse Templates →
+              </div>
+            </button>
+
+            <button
+              onClick={() => setSelectedView("monthly-drops")}
+              className={`w-full ${academyFeatureCardClass}`}
+            >
+              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
+                Monthly Drops
+              </h2>
+              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
+                Exclusive monthly resources and content drops for Studio Members
+              </p>
+              <div className="text-xs tracking-wider uppercase text-white/70">
+                View Monthly Drops →
+              </div>
+            </button>
+
+            <button
+              onClick={() => setSelectedView("flatlay-images")}
+              className={`w-full ${academyFeatureCardClass}`}
+            >
+              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
+                Flatlay Images
+              </h2>
+              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
+                Professional flatlay images to elevate your content and brand aesthetic
+              </p>
+              <div className="text-xs tracking-wider uppercase text-white/70">
+                Browse Flatlay Images →
+              </div>
+            </button>
+
+            {(inProgressCourses[0] || allCourses[0]) && (
+              <div className="stone-panel-strong rounded-2xl p-8 text-white sm:p-10">
+                <div className="space-y-6">
+                  <div>
+                    <div className="stone-chip mb-4 inline-block rounded-full px-3 py-1 text-xs uppercase tracking-wider text-white/70">
+                      {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
+                      {(inProgressCourses[0] || allCourses[0])?.title}
+                    </h2>
+                    <p className="text-white/50 text-sm leading-relaxed">
+                      {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons •{" "}
+                      {(() => {
+                        const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
+                        if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
+                          return "0m"
+                        }
+                        const hours = Math.floor(Number(duration) / 60)
+                        const mins = Number(duration) % 60
+                        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                      })()}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
+                    className={`w-full ${academyPrimaryActionClass}`}
+                  >
+                    {inProgressCourses[0] ? "Continue" : "Start Learning"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

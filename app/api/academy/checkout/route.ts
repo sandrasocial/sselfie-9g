@@ -1,25 +1,19 @@
 import { NextResponse } from "next/server"
+
+import { getAcademyEntitlementState, getAcademyProductCatalog } from "@/lib/academy-entitlements"
 import { stripe } from "@/lib/stripe"
-import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
 type CheckoutRequestBody = {
-  productId?: AcademyProductId
+  productId?: string
 }
 
 export async function POST(request: Request) {
   try {
     const { productId } = (await request.json()) as CheckoutRequestBody
-
-    if (!productId || !(productId in ACADEMY_PRODUCTS)) {
+    if (!productId) {
       return NextResponse.json({ error: "Invalid productId" }, { status: 400 })
-    }
-
-    const product = ACADEMY_PRODUCTS[productId]
-    if (!product.stripePriceId) {
-      return NextResponse.json({ error: "Stripe price is not configured for this product" }, { status: 500 })
     }
 
     const supabase = await createServerClient()
@@ -37,23 +31,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const isStudioMember = await hasActiveStudioMembership(neonUser.id)
-    if (isStudioMember) {
+    const [catalog, entitlementState] = await Promise.all([
+      getAcademyProductCatalog(),
+      getAcademyEntitlementState(String(neonUser.id)),
+    ])
+
+    const product = catalog.find(entry => entry.id === productId)
+    if (!product || !product.purchasable) {
+      return NextResponse.json({ error: "Invalid productId" }, { status: 400 })
+    }
+
+    if (product.deliveryKind === "direct_private") {
       return NextResponse.json(
-        { error: "Studio members already have Academy access for this product." },
-        { status: 403 },
+        { error: "This product uses a dedicated checkout flow.", purchaseUrl: product.purchaseUrl },
+        { status: 400 }
       )
     }
 
-    const configuredSiteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || "").trim()
-    const forwardedHost = request.headers.get("x-forwarded-host")
-    const forwardedProto = request.headers.get("x-forwarded-proto") || "https"
-    const requestOrigin = new URL(request.url).origin
-    const derivedOrigin =
-      configuredSiteUrl ||
-      (forwardedHost ? `${forwardedProto}://${forwardedHost}` : "") ||
-      requestOrigin
-    const siteUrl = derivedOrigin.replace(/\/$/, "")
+    if (!product.stripePriceId) {
+      return NextResponse.json(
+        { error: "Stripe price is not configured for this product" },
+        { status: 500 }
+      )
+    }
+
+    if (entitlementState.membershipActive) {
+      return NextResponse.json(
+        { error: "Studio members already have Academy access for this product." },
+        { status: 403 }
+      )
+    }
+
+    const derivedOrigin = new URL(request.url).origin
+    const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || derivedOrigin).replace(/\/$/, "")
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -62,7 +72,7 @@ export async function POST(request: Request) {
       cancel_url: `${siteUrl}/academy`,
       metadata: {
         product_id: productId,
-        user_id: neonUser.id,
+        user_id: String(neonUser.id),
         product_type: "academy_mini_product",
       },
     })

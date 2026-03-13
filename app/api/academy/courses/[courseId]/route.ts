@@ -1,63 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCourseWithLessons, getUserCourseProgress, enrollUserInCourse } from "@/lib/data/academy"
-import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
+
+import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
+import { enrollUserInCourse, getCourseWithLessons, getUserCourseProgress } from "@/lib/data/academy"
+import { userHasAcademyProductAccess } from "@/lib/academy-entitlements"
 
 export async function GET(req: NextRequest, { params }: { params: { courseId: string } }) {
   try {
     const { courseId } = await params
-
-    console.log("[v0] Academy course details API called for course:", courseId)
-
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const parsedCourseId = Number.parseInt(courseId, 10)
+    if (!Number.isFinite(parsedCourseId) || parsedCourseId <= 0) {
+      return NextResponse.json({ error: "Invalid courseId" }, { status: 400 })
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const hasAccess = await hasActiveStudioMembership(neonUser.id)
-
-    if (!hasAccess) {
-      console.log("[v0] User does not have Academy access")
-      return NextResponse.json(
-        {
-          error: "Academy access requires Studio Membership",
-          hasAccess: false,
-        },
-        { status: 403 },
-      )
-    }
-
-    // Get course with lessons
-    const course = await getCourseWithLessons(Number.parseInt(courseId))
-
+    const { neonUser } = await requireAcademyUser()
+    const course = await getCourseWithLessons(parsedCourseId)
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
-    await enrollUserInCourse(neonUser.id, Number.parseInt(courseId))
+    if (
+      !course.product_id ||
+      !(await userHasAcademyProductAccess(neonUser.id, course.product_id))
+    ) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: course.product_id,
+        },
+        { status: 403 }
+      )
+    }
 
-    // Get user's progress for this course
-    const progressData = await getUserCourseProgress(neonUser.id.toString(), Number.parseInt(courseId))
+    await enrollUserInCourse(neonUser.id, parsedCourseId)
 
-    const lessonsWithProgress = course.lessons?.map((lesson) => {
-      const lessonProgress = progressData?.lessonProgress?.find((lp: any) => lp.lesson_id === lesson.id)
+    const progressData = await getUserCourseProgress(neonUser.id, parsedCourseId)
+    const lessonsWithProgress = course.lessons?.map(lesson => {
+      const lessonProgress = progressData?.lessonProgress?.find(
+        (lp: any) => lp.lesson_id === lesson.id
+      )
       return {
         ...lesson,
         is_completed: lessonProgress?.status === "completed",
-        is_locked: false, // All lessons unlocked for Studio members
+        is_locked: false,
       }
     })
 
@@ -65,20 +50,24 @@ export async function GET(req: NextRequest, { params }: { params: { courseId: st
       ...course,
       lessons: lessonsWithProgress,
       progress_percentage: progressData?.enrollment?.progress_percentage ?? 0,
-      completed_lessons: progressData?.lessonProgress?.filter((lp: any) => lp.status === "completed").length ?? 0,
+      completed_lessons:
+        progressData?.lessonProgress?.filter((lp: any) => lp.status === "completed").length ?? 0,
       lesson_count: course.lessons?.length ?? 0,
       is_completed: (progressData?.enrollment?.progress_percentage ?? 0) >= 100,
       certificate_url: progressData?.enrollment?.certificate_url ?? null,
     }
 
-    console.log("[v0] Course found:", enrichedCourse.title, "with", enrichedCourse.lessons?.length || 0, "lessons")
-    console.log("[v0] User progress:", enrichedCourse.progress_percentage, "%")
-
     return NextResponse.json({
+      hasAccess: true,
       course: enrichedCourse,
       progress: progressData,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error fetching course details:", error)
     return NextResponse.json({ error: "Failed to fetch course details" }, { status: 500 })
   }

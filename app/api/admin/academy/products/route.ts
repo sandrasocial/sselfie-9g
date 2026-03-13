@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { requireAdmin } from "@/lib/admin-feature-flags"
-import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 import { getAcademyProducts } from "@/lib/academy-products"
-
-
-const VALID_PRODUCT_IDS = new Set(Object.keys(ACADEMY_PRODUCTS))
 
 type UpdatePayload = {
   product_id?: string
@@ -23,7 +19,7 @@ function badRequest(error: string) {
 function unauthorized(error?: string) {
   return NextResponse.json(
     { error: error || "Admin access required" },
-    { status: error === "Not authenticated" ? 401 : 403 },
+    { status: error === "Not authenticated" ? 401 : 403 }
   )
 }
 
@@ -45,8 +41,10 @@ async function upsertProductOverride(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as UpdatePayload
   const { product_id, name, tagline, description, price_cents, active } = body
+  const products = await getAcademyProducts()
+  const validProductIds = new Set(products.map(product => product.id))
 
-  if (!product_id || !VALID_PRODUCT_IDS.has(product_id)) {
+  if (!product_id || !validProductIds.has(product_id)) {
     return badRequest("Valid product_id is required")
   }
 
@@ -77,8 +75,8 @@ async function upsertProductOverride(request: Request) {
       updated_at = NOW()
   `
 
-  const products = await getAcademyProducts()
-  const updatedProduct = products.find((product) => product.id === (product_id as AcademyProductId))
+  const updatedProducts = await getAcademyProducts()
+  const updatedProduct = updatedProducts.find(product => product.id === product_id)
 
   return NextResponse.json({ product: updatedProduct ?? null })
 }

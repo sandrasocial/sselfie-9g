@@ -2,11 +2,15 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 // PATCH update course
-export async function PATCH(request: Request, { params }: { params: Promise<{ courseId: string }> }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ courseId: string }> }
+) {
   try {
     const supabase = await createServerClient()
     const {
@@ -24,11 +28,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     }
 
     const { courseId } = await params
-    const { title, description, thumbnail_url, order_index, status } = await request.json()
+    const { title, description, thumbnail_url, product_id, order_index, status } =
+      await request.json()
+
+    if (product_id !== undefined && !(product_id in ACADEMY_PRODUCTS)) {
+      return NextResponse.json({ error: "Valid product_id is required" }, { status: 400 })
+    }
 
     const updatedCourse = await sql`
       UPDATE academy_courses
       SET 
+        product_id = COALESCE(${product_id}, product_id),
         title = COALESCE(${title}, title),
         description = COALESCE(${description}, description),
         thumbnail_url = COALESCE(${thumbnail_url}, thumbnail_url),
@@ -53,7 +63,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
 }
 
 // DELETE course
-export async function DELETE(request: Request, { params }: { params: Promise<{ courseId: string }> }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ courseId: string }> }
+) {
   try {
     const supabase = await createServerClient()
     const {

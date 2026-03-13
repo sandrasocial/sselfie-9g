@@ -12,6 +12,7 @@ export interface MiniProductCardProps {
   productId: string
   name: string
   price: number
+  href: string
   /** Optional image URL */
   imageUrl?: string | null
   /** Currency symbol, default € */
@@ -22,24 +23,20 @@ export default function MiniProductCard({
   productId,
   name,
   price,
+  href,
   imageUrl,
   currency = "€",
 }: MiniProductCardProps) {
-  const href = `/academy/products/${productId}`
-
   return (
     <Link
       href={href}
+      data-product-id={productId}
       className="stone-panel flex h-[200px] w-full max-w-[160px] flex-col overflow-hidden rounded-xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
     >
       {/* Image */}
       <div className="relative h-[88px] w-full shrink-0 overflow-hidden bg-[rgba(175,170,162,0.10)]">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(240,237,232,0.14),rgba(175,170,162,0.06))]">
             <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/35">
@@ -58,7 +55,8 @@ export default function MiniProductCard({
           {name}
         </h3>
         <p className="mt-1 text-[12px] font-light text-[color:var(--color-smoke)]">
-          {currency}{price}
+          {currency}
+          {price}
         </p>
         <span className="mt-auto inline-flex self-start pt-2 text-[12px] font-light text-[color:var(--color-porcelain)] transition-colors">
           Get it →

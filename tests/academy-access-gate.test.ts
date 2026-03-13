@@ -1,55 +1,44 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const sqlMock = vi.fn()
-const hasStudioMembershipMock = vi.fn()
+const userHasAcademyProductAccessMock = vi.fn()
 
-vi.mock("@/lib/db/client", () => ({
-  sql: sqlMock,
-}))
-
-vi.mock("@/lib/subscription", () => ({
-  hasStudioMembership: hasStudioMembershipMock,
+vi.mock("@/lib/academy-entitlements", () => ({
+  userHasAcademyProductAccess: userHasAcademyProductAccessMock,
 }))
 
 describe("userHasAcademyAccess", () => {
   beforeEach(() => {
+    vi.resetModules()
     vi.clearAllMocks()
-    sqlMock.mockResolvedValue([])
-    hasStudioMembershipMock.mockResolvedValue(false)
   })
 
-  it("grants access through Studio membership without requiring per-course purchase rows", async () => {
-    hasStudioMembershipMock.mockResolvedValueOnce(true)
+  it("delegates Academy access checks to the centralized entitlement resolver", async () => {
+    userHasAcademyProductAccessMock.mockResolvedValueOnce(true)
 
     const { userHasAcademyAccess } = await import("@/lib/academy-access")
     const result = await userHasAcademyAccess("user-1", "what_to_say")
 
     expect(result).toBe(true)
-    expect(hasStudioMembershipMock).toHaveBeenCalledWith("user-1")
-    expect(sqlMock).not.toHaveBeenCalled()
+    expect(userHasAcademyProductAccessMock).toHaveBeenCalledWith("user-1", "what_to_say")
   })
 
-  it("grants access through active per-course purchase for non-members", async () => {
-    hasStudioMembershipMock.mockResolvedValueOnce(false)
-    sqlMock.mockResolvedValueOnce([{ id: 1 }])
+  it("returns false when the centralized entitlement resolver denies access", async () => {
+    userHasAcademyProductAccessMock.mockResolvedValueOnce(false)
 
     const { userHasAcademyAccess } = await import("@/lib/academy-access")
     const result = await userHasAcademyAccess("user-2", "show_up")
 
-    expect(result).toBe(true)
-    expect(hasStudioMembershipMock).toHaveBeenCalledWith("user-2")
-    expect(sqlMock).toHaveBeenCalledTimes(1)
+    expect(result).toBe(false)
+    expect(userHasAcademyProductAccessMock).toHaveBeenCalledWith("user-2", "show_up")
   })
 
-  it("keeps paywall for non-members without purchase", async () => {
-    hasStudioMembershipMock.mockResolvedValueOnce(false)
-    sqlMock.mockResolvedValueOnce([])
+  it("fails closed when the entitlement resolver throws", async () => {
+    userHasAcademyProductAccessMock.mockRejectedValueOnce(new Error("db unavailable"))
 
     const { userHasAcademyAccess } = await import("@/lib/academy-access")
     const result = await userHasAcademyAccess("user-3", "get_paid")
 
     expect(result).toBe(false)
-    expect(hasStudioMembershipMock).toHaveBeenCalledWith("user-3")
-    expect(sqlMock).toHaveBeenCalledTimes(1)
+    expect(userHasAcademyProductAccessMock).toHaveBeenCalledWith("user-3", "get_paid")
   })
 })

@@ -8,12 +8,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
 import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 
 interface Course {
   id: string
+  product_id: string | null
   title: string
   description: string | null
   thumbnail_url: string | null
@@ -118,6 +125,7 @@ export default function AdminAcademyPage() {
   const [courseDialogOpen, setCourseDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [courseForm, setCourseForm] = useState({
+    product_id: defaultCourseId,
     title: "",
     description: "",
     thumbnail_url: "",
@@ -509,6 +517,7 @@ export default function AdminAcademyPage() {
   const handleCreateCourse = () => {
     setEditingCourse(null)
     setCourseForm({
+      product_id: defaultCourseId,
       title: "",
       description: "",
       thumbnail_url: "",
@@ -521,6 +530,7 @@ export default function AdminAcademyPage() {
   const handleEditCourse = (course: Course) => {
     setEditingCourse(course)
     setCourseForm({
+      product_id: course.product_id || defaultCourseId,
       title: course.title,
       description: course.description || "",
       thumbnail_url: course.thumbnail_url || "",
@@ -537,7 +547,9 @@ export default function AdminAcademyPage() {
   const handleSaveCourse = async () => {
     setSaving(true)
     try {
-      const url = editingCourse ? `/api/admin/academy/courses/${editingCourse.id}` : "/api/admin/academy/courses"
+      const url = editingCourse
+        ? `/api/admin/academy/courses/${editingCourse.id}`
+        : "/api/admin/academy/courses"
 
       const method = editingCourse ? "PATCH" : "POST"
 
@@ -615,7 +627,9 @@ export default function AdminAcademyPage() {
 
     setSaving(true)
     try {
-      const url = editingLesson ? `/api/admin/academy/lessons/${editingLesson.id}` : "/api/admin/academy/lessons"
+      const url = editingLesson
+        ? `/api/admin/academy/lessons/${editingLesson.id}`
+        : "/api/admin/academy/lessons"
 
       const method = editingLesson ? "PATCH" : "POST"
 
@@ -665,7 +679,9 @@ export default function AdminAcademyPage() {
     const maxSize = 500 * 1024 * 1024 // 500MB
     if (file.size > maxSize) {
       const sizeMB = Math.round(file.size / 1024 / 1024)
-      setUploadProgress(`File too large (${sizeMB}MB). Max 500MB. Use YouTube (unlisted) or Vimeo for larger videos.`)
+      setUploadProgress(
+        `File too large (${sizeMB}MB). Max 500MB. Use YouTube (unlisted) or Vimeo for larger videos.`
+      )
       setTimeout(() => setUploadProgress(""), 5000)
       return
     }
@@ -970,7 +986,7 @@ export default function AdminAcademyPage() {
               </div>
 
               <div className="space-y-3">
-                {courses.map((course) => (
+                {courses.map(course => (
                   <div
                     key={course.id}
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
@@ -994,7 +1010,7 @@ export default function AdminAcademyPage() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             handleEditCourse(course)
                           }}
@@ -1003,7 +1019,7 @@ export default function AdminAcademyPage() {
                           Edit
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             handleDeleteCourse(course.id)
                           }}
@@ -1017,7 +1033,9 @@ export default function AdminAcademyPage() {
                 ))}
 
                 {courses.length === 0 && (
-                  <p className="text-sm text-stone-500 text-center py-8">No courses yet. Create your first course!</p>
+                  <p className="text-sm text-stone-500 text-center py-8">
+                    No courses yet. Create your first course!
+                  </p>
                 )}
               </div>
             </div>
@@ -1040,20 +1058,24 @@ export default function AdminAcademyPage() {
 
               {selectedCourse ? (
                 <div className="space-y-3">
-                  {lessons.map((lesson) => (
+                  {lessons.map(lesson => (
                     <div
                       key={lesson.id}
                       className="p-4 rounded-xl border border-stone-200 hover:border-stone-400 transition-all"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="text-sm font-medium text-stone-950 mb-1">{lesson.title}</h3>
+                          <h3 className="text-sm font-medium text-stone-950 mb-1">
+                            {lesson.title}
+                          </h3>
                           <p className="text-xs text-stone-500">
                             {Math.floor(lesson.duration_seconds / 60)}:
                             {(lesson.duration_seconds % 60).toString().padStart(2, "0")} min
                           </p>
                           {lesson.video_url && (
-                            <p className="text-[10px] text-stone-400 mt-1 truncate">{lesson.video_url}</p>
+                            <p className="text-[10px] text-stone-400 mt-1 truncate">
+                              {lesson.video_url}
+                            </p>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -1074,11 +1096,15 @@ export default function AdminAcademyPage() {
                     </div>
                   ))}
                   {lessons.length === 0 && (
-                    <p className="text-sm text-stone-500 text-center py-8">No lessons yet. Add your first lesson!</p>
+                    <p className="text-sm text-stone-500 text-center py-8">
+                      No lessons yet. Add your first lesson!
+                    </p>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-stone-500 text-center py-8">Select a course to view lessons</p>
+                <p className="text-sm text-stone-500 text-center py-8">
+                  Select a course to view lessons
+                </p>
               )}
             </div>
           </div>
@@ -1099,7 +1125,7 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-3">
-              {templates.map((template) => (
+              {templates.map(template => (
                 <div
                   key={template.id}
                   className="p-4 rounded-xl border border-stone-200 hover:border-stone-400 transition-all"
@@ -1135,7 +1161,9 @@ export default function AdminAcademyPage() {
               ))}
 
               {templates.length === 0 && (
-                <p className="text-sm text-stone-500 text-center py-8">No templates yet. Create your first template!</p>
+                <p className="text-sm text-stone-500 text-center py-8">
+                  No templates yet. Create your first template!
+                </p>
               )}
             </div>
           </div>
@@ -1156,7 +1184,7 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-3">
-              {monthlyDrops.map((drop) => (
+              {monthlyDrops.map(drop => (
                 <div
                   key={drop.id}
                   className="p-4 rounded-xl border border-stone-200 hover:border-stone-400 transition-all"
@@ -1215,7 +1243,7 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-3">
-              {flatlayImages.map((flatlay) => (
+              {flatlayImages.map(flatlay => (
                 <div
                   key={flatlay.id}
                   className="p-4 rounded-xl border border-stone-200 hover:border-stone-400 transition-all"
@@ -1272,7 +1300,10 @@ export default function AdminAcademyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="grant-email" className="text-xs uppercase tracking-wider text-stone-600">
+                <Label
+                  htmlFor="grant-email"
+                  className="text-xs uppercase tracking-wider text-stone-600"
+                >
                   Customer Email
                 </Label>
                 <Input
@@ -1280,24 +1311,27 @@ export default function AdminAcademyPage() {
                   type="email"
                   placeholder="customer@email.com"
                   value={grantForm.email}
-                  onChange={(event) => setGrantForm({ ...grantForm, email: event.target.value })}
+                  onChange={event => setGrantForm({ ...grantForm, email: event.target.value })}
                   className="bg-white"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="grant-course" className="text-xs uppercase tracking-wider text-stone-600">
+                <Label
+                  htmlFor="grant-course"
+                  className="text-xs uppercase tracking-wider text-stone-600"
+                >
                   Course
                 </Label>
                 <select
                   id="grant-course"
                   value={grantForm.courseId}
-                  onChange={(event) =>
+                  onChange={event =>
                     setGrantForm({ ...grantForm, courseId: event.target.value as AcademyProductId })
                   }
                   className="w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900"
                 >
-                  {academyProductOptions.map((product) => (
+                  {academyProductOptions.map(product => (
                     <option key={product.id} value={product.id}>
                       {product.name}
                     </option>
@@ -1306,14 +1340,17 @@ export default function AdminAcademyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="grant-reason" className="text-xs uppercase tracking-wider text-stone-600">
+                <Label
+                  htmlFor="grant-reason"
+                  className="text-xs uppercase tracking-wider text-stone-600"
+                >
                   Reason
                 </Label>
                 <Textarea
                   id="grant-reason"
                   placeholder="Shopify customer — Editing Masterclass purchase"
                   value={grantForm.reason}
-                  onChange={(event) => setGrantForm({ ...grantForm, reason: event.target.value })}
+                  onChange={event => setGrantForm({ ...grantForm, reason: event.target.value })}
                   className="bg-white"
                 />
               </div>
@@ -1321,7 +1358,9 @@ export default function AdminAcademyPage() {
               <div className="flex items-center gap-3">
                 <Button
                   onClick={handleGrantAccess}
-                  disabled={grantSubmitting || !grantForm.email || !grantForm.courseId || !grantForm.reason}
+                  disabled={
+                    grantSubmitting || !grantForm.email || !grantForm.courseId || !grantForm.reason
+                  }
                   className="bg-stone-950 text-white hover:bg-stone-800 text-xs tracking-wider uppercase"
                 >
                   {grantSubmitting ? "Granting..." : "Grant Access & Send Email"}
@@ -1360,10 +1399,27 @@ export default function AdminAcademyPage() {
           </DialogHeader>
           <div className="space-y-4 py-4 overflow-y-auto flex-1">
             <div className="space-y-2">
+              <Label className="text-xs tracking-wider uppercase text-stone-600">Product</Label>
+              <select
+                value={courseForm.product_id}
+                onChange={e =>
+                  setCourseForm({ ...courseForm, product_id: e.target.value as AcademyProductId })
+                }
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+              >
+                {academyProductOptions.map(product => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <Label className="text-xs tracking-wider uppercase text-stone-600">Title</Label>
               <Input
                 value={courseForm.title}
-                onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+                onChange={e => setCourseForm({ ...courseForm, title: e.target.value })}
                 placeholder="Course title"
                 className="border-stone-300"
               />
@@ -1373,7 +1429,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Description</Label>
               <Textarea
                 value={courseForm.description}
-                onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                onChange={e => setCourseForm({ ...courseForm, description: e.target.value })}
                 placeholder="Course description"
                 className="border-stone-300 min-h-[100px]"
               />
@@ -1403,7 +1459,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={courseThumbnailPosition.x}
-                        onChange={(e) =>
+                        onChange={e =>
                           setCourseThumbnailPosition({
                             ...courseThumbnailPosition,
                             x: Number.parseInt(e.target.value),
@@ -1421,7 +1477,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={courseThumbnailPosition.y}
-                        onChange={(e) =>
+                        onChange={e =>
                           setCourseThumbnailPosition({
                             ...courseThumbnailPosition,
                             y: Number.parseInt(e.target.value),
@@ -1446,7 +1502,7 @@ export default function AdminAcademyPage() {
               </div>
               <Input
                 value={courseForm.thumbnail_url}
-                onChange={(e) => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })}
+                onChange={e => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })}
                 placeholder="Or paste thumbnail URL"
                 className="border-stone-300"
               />
@@ -1458,7 +1514,9 @@ export default function AdminAcademyPage() {
                 <Input
                   type="number"
                   value={courseForm.order_index}
-                  onChange={(e) => setCourseForm({ ...courseForm, order_index: Number.parseInt(e.target.value) })}
+                  onChange={e =>
+                    setCourseForm({ ...courseForm, order_index: Number.parseInt(e.target.value) })
+                  }
                   className="border-stone-300"
                 />
               </div>
@@ -1467,7 +1525,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
                 <select
                   value={courseForm.status}
-                  onChange={(e) => setCourseForm({ ...courseForm, status: e.target.value })}
+                  onChange={e => setCourseForm({ ...courseForm, status: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
                   <option value="draft">Draft</option>
@@ -1477,7 +1535,9 @@ export default function AdminAcademyPage() {
               </div>
             </div>
           </div>
-          {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
+          {uploadProgress && (
+            <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>
+          )}
           <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
@@ -1489,7 +1549,7 @@ export default function AdminAcademyPage() {
             </Button>
             <Button
               onClick={handleSaveCourse}
-              disabled={saving || !courseForm.title}
+              disabled={saving || !courseForm.title || !courseForm.product_id}
               className="bg-stone-950 text-white hover:bg-stone-800"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
@@ -1511,7 +1571,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Title</Label>
               <Input
                 value={lessonForm.title}
-                onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
+                onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })}
                 placeholder="Lesson title"
                 className="border-stone-300"
               />
@@ -1521,7 +1581,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Description</Label>
               <Textarea
                 value={lessonForm.description}
-                onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
+                onChange={e => setLessonForm({ ...lessonForm, description: e.target.value })}
                 placeholder="Lesson description"
                 className="border-stone-300 min-h-[80px]"
               />
@@ -1530,11 +1590,17 @@ export default function AdminAcademyPage() {
             <div className="space-y-2">
               <Label className="text-xs tracking-wider uppercase text-stone-600">Video</Label>
               <p className="text-[10px] text-stone-500 mb-2">
-                Max 500MB. For larger videos, upload to YouTube (unlisted) or Vimeo and paste URL below.
+                Max 500MB. For larger videos, upload to YouTube (unlisted) or Vimeo and paste URL
+                below.
               </p>
               {lessonForm.video_url && (
                 <div className="relative w-full rounded-lg overflow-hidden border border-stone-200 mb-2">
-                  <video src={lessonForm.video_url} controls className="w-full" style={{ maxHeight: "200px" }} />
+                  <video
+                    src={lessonForm.video_url}
+                    controls
+                    className="w-full"
+                    style={{ maxHeight: "200px" }}
+                  />
                 </div>
               )}
               <div className="flex gap-2">
@@ -1549,7 +1615,7 @@ export default function AdminAcademyPage() {
               </div>
               <Input
                 value={lessonForm.video_url}
-                onChange={(e) => setLessonForm({ ...lessonForm, video_url: e.target.value })}
+                onChange={e => setLessonForm({ ...lessonForm, video_url: e.target.value })}
                 placeholder="Or paste video URL (YouTube, Vimeo, etc.)"
                 className="border-stone-300"
               />
@@ -1557,11 +1623,18 @@ export default function AdminAcademyPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs tracking-wider uppercase text-stone-600">Duration (seconds)</Label>
+                <Label className="text-xs tracking-wider uppercase text-stone-600">
+                  Duration (seconds)
+                </Label>
                 <Input
                   type="number"
                   value={lessonForm.duration_seconds}
-                  onChange={(e) => setLessonForm({ ...lessonForm, duration_seconds: Number.parseInt(e.target.value) })}
+                  onChange={e =>
+                    setLessonForm({
+                      ...lessonForm,
+                      duration_seconds: Number.parseInt(e.target.value),
+                    })
+                  }
                   className="border-stone-300"
                 />
               </div>
@@ -1571,13 +1644,17 @@ export default function AdminAcademyPage() {
                 <Input
                   type="number"
                   value={lessonForm.order_index}
-                  onChange={(e) => setLessonForm({ ...lessonForm, order_index: Number.parseInt(e.target.value) })}
+                  onChange={e =>
+                    setLessonForm({ ...lessonForm, order_index: Number.parseInt(e.target.value) })
+                  }
                   className="border-stone-300"
                 />
               </div>
             </div>
           </div>
-          {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
+          {uploadProgress && (
+            <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>
+          )}
           <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
@@ -1610,7 +1687,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Title</Label>
               <Input
                 value={templateForm.title}
-                onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                onChange={e => setTemplateForm({ ...templateForm, title: e.target.value })}
                 placeholder="Template title"
                 className="border-stone-300"
               />
@@ -1620,7 +1697,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Description</Label>
               <Textarea
                 value={templateForm.description}
-                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                onChange={e => setTemplateForm({ ...templateForm, description: e.target.value })}
                 placeholder="Template description"
                 className="border-stone-300 min-h-[80px]"
               />
@@ -1650,7 +1727,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={templateThumbnailPosition.x}
-                        onChange={(e) =>
+                        onChange={e =>
                           setTemplateThumbnailPosition({
                             ...templateThumbnailPosition,
                             x: Number.parseInt(e.target.value),
@@ -1668,7 +1745,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={templateThumbnailPosition.y}
-                        onChange={(e) =>
+                        onChange={e =>
                           setTemplateThumbnailPosition({
                             ...templateThumbnailPosition,
                             y: Number.parseInt(e.target.value),
@@ -1688,21 +1765,25 @@ export default function AdminAcademyPage() {
                   disabled={uploadingTemplateThumbnail}
                   className="border-stone-300"
                 />
-                {uploadingTemplateThumbnail && <Loader2 className="w-5 h-5 animate-spin text-stone-950" />}
+                {uploadingTemplateThumbnail && (
+                  <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
+                )}
               </div>
               <Input
                 value={templateForm.thumbnail_url}
-                onChange={(e) => setTemplateForm({ ...templateForm, thumbnail_url: e.target.value })}
+                onChange={e => setTemplateForm({ ...templateForm, thumbnail_url: e.target.value })}
                 placeholder="Or paste thumbnail URL"
                 className="border-stone-300"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource Type</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource Type
+              </Label>
               <select
                 value={templateForm.resource_type}
-                onChange={(e) => setTemplateForm({ ...templateForm, resource_type: e.target.value })}
+                onChange={e => setTemplateForm({ ...templateForm, resource_type: e.target.value })}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
               >
                 <option value="canva">Canva Template</option>
@@ -1713,10 +1794,12 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource URL</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource URL
+              </Label>
               <Input
                 value={templateForm.resource_url}
-                onChange={(e) => setTemplateForm({ ...templateForm, resource_url: e.target.value })}
+                onChange={e => setTemplateForm({ ...templateForm, resource_url: e.target.value })}
                 placeholder="https://..."
                 className="border-stone-300"
               />
@@ -1727,7 +1810,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Category</Label>
                 <select
                   value={templateForm.category}
-                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                  onChange={e => setTemplateForm({ ...templateForm, category: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
                   <option value="">Select Category...</option>
@@ -1745,7 +1828,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
                 <select
                   value={templateForm.status}
-                  onChange={(e) => setTemplateForm({ ...templateForm, status: e.target.value })}
+                  onChange={e => setTemplateForm({ ...templateForm, status: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
                   <option value="draft">Draft</option>
@@ -1755,7 +1838,9 @@ export default function AdminAcademyPage() {
               </div>
             </div>
           </div>
-          {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
+          {uploadProgress && (
+            <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>
+          )}
           <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
@@ -1788,7 +1873,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Title</Label>
               <Input
                 value={dropForm.title}
-                onChange={(e) => setDropForm({ ...dropForm, title: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, title: e.target.value })}
                 placeholder="Monthly drop title"
                 className="border-stone-300"
               />
@@ -1798,7 +1883,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Description</Label>
               <Textarea
                 value={dropForm.description}
-                onChange={(e) => setDropForm({ ...dropForm, description: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, description: e.target.value })}
                 placeholder="Monthly drop description"
                 className="border-stone-300 min-h-[80px]"
               />
@@ -1808,7 +1893,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Month</Label>
               <Input
                 value={dropForm.month}
-                onChange={(e) => setDropForm({ ...dropForm, month: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, month: e.target.value })}
                 placeholder="e.g. January 2025"
                 className="border-stone-300"
               />
@@ -1838,7 +1923,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={dropThumbnailPosition.x}
-                        onChange={(e) =>
+                        onChange={e =>
                           setDropThumbnailPosition({
                             ...dropThumbnailPosition,
                             x: Number.parseInt(e.target.value),
@@ -1856,7 +1941,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={dropThumbnailPosition.y}
-                        onChange={(e) =>
+                        onChange={e =>
                           setDropThumbnailPosition({
                             ...dropThumbnailPosition,
                             y: Number.parseInt(e.target.value),
@@ -1876,21 +1961,25 @@ export default function AdminAcademyPage() {
                   disabled={uploadingDropThumbnail}
                   className="border-stone-300"
                 />
-                {uploadingDropThumbnail && <Loader2 className="w-5 h-5 animate-spin text-stone-950" />}
+                {uploadingDropThumbnail && (
+                  <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
+                )}
               </div>
               <Input
                 value={dropForm.thumbnail_url}
-                onChange={(e) => setDropForm({ ...dropForm, thumbnail_url: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, thumbnail_url: e.target.value })}
                 placeholder="Or paste thumbnail URL"
                 className="border-stone-300"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource Type</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource Type
+              </Label>
               <select
                 value={dropForm.resource_type}
-                onChange={(e) => setDropForm({ ...dropForm, resource_type: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, resource_type: e.target.value })}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
               >
                 <option value="canva">Canva Template</option>
@@ -1901,10 +1990,12 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource URL</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource URL
+              </Label>
               <Input
                 value={dropForm.resource_url}
-                onChange={(e) => setDropForm({ ...dropForm, resource_url: e.target.value })}
+                onChange={e => setDropForm({ ...dropForm, resource_url: e.target.value })}
                 placeholder="https://..."
                 className="border-stone-300"
               />
@@ -1915,7 +2006,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Category</Label>
                 <Input
                   value={dropForm.category}
-                  onChange={(e) => setDropForm({ ...dropForm, category: e.target.value })}
+                  onChange={e => setDropForm({ ...dropForm, category: e.target.value })}
                   placeholder="e.g. Social Media"
                   className="border-stone-300"
                 />
@@ -1925,7 +2016,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
                 <select
                   value={dropForm.status}
-                  onChange={(e) => setDropForm({ ...dropForm, status: e.target.value })}
+                  onChange={e => setDropForm({ ...dropForm, status: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
                   <option value="draft">Draft</option>
@@ -1935,7 +2026,9 @@ export default function AdminAcademyPage() {
               </div>
             </div>
           </div>
-          {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
+          {uploadProgress && (
+            <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>
+          )}
           <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
@@ -1968,7 +2061,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Title</Label>
               <Input
                 value={flatlayForm.title}
-                onChange={(e) => setFlatlayForm({ ...flatlayForm, title: e.target.value })}
+                onChange={e => setFlatlayForm({ ...flatlayForm, title: e.target.value })}
                 placeholder="Flatlay image title"
                 className="border-stone-300"
               />
@@ -1978,7 +2071,7 @@ export default function AdminAcademyPage() {
               <Label className="text-xs tracking-wider uppercase text-stone-600">Description</Label>
               <Textarea
                 value={flatlayForm.description}
-                onChange={(e) => setFlatlayForm({ ...flatlayForm, description: e.target.value })}
+                onChange={e => setFlatlayForm({ ...flatlayForm, description: e.target.value })}
                 placeholder="Flatlay image description"
                 className="border-stone-300 min-h-[80px]"
               />
@@ -2008,7 +2101,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={flatlayThumbnailPosition.x}
-                        onChange={(e) =>
+                        onChange={e =>
                           setFlatlayThumbnailPosition({
                             ...flatlayThumbnailPosition,
                             x: Number.parseInt(e.target.value),
@@ -2026,7 +2119,7 @@ export default function AdminAcademyPage() {
                         min="0"
                         max="100"
                         value={flatlayThumbnailPosition.y}
-                        onChange={(e) =>
+                        onChange={e =>
                           setFlatlayThumbnailPosition({
                             ...flatlayThumbnailPosition,
                             y: Number.parseInt(e.target.value),
@@ -2046,21 +2139,25 @@ export default function AdminAcademyPage() {
                   disabled={uploadingFlatlayThumbnail}
                   className="border-stone-300"
                 />
-                {uploadingFlatlayThumbnail && <Loader2 className="w-5 h-5 animate-spin text-stone-950" />}
+                {uploadingFlatlayThumbnail && (
+                  <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
+                )}
               </div>
               <Input
                 value={flatlayForm.thumbnail_url}
-                onChange={(e) => setFlatlayForm({ ...flatlayForm, thumbnail_url: e.target.value })}
+                onChange={e => setFlatlayForm({ ...flatlayForm, thumbnail_url: e.target.value })}
                 placeholder="Or paste thumbnail URL"
                 className="border-stone-300"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource Type</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource Type
+              </Label>
               <select
                 value={flatlayForm.resource_type}
-                onChange={(e) => setFlatlayForm({ ...flatlayForm, resource_type: e.target.value })}
+                onChange={e => setFlatlayForm({ ...flatlayForm, resource_type: e.target.value })}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
               >
                 <option value="image">Image</option>
@@ -2071,10 +2168,12 @@ export default function AdminAcademyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Resource URL</Label>
+              <Label className="text-xs tracking-wider uppercase text-stone-600">
+                Resource URL
+              </Label>
               <Input
                 value={flatlayForm.resource_url}
-                onChange={(e) => setFlatlayForm({ ...flatlayForm, resource_url: e.target.value })}
+                onChange={e => setFlatlayForm({ ...flatlayForm, resource_url: e.target.value })}
                 placeholder="https://..."
                 className="border-stone-300"
               />
@@ -2082,11 +2181,15 @@ export default function AdminAcademyPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs tracking-wider uppercase text-stone-600">Order Index</Label>
+                <Label className="text-xs tracking-wider uppercase text-stone-600">
+                  Order Index
+                </Label>
                 <Input
                   type="number"
                   value={flatlayForm.order_index}
-                  onChange={(e) => setFlatlayForm({ ...flatlayForm, order_index: Number.parseInt(e.target.value) })}
+                  onChange={e =>
+                    setFlatlayForm({ ...flatlayForm, order_index: Number.parseInt(e.target.value) })
+                  }
                   className="border-stone-300"
                 />
               </div>
@@ -2095,7 +2198,7 @@ export default function AdminAcademyPage() {
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
                 <select
                   value={flatlayForm.status}
-                  onChange={(e) => setFlatlayForm({ ...flatlayForm, status: e.target.value })}
+                  onChange={e => setFlatlayForm({ ...flatlayForm, status: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
                   <option value="draft">Draft</option>
@@ -2105,7 +2208,9 @@ export default function AdminAcademyPage() {
               </div>
             </div>
           </div>
-          {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
+          {uploadProgress && (
+            <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>
+          )}
           <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"

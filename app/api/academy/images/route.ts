@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
+
+import { requireAdmin } from "@/lib/admin-feature-flags"
 import { getDb } from "@/lib/db/client"
 
 const SANDRA_USER_IDS = [
@@ -26,8 +28,27 @@ function isLocalhostRequest(request: NextRequest): boolean {
     return true
   }
 
-  const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").toLowerCase()
+  const host = (
+    request.headers.get("x-forwarded-host") ||
+    request.headers.get("host") ||
+    ""
+  ).toLowerCase()
   return host.startsWith("localhost:") || host.startsWith("127.0.0.1:") || host.startsWith("[::1]:")
+}
+
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  if (isLocalhostRequest(request)) {
+    return true
+  }
+
+  const secret = process.env.ACADEMY_IMAGE_LIBRARY_SECRET?.trim()
+  const providedSecret = request.headers.get("x-academy-secret")?.trim()
+  if (secret && providedSecret && secret === providedSecret) {
+    return true
+  }
+
+  const adminCheck = await requireAdmin()
+  return adminCheck.isAdmin
 }
 
 function parseSlot(value: string | null): Slot | null {
@@ -45,22 +66,24 @@ function parseExcludeIds(value: string | null): string[] {
   if (!value) return []
   return value
     .split(",")
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0)
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const isInternalHeader = request.headers.get("x-internal") === "academy-builder"
-    if (!isInternalHeader && !isLocalhostRequest(request)) {
+    if (!(await isAuthorized(request))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const slot = parseSlot(request.nextUrl.searchParams.get("slot"))
     if (!slot) {
       return NextResponse.json(
-        { error: "Invalid slot. Expected one of: hero, portrait, lifestyle, working, fullbody, flatlay, brand, any" },
-        { status: 400 },
+        {
+          error:
+            "Invalid slot. Expected one of: hero, portrait, lifestyle, working, fullbody, flatlay, brand, any",
+        },
+        { status: 400 }
       )
     }
 
@@ -69,7 +92,7 @@ export async function GET(request: NextRequest) {
     const categories = SLOT_CATEGORY_MAP[slot]
     const db = getDb()
 
-    const images = await db`
+    const images = (await db`
       WITH all_images AS (
         SELECT
           ('gi_' || id::text) AS source_id,
@@ -123,7 +146,7 @@ export async function GET(request: NextRequest) {
       WHERE row_num = 1
       ORDER BY RANDOM()
       LIMIT ${limit}
-    ` as Array<{
+    `) as Array<{
       id: string
       url: string
       category: string | null

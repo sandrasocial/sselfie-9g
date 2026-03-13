@@ -24,6 +24,7 @@
     "automation:support": "node scripts/support-digest.mjs",
     "automation:archive": "node scripts/archive-automation-outputs.mjs",
     "automation:daily": "node scripts/run-automation-daily.mjs",
+    "academy:reconcile": "tsx scripts/reconcile-academy-entitlements.ts",
     "arpu-churn-digest": "node scripts/arpu-churn-weekly-digest.mjs",
     "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",
     "product-qa-digest": "tsx scripts/product-qa-digest.ts",

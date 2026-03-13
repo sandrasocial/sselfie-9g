@@ -1,48 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { submitExercise } from "@/lib/data/academy"
+
+import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
+import { getExerciseCourseProductId, submitExercise } from "@/lib/data/academy"
+import { userHasAcademyProductAccess } from "@/lib/academy-entitlements"
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { exerciseId, answer, isCorrect: isCorrectInput } = body
+    const exerciseId = Number.parseInt(String(body?.exerciseId || ""), 10)
+    const answer = String(body?.answer || "").trim()
+    const isCorrect = typeof body?.isCorrect === "boolean" ? body.isCorrect : false
 
-    console.log("[v0] Submit exercise:", { exerciseId, answerLength: answer?.length })
-
-    if (!exerciseId || !answer) {
+    if (!Number.isFinite(exerciseId) || !answer) {
       return NextResponse.json({ error: "Missing exerciseId or answer" }, { status: 400 })
     }
 
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const { neonUser } = await requireAcademyUser()
+    const productId = await getExerciseCourseProductId(exerciseId)
 
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!productId || !(await userHasAcademyProductAccess(neonUser.id, productId))) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: productId,
+        },
+        { status: 403 }
+      )
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Submit exercise
-    const isCorrect = typeof isCorrectInput === "boolean" ? isCorrectInput : false
-    await submitExercise(neonUser.id, Number.parseInt(exerciseId), answer, isCorrect)
-
-    console.log("[v0] Exercise submitted:", { exerciseId, isCorrect })
+    await submitExercise(neonUser.id, exerciseId, answer, isCorrect)
 
     return NextResponse.json({
       success: true,
+      hasAccess: true,
       exerciseId,
       isCorrect,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error submitting exercise:", error)
     return NextResponse.json({ error: "Failed to submit exercise" }, { status: 500 })
   }

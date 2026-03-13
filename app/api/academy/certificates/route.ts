@@ -1,95 +1,80 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { generateCertificate, getUserCertificates } from "@/lib/data/academy"
 
-// POST - Generate certificate for completed course
+import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
+import { generateCertificate, getCourseProductId, getUserCertificates } from "@/lib/data/academy"
+import { userHasAcademyProductAccess } from "@/lib/academy-entitlements"
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { courseId, certificateUrl: certificateUrlFromBody } = body
+    const courseId = Number.parseInt(String(body?.courseId || ""), 10)
+    const certificateUrlFromBody =
+      typeof body?.certificateUrl === "string" ? body.certificateUrl : null
 
-    console.log("[v0] Generate certificate for course:", courseId)
-
-    if (!courseId) {
+    if (!Number.isFinite(courseId) || courseId <= 0) {
       return NextResponse.json({ error: "Missing courseId" }, { status: 400 })
     }
 
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    const { neonUser } = await requireAcademyUser()
+    const productId = await getCourseProductId(courseId)
+    if (!productId || !(await userHasAcademyProductAccess(neonUser.id, productId))) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: productId,
+        },
+        { status: 403 }
+      )
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://sselfie.ai"
     const resolvedCertificateUrl =
       certificateUrlFromBody || `${baseUrl}/academy/certificates/${neonUser.id}/${courseId}`
 
-    // Generate certificate record
-    await generateCertificate(neonUser.id, Number.parseInt(courseId), resolvedCertificateUrl)
+    await generateCertificate(neonUser.id, courseId, resolvedCertificateUrl)
 
     const certificates = await getUserCertificates(neonUser.id)
-    const certificate = certificates.find((item: any) => item.course_id === Number.parseInt(courseId)) || null
-
+    const certificate = certificates.find((item: any) => item.course_id === courseId) || null
     if (!certificate) {
-      return NextResponse.json({ error: "Course not completed or certificate already exists" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Course not completed or certificate already exists" },
+        { status: 400 }
+      )
     }
-
-    console.log("[v0] Certificate generated:", certificate.id)
 
     return NextResponse.json({
       success: true,
+      hasAccess: true,
       certificate,
       certificateUrl: resolvedCertificateUrl,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error generating certificate:", error)
     return NextResponse.json({ error: "Failed to generate certificate" }, { status: 500 })
   }
 }
 
-// GET - Get user's certificates
 export async function GET() {
   try {
-    console.log("[v0] Get user certificates API called")
-
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Get certificates
+    const { neonUser } = await requireAcademyUser()
     const certificates = await getUserCertificates(neonUser.id)
 
-    console.log("[v0] User has", certificates.length, "certificates")
-
     return NextResponse.json({
+      hasAccess: true,
       certificates,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error fetching certificates:", error)
     return NextResponse.json({ error: "Failed to fetch certificates" }, { status: 500 })
   }

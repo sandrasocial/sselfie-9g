@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db/client"
-import { getUserProductAccess } from "@/lib/subscription"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
+import { NextResponse } from "next/server"
 
+import { sql } from "@/lib/db/client"
+import {
+  academyRouteErrorToResponse,
+  requireAcademyMembershipCollectionAccess,
+} from "@/lib/academy-server-access"
 
 type MonthlyDropRow = {
   id: number | string
@@ -36,37 +36,9 @@ function dedupeMonthlyDrops(rows: MonthlyDropRow[]): MonthlyDropRow[] {
   return Array.from(byId.values())
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const hasAccess = await hasActiveStudioMembership(neonUser.id)
-    const productType = await getUserProductAccess(neonUser.id)
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        {
-          hasAccess: false,
-          monthlyDrops: [],
-          productType,
-          message: "Monthly Drops access requires Studio Membership",
-        },
-        { status: 200 },
-      )
-    }
+    const { neonUser } = await requireAcademyMembershipCollectionAccess("monthly-drops")
 
     const monthlyDrops = await sql`
       SELECT
@@ -90,14 +62,16 @@ export async function GET(request: NextRequest) {
       ORDER BY md.created_at DESC, md.order_index ASC
     `
 
-    const normalizedMonthlyDrops = dedupeMonthlyDrops(monthlyDrops as MonthlyDropRow[])
-
     return NextResponse.json({
       hasAccess: true,
-      monthlyDrops: normalizedMonthlyDrops,
-      productType,
+      monthlyDrops: dedupeMonthlyDrops(monthlyDrops as MonthlyDropRow[]),
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error fetching monthly drops:", error)
     return NextResponse.json({ error: "Failed to fetch monthly drops" }, { status: 500 })
   }

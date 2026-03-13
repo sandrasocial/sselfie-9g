@@ -1,52 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db/client"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
 
+import { sql } from "@/lib/db/client"
+import {
+  academyRouteErrorToResponse,
+  requireAcademyMembershipCollectionAccess,
+} from "@/lib/academy-server-access"
 
 export async function POST(request: NextRequest, { params }: { params: { templateId: string } }) {
   try {
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Check Studio Membership access
-    const hasAccess = await hasActiveStudioMembership(neonUser.id)
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 })
-    }
-
+    const { neonUser } = await requireAcademyMembershipCollectionAccess("templates")
     const { templateId } = await params
+    const parsedTemplateId = Number.parseInt(templateId, 10)
 
-    // Increment download count
+    if (!Number.isFinite(parsedTemplateId) || parsedTemplateId <= 0) {
+      return NextResponse.json({ error: "Invalid templateId" }, { status: 400 })
+    }
+
     await sql`
       UPDATE academy_templates
       SET download_count = download_count + 1
-      WHERE id = ${templateId}
+      WHERE id = ${parsedTemplateId}
     `
 
-    // Track user download
     await sql`
       INSERT INTO user_resource_downloads (user_id, resource_type, resource_id)
-      VALUES (${neonUser.id}, 'template', ${Number.parseInt(templateId)})
+      SELECT ${neonUser.id}, 'template', ${parsedTemplateId}
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM user_resource_downloads
+        WHERE user_id = ${neonUser.id}
+          AND resource_type = 'template'
+          AND resource_id = ${parsedTemplateId}
+      )
     `
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, hasAccess: true })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error tracking template download:", error)
     return NextResponse.json({ error: "Failed to track download" }, { status: 500 })
   }

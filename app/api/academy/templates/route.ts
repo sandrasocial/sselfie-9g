@@ -1,42 +1,14 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+
 import { sql } from "@/lib/db/client"
-import { getUserProductAccess } from "@/lib/subscription"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasActiveStudioMembership } from "@/lib/academy-entitlements"
+import {
+  academyRouteErrorToResponse,
+  requireAcademyMembershipCollectionAccess,
+} from "@/lib/academy-server-access"
 
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const hasAccess = await hasActiveStudioMembership(neonUser.id)
-    const productType = await getUserProductAccess(neonUser.id)
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        {
-          hasAccess: false,
-          templates: [],
-          productType,
-          message: "Templates access requires Studio Membership",
-        },
-        { status: 403 },
-      )
-    }
+    await requireAcademyMembershipCollectionAccess("templates")
 
     const templates = await sql`
       SELECT 
@@ -57,9 +29,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       hasAccess: true,
       templates,
-      productType,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error fetching templates:", error)
     return NextResponse.json({ error: "Failed to fetch templates" }, { status: 500 })
   }

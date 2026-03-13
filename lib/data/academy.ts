@@ -1,11 +1,11 @@
 import { sql } from "@/lib/db/client"
 import { getRedisClient, CacheKeys, CacheTTL } from "@/lib/redis"
 
-
 // Type Definitions
 
 export interface AcademyCourse {
   id: number
+  product_id: string | null
   title: string
   description: string | null
   duration_minutes: number | null
@@ -192,6 +192,22 @@ export async function getCourseWithLessons(courseId: number): Promise<CourseWith
   }
 }
 
+export async function getCourseById(courseId: number): Promise<AcademyCourse | null> {
+  try {
+    const courses = await sql`
+      SELECT *
+      FROM academy_courses
+      WHERE id = ${courseId}
+      LIMIT 1
+    `
+
+    return courses.length > 0 ? (courses[0] as AcademyCourse) : null
+  } catch (error) {
+    console.error("[v0] Error fetching course by ID:", error)
+    return null
+  }
+}
+
 /**
  * Get user's enrolled courses with progress
  */
@@ -217,10 +233,64 @@ export async function getUserEnrolledCourses(userId: string): Promise<CourseWith
   }
 }
 
+export async function getCourseProductId(courseId: number): Promise<string | null> {
+  try {
+    const rows = await sql`
+      SELECT product_id
+      FROM academy_courses
+      WHERE id = ${courseId}
+      LIMIT 1
+    `
+
+    return rows[0]?.product_id || null
+  } catch (error) {
+    console.error("[v0] Error fetching course product ID:", error)
+    return null
+  }
+}
+
+export async function getLessonCourseProductId(lessonId: number): Promise<string | null> {
+  try {
+    const rows = await sql`
+      SELECT c.product_id
+      FROM academy_lessons l
+      JOIN academy_courses c ON c.id = l.course_id
+      WHERE l.id = ${lessonId}
+      LIMIT 1
+    `
+
+    return rows[0]?.product_id || null
+  } catch (error) {
+    console.error("[v0] Error fetching lesson course product ID:", error)
+    return null
+  }
+}
+
+export async function getExerciseCourseProductId(exerciseId: number): Promise<string | null> {
+  try {
+    const rows = await sql`
+      SELECT c.product_id
+      FROM academy_exercises e
+      JOIN academy_lessons l ON l.id = e.lesson_id
+      JOIN academy_courses c ON c.id = l.course_id
+      WHERE e.id = ${exerciseId}
+      LIMIT 1
+    `
+
+    return rows[0]?.product_id || null
+  } catch (error) {
+    console.error("[v0] Error fetching exercise course product ID:", error)
+    return null
+  }
+}
+
 /**
  * Enroll user in a course
  */
-export async function enrollUserInCourse(userId: string, courseId: number): Promise<UserEnrollment | null> {
+export async function enrollUserInCourse(
+  userId: string,
+  courseId: number
+): Promise<UserEnrollment | null> {
   try {
     const enrollment = await sql`
       INSERT INTO user_academy_enrollments (user_id, course_id)
@@ -242,7 +312,10 @@ export async function enrollUserInCourse(userId: string, courseId: number): Prom
 /**
  * Get user's progress for a specific lesson
  */
-export async function getUserLessonProgress(userId: string, lessonId: number): Promise<UserLessonProgress | null> {
+export async function getUserLessonProgress(
+  userId: string,
+  lessonId: number
+): Promise<UserLessonProgress | null> {
   try {
     const progress = await sql`
       SELECT * FROM user_lesson_progress
@@ -260,7 +333,11 @@ export async function getUserLessonProgress(userId: string, lessonId: number): P
 /**
  * Update video watch time for a lesson
  */
-export async function updateVideoWatchTime(userId: string, lessonId: number, watchTimeSeconds: number): Promise<void> {
+export async function updateVideoWatchTime(
+  userId: string,
+  lessonId: number,
+  watchTimeSeconds: number
+): Promise<void> {
   try {
     await sql`
       INSERT INTO user_lesson_progress (user_id, lesson_id, watch_time_seconds, status, last_accessed_at)
@@ -311,7 +388,7 @@ export async function completeLesson(userId: string, lessonId: number): Promise<
 export async function updateInteractiveLessonProgress(
   userId: string,
   lessonId: number,
-  completedSteps: number[],
+  completedSteps: number[]
 ): Promise<void> {
   try {
     await sql`
@@ -360,7 +437,8 @@ async function updateCourseProgress(userId: string, lessonId: number): Promise<v
     const totalLessons = Number(stats[0].total_lessons) || 0
     const completedLessons = Number(stats[0].completed_lessons) || 0
 
-    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+    const progressPercentage =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
     // Update enrollment progress
     await sql`
@@ -411,7 +489,7 @@ export async function submitExercise(
   userId: string,
   exerciseId: number,
   answer: string,
-  isCorrect: boolean,
+  isCorrect: boolean
 ): Promise<void> {
   try {
     await sql`
@@ -435,7 +513,11 @@ export async function submitExercise(
 /**
  * Generate and store certificate for completed course
  */
-export async function generateCertificate(userId: string, courseId: number, certificateUrl: string): Promise<void> {
+export async function generateCertificate(
+  userId: string,
+  courseId: number,
+  certificateUrl: string
+): Promise<void> {
   try {
     await sql`
       INSERT INTO academy_certificates (user_id, course_id, certificate_url)
@@ -526,7 +608,6 @@ export async function getUserCourseProgress(userId: string, courseId: number) {
     return null
   }
 }
-
 
 /**
  * @deprecated Use getCoursesForMembership() instead

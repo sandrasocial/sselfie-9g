@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
@@ -60,19 +61,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { title, description, thumbnail_url, tier, order_index, status } = await request.json()
+    const { title, description, thumbnail_url, product_id, order_index, status } =
+      await request.json()
 
-    if (!title || !tier) {
-      return NextResponse.json({ error: "Title and tier are required" }, { status: 400 })
+    if (!title || !product_id || !(product_id in ACADEMY_PRODUCTS)) {
+      return NextResponse.json(
+        { error: "Title and valid product_id are required" },
+        { status: 400 }
+      )
     }
 
     const newCourse = await sql`
       INSERT INTO academy_courses (
-        title, description, thumbnail_url, tier, order_index, status, created_at, updated_at
+        product_id, title, description, thumbnail_url, order_index, status, created_at, updated_at
       )
       VALUES (
-        ${title}, ${description || null}, ${thumbnail_url || null}, 
-        ${tier}, ${order_index || 0}, ${status || "draft"}, NOW(), NOW()
+        ${product_id}, ${title}, ${description || null}, ${thumbnail_url || null},
+        ${order_index || 0}, ${status || "draft"}, NOW(), NOW()
       )
       RETURNING *
     `

@@ -1,91 +1,100 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { completeLesson, updateVideoWatchTime } from "@/lib/data/academy"
 
-// POST - Update watch time for video lessons
+import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
+import { completeLesson, getLessonCourseProductId, updateVideoWatchTime } from "@/lib/data/academy"
+import { userHasAcademyProductAccess } from "@/lib/academy-entitlements"
+
+async function requireLessonAccess(userId: string, lessonId: number) {
+  const productId = await getLessonCourseProductId(lessonId)
+  if (!productId || !(await userHasAcademyProductAccess(userId, productId))) {
+    return {
+      hasAccess: false,
+      requiredProductId: productId,
+    }
+  }
+
+  return {
+    hasAccess: true,
+    requiredProductId: productId,
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { lessonId, watchTimeSeconds } = body
+    const lessonId = Number.parseInt(String(body?.lessonId || ""), 10)
+    const watchTimeSeconds = body?.watchTimeSeconds
 
-    console.log("[v0] Update lesson progress:", { lessonId, watchTimeSeconds })
-
-    if (!lessonId || watchTimeSeconds === undefined) {
+    if (!Number.isFinite(lessonId) || watchTimeSeconds === undefined) {
       return NextResponse.json({ error: "Missing lessonId or watchTimeSeconds" }, { status: 400 })
     }
 
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { neonUser } = await requireAcademyUser()
+    const access = await requireLessonAccess(neonUser.id, lessonId)
+    if (!access.hasAccess) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: access.requiredProductId,
+        },
+        { status: 403 }
+      )
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Update progress
-    const progress = await updateVideoWatchTime(neonUser.id, Number.parseInt(lessonId), watchTimeSeconds)
-
-    console.log("[v0] Progress updated:", progress)
+    const progress = await updateVideoWatchTime(neonUser.id, lessonId, watchTimeSeconds)
 
     return NextResponse.json({
       success: true,
+      hasAccess: true,
       progress,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error updating progress:", error)
     return NextResponse.json({ error: "Failed to update progress" }, { status: 500 })
   }
 }
 
-// PATCH - Mark lesson as complete
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
-    const { lessonId } = body
+    const lessonId = Number.parseInt(String(body?.lessonId || ""), 10)
 
-    console.log("[v0] Mark lesson complete:", lessonId)
-
-    if (!lessonId) {
+    if (!Number.isFinite(lessonId) || lessonId <= 0) {
       return NextResponse.json({ error: "Missing lessonId" }, { status: 400 })
     }
 
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { neonUser } = await requireAcademyUser()
+    const access = await requireLessonAccess(neonUser.id, lessonId)
+    if (!access.hasAccess) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: access.requiredProductId,
+        },
+        { status: 403 }
+      )
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Mark as complete
-    const progress = await completeLesson(neonUser.id, Number.parseInt(lessonId))
-
-    console.log("[v0] Lesson marked complete:", progress)
+    const progress = await completeLesson(neonUser.id, lessonId)
 
     return NextResponse.json({
       success: true,
+      hasAccess: true,
       progress,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error marking lesson complete:", error)
     return NextResponse.json({ error: "Failed to mark lesson complete" }, { status: 500 })
   }

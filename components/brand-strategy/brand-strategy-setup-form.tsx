@@ -15,7 +15,7 @@ const BRAND_VIBE_OPTIONS = [
 ]
 
 interface Props {
-  setupToken: string
+  setupToken?: string | null
   email: string
   displayName: string
 }
@@ -33,8 +33,10 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
     brandVibe: "warm",
   })
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,7 +53,7 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          setupToken,
+          ...(setupToken ? { setupToken } : {}),
           name: form.name.trim(),
           businessType: form.businessType.trim(),
           targetAudience: form.targetAudience.trim(),
@@ -89,9 +91,7 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
           <p className="setup-subtitle">
             Four questions. Two minutes. Your strategy will be ready the moment you submit.
           </p>
-          {email && (
-            <p className="setup-email-note">Building strategy for: {email}</p>
-          )}
+          {email && <p className="setup-email-note">Building strategy for: {email}</p>}
         </div>
 
         <form onSubmit={handleSubmit} className="setup-form">
@@ -114,7 +114,8 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
 
           <div className="form-field">
             <label className="form-label" htmlFor="businessType">
-              What do you do? <span className="form-label-hint">(your business in one sentence)</span>
+              What do you do?{" "}
+              <span className="form-label-hint">(your business in one sentence)</span>
             </label>
             <input
               id="businessType"
@@ -175,7 +176,7 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
               onChange={handleChange}
               disabled={isLoading}
             >
-              {BRAND_VIBE_OPTIONS.map((opt) => (
+              {BRAND_VIBE_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>

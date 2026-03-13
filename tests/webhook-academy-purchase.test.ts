@@ -98,7 +98,9 @@ describe("stripe webhook academy purchase branch", () => {
 
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
-      if (query.includes("SELECT id FROM webhook_events")) return []
+      if (query.includes("INSERT INTO webhook_events") && query.includes("RETURNING id")) {
+        return [{ id: 1 }]
+      }
       return []
     })
 
@@ -140,40 +142,40 @@ describe("stripe webhook academy purchase branch", () => {
         method: "POST",
         headers: { "stripe-signature": "sig_test" },
         body: "{}",
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(200)
 
     const queries = sqlMock.mock.calls.map(([strings]) =>
-      Array.isArray(strings) ? strings.join(" ") : String(strings),
+      Array.isArray(strings) ? strings.join(" ") : String(strings)
     )
 
     expect(
       queries.some(
-        (query) =>
+        query =>
           query.includes("INSERT INTO academy_course_purchases") &&
           query.includes("stripe_payment_intent_id") &&
           query.includes("amount_paid") &&
-          query.includes("currency"),
-      ),
+          query.includes("currency")
+      )
     ).toBe(true)
 
     expect(
-      queries.some((query) => query.includes("CREATE TABLE IF NOT EXISTS academy_course_purchases")),
+      queries.some(query => query.includes("CREATE TABLE IF NOT EXISTS academy_course_purchases"))
     ).toBe(false)
 
     expect(
       queries.some(
-        (query) => query.includes("INSERT INTO user_tags") && query.includes("WHERE NOT EXISTS"),
-      ),
+        query => query.includes("INSERT INTO user_tags") && query.includes("WHERE NOT EXISTS")
+      )
     ).toBe(true)
 
     expect(
       queries.some(
-        (query) =>
-          query.includes("INSERT INTO user_tags (user_id, tag)") && !query.includes("created_at"),
-      ),
+        query =>
+          query.includes("INSERT INTO user_tags (user_id, tag)") && !query.includes("created_at")
+      )
     ).toBe(true)
   })
 })

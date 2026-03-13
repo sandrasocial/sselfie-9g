@@ -8,33 +8,17 @@ import { useRouter } from "next/navigation"
  * "You have access" badge, CTA (Obsidian, minimal, underline on hover).
  * Copy from docs/in-app-funnel/02-content-copy-2026-02-25.md Section 1.
  */
-export type ProductAccessId =
-  | "what_to_say"
-  | "show_up"
-  | "get_paid"
-  | "ai_photo_prompts"
-  | "selfie_guide"
-  | "brand_strategy_pack"
-
 export interface ProductAccessCardProps {
-  productId: ProductAccessId
+  productId: string
   /** Display name, e.g. "What To Say" */
   name: string
   /** Sub-text from copy doc */
   subText: string
   /** CTA button label from copy doc */
   ctaLabel: string
+  href: string
   /** Optional image URL; placeholder if missing */
   imageUrl?: string | null
-}
-
-const DEEP_LINKS: Record<ProductAccessId, string> = {
-  what_to_say: "/academy/products/what_to_say",
-  show_up: "/academy/products/show_up",
-  get_paid: "/academy/products/get_paid",
-  ai_photo_prompts: "/academy/products/ai_photo_prompts",
-  selfie_guide: "/selfie-guide",
-  brand_strategy_pack: "/brand-strategy",
 }
 
 export default function ProductAccessCard({
@@ -42,10 +26,10 @@ export default function ProductAccessCard({
   name,
   subText,
   ctaLabel,
+  href,
   imageUrl,
 }: ProductAccessCardProps) {
   const router = useRouter()
-  const href = DEEP_LINKS[productId]
 
   const handleClick = () => {
     if (href) router.push(href)
@@ -55,17 +39,14 @@ export default function ProductAccessCard({
     <button
       type="button"
       onClick={handleClick}
+      data-product-id={productId}
       className="stone-panel flex min-h-[180px] w-[200px] shrink-0 flex-col overflow-hidden rounded-2xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
       style={{ minWidth: 200 }}
     >
       {/* Image area */}
       <div className="relative h-[88px] w-full overflow-hidden bg-[rgba(175,170,162,0.10)]">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(240,237,232,0.14),rgba(175,170,162,0.06))]">
             <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/35">

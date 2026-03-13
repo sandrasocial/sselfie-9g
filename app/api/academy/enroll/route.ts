@@ -1,46 +1,45 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { enrollUserInCourse } from "@/lib/data/academy"
+
+import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
+import { enrollUserInCourse, getCourseProductId } from "@/lib/data/academy"
+import { userHasAcademyProductAccess } from "@/lib/academy-entitlements"
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { courseId } = body
+    const courseId = Number.parseInt(String(body?.courseId || ""), 10)
 
-    console.log("[v0] Enroll user in course:", courseId)
-
-    if (!courseId) {
+    if (!Number.isFinite(courseId) || courseId <= 0) {
       return NextResponse.json({ error: "Missing courseId" }, { status: 400 })
     }
 
-    // Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const { neonUser } = await requireAcademyUser()
+    const productId = await getCourseProductId(courseId)
 
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!productId || !(await userHasAcademyProductAccess(neonUser.id, productId))) {
+      return NextResponse.json(
+        {
+          error: "Academy product access required",
+          hasAccess: false,
+          requiredProductId: productId,
+        },
+        { status: 403 }
+      )
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Enroll user
-    const enrollment = await enrollUserInCourse(neonUser.id, Number.parseInt(courseId))
-
-    console.log("[v0] User enrolled successfully:", enrollment)
+    const enrollment = await enrollUserInCourse(neonUser.id, courseId)
 
     return NextResponse.json({
       success: true,
+      hasAccess: true,
       enrollment,
     })
   } catch (error) {
+    const response = academyRouteErrorToResponse(error)
+    if (response) {
+      return response
+    }
+
     console.error("[v0] Error enrolling user:", error)
     return NextResponse.json({ error: "Failed to enroll in course" }, { status: 500 })
   }
