@@ -1,4 +1,6 @@
 # 📍 SSELFIE STATUS — Shared Handover File
+**Scope:** technical and deploy handover.
+**Important:** any business metrics, subscriber counts, prices, or product-status notes in historical entries below are not authoritative for current decisions. Verify live values in Stripe or Resend and use `CLAUDE.md` plus `~/stella/NORTH_ACTIVE.md` for current truth.
 **Protocol:** Codex updates this at the end of every session. Claude reads this at the start of every conversation.
 
 ---

@@ -30,7 +30,7 @@
 - **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
 - **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.
-- **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
+- **State + memory**: `CLAUDE.md` (root) is the single source of truth for business direction, active products, and operating rules. `AGENTS.md` holds Stella's rules. `docs/CODEX_CONTEXT.md` holds tech context. Dynamic metrics such as MRR, subscriber counts, active paying totals, discount cohorts, and current prices must come from live Stripe, Resend, Neon, or production checks, not from documentation. North's canonical chain: CLAUDE.md → CODEX_CONTEXT.md → NORTH_ACTIVE.md → STATUS.md (technical only). Task list: `~/stella/ACTIVE/tasks/`. `SHARED_MEMORY.md` is handoff-only; `BUSINESS_STATE.md` and `NORTH_TASK_QUEUE.md` are retired. See `docs/_CANONICAL/AGENT_TRUTH_MODEL.md` for full authority and handoff contract.
 
 ## File map (anchor points for future work)
 
@@ -42,7 +42,7 @@
 | `lib/cache.ts` | Upstash Redis lock + cache helpers – critical for handling Resend rate limits and marketing-runner locks. Make sure Upstash env vars exist in both env.local and Vercel production. |
 | `output/automation/` | Automation outputs (health reports, triage, cleanup). Treat these as immutable logs; refer to them when diagnosing incidents. |
 | `scripts/` | Diagnostic + onboarding scripts (Resend tests, automation instrumentation). Includes `user-journey-smoke.ts` for headless public funnel validation, `maya-quality-audit.ts` for Maya prompt/tool drift, `brand-consistency-audit.ts` for voice/design drift, and `verify-onboarding-segment-env.ts` for real Resend segment drift checks. Run them to double-check behavior before code changes. |
-| `docs/` | Strategy + context docs (read `STRATEGIC_CLEANUP_RECOMMENDATION.md`, `MASTER_COMMAND_CENTER.md`, etc.) before altering automation flows. |
+| `docs/` | Strategy + context docs (e.g. `docs/automation/`, `docs/features/`, `docs/_CANONICAL/`). Archived strategy docs in `docs/archive/root-cleanup-2026-02-20/` if needed. |
 | `docs/features/` | **Per-feature source of truth** for research and implementation: `maya.md`, `feed-planner.md`, `gallery.md`, `academy.md`, `profile.md`, `admin.md`. **Research agents:** read the relevant feature doc, then fill "Current value / pain" and "Opportunities" using `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md`, and feedback. See `docs/features/README.md` for how to use. |
 | `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md` | Current Maya stabilization and UX recovery program. Read before changing Maya tabs, chat types, quick prompts, or handoff behavior. |
 | `lib/maya/prompt-contract.ts` | **Single source of truth for Maya quick prompts and input placeholder.** Mode-aware: prompts differ by `proMode` and `hasTrainedModel`. Edit here when changing chips or placeholder copy — do not hardcode prompts in components. |
@@ -54,6 +54,8 @@
 | `skills/sselfie-maya-os/` | **Shared agent skill for Maya-first operating model.** Contains canonical user journey, screen map, scaling playbook, and QA checklist for funnel/frontend changes. |
 
 ## Current state — Research Sprint Feb 2026
+
+Historical sprint snapshot below. Do not treat numeric values in this section as current business truth; verify live before quoting in decisions.
 
 ```
 Context: Research sprint completed 2026-02-25. All 6 feature docs now have §7 and §8 filled.

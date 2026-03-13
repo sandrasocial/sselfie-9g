@@ -1,4 +1,7 @@
 # ARCHITECTURE PROPOSAL V1
+> Historical proposal snapshot (2026-03-03). Not canonical operating truth.
+> Canonical agent/system truth lives in `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, and `docs/_CANONICAL/CURSOR_CONSTITUTION.md`.
+
 **Branch:** `refactor/architecture-stabilization-v1`
 **Date:** 2026-03-03
 **Status:** AWAITING APPROVAL — no code has changed

@@ -1,17 +1,17 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-03-12 — Read this at the start of every session*
+*Last updated: 2026-03-13 — Read this at the start of every session*
 
 ---
 
 ## Me — Sandra (The Selfie Queen)
-Founder of SSELFIE Studio. Single mother, Iceland/Norway. 28 active paying customers (15 Studio + 13 Blueprint), 180K+ followers, 3K+ email list. MRR: €1,509. Building AI-powered personal branding platform. 8 months live.
+Founder of SSELFIE Studio. Single mother, Iceland/Norway. Building an AI-powered personal branding platform for women creators.
 
 ## My Role (Claude in Cowork)
-I am the **human-facing layer** between Sandra and the OpenClaw agent team. I:
+I am the **desktop strategy and execution layer**. I:
 - Validate agent plans before execution
 - Catch inconsistencies and errors before they reach production
 - Translate Sandra's requests into precise agent instructions
-- Keep all agents synced to the locked Codex strategy
+- Keep all agents synced to the locked Codex strategy while North handles mobile-first orchestration
 
 **Access:** Claude (Cowork) has full access to Sandra's Mac via Desktop Commander — terminal, all projects, all API keys. No limitations.
 **Stella (Codex)** also has full Mac access — terminal, all projects, all API keys in `.env.local`. No MCPs needed; she can query Neon, Stripe, Resend etc. directly via terminal.
@@ -22,13 +22,20 @@ I am the **human-facing layer** between Sandra and the OpenClaw agent team. I:
 
 | Agent | Role | Talk to them? |
 |-------|------|--------------|
-| **North** | COO — orchestrates all sub-agents | YES — primary contact |
-| north-content | Content creation | Via North |
-| north-revenue | Revenue/Stripe/pricing | Via North |
-| north-audience | Email/Resend/subscribers | Via North |
-| north-code | Dev tasks, cron jobs, sync scripts | Via North |
-| north-email | Email drafts and sends | Via North |
-| north-product | Product decisions | Via North |
+| **North** | COO orchestrator, Telegram/mobile-first command layer | YES — primary contact |
+| **Operator** | Revenue + email + audience operations (Stripe/Resend/Neon checks) | Via North |
+| **Builder** | Technical specs, deploy checks, Codex handoff verification | Via North |
+| **Stella (Codex)** | Code implementation in repo | Via Claude/Cursor or Builder handoff |
+
+Retired as standalone agents (kept as compatibility stubs): `north-revenue`, `north-email`, `north-audience`, `north-code`, `north-product`, `north-content`, `north-inbox`.
+
+## When To Use Claude vs North
+
+| When | Use | Why |
+|------|-----|-----|
+| Mobile, quick checks, morning brief, fast approvals | **North via Telegram/OpenClaw** | Always-on execution without computer access |
+| Planning, deep strategy, code review, implementation specs | **Claude via Cursor** | Full repo context and precise file-level control |
+| Urgent bug triage | **Either** (Claude preferred for code changes) | North diagnoses quickly; Claude applies/validates fixes |
 
 **Command to talk to North:**
 ```
@@ -44,15 +51,17 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 | File | What it is |
 |------|-----------|
-| `NORTH_TASK_QUEUE.md` | North's active task list — check before adding tasks |
-| `SHARED_MEMORY.md` | What ALL agents read on session start |
+| `ACTIVE/tasks/` | Active task list — check before adding tasks |
+| `ACTIVE/reports/` | Execution reports and evidence |
+| `NORTH_ACTIVE.md` | Compact runtime snapshot (refreshed from live Stripe + ACTIVE) |
+| `SHARED_MEMORY.md` | Handoff log only (blockers, completions); not canonical business truth. Canonical: CLAUDE.md → CODEX_CONTEXT.md → NORTH_ACTIVE.md → STATUS.md (technical only) |
 | `PIVOT-LOG-2026-02-28.md` | Strategic pivot doc — Website Agent V1 decision |
 | `reports/REVENUE-IMPACT-*.md` | Revenue audit findings |
 | `reports/EMAIL-HISTORY-AUDIT-*.md` | Email history findings |
 | `reports/RESEND-NEON-AUDIT-*.md` | Resend/DB inconsistency audit |
 | `drafts/` | Email and content drafts |
 
-**App codebase:** `/sessions/nifty-serene-bardeen/mnt/sselfie-9g/` (= Sandra's selected folder)
+**App codebase:** sselfie-9g repo (path may vary by workspace; e.g. Sandra's selected folder)
 **Codex spec:** `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`
 
 ---
@@ -87,7 +96,7 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 **⚠️ CRITICAL: Maya Feed Tab ≠ Feed Planner — DO NOT CONFUSE THESE**
 | System | Status | What it is |
 |--------|--------|-----------|
-| **Feed Planner** (`app/feed-planner/`, `app/api/feed-planner/*`, `app/api/feed/*`) | ✅ LIVE — DO NOT DELETE | Paid Blueprint product. 13 paying users depend on it. Full 9-post grid, captions, strategy. |
+| **Feed Planner** (`app/feed-planner/`, `app/api/feed-planner/*`, `app/api/feed/*`) | ✅ LIVE — DO NOT DELETE | Paid Blueprint product used by active paying users. Full 9-post grid, captions, strategy. |
 | **Maya Feed Tab** (`components/sselfie/maya/maya-feed-tab.tsx`, `app/api/maya/feed*`) | ❌ DEAD — disabled via `isFeedTabDisabled = true` | A separate in-Maya feed tab. Hardcoded disabled. Routes are orphaned. Safe to delete. |
 | **`lib/maya/feed-generation-handler.ts`** | ⚠️ SHARED — DO NOT DELETE | Used by BOTH the dead Maya tab AND the live Feed Planner hooks (`use-feed-actions.ts`). Cannot be removed until Feed Planner is refactored. |
 
@@ -142,11 +151,12 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 | What | Value |
 |------|-------|
 | Resend Main Audience ID | `3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd` |
-| Resend total contacts | 3,082 (2,954 subscribers) |
-| Neon DB users | 603 unique emails |
-| Active Studio members | 15 Stripe subs (€97/mo) — verified 2026-03-02 |
-| Active Blueprint buyers | 13 Blueprint (one-time or ongoing) — verified 2026-03-02 |
-| Total active paying | 28 (15 Studio + 13 Blueprint) — verified 2026-03-02 |
+| Resend total contacts | Verify live in Resend before quoting |
+| Neon DB users | Verify live in Neon before quoting |
+| Active Studio members | Verify live in Stripe before quoting |
+| Active Blueprint buyers | Verify live in Stripe + Neon before quoting |
+| Total active paying | Verify live (Stripe subscriptions + valid one-time entitlements) |
+| Last metrics verification baseline | Historical snapshots may exist in reports; always verify live before quoting |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
 | Selfie Guide checkout URL | `https://sselfie.ai/checkout/selfie-guide` |
@@ -170,13 +180,19 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 
 | Segment | Count | Notes |
 |---------|-------|-------|
-| Main Audience | 2,965 | ✅ Use for all broadcasts |
-| Brand Blueprint (legacy) | ~892 | Legacy Blueprint freebie downloaders — old segment, no new entries |
-| Paid users | 93 | ⚠️ MIXED: one-time + beta + Studio members |
-| Beta Customers | 73 | Old beta pricing (€47/€79/€99) |
-| Cold Users | 0 | Empty — pending cleanup |
+| Main Audience | Verify live | ✅ Use for full-list broadcasts |
+| Brand Blueprint (legacy) | Verify live | Legacy Blueprint/freebie cohort; no new expected entries |
+| Paid users | Verify live | ⚠️ Mixed cohort: one-time + beta + Studio members |
+| Beta Customers | Verify live | Legacy pricing cohort (historically €47/€79/€99) |
+| Cold Users | Verify live | Segment may be empty; confirm before use |
 
-**Queued cleanup (Tasks 15-17):** Split 93 paid users → 3 segments: `paid-one-time`, `paid-beta`, `paid-studio-active`. Low priority, after Agent V1 W2-C.
+**Queued cleanup (Tasks 15-17):** Split mixed paid cohort into `paid-one-time`, `paid-beta`, `paid-studio-active`. Low priority, after Agent V1 W2-C.
+
+### Audience Composition (Critical Context)
+- Resend audience size does **not** equal app users.
+- A large chunk of contacts are migrated from legacy Flodesk selfie-guide freebie flows (pre-app era).
+- Neon "registered users" reflects app signups only; many Resend contacts may never have created an app account.
+- Beta cohorts and legacy one-time buyers must be segmented from active Studio subscriptions before revenue decisions.
 
 ---
 
@@ -209,7 +225,7 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 - Feb 28, 2026: Recovery emails sent to 9 members with failed payments
 - Mar 02, 2026: SEQ-01 Nurture sequence approved (5 emails, Day 2/5/9/14/20 for Selfie Guide buyers) — templates renamed from `nurture-freebie-n*.ts` → `nurture-strategy-n*.ts` in V-02
 - Mar 09, 2026: Legacy manual/scheduled campaign stack removed from repo. Archived cron copies, old campaign catalog/executor, and dead funnel templates deleted so agents only see live email paths.
-- **Always send to Main Audience** (2,965) for full-list broadcasts — NOT smaller segments
+- **Always send to Main Audience** (ID locked above; count verify live) for full-list broadcasts — NOT smaller segments
 
 ---
 
@@ -312,11 +328,11 @@ That's not a tool. That's a business relationship. Target: €197/month minimum.
 | `app/api/feed/*` (11 routes) | Not under `feed-planner/` so looks orphaned | Actively called by `components/feed-planner/*` — core Feed Planner data layer |
 | `lib/maya/feed-generation-handler.ts` | Associated with disabled Maya Feed Tab | `FeedStrategy` type + `createFeedFromStrategyHandler` used by `lib/feed-planner/hooks/` |
 | `lib/feed-planner-v2/` | Looks like a parallel/unfinished system | Used in 4 active feed routes via `use_feed_planner_v2` per-user flag |
-| `app/feed-planner/` entire directory | Might be confused with the dead Maya Feed Tab | LIVE product — 13 paying Blueprint users depend on this |
+| `app/feed-planner/` entire directory | Might be confused with the dead Maya Feed Tab | LIVE product — active paying Blueprint users depend on this |
 | `app/api/feed-planner/*` (12 routes) | Separate from `app/api/feed/*` so might look redundant | Both systems active — feed-planner routes handle higher-level logic |
 
 ### 🔒 Never delete — business-critical
-- `app/feed-planner/` — entire directory — **13 paying users, recurring revenue**
+- `app/feed-planner/` — entire directory — **active paying users, recurring revenue**
 - `app/api/feed-planner/` — entire directory
 - `app/api/feed/` — entire directory
 - `lib/feed-planner/` — entire directory
@@ -336,7 +352,7 @@ That's not a tool. That's a business relationship. Target: €197/month minimum.
 | Maya chat (real AI) | ✅ FIXED — commit `15b3cf94` — streaming + `[GENERATE_CONCEPTS]` wired |
 | Background colour | ✅ FIXED — commit `15b3cf94` — full light theme cascade (22 files) |
 | All 5 screens | ✅ Skeletal layouts present |
-| Main branch (28 paying customers) | ✅ Untouched — live throughout |
+| Main branch (live paying customers) | ✅ Untouched — live throughout |
 
 **Preview (NOT production):** https://v0-sselfie-qanvy6o2q-sselfie-studio.vercel.app
 **Do NOT merge to main until Sandra verifies on preview.**
@@ -346,12 +362,11 @@ That's not a tool. That's a business relationship. Target: €197/month minimum.
 
 ## Protocol: How Claude Guides North
 
-1. **Check North's task queue** (`~/stella/NORTH_TASK_QUEUE.md`) before adding new tasks
+1. **Check North's task list** (`~/stella/ACTIVE/tasks/` and `~/stella/NORTH_ACTIVE.md`) before adding new tasks
 2. **Keep messages to North under 100 words** — long replies cause timeouts
-3. **Validate numbers** — North has made counting errors before (check against known constants above)
-4. **Corrections go via terminal** — don't let wrong info propagate to SHARED_MEMORY.md
+3. **Validate numbers** — North has made counting errors before (check live Stripe/Resend/Neon, not doc snapshots)
+4. **Corrections go via terminal** — do not write business metrics or product truth into SHARED_MEMORY.md (handoff log only)
 5. **Sandra approves strategy** — Claude and North execute, Sandra decides direction
 6. **Before any broadcast email:** confirm audience ID, confirm copy is approved, confirm image is hosted
 
 → Deep context: `memory/context/openclaw-protocol.md`
-→ Agent details: `memory/context/agents.md`

@@ -11,7 +11,7 @@ Outstanding issues: Product value gap, drops pipeline not proven end-to-end, bri
 Next steps: Execute Week 1 -> Week 2 sequence below without widening scope.
 
 ## 1) Verified Baseline (from actual code + runtime)
-1. OpenClaw/ClawdBot infra exists and is operational on this Mac (`/Users/MD760HA/.openclaw/openclaw.json`, `/Users/MD760HA/stella/SOUL.md`, `/Users/MD760HA/stella/SHARED_MEMORY.md`).
+1. OpenClaw/ClawdBot infra exists and is operational on this Mac (`/Users/MD760HA/.openclaw/openclaw.json`, `/Users/MD760HA/stella/SOUL.md`, `/Users/MD760HA/stella/SHARED_MEMORY.md` — SHARED_MEMORY is handoff/coordination only, not canonical state).
 2. SSELFIE has a bridge runtime (`/Users/MD760HA/sselfie-9g/app/api/stella/bridge/route.ts`, `/Users/MD760HA/sselfie-9g/lib/stella/runtime.ts`).
 3. Mini-products currently resolve to workbook-style flows/assets (low outcome delivery).
 4. Monthly drops are wired in UI/API but live data currently has no published drop rows.

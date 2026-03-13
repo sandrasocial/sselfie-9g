@@ -674,7 +674,7 @@ To keep scope tight:
 ## HOW TO START
 
 1. **Sandra approves this spec** (or requests changes)
-2. **North agents complete R1/R2/R3 research** (already queued in NORTH_TASK_QUEUE.md)
+2. **North agents complete R1/R2/R3 research** (already in current task list — ACTIVE/tasks/)
 3. **Claude reviews research reports** + updates any spec decisions (model IDs, carousel approach)
 4. **north-code creates branch** + runs migrations in preview env
 5. **Weekly check-ins with Sandra** at end of W1, W2, W3

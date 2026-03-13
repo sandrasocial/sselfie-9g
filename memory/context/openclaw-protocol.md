@@ -1,12 +1,20 @@
 # OpenClaw Protocol — How Claude Works With the Agent Team
 
-*Last updated: 2026-02-28*
+*Last updated: 2026-03-13*
 
 ---
 
 ## What is OpenClaw?
 
-OpenClaw is Sandra's local AI agent system. It runs agents on her machine. Claude (in Cowork) acts as the **human-facing supervisor** — validating plans, catching errors, and translating Sandra's vision into precise agent tasks.
+OpenClaw is Sandra's local AI agent system. It runs agents on her machine and provides mobile-first control through North. Claude (in Cowork/Cursor) is the desktop strategy and deep-work layer for planning, review, and implementation coordination.
+
+## When To Use Claude vs North
+
+| When | Use | Why |
+|------|-----|-----|
+| Mobile, quick check, morning brief, fast approvals | **North via Telegram/OpenClaw** | Always-on; no computer required |
+| Planning, deep strategy, code review, spec writing | **Claude via Cursor** | Full repo context and file-level control |
+| Urgent issue triage | **Either** (Claude preferred for code changes) | North diagnoses quickly; Claude executes fixes safely |
 
 ---
 
@@ -30,20 +38,17 @@ cat ~/.openclaw/agents/north/config.json
 ## Agent Architecture
 
 ```
-Claude (Cowork) — human-facing supervisor
+Claude (Cowork/Cursor) — desktop strategy + deep work
     ↓ validates & directs
 North (COO agent)
     ↓ spawns & manages
-    ├── north-content    (content creation)
-    ├── north-revenue    (Stripe, pricing, revenue)
-    ├── north-audience   (Resend, email, subscribers)
-    ├── north-code       (dev, cron, scripts)
-    ├── north-email      (email drafts + sends)
-    └── north-product    (product decisions)
+    ├── operator         (Stripe + Resend + audience ops)
+    ├── builder          (specs + deploy checks + Codex handoff)
+    └── stella/codex     (implementation)
 ```
 
-**North's model:** `anthropic/claude-haiku-4-5-20251001`
-**All sub-agents:** Same model, same `~/stella/` workspace
+**North's model:** configured via OpenRouter profile in current runtime
+**All active agents:** same `~/stella/` workspace
 
 ---
 
@@ -65,10 +70,10 @@ North (COO agent)
 ### DO
 - ✅ Keep messages under 100 words
 - ✅ Give North ONE clear task per message
-- ✅ Verify numbers against CLAUDE.md constants before trusting North's output
-- ✅ Ask North to save reports to `~/stella/reports/` for traceability
-- ✅ Tell North to update `NORTH_TASK_QUEUE.md` when adding/completing tasks
-- ✅ Tell North to update `SHARED_MEMORY.md` for decisions ALL agents need to know
+- ✅ Verify numbers live in Stripe/Resend/Neon before trusting any output
+- ✅ Ask North to save reports to `~/stella/ACTIVE/reports/` for traceability
+- ✅ Tell North to add/update tasks in `~/stella/ACTIVE/tasks/` (or add a task file there)
+- ✅ Use `SHARED_MEMORY.md` for handoffs/blockers only (via sync_shared_memory.sh or submit_handoff_to_north.sh); not for business truth
 
 ### DON'T
 - ❌ Don't ask North for multiple things in one message (causes drift)
@@ -83,10 +88,10 @@ North (COO agent)
 
 | Issue | Root cause | Fix |
 |-------|-----------|-----|
-| North returns wrong counts | She queries Neon but confuses tables | Cross-check with CLAUDE.md constants |
+| North returns wrong counts | Mixed sources or stale assumptions | Cross-check live Stripe/Resend/Neon and refresh `NORTH_ACTIVE.md` |
 | 60s timeout on long tasks | Response too verbose | Ask for summary only, check file output |
 | North creates competing strategy docs | Hasn't read Codex spec | Send corrective message, point to spec |
-| North flips Resend/Neon counts | Assumes Neon is bigger | Resend (3K) > Neon (603) — that's correct |
+| North flips Resend/Neon counts | Treats list size as app-user size | Keep distinction explicit: Resend audience includes legacy migrated contacts; Neon is app-user dataset |
 | openclaw command not found | Not in PATH for this shell | Try `~/.local/bin/openclaw` or `npx openclaw` |
 
 ---
@@ -117,8 +122,10 @@ When Sandra asks Claude to do something that requires North:
 **North's workspace:**
 ```
 ~/stella/
-├── NORTH_TASK_QUEUE.md    ← Active tasks
-├── SHARED_MEMORY.md       ← All-agent shared context
+├── ACTIVE/tasks/          ← Active task list (check before adding tasks)
+├── ACTIVE/reports/        ← Execution reports and evidence
+├── NORTH_ACTIVE.md        ← Compact runtime snapshot (refreshed from live + ACTIVE)
+├── SHARED_MEMORY.md       ← Handoff log only (not business truth)
 ├── PIVOT-LOG-*.md         ← Strategic decision log
 ├── reports/               ← Audit reports
 └── drafts/                ← Copy drafts
@@ -131,7 +138,7 @@ When Sandra asks Claude to do something that requires North:
 **If North is being unreliable, tell her to:**
 1. Respond in bullet points only (reduces verbosity + timeouts)
 2. Save detailed output to a file, return only the summary
-3. Re-read `SHARED_MEMORY.md` and confirm she understands current strategy
+3. Re-read `NORTH_ACTIVE.md` and `CLAUDE.md` and confirm she understands current strategy (SHARED_MEMORY is handoff-only)
 
 Example corrective message:
 ```

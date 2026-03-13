@@ -1485,7 +1485,7 @@ Save log to: `~/stella/reports/audit-log-[date].md`
 
 ### north-code daily task
 ```bash
-1. cat ~/stella/SHARED_MEMORY.md → check last deploy state
+1. For handoff/deploy notes only: ~/stella/SHARED_MEMORY.md; for deploy truth use STATUS.md and NORTH_ACTIVE.md
 2. Check Vercel for any build warnings
 3. Run visual diff on last 3 merged PRs (git diff HEAD~3 HEAD -- components/)
 4. If any Type D/P issues found → write Codex spec immediately, queue it

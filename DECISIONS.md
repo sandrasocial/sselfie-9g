@@ -1,4 +1,7 @@
 # 📋 SSELFIE APP — DECISIONS DOCUMENT
+> Historical draft snapshot (2026-02-20). Not canonical operating truth.
+> For current truth use `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, and `docs/_CANONICAL/CURSOR_CONSTITUTION.md`.
+
 **Date:** 20 Feb 2026
 **Status:** DRAFT — Sandra to approve
 **Purpose:** Single source of truth for what stays, what gets deleted, what gets finished
