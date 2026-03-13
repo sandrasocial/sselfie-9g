@@ -284,6 +284,7 @@ export async function GET(request: Request) {
         u.id,
         u.email,
         u.display_name,
+        u.created_at,
         uc.balance AS credit_balance
       FROM users u
       INNER JOIN subscriptions s ON s.user_id = u.id::varchar
