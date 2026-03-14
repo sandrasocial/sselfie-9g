@@ -633,8 +633,8 @@ function inferCategoryFromContent(title: string, description: string): string {
   return "LIFESTYLE"
 }
 
-/** Clean a raw Pro Mode prompt: inject identity phrase if missing, strip markdown, normalise whitespace. */
-function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDescription: string, index: number): string {
+/** Normalise a raw Pro Mode prompt: inject identity phrase if missing, strip markdown, clean whitespace. */
+function normalizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDescription: string, index: number): string {
   let prompt = rawPrompt.trim().length > 0
     ? rawPrompt
     : `${IDENTITY_PRESERVATION_PHRASE} Professional photography. ${fallbackTitle}. ${fallbackDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
@@ -644,12 +644,13 @@ function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDes
     prompt = `${IDENTITY_PRESERVATION_PHRASE} ${prompt}`
   }
 
-  const wordCount = prompt.split(/\s+/).length
+  const wordCount = prompt.split(" ").filter(Boolean).length
   if (wordCount < 150) {
     console.warn(`[v0] [PRO MODE] Concept ${index + 1} prompt is too short (${wordCount} words, minimum 150). Maya should generate longer prompts.`)
   }
 
-  prompt = prompt.replaceAll(/\*\*/g, "")
+  // Strip markdown bold markers and section labels
+  prompt = prompt.replaceAll("**", "")
   prompt = prompt
     .replaceAll(/Outfit:\s*/gi, "")
     .replaceAll(/Pose:\s*/gi, "")
@@ -659,6 +660,7 @@ function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDes
     .replaceAll(/Mood:\s*/gi, "")
     .replaceAll(/Aesthetic:\s*/gi, "")
     .replaceAll(/Camera:\s*/gi, "")
+  // Collapse whitespace
   prompt = prompt.replaceAll(/\n{3,}/g, "\n\n")
   prompt = prompt.replaceAll(/[ \t]+/g, " ")
   prompt = prompt.replaceAll(/^\s+/gm, "").replaceAll(/\s+$/gm, "")
@@ -695,7 +697,7 @@ function buildConceptFromAiData(
   const promptCategory = safeCategory.toUpperCase()
 
   const rawPrompt = safeAiStr(aiConcept.prompt, "")
-  const fullPrompt = sanitizeProPrompt(rawPrompt, safeTitle, safeDescription, index)
+  const fullPrompt = normalizeProPrompt(rawPrompt, safeTitle, safeDescription, index)
 
   console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
   console.log(`[v0] [PRO MODE] Cleaned prompt preview:`, fullPrompt.substring(0, 200))
