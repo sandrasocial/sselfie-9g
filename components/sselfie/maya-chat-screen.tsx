@@ -4069,15 +4069,10 @@ export default function MayaChatScreen({
                   onGeneratePhoto={() => {
                     handleSendMessage("I need photos for Monday's post")
                   }}
-                  onPlanFeed={() => {
-                    handleSendMessage("Plan my week and build an Instagram feed for my offer")
-                  }}
                   onBrowseStyles={() => {
                     handleSendMessage("Show me fresh style directions for my next post")
                   }}
-                  onCreateCalendar={() => {
-                    handleSendMessage("Create a content calendar draft for this week")
-                  }}
+                  // [STABILIZATION] onCreateCalendar not passed — content calendar feature hidden
                   onUploadAssets={() => {
                     handleSendMessage("I want to upload product photos and brand references")
                   }}
@@ -4144,10 +4139,7 @@ export default function MayaChatScreen({
                               label: "Use base model",
                               onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
                             },
-                            {
-                              label: "Build my week plan",
-                              onClick: () => handleSendMessage("Create a content calendar draft for this week"),
-                            },
+                            // [STABILIZATION] "Build my week plan" (content calendar) hidden — feature not stable
                           ]
                         : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
                           ? [
@@ -4243,10 +4235,7 @@ export default function MayaChatScreen({
                               : "Use the base model and create a photo for my brand now",
                           ),
                       },
-                      {
-                        label: "Create this week’s plan",
-                        onClick: () => handleSendMessage("Create a content calendar draft for this week"),
-                      },
+                      // [STABILIZATION] "Create this week’s plan" (content calendar) hidden — feature not stable
                     ]}
                   />
                   <MayaQuickPrompts
@@ -4288,38 +4277,8 @@ export default function MayaChatScreen({
           }}
         >
           <div className="mx-auto w-full max-w-5xl">
-            {/* Calendar suggestion — fires after 2nd photo in session */}
-            {showCalendarSuggestion && (
-              <div className="mb-2 flex items-center gap-2 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.08)] px-3 py-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <span className="shrink-0 text-[10px] text-[#c8c4bb]">✦</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-[#f0ede8]">
-                    {generatedPhotoCountInChat} photos created.{" "}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleSendMessage(
-                        "Plan my content calendar for this week using the photos I just created",
-                      )
-                      setCalendarSuggestionDismissed(true)
-                    }}
-                    className="text-xs text-[#c8c4bb] hover:text-[#f0ede8] transition-colors"
-                    style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}
-                  >
-                    Plan the week around them?
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCalendarSuggestionDismissed(true)}
-                  className="shrink-0 text-[11px] leading-none text-[#8a8780] hover:text-[#f0ede8] transition-colors px-1 py-0.5"
-                  aria-label="Dismiss"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
+            {/* [STABILIZATION] Calendar suggestion banner hidden — content calendar feature not stable */}
+            {/* showCalendarSuggestion && (...) */}
 
             {/* Quick Actions */}
             {shouldShowInputPrompts ? (

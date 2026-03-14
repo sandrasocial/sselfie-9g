@@ -15,6 +15,11 @@ import type { NextRequest } from "next/server"
 export const maxDuration = 60
 
 /**
+ * @deprecated NON-PRIMARY — No active component caller.
+ * The main Maya UI routes all chat through /api/maya/chat.
+ * This route is preserved for reference but should not be called by any live component.
+ * Audit date: 2026-03-14. Safe to delete after confirming zero runtime callers.
+ *
  * Specialized Maya Pro chat route.
  *
  * This file is not the primary live Maya chat backend for the current app

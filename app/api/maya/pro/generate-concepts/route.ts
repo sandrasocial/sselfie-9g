@@ -703,13 +703,31 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
 
       let aiConcepts: any[]
       try {
-        aiConcepts = JSON.parse(jsonMatch[0])
+        const parsed = JSON.parse(jsonMatch[0])
+        // Validate each item has minimum required fields; drop invalid entries rather than crashing
+        aiConcepts = Array.isArray(parsed)
+          ? parsed.filter((c: any) => {
+              const valid =
+                c &&
+                typeof c === "object" &&
+                typeof c.title === "string" &&
+                typeof c.prompt === "string"
+              if (!valid) {
+                console.warn("[v0] [PRO MODE] Dropping malformed concept card:", c)
+              }
+              return valid
+            })
+          : []
+        if (aiConcepts.length === 0) {
+          console.error("[v0] [PRO MODE] ❌ No valid concept cards after schema filter")
+          throw new Error("No valid concept cards in AI response")
+        }
       } catch (parseError: any) {
         console.error("[v0] [PRO MODE] JSON parse error:", parseError)
         console.error("[v0] [PRO MODE] JSON string that failed to parse:", jsonMatch[0].substring(0, 500))
         throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`)
       }
-      
+
       // 🔴 DEBUG: Log what Maya generated
       console.log('[v0] [PRO MODE] Maya generated concepts:', aiConcepts.map((c: any) => ({
         title: c.title?.substring(0, 50),

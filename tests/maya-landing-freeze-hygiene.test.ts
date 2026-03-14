@@ -17,10 +17,11 @@ describe("maya landing page chat hygiene", () => {
     expect(mayaChatScreen).not.toContain("or a page draft")
   })
 
-  it("keeps feed planning inline from the Maya home state", () => {
+  it("removes plan-my-week from Maya home actions (stabilization)", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
-    expect(mayaChatScreen).toContain('handleSendMessage("Plan my week and build an Instagram feed for my offer")')
+    expect(mayaChatScreen).not.toContain('handleSendMessage("Plan my week and build an Instagram feed for my offer")')
     expect(mayaChatScreen).not.toContain('setActiveTab?.("feed-planner")')
+    expect(mayaChatScreen).not.toContain('onPlanFeed')
   })
 
   it("removes duplicate header upload/library actions in Maya shell", () => {

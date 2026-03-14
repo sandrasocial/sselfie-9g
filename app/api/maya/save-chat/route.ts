@@ -1,3 +1,10 @@
+/**
+ * @deprecated NON-PRIMARY — No active component caller found.
+ * Chat creation now flows through /api/maya/new-chat and message persistence
+ * through /api/maya/save-message + /api/maya/update-message.
+ * Preserved for reference. Audit date: 2026-03-14.
+ * Safe to delete after confirming zero runtime callers via telemetry.
+ */
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"

@@ -1268,7 +1268,8 @@ export default function MayaChatInterface({
                             if (part.type === "tool-collectOfferBrief") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
-                              if (assetType === "page") {
+                              // [STABILIZATION] Hide page, calendar, and workbook (pdf) asset types
+                              if (assetType === "page" || assetType === "calendar" || assetType === "pdf") {
                                 return null
                               }
                               return (
@@ -1288,7 +1289,8 @@ export default function MayaChatInterface({
                             if (part.type === "tool-editAsset") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
-                              if (assetType === "page") {
+                              // [STABILIZATION] Hide page, calendar, and workbook (pdf) asset types
+                              if (assetType === "page" || assetType === "calendar" || assetType === "pdf") {
                                 return null
                               }
                               const assetLabel =
@@ -1322,7 +1324,8 @@ export default function MayaChatInterface({
                             if (part.type === "tool-createAssetPreview") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
-                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                              // [STABILIZATION] Hide page (landing), calendar, and workbook (pdf) asset types
+                              if (!isLandingPagesUiEnabled || assetType === "page" || assetType === "calendar" || assetType === "pdf") {
                                 return null
                               }
                               const assetLabel =
@@ -1382,7 +1385,8 @@ export default function MayaChatInterface({
                             if (part.type === "tool-structuredAssetBlocked") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "calendar"
-                              if (assetType === "pdf" || assetType === "page") {
+                              // [STABILIZATION] Hide page, calendar, and workbook (pdf) asset types
+                              if (assetType === "pdf" || assetType === "page" || assetType === "calendar") {
                                 return null
                               }
                               const recoveryHint =

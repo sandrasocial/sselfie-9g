@@ -8,9 +8,7 @@ interface MembershipHomeCardProps {
   monthlyDropName?: string | null
   onContinue: () => void
   onGeneratePhoto: () => void
-  onPlanFeed: () => void
   onBrowseStyles: () => void
-  onCreateCalendar?: () => void
   onUploadAssets?: () => void
   onExploreMonthlyDrop?: () => void
 }
@@ -21,9 +19,7 @@ export default function MembershipHomeCard({
   monthlyDropName,
   onContinue,
   onGeneratePhoto,
-  onPlanFeed,
   onBrowseStyles,
-  onCreateCalendar,
   onUploadAssets,
   onExploreMonthlyDrop,
 }: MembershipHomeCardProps) {
@@ -39,14 +35,13 @@ export default function MembershipHomeCard({
       <MayaInlineCard
         eyebrow="My Studio"
         title="Your studio lives here"
-        subtitle="Tell me what you need, and I'll build it here with you - posts, weekly plans, and calendar drafts in one flow."
+        subtitle="Tell me what you need — I'll build it right here."
         aside={<MayaInlinePill tone="strong">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
         actions={
           <>
             <MayaInlineAction onClick={onGeneratePhoto} variant="primary">
               Create a post
             </MayaInlineAction>
-            <MayaInlineAction onClick={onPlanFeed}>Plan my week</MayaInlineAction>
             <MayaInlineAction onClick={onBrowseStyles}>Browse styles</MayaInlineAction>
           </>
         }
@@ -79,19 +74,9 @@ export default function MembershipHomeCard({
               </div>
             ) : null}
 
-            {(onCreateCalendar || onUploadAssets) ? (
+            {/* [STABILIZATION] Calendar panel hidden — content calendar feature not stable */}
+            {(onUploadAssets) ? (
               <div className="grid gap-3 sm:grid-cols-2">
-                {onCreateCalendar ? (
-                  <div className="stone-inset-panel rounded-[22px] px-4 py-4">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Calendar</div>
-                    <div className="mt-2 text-sm text-[color:var(--color-porcelain)]">
-                      Let&apos;s map this week together and keep it easy to follow.
-                    </div>
-                    <div className="mt-3">
-                      <MayaInlineAction onClick={onCreateCalendar}>Create calendar</MayaInlineAction>
-                    </div>
-                  </div>
-                ) : null}
                 {onUploadAssets ? (
                   <div className="stone-inset-panel rounded-[22px] px-4 py-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Assets</div>
