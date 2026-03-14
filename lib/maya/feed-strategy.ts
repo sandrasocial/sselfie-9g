@@ -136,3 +136,69 @@ export function stripFeedStrategyArtifacts(text: string): string {
 export function shouldRetryInlineFeedGeneration(status: number): boolean {
   return status === 429 || status >= 500
 }
+
+type ParseFeedStrategyOk = { ok: true; strategy: any }
+type ParseFeedStrategyErr = { ok: false; status: 400; body: Record<string, unknown> }
+
+/**
+ * Parse and validate a feed strategy JSON string from Maya's output.
+ * Shared by both the classic and pro generate-feed routes to avoid duplication.
+ */
+export function parseFeedStrategy(
+  strategyJson: string,
+  logPrefix: string,
+): ParseFeedStrategyOk | ParseFeedStrategyErr {
+  let parsed: any
+  try {
+    parsed = JSON.parse(strategyJson)
+  } catch {
+    console.error(`${logPrefix} ❌ JSON parse error`)
+    return { ok: false, status: 400, body: { error: "Invalid JSON format" } }
+  }
+
+  // Unwrap if nested in feedStrategy object
+  let strategy: any
+  if (parsed.feedStrategy && typeof parsed.feedStrategy === "object") {
+    strategy = parsed.feedStrategy
+    console.log(`${logPrefix} 🔄 Unwrapped feedStrategy from nested structure`)
+  } else {
+    strategy = parsed
+  }
+
+  if (!strategy.posts || !Array.isArray(strategy.posts)) {
+    console.error(`${logPrefix} ❌ Missing or invalid posts array`)
+    return { ok: false, status: 400, body: { error: "Strategy must contain a posts array" } }
+  }
+
+  if (!isSupportedFeedPlanPostCount(strategy.posts.length)) {
+    console.error(`${logPrefix} ❌ Unsupported post count: ${strategy.posts.length}`)
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: `Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint), found ${strategy.posts.length}`,
+        code: "UNSUPPORTED_FEED_POST_COUNT",
+        supportedPostCounts: SUPPORTED_FEED_PLAN_POST_COUNTS,
+      },
+    }
+  }
+
+  const invalidPosts: number[] = []
+  strategy.posts.forEach((post: any, index: number) => {
+    if (!post.position || post.position < 1 || post.position > 12) invalidPosts.push(index + 1)
+    if (!post.visualDirection || post.visualDirection.trim() === "") invalidPosts.push(index + 1)
+  })
+
+  if (invalidPosts.length > 0) {
+    console.error(`${logPrefix} ❌ Invalid posts at positions: ${invalidPosts.join(", ")}`)
+    return {
+      ok: false,
+      status: 400,
+      body: { error: `Invalid posts at positions: ${invalidPosts.join(", ")}` },
+    }
+  }
+
+  if (!strategy.feedTitle && strategy.title) strategy.feedTitle = strategy.title
+
+  return { ok: true, strategy }
+}

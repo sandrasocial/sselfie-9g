@@ -50,6 +50,20 @@ const PROMPT_LEAK_MARKERS: RegExp[] = [
   /output[:\s]only the caption/i,
 ]
 
+function formatBrandContext(brandProfile: any): string {
+  if (!brandProfile) return "Personal Brand"
+  const lines: string[] = []
+  if (brandProfile.business_name || brandProfile.name) lines.push(`Brand: ${brandProfile.business_name || brandProfile.name}`)
+  if (brandProfile.business_type) lines.push(`Business Type: ${brandProfile.business_type}`)
+  if (brandProfile.brand_vibe) lines.push(`Brand Vibe: ${brandProfile.brand_vibe}`)
+  if (brandProfile.brand_voice) lines.push(`Brand Voice: ${brandProfile.brand_voice}`)
+  if (brandProfile.target_audience) lines.push(`Target Audience: ${brandProfile.target_audience}`)
+  if (brandProfile.niche) lines.push(`Niche: ${brandProfile.niche}`)
+  if (brandProfile.business_description) lines.push(`About: ${brandProfile.business_description}`)
+  if (brandProfile.unique_value_proposition || brandProfile.uvp) lines.push(`Unique Value: ${brandProfile.unique_value_proposition || brandProfile.uvp}`)
+  return lines.length > 0 ? lines.join("\n") : "Personal Brand"
+}
+
 function countWords(value: string): number {
   return value
     .trim()
@@ -298,7 +312,7 @@ ${captionTypeInstructions}
 ${contentPillarsContext}
 
 BRAND PROFILE:
-${JSON.stringify(brandProfile, null, 2)}
+${formatBrandContext(brandProfile)}
 
 TARGET AUDIENCE: ${targetAudience}
 BRAND VOICE: ${brandVoice}

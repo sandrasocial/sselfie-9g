@@ -185,39 +185,36 @@ export default function FeedPostsList({
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-sm flex-1 min-w-0">
-                    <span className="font-semibold text-white">sselfie</span>{" "}
-                    <span className="whitespace-pre-wrap break-words text-white/88">{displayCaption}</span>
-                    {shouldTruncate && (
-                      <button
-                        onClick={() => onToggleCaption(post.id)}
-                        className="ml-1 text-white/55 transition-colors hover:text-white/80"
-                      >
-                        {isExpanded ? "less" : "more"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                <div className="text-sm">
+                  <span className="font-semibold text-white">sselfie</span>{" "}
+                  <span className="whitespace-pre-wrap break-words text-white/88">{displayCaption}</span>
+                  {shouldTruncate && (
                     <button
-                      onClick={() => onCopyCaption(post.caption, post.id)}
-                      className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30"
-                      title="Copy caption"
+                      onClick={() => onToggleCaption(post.id)}
+                      className="ml-1 text-white/55 transition-colors hover:text-white/80"
                     >
-                      {copiedCaptions.has(post.id) ? "Copied" : "Copy"}
+                      {isExpanded ? "less" : "more"}
                     </button>
-                    {/* Decision 2: Hide enhance caption button in blueprint mode */}
-                    {showCaptionGeneration && (
-                      <button
-                        onClick={() => onEnhanceCaption(post.id, post.caption)}
-                        disabled={enhancingCaptions.has(post.id)}
-                        className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
-                        title="Enhance with Maya"
-                      >
-                        {enhancingCaptions.has(post.id) ? "Working" : "Enhance"}
-                      </button>
-                    )}
-                  </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => onCopyCaption(post.caption, post.id)}
+                    className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30"
+                    title="Copy caption"
+                  >
+                    {copiedCaptions.has(post.id) ? "Copied" : "Copy"}
+                  </button>
+                  {showCaptionGeneration && (
+                    <button
+                      onClick={() => onEnhanceCaption(post.id, post.caption)}
+                      disabled={enhancingCaptions.has(post.id)}
+                      className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      title="Enhance with Maya"
+                    >
+                      {enhancingCaptions.has(post.id) ? "Working" : "Enhance"}
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs uppercase tracking-wide text-white/40">Just now</p>
               </div>

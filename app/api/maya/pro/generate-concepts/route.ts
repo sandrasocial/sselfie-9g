@@ -718,14 +718,16 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
               return valid
             })
           : []
-        if (aiConcepts.length === 0) {
-          console.error("[v0] [PRO MODE] ❌ No valid concept cards after schema filter")
-          throw new Error("No valid concept cards in AI response")
-        }
       } catch (parseError: any) {
         console.error("[v0] [PRO MODE] JSON parse error:", parseError)
         console.error("[v0] [PRO MODE] JSON string that failed to parse:", jsonMatch[0].substring(0, 500))
         throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`)
+      }
+
+      // Validation is separate from JSON parsing — empty array after filtering is a different failure mode
+      if (aiConcepts.length === 0) {
+        console.error("[v0] [PRO MODE] ❌ No valid concept cards after schema filter")
+        throw new Error("No valid concept cards in AI response")
       }
 
       // 🔴 DEBUG: Log what Maya generated

@@ -458,75 +458,74 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
           </div>
         ) : caption ? (
           <div className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="text-sm flex-1 min-w-0">
-                <span className="font-semibold text-stone-950">sselfie</span>{" "}
-                <span className="text-stone-950 whitespace-pre-wrap break-words">
-                  {showFullCaption ? caption : truncatedCaption}
-                </span>
-                {caption.length > 100 && (
-                  <button
-                    onClick={() => setShowFullCaption(!showFullCaption)}
-                    className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
-                  >
-                    {showFullCaption ? "less" : "more"}
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+            {/* caption then buttons stacked */}
+            <div className="text-sm">
+              <span className="font-semibold text-stone-950">sselfie</span>{" "}
+              <span className="text-stone-950 whitespace-pre-wrap break-words">
+                {showFullCaption ? caption : truncatedCaption}
+              </span>
+              {caption.length > 100 && (
                 <button
-                  onClick={copyCaptionToClipboard}
-                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
-                  title="Copy caption"
+                  onClick={() => setShowFullCaption(!showFullCaption)}
+                  className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
                 >
-                  {copiedCaption ? (
+                  {showFullCaption ? "less" : "more"}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={copyCaptionToClipboard}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                title="Copy caption"
+              >
+                {copiedCaption ? (
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
+                ) : (
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Copy</span>
+                )}
+              </button>
+              {hashtags && (
+                <button
+                  onClick={handleCopyHashtags}
+                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                  title="Copy hashtags"
+                >
+                  {copiedHashtags ? (
                     <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
                   ) : (
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Copy</span>
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Tags</span>
                   )}
                 </button>
-                {hashtags && (
-                  <button
-                    onClick={handleCopyHashtags}
-                    className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
-                    title="Copy hashtags"
-                  >
-                    {copiedHashtags ? (
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
-                    ) : (
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Tags</span>
-                    )}
-                  </button>
+              )}
+              <button
+                onClick={handleStartEdit}
+                disabled={isRegenerating || isEnhancing}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Edit caption"
+              >
+                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Edit</span>
+              </button>
+              <button
+                onClick={handleRegenerateCaption}
+                disabled={isRegenerating || isEnhancing}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Regenerate caption"
+              >
+                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Redo</span>
+              </button>
+              <button
+                onClick={handleEnhanceCaption}
+                disabled={isEnhancing || isRegenerating}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Enhance caption (make it longer)"
+              >
+                {isEnhancing ? (
+                  <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
+                ) : (
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Boost</span>
                 )}
-                <button
-                  onClick={handleStartEdit}
-                  disabled={isRegenerating || isEnhancing}
-                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Edit caption"
-                >
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Edit</span>
-                </button>
-                <button
-                  onClick={handleRegenerateCaption}
-                  disabled={isRegenerating || isEnhancing}
-                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Regenerate caption"
-                >
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Redo</span>
-                </button>
-                <button
-                  onClick={handleEnhanceCaption}
-                  disabled={isEnhancing || isRegenerating}
-                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Enhance caption (make it longer)"
-                >
-                  {isEnhancing ? (
-                    <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
-                  ) : (
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Boost</span>
-                  )}
-                </button>
-              </div>
+              </button>
             </div>
             <div className="flex items-center justify-between px-4">
               <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>

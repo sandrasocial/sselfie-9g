@@ -108,12 +108,36 @@ export async function POST(
       }
     }
 
+    // Caption type rotates story/value/motivational across the 9-post grid
+    const CAPTION_TYPE_ROTATION: Array<'story' | 'value' | 'motivational'> = [
+      'story', 'value', 'motivational',
+      'story', 'value', 'motivational',
+      'story', 'value', 'motivational',
+    ]
+    const TONE_BY_TYPE: Record<string, string> = { story: 'warm', value: 'confident', motivational: 'inspiring' }
+    const captionType = CAPTION_TYPE_ROTATION[(post.position - 1) % 9]
+    const emotionalTone = TONE_BY_TYPE[captionType]
+
+    // Parse content pillars from brand profile
+    let contentPillars: any[] = []
+    if (brandProfile?.content_pillars) {
+      try {
+        contentPillars = typeof brandProfile.content_pillars === 'string'
+          ? JSON.parse(brandProfile.content_pillars)
+          : brandProfile.content_pillars
+      } catch (e) {
+        // silently ignore parse error
+      }
+    }
+
     // Generate new caption using the same logic as create-from-strategy
     const captionResult = await generateInstagramCaption({
       postPosition: post.position,
       shotType: post.post_type || 'portrait',
       purpose: post.content_pillar || 'general',
-      emotionalTone: 'warm',
+      emotionalTone,
+      captionType,
+      contentPillars,
       brandProfile: (brandProfile as any) || {
         business_type: post.business_type || 'Personal Brand',
         brand_vibe: post.brand_vibe || 'Strategic',
