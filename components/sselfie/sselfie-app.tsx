@@ -853,7 +853,7 @@ export default function SselfieApp({
 
   return (
     <div
-        className="stone-stage h-screen relative overflow-hidden prevent-horizontal-scroll"
+        className="stone-stage h-screen relative overflow-x-hidden"
         style={{
           fontFamily: "var(--font-body)",
           paddingTop: "env(safe-area-inset-top)",

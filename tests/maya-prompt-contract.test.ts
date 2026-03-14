@@ -23,7 +23,8 @@ describe("maya prompt contract", () => {
     })
 
     expect(prompts.map((item) => item.label)).toContain("My Model")
-    expect(prompts.map((item) => item.label)).toContain("Plan My Week")
+    expect(prompts.map((item) => item.label)).toContain("Write a caption")
+    expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
     expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 
@@ -36,7 +37,8 @@ describe("maya prompt contract", () => {
 
     expect(prompts.map((item) => item.label)).toContain("New Photo")
     expect(prompts.map((item) => item.label)).toContain("Upload & Create")
-    expect(prompts.map((item) => item.label)).toContain("Plan My Week")
+    expect(prompts.map((item) => item.label)).toContain("Write a caption")
+    expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
     expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 

@@ -1,3 +1,10 @@
+/**
+ * @deprecated NON-PRIMARY — No active component caller found.
+ * Studio Pro prompt generation routes through /api/maya/generate-concepts (studioProMode flag)
+ * and the Pro Mode concept generation path.
+ * Preserved for reference. Audit date: 2026-03-14.
+ * Safe to delete after confirming zero runtime callers via telemetry.
+ */
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"

@@ -1533,7 +1533,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             <InstagramPhotoCard
               concept={{
                 title: concept.title,
-                description: concept.description,
+                // Pro mode: description is the detailed generation prompt, not an Instagram caption.
+                // Pass empty string so the user writes their own caption below the image.
+                description: '',
                 category: concept.category || '',
                 prompt: concept.fullPrompt || concept.prompt || '',
               }}

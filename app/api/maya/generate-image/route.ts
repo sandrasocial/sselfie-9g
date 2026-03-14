@@ -200,11 +200,12 @@ export async function POST(request: NextRequest) {
       ? customSettings.extraLoraScale
       : customSettings?.realismStrength
     
-    // CRITICAL FIX: Enhanced Authenticity toggle is HIGHEST PRIORITY - it FORCES extra LoRA to 0
-    // The toggle explicitly overrides any user realismStrength setting
-    // Priority: 1. Enhanced Authenticity toggle (if ON → force 0), 2. User's realismStrength, 3. Preset default
     const hasUserSetRealism = manualExtraLoraScale !== undefined
-    const shouldDisableExtraLora = false
+    // Disable extra LoRA when the user hasn't set an explicit realism value AND either:
+    // - Enhanced Authenticity toggle is ON (user wants authentic iPhone look via prompt)
+    // - Prompt already contains authentic-aesthetic keywords (so LoRA doesn't contradict the prompt)
+    // When the user HAS explicitly set realismStrength, respect that setting even if the toggle is on.
+    const shouldDisableExtraLora = !hasUserSetRealism && (enhancedAuthenticity === true || hasAuthenticAesthetic)
     
     const qualitySettings = {
       ...presetSettings,
@@ -217,14 +218,17 @@ export async function POST(request: NextRequest) {
         : (userLoraScale ?? presetSettings.lora_scale), // Fall back to DB or preset
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
-      // CRITICAL FIX: Handle extra_lora_scale with proper priority:
-      // 1. Enhanced Authenticity toggle is HIGHEST PRIORITY → if ON, force to 0 (overrides everything)
-      // 2. If prompt has authentic aesthetic keywords → force to 0
-      // 3. If user explicitly set realismStrength/extraLoraScale → use that value
-      // 4. Otherwise → use preset default
-      extra_lora_scale: hasUserSetRealism
-        ? manualExtraLoraScale
-        : presetSettings.extra_lora_scale,
+      // Handle extra_lora_scale with proper priority:
+      // 1. Enhanced Authenticity toggle ON → force to 0 (extraLoraDisabled=true skips inclusion entirely)
+      // 2. User explicitly set realismStrength/extraLoraScale → use that value
+      // 3. Otherwise → use preset default
+      // NOTE: shouldDisableExtraLora=true causes buildClassicModeReplicateInput to skip
+      // extra_lora entirely from the prediction input, so the scale here is only used when toggle is OFF.
+      extra_lora_scale: shouldDisableExtraLora
+        ? 0
+        : hasUserSetRealism
+          ? manualExtraLoraScale
+          : presetSettings.extra_lora_scale,
       num_inference_steps: presetSettings.num_inference_steps,
     }
     

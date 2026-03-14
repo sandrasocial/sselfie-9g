@@ -2873,13 +2873,34 @@ Same quality/luxury/styling as professional concepts, but with:
         temperature: 0.85,
       })
 
-      // Parse JSON response
+      // Parse JSON response — hardened with try/catch and field validation
       const jsonMatch = text.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
-        concepts = JSON.parse(jsonMatch[0])
+        try {
+          const parsed = JSON.parse(jsonMatch[0])
+          // Validate each item has the minimum required fields; drop invalid entries
+          concepts = Array.isArray(parsed)
+            ? parsed.filter((c: any) => {
+                const valid =
+                  c &&
+                  typeof c === "object" &&
+                  typeof c.title === "string" &&
+                  typeof c.prompt === "string"
+                if (!valid) {
+                  console.warn("[v0] [AI-GENERATION] Dropping malformed concept card:", c)
+                }
+                return valid
+              })
+            : []
+          if (concepts.length === 0) {
+            console.error("[v0] [AI-GENERATION] ❌ No valid concept cards after schema filter")
+          }
+        } catch (parseErr) {
+          console.error("[v0] [AI-GENERATION] ❌ JSON.parse failed for concept cards:", parseErr)
+          concepts = []
+        }
       } else {
         console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
-        // Return empty array if parsing fails
         concepts = []
       }
       

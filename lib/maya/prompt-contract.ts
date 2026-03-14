@@ -59,18 +59,18 @@ export function getMayaSurfaceQuickPrompts(input: {
   const primaryPrompts: MayaQuickPromptItem[] = proMode
     ? [
         { label: "New Photo", prompt: "Use my selfies and create a new photo for my brand" },
-        { label: "Plan My Week", prompt: "Build a content calendar for my brand this week" },
+        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
         { label: "Upload & Create", prompt: "I want to upload photos and brand references for a new photo" },
       ]
     : hasTrainedModel
     ? [
         { label: "New Photo", prompt: "Use my trained model and create a new photo for my brand" },
-        { label: "Plan My Week", prompt: "Build a content calendar for my brand this week" },
+        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
         { label: "My Model", prompt: "Use my trained model and create a photo for my brand now" },
       ]
     : [
         { label: "New Photo", prompt: "Create a new photo for my brand" },
-        { label: "Plan My Week", prompt: "Build a content calendar for my brand this week" },
+        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
         { label: "Train My Model", prompt: "I want to train my custom model" },
       ]
 

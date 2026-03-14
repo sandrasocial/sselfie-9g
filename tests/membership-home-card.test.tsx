@@ -7,9 +7,7 @@ describe("MembershipHomeCard", () => {
   it("renders core rows and action callbacks", () => {
     const onContinue = vi.fn()
     const onGeneratePhoto = vi.fn()
-    const onPlanFeed = vi.fn()
     const onBrowseStyles = vi.fn()
-    const onCreateCalendar = vi.fn()
     const onUploadAssets = vi.fn()
     render(
       <MembershipHomeCard
@@ -18,9 +16,7 @@ describe("MembershipHomeCard", () => {
         monthlyDropName={null}
         onContinue={onContinue}
         onGeneratePhoto={onGeneratePhoto}
-        onPlanFeed={onPlanFeed}
         onBrowseStyles={onBrowseStyles}
-        onCreateCalendar={onCreateCalendar}
         onUploadAssets={onUploadAssets}
       />,
     )
@@ -32,17 +28,17 @@ describe("MembershipHomeCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^open$/i }))
     fireEvent.click(screen.getByRole("button", { name: /create a post/i }))
-    fireEvent.click(screen.getByRole("button", { name: /plan my week/i }))
     fireEvent.click(screen.getByRole("button", { name: /browse styles/i }))
-    fireEvent.click(screen.getByRole("button", { name: /create calendar/i }))
     fireEvent.click(screen.getByRole("button", { name: /upload assets/i }))
 
     expect(onContinue).toHaveBeenCalledTimes(1)
     expect(onGeneratePhoto).toHaveBeenCalledTimes(1)
-    expect(onPlanFeed).toHaveBeenCalledTimes(1)
     expect(onBrowseStyles).toHaveBeenCalledTimes(1)
-    expect(onCreateCalendar).toHaveBeenCalledTimes(1)
     expect(onUploadAssets).toHaveBeenCalledTimes(1)
+
+    // calendar and plan-my-week actions are hidden (stabilization)
+    expect(screen.queryByRole("button", { name: /plan my week/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /create calendar/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /build a page/i })).not.toBeInTheDocument()
   })
 
@@ -56,7 +52,6 @@ describe("MembershipHomeCard", () => {
         monthlyDropName="Coastal Summer style pack"
         onContinue={vi.fn()}
         onGeneratePhoto={vi.fn()}
-        onPlanFeed={vi.fn()}
         onBrowseStyles={vi.fn()}
         onExploreMonthlyDrop={onExploreMonthlyDrop}
       />,
