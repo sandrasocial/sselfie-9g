@@ -95,9 +95,9 @@ function resolveLoraDecision(
   finalPrompt: string,
 ): LoraDecision {
   const manualExtraLoraScale =
-    customSettings?.extraLoraScale !== undefined
-      ? customSettings.extraLoraScale
-      : customSettings?.realismStrength
+    customSettings?.extraLoraScale === undefined
+      ? customSettings?.realismStrength
+      : customSettings.extraLoraScale
 
   const hasUserSetRealism = manualExtraLoraScale !== undefined
   const hasAuthenticKeywords =
@@ -118,22 +118,25 @@ function buildQualitySettings(
   lora: LoraDecision,
 ) {
   const { shouldDisableExtraLora, hasUserSetRealism, manualExtraLoraScale } = lora
+
+  // Priority: authenticity toggle/keywords forces 0 → explicit realism → preset default
+  const extraLoraScale = shouldDisableExtraLora
+    ? 0
+    : hasUserSetRealism
+      ? manualExtraLoraScale
+      : presetSettings.extra_lora_scale
+
   return {
     ...presetSettings,
     aspect_ratio: customSettings?.aspectRatio ?? presetSettings.aspect_ratio,
     // Priority: manual styleStrength → DB lora_scale → preset default
     lora_scale:
-      customSettings?.styleStrength !== undefined
-        ? customSettings.styleStrength
-        : (userLoraScale ?? presetSettings.lora_scale),
+      customSettings?.styleStrength === undefined
+        ? (userLoraScale ?? presetSettings.lora_scale)
+        : customSettings.styleStrength,
     guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
     extra_lora: customSettings?.extraLora ?? presetSettings.extra_lora,
-    // Priority: authenticity toggle/keywords forces 0 → explicit realism → preset default
-    extra_lora_scale: shouldDisableExtraLora
-      ? 0
-      : hasUserSetRealism
-        ? manualExtraLoraScale
-        : presetSettings.extra_lora_scale,
+    extra_lora_scale: extraLoraScale,
     num_inference_steps: presetSettings.num_inference_steps,
   }
 }
