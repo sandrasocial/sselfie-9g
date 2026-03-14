@@ -26,6 +26,7 @@
  * Last Updated: January 4, 2026 (Post-cleanup: Added brand intelligence, fixed prompts)
  */
 
+import { randomInt } from "crypto"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -354,12 +355,11 @@ function buildAiPrompt(params: {
   mayaPersonality: string
   userRequest: string
   categoryInfo: CategoryInfo | null
-  categoryKey: string | null
   library: ImageLibrary
   essenceWords: string | undefined
   outfitSuggestions: Record<string, any>
 }): string {
-  const { mayaPersonality, userRequest, categoryInfo, categoryKey, library, essenceWords, outfitSuggestions } = params
+  const { mayaPersonality, userRequest, categoryInfo, library, essenceWords, outfitSuggestions } = params
 
   const categoryHint =
     categoryInfo?.name && categoryInfo?.description
@@ -713,7 +713,7 @@ function buildConceptFromAiData(
   const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, promptCategory)
 
   return {
-    id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `concept-${Date.now()}-${index}-${randomInt(1_000_000_000).toString(36)}`,
     title: safeTitle,
     description: safeDescription,
     category: safeCategory,
@@ -853,7 +853,6 @@ export async function POST(req: NextRequest) {
       mayaPersonality,
       userRequest,
       categoryInfo,
-      categoryKey,
       library,
       essenceWords,
       outfitSuggestions,
