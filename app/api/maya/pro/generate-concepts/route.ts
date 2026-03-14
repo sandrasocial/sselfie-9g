@@ -26,7 +26,6 @@
  * Last Updated: January 4, 2026 (Post-cleanup: Added brand intelligence, fixed prompts)
  */
 
-import { randomInt } from "crypto"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -662,7 +661,7 @@ function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDes
     .replaceAll(/Camera:\s*/gi, "")
   prompt = prompt.replaceAll(/\n{3,}/g, "\n\n")
   prompt = prompt.replaceAll(/[ \t]+/g, " ")
-  prompt = prompt.replaceAll(/^\s+|\s+$/gm, "")
+  prompt = prompt.replaceAll(/^\s+/gm, "").replaceAll(/\s+$/gm, "")
   prompt = prompt.replaceAll(/\n\s*\n/g, "\n")
   return prompt.trim()
 }
@@ -713,7 +712,7 @@ function buildConceptFromAiData(
   const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, promptCategory)
 
   return {
-    id: `concept-${Date.now()}-${index}-${randomInt(1_000_000_000).toString(36)}`,
+    id: `concept-${Date.now()}-${index}`,
     title: safeTitle,
     description: safeDescription,
     category: safeCategory,
