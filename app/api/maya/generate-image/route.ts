@@ -125,12 +125,9 @@ function buildQualitySettings(
       ? (userLoraScale ?? presetSettings.lora_scale)
       : customSettings.styleStrength
 
-  // Priority: authenticity toggle/keywords forces 0 → explicit realism → preset default
-  const extraLoraScale = shouldDisableExtraLora
-    ? 0
-    : hasUserSetRealism
-      ? manualExtraLoraScale
-      : presetSettings.extra_lora_scale
+  // Priority: explicit realism → preset default (then disabled if toggle is on)
+  const baseExtraLoraScale = hasUserSetRealism ? manualExtraLoraScale : presetSettings.extra_lora_scale
+  const extraLoraScale = shouldDisableExtraLora ? 0 : baseExtraLoraScale
 
   return {
     ...presetSettings,
