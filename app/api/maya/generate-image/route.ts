@@ -205,7 +205,9 @@ export async function POST(request: NextRequest) {
     // Priority: 1. Enhanced Authenticity toggle (if ON → force 0), 2. User's realismStrength, 3. Preset default
     const hasUserSetRealism = manualExtraLoraScale !== undefined
     // FIX (2026-03-14): was hardcoded `false` despite comments. Now correctly reflects toggle state.
-    const shouldDisableExtraLora = enhancedAuthenticity === true
+    // Also disable when the prompt itself contains authentic-aesthetic keywords (film grain, candid, etc.)
+    // so the LoRA doesn't contradict the user's explicit prompt intent.
+    const shouldDisableExtraLora = enhancedAuthenticity === true || hasAuthenticAesthetic
     
     const qualitySettings = {
       ...presetSettings,
