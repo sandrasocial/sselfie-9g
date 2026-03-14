@@ -1,28 +1,28 @@
 /**
  * PRO MODE CONCEPT GENERATION API
- * 
+ *
  * PURPOSE: Generates concepts for Pro Mode (Nano Banana Pro) image generation.
- * 
+ *
  * FLOW:
  * 1. User requests concepts in Pro Mode
  * 2. System uses Maya's AI personality to generate natural language prompts
  * 3. System prompt instructs Maya to use brand-library-2025.ts for brand variety
  * 4. Post-processing removes markdown, ensures identity preservation phrase
  * 5. Output: 150-400 word natural language prompts with linked images
- * 
+ *
  * KEY FEATURES:
  * - Identity preservation phrase (required for Nano Banana Pro)
  * - Brand intelligence via brand-library-2025.ts (dynamic variety)
  * - Natural flowing sentences (no markdown)
  * - Editorial, Pinterest-style format
  * - Image linking (3-5 images per concept)
- * 
+ *
  * DIFFERENCES FROM CLASSIC MODE:
  * - No trigger words (Nano Banana Pro doesn't need them)
  * - Identity preservation phrase instead
  * - Longer, more detailed prompts (150-400 words)
  * - Natural language only (no technical specs)
- * 
+ *
  * Last Updated: January 4, 2026 (Post-cleanup: Added brand intelligence, fixed prompts)
  */
 
@@ -68,7 +68,7 @@ function linkImagesToConcept(
   const titleLower = (concept.title && typeof concept.title === 'string') ? concept.title.toLowerCase() : ''
   const descLower = (concept.description && typeof concept.description === 'string') ? concept.description.toLowerCase() : ''
   const aestheticLower = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic.toLowerCase() : ''
-  
+
   // Combine all text for keyword analysis
   const combinedText = `${titleLower} ${descLower} ${aestheticLower}`.toLowerCase()
 
@@ -80,7 +80,7 @@ function linkImagesToConcept(
   if (imageLibrary.selfies.length > 0) {
     // Always include at least one selfie (required for identity preservation)
     linkedImages.push(imageLibrary.selfies[0])
-    
+
     // Use multiple selfies when available (up to 4 for better character consistency)
     // This is especially important for Nano Banana Pro which benefits from multiple reference images
     const maxSelfies = Math.min(imageLibrary.selfies.length, 4)
@@ -101,10 +101,10 @@ function linkImagesToConcept(
     'fashion', 'outfit', 'clothing', 'accessories', 'jewelry',
     'bag', 'shoes', 'sunglasses', 'watch', 'perfume'
   ]
-  
-  const mentionsProducts = productKeywords.some(keyword => 
+
+  const mentionsProducts = productKeywords.some(keyword =>
     combinedText.includes(keyword)
-  ) || hasBrandReferences || 
+  ) || hasBrandReferences ||
     categoryLower === 'beauty' ||
     categoryLower === 'wellness' ||
     categoryLower === 'fashion' ||
@@ -118,7 +118,7 @@ function linkImagesToConcept(
     } else if (hasBrandReferences && concept.brandReferences!.length > 1) {
       productCount = 2 // Multiple brands: link 2 products
     }
-    
+
     // Link products
     imageLibrary.products.slice(0, productCount).forEach(product => {
       if (!linkedImages.includes(product) && linkedImages.length < 5) {
@@ -135,8 +135,8 @@ function linkImagesToConcept(
     'together', 'social', 'community', 'gathering', 'event',
     'party', 'celebration', 'dinner', 'brunch', 'coffee', 'cafe'
   ]
-  
-  const isLifestyle = lifestyleKeywords.some(keyword => 
+
+  const isLifestyle = lifestyleKeywords.some(keyword =>
     combinedText.includes(keyword)
   ) || categoryLower === 'lifestyle' ||
     categoryLower === 'travel' ||
@@ -161,11 +161,11 @@ function linkImagesToConcept(
     'pinterest', 'instagram', 'aspirational', 'inspo', 'mood board',
     'visual', 'atmosphere', 'ambiance', 'feeling', 'energy'
   ]
-  
-  const hasVibeKeywords = vibeKeywords.some(keyword => 
+
+  const hasVibeKeywords = vibeKeywords.some(keyword =>
     combinedText.includes(keyword)
   )
-  
+
   const isAestheticFocused = hasVibeKeywords ||
     categoryLower === 'fashion' ||
     categoryLower === 'luxury' ||
@@ -248,17 +248,17 @@ function linkImagesToConcept(
         linkedImages.push(selfie)
       }
     }
-    
+
     // Then add other image types if slots remain
     const availableTypes = [
       { type: 'products', images: imageLibrary.products },
       { type: 'people', images: imageLibrary.people },
       { type: 'vibes', images: imageLibrary.vibes },
     ]
-    
+
     for (const { images } of availableTypes) {
       if (linkedImages.length >= 5) break
-      
+
       for (const image of images) {
         if (!linkedImages.includes(image) && linkedImages.length < 5) {
           linkedImages.push(image)
@@ -274,193 +274,110 @@ function linkImagesToConcept(
 }
 
 
-/**
- * Pro Mode Generate Concepts API Route
- * 
- * Generates concepts for Studio Pro Mode using:
- * - Category detection
- * - Universal Prompts
- * - Prompt builder for full prompts
- * - Image linking logic
- */
-export async function POST(req: NextRequest) {
-  console.log("[v0] [PRO MODE] Generate concepts API called")
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers extracted from POST to reduce cyclomatic complexity
+// ─────────────────────────────────────────────────────────────────────────────
 
-  try {
-    // Wrap entire function in try-catch to catch any null reference errors
-    // Authenticate user
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
+const IDENTITY_PRESERVATION_PHRASE =
+  "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
 
-    if (authError || !authUser) {
-      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
-      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+/** Normalise a raw imageLibrary body payload to a safe ImageLibrary with non-null arrays. */
+function normalizeImageLibrary(raw: any): ImageLibrary {
+  return {
+    selfies: Array.isArray(raw.selfies) ? raw.selfies : [],
+    products: Array.isArray(raw.products) ? raw.products : [],
+    people: Array.isArray(raw.people) ? raw.people : [],
+    vibes: Array.isArray(raw.vibes) ? raw.vibes : [],
+    intent: raw.intent && typeof raw.intent === "string" ? raw.intent : "",
+  }
+}
+
+/** Resolve a categoryKey + categoryInfo from an optional hint + userRequest fallback detection. */
+function resolveCategory(
+  categoryInput: string | null | undefined,
+  userRequest: string,
+  library: ImageLibrary,
+): { categoryKey: string | null; categoryInfo: CategoryInfo | null } {
+  let categoryKey: string | null = (categoryInput && typeof categoryInput === "string") ? categoryInput : null
+  let categoryInfo: CategoryInfo | null = null
+
+  if (!categoryKey) {
+    categoryInfo = detectCategory(userRequest, library)
+    if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === "string") {
+      categoryKey = categoryInfo.key
+      console.log("[v0] [PRO MODE] Category hint detected:", categoryInfo.name || categoryInfo.key)
+    } else {
+      console.log("[v0] [PRO MODE] No category hint - Maya will determine categories dynamically")
+      categoryKey = null
+      categoryInfo = null
     }
-
-    const userId = authUser.id
-    const user = await getEffectiveNeonUser(userId)
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const dbUserId = user.id
-
-    console.log("[v0] [PRO MODE] User authenticated:", { userId, dbUserId })
-
-    // Check credits (1 credit per concept generation)
-    const hasCredits = await checkCredits(dbUserId, 1)
-    if (!hasCredits) {
-      console.log("[v0] [PRO MODE] User has insufficient credits for concept generation")
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
-    }
-
-    // Parse request body
-    const body = await req.json()
-    const { userRequest, imageLibrary, category, essenceWords, concepts } = body
-
-    if (!userRequest || typeof userRequest !== "string") {
-      return NextResponse.json({ error: "userRequest is required" }, { status: 400 })
-    }
-
-    if (!imageLibrary) {
-      return NextResponse.json({ error: "imageLibrary is required" }, { status: 400 })
-    }
-
-    // Safe null handling for imageLibrary - ensure all fields are arrays/strings
-    const library: ImageLibrary = {
-      selfies: (Array.isArray(imageLibrary.selfies)) ? imageLibrary.selfies : [],
-      products: (Array.isArray(imageLibrary.products)) ? imageLibrary.products : [],
-      people: (Array.isArray(imageLibrary.people)) ? imageLibrary.people : [],
-      vibes: (Array.isArray(imageLibrary.vibes)) ? imageLibrary.vibes : [],
-      intent: (imageLibrary.intent && typeof imageLibrary.intent === 'string') ? imageLibrary.intent : "",
-    }
-
-    // Validate that selfies are available (required)
-    if (library.selfies.length === 0) {
-      return NextResponse.json(
-        { error: "At least one selfie is required to generate concepts" },
-        { status: 400 }
-      )
-    }
-
-    // 🔴 FIX: Category detection is now OPTIONAL - just as hints for Maya
-    // Maya will determine categories dynamically using her personality and expertise
-    let categoryKey: string | null = (category && typeof category === 'string') ? category : null
-    let categoryInfo: CategoryInfo | null = null
-    
-    // Try to detect category as a HINT (not required)
-    if (!categoryKey) {
-      categoryInfo = detectCategory(userRequest, library)
-      if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
-        categoryKey = categoryInfo.key
-        console.log("[v0] [PRO MODE] Category hint detected:", categoryInfo.name || categoryInfo.key)
-      } else {
-        console.log("[v0] [PRO MODE] No category hint - Maya will determine categories dynamically")
-        categoryKey = null
-        categoryInfo = null
+  } else {
+    if (typeof categoryKey === "string") {
+      categoryInfo = getCategoryByKey(categoryKey)
+      if (!categoryInfo) {
+        console.log("[v0] [PRO MODE] Category key provided but not found in system:", categoryKey)
+        categoryInfo = detectCategory(userRequest, library)
+        if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === "string") {
+          categoryKey = categoryInfo.key
+        } else {
+          categoryKey = null
+          categoryInfo = null
+        }
       }
     } else {
-      // Category was provided - get category info (ensure categoryKey is string)
-      if (typeof categoryKey === 'string') {
-        categoryInfo = getCategoryByKey(categoryKey)
-        if (!categoryInfo) {
-          console.log("[v0] [PRO MODE] Category key provided but not found in system:", categoryKey)
-          // Fallback: try to detect category from userRequest as hint
-          categoryInfo = detectCategory(userRequest, library)
-          if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
-            categoryKey = categoryInfo.key
-          } else {
-            categoryKey = null
-            categoryInfo = null
-          }
-        }
-      } else {
-        // categoryKey is not a string - reset to null
-        categoryKey = null
-        categoryInfo = null
-      }
+      categoryKey = null
+      categoryInfo = null
     }
+  }
 
-    // Now log with categoryInfo safely initialized
-    console.log("[v0] [PRO MODE] Request:", {
-      userRequestLength: userRequest.length,
-      categoryHint: (categoryInfo && categoryInfo.name) ? categoryInfo.name : (categoryKey || "none - Maya will determine dynamically"),
-      essenceWords: essenceWords || "none",
-      hasConcepts: !!concepts,
-      conceptsCount: Array.isArray(concepts) ? concepts.length : 0,
-      imageLibraryCounts: {
-        selfies: library.selfies.length,
-        products: library.products.length,
-        people: library.people.length,
-        vibes: library.vibes.length,
-      },
-    })
+  return { categoryKey, categoryInfo }
+}
 
-    // 🔴 FIX: No early return - always proceed with AI generation
-    // Category is optional - Maya will determine categories dynamically
+/** Map a Pro Mode category key to the brand-library category name. */
+function mapProCategoryToBrandLibrary(proCategory: string | null): string | null {
+  if (!proCategory) return null
+  const categoryLower = proCategory.toLowerCase()
 
-    // 🔴 FIX: Use AI generation with Maya's personality
-    // Generate dynamic concepts based on userRequest using Maya's fashion expertise
-    console.log("[v0] [PRO MODE] Generating concepts with AI using Maya's personality:", userRequest.substring(0, 100))
+  if (categoryLower === "wellness" || categoryLower === "alo-workout" || categoryLower.includes("workout") || categoryLower.includes("athletic")) {
+    return "workout"
+  }
+  if (categoryLower === "luxury" || categoryLower === "luxury-fashion") {
+    return "luxury"
+  }
+  if (categoryLower === "casual" || categoryLower === "casual-lifestyle" || categoryLower === "lifestyle") {
+    return "casual"
+  }
+  if (categoryLower === "travel" || categoryLower === "travel-airport") {
+    return "travel"
+  }
+  if (categoryLower.includes("cozy") || categoryLower === "home") {
+    return "cozy"
+  }
+  if (categoryLower === "street-style" || categoryLower === "fashion") {
+    return "street-style"
+  }
 
-    // Declare generatedConcepts outside try block so it's accessible later
-    let generatedConcepts: any[] = []
+  return "casual"
+}
 
-    // Get Maya's personality for Pro Mode using unified system
-    const mayaPersonality = getMayaSystemPrompt(MAYA_PRO_CONFIG)
+/** Build the full AI prompt for Pro Mode concept generation. */
+function buildAiPrompt(params: {
+  mayaPersonality: string
+  userRequest: string
+  categoryInfo: CategoryInfo | null
+  categoryKey: string | null
+  library: ImageLibrary
+  essenceWords: string | undefined
+  outfitSuggestions: Record<string, any>
+}): string {
+  const { mayaPersonality, userRequest, categoryInfo, categoryKey, library, essenceWords, outfitSuggestions } = params
 
-    // 🔴 FIX: Get brand intelligence from brand-library-2025.ts
-    // Map Pro Mode categories to brand-library categories
-    const mapProCategoryToBrandLibrary = (proCategory: string | null): string | null => {
-      if (!proCategory) return null
-      const categoryLower = proCategory.toLowerCase()
-      
-      // Map Pro Mode categories to brand-library categories
-      if (categoryLower === 'wellness' || categoryLower === 'alo-workout' || categoryLower.includes('workout') || categoryLower.includes('athletic')) {
-        return 'workout'
-      }
-      if (categoryLower === 'luxury' || categoryLower === 'luxury-fashion') {
-        return 'luxury'
-      }
-      if (categoryLower === 'casual' || categoryLower === 'casual-lifestyle' || categoryLower === 'lifestyle') {
-        return 'casual'
-      }
-      if (categoryLower === 'travel' || categoryLower === 'travel-airport') {
-        return 'travel'
-      }
-      if (categoryLower.includes('cozy') || categoryLower === 'home') {
-        return 'cozy'
-      }
-      if (categoryLower === 'street-style' || categoryLower === 'fashion') {
-        return 'street-style'
-      }
-      
-      // Default to casual if no match
-      return 'casual'
-    }
-
-    // Get outfit suggestions from brand library for variety
-    const brandLibraryCategory = mapProCategoryToBrandLibrary(categoryKey)
-    const outfitSuggestions = brandLibraryCategory 
-      ? generateCompleteOutfit(brandLibraryCategory, categoryInfo?.name?.toLowerCase() || '')
-      : generateCompleteOutfit('casual', '')
-    
-    // Extract brand names from outfit suggestions for variety
-    const availableBrands = new Set<string>()
-    Object.values(outfitSuggestions).forEach((item: string) => {
-      // Extract brand names from outfit items (e.g., "Alo Yoga Airlift bralette" → "Alo Yoga")
-      const brandMatch = item.match(/^(Alo Yoga|Lululemon|Nike|Adidas|New Balance|Levi's|UGG|Bottega Veneta|The Row|Cartier|Hermès|Chanel|Louis Vuitton|Brunello Cucinelli|Toteme|Khaite|Jenni Kayne|Glossier)/i)
-      if (brandMatch) {
-        availableBrands.add(brandMatch[1])
-      }
-    })
-
-    // Category context is OPTIONAL - just a hint, not a requirement
-    const categoryHint = categoryInfo && categoryInfo.name && categoryInfo.description
+  const categoryHint =
+    categoryInfo?.name && categoryInfo?.description
       ? `\n**Optional Category Hint:** ${categoryInfo.name} - ${categoryInfo.description}\n(Use this as inspiration, but determine the best category based on the user's request)`
       : ""
 
-    const libraryContext = `
+  const libraryContext = `
 **Image Library:**
 - Selfies: ${library.selfies.length}
 - Products: ${library.products.length}
@@ -469,7 +386,7 @@ export async function POST(req: NextRequest) {
 - Intent: ${library.intent || "Not specified"}
 `
 
-    const aiPrompt = `${mayaPersonality}
+  return `${mayaPersonality}
 
 Generate 6 unique, creative concept cards based on the user's request. Use your fashion expertise and editorial knowledge to create diverse, sophisticated concepts.
 
@@ -598,7 +515,7 @@ The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana P
 
 **AVOID REPETITION:**
 - ❌ Don't create multiple "sitting on sofa" concepts
-- ❌ Don't default to "holding mug/teacup" repeatedly  
+- ❌ Don't default to "holding mug/teacup" repeatedly
 - ❌ Don't use "reading book" in multiple concepts
 - ✅ Create fresh, unique moments for each concept
 - ✅ Show variety in activities and settings
@@ -686,7 +603,256 @@ Example outfit from brand library: ${JSON.stringify(outfitSuggestions)}
 - All sentences must be complete (no fragments)
 
 Make each concept unique, sophisticated, and based on the user's request. Use your full fashion expertise - do NOT use generic descriptions.`
+}
 
+/** Parse the raw AI response text into a validated concept array. Throws on failure. */
+function parseAiConcepts(text: string): any[] {
+  const jsonMatch = text.match(/\[[\s\S]*\]/)
+  if (!jsonMatch) {
+    console.error("[v0] [PRO MODE] No JSON array found in AI response. Response text:", text.substring(0, 500))
+    throw new Error("No JSON array found in AI response")
+  }
+  let parsed: any[]
+  try {
+    const raw = JSON.parse(jsonMatch[0])
+    parsed = Array.isArray(raw)
+      ? raw.filter((c: any) => {
+          const valid = c && typeof c === "object" && typeof c.title === "string" && typeof c.prompt === "string"
+          if (!valid) console.warn("[v0] [PRO MODE] Dropping malformed concept card:", c)
+          return valid
+        })
+      : []
+  } catch (parseError: any) {
+    console.error("[v0] [PRO MODE] JSON parse error:", parseError)
+    console.error("[v0] [PRO MODE] JSON string that failed to parse:", jsonMatch[0].substring(0, 500))
+    throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`)
+  }
+  if (parsed.length === 0) {
+    console.error("[v0] [PRO MODE] ❌ No valid concept cards after schema filter")
+    throw new Error("No valid concept cards in AI response")
+  }
+  return parsed
+}
+
+/** Infer a category string from concept title + description keywords. */
+function inferCategoryFromContent(title: string, description: string): string {
+  const text = `${title} ${description}`.toLowerCase()
+  if (/wellness|yoga|fitness|workout|athletic/i.test(text)) return "WELLNESS"
+  if (/luxury|elegant|chic|sophisticated|premium/i.test(text)) return "LUXURY"
+  if (/fashion|street|style|editorial/i.test(text)) return "FASHION"
+  if (/travel|vacation|airport|jet-set/i.test(text)) return "TRAVEL"
+  if (/beauty|skincare|makeup|routine/i.test(text)) return "BEAUTY"
+  return "LIFESTYLE"
+}
+
+/** Clean a raw Pro Mode prompt: inject identity phrase if missing, strip markdown, normalise whitespace. */
+function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDescription: string, index: number): string {
+  let prompt = rawPrompt.trim().length > 0
+    ? rawPrompt
+    : `${IDENTITY_PRESERVATION_PHRASE} Professional photography. ${fallbackTitle}. ${fallbackDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
+
+  if (!prompt.toLowerCase().includes("maintain exactly the characteristics")) {
+    console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing identity preservation phrase, adding it`)
+    prompt = `${IDENTITY_PRESERVATION_PHRASE} ${prompt}`
+  }
+
+  const wordCount = prompt.split(/\s+/).length
+  if (wordCount < 150) {
+    console.warn(`[v0] [PRO MODE] Concept ${index + 1} prompt is too short (${wordCount} words, minimum 150). Maya should generate longer prompts.`)
+  }
+
+  prompt = prompt.replace(/\*\*/g, "")
+  prompt = prompt
+    .replace(/Outfit:\s*/gi, "")
+    .replace(/Pose:\s*/gi, "")
+    .replace(/Setting:\s*/gi, "")
+    .replace(/Lighting:\s*/gi, "")
+    .replace(/Camera Composition:\s*/gi, "")
+    .replace(/Mood:\s*/gi, "")
+    .replace(/Aesthetic:\s*/gi, "")
+    .replace(/Camera:\s*/gi, "")
+  prompt = prompt.replace(/\n{3,}/g, "\n\n")
+  prompt = prompt.replace(/[ \t]+/g, " ")
+  prompt = prompt.replace(/^\s+|\s+$/gm, "")
+  prompt = prompt.replace(/\n\s*\n/g, "\n")
+  return prompt.trim()
+}
+
+/** Build a single concept result object from raw AI data. Returns concept or throws. */
+function buildConceptFromAiData(
+  aiConcept: any,
+  index: number,
+  library: ImageLibrary,
+  categoryKey: string | null,
+): any {
+  const safeTitle = aiConcept.title && typeof aiConcept.title === "string" ? aiConcept.title : `Concept ${index + 1}`
+  const safeDescription = aiConcept.description && typeof aiConcept.description === "string" ? aiConcept.description : ""
+  const safeAesthetic = aiConcept.aesthetic && typeof aiConcept.aesthetic === "string" ? aiConcept.aesthetic : undefined
+  const safeBrandReferences = Array.isArray(aiConcept.brandReferences) ? aiConcept.brandReferences : []
+
+  let safeCategory = aiConcept.category && typeof aiConcept.category === "string" ? aiConcept.category : null
+  if (!safeCategory) safeCategory = inferCategoryFromContent(safeTitle, safeDescription)
+
+  const promptCategory =
+    safeCategory && typeof safeCategory === "string"
+      ? safeCategory.toUpperCase()
+      : categoryKey && typeof categoryKey === "string"
+        ? categoryKey
+        : "LIFESTYLE"
+
+  const rawPrompt = aiConcept.prompt && typeof aiConcept.prompt === "string" ? aiConcept.prompt : ""
+  const fullPrompt = sanitizeProPrompt(rawPrompt, safeTitle, safeDescription, index)
+
+  console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
+  console.log(`[v0] [PRO MODE] Cleaned prompt preview:`, fullPrompt.substring(0, 200))
+
+  const mockUniversalPrompt = {
+    id: `concept-${Date.now()}-${index}`,
+    title: safeTitle,
+    description: safeDescription,
+    category: safeCategory,
+    aesthetic: safeAesthetic,
+    brandReferences: safeBrandReferences,
+  }
+
+  const categoryForLinking =
+    promptCategory && typeof promptCategory === "string"
+      ? promptCategory
+      : safeCategory && typeof safeCategory === "string"
+        ? safeCategory
+        : "LIFESTYLE"
+  const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
+
+  return {
+    id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+    title: safeTitle,
+    description: safeDescription,
+    category: safeCategory,
+    aesthetic: safeAesthetic,
+    linkedImages: linkedImages.length > 0 ? linkedImages : undefined,
+    fullPrompt,
+    template: undefined,
+    brandReferences: safeBrandReferences,
+    stylingDetails: aiConcept.stylingDetails && typeof aiConcept.stylingDetails === "string" ? aiConcept.stylingDetails : undefined,
+    technicalSpecs: aiConcept.technicalSpecs && typeof aiConcept.technicalSpecs === "string" ? aiConcept.technicalSpecs : undefined,
+    prompt: fullPrompt,
+    referenceImageUrl: linkedImages[0],
+  }
+}
+
+/** If caller provided existing concepts, merge them with newly generated ones. */
+function mergeWithProvidedConcepts(generated: any[], provided: any[]): any[] {
+  return provided.map((providedConcept: any, index: number) => {
+    const gen = generated[index] ?? generated[0]
+    if (!gen) {
+      console.error("[v0] [PRO MODE] No generated concept available for index", index)
+      return providedConcept
+    }
+    return {
+      ...providedConcept,
+      fullPrompt: gen.fullPrompt ?? providedConcept.prompt,
+      linkedImages: gen.linkedImages ?? providedConcept.linkedImages,
+      brandReferences: gen.brandReferences ?? providedConcept.brandReferences,
+      stylingDetails: gen.stylingDetails ?? providedConcept.stylingDetails,
+      technicalSpecs: gen.technicalSpecs ?? providedConcept.technicalSpecs,
+      prompt: gen.fullPrompt ?? providedConcept.prompt,
+      referenceImageUrl: gen.linkedImages?.[0] ?? providedConcept.referenceImageUrl,
+    }
+  })
+}
+
+
+/**
+ * Pro Mode Generate Concepts API Route
+ *
+ * Generates concepts for Studio Pro Mode using:
+ * - Category detection
+ * - Universal Prompts
+ * - Prompt builder for full prompts
+ * - Image linking logic
+ */
+export async function POST(req: NextRequest) {
+  console.log("[v0] [PRO MODE] Generate concepts API called")
+
+  try {
+    // ── Auth ──────────────────────────────────────────────────────────────
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+    if (authError || !authUser) {
+      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getEffectiveNeonUser(authUser.id)
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+    console.log("[v0] [PRO MODE] User authenticated:", { userId: authUser.id, dbUserId: user.id })
+
+    const hasCredits = await checkCredits(user.id, 1)
+    if (!hasCredits) {
+      console.log("[v0] [PRO MODE] User has insufficient credits for concept generation")
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
+    }
+
+    // ── Request parsing ────────────────────────────────────────────────────
+    const body = await req.json()
+    const { userRequest, imageLibrary, category, essenceWords, concepts } = body
+
+    if (!userRequest || typeof userRequest !== "string") {
+      return NextResponse.json({ error: "userRequest is required" }, { status: 400 })
+    }
+    if (!imageLibrary) {
+      return NextResponse.json({ error: "imageLibrary is required" }, { status: 400 })
+    }
+
+    const library = normalizeImageLibrary(imageLibrary)
+    if (library.selfies.length === 0) {
+      return NextResponse.json(
+        { error: "At least one selfie is required to generate concepts" },
+        { status: 400 },
+      )
+    }
+
+    // ── Category resolution ────────────────────────────────────────────────
+    const { categoryKey, categoryInfo } = resolveCategory(category, userRequest, library)
+
+    console.log("[v0] [PRO MODE] Request:", {
+      userRequestLength: userRequest.length,
+      categoryHint: categoryInfo?.name ?? categoryKey ?? "none - Maya will determine dynamically",
+      essenceWords: essenceWords || "none",
+      hasConcepts: !!concepts,
+      conceptsCount: Array.isArray(concepts) ? concepts.length : 0,
+      imageLibraryCounts: {
+        selfies: library.selfies.length,
+        products: library.products.length,
+        people: library.people.length,
+        vibes: library.vibes.length,
+      },
+    })
+
+    // ── Brand intelligence ─────────────────────────────────────────────────
+    const brandLibraryCategory = mapProCategoryToBrandLibrary(categoryKey)
+    const outfitSuggestions = brandLibraryCategory
+      ? generateCompleteOutfit(brandLibraryCategory, categoryInfo?.name?.toLowerCase() ?? "")
+      : generateCompleteOutfit("casual", "")
+
+    // ── AI generation ──────────────────────────────────────────────────────
+    const mayaPersonality = getMayaSystemPrompt(MAYA_PRO_CONFIG)
+    const aiPrompt = buildAiPrompt({
+      mayaPersonality,
+      userRequest,
+      categoryInfo,
+      categoryKey,
+      library,
+      essenceWords,
+      outfitSuggestions,
+    })
+
+    console.log(
+      "[v0] [PRO MODE] Generating concepts with AI using Maya's personality:",
+      userRequest.substring(0, 100),
+    )
+
+    let generatedConcepts: any[] = []
     try {
       const { text } = await generateText({
         model: createMayaOpenRouterModel("chat_pro"),
@@ -694,256 +860,69 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
         temperature: 0.85,
       })
 
-      // Parse AI response
-      const jsonMatch = text.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) {
-        console.error("[v0] [PRO MODE] No JSON array found in AI response. Response text:", text.substring(0, 500))
-        throw new Error("No JSON array found in AI response")
-      }
+      const aiConcepts = parseAiConcepts(text)
 
-      let aiConcepts: any[]
-      try {
-        const parsed = JSON.parse(jsonMatch[0])
-        // Validate each item has minimum required fields; drop invalid entries rather than crashing
-        aiConcepts = Array.isArray(parsed)
-          ? parsed.filter((c: any) => {
-              const valid =
-                c &&
-                typeof c === "object" &&
-                typeof c.title === "string" &&
-                typeof c.prompt === "string"
-              if (!valid) {
-                console.warn("[v0] [PRO MODE] Dropping malformed concept card:", c)
-              }
-              return valid
-            })
-          : []
-      } catch (parseError: any) {
-        console.error("[v0] [PRO MODE] JSON parse error:", parseError)
-        console.error("[v0] [PRO MODE] JSON string that failed to parse:", jsonMatch[0].substring(0, 500))
-        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`)
-      }
+      console.log(
+        "[v0] [PRO MODE] Maya generated concepts:",
+        aiConcepts.map((c: any) => ({
+          title: c.title?.substring(0, 50),
+          description: c.description?.substring(0, 100),
+          category: c.category,
+        })),
+      )
 
-      // Validation is separate from JSON parsing — empty array after filtering is a different failure mode
-      if (aiConcepts.length === 0) {
-        console.error("[v0] [PRO MODE] ❌ No valid concept cards after schema filter")
-        throw new Error("No valid concept cards in AI response")
-      }
-
-      // 🔴 DEBUG: Log what Maya generated
-      console.log('[v0] [PRO MODE] Maya generated concepts:', aiConcepts.map((c: any) => ({
-        title: c.title?.substring(0, 50),
-        description: c.description?.substring(0, 100),
-        category: c.category,
-      })))
-
-      // Validate AI concepts array
-      if (!Array.isArray(aiConcepts) || aiConcepts.length === 0) {
-        throw new Error("AI returned invalid or empty concepts array")
-      }
-
-      // Build concepts with full prompts and linked images
-      // Wrap in try-catch to handle individual concept errors
-      const conceptResults: any[] = []
-      for (let index = 0; index < aiConcepts.length; index++) {
-        const aiConcept = aiConcepts[index]
+      const conceptResults = aiConcepts.flatMap((aiConcept: any, index: number) => {
         try {
-          // Validate and sanitize AI concept data
-          const safeTitle = (aiConcept.title && typeof aiConcept.title === 'string') ? aiConcept.title : `Concept ${index + 1}`
-          const safeDescription = (aiConcept.description && typeof aiConcept.description === 'string') ? aiConcept.description : ''
-          const safeAesthetic = (aiConcept.aesthetic && typeof aiConcept.aesthetic === 'string') ? aiConcept.aesthetic : undefined
-          const safeBrandReferences = Array.isArray(aiConcept.brandReferences) ? aiConcept.brandReferences : []
-          // 🔴 FIX: Use AI-determined category, or try to infer from title/description if missing
-          // Don't default to LIFESTYLE - Maya should always return a category
-          let safeCategory = (aiConcept.category && typeof aiConcept.category === 'string') ? aiConcept.category : null
-          
-          // If AI didn't return category, try to infer from title/description
-          if (!safeCategory) {
-            const titleDesc = `${safeTitle} ${safeDescription}`.toLowerCase()
-            if (/wellness|yoga|fitness|workout|athletic/i.test(titleDesc)) safeCategory = 'WELLNESS'
-            else if (/luxury|elegant|chic|sophisticated|premium/i.test(titleDesc)) safeCategory = 'LUXURY'
-            else if (/fashion|street|style|editorial/i.test(titleDesc)) safeCategory = 'FASHION'
-            else if (/travel|vacation|airport|jet-set/i.test(titleDesc)) safeCategory = 'TRAVEL'
-            else if (/beauty|skincare|makeup|routine/i.test(titleDesc)) safeCategory = 'BEAUTY'
-            else safeCategory = 'LIFESTYLE' // Last resort fallback
-          }
-          
-          // Use AI-determined category
-          const promptCategory = (safeCategory && typeof safeCategory === 'string') 
-            ? safeCategory.toUpperCase() 
-            : (categoryKey && typeof categoryKey === 'string' ? categoryKey : 'LIFESTYLE')
-          
-          // Use Maya's generated prompt directly
-          let fullPrompt: string = (aiConcept.prompt && typeof aiConcept.prompt === 'string') ? aiConcept.prompt : ''
-          let finalCategory: string = promptCategory
-          
-          // Simple fallback only if Maya didn't generate a prompt
-          if (!fullPrompt || fullPrompt.trim().length === 0) {
-            console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing prompt, using fallback`)
-            fullPrompt = `Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo. Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
-          }
-          
-          // 🔴 FIX: Ensure identity preservation phrase is present (REQUIRED for Pro Mode)
-          const identityPhrase = "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
-          if (!fullPrompt.toLowerCase().includes("maintain exactly the characteristics")) {
-            console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing identity preservation phrase, adding it`)
-            fullPrompt = `${identityPhrase} ${fullPrompt}`
-          }
-          
-          // 🔴 FIX: Check prompt length and warn if too short
-          const wordCount = fullPrompt.split(/\s+/).length
-          if (wordCount < 150) {
-            console.warn(`[v0] [PRO MODE] Concept ${index + 1} prompt is too short (${wordCount} words, minimum 150). Maya should generate longer prompts.`)
-          }
-          
-          // 🔴 FIX: Clean markdown formatting from prompts before returning
-          // Remove markdown bold formatting
-          fullPrompt = fullPrompt.replace(/\*\*/g, '')
-          
-          // Remove section labels if they snuck through
-          fullPrompt = fullPrompt
-            .replace(/Outfit:\s*/gi, '')
-            .replace(/Pose:\s*/gi, '')
-            .replace(/Setting:\s*/gi, '')
-            .replace(/Lighting:\s*/gi, '')
-            .replace(/Camera Composition:\s*/gi, '')
-            .replace(/Mood:\s*/gi, '')
-            .replace(/Aesthetic:\s*/gi, '')
-            .replace(/Camera:\s*/gi, '')
-          
-          // Clean up extra whitespace and newlines
-          fullPrompt = fullPrompt.replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
-          fullPrompt = fullPrompt.replace(/[ \t]+/g, ' ') // Multiple spaces to single space
-          fullPrompt = fullPrompt.replace(/^\s+|\s+$/gm, '') // Trim each line
-          fullPrompt = fullPrompt.replace(/\n\s*\n/g, '\n') // Remove empty lines between content
-          fullPrompt = fullPrompt.trim()
-          
-          console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
-          console.log(`[v0] [PRO MODE] Cleaned prompt preview:`, fullPrompt.substring(0, 200))
-
-          // Create a mock UniversalPrompt for image linking (using safe values)
-          const mockUniversalPrompt = {
-            id: `concept-${Date.now()}-${index}`,
-            title: safeTitle,
-            description: safeDescription,
-            category: safeCategory,
-            aesthetic: safeAesthetic,
-            brandReferences: safeBrandReferences,
-          }
-
-          // Link images to concept using final category from direct generation
-          const categoryForLinking = (finalCategory && typeof finalCategory === 'string') ? finalCategory : (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
-          const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
-
-          // Build concept object
-          const concept = {
-            id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-            title: safeTitle,
-            description: safeDescription,
-            category: safeCategory,
-            aesthetic: safeAesthetic,
-            linkedImages: linkedImages.length > 0 ? linkedImages : undefined,
-            fullPrompt: fullPrompt,
-            template: undefined,
-            brandReferences: safeBrandReferences,
-            stylingDetails: (aiConcept.stylingDetails && typeof aiConcept.stylingDetails === 'string') ? aiConcept.stylingDetails : undefined,
-            technicalSpecs: (aiConcept.technicalSpecs && typeof aiConcept.technicalSpecs === 'string') ? aiConcept.technicalSpecs : undefined,
-            // For compatibility with ConceptData
-            prompt: fullPrompt,
-            referenceImageUrl: linkedImages[0], // Use first linked image as reference
-          }
-          
-          conceptResults.push(concept)
+          return [buildConceptFromAiData(aiConcept, index, library, categoryKey)]
         } catch (conceptError: any) {
           console.error(`[v0] [PRO MODE] Error building concept ${index + 1}:`, conceptError)
-          // Skip this concept but continue with others
+          return []
         }
-      }
-      
-      generatedConcepts = conceptResults
-      
-      console.log("[v0] [PRO MODE] Generated", generatedConcepts.length, "concepts using AI")
-      console.log("[v0] [PRO MODE] Concept details:", generatedConcepts.map((c: any) => ({
-        id: c.id,
-        title: c.title?.substring(0, 30),
-        category: c.category,
-        linkedImagesCount: c.linkedImages?.length || 0,
-        hasFullPrompt: !!c.fullPrompt,
-      })))
-      
-      // Validate that concepts were actually generated
-      if (!Array.isArray(generatedConcepts) || generatedConcepts.length === 0) {
-        console.error("[v0] [PRO MODE] ❌ No concepts generated - conceptResults was empty")
+      })
+
+      if (conceptResults.length === 0) {
         throw new Error("AI generation returned empty or invalid concepts array")
       }
+
+      generatedConcepts = conceptResults
+
+      console.log("[v0] [PRO MODE] Generated", generatedConcepts.length, "concepts using AI")
+      console.log(
+        "[v0] [PRO MODE] Concept details:",
+        generatedConcepts.map((c: any) => ({
+          id: c.id,
+          title: c.title?.substring(0, 30),
+          category: c.category,
+          linkedImagesCount: c.linkedImages?.length || 0,
+          hasFullPrompt: !!c.fullPrompt,
+        })),
+      )
     } catch (aiError: any) {
       console.error("[v0] [PRO MODE] AI generation error:", aiError)
       console.error("[v0] [PRO MODE] Error stack:", aiError.stack)
-      // Reset generatedConcepts to empty array on error
-      generatedConcepts = []
-      // Fallback: return error but don't crash
-      return NextResponse.json({
-        error: "Failed to generate concepts with AI",
-        details: aiError.message || "Unknown error occurred during concept generation",
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: "Failed to generate concepts with AI",
+          details: aiError.message || "Unknown error occurred during concept generation",
+        },
+        { status: 500 },
+      )
     }
 
-    // Validate that we have generated concepts
-    if (!Array.isArray(generatedConcepts) || generatedConcepts.length === 0) {
-      console.error("[v0] [PRO MODE] No concepts were generated")
-      return NextResponse.json({
-        error: "Failed to generate concepts",
-        details: "No concepts were generated. Please try again.",
-      }, { status: 500 })
-    }
-
-
-    // If concepts were provided (from hook), enhance them
+    // ── Response ───────────────────────────────────────────────────────────
+    let finalConcepts: any[]
     if (Array.isArray(concepts) && concepts.length > 0) {
       console.log("[v0] [PRO MODE] Enhancing", concepts.length, "provided concepts")
-      
-      // Merge provided concepts with generated ones
-      const enhancedConcepts = concepts.map((providedConcept: any, index: number) => {
-        const generatedConcept = generatedConcepts[index] || generatedConcepts[0]
-        
-        if (!generatedConcept) {
-          console.error("[v0] [PRO MODE] No generated concept available for index", index)
-          return providedConcept
-        }
-        
-        return {
-          ...providedConcept,
-          // Enhance with generated data
-          fullPrompt: generatedConcept.fullPrompt || providedConcept.prompt,
-          linkedImages: generatedConcept.linkedImages || providedConcept.linkedImages,
-          brandReferences: generatedConcept.brandReferences || providedConcept.brandReferences,
-          stylingDetails: generatedConcept.stylingDetails || providedConcept.stylingDetails,
-          technicalSpecs: generatedConcept.technicalSpecs || providedConcept.technicalSpecs,
-          // Ensure compatibility fields
-          prompt: generatedConcept.fullPrompt || providedConcept.prompt,
-          referenceImageUrl: generatedConcept.linkedImages?.[0] || providedConcept.referenceImageUrl,
-        }
-      })
-
-      // 🔴 FIX: Match Classic Mode response format for consistency
-      // Classic Mode returns: { state: "ready", concepts: [...] }
-      // This ensures rendering and saving code works the same way
-      return NextResponse.json({
-        state: "ready",
-        concepts: enhancedConcepts,
-        category: categoryKey,
-        count: enhancedConcepts.length,
-      })
+      finalConcepts = mergeWithProvidedConcepts(generatedConcepts, concepts)
+    } else {
+      finalConcepts = generatedConcepts
     }
 
-    // 🔴 FIX: Match Classic Mode response format for consistency
-    // Classic Mode returns: { state: "ready", concepts: [...] }
-    // This ensures rendering and saving code works the same way
     return NextResponse.json({
       state: "ready",
-      concepts: generatedConcepts,
+      concepts: finalConcepts,
       category: categoryKey,
-      count: generatedConcepts.length,
+      count: finalConcepts.length,
     })
   } catch (error: any) {
     console.error("[v0] [PRO MODE] Generate concepts API error:", error)
@@ -953,19 +932,19 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
       name: error.name,
       cause: error.cause,
     })
-    
-    // Provide more helpful error message
+
     const errorMessage = error.message || "Internal server error"
-    const isNullReference = errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
-    
+    const isNullReference =
+      errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
+
     return NextResponse.json(
-      { 
-        error: isNullReference 
+      {
+        error: isNullReference
           ? "An internal error occurred while processing your request. Please try again with more specific details."
           : errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
