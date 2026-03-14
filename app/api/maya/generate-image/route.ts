@@ -200,14 +200,12 @@ export async function POST(request: NextRequest) {
       ? customSettings.extraLoraScale
       : customSettings?.realismStrength
     
-    // CRITICAL FIX: Enhanced Authenticity toggle is HIGHEST PRIORITY - it FORCES extra LoRA to 0
-    // The toggle explicitly overrides any user realismStrength setting
-    // Priority: 1. Enhanced Authenticity toggle (if ON → force 0), 2. User's realismStrength, 3. Preset default
     const hasUserSetRealism = manualExtraLoraScale !== undefined
-    // FIX (2026-03-14): was hardcoded `false` despite comments. Now correctly reflects toggle state.
-    // Also disable when the prompt itself contains authentic-aesthetic keywords (film grain, candid, etc.)
-    // so the LoRA doesn't contradict the user's explicit prompt intent.
-    const shouldDisableExtraLora = enhancedAuthenticity === true || hasAuthenticAesthetic
+    // Disable extra LoRA when the user hasn't set an explicit realism value AND either:
+    // - Enhanced Authenticity toggle is ON (user wants authentic iPhone look via prompt)
+    // - Prompt already contains authentic-aesthetic keywords (so LoRA doesn't contradict the prompt)
+    // When the user HAS explicitly set realismStrength, respect that setting even if the toggle is on.
+    const shouldDisableExtraLora = !hasUserSetRealism && (enhancedAuthenticity === true || hasAuthenticAesthetic)
     
     const qualitySettings = {
       ...presetSettings,

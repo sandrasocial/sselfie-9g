@@ -4,6 +4,14 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 
+function parseJsonOrNull<T = unknown>(value: unknown): T | null {
+  if (!value) return null
+  try {
+    return typeof value === "string" ? (JSON.parse(value) as T) : (value as T)
+  } catch {
+    return null
+  }
+}
 
 export async function POST(
   req: NextRequest,
@@ -97,38 +105,20 @@ export async function POST(
     `
 
     // Parse research insights if available
-    let researchData = null
-    if (post.research_insights) {
-      try {
-        researchData = typeof post.research_insights === 'string' 
-          ? JSON.parse(post.research_insights) 
-          : post.research_insights
-      } catch (e) {
-        console.warn("[v0] Failed to parse research insights:", e)
-      }
-    }
+    const researchData = parseJsonOrNull(post.research_insights)
 
     // Caption type rotates story/value/motivational across the 9-post grid
-    const CAPTION_TYPE_ROTATION: Array<'story' | 'value' | 'motivational'> = [
-      'story', 'value', 'motivational',
-      'story', 'value', 'motivational',
-      'story', 'value', 'motivational',
+    const CAPTION_TYPE_ROTATION: Array<"story" | "value" | "motivational"> = [
+      "story", "value", "motivational",
+      "story", "value", "motivational",
+      "story", "value", "motivational",
     ]
-    const TONE_BY_TYPE: Record<string, string> = { story: 'warm', value: 'confident', motivational: 'inspiring' }
+    const TONE_BY_TYPE: Record<string, string> = { story: "warm", value: "confident", motivational: "inspiring" }
     const captionType = CAPTION_TYPE_ROTATION[(post.position - 1) % 9]
     const emotionalTone = TONE_BY_TYPE[captionType]
 
     // Parse content pillars from brand profile
-    let contentPillars: any[] = []
-    if (brandProfile?.content_pillars) {
-      try {
-        contentPillars = typeof brandProfile.content_pillars === 'string'
-          ? JSON.parse(brandProfile.content_pillars)
-          : brandProfile.content_pillars
-      } catch (e) {
-        // silently ignore parse error
-      }
-    }
+    const contentPillars: any[] = parseJsonOrNull<any[]>(brandProfile?.content_pillars) ?? []
 
     // Generate new caption using the same logic as create-from-strategy
     const captionResult = await generateInstagramCaption({
