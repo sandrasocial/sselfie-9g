@@ -265,10 +265,10 @@ export default function InstagramPhotoCard({
               {!isEditingCaption ? (
                 <span
                   onClick={() => setIsEditingCaption(true)}
-                  className="text-[#a8a49c] cursor-text hover:bg-[rgba(175,170,162,0.10)] rounded px-1 -mx-1 transition-all whitespace-pre-wrap"
+                  className={`cursor-text hover:bg-[rgba(175,170,162,0.10)] rounded px-1 -mx-1 transition-all whitespace-pre-wrap ${concept.description ? "text-[#a8a49c]" : "text-[#5a5752] italic"}`}
                   title="Click to edit caption"
                 >
-                  {formatCaption(concept.description)}
+                  {concept.description ? formatCaption(concept.description) : "Write your caption..."}
                 </span>
               ) : (
                 <div className="mt-2 space-y-2">
