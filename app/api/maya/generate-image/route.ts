@@ -8,22 +8,192 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
-import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import {
+  extractReplicateVersionId,
+  ensureTriggerWordPrefix,
+  ensureGenderInPrompt,
+  buildClassicModeReplicateInput,
+} from "@/lib/replicate-helpers"
 import { logger } from "@/lib/logger"
 
 const sql = getDbClient()
 
-// =============================================================================
-// HELPER FUNCTIONS: Extract prompt elements from Maya's creative prompts
-// =============================================================================
+// ─── Types ───────────────────────────────────────────────────────────────────
 
+type UserModelData = {
+  triggerWord: string
+  gender: string | null
+  ethnicity: string | null
+  replicateVersionId: string | null
+  replicateModelId: string | null
+  userLoraScale: number | null
+  loraWeightsUrl: string | null
+}
+
+type LoraDecision = {
+  manualExtraLoraScale: number | undefined
+  hasUserSetRealism: boolean
+  shouldDisableExtraLora: boolean
+}
+
+// ─── Pure helpers ─────────────────────────────────────────────────────────────
+
+/** Normalise a raw DB gender string to a prompt-ready gender term. */
+function resolveUserGender(gender: string | null): string {
+  if (!gender) return "person"
+  const g = gender.toLowerCase().trim()
+  if (g === "woman" || g === "female") return "woman"
+  if (g === "man" || g === "male") return "man"
+  return "person"
+}
+
+/**
+ * Apply trigger-word prefix, gender, highlight, and authenticity modifiers
+ * to a raw concept prompt.
+ */
+function buildFinalPrompt(
+  conceptPrompt: string,
+  opts: {
+    triggerWord: string
+    userGender: string
+    ethnicity: string | null
+    isHighlight: boolean
+    enhancedAuthenticity: boolean
+  },
+): string {
+  let prompt = conceptPrompt.trim()
+  prompt = ensureTriggerWordPrefix(prompt, opts.triggerWord)
+  prompt = ensureGenderInPrompt(prompt, opts.triggerWord, opts.userGender, opts.ethnicity)
+  if (opts.isHighlight) {
+    prompt +=
+      ", professional Instagram story highlight aesthetic, elegant and minimalistic design," +
+      " soft lighting, high-end editorial quality, perfect for text overlay," +
+      " circular crop friendly, trending Instagram aesthetic 2025"
+  }
+  if (opts.enhancedAuthenticity) {
+    prompt +=
+      ", muted colors, iPhone quality, film grain, authentic cellphone photo aesthetic," +
+      " natural skin texture with visible pores, amateur cellphone quality," +
+      " visible sensor noise, heavy HDR glow, blown-out highlights, crushed shadows," +
+      " authentic moment, unfiltered, real life texture"
+    console.log("[v0] ✅ Enhanced Authenticity: Added authentic iPhone aesthetic keywords to prompt")
+  }
+  return prompt
+}
+
+/**
+ * Decide whether to disable the super-realism extra LoRA and resolve the
+ * manual scale value.
+ *
+ * Priority: user's explicit realismStrength always beats toggle/keyword
+ * detection — so if the user has set a value we honour it even when the
+ * authenticity toggle is on.
+ */
+function resolveLoraDecision(
+  customSettings: Record<string, any> | undefined,
+  enhancedAuthenticity: boolean,
+  finalPrompt: string,
+): LoraDecision {
+  const manualExtraLoraScale =
+    customSettings?.extraLoraScale !== undefined
+      ? customSettings.extraLoraScale
+      : customSettings?.realismStrength
+
+  const hasUserSetRealism = manualExtraLoraScale !== undefined
+  const hasAuthenticKeywords =
+    /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(
+      finalPrompt,
+    )
+  const shouldDisableExtraLora =
+    !hasUserSetRealism && (enhancedAuthenticity || hasAuthenticKeywords)
+
+  return { manualExtraLoraScale, hasUserSetRealism, shouldDisableExtraLora }
+}
+
+/** Merge preset quality settings with user overrides, applying LoRA priority rules. */
+function buildQualitySettings(
+  presetSettings: Record<string, any>,
+  customSettings: Record<string, any> | undefined,
+  userLoraScale: number | null,
+  lora: LoraDecision,
+) {
+  const { shouldDisableExtraLora, hasUserSetRealism, manualExtraLoraScale } = lora
+  return {
+    ...presetSettings,
+    aspect_ratio: customSettings?.aspectRatio ?? presetSettings.aspect_ratio,
+    // Priority: manual styleStrength → DB lora_scale → preset default
+    lora_scale:
+      customSettings?.styleStrength !== undefined
+        ? customSettings.styleStrength
+        : (userLoraScale ?? presetSettings.lora_scale),
+    guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
+    extra_lora: customSettings?.extraLora ?? presetSettings.extra_lora,
+    // Priority: authenticity toggle/keywords forces 0 → explicit realism → preset default
+    extra_lora_scale: shouldDisableExtraLora
+      ? 0
+      : hasUserSetRealism
+        ? manualExtraLoraScale
+        : presetSettings.extra_lora_scale,
+    num_inference_steps: presetSettings.num_inference_steps,
+  }
+}
+
+/** Load the most-recent completed model for a user. Returns null if none found. */
+async function loadUserModel(neonUserId: number): Promise<UserModelData | null> {
+  const rows = await sql`
+    SELECT
+      u.gender,
+      u.ethnicity,
+      um.trigger_word,
+      um.replicate_version_id,
+      um.replicate_model_id,
+      um.lora_scale,
+      um.lora_weights_url
+    FROM users u
+    LEFT JOIN user_models um ON u.id = um.user_id
+    WHERE u.id = ${neonUserId}
+    AND um.training_status = 'completed'
+    AND (um.is_test = false OR um.is_test IS NULL)
+    ORDER BY um.created_at DESC
+    LIMIT 1
+  `
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return {
+    triggerWord: row.trigger_word || "person",
+    gender: row.gender,
+    ethnicity: row.ethnicity,
+    replicateVersionId: extractReplicateVersionId(row.replicate_version_id),
+    replicateModelId: row.replicate_model_id,
+    userLoraScale: row.lora_scale,
+    loraWeightsUrl: row.lora_weights_url,
+  }
+}
+
+/** Format a caught error into a 500 JSON response, detecting Replicate 401s. */
+function handleGenerationError(error: unknown): NextResponse {
+  console.error("[v0] Error generating image:", error)
+  if (error instanceof Error) {
+    console.error("[v0] Error message:", error.message)
+    console.error("[v0] Error stack:", error.stack)
+  }
+  const message = error instanceof Error ? error.message : "Unknown error"
+  const is401 = message.includes("401") || message.includes("Unauthenticated")
+  return NextResponse.json(
+    {
+      error: is401 ? "Replicate authentication failed" : "Failed to generate image",
+      details: is401
+        ? "Your REPLICATE_API_TOKEN is invalid or expired. Please update it in the Vars section. Get a new token from https://replicate.com/account/api-tokens"
+        : message,
+    },
+    { status: 500 },
+  )
+}
+
+// ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  const rateLimitResult = await rateLimit(request, {
-    maxRequests: 30,
-    windowMs: 60000,
-  })
-
+  const rateLimitResult = await rateLimit(request, { maxRequests: 30, windowMs: 60000 })
   if (!rateLimitResult.success) {
     return NextResponse.json(
       {
@@ -36,8 +206,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // ── Auth ──────────────────────────────────────────────────────────────
     const { user, error: authError } = await getAuthenticatedUser()
-
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -54,16 +224,10 @@ export async function POST(request: NextRequest) {
       textOverlayConfig,
       isHighlight,
       customSettings,
-      enhancedAuthenticity, // CRITICAL: Receive enhanced authenticity toggle from frontend
+      enhancedAuthenticity,
     } = body
 
-    console.log("[v0] Generating image for concept:", {
-      conceptTitle,
-      category,
-      hasReferenceImage: !!referenceImageUrl,
-      addTextOverlay: !!addTextOverlay,
-    })
-
+    // ── User + credit guard ────────────────────────────────────────────────
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
     const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
@@ -71,10 +235,8 @@ export async function POST(request: NextRequest) {
     }
 
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
-
     if (!hasEnoughCredits) {
       const currentBalance = await getUserCredits(neonUser.id)
-
       return NextResponse.json(
         {
           error: "Insufficient credits",
@@ -88,26 +250,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userDataResult = await sql`
-      SELECT 
-        u.gender,
-        u.ethnicity,
-        um.trigger_word,
-        um.replicate_version_id,
-        um.replicate_model_id,
-        um.training_status,
-        um.lora_scale,
-        um.lora_weights_url
-      FROM users u
-      LEFT JOIN user_models um ON u.id = um.user_id
-      WHERE u.id = ${neonUser.id}
-      AND um.training_status = 'completed'
-      AND (um.is_test = false OR um.is_test IS NULL)
-      ORDER BY um.created_at DESC
-      LIMIT 1
-    `
-
-    if (userDataResult.length === 0) {
+    // ── Model data ─────────────────────────────────────────────────────────
+    const model = await loadUserModel(neonUser.id)
+    if (!model) {
       return NextResponse.json(
         {
           error: "No trained model found. Please complete training first.",
@@ -118,209 +263,86 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       )
     }
-
-    const userData = userDataResult[0]
-    const triggerWord = userData.trigger_word || "person"
-    const gender = userData.gender
-    const ethnicity = userData.ethnicity
-    
-    // Extract version ID using shared helper
-    const replicateVersionId = extractReplicateVersionId(userData.replicate_version_id)
-    
-    // Validate version exists
-    if (!replicateVersionId) {
+    if (!model.replicateVersionId) {
       console.error("[v0] ❌ CRITICAL: replicate_version_id is missing!")
       return NextResponse.json(
         { error: "Model version not found. Please retrain your model." },
-        { status: 400 }
+        { status: 400 },
       )
     }
-    
-    const replicateModelId = userData.replicate_model_id
-    const userLoraScale = userData.lora_scale
-    const loraWeightsUrl = userData.lora_weights_url
 
-    // Build user gender term (same format as concept cards)
-    let userGender = "person"
-    if (gender) {
-      const dbGender = gender.toLowerCase().trim()
-      if (dbGender === "woman" || dbGender === "female") {
-        userGender = "woman"
-      } else if (dbGender === "man" || dbGender === "male") {
-        userGender = "man"
-      }
-    }
+    // ── Prompt construction ────────────────────────────────────────────────
+    const userGender = resolveUserGender(model.gender)
+    const finalPrompt = buildFinalPrompt(conceptPrompt, {
+      triggerWord: model.triggerWord,
+      userGender,
+      ethnicity: model.ethnicity,
+      isHighlight,
+      enhancedAuthenticity: enhancedAuthenticity === true,
+    })
 
-    // =============================================================================
-    // USE MAYA'S PROMPT DIRECTLY WITH GENDER VALIDATION
-    // =============================================================================
-    // Trust Maya's generated prompt, but ensure trigger word and gender are present
-    
-    let finalPrompt = conceptPrompt.trim()
-    
-    // Ensure trigger word is first using shared helper
-    finalPrompt = ensureTriggerWordPrefix(finalPrompt, triggerWord)
-    
-    // CRITICAL: Ensure gender is present after trigger word (fixes missing gender issue)
-    finalPrompt = ensureGenderInPrompt(finalPrompt, triggerWord, userGender, ethnicity)
-    
-    console.log("[v0] Using Maya's prompt directly:", {
+    console.log("[v0] Prompt ready:", {
+      conceptTitle,
+      category,
       promptLength: finalPrompt.length,
-      startsWithTrigger: finalPrompt.toLowerCase().startsWith(triggerWord.toLowerCase()),
-      enhancedAuthenticity: enhancedAuthenticity,
+      hasReferenceImage: !!referenceImageUrl,
+      enhancedAuthenticity,
     })
-    
-    // Apply highlight modifications if needed
-    if (isHighlight) {
-      finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
-    }
 
-    // Apply Enhanced Authenticity modifications if toggle is ON
-    // This adds: muted colors, iPhone quality, film grain for authentic look
-    if (enhancedAuthenticity === true) {
-      finalPrompt = `${finalPrompt}, muted colors, iPhone quality, film grain, authentic cellphone photo aesthetic, natural skin texture with visible pores, amateur cellphone quality, visible sensor noise, heavy HDR glow, blown-out highlights, crushed shadows, authentic moment, unfiltered, real life texture`
-      console.log("[v0] ✅ Enhanced Authenticity: Added authentic iPhone aesthetic keywords to prompt")
-    }
-
+    // ── Quality settings ───────────────────────────────────────────────────
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
-    const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
-    const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
+    const presetSettings =
+      MAYA_QUALITY_PRESETS[category as keyof typeof MAYA_QUALITY_PRESETS] ||
+      MAYA_QUALITY_PRESETS.default
+    const lora = resolveLoraDecision(customSettings, enhancedAuthenticity === true, finalPrompt)
+    const qualitySettings = buildQualitySettings(
+      presetSettings,
+      customSettings,
+      model.userLoraScale,
+      lora,
+    )
 
-    // CRITICAL: Check multiple sources for authentic aesthetic
-    // 1. Enhanced Authenticity toggle (explicit user preference)
-    // 2. Prompt keywords (implicit from prompt content)
-    // Note: Use finalPrompt (after trigger word check) for keyword detection
-    const finalPromptLower = finalPrompt.toLowerCase()
-    const hasAuthenticAesthetic = /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(finalPromptLower)
-    
-    // CRITICAL FIX: Map realismStrength to extraLoraScale if provided
-    // Frontend sends realismStrength, but API expects extraLoraScale
-    // Use !== undefined to preserve 0 values (0 is a valid setting)
-    const manualExtraLoraScale = customSettings?.extraLoraScale !== undefined
-      ? customSettings.extraLoraScale
-      : customSettings?.realismStrength
-    
-    const hasUserSetRealism = manualExtraLoraScale !== undefined
-    // Disable extra LoRA when the user hasn't set an explicit realism value AND either:
-    // - Enhanced Authenticity toggle is ON (user wants authentic iPhone look via prompt)
-    // - Prompt already contains authentic-aesthetic keywords (so LoRA doesn't contradict the prompt)
-    // When the user HAS explicitly set realismStrength, respect that setting even if the toggle is on.
-    const shouldDisableExtraLora = !hasUserSetRealism && (enhancedAuthenticity === true || hasAuthenticAesthetic)
-    
-    const qualitySettings = {
-      ...presetSettings,
-      aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
-      // CRITICAL FIX: User's manual styleStrength setting should override database value
-      // Priority: 1. User's manual styleStrength (if set), 2. Database lora_scale, 3. Preset default
-      // This allows users to adjust style strength even if database has a value
-      lora_scale: customSettings?.styleStrength !== undefined
-        ? customSettings.styleStrength  // User's manual adjustment takes priority ✅
-        : (userLoraScale ?? presetSettings.lora_scale), // Fall back to DB or preset
-      guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
-      extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
-      // Handle extra_lora_scale with proper priority:
-      // 1. Enhanced Authenticity toggle ON → force to 0 (extraLoraDisabled=true skips inclusion entirely)
-      // 2. User explicitly set realismStrength/extraLoraScale → use that value
-      // 3. Otherwise → use preset default
-      // NOTE: shouldDisableExtraLora=true causes buildClassicModeReplicateInput to skip
-      // extra_lora entirely from the prediction input, so the scale here is only used when toggle is OFF.
-      extra_lora_scale: shouldDisableExtraLora
-        ? 0
-        : hasUserSetRealism
-          ? manualExtraLoraScale
-          : presetSettings.extra_lora_scale,
-      num_inference_steps: presetSettings.num_inference_steps,
-    }
-    
-    console.log("[v0] Generation Settings Applied:", {
-      customSettingsProvided: !!customSettings,
-      customSettingsKeys: customSettings ? Object.keys(customSettings) : [],
-      aspectRatio: {
-        fromSettings: customSettings?.aspectRatio,
-        fromPreset: presetSettings.aspect_ratio,
-        final: qualitySettings.aspect_ratio,
-      },
-      guidanceScale: {
-        fromSettings: customSettings?.promptAccuracy,
-        fromPreset: presetSettings.guidance_scale,
-        final: qualitySettings.guidance_scale,
-      },
-      loraScale: {
-        fromDB: userLoraScale,
-        fromSettings: customSettings?.styleStrength,
-        fromPreset: presetSettings.lora_scale,
-        final: qualitySettings.lora_scale,
-        priority: customSettings?.styleStrength !== undefined 
-          ? "User's manual styleStrength (highest priority)" 
-          : (userLoraScale ? "Database lora_scale (fallback)" : "Preset default"),
-      },
-    })
-    
-    console.log("[v0] LoRA Scale Priority:", {
-      userLoraScaleFromDB: userLoraScale,
-      styleStrengthFromSettings: customSettings?.styleStrength,
-      presetLoraScale: presetSettings.lora_scale,
-      finalLoraScale: qualitySettings.lora_scale
-    })
-    
     console.log("[v0] Super-Realism LoRA:", {
-      enhancedAuthenticityToggle: enhancedAuthenticity,
-      hasAuthenticAestheticKeywords: hasAuthenticAesthetic,
-      hasUserSetRealism,
-      manualExtraLoraScale,
-      shouldDisableExtraLora,
-      finalExtraLoraScale: qualitySettings.extra_lora_scale,
-      reason: hasUserSetRealism
-        ? `Using user's explicit setting: ${manualExtraLoraScale}`
-        : "Using preset/default scale"
+      shouldDisable: lora.shouldDisableExtraLora,
+      hasUserSetRealism: lora.hasUserSetRealism,
+      finalScale: qualitySettings.extra_lora_scale,
     })
 
+    // ── Replicate submission ───────────────────────────────────────────────
     let replicate
     try {
       replicate = getReplicateClient()
-    } catch (error) {
-      console.error("[v0] Failed to initialize Replicate client:", error)
+    } catch (err) {
+      console.error("[v0] Failed to initialize Replicate client:", err)
       return NextResponse.json(
         {
           error: "Replicate API configuration error",
           details:
-            error instanceof Error
-              ? error.message
+            err instanceof Error
+              ? err.message
               : "Please check your REPLICATE_API_TOKEN in the Vars section. Get a valid token from https://replicate.com/account/api-tokens",
         },
         { status: 500 },
       )
     }
 
-    // Calculate seed: customSettings seed, preset seed, or random
-    const seed = customSettings?.seed ?? (qualitySettings as any).seed ?? Math.floor(Math.random() * 1000000)
-
-    // Build Replicate input using shared helper
-    // The helper handles conditional extra_lora inclusion (only if scale > 0)
+    const seed =
+      customSettings?.seed ?? (qualitySettings as any).seed ?? Math.floor(Math.random() * 1000000)
     const predictionInput = buildClassicModeReplicateInput({
       prompt: finalPrompt,
       qualitySettings,
-      loraWeightsUrl,
+      loraWeightsUrl: model.loraWeightsUrl,
       seed,
       referenceImageUrl,
-      extraLoraDisabled: shouldDisableExtraLora, // Pass the computed flag
+      extraLoraDisabled: lora.shouldDisableExtraLora,
     })
 
-    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale !== undefined && !shouldDisableExtraLora) {
-      console.log("[v0] ✅ Super-Realism LoRA included:", qualitySettings.extra_lora_scale)
-    } else {
-      console.log("[v0] ✅ Super-Realism LoRA disabled")
-    }
-
-    if (referenceImageUrl) {
-      console.log("[v0] ✅ Reference image included in input")
-    }
-
     const prediction = await replicate.predictions.create({
-      version: replicateVersionId,
+      version: model.replicateVersionId,
       input: predictionInput,
     })
 
+    // ── Credits + DB record ────────────────────────────────────────────────
     const deductionResult = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
@@ -328,7 +350,6 @@ export async function POST(request: NextRequest) {
       `Generated: ${conceptTitle}`,
       prediction.id,
     )
-
     if (!deductionResult.success) {
       console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
     }
@@ -357,17 +378,18 @@ export async function POST(request: NextRequest) {
       )
       RETURNING id
     `
-
     const generationId = insertResult[0].id
 
-    // Trigger referral email after 3rd generation (non-blocking)
+    // ── Referral trigger (non-blocking) ────────────────────────────────────
     try {
-      const { triggerReferralEmailIfNeeded } = await import("@/lib/referrals/trigger-referral-email")
-      triggerReferralEmailIfNeeded(neonUser.id).catch((error) => {
-        console.error(`[v0] Error triggering referral email (non-critical):`, error)
+      const { triggerReferralEmailIfNeeded } = await import(
+        "@/lib/referrals/trigger-referral-email"
+      )
+      triggerReferralEmailIfNeeded(neonUser.id).catch((err) => {
+        console.error("[v0] Error triggering referral email (non-critical):", err)
       })
-    } catch (error) {
-      logger.error("Referral trigger import failed (non-critical)", error as Error, {
+    } catch (err) {
+      logger.error("Referral trigger import failed (non-critical)", err as Error, {
         route: "/api/maya/generate-image",
         userId: neonUser.id,
       })
@@ -383,23 +405,6 @@ export async function POST(request: NextRequest) {
       newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
     })
   } catch (error) {
-    console.error("[v0] Error generating image:", error)
-    if (error instanceof Error) {
-      console.error("[v0] Error message:", error.message)
-      console.error("[v0] Error stack:", error.stack)
-    }
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    const is401Error = errorMessage.includes("401") || errorMessage.includes("Unauthenticated")
-
-    return NextResponse.json(
-      {
-        error: is401Error ? "Replicate authentication failed" : "Failed to generate image",
-        details: is401Error
-          ? "Your REPLICATE_API_TOKEN is invalid or expired. Please update it in the Vars section. Get a new token from https://replicate.com/account/api-tokens"
-          : errorMessage,
-      },
-      { status: 500 },
-    )
+    return handleGenerationError(error)
   }
 }
