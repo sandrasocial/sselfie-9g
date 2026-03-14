@@ -119,6 +119,12 @@ function buildQualitySettings(
 ) {
   const { shouldDisableExtraLora, hasUserSetRealism, manualExtraLoraScale } = lora
 
+  // Priority: manual styleStrength → DB lora_scale → preset default
+  const loraScale =
+    customSettings?.styleStrength === undefined
+      ? (userLoraScale ?? presetSettings.lora_scale)
+      : customSettings.styleStrength
+
   // Priority: authenticity toggle/keywords forces 0 → explicit realism → preset default
   const extraLoraScale = shouldDisableExtraLora
     ? 0
@@ -129,11 +135,7 @@ function buildQualitySettings(
   return {
     ...presetSettings,
     aspect_ratio: customSettings?.aspectRatio ?? presetSettings.aspect_ratio,
-    // Priority: manual styleStrength → DB lora_scale → preset default
-    lora_scale:
-      customSettings?.styleStrength === undefined
-        ? (userLoraScale ?? presetSettings.lora_scale)
-        : customSettings.styleStrength,
+    lora_scale: loraScale,
     guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
     extra_lora: customSettings?.extraLora ?? presetSettings.extra_lora,
     extra_lora_scale: extraLoraScale,
