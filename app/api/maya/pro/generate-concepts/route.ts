@@ -292,45 +292,34 @@ function normalizeImageLibrary(raw: any): ImageLibrary {
   }
 }
 
+/** Run detectCategory, validate the result, log, and return a { categoryKey, categoryInfo } pair. */
+function detectCategoryHint(
+  userRequest: string,
+  library: ImageLibrary,
+): { categoryKey: string | null; categoryInfo: CategoryInfo | null } {
+  const info = detectCategory(userRequest, library)
+  if (typeof info?.key === "string") {
+    console.log("[v0] [PRO MODE] Category hint detected:", info.name || info.key)
+    return { categoryKey: info.key, categoryInfo: info }
+  }
+  console.log("[v0] [PRO MODE] No category hint - Maya will determine categories dynamically")
+  return { categoryKey: null, categoryInfo: null }
+}
+
 /** Resolve a categoryKey + categoryInfo from an optional hint + userRequest fallback detection. */
 function resolveCategory(
   categoryInput: string | null | undefined,
   userRequest: string,
   library: ImageLibrary,
 ): { categoryKey: string | null; categoryInfo: CategoryInfo | null } {
-  let categoryKey: string | null = (categoryInput && typeof categoryInput === "string") ? categoryInput : null
-  let categoryInfo: CategoryInfo | null = null
+  const inputKey = typeof categoryInput === "string" && categoryInput ? categoryInput : null
+  if (!inputKey) return detectCategoryHint(userRequest, library)
 
-  if (!categoryKey) {
-    categoryInfo = detectCategory(userRequest, library)
-    if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === "string") {
-      categoryKey = categoryInfo.key
-      console.log("[v0] [PRO MODE] Category hint detected:", categoryInfo.name || categoryInfo.key)
-    } else {
-      console.log("[v0] [PRO MODE] No category hint - Maya will determine categories dynamically")
-      categoryKey = null
-      categoryInfo = null
-    }
-  } else {
-    if (typeof categoryKey === "string") {
-      categoryInfo = getCategoryByKey(categoryKey)
-      if (!categoryInfo) {
-        console.log("[v0] [PRO MODE] Category key provided but not found in system:", categoryKey)
-        categoryInfo = detectCategory(userRequest, library)
-        if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === "string") {
-          categoryKey = categoryInfo.key
-        } else {
-          categoryKey = null
-          categoryInfo = null
-        }
-      }
-    } else {
-      categoryKey = null
-      categoryInfo = null
-    }
-  }
+  const info = getCategoryByKey(inputKey)
+  if (info) return { categoryKey: inputKey, categoryInfo: info }
 
-  return { categoryKey, categoryInfo }
+  console.log("[v0] [PRO MODE] Category key provided but not found in system:", inputKey)
+  return detectCategoryHint(userRequest, library)
 }
 
 /** Map a Pro Mode category key to the brand-library category name. */
@@ -661,21 +650,31 @@ function sanitizeProPrompt(rawPrompt: string, fallbackTitle: string, fallbackDes
     console.warn(`[v0] [PRO MODE] Concept ${index + 1} prompt is too short (${wordCount} words, minimum 150). Maya should generate longer prompts.`)
   }
 
-  prompt = prompt.replace(/\*\*/g, "")
+  prompt = prompt.replaceAll(/\*\*/g, "")
   prompt = prompt
-    .replace(/Outfit:\s*/gi, "")
-    .replace(/Pose:\s*/gi, "")
-    .replace(/Setting:\s*/gi, "")
-    .replace(/Lighting:\s*/gi, "")
-    .replace(/Camera Composition:\s*/gi, "")
-    .replace(/Mood:\s*/gi, "")
-    .replace(/Aesthetic:\s*/gi, "")
-    .replace(/Camera:\s*/gi, "")
-  prompt = prompt.replace(/\n{3,}/g, "\n\n")
-  prompt = prompt.replace(/[ \t]+/g, " ")
-  prompt = prompt.replace(/^\s+|\s+$/gm, "")
-  prompt = prompt.replace(/\n\s*\n/g, "\n")
+    .replaceAll(/Outfit:\s*/gi, "")
+    .replaceAll(/Pose:\s*/gi, "")
+    .replaceAll(/Setting:\s*/gi, "")
+    .replaceAll(/Lighting:\s*/gi, "")
+    .replaceAll(/Camera Composition:\s*/gi, "")
+    .replaceAll(/Mood:\s*/gi, "")
+    .replaceAll(/Aesthetic:\s*/gi, "")
+    .replaceAll(/Camera:\s*/gi, "")
+  prompt = prompt.replaceAll(/\n{3,}/g, "\n\n")
+  prompt = prompt.replaceAll(/[ \t]+/g, " ")
+  prompt = prompt.replaceAll(/^\s+|\s+$/gm, "")
+  prompt = prompt.replaceAll(/\n\s*\n/g, "\n")
   return prompt.trim()
+}
+
+/** Return value as a string if it is non-empty, otherwise return the given fallback. */
+function safeAiStr(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.length > 0 ? value : fallback
+}
+
+/** Return value as a string if it is non-empty, otherwise return undefined. */
+function safeAiStrOpt(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined
 }
 
 /** Build a single concept result object from raw AI data. Returns concept or throws. */
@@ -685,22 +684,18 @@ function buildConceptFromAiData(
   library: ImageLibrary,
   categoryKey: string | null,
 ): any {
-  const safeTitle = aiConcept.title && typeof aiConcept.title === "string" ? aiConcept.title : `Concept ${index + 1}`
-  const safeDescription = aiConcept.description && typeof aiConcept.description === "string" ? aiConcept.description : ""
-  const safeAesthetic = aiConcept.aesthetic && typeof aiConcept.aesthetic === "string" ? aiConcept.aesthetic : undefined
+  const safeTitle = safeAiStr(aiConcept.title, `Concept ${index + 1}`)
+  const safeDescription = safeAiStr(aiConcept.description, "")
+  const safeAesthetic = safeAiStrOpt(aiConcept.aesthetic)
   const safeBrandReferences = Array.isArray(aiConcept.brandReferences) ? aiConcept.brandReferences : []
 
-  let safeCategory = aiConcept.category && typeof aiConcept.category === "string" ? aiConcept.category : null
+  // safeCategory guaranteed non-empty after inferCategoryFromContent fallback
+  let safeCategory = safeAiStr(aiConcept.category, "")
   if (!safeCategory) safeCategory = inferCategoryFromContent(safeTitle, safeDescription)
 
-  const promptCategory =
-    safeCategory && typeof safeCategory === "string"
-      ? safeCategory.toUpperCase()
-      : categoryKey && typeof categoryKey === "string"
-        ? categoryKey
-        : "LIFESTYLE"
+  const promptCategory = safeCategory.toUpperCase()
 
-  const rawPrompt = aiConcept.prompt && typeof aiConcept.prompt === "string" ? aiConcept.prompt : ""
+  const rawPrompt = safeAiStr(aiConcept.prompt, "")
   const fullPrompt = sanitizeProPrompt(rawPrompt, safeTitle, safeDescription, index)
 
   console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
@@ -715,13 +710,7 @@ function buildConceptFromAiData(
     brandReferences: safeBrandReferences,
   }
 
-  const categoryForLinking =
-    promptCategory && typeof promptCategory === "string"
-      ? promptCategory
-      : safeCategory && typeof safeCategory === "string"
-        ? safeCategory
-        : "LIFESTYLE"
-  const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
+  const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, promptCategory)
 
   return {
     id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
@@ -733,8 +722,8 @@ function buildConceptFromAiData(
     fullPrompt,
     template: undefined,
     brandReferences: safeBrandReferences,
-    stylingDetails: aiConcept.stylingDetails && typeof aiConcept.stylingDetails === "string" ? aiConcept.stylingDetails : undefined,
-    technicalSpecs: aiConcept.technicalSpecs && typeof aiConcept.technicalSpecs === "string" ? aiConcept.technicalSpecs : undefined,
+    stylingDetails: safeAiStrOpt(aiConcept.stylingDetails),
+    technicalSpecs: safeAiStrOpt(aiConcept.technicalSpecs),
     prompt: fullPrompt,
     referenceImageUrl: linkedImages[0],
   }
@@ -761,6 +750,29 @@ function mergeWithProvidedConcepts(generated: any[], provided: any[]): any[] {
   })
 }
 
+
+/** Format a caught error from POST into a 500 JSON response. */
+function handleProConceptsError(error: any): NextResponse {
+  console.error("[v0] [PRO MODE] Generate concepts API error:", error)
+  console.error("[v0] [PRO MODE] Error stack:", error.stack)
+  console.error("[v0] [PRO MODE] Error details:", {
+    message: error.message,
+    name: error.name,
+    cause: error.cause,
+  })
+  const errorMessage = error.message || "Internal server error"
+  const isNullReference =
+    errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
+  return NextResponse.json(
+    {
+      error: isNullReference
+        ? "An internal error occurred while processing your request. Please try again with more specific details."
+        : errorMessage,
+      details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+    },
+    { status: 500 },
+  )
+}
 
 /**
  * Pro Mode Generate Concepts API Route
@@ -925,26 +937,6 @@ export async function POST(req: NextRequest) {
       count: finalConcepts.length,
     })
   } catch (error: any) {
-    console.error("[v0] [PRO MODE] Generate concepts API error:", error)
-    console.error("[v0] [PRO MODE] Error stack:", error.stack)
-    console.error("[v0] [PRO MODE] Error details:", {
-      message: error.message,
-      name: error.name,
-      cause: error.cause,
-    })
-
-    const errorMessage = error.message || "Internal server error"
-    const isNullReference =
-      errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
-
-    return NextResponse.json(
-      {
-        error: isNullReference
-          ? "An internal error occurred while processing your request. Please try again with more specific details."
-          : errorMessage,
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
-      },
-      { status: 500 },
-    )
+    return handleProConceptsError(error)
   }
 }
