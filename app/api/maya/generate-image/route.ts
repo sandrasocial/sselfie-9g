@@ -2,6 +2,7 @@
 // This route is for Classic mode (Flux) generation only
 // Studio Pro uses /api/maya/generate-studio-pro
 
+import { randomInt } from "crypto"
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
@@ -329,7 +330,7 @@ export async function POST(request: NextRequest) {
     }
 
     const seed =
-      customSettings?.seed ?? (qualitySettings as any).seed ?? Math.floor(Math.random() * 1000000)
+      customSettings?.seed ?? (qualitySettings as any).seed ?? randomInt(1_000_000)
     const predictionInput = buildClassicModeReplicateInput({
       prompt: finalPrompt,
       qualitySettings,
