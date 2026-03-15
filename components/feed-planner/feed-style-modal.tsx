@@ -240,7 +240,7 @@ export default function FeedStyleModal({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
             <div
-              className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/15 bg-[rgba(13,15,19,0.94)] ${DesignClasses.spacing.padding.lg} text-white shadow-2xl backdrop-blur-2xl`}
+              className={`relative flex flex-col w-full max-w-4xl max-h-[calc(100dvh-8rem)] sm:max-h-[90vh] overflow-hidden rounded-2xl border border-white/15 bg-[rgba(13,15,19,0.94)] text-white shadow-2xl backdrop-blur-2xl`}
             >
               {/* Close Button - matching unified wizard */}
               <button
@@ -251,218 +251,221 @@ export default function FeedStyleModal({
                 <span className="text-[10px] uppercase tracking-[0.18em]">Close</span>
               </button>
 
-              <div className="space-y-8 py-6">
-                {/* Title - matching unified wizard typography */}
-                <div>
-                  <h2
-                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                    className="mb-3 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
-                  >
-                    Choose Feed Style
-                  </h2>
-                  <p className="text-sm font-light leading-relaxed text-white/65">
-                    Select the visual style for this feed. You can use your last selection or choose a different style.
-                  </p>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Feed Style Selection */}
+              {/* Scrollable content — flex-1 so sticky footer stays anchored */}
+              <div className={`overflow-y-auto flex-1 min-h-0 ${DesignClasses.spacing.padding.lg}`}>
+                <div className="space-y-8 py-6">
+                  {/* Title - matching unified wizard typography */}
                   <div>
-                    <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                      Feed Style
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-                      {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
-                        const feedStyle = key as FeedStyle
-                        const isSelected = selectedStyle === feedStyle
-                        const isDefault = defaultFeedStyle === feedStyle
-
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => setSelectedStyle(feedStyle)}
-                            className={`cursor-pointer transition-all duration-300 ${
-                              isSelected ? "scale-105" : "hover:scale-102"
-                            }`}
-                          >
-                            <div
-                              className={`border p-4 rounded-2xl backdrop-blur-xl ${
-                                isSelected ? "border-white/40 bg-white/18" : "border-white/15 bg-white/[0.04]"
-                              }`}
-                            >
-                              {/* Grid Preview */}
-                              <div className="grid grid-cols-3 gap-2 mb-4">
-                                {style.grid.map((type, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`aspect-square rounded ${
-                                      feedStyle === "minimal" ? "border border-white/35" : ""
-                                    }`}
-                                    style={{
-                                      backgroundColor:
-                                        type === "selfie" ? style.colors[0] : style.colors[1],
-                                    }}
-                                  />
-                                ))}
-                              </div>
-
-                              {/* Style Name */}
-                              <h3 className="mb-2 text-sm font-medium uppercase tracking-wider text-white">
-                                {style.name}
-                              </h3>
-
-                              {/* Color Swatches */}
-                              <div className="flex gap-2 mb-4">
-                                {style.colors.map((color, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`w-6 h-6 rounded-full ${
-                                      feedStyle === "minimal"
-                                        ? "border border-white/35"
-                                        : "border border-white/15"
-                                    }`}
-                                    style={{ backgroundColor: color }}
-                                  />
-                                ))}
-                              </div>
-
-                              {/* Selection Button */}
-                              <button
-                                className={`w-full border py-3 text-xs uppercase tracking-[0.2em] transition-all duration-200 sm:tracking-[0.3em] ${
-                                  isSelected
-                                    ? "border-white/35 bg-white/20 text-white"
-                                    : "border-white/20 bg-white/[0.03] text-white/75 hover:border-white/40 hover:text-white"
-                                }`}
-                              >
-                                {isSelected ? "SELECTED" : "SELECT"}
-                              </button>
-
-                              {/* Default Badge */}
-                              {isDefault && !isSelected && (
-                                <p className="mt-2 text-center text-[10px] text-white/50">
-                                  (Your last selection)
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                    <h2
+                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                      className="mb-3 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
+                    >
+                      Choose Feed Style
+                    </h2>
+                    <p className="text-sm font-light leading-relaxed text-white/65">
+                      Select the visual style for this feed. You can use your last selection or choose a different style.
+                    </p>
                   </div>
 
-                  {(
+                  <div className="space-y-6">
+                    {/* Feed Style Selection */}
                     <div>
                       <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                        Choose Variation
+                        Feed Style
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {(variationData?.variations || []).map((variation: FeedStyleVariationOption) => {
-                          const isSelected = selectedVariationId === variation.id
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+                        {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
+                          const feedStyle = key as FeedStyle
+                          const isSelected = selectedStyle === feedStyle
+                          const isDefault = defaultFeedStyle === feedStyle
+
                           return (
-                            <button
-                              key={variation.id}
-                              onClick={() => {
-                                console.log('[Feed Style Modal] User explicitly selected variation:', variation.id, variation.name)
-                                // Mark as user selection to prevent auto-reset
-                                userExplicitlySelectedVariationRef.current = true
-                                setSelectedVariationId(variation.id)
-                              }}
-                              className={`w-full border p-4 text-left transition-all duration-200 ${
-                                isSelected
-                                  ? "border-white/35 bg-white/20 text-white"
-                                  : "border-white/20 bg-white/[0.04] text-white/75 hover:border-white/40 hover:text-white"
+                            <div
+                              key={key}
+                              onClick={() => setSelectedStyle(feedStyle)}
+                              className={`cursor-pointer transition-all duration-300 ${
+                                isSelected ? "scale-105" : "hover:scale-102"
                               }`}
                             >
-                              <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
-                              {variation.description ? (
-                                <p className={`mt-2 text-xs ${isSelected ? "text-white/75" : "text-white/55"}`}>
-                                  {variation.description}
-                                </p>
-                              ) : null}
-                            </button>
+                              <div
+                                className={`border p-4 rounded-2xl backdrop-blur-xl ${
+                                  isSelected ? "border-white/40 bg-white/18" : "border-white/15 bg-white/[0.04]"
+                                }`}
+                              >
+                                {/* Grid Preview */}
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                  {style.grid.map((type, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`aspect-square rounded ${
+                                        feedStyle === "minimal" ? "border border-white/35" : ""
+                                      }`}
+                                      style={{
+                                        backgroundColor:
+                                          type === "selfie" ? style.colors[0] : style.colors[1],
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+
+                                {/* Style Name */}
+                                <h3 className="mb-2 text-sm font-medium uppercase tracking-wider text-white">
+                                  {style.name}
+                                </h3>
+
+                                {/* Color Swatches */}
+                                <div className="flex gap-2 mb-4">
+                                  {style.colors.map((color, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`w-6 h-6 rounded-full ${
+                                        feedStyle === "minimal"
+                                          ? "border border-white/35"
+                                          : "border border-white/15"
+                                      }`}
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+
+                                {/* Selection Button */}
+                                <button
+                                  className={`w-full border py-3 text-xs uppercase tracking-[0.2em] transition-all duration-200 sm:tracking-[0.3em] ${
+                                    isSelected
+                                      ? "border-white/35 bg-white/20 text-white"
+                                      : "border-white/20 bg-white/[0.03] text-white/75 hover:border-white/40 hover:text-white"
+                                  }`}
+                                >
+                                  {isSelected ? "SELECTED" : "SELECT"}
+                                </button>
+
+                                {/* Default Badge */}
+                                {isDefault && !isSelected && (
+                                  <p className="mt-2 text-center text-[10px] text-white/50">
+                                    (Your last selection)
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           )
                         })}
                       </div>
-                      {variationData?.variations?.length === 0 && (
-                        <p className="mt-3 text-xs text-white/55">
-                          No variations are available yet for this style.
-                        </p>
-                      )}
                     </div>
-                  )}
 
-                  {/* Advanced Options Toggle */}
-                  <div className="border-t border-white/15 pt-4">
-                    <button
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      className="flex w-full items-center justify-between py-3 text-sm font-medium text-white/80 transition-colors hover:text-white"
-                    >
-                      <span className="uppercase tracking-wider">Advanced Options</span>
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-white/70">
-                        {showAdvanced ? "Hide" : "Show"}
-                      </span>
-                    </button>
-
-                    {/* Advanced Options Content */}
-                    <AnimatePresence>
-                      {showAdvanced && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pt-6 space-y-6">
-                            {/* Selfie Upload */}
-                            <div>
-                              <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                                Reference Images (Optional)
-                              </label>
-                              <p className="mb-4 text-xs font-light text-white/55">
-                                Upload 1-3 selfies to use as reference images for generating your feed.
-                                These will help AI generate images that match your style and aesthetic.
-                              </p>
-                              <BlueprintSelfieUpload
-                                onUploadComplete={(imageUrls) => {
-                                  setSelfieImages(imageUrls)
+                    {(
+                      <div>
+                        <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
+                          Choose Variation
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {(variationData?.variations || []).map((variation: FeedStyleVariationOption) => {
+                            const isSelected = selectedVariationId === variation.id
+                            return (
+                              <button
+                                key={variation.id}
+                                onClick={() => {
+                                  console.log('[Feed Style Modal] User explicitly selected variation:', variation.id, variation.name)
+                                  // Mark as user selection to prevent auto-reset
+                                  userExplicitlySelectedVariationRef.current = true
+                                  setSelectedVariationId(variation.id)
                                 }}
-                                maxImages={3}
-                                initialImages={selfieImages}
-                              />
+                                className={`w-full border p-4 text-left transition-all duration-200 ${
+                                  isSelected
+                                    ? "border-white/35 bg-white/20 text-white"
+                                    : "border-white/20 bg-white/[0.04] text-white/75 hover:border-white/40 hover:text-white"
+                                }`}
+                              >
+                                <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
+                                {variation.description ? (
+                                  <p className={`mt-2 text-xs ${isSelected ? "text-white/75" : "text-white/55"}`}>
+                                    {variation.description}
+                                  </p>
+                                ) : null}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {variationData?.variations?.length === 0 && (
+                          <p className="mt-3 text-xs text-white/55">
+                            No variations are available yet for this style.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Advanced Options Toggle */}
+                    <div className="border-t border-white/15 pt-4">
+                      <button
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="flex w-full items-center justify-between py-3 text-sm font-medium text-white/80 transition-colors hover:text-white"
+                      >
+                        <span className="uppercase tracking-wider">Advanced Options</span>
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/70">
+                          {showAdvanced ? "Hide" : "Show"}
+                        </span>
+                      </button>
+
+                      {/* Advanced Options Content */}
+                      <AnimatePresence>
+                        {showAdvanced && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="pt-6 space-y-6">
+                              {/* Selfie Upload */}
+                              <div>
+                                <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
+                                  Reference Images (Optional)
+                                </label>
+                                <p className="mb-4 text-xs font-light text-white/55">
+                                  Upload 1-3 selfies to use as reference images for generating your feed.
+                                  These will help AI generate images that match your style and aesthetic.
+                                </p>
+                                <BlueprintSelfieUpload
+                                  onUploadComplete={(imageUrls) => {
+                                    setSelfieImages(imageUrls)
+                                  }}
+                                  maxImages={3}
+                                  initialImages={selfieImages}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Action Buttons - matching unified wizard style */}
-                  <div className="flex items-center justify-between pt-6 border-t border-white/15">
-                    <Button
-                      variant="ghost"
-                      onClick={() => onOpenChange(false)}
-                      disabled={isLoading}
-                      className="text-white/70 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </Button>
-
-                    <Button
-                      onClick={handleConfirm}
-                      disabled={isLoading}
-                      className="border border-white/25 bg-white/12 px-6 py-3 text-sm font-medium uppercase tracking-wider text-white transition-all duration-200 hover:scale-105 hover:bg-white/18 active:scale-95 sm:px-8 sm:py-4 disabled:opacity-50"
-                    >
-                      {isLoading
-                        ? isPreviewFeed
-                          ? "Creating Preview..."
-                          : "Creating Feed..."
-                        : isPreviewFeed
-                          ? "Create Preview"
-                          : "Create Feed"}
-                    </Button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Sticky Action Buttons — outside scroll area, always visible */}
+              <div className="flex flex-shrink-0 items-center justify-between border-t border-white/15 px-6 sm:px-8 py-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                  className="text-white/70 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  onClick={handleConfirm}
+                  disabled={isLoading}
+                  className="border border-white/25 bg-white/12 px-6 py-3 text-sm font-medium uppercase tracking-wider text-white transition-all duration-200 hover:scale-105 hover:bg-white/18 active:scale-95 sm:px-8 sm:py-4 disabled:opacity-50"
+                >
+                  {isLoading
+                    ? isPreviewFeed
+                      ? "Creating Preview..."
+                      : "Creating Feed..."
+                    : isPreviewFeed
+                      ? "Create Preview"
+                      : "Create Feed"}
+                </Button>
               </div>
             </div>
           </motion.div>
