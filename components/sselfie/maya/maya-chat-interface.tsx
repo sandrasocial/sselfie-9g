@@ -267,18 +267,18 @@ function removeEmojis(text: string): string {
     .replaceAll(/[\u{1F900}-\u{1F9FF}]/gu, "")
     .replaceAll(/[\u{1FA00}-\u{1FA6F}]/gu, "")
     .replaceAll(/[\u{1FA70}-\u{1FAFF}]/gu, "")
-    .replaceAll(/\u{200D}/gu, "")
-    .replaceAll(/\u{FE0F}/gu, "")
+    .replaceAll("\u200D", "")
+    .replaceAll("\uFE0F", "")
     .replaceAll(/\s+/g, " ")
     .trim()
 }
 
 function renderMarkdownText(text: string): React.ReactNode {
   let cleanedText = text
-  cleanedText = cleanedText.replaceAll(/\*\*/g, "")
+  cleanedText = cleanedText.replaceAll("**", "")
   const lines = cleanedText.split("\n")
   const elements: React.ReactNode[] = []
-  let currentList: React.ReactNode[][] = []
+  let currentList: Array<{ itemKey: string; nodes: React.ReactNode[] }> = []
 
   lines.forEach((line, index) => {
     const trimmedLine = line.trim()
@@ -291,14 +291,14 @@ function renderMarkdownText(text: string): React.ReactNode {
       if (processedItem.length === 0) {
         processedItem.push(<span key="text-0">{listItem}</span>)
       }
-      currentList.push(processedItem)
+      currentList.push({ itemKey: `li-${cleanedListItem.slice(0, 20)}`, nodes: processedItem })
     } else {
       if (currentList.length > 0) {
         elements.push(
           <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-2 my-3 ml-6">
-            {currentList.map((item, itemIdx) => (
-              <li key={`li-${itemIdx}`} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]"> {/* NOSONAR */}
-                {item}
+            {currentList.map(({ itemKey, nodes }) => (
+              <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
+                {nodes}
               </li>
             ))}
           </ul>
@@ -329,9 +329,9 @@ function renderMarkdownText(text: string): React.ReactNode {
   if (currentList.length > 0) {
     elements.push(
       <ul key="list-final" className="list-disc list-inside space-y-2 my-3 ml-6">
-        {currentList.map((item, itemIdx) => (
-          <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
-            {item}
+        {currentList.map(({ itemKey, nodes }) => (
+          <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
+            {nodes}
           </li>
         ))}
       </ul>
@@ -371,7 +371,7 @@ function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
   cleanedText = cleanedText.replaceAll(/\[GENERATE_CAPTIONS\]/gi, "").trim()
   cleanedText = cleanedText.replaceAll(/\[GENERATE_STRATEGY\]/gi, "").trim()
 
-  const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+  const inspirationImageMatch = /\[Inspiration Image: (https?:\/\/[^\]]+)\]/.exec(cleanedText)
 
   if (inspirationImageMatch) {
     const imageUrl = inspirationImageMatch[1]
@@ -453,9 +453,8 @@ function parsePromptSuggestions(
     })
   }
 
-  // NOSONAR — this regex is intentionally complex; simplifying would break prompt extraction
   const optionPattern =
-    /(?:\*\*)?Option\s+(\d+)[\s-]+([^:]+):\s*(?:"([^"]+)"|`([^`]+)`|```[\s\S]*?```|([^"`\n]+(?:\n[^"`\n]+)*?)(?=\n\n|\nOption|\n\*\*Option|$))/gi
+    /(?:\*\*)?Option\s+(\d+)[\s-]+([^:]+):\s*(?:"([^"]+)"|`([^`]+)`|```[\s\S]*?```|([^"`\n]+(?:\n[^"`\n]+)*?)(?=\n\n|\nOption|\n\*\*Option|$))/gi // NOSONAR — intentionally complex; simplifying would break prompt extraction
   let match
   while ((match = optionPattern.exec(text)) !== null) {
     const optionNum = match[1]
@@ -595,7 +594,7 @@ function applyConceptPromptUpdate(
 
 function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = part.output
-  if (!output || output.state !== "ready" || !Array.isArray(output.concepts)) return null
+  if (output?.state !== "ready" || !Array.isArray(output?.concepts)) return null
   const { concepts } = output
   return (
     <MayaConceptCards
@@ -828,7 +827,7 @@ function renderShowGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Reac
               <div className="aspect-square overflow-hidden">
                 <img
                   src={image.imageUrl || image.image_url}
-                  alt="Gallery image"
+                  alt="Gallery"
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -1237,7 +1236,7 @@ function applyFeedPromptUpdate(
 
 function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   console.log("[FEED-CARD] 🎨 RENDERING FEED CARD IN CHAT")
-  const toolPart = part as any
+  const toolPart = part
   const output = toolPart.output
 
   if (!output) {
@@ -1298,7 +1297,7 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
 }
 
 function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  const toolPart = part as any
+  const toolPart = part
   const output = toolPart.output
   if (!output?.feedId || !Array.isArray(output?.captions)) return null
 
@@ -1404,6 +1403,7 @@ function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
 
 function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const images = Array.isArray(output.images) ? output.images : []
+  const photoPlural = images.length === 1 ? "" : "s"
   if (ctx.activeTab === "videos") {
     return (
       <MayaInlineCard
@@ -1412,7 +1412,7 @@ function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCt
         title="Choose a photo to animate"
         subtitle={
           images.length > 0
-            ? `${images.length} photo${images.length === 1 ? "" : "s"} ready. Scroll down to pick one.`
+            ? `${images.length} photo${photoPlural} ready. Scroll down to pick one.`
             : "Your gallery is right below — pick one to start."
         }
         actions={
@@ -1461,7 +1461,7 @@ function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCt
 }
 
 function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  const toolPart = part as any
+  const toolPart = part
   const output = toolPart.output
 
   if (!output) return null
@@ -1662,7 +1662,7 @@ interface MayaTextPartProps {
 
 function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
   const { part, idx, msg, messageHasFeedArtifacts, hasFeedCard, isCreatingFeed, isTyping, proMode, messages, promptSuggestions } = props
-  const text = (part as any)?.text || ""
+  const text = part?.text || ""
   const shouldShowPendingFeedLoader =
     messageHasFeedArtifacts && !hasFeedCard && (isCreatingFeed || isTyping)
   const shouldShowLoader = shouldShowPendingFeedLoader && idx === 0
@@ -1684,7 +1684,7 @@ function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
 
   if (shouldHideText || displayText.length === 0) return null
 
-  const isLastMessage = msg.id === messages[messages.length - 1]?.id
+  const isLastMessage = msg.id === messages.at(-1)?.id
   const showApiSuggestions = msg.role === "assistant" && promptSuggestions.length > 0 && isLastMessage
   const hasCarouselSlides = parsedPromptSuggestions.some((s) => s.label.includes("Slide"))
   const nonCarouselSuggestions = hasCarouselSlides
