@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { DesignClasses } from "@/lib/design-tokens"
 import { Button } from "@/components/ui/button"
@@ -215,9 +216,14 @@ export default function FeedStyleModal({
     })
   }
 
-  if (!open) return null
+  // Portal target — avoids stacking-context traps from Framer Motion wrappers
+  // (motion.div with will-change creates a new stacking context that traps fixed children)
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
+  useEffect(() => { setPortalTarget(document.body) }, [])
 
-  return (
+  if (!open || !portalTarget) return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -471,6 +477,7 @@ export default function FeedStyleModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    portalTarget
   )
 }

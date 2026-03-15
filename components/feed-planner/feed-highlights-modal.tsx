@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 
 interface Highlight {
@@ -146,9 +147,12 @@ export default function FeedHighlightsModal({
     }
   }
 
-  if (!isOpen) return null
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
+  useEffect(() => { setPortalTarget(document.body) }, [])
 
-  return (
+  if (!isOpen || !portalTarget) return null
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
@@ -275,6 +279,7 @@ export default function FeedHighlightsModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    portalTarget
   )
 }
