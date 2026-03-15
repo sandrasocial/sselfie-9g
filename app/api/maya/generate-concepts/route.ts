@@ -380,332 +380,6 @@ function detectCategoryForPromptConstructor(
   }
 }
 
-/**
- * Extract user age from physical preferences or default
- */
-function extractUserAge(physicalPreferences?: string | null): string | undefined {
-  if (!physicalPreferences) return undefined
-  
-  const ageMatch = physicalPreferences.match(/(?:age|aged?|years? old)\s*:?\s*(\d+)/i)
-  if (ageMatch) {
-    const age = parseInt(ageMatch[1])
-    if (age >= 20 && age < 30) return 'Woman in late twenties'
-    if (age >= 30 && age < 40) return 'Woman in early thirties'
-    if (age >= 40) return 'Woman in forties'
-  }
-  
-  return undefined
-}
-
-/**
- * Map upload module concept value to specific universal prompt ID
- * This ensures each concept (e.g., "christmas-party") maps to the correct prompt
- */
-function mapConceptToPromptId(category: string, conceptValue: string): string | null {
-  const categoryLower = category.toLowerCase()
-  const conceptLower = conceptValue.toLowerCase().trim()
-  
-  // Christmas/Holiday concepts
-  if (categoryLower === 'seasonal-holiday' || categoryLower === 'seasonal-christmas') {
-    if (conceptLower.includes('party') || conceptLower.includes('dinner') || conceptLower.includes('evening')) {
-      return 'christmas-dinner-party-1'
-    }
-    if (conceptLower.includes('morning')) {
-      return 'christmas-morning-coffee-1'
-    }
-    if (conceptLower.includes('market') || conceptLower.includes('shopping')) {
-      return 'christmas-market-outdoor-1'
-    }
-    if (conceptLower.includes('baking') || conceptLower.includes('cookie')) {
-      return 'christmas-baking-cookies-1'
-    }
-    if (conceptLower.includes('tree') && conceptLower.includes('decorat')) {
-      return 'christmas-tree-decorating-1'
-    }
-    if (conceptLower.includes('gift') || conceptLower.includes('wrapping')) {
-      return 'christmas-gift-wrapping-1'
-    }
-    if (conceptLower.includes('reading') || conceptLower.includes('cozy')) {
-      return 'christmas-reading-nook-1'
-    }
-    if (conceptLower.includes('walk') || conceptLower.includes('winter') || conceptLower.includes('snow')) {
-      return 'christmas-winter-walk-1'
-    }
-    if (conceptLower.includes('fireplace') || conceptLower.includes('fire')) {
-      return 'christmas-fireplace-morning-1'
-    }
-    // Default to elegant dinner party for generic "party" or "christmas-party"
-    if (conceptLower.includes('christmas') || conceptLower === 'party') {
-      return 'christmas-dinner-party-1'
-    }
-  }
-  
-  // Travel/Airport concepts
-  if (categoryLower === 'travel-lifestyle' || categoryLower === 'travel-airport') {
-    if (conceptLower.includes('lounge') || conceptLower.includes('airport')) {
-      return 'travel-airport-lounge-1'
-    }
-    if (conceptLower.includes('departure') || conceptLower.includes('leaving')) {
-      return 'travel-airport-departure-1'
-    }
-    if (conceptLower.includes('walking') || conceptLower.includes('terminal')) {
-      return 'travel-airport-walking-1'
-    }
-    if (conceptLower.includes('escalator') || conceptLower.includes('motion')) {
-      return 'travel-airport-escalator-1'
-    }
-    if (conceptLower.includes('baggage') || conceptLower.includes('claim')) {
-      return 'travel-airport-baggage-claim-1'
-    }
-    if (conceptLower.includes('exit') || conceptLower.includes('taxi')) {
-      return 'travel-airport-taxi-exit-1'
-    }
-  }
-  
-  // Workout/Athletic concepts
-  if (categoryLower === 'wellness-content' || categoryLower === 'alo-workout') {
-    if (conceptLower.includes('yoga') && conceptLower.includes('studio')) {
-      return 'alo-yoga-studio-warrior-1'
-    }
-    if (conceptLower.includes('tennis')) {
-      return 'alo-tennis-court-1'
-    }
-    if (conceptLower.includes('running') || conceptLower.includes('trail')) {
-      return 'alo-outdoor-running-1'
-    }
-    if (conceptLower.includes('pilates') || conceptLower.includes('reformer')) {
-      return 'alo-pilates-reformer-1'
-    }
-    if (conceptLower.includes('gym') || conceptLower.includes('weights') || conceptLower.includes('strength')) {
-      return 'alo-gym-weights-1'
-    }
-    if (conceptLower.includes('beach') && conceptLower.includes('yoga')) {
-      return 'alo-beach-yoga-sunset-1'
-    }
-  }
-  
-  // Casual Lifestyle concepts
-  if (categoryLower === 'casual-lifestyle') {
-    if (conceptLower.includes('coffee') || conceptLower.includes('cafe')) {
-      return 'casual-coffee-shop-1'
-    }
-    if (conceptLower.includes('morning') && (conceptLower.includes('routine') || conceptLower.includes('bathroom'))) {
-      return 'casual-bathroom-morning-1'
-    }
-    if (conceptLower.includes('market') || conceptLower.includes('grocery') || conceptLower.includes('farmers')) {
-      return 'casual-grocery-market-1'
-    }
-    if (conceptLower.includes('office') || conceptLower.includes('work') || conceptLower.includes('laptop')) {
-      return 'casual-home-office-laptop-1'
-    }
-    if (conceptLower.includes('cooking') || conceptLower.includes('dinner') || conceptLower.includes('kitchen')) {
-      return 'casual-cooking-dinner-1'
-    }
-    if (conceptLower.includes('reading') || conceptLower.includes('couch') || conceptLower.includes('evening')) {
-      return 'casual-couch-reading-evening-1'
-    }
-  }
-  
-  return null
-}
-
-/**
- * Map internal category to Universal Prompts library category
- * Now simplified since detectCategoryFromRequest already returns Universal Prompt categories
- */
-// Universal prompts system removed - this function is deprecated
-function mapToUniversalPromptCategory(category: string, userRequest?: string): string | null {
-  // detectCategoryFromRequest now directly returns Universal Prompt categories
-  // So we can use it directly, but we also need to handle prompt constructor categories
-  const categoryLower = category.toLowerCase()
-  const requestLower = (userRequest || '').toLowerCase()
-  
-  // If category is already a Universal Prompt category, return it
-  if (['travel-airport', 'alo-workout', 'seasonal-christmas', 'casual-lifestyle', 'luxury-fashion'].includes(categoryLower)) {
-    return categoryLower
-  }
-  
-  // Map prompt constructor categories to Universal Prompt categories
-  // Travel/Airport
-  if (categoryLower === 'travel' || categoryLower === 'airport' || 
-      /airport|travel|traveling|flying|terminal/.test(requestLower)) {
-    return 'travel-airport'
-  }
-  
-  // Alo/Workout
-  if (categoryLower === 'workout' || categoryLower === 'athletic' || categoryLower === 'gym' ||
-      /alo|yoga|workout|gym|fitness|athletic/.test(requestLower)) {
-    return 'alo-workout'
-  }
-  
-  // Christmas/Holiday
-  if (categoryLower === 'cozy' && /christmas|holiday|winter|snow/.test(requestLower)) {
-    return 'seasonal-christmas'
-  }
-  
-  // Casual Lifestyle
-  if (categoryLower === 'casual' || categoryLower === 'coffee-run' ||
-      /coffee|casual|errands|everyday/.test(requestLower)) {
-    return 'casual-lifestyle'
-  }
-  
-  // Luxury Fashion
-  if (categoryLower === 'luxury' || categoryLower === 'street-style' ||
-      /luxury|chic|elegant|sophisticated|designer/.test(requestLower)) {
-    return 'luxury-fashion'
-  }
-  
-  return null
-}
-
-function buildEnhancedPrompt(args: {
-  category: string
-  vibe: string
-  location: string
-  userAge?: string
-  userFeatures?: string | null
-  userGender: string
-  hairStyle?: string
-  userRequest: string
-  imageAnalysis?: string
-}): string {
-  const cleanedFeatures =
-    typeof args.userFeatures === "string"
-      ? args.userFeatures
-          .replace(/\b(don't|do not|doesn't|keep my|maintain|preserve|keep the|the same)\s+/gi, "")
-          .trim()
-      : ""
-
-  const personLine = [args.userAge, args.userGender, cleanedFeatures || undefined, args.hairStyle]
-    .filter(Boolean)
-    .join(", ")
-
-  return [
-    `Create a professional, photorealistic image concept.`,
-    `Category: ${args.category}. Vibe: ${args.vibe}. Location: ${args.location}.`,
-    `Person: ${personLine || args.userGender}.`,
-    `User request: ${args.userRequest}`,
-    args.imageAnalysis ? `Image notes: ${args.imageAnalysis}` : null,
-    `Include outfit details (materials, colors, brand-appropriate styling), a natural pose, and cinematic lighting.`,
-    `Add camera specs (lens + f-stop) and a high-resolution, realistic finish.`,
-  ]
-    .filter(Boolean)
-    .join("\n")
-}
-
-/**
- * Validate prompt matches production requirements
- */
-function validateProductionPrompt(prompt: string): { valid: boolean; warnings: string[] } {
-  const warnings: string[] = []
-  const wordCount = prompt.split(/\s+/).length
-  
-  // Check word count (250-500 words)
-  if (wordCount < 250) {
-    warnings.push(`Prompt too short: ${wordCount} words (minimum 250 words)`)
-  }
-  if (wordCount > 500) {
-    warnings.push(`Prompt too long: ${wordCount} words (maximum 500 words)`)
-  }
-  
-  // Check for camera specs
-  if (!/mm|lens|Camera|camera|f\/|f\s*\d/.test(prompt)) {
-    warnings.push('Missing camera specs (lens, mm, f-stop)')
-  }
-  
-  // Check for lighting
-  if (!/light|lighting|sunlight|daylight|ambient/.test(prompt)) {
-    warnings.push('Missing lighting description')
-  }
-  
-  // Brand names are optional - Maya chooses brands based on context and aesthetic
-  // No validation needed - let Maya use her intelligence to select appropriate brands
-  
-  // Check for resolution/quality
-  if (!/4K|8K|hyper-realistic|hyper realistic/.test(prompt)) {
-    warnings.push('Missing resolution/quality spec (4K, 8K, or hyper-realistic)')
-  }
-  
-  return {
-    valid: warnings.length === 0,
-    warnings,
-  }
-}
-
-/**
- * Generate a prompt using the brand library and prompt constructor system
- * This can be used as an alternative to the composition system for Studio Pro mode
- */
-function generatePromptWithBrandLibrary(
-  userRequest: string,
-  userGender: string,
-  physicalPreferences?: string | null,
-  triggerWord?: string,
-  aesthetic?: string,
-  context?: string,
-  categoryOverride?: string | null,
-  vibeOverride?: string | null,
-  locationOverride?: string | null
-): string {
-  // Detect category, vibe, and location (use overrides if provided to preserve context)
-  const detected = categoryOverride !== undefined && vibeOverride !== undefined && locationOverride !== undefined
-    ? { category: categoryOverride, vibe: vibeOverride, location: locationOverride, wasDetected: true, isAestheticDescription: false }
-    : detectCategoryForPromptConstructor(userRequest, aesthetic, context)
-  
-  // 🔴 FIX: If category not detected, allow dynamic generation instead of forcing defaults
-  if (!detected.wasDetected && !detected.category) {
-    // Category not detected - this is likely an aesthetic description
-    // Use Maya's fashion knowledge and AI generation instead of category-specific templates
-    console.log('[v0] [PROMPT-CONSTRUCTOR] No category detected - will use dynamic generation with Maya fashion knowledge')
-    // Return empty string to signal caller should use AI generation
-    // The caller will handle this by using AI generation path
-    return ''
-  }
-  
-  // Category detected - use prompt constructor
-  const { category, vibe, location } = detected
-  
-  // Extract user age
-  const userAge = extractUserAge(physicalPreferences)
-  
-  // Extract hair style from physical preferences if available
-  let hairStyle: string | undefined
-  if (physicalPreferences) {
-    const hairMatch = physicalPreferences.match(/(?:hair|hairstyle)[^.]*?([^.]*)/i)
-    if (hairMatch) {
-      hairStyle = hairMatch[1].trim()
-    }
-  }
-  
-  // Build prompt using prompt constructor
-  // Note: Only pass physicalPreferences once to avoid duplication in buildPromptWithFeatures
-  const prompt = buildPromptWithFeatures({
-    category: category!, // Non-null assertion since we checked above
-    vibe: vibe!,
-    location: location!,
-    userAge,
-    userFeatures: physicalPreferences || undefined, // Use userFeatures, not physicalPreferences to avoid duplication
-    userGender,
-    hairStyle,
-    triggerWord,
-    userRequest, // Pass userRequest to preserve context (e.g., Christmas)
-    // Don't pass physicalPreferences separately - it's the same as userFeatures
-  })
-  
-  // Validate the prompt
-  const validation = validateProductionPrompt(prompt)
-  if (!validation.valid) {
-    console.warn('[v0] [PROMPT-CONSTRUCTOR] Prompt validation warnings:', validation.warnings)
-  }
-  
-  // Also check word count using prompt constructor validation
-  const lengthValidation = validatePromptLength(prompt)
-  if (!lengthValidation.valid) {
-    console.warn('[v0] [PROMPT-CONSTRUCTOR]', lengthValidation.message)
-  }
-  
-  return prompt
-}
 
 /**
  * Helper: Detect brand from text
@@ -723,23 +397,103 @@ function detectBrand(text?: string): string | undefined {
   return undefined
 }
 
+
 /**
- * Helper: Map component category to Maya's expected category
+ * Detect and refine the guide prompt from request params and conversation context.
+ * Extracted from POST to reduce cyclomatic complexity.
  */
-function mapComponentCategoryToMayaCategory(category: string): string {
-  // Map component categories to Maya's expected categories
-  const mapping: Record<string, string> = {
-    'alo-workout': 'Full Body',
-    'chanel-luxury': 'Half Body',
-    'travel-lifestyle': 'Lifestyle',
-    'beauty': 'Close-Up',
-    'selfies': 'Close-Up',
-    'lifestyle-wellness': 'Lifestyle',
-    'seasonal-christmas': 'Lifestyle',
-    'tech': 'Lifestyle',
+function detectAndRefineGuidePrompt(
+  userRequest: string | undefined,
+  guidePrompt: string | undefined,
+  conversationContext: string | undefined
+): { detectedGuidePrompt: string | null; hasNewUserRequest: boolean } {
+  let detectedGuidePrompt: string | null = null
+  let hasNewUserRequest = false
+
+  // First, check if userRequest should be the guide prompt (highest priority)
+  if (userRequest) {
+    const userRequestLength = userRequest.trim().length
+    const hasDetailedElements = /(?:wearing|outfit|dressed|seated|standing|sitting|holding|hair|bun|expression|lighting|light|50mm|85mm|lens|f\/|depth of field|skin texture|pores|setting|scene|location|background|tree|fireplace|sofa|room)/i.test(userRequest)
+    const hasMultipleSentences = (userRequest.match(/[.!?]\s+/g) || []).length >= 2
+    const hasSpecificDetails = userRequestLength > 100 && (hasDetailedElements || hasMultipleSentences)
+
+    if (hasSpecificDetails) {
+      detectedGuidePrompt = userRequest.trim()
+      hasNewUserRequest = true
+    } else if (userRequestLength > 20) {
+      hasNewUserRequest = true
+    }
   }
 
-  return mapping[category] || 'Lifestyle'
+  // Second, use explicitly provided guidePrompt if no userRequest guide prompt was detected
+  if (!detectedGuidePrompt && guidePrompt) {
+    detectedGuidePrompt = guidePrompt
+  }
+
+  // Only extract guide prompt from conversationContext if no new userRequest was provided,
+  // OR the userRequest is a continuation/refinement of the old guide prompt
+  if (!detectedGuidePrompt && conversationContext && !hasNewUserRequest) {
+    const guidePromptMatch = /\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i.exec(conversationContext)
+    if (guidePromptMatch?.[1]) {
+      detectedGuidePrompt = guidePromptMatch[1].trim()
+    }
+  } else if (conversationContext && hasNewUserRequest && !detectedGuidePrompt) {
+    const guidePromptMatch = /\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i.exec(conversationContext)
+    if (guidePromptMatch?.[1]) {
+      const oldGuidePrompt = guidePromptMatch[1].trim()
+      const oldHasOutfit = /(?:wearing|outfit|dress|sweater|pajamas|gloves|heels)/i.test(oldGuidePrompt)
+      const oldHasLocation = /(?:tree|sofa|fireplace|room|setting|scene|location|background)/i.test(oldGuidePrompt)
+      const newMentionsOutfit = oldHasOutfit && /(?:wearing|outfit|dress|sweater|pajamas|gloves|heels)/i.test(userRequest || "")
+      const newMentionsLocation = oldHasLocation && /(?:tree|sofa|fireplace|room|setting|scene|location|background)/i.test(userRequest || "")
+      if (newMentionsOutfit || newMentionsLocation) {
+        detectedGuidePrompt = oldGuidePrompt
+      }
+    }
+  }
+
+  return { detectedGuidePrompt, hasNewUserRequest }
+}
+
+/**
+ * Parse legacy AI-generated concept cards from a raw text response.
+ * Extracted from POST to reduce cyclomatic complexity.
+ */
+function parseLegacyConceptsFromText(text: string): MayaConcept[] {
+  const jsonMatch = /\[\s\S]*\]/.exec(text)
+  if (!jsonMatch) {
+    console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
+    return []
+  }
+  try {
+    const parsed = JSON.parse(jsonMatch[0])
+    const valid: MayaConcept[] = Array.isArray(parsed)
+      ? parsed.filter((c: any) => {
+          const isValid = c && typeof c === "object" && typeof c.title === "string" && typeof c.prompt === "string"
+          if (!isValid) console.warn("[v0] [AI-GENERATION] Dropping malformed concept card:", c)
+          return isValid
+        })
+      : []
+    if (valid.length === 0) console.error("[v0] [AI-GENERATION] ❌ No valid concept cards after schema filter")
+    return valid
+  } catch (parseErr) {
+    console.error("[v0] [AI-GENERATION] ❌ JSON.parse failed for concept cards:", parseErr)
+    return []
+  }
+}
+
+/**
+ * Apply minimal syntax cleanup to a concept prompt.
+ * Extracted from POST nested function to top-level.
+ */
+function minimalSyntaxCleanup(prompt: string, triggerWord: string): string {
+  let clean = prompt
+    .replace(/,\s*,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (triggerWord && !clean.toLowerCase().startsWith(triggerWord.toLowerCase())) {
+    clean = `${triggerWord}, ${clean}`
+  }
+  return clean
 }
 
 export async function POST(req: NextRequest) {
@@ -781,66 +535,12 @@ export async function POST(req: NextRequest) {
       aspectRatio = "1:1", // Aspect ratio for image generation (default to 1:1)
     } = body
 
-    // 🔴 CRITICAL: Auto-detect detailed prompts as guide prompts if not explicitly provided
-    // If user provides a detailed prompt (100+ chars with specific details), treat it as a guide prompt
-    // PRIORITY: userRequest > guidePrompt (explicit) > conversationContext (old)
-    let detectedGuidePrompt: string | null = null
-    let hasNewUserRequest = false
-    
-    // First, check if userRequest should be the guide prompt (highest priority)
-    if (userRequest) {
-      const userRequestLength = userRequest.trim().length
-      // Check if it's a detailed prompt (has specific details like outfit, location, pose, lighting, camera specs)
-      const hasDetailedElements = /(?:wearing|outfit|dressed|seated|standing|sitting|holding|hair|bun|expression|lighting|light|50mm|85mm|lens|f\/|depth of field|skin texture|pores|setting|scene|location|background|tree|fireplace|sofa|room)/i.test(userRequest)
-      const hasMultipleSentences = (userRequest.match(/[.!?]\s+/g) || []).length >= 2
-      const hasSpecificDetails = userRequestLength > 100 && (hasDetailedElements || hasMultipleSentences)
-      
-      if (hasSpecificDetails) {
-        detectedGuidePrompt = userRequest.trim()
-        hasNewUserRequest = true
-      } else if (userRequestLength > 20) {
-        // User provided a substantial request (even if not detailed enough for guide prompt)
-        // This indicates they want something NEW, not to continue with old guide prompt
-        hasNewUserRequest = true
-      }
-    }
-    
-    // Second, use explicitly provided guidePrompt if no userRequest guide prompt was detected
-    if (!detectedGuidePrompt && guidePrompt) {
-      detectedGuidePrompt = guidePrompt
-    }
-    
-    // 🔴 CRITICAL: Only extract guide prompt from conversationContext if:
-    // 1. No new userRequest was provided, OR
-    // 2. The userRequest is a continuation/refinement of the old guide prompt (mentions similar elements)
-    // This prevents old guide prompts from persisting when user asks for something different
-    if (!detectedGuidePrompt && conversationContext && !hasNewUserRequest) {
-      const guidePromptMatch = conversationContext.match(/\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i)
-      if (guidePromptMatch && guidePromptMatch[1]) {
-        detectedGuidePrompt = guidePromptMatch[1].trim()
-      }
-    } else if (conversationContext && hasNewUserRequest && !detectedGuidePrompt) {
-      // User provided new request - check if they're asking to continue/refine the old guide prompt
-      const guidePromptMatch = conversationContext.match(/\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i)
-      if (guidePromptMatch && guidePromptMatch[1]) {
-        const oldGuidePrompt = guidePromptMatch[1].trim()
-        // Check if new request is a continuation/refinement (mentions similar elements)
-        const userRequestLower = (userRequest || "").toLowerCase()
-        const oldGuideLower = oldGuidePrompt.toLowerCase()
-        
-        // Extract key elements from old guide prompt
-        const oldHasOutfit = /(?:wearing|outfit|dress|sweater|pajamas|gloves|heels)/i.test(oldGuidePrompt)
-        const oldHasLocation = /(?:tree|sofa|fireplace|room|setting|scene|location|background)/i.test(oldGuidePrompt)
-        const newMentionsOutfit = oldHasOutfit && /(?:wearing|outfit|dress|sweater|pajamas|gloves|heels)/i.test(userRequest || "")
-        const newMentionsLocation = oldHasLocation && /(?:tree|sofa|fireplace|room|setting|scene|location|background)/i.test(userRequest || "")
-        
-        // If new request mentions similar elements, it might be a refinement - use old guide prompt
-        // Otherwise, treat it as a NEW request and don't use old guide prompt
-        if (newMentionsOutfit || newMentionsLocation) {
-          detectedGuidePrompt = oldGuidePrompt
-        }
-      }
-    }
+    // Detect guide prompt from userRequest, explicit guidePrompt param, or conversationContext.
+    const { detectedGuidePrompt, hasNewUserRequest } = detectAndRefineGuidePrompt(
+      userRequest,
+      guidePrompt,
+      conversationContext
+    )
 
     // Warn if userRequest is empty - this causes defaults
     if (!userRequest || userRequest.trim().length === 0) {
@@ -2873,36 +2573,8 @@ Same quality/luxury/styling as professional concepts, but with:
         temperature: 0.85,
       })
 
-      // Parse JSON response — hardened with try/catch and field validation
-      const jsonMatch = text.match(/\[[\s\S]*\]/)
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0])
-          // Validate each item has the minimum required fields; drop invalid entries
-          concepts = Array.isArray(parsed)
-            ? parsed.filter((c: any) => {
-                const valid =
-                  c &&
-                  typeof c === "object" &&
-                  typeof c.title === "string" &&
-                  typeof c.prompt === "string"
-                if (!valid) {
-                  console.warn("[v0] [AI-GENERATION] Dropping malformed concept card:", c)
-                }
-                return valid
-              })
-            : []
-          if (concepts.length === 0) {
-            console.error("[v0] [AI-GENERATION] ❌ No valid concept cards after schema filter")
-          }
-        } catch (parseErr) {
-          console.error("[v0] [AI-GENERATION] ❌ JSON.parse failed for concept cards:", parseErr)
-          concepts = []
-        }
-      } else {
-        console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
-        concepts = []
-      }
+      // Parse JSON response via extracted helper
+      concepts = parseLegacyConceptsFromText(text)
       
       // Audit log legacy path
       const legacyGenerationTime = Date.now() - generationStartTime
@@ -2963,414 +2635,6 @@ Same quality/luxury/styling as professional concepts, but with:
       })
     }
     
-    // Prompt constructor is disabled - direct generation handles all prompts
-    const usePromptConstructor = false
-    
-    if (usePromptConstructor) {
-      // 🔴 CRITICAL: Upload module category/concept already extracted above (line 2740, 2752)
-      // Upload module sends explicit category/concept (e.g., "beauty-self-care" + "makeup look")
-      // uploadModuleCategory and uploadModuleConcept are already extracted above
-      
-      // 🔴 CRITICAL: Include conversationContext for context preservation (like Classic Mode)
-      // Combine userRequest with conversationContext to preserve full conversation context
-      const enrichedUserRequest = conversationContext 
-        ? `${userRequest || ''} ${conversationContext}`.trim()
-        : userRequest || ''
-      
-      // 🔴 CRITICAL: User request ALWAYS takes priority over upload module category
-      // If user provides a new request, prioritize their request over upload module category
-      // This allows users to pivot directions, concepts, scenes, categories, styles using the same images
-      const hasUserRequest = userRequest && userRequest.trim().length > 0
-      const shouldUseUploadModuleCategory = uploadModuleCategory && !hasUserRequest
-      
-      // 🔴 CRITICAL: Prioritize upload module category/concept ONLY if user hasn't provided a new request
-      // If upload module provided category, use it directly instead of pattern matching
-      // 🔴 FIX: Don't default to 'casual' - start with null and handle explicitly
-      let category: string | null = null
-      let vibe: string | null = null
-      let location: string | null = null
-      let detectedCategoryForMapping: string | null = null
-      let categoryWasDetected = false
-      
-      if (shouldUseUploadModuleCategory && uploadModuleCategory) {
-        console.log("[v0] [PROMPT-CONSTRUCTOR] 🔴 Using upload module category (no user request):", uploadModuleCategory)
-        // Map upload module category directly to prompt constructor categories
-        const uploadCategoryLower = uploadModuleCategory.toLowerCase()
-        
-        // Direct mapping from upload module categories to prompt constructor categories
-        // Check compound categories first (e.g., "beauty-self-care", "travel-lifestyle")
-        if (uploadCategoryLower.includes('workout') || uploadCategoryLower.includes('athletic') || uploadCategoryLower.includes('fitness') || uploadCategoryLower === 'gym' || uploadCategoryLower === 'brand-content' || uploadCategoryLower === 'wellness-content') {
-          category = 'workout'
-          vibe = 'athletic'
-          location = 'gym'
-          detectedCategoryForMapping = 'alo-workout'
-        } else if (uploadCategoryLower.includes('travel') || uploadCategoryLower === 'airport' || uploadCategoryLower === 'travel-lifestyle' || uploadCategoryLower === 'luxury-travel') {
-          category = 'travel'
-          vibe = 'travel'
-          location = 'airport'
-          detectedCategoryForMapping = 'travel-airport'
-        } else if (uploadCategoryLower.includes('luxury') || uploadCategoryLower.includes('fashion') || uploadCategoryLower === 'fashion-editorial') {
-          category = 'luxury'
-          vibe = 'luxury'
-          location = 'luxury location'
-          detectedCategoryForMapping = 'luxury-fashion'
-        } else if (uploadCategoryLower.includes('cozy') || uploadCategoryLower === 'home' || uploadCategoryLower.includes('christmas') || uploadCategoryLower.includes('holiday') || uploadCategoryLower === 'seasonal-holiday') {
-          category = 'cozy'
-          vibe = 'cozy'
-          location = 'home'
-          detectedCategoryForMapping = uploadCategoryLower.includes('christmas') || uploadCategoryLower.includes('holiday') || uploadCategoryLower === 'seasonal-holiday' ? 'seasonal-christmas' : 'casual-lifestyle'
-        } else if (uploadCategoryLower === 'casual' || uploadCategoryLower === 'lifestyle' || uploadCategoryLower === 'coffee') {
-          category = 'casual'
-          vibe = 'casual'
-          location = 'coffee-shop'
-          detectedCategoryForMapping = 'casual-lifestyle'
-        } else if (uploadCategoryLower === 'street' || uploadCategoryLower === 'street-style') {
-          category = 'street-style'
-          vibe = 'street-style'
-          location = 'street'
-          detectedCategoryForMapping = 'luxury-fashion'
-        } else if (uploadCategoryLower.includes('beauty') || uploadCategoryLower === 'beauty-self-care' || uploadCategoryLower === 'selfie-styles') {
-          // Beauty categories don't use prompt constructor (they're in unsupportedCategories)
-          // But we should still log and handle them
-          console.log("[v0] [PROMPT-CONSTRUCTOR] ⚠️ Beauty category detected - will use AI generation system instead of prompt constructor")
-          category = 'casual' // Fallback for now
-          vibe = 'casual'
-          location = 'street'
-          detectedCategoryForMapping = 'casual-lifestyle'
-        } else if (uploadCategoryLower === 'tech-work' || uploadCategoryLower === 'tech') {
-          // Tech categories don't use prompt constructor
-          console.log("[v0] [PROMPT-CONSTRUCTOR] ⚠️ Tech category detected - will use AI generation system instead of prompt constructor")
-          category = 'casual' // Fallback for now
-          vibe = 'casual'
-          location = 'street'
-          detectedCategoryForMapping = 'casual-lifestyle'
-        } else {
-          // If upload module category doesn't match known categories, enrich request and use pattern matching
-          console.log("[v0] [PROMPT-CONSTRUCTOR] ⚠️ Upload module category not recognized, using pattern matching:", uploadModuleCategory)
-          const requestWithUploadContext = uploadModuleConcept
-            ? `${enrichedUserRequest} ${uploadModuleCategory} ${uploadModuleConcept}`.trim()
-            : `${enrichedUserRequest} ${uploadModuleCategory}`.trim()
-          
-          const detected = detectCategoryForPromptConstructor(requestWithUploadContext, aesthetic, context, conversationContext)
-          category = detected.category
-          vibe = detected.vibe
-          location = detected.location
-          detectedCategoryForMapping = detectCategoryFromRequest(requestWithUploadContext, aesthetic, context, conversationContext)
-        }
-      } else {
-        // User provided a request OR no upload module category - prioritize user request
-        if (hasUserRequest) {
-          console.log("[v0] [PROMPT-CONSTRUCTOR] 🔴 User provided request - prioritizing user request over upload module category")
-        } else {
-          console.log("[v0] [PROMPT-CONSTRUCTOR] ⚠️ No upload module category found, using pattern matching")
-        }
-        const requestWithUploadContext = enrichedUserRequest
-        const detected = detectCategoryForPromptConstructor(requestWithUploadContext, aesthetic, context, conversationContext)
-        
-        // 🔴 FIX: Check if category was actually detected (not defaulted)
-        categoryWasDetected = detected.wasDetected
-        
-        if (categoryWasDetected) {
-          // Category was successfully detected from patterns
-          category = detected.category
-          vibe = detected.vibe
-          location = detected.location
-          console.log("[v0] [PROMPT-CONSTRUCTOR] ✅ Category detected from patterns:", category)
-        } else {
-          // Category was NOT detected - this is likely an aesthetic description
-          // Allow dynamic generation instead of forcing defaults
-          console.log('[v0] [PROMPT-CONSTRUCTOR] Category not detected - allowing dynamic generation with Maya fashion knowledge')
-          
-          // Try detectCategoryFromRequest as fallback, but don't force it
-          const detectedFromRequest = detectCategoryFromRequest(requestWithUploadContext, aesthetic, context, conversationContext)
-          if (detectedFromRequest && detectedFromRequest.trim().length > 0) {
-            detectedCategoryForMapping = detectedFromRequest
-            // Map detected category to prompt constructor format
-            if (detectedFromRequest === 'alo-workout') {
-              category = 'workout'
-              vibe = 'athletic'
-              location = 'gym'
-              categoryWasDetected = true
-            } else if (detectedFromRequest === 'travel-airport') {
-              category = 'travel'
-              vibe = 'travel'
-              location = 'airport'
-              categoryWasDetected = true
-            } else if (detectedFromRequest === 'luxury-fashion') {
-              category = 'luxury'
-              vibe = 'luxury'
-              location = 'luxury location'
-              categoryWasDetected = true
-            } else if (detectedFromRequest === 'seasonal-christmas') {
-              category = 'cozy'
-              vibe = 'cozy'
-              location = 'home'
-              categoryWasDetected = true
-            } else if (detectedFromRequest === 'casual-lifestyle') {
-              // Only use casual-lifestyle if we have meaningful text
-              if (requestWithUploadContext.trim().length > 0) {
-                category = 'casual'
-                vibe = 'casual'
-                location = 'coffee-shop'
-                categoryWasDetected = true
-              }
-            }
-            // If detectedFromRequest doesn't map, leave category as null to allow dynamic generation
-          }
-          
-          // If still no category detected and upload module category exists, use it
-          if (!categoryWasDetected && uploadModuleCategory) {
-            console.log("[v0] [PROMPT-CONSTRUCTOR] ⚠️ No category detected from patterns, using upload module category as fallback:", uploadModuleCategory)
-            // Map upload module category (same logic as above)
-            const uploadCategoryLower = uploadModuleCategory.toLowerCase()
-            if (uploadCategoryLower.includes('workout') || uploadCategoryLower.includes('athletic') || uploadCategoryLower.includes('fitness') || uploadCategoryLower === 'gym' || uploadCategoryLower === 'brand-content' || uploadCategoryLower === 'wellness-content') {
-              category = 'workout'
-              vibe = 'athletic'
-              location = 'gym'
-              detectedCategoryForMapping = 'alo-workout'
-              categoryWasDetected = true
-            } else if (uploadCategoryLower.includes('travel') || uploadCategoryLower === 'airport' || uploadCategoryLower === 'travel-lifestyle' || uploadCategoryLower === 'luxury-travel') {
-              category = 'travel'
-              vibe = 'travel'
-              location = 'airport'
-              detectedCategoryForMapping = 'travel-airport'
-              categoryWasDetected = true
-            } else if (uploadCategoryLower.includes('luxury') || uploadCategoryLower.includes('fashion') || uploadCategoryLower === 'fashion-editorial') {
-              category = 'luxury'
-              vibe = 'luxury'
-              location = 'luxury location'
-              detectedCategoryForMapping = 'luxury-fashion'
-              categoryWasDetected = true
-            } else if (uploadCategoryLower.includes('cozy') || uploadCategoryLower === 'home' || uploadCategoryLower.includes('christmas') || uploadCategoryLower.includes('holiday') || uploadCategoryLower === 'seasonal-holiday') {
-              category = 'cozy'
-              vibe = 'cozy'
-              location = 'home'
-              detectedCategoryForMapping = uploadCategoryLower.includes('christmas') || uploadCategoryLower.includes('holiday') || uploadCategoryLower === 'seasonal-holiday' ? 'seasonal-christmas' : 'casual-lifestyle'
-              categoryWasDetected = true
-            } else if (uploadCategoryLower === 'casual' || uploadCategoryLower === 'lifestyle' || uploadCategoryLower === 'coffee') {
-              category = 'casual'
-              vibe = 'casual'
-              location = 'coffee-shop'
-              detectedCategoryForMapping = 'casual-lifestyle'
-              categoryWasDetected = true
-            } else if (uploadCategoryLower === 'street' || uploadCategoryLower === 'street-style') {
-              category = 'street-style'
-              vibe = 'street-style'
-              location = 'street'
-              detectedCategoryForMapping = 'luxury-fashion'
-              categoryWasDetected = true
-            }
-          }
-        }
-        
-        // Get detectedCategoryForMapping if not already set
-        if (!detectedCategoryForMapping) {
-          const detectedFromRequest = detectCategoryFromRequest(requestWithUploadContext, aesthetic, context, conversationContext)
-          detectedCategoryForMapping = (detectedFromRequest && detectedFromRequest.trim().length > 0) ? detectedFromRequest : null
-        }
-        
-        // 🔴 FIX: If no category detected, allow dynamic generation instead of forcing defaults
-        if (!category || !vibe || !location) {
-          if (uploadModuleCategory) {
-            console.log("[v0] [PROMPT-CONSTRUCTOR] No category detected but upload module category exists - will use AI generation with upload category context")
-          } else {
-            console.log("[v0] [PROMPT-CONSTRUCTOR] No category detected - allowing dynamic generation with Maya fashion knowledge")
-          }
-          // Don't force defaults - leave as null to trigger dynamic generation path
-          // The AI generation path will use Maya's full fashion knowledge
-        }
-      }
-      
-      // 🔴 FIX: If no category detected, skip prompt constructor and use AI generation
-      // Don't force defaults - allow dynamic generation with Maya fashion knowledge
-      if (!category || !vibe || !location) {
-        console.log("[v0] [PROMPT-CONSTRUCTOR] No category detected - will skip prompt constructor and use AI generation with Maya fashion knowledge")
-        // Leave category/vibe/location as null - this will skip prompt constructor section below
-        // and trigger AI generation path which uses Maya's full fashion knowledge
-      }
-      
-      const mappedCategory = mapCategoryForBrandLibrary(detectedCategoryForMapping, enrichedUserRequest)
-      
-      console.log("[v0] [PROMPT-CONSTRUCTOR] Category detection:", {
-        uploadModuleCategory,
-        uploadModuleConcept,
-        detectedCategory: detectedCategoryForMapping,
-        promptConstructorCategory: category,
-        vibe,
-        location,
-        mappedCategory,
-        userRequest: userRequest?.substring(0, 100),
-        hasConversationContext: !!conversationContext,
-        conversationContextPreview: conversationContext?.substring(0, 200),
-        enrichedUserRequest: enrichedUserRequest?.substring(0, 200)
-      })
-      
-      // Only use prompt constructor if we have a valid category mapping
-      // Include 'cozy' for Christmas requests (Christmas maps to cozy in prompt constructor)
-      // Supported categories: workout, casual, coffee-run, street-style, travel, cozy, luxury
-      // 🔴 FIX: If category is null, skip prompt constructor and use AI generation with Maya fashion knowledge
-      const supportedCategories = ['workout', 'casual', 'coffee-run', 'street-style', 'travel', 'cozy', 'luxury']
-      if (category && mappedCategory && supportedCategories.includes(category)) {
-        
-        // 🎯 PRIMARY: Use dynamic prompt constructor for Studio Pro Mode
-        // Universal Prompts are ONLY used as fallback if prompt constructor fails
-        console.log("[v0] [PROMPT-CONSTRUCTOR] Using dynamic prompt constructor system for category:", category, "vibe:", vibe, "location:", location)
-        
-        // Generate prompts using prompt constructor (PRIMARY METHOD)
-        const promptConstructorConcepts: MayaConcept[] = []
-        let promptConstructorFailed = false
-        
-        try {
-          for (let i = 0; i < count; i++) {
-            // 🔴 CRITICAL: Studio Pro Mode (NanoBanana) does NOT use trigger words
-            // Instead, it uses the mandatory identity preservation instruction
-            // Do not pass triggerWord for Studio Pro Mode
-            // 🔴 CRITICAL: Use enriched userRequest that includes conversationContext
-            // This preserves context from the conversation thread (like Classic Mode does)
-            // 🔴 CRITICAL: Use enhanced prompt constructor for dynamic, detailed prompts
-            // This generates longer (150-400 words), more detailed prompts with specific sections
-            // Matching production-quality prompts with poses, lighting, environment, makeup, hair, camera specs
-            
-            // Extract hair info from image analysis for enhanced prompts
-            let hairInfoFromAnalysis = ''
-            if (imageAnalysis) {
-              let hairMatch = imageAnalysis.match(/(?:hair|hairstyle)(?:\s+is|\s+appears|\s+color|\s+length)[^.]*?([^.]{15,120})/i)
-              if (!hairMatch) {
-                hairMatch = imageAnalysis.match(/(?:long|short|medium|brown|blonde|black|red|auburn|brunette|dark|light)[^.]*?hair[^.]*?([^.]{10,80})/i)
-              }
-              if (!hairMatch) {
-                hairMatch = imageAnalysis.match(/with\s+([^.]*?(?:long|short|medium|brown|blonde|black|red|auburn|brunette)[^.]*?hair[^.]{0,50})/i)
-              }
-              if (!hairMatch) {
-                hairMatch = imageAnalysis.match(/(?:hair|hairstyle)[^.]*?([^.]{20,100})/i)
-              }
-              
-              if (hairMatch && hairMatch[1]) {
-                hairInfoFromAnalysis = hairMatch[1].trim()
-                  .replace(/\b(the person's|their|they have|showing|visible|appears|looks like|seems to have|has|wearing|styled)\b/gi, '')
-                  .replace(/[.,;:]\s*$/, '')
-                  .replace(/\s+/g, ' ')
-                  .trim()
-                
-                if (hairInfoFromAnalysis && 
-                    /(?:long|short|medium|brown|blonde|black|red|auburn|brunette|dark|light|curly|straight|wavy|hair|hairstyle)/i.test(hairInfoFromAnalysis)) {
-                  console.log("[v0] [PROMPT-CONSTRUCTOR] ✅ Extracted hair info from image analysis:", hairInfoFromAnalysis.substring(0, 80))
-                } else {
-                  hairInfoFromAnalysis = ''
-                }
-              }
-            }
-            
-            // Use enhanced prompt constructor for detailed, dynamic prompts
-            // Extract user age from physical preferences
-            let extractedAge: string | undefined
-            if (physicalPreferences) {
-              const ageMatch = physicalPreferences.match(/(?:age|aged?|years? old)\s*:?\s*(\d+)/i)
-              if (ageMatch) {
-                const age = parseInt(ageMatch[1])
-                if (age >= 20 && age < 30) extractedAge = 'Woman in late twenties'
-                else if (age >= 30 && age < 40) extractedAge = 'Woman in early thirties'
-                else if (age >= 40) extractedAge = 'Woman in forties'
-              }
-            }
-            
-            const constructedPrompt = buildEnhancedPrompt({
-              category: category || 'casual',
-              vibe: vibe || 'casual',
-              location: location || 'street',
-              userAge: extractedAge,
-              userFeatures: physicalPreferences,
-              userGender: userGender || 'woman',
-              hairStyle: hairInfoFromAnalysis || undefined,
-              userRequest: enrichedUserRequest || userRequest,
-              imageAnalysis: imageAnalysis || undefined,
-            })
-            
-            // Validate the generated prompt (warnings only, not errors)
-            const validation = validateProductionPrompt(constructedPrompt)
-            if (validation.warnings.length > 0) {
-              console.log(`[v0] [PROMPT-CONSTRUCTOR] Concept ${i + 1} suggestions:`, validation.warnings)
-            }
-            
-            // 🔴 CRITICAL: Use upload module category/concept for titles if available
-            // Otherwise fall back to detected category
-            let conceptTitle = ''
-            let conceptDescription = ''
-            
-            if (uploadModuleCategory && uploadModuleConcept) {
-              // Use upload module category/concept for titles (e.g., "Beauty Concept 1" or "Makeup Look Concept 1")
-              const categoryTitle = uploadModuleCategory.charAt(0).toUpperCase() + uploadModuleCategory.slice(1)
-              const conceptTitlePart = uploadModuleConcept.charAt(0).toUpperCase() + uploadModuleConcept.slice(1)
-              conceptTitle = `${categoryTitle} - ${conceptTitlePart} ${i + 1}`
-              conceptDescription = `${uploadModuleCategory} ${uploadModuleConcept} concept with detailed specifications`
-            } else {
-              // 🔴 FIX: Use best available category source, not just default 'category' variable
-              // Priority: detectedCategoryForMapping > category > fallback
-              const bestCategory = detectedCategoryForMapping || category || 'casual'
-              const bestCategoryTitle = bestCategory === 'alo-workout' ? 'Workout' :
-                                       bestCategory === 'travel-airport' ? 'Travel' :
-                                       bestCategory === 'luxury-fashion' ? 'Luxury' :
-                                       bestCategory === 'seasonal-christmas' ? 'Holiday' :
-                                       bestCategory === 'casual-lifestyle' ? 'Casual' :
-                                       bestCategory.charAt(0).toUpperCase() + bestCategory.slice(1).replace(/-/g, ' ')
-              
-              conceptTitle = `${bestCategoryTitle} Concept ${i + 1}`
-              conceptDescription = `${vibe || 'casual'} ${category || 'casual'} concept with detailed brand specifications`
-              
-              console.log("[v0] [PROMPT-CONSTRUCTOR] Using category for title:", {
-                detectedCategoryForMapping,
-                category,
-                bestCategory,
-                bestCategoryTitle,
-                conceptTitle
-              })
-            }
-            
-            const concept: MayaConcept = {
-              title: conceptTitle,
-              description: conceptDescription,
-              category: uploadModuleCategory || mapComponentCategoryToMayaCategory(detectedCategoryForMapping || 'casual-lifestyle'),
-              fashionIntelligence: '',
-              lighting: '', // Will be extracted from prompt if needed
-              location: location || 'street', // 🔴 FIX: Ensure location is always string, not null
-              prompt: constructedPrompt,
-            }
-            
-            promptConstructorConcepts.push(concept)
-          }
-          
-          concepts = promptConstructorConcepts
-          console.log(`[v0] [PROMPT-CONSTRUCTOR] ✅ Generated ${concepts.length} dynamic concepts using prompt constructor system`)
-        } catch (error) {
-          console.error('[v0] [PROMPT-CONSTRUCTOR] ❌ Error generating prompts:', error)
-          promptConstructorFailed = true
-        }
-        
-        // 🎯 FALLBACK: Use Universal Prompts ONLY if prompt constructor failed
-        if (promptConstructorFailed || concepts.length === 0) {
-          console.log("[v0] [UNIVERSAL-PROMPTS] Prompt constructor failed, using Universal Prompts as fallback")
-          
-          // Include conversationContext for better category detection (like Classic Mode)
-          const enrichedRequestForFallback = conversationContext 
-            ? `${userRequest || ''} ${conversationContext}`.trim()
-            : userRequest || ''
-          const detectedCategory = detectCategoryFromRequest(enrichedRequestForFallback, aesthetic, context, conversationContext)
-          // 🔴 FIX: If detectedCategory is null, skip Universal Prompts and use AI generation
-          // 🔴 CRITICAL: Removed 'seasonal-christmas' from fallback - trust Maya's generation for Christmas requests
-          const universalPromptCategory = detectedCategory && ['travel-airport', 'alo-workout', 'casual-lifestyle', 'luxury-fashion'].includes(detectedCategory)
-            ? detectedCategory
-            : (category ? mapToUniversalPromptCategory(category, userRequest) : null)
-          
-          // Universal prompts system removed - Maya generates directly using her intelligence
-          // This fallback code path is disabled - Maya uses her intelligence instead of templates
-          // No action needed - Maya will generate concepts directly below
-          console.log('[v0] [UNIVERSAL-PROMPTS] No category for Universal Prompts - AI generation will be used')
-        }
-      } else {
-        console.log(`[v0] [PROMPT-CONSTRUCTOR] Skipping - category ${category} not supported or no valid mapping`)
-      }
-    }
-    
     // 🔴 REMOVED: Post-generation brand injection that overrides Maya's prompts
     // Maya's generated prompts should stand as-is without any post-processing injection or replacement
     // Brand library instructions in the AI prompt (for Pro Mode) are sufficient guidance
@@ -3411,49 +2675,6 @@ Same quality/luxury/styling as professional concepts, but with:
           console.log("[v0] ✅ Concept #" + variationNumber + " created as variation (fallback)")
         } else {
           console.log("[v0] ✅ Concept #" + variationNumber + " already has prompt from direct generation")
-        }
-      }
-    }
-
-    /**
-     * Enhance prompt to explicitly reference image positions
-     * This tells Nanobanana Pro which images to use for face vs outfit/styling
-     */
-    function enhancePromptForReferences(
-      originalPrompt: string,
-      numUserSelfies: number
-    ): string {
-      // Always add reference image instructions if not present
-      const hasReferenceInstruction = /character consistency with provided reference images/i.test(originalPrompt)
-      
-      // Build specific image role instructions
-      let imageRoleInstructions = ''
-      
-      if (numUserSelfies > 0) {
-        // We have user selfies + concept #1
-        const lastImageIndex = numUserSelfies + 1
-        imageRoleInstructions = `Character consistency with provided reference images. Match the exact facial features, skin tone, and physical characteristics from reference images 1-${numUserSelfies}. Match the exact outfit, styling, hair, and accessories from reference image ${lastImageIndex}. This is the same person in a different scene.`
-      } else {
-        // Only concept #1 (no user selfies)
-        imageRoleInstructions = `Character consistency with provided reference images. Match the exact facial features, outfit, styling, and characteristics from the reference image. This is the same person in a different scene.`
-      }
-      
-      if (hasReferenceInstruction) {
-        // Replace existing generic instruction with specific one
-        return originalPrompt.replace(
-          /Character consistency with provided reference images[^.]+\./i,
-          imageRoleInstructions
-        )
-      } else {
-        // Add reference instruction at the beginning (after trigger/character description)
-        // Find where to insert (after first sentence or after character description)
-        const sentences = originalPrompt.split(/[.!?]\s+/)
-        if (sentences.length > 1) {
-          // Insert after first sentence
-          return sentences[0] + '. ' + imageRoleInstructions + ' ' + sentences.slice(1).join('. ')
-        } else {
-          // Add at beginning
-          return imageRoleInstructions + ' ' + originalPrompt
         }
       }
     }
@@ -3604,346 +2825,6 @@ Same quality/luxury/styling as professional concepts, but with:
       concept.prompt = prompt
     })
     
-    const bannedWords = [
-      "ultra realistic",
-      "photorealistic",
-      "8K",
-      "4K",
-      "high quality",
-      "high resolution",
-      "perfect",
-      "flawless",
-      "stunning",
-      "beautiful",
-      "gorgeous",
-      "professional photography",
-      "editorial",
-      "magazine quality",
-      "dramatic",
-      "cinematic",
-      "cinematic quality",
-      "hyper detailed",
-      "sharp focus",
-      "ultra sharp",
-      "crystal clear",
-      "DSLR",
-      "studio lighting",
-      "professional lighting",
-      "perfect lighting",
-      "even lighting",
-      "ideal lighting",
-      "beautiful lighting",
-      "smooth skin",
-      "flawless skin",
-      "airbrushed",
-      "perfect skin",
-      "silk-like skin",
-    ]
-
-    // CRITICAL FIX: Function to ensure all mandatory anti-plastic requirements are present
-    // Now with conditional logic to respect user style requests AND reference image analysis
-    // 🔴 PRO MODE: Only add skin texture if it's in user prompt, guide prompt, or templates
-    function ensureRequiredElements(
-      prompt: string,
-      currentWordCount: number,
-      MAX_WORDS: number,
-      userRequest?: string,
-      aesthetic?: string,
-      imageAnalysisText?: string,
-      isStudioPro?: boolean,
-      isEnhancedAuthenticity?: boolean,
-      guidePrompt?: string,
-      templateExamples?: string[],
-    ): string {
-      let enhanced = prompt
-      let addedCount = 0
-
-      // Combine user request, aesthetic, and image analysis for style detection
-      const styleContext = `${userRequest || ""} ${aesthetic || ""} ${imageAnalysisText || ""}`.toLowerCase()
-
-      // Detect if user wants professional/studio/magazine aesthetic (skip amateur requirements)
-      const wantsProfessional = /magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(styleContext)
-      const userExplicitStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|studio\s+images?|in\s+studio|photo\s+studio|studio\s+backdrop|studio\s+set|studio\s+session)\b/i.test(
-        styleContext,
-      )
-      
-      // Detect if user request is B&W/monochrome (NOT from image analysis - only user's explicit request)
-      const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale|black and white/i.test(userRequest || "")
-      
-      // Detect if reference image shows studio lighting (explicit phrases only)
-      const imageShowsStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|photo\s+studio|controlled\s+studio\s+lighting|professional\s+studio\s+lighting)\b/i.test(
-        imageAnalysisText || "",
-      )
-
-      // 🔴 CRITICAL: Check if skin texture should be included (from user prompt, guide prompt, or templates)
-      // BUT: NEVER add in Studio Pro mode - Studio Pro uses professional photography without explicit skin texture mentions
-      const shouldAddSkinTexture = shouldIncludeSkinTexture(userRequest, guidePrompt, templateExamples) && !isStudioPro
-      
-      // Check for natural skin texture - ONLY add if it should be included AND NOT in Studio Pro mode
-      // Format: "natural skin texture with visible pores" (not "with visible pores" at the end)
-      if (!/natural\s+skin\s+texture/i.test(enhanced)) {
-        if (shouldAddSkinTexture) {
-          // Insert before camera specs or at end if no camera specs
-          if (/professional\s+photography|85mm|f\/|shot\s+on/i.test(enhanced)) {
-            // Insert before camera specs
-            enhanced = enhanced.replace(/(professional\s+photography|85mm|f\/|shot\s+on[^,]*)/i, "natural skin texture with visible pores, $1")
-          } else {
-            // Add before final period or at end
-            enhanced = enhanced.replace(/(\.\s*$)/, ", natural skin texture with visible pores$1")
-            if (!enhanced.includes("natural skin texture")) {
-              enhanced += ", natural skin texture with visible pores"
-            }
-          }
-          addedCount += 6
-        } else {
-        }
-      }
-      
-      // Remove any incorrectly placed "with visible pores" at the end
-      enhanced = enhanced.replace(/,\s*with\s+visible\s+pores\.?\s*$/i, "")
-      enhanced = enhanced.replace(/with\s+visible\s+pores\.?\s*,\s*black\s+and\s+white/i, "black and white")
-      enhanced = enhanced.replace(/\.\s*with\s+visible\s+pores\.?\s*$/i, ".")
-      enhanced = enhanced.replace(/,\s*with\s+visible\s+pores\.?\s*,\s*black\s+and\s+white/i, ", black and white")
-      
-      // 🔴 CRITICAL: For Studio Pro mode, ensure camera specs and lighting are included
-      if (studioProMode) {
-        // Ensure camera specs are present
-        if (!/professional\s+photography|85mm|f\/\d|f\s*\d/i.test(enhanced)) {
-          if (/natural\s+skin\s+texture/i.test(enhanced)) {
-            enhanced = enhanced.replace(/(natural\s+skin\s+texture)/i, "professional photography, 85mm lens, f/2.0 depth of field, $1")
-          } else {
-            enhanced += ", professional photography, 85mm lens, f/2.0 depth of field"
-          }
-          addedCount += 6
-        }
-        
-        // Ensure lighting description is present (check for lighting-related terms)
-        // Pattern requires two words where second word must be lighting-related
-        // This safely matches "natural light" but NOT "natural skin texture" (since "skin" isn't a lighting word)
-        const hasLighting = /(?:soft|window|warm|ambient|mixed|color\s+temperatures|lighting|light|natural)\s+(?:light|lighting|window\s+light|ambient|illumination|shadows)/i.test(enhanced)
-        if (!hasLighting) {
-          // Add before camera specs if they exist, otherwise at end
-          if (/professional\s+photography|85mm/i.test(enhanced)) {
-            enhanced = enhanced.replace(/(professional\s+photography|85mm)/i, "soft natural lighting, $1")
-          } else {
-            enhanced += ", soft natural lighting"
-          }
-          addedCount += 3
-        }
-      }
-      
-      // Final cleanup
-      enhanced = enhanced.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
-
-      // Check for anti-plastic phrases (need at least 2 positive descriptors) - ONLY if skin texture should be included
-      if (shouldAddSkinTexture) {
-        const antiPlasticMatches =
-          enhanced.match(/organic\s+imperfections|unretouched\s+skin|matte\s+skin\s+texture|realistic\s+texture|visible\s+pores|natural\s+imperfections/gi) || []
-        const antiPlasticCount = antiPlasticMatches.length
-
-        if (antiPlasticCount < 2) {
-          const antiPlasticPhrases = [
-            "organic imperfections",
-            "unretouched skin texture",
-            "matte skin texture",
-            "realistic texture",
-            "visible pores",
-          ]
-          const needed = Math.max(0, 2 - antiPlasticCount)
-          if (needed > 0) {
-            enhanced += ", " + antiPlasticPhrases.slice(0, needed).join(", ")
-            addedCount += 2 * needed
-          }
-        }
-      }
-
-      // Check for film grain (ALWAYS required - no exceptions)
-      // Enhanced Authenticity mode: Use stronger film grain descriptions
-      const hasFilmGrain = /film\s+grain|visible\s+film\s+grain|subtle\s+film\s+grain|prominent\s+film\s+grain/i.test(enhanced)
-      if (!hasFilmGrain) {
-        console.log("[v0] Missing: film grain - adding")
-        if (isEnhancedAuthenticity && !isStudioPro) {
-          enhanced += ", visible film grain, grainy texture"
-          addedCount += 5
-        } else {
-          enhanced += ", subtle film grain"
-          addedCount += 3
-        }
-      } else if (isEnhancedAuthenticity && !isStudioPro && !/visible\s+film\s+grain|prominent\s+film\s+grain|grainy\s+texture/i.test(enhanced)) {
-        // Upgrade to stronger film grain if enhanced authenticity is enabled
-        enhanced = enhanced.replace(/subtle\s+film\s+grain/i, "visible film grain, grainy texture")
-        console.log("[v0] Upgraded film grain for enhanced authenticity")
-      }
-
-      // PRIORITY 1 FIX #1: Make muted colors conditional on user request AND reference image
-      // Check if user wants vibrant, pastel, high-contrast, B&W, or other non-muted styles
-      const userWantsVibrant = /vibrant|bright|saturated|high.?contrast|bold.?colors|colorful|neon/i.test(styleContext)
-      const userWantsPastel = /pastel|soft.?tones|gentle.?colors|light.?colors/i.test(styleContext)
-      const userWantsMonochrome = /monochrome|black.?and.?white|b&w|grayscale/i.test(styleContext)
-      const userWantsEditorial = /editorial|high.?fashion|fashion.?editorial|magazine/i.test(styleContext)
-
-      // Check if prompt already has B&W/monochrome
-      const hasBAndW = /black.?and.?white|monochrome|b&w|grayscale/i.test(enhanced)
-
-      // 🔴 CRITICAL: Only add B&W if explicitly requested by user (NOT from image analysis)
-      // Do NOT add B&W based on image analysis - only user's explicit request
-      const userExplicitlyWantsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white)\b/i.test(userRequest || "")
-
-      if (!/muted\s+(?:colors?|color\s+palette|tones?)/i.test(enhanced)) {
-        // Only add B&W if user explicitly requested it (NOT from image analysis)
-        if (userExplicitlyWantsBAndW && !hasBAndW) {
-          // User explicitly wants B&W - add it
-          console.log("[v0] B&W/Monochrome explicitly requested by user - adding to prompt")
-          enhanced += ", black and white"
-          addedCount += 3
-        } else if (hasBAndW) {
-          // B&W already in prompt - skip muted colors
-          console.log("[v0] B&W/Monochrome already in prompt - skipping muted colors")
-        } else if (wantsProfessional) {
-          // User wants vibrant - use "muted vibrant palette" as compromise (still authentic but respects request)
-          console.log("[v0] User wants vibrant colors - using muted vibrant palette")
-          enhanced += ", muted vibrant color palette"
-          addedCount += 4
-        } else if (userWantsPastel) {
-          // User wants pastel - use "muted pastel tones" as compromise
-          console.log("[v0] User wants pastel colors - using muted pastel tones")
-          enhanced += ", muted pastel tones"
-          addedCount += 3
-        } else if (userWantsMonochrome) {
-          // User wants monochrome - skip muted colors (monochrome is already muted)
-          console.log("[v0] User wants monochrome - skipping muted colors")
-        } else if (userWantsEditorial) {
-          // User wants editorial - use "muted editorial palette" as compromise
-          console.log("[v0] User wants editorial - using muted editorial color palette")
-          enhanced += ", muted editorial color palette"
-          addedCount += 4
-        } else {
-          // Default: add muted colors (Scandinavian minimalism default)
-          // Enhanced Authenticity mode: Use stronger muted color descriptions
-          console.log("[v0] Missing: muted colors - adding (default)")
-          if (isEnhancedAuthenticity && !isStudioPro) {
-            enhanced += ", heavily muted colors, desaturated color palette"
-            addedCount += 4
-          } else {
-            enhanced += ", muted colors"
-            addedCount += 2
-          }
-        }
-      }
-
-      // PRIORITY 1 FIX #2: Make uneven lighting conditional on user request AND reference image
-      // Check if user wants dramatic, soft, golden hour, studio, or other specific lighting styles
-      const userWantsDramatic = /dramatic|cinematic|editorial|high.?fashion|fashion.?editorial|striking/i.test(styleContext)
-      const userWantsSoft = /soft|dreamy|gentle|diffused|soft.?glow|dreamy.?light/i.test(styleContext)
-      const userWantsGoldenHour = /golden.?hour|warm.?glow|sunset|sunrise|warm.?light/i.test(styleContext)
-      const userWantsMoody = /moody|dark|shadowy|deep.?shadows|low.?light/i.test(styleContext)
-      // Check if prompt already has studio lighting
-      const hasStudioLighting = /studio\s+lighting|professional\s+studio\s+lighting|dramatic\s+studio/i.test(enhanced)
-
-      if (!/uneven\s+(?:natural\s+)?lighting|uneven\s+illumination/i.test(enhanced)) {
-        // Check if user requested specific lighting style OR reference image shows studio
-        if (userExplicitStudio || imageShowsStudio) {
-          // User explicitly asked for studio OR reference shows studio - allow studio lighting
-          console.log("[v0] Studio lighting explicitly requested or shown - skipping uneven requirement")
-          if (!hasStudioLighting && !/studio/i.test(enhanced)) {
-            enhanced += ", studio lighting"
-            addedCount += 2
-            console.log("[v0] Added 'studio lighting' to prompt")
-          }
-        } else if (wantsProfessional) {
-          // Professional vibe without explicit studio request - do not force studio lighting
-          console.log("[v0] Professional vibe without studio request - keeping existing lighting")
-        } else if (userWantsDramatic) {
-          // User wants dramatic lighting - check if it's already in prompt or needs to be preserved
-          if (/\b(?:dramatic|cinematic|editorial)\s+lighting/i.test(enhanced)) {
-            // Already in prompt - keep it as-is, just ensure it's not "perfect"
-            console.log("[v0] User wants dramatic lighting - keeping as-is (not perfect)")
-            enhanced = enhanced.replace(/\bperfect\s+lighting\b/gi, "dramatic lighting")
-          } else {
-            // User wants dramatic but not in prompt yet - don't add "uneven", let Maya add dramatic
-            console.log("[v0] User wants dramatic lighting - skipping uneven requirement")
-          }
-        } else if (userWantsSoft) {
-          // User wants soft lighting - check if it's already in prompt
-          if (/\b(?:soft|dreamy|gentle|diffused)\s+lighting/i.test(enhanced)) {
-            // Already in prompt - keep it, but add natural shadows for authenticity
-            console.log("[v0] User wants soft lighting - keeping with natural shadows")
-            if (!/shadows|uneven/i.test(enhanced)) {
-              enhanced = enhanced.replace(/\b(soft|dreamy|gentle|diffused)\s+lighting\b/gi, "$1 lighting with natural shadows")
-              addedCount += 3
-            }
-          } else {
-            // User wants soft but not in prompt yet - don't add "uneven", let Maya add soft
-            console.log("[v0] User wants soft lighting - skipping uneven requirement")
-          }
-        } else if (userWantsGoldenHour) {
-          // User wants golden hour - check if it's already in prompt
-          if (/\b(?:golden.?hour|warm.?glow|sunset|sunrise)\s+lighting/i.test(enhanced)) {
-            // Already in prompt - keep it, but add natural variation
-            console.log("[v0] User wants golden hour lighting - keeping with natural variation")
-            if (!/uneven|variation|mixed/i.test(enhanced)) {
-              enhanced = enhanced.replace(/\b(golden.?hour|warm.?glow|sunset|sunrise)\s+lighting\b/gi, "$1 lighting with natural variation")
-              addedCount += 3
-            }
-          } else {
-            // User wants golden hour but not in prompt yet - don't add "uneven", let Maya add golden hour
-            console.log("[v0] User wants golden hour lighting - skipping uneven requirement")
-          }
-        } else if (userWantsMoody) {
-          // User wants moody lighting - check if it's already in prompt
-          if (/\b(?:moody|dark|shadowy)\s+lighting/i.test(enhanced)) {
-            // Already in prompt - keep it as-is (moody already implies uneven)
-            console.log("[v0] User wants moody lighting - keeping as-is")
-          } else {
-            // User wants moody but not in prompt yet - don't add "uneven", let Maya add moody
-            console.log("[v0] User wants moody lighting - skipping uneven requirement")
-          }
-        } else {
-          // Default: add uneven for natural lighting (Scandinavian minimalism default)
-          console.log("[v0] Checking for lighting to make uneven...")
-          // Only modify if lighting description exists but doesn't have "uneven"
-          if (/\b(?:natural\s+)?lighting\b/i.test(enhanced) && !/uneven/i.test(enhanced)) {
-            enhanced = enhanced.replace(/\b(natural\s+)?lighting\b/gi, "uneven $1lighting")
-            console.log("[v0] Modified lighting to be 'uneven' (default)")
-          }
-        }
-      }
-
-      // Add authentic iPhone aesthetic at the end if not present (skip for professional/studio requests AND Studio Pro mode)
-      // Enhanced Authenticity mode: Use stronger iPhone quality descriptions
-      if (!isStudioPro && !wantsProfessional && !/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
-        console.log("[v0] Missing: authentic iPhone aesthetic - adding")
-        if (isEnhancedAuthenticity) {
-          enhanced += ", raw iPhone photo, authentic iPhone camera quality, amateur cellphone aesthetic"
-          addedCount += 7
-        } else {
-          enhanced += ", authentic iPhone photo aesthetic"
-          addedCount += 4
-        }
-      } else if (isStudioPro) {
-        console.log("[v0] Studio Pro mode - skipping authentic iPhone aesthetic")
-      } else if (wantsProfessional) {
-        console.log("[v0] Professional/studio request - skipping authentic iPhone aesthetic")
-      } else if (isEnhancedAuthenticity && !isStudioPro && !wantsProfessional) {
-        // Upgrade existing iPhone aesthetic to stronger version if enhanced authenticity is enabled
-        if (/authentic\s+iPhone\s+photo\s+aesthetic/i.test(enhanced)) {
-          enhanced = enhanced.replace(/authentic\s+iPhone\s+photo\s+aesthetic/i, "raw iPhone photo, authentic iPhone camera quality, amateur cellphone aesthetic")
-          console.log("[v0] Upgraded iPhone aesthetic for enhanced authenticity")
-        }
-      }
-
-      // Clean up any double commas or trailing commas
-      enhanced = enhanced
-        .replace(/,\s*,/g, ",")
-        .replace(/^,\s*/, "")
-        .replace(/\s*,\s*$/, "")
-        .trim()
-
-      console.log(`[v0] Post-processing validation complete - added ${addedCount} words`)
-
-      return enhanced
-    }
-
     // Redefine helper functions for this scope (originally defined at lines 2872 and 2868)
     // These are needed here because the previous definitions may be in a different scope
     const isGuidePromptConceptFnLocal = (concept: MayaConcept) => 
@@ -3957,27 +2838,7 @@ Same quality/luxury/styling as professional concepts, but with:
       concepts = []
     }
     
-    // =============================================================================
-    // MINIMAL SYNTAX CLEANUP
-    // =============================================================================
-    // Apply only essential syntax fixes - no content modifications
-    // Trust Maya's generated prompts - she knows what she's doing!
-
-    function minimalSyntaxCleanup(prompt: string, triggerWord: string): string {
-      let clean = prompt
-        .replace(/,\s*,/g, ',')  // Remove double commas
-        .replace(/\s+/g, ' ')     // Normalize whitespace
-        .trim()
-      
-      // Ensure trigger word is first (Classic Mode only)
-      if (triggerWord && !clean.toLowerCase().startsWith(triggerWord.toLowerCase())) {
-        clean = `${triggerWord}, ${clean}`
-      }
-      
-      return clean
-    }
-
-    // Apply minimal cleanup to all concepts
+    // Apply minimal cleanup to all concepts (minimalSyntaxCleanup is a top-level helper)
     concepts.forEach((concept, index) => {
       if (concept.prompt) {
         const originalPrompt = concept.prompt
@@ -4056,56 +2917,3 @@ Same quality/luxury/styling as professional concepts, but with:
   }
 }
 
-// ============================================
-// HELPER FUNCTIONS FOR UNIVERSAL PROMPTS
-// ============================================
-
-/**
- * Map Universal Prompt category to Maya category
- */
-function mapUniversalCategoryToMaya(category: string): string {
-  const mapping: Record<string, string> = {
-    'travel-airport': 'Lifestyle',
-    'alo-workout': 'Action',
-    'seasonal-christmas': 'Lifestyle',
-    'casual-lifestyle': 'Half Body',
-    'luxury-fashion': 'Lifestyle'
-  }
-  return mapping[category] || 'Lifestyle'
-}
-
-/**
- * Extract fashion intelligence from prompt
- */
-function extractFashionIntelligence(prompt: string): string {
-  // Look for outfit section
-  const outfitMatch = prompt.match(/(?:She wears|outfit:|wearing)([^\.]+\.|[^\.]{50,200})/i)
-  if (outfitMatch) {
-    return outfitMatch[1].trim()
-  }
-  return ''
-}
-
-/**
- * Extract lighting description from prompt
- */
-function extractLighting(prompt: string): string {
-  // Look for lighting section
-  const lightingMatch = prompt.match(/Lighting:([^\.]+\.|[^\.]{50,200})/i)
-  if (lightingMatch) {
-    return lightingMatch[1].trim()
-  }
-  return ''
-}
-
-/**
- * Extract location description from prompt  
- */
-function extractLocation(prompt: string): string {
-  // Look for environment section
-  const locationMatch = prompt.match(/Environment:([^\.]+\.|[^\.]{50,200})/i)
-  if (locationMatch) {
-    return locationMatch[1].trim()
-  }
-  return ''
-}
