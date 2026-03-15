@@ -171,28 +171,28 @@ function stripControlText(text: string): string {
   if (!text) return ""
   return stripFeedStrategyArtifacts(
     text
-      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
-      .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
-      .replace(/\[SHOW_CAPABILITIES\]/gi, "")
-      .replace(/\[SHOW_STUDIO_HUB\]/gi, "")
-      .replace(/\[SHOW_GALLERY\]/gi, "")
-      .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
-      .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
-      .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
-      .replace(/\[GENERATE_STRATEGY\]/gi, "")
-      .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/\s{2,}/g, " ")
+      .replaceAll(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replaceAll(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replaceAll(/\[SHOW_CAPABILITIES\]/gi, "")
+      .replaceAll(/\[SHOW_STUDIO_HUB\]/gi, "")
+      .replaceAll(/\[SHOW_GALLERY\]/gi, "")
+      .replaceAll(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[VIDEO_CARD:[^\]]+\]/gi, "")
+      .replaceAll(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
+      .replaceAll(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replaceAll(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replaceAll(/\[GENERATE_STRATEGY\]/gi, "")
+      .replaceAll(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
+      .replaceAll(/\n{3,}/g, "\n\n")
+      .replaceAll(/\s{2,}/g, " ")
       .trim(),
   )
 }
@@ -255,22 +255,22 @@ function renderVideoDebugPanel(debug: any): React.ReactNode {
 function removeEmojis(text: string): string {
   if (!text) return text
   return text
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-    .replace(/[\u{2600}-\u{26FF}]/gu, "")
-    .replace(/[\u{2700}-\u{27BF}]/gu, "")
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")
-    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")
-    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")
-    .replace(/[\u{200D}]/gu, "")
-    .replace(/[\u{FE0F}]/gu, "")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, "")
+    .replaceAll(/[\u{2600}-\u{26FF}]/gu, "")
+    .replaceAll(/[\u{2700}-\u{27BF}]/gu, "")
+    .replaceAll(/[\u{1F600}-\u{1F64F}]/gu, "")
+    .replaceAll(/[\u{1F900}-\u{1F9FF}]/gu, "")
+    .replaceAll(/[\u{1FA00}-\u{1FA6F}]/gu, "")
+    .replaceAll(/[\u{1FA70}-\u{1FAFF}]/gu, "")
+    .replaceAll(/[\u{200D}]/gu, "")
+    .replaceAll(/[\u{FE0F}]/gu, "")
+    .replaceAll(/\s+/g, " ")
     .trim()
 }
 
 function renderMarkdownText(text: string): React.ReactNode {
   let cleanedText = text
-  cleanedText = cleanedText.replace(/\*\*/g, "")
+  cleanedText = cleanedText.replaceAll(/\*\*/g, "")
   const lines = cleanedText.split("\n")
   const elements: React.ReactNode[] = []
   let currentList: React.ReactNode[][] = []
@@ -280,7 +280,7 @@ function renderMarkdownText(text: string): React.ReactNode {
 
     if (trimmedLine.match(/^[-*]\s+/)) {
       const listItem = trimmedLine.replace(/^[-*]\s+/, "")
-      const cleanedListItem = listItem.replace(/\*\*/g, "")
+      const cleanedListItem = listItem.replaceAll(/\*\*/g, "")
       const processedItem: React.ReactNode[] = []
       processedItem.push(<span key="text-0">{cleanedListItem}</span>)
       if (processedItem.length === 0) {
@@ -302,7 +302,7 @@ function renderMarkdownText(text: string): React.ReactNode {
       }
 
       if (trimmedLine) {
-        const cleanedLine = trimmedLine.replace(/\*\*/g, "")
+        const cleanedLine = trimmedLine.replaceAll(/\*\*/g, "")
         const processedLine: React.ReactNode[] = []
         processedLine.push(<span key="text-0">{cleanedLine}</span>)
         if (processedLine.length === 0) {
@@ -338,39 +338,39 @@ function renderMarkdownText(text: string): React.ReactNode {
 
 function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
   let cleanedText = stripFeedStrategyArtifacts(text)
-  cleanedText = cleanedText.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SHOW_CAPABILITIES\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SHOW_CAPABILITIES\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SHOW_GALLERY\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
   cleanedText = cleanedText
-    .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
-    .replace(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
+    .replaceAll(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+    .replaceAll(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
     .trim()
-  cleanedText = cleanedText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, "").trim()
-  cleanedText = cleanedText.replace(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
-  cleanedText = cleanedText.replace(/FEED STRATEGY:\s*"[^"]*"\s*/gi, "").trim()
-  cleanedText = cleanedText.replace(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
-  cleanedText = cleanedText.replace(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, "").trim()
-  cleanedText = cleanedText.replace(/Posts:[\s\S]*?(?=\n\n|$)/gi, "").trim()
-  cleanedText = cleanedText.replace(/"position":\s*\d+[\s\S]*$/g, "").trim()
-  cleanedText = cleanedText.replace(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
+  cleanedText = cleanedText.replaceAll(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/FEED STRATEGY:\s*"[^"]*"\s*/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/Posts:[\s\S]*?(?=\n\n|$)/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/"position":\s*\d+[\s\S]*$/g, "").trim()
+  cleanedText = cleanedText.replaceAll(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
   cleanedText = cleanedText.trim()
-  cleanedText = cleanedText.replace(/\[GENERATE_CAPTIONS\]/gi, "").trim()
-  cleanedText = cleanedText.replace(/\[GENERATE_STRATEGY\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_CAPTIONS\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_STRATEGY\]/gi, "").trim()
 
   const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
 
   if (inspirationImageMatch) {
     const imageUrl = inspirationImageMatch[1]
-    const textWithoutImage = cleanedText.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+    const textWithoutImage = cleanedText.replaceAll(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
     return (
       <div className="space-y-3">
         {textWithoutImage && (
@@ -425,7 +425,7 @@ function parsePromptSuggestions(
 
       prompt = prompt
         .replace(/\n\n(Copy|Then|This is going|Once you|Here are all|Copy slide|Perfect! For carousels).*$/is, "")
-        .replace(/^[\s\n]+|[\s\n]+$/g, "")
+        .replaceAll(/^[\s\n]+|[\s\n]+$/g, "")
         .trim()
 
       const hasTemplateStructure =
@@ -470,12 +470,12 @@ function removePromptsFromText(text: string, suggestions: Array<{ prompt: string
 
   suggestions.forEach((suggestion) => {
     const prompt = suggestion.prompt
-    const escapedPrompt = prompt.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const escapedPrompt = prompt.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
-    cleanedText = cleanedText.replace(new RegExp(`"${escapedPrompt}"`, "g"), "")
-    cleanedText = cleanedText.replace(new RegExp(`'${escapedPrompt}'`, "g"), "")
-    cleanedText = cleanedText.replace(new RegExp("```[\\s\\S]*?" + escapedPrompt + "[\\s\\S]*?```", "g"), "")
-    cleanedText = cleanedText.replace(new RegExp("`" + escapedPrompt + "`", "g"), "")
+    cleanedText = cleanedText.replaceAll(new RegExp(`"${escapedPrompt}"`, "g"), "")
+    cleanedText = cleanedText.replaceAll(new RegExp(`'${escapedPrompt}'`, "g"), "")
+    cleanedText = cleanedText.replaceAll(new RegExp("```[\\s\\S]*?" + escapedPrompt + "[\\s\\S]*?```", "g"), "")
+    cleanedText = cleanedText.replaceAll(new RegExp("`" + escapedPrompt + "`", "g"), "")
 
     const lines = cleanedText.split("\n")
     cleanedText = lines
@@ -493,7 +493,7 @@ function removePromptsFromText(text: string, suggestions: Array<{ prompt: string
       .join("\n")
   })
 
-  cleanedText = cleanedText.replace(/\n{3,}/g, "\n\n").trim()
+  cleanedText = cleanedText.replaceAll(/\n{3,}/g, "\n\n").trim()
   return cleanedText
 }
 
@@ -503,18 +503,18 @@ function computeDisplayText(
   parsedSuggestions: Array<{ label: string; prompt: string }>,
 ): string {
   let t = stripFeedStrategyArtifacts(rawText)
-  t = t.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, "").trim()
-  t = t.replace(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
-  t = t.replace(/FEED STRATEGY:\s*"[^"]*"\s*/gi, "").trim()
-  t = t.replace(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
-  t = t.replace(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, "").trim()
-  t = t.replace(/Posts:\s*```json[\s\S]*?```/gi, "").trim()
-  t = t.replace(/Posts:\s*\{[\s\S]*?\}/g, "").trim()
-  t = t.replace(/"position":\s*\d+[\s\S]*$/g, "").trim()
-  t = t.replace(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
-  t = t.replace(/\[GENERATE_CAPTIONS\]/gi, "").trim()
-  t = t.replace(/\[GENERATE_STRATEGY\]/gi, "").trim()
-  t = t.replace(/\n{3,}/g, "\n\n").trim()
+  t = t.replaceAll(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, "").trim()
+  t = t.replaceAll(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
+  t = t.replaceAll(/FEED STRATEGY:\s*"[^"]*"\s*/gi, "").trim()
+  t = t.replaceAll(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, "").trim()
+  t = t.replaceAll(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, "").trim()
+  t = t.replaceAll(/Posts:\s*```json[\s\S]*?```/gi, "").trim()
+  t = t.replaceAll(/Posts:\s*\{[\s\S]*?\}/g, "").trim()
+  t = t.replaceAll(/"position":\s*\d+[\s\S]*$/g, "").trim()
+  t = t.replaceAll(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
+  t = t.replaceAll(/\[GENERATE_CAPTIONS\]/gi, "").trim()
+  t = t.replaceAll(/\[GENERATE_STRATEGY\]/gi, "").trim()
+  t = t.replaceAll(/\n{3,}/g, "\n\n").trim()
 
   if (!proMode && parsedSuggestions.length > 0) {
     parsedSuggestions.forEach((suggestion) => {
@@ -526,7 +526,7 @@ function computeDisplayText(
             `Slide\\s+${slideNum}\\s*(?:of\\s+\\d+)?\\s*[-–]\\s*[^:]+:.*?(?=\\nSlide\\s+\\d+\\s*(?:of\\s+\\d+)?\\s*[-–]|\\nCopy slide|$)`,
             "gis",
           )
-          t = t.replace(slidePattern, "")
+          t = t.replaceAll(slidePattern, "")
         }
       }
     })
@@ -537,15 +537,15 @@ function computeDisplayText(
     }
 
     t = t
-      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
-      .replace(/\[GENERATE_PROMPTS\]/gi, "")
-      .replace(/\[SHOW_IMAGE_UPLOAD_MODULE[:\s]+[^\]]+\]/gi, "")
-      .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\][^\n]*/gi, "")
-      .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\]/gi, "")
-      .replace(/Keep the .*?facial features EXACTLY identical.*?This is critical\./gis, "")
-      .replace(/Composition:.*?Final Use:.*?Slide \d+ of \d+/gis, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/\s{2,}/g, " ")
+      .replaceAll(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replaceAll(/\[GENERATE_PROMPTS\]/gi, "")
+      .replaceAll(/\[SHOW_IMAGE_UPLOAD_MODULE[:\s]+[^\]]+\]/gi, "")
+      .replaceAll(/\[SHOW_IMAGE_UPLOAD_MODULE\][^\n]*/gi, "")
+      .replaceAll(/\[SHOW_IMAGE_UPLOAD_MODULE\]/gi, "")
+      .replaceAll(/Keep the .*?facial features EXACTLY identical.*?This is critical\./gis, "")
+      .replaceAll(/Composition:.*?Final Use:.*?Slide \d+ of \d+/gis, "")
+      .replaceAll(/\n{3,}/g, "\n\n")
+      .replaceAll(/\s{2,}/g, " ")
       .trim()
   }
 
@@ -1150,6 +1150,76 @@ function renderStructuredAssetBlockedTool(part: any, partIndex: number, ctx: Too
   )
 }
 
+function applyFeedSaveToMessages(prevMessages: any[], currentMessageId: string, feedId: number): any[] {
+  return prevMessages.map((message) => {
+    if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
+      const updatedParts = message.parts.map((p: any) => {
+        if (p.type === "tool-generateFeed") {
+          const { strategy: _s, ...outputWithoutStrategy } = p.output || {}
+          return { ...p, output: { ...outputWithoutStrategy, feedId, isSaved: true } }
+        }
+        return { ...p }
+      })
+      console.log("[MayaChatInterface] 🔄 Message updated with feedId:", feedId, "triggering re-save")
+      return { ...message, parts: updatedParts }
+    }
+    return { ...message }
+  })
+}
+
+function applyFeedPromptUpdate(
+  prevMessages: any[],
+  messageId: string,
+  postId: string,
+  newPrompt: string,
+  chatId: number | undefined,
+): any[] {
+  return prevMessages.map((message) => {
+    if (message.id === messageId && message.parts) {
+      const updatedParts = message.parts.map((p: any) => {
+        if (p.type === "tool-generateFeed" && p.output) {
+          const postToUpdate = (p.output.posts || []).find((post: any) => post.id === postId)
+          const postPosition = postToUpdate?.position
+          const updatedPosts = (p.output.posts || []).map((post: any) =>
+            post.id === postId ? { ...post, prompt: newPrompt, visualDirection: newPrompt } : post,
+          )
+          let updatedStrategy = p.output.strategy
+          if (updatedStrategy?.posts && postPosition) {
+            updatedStrategy = {
+              ...updatedStrategy,
+              posts: updatedStrategy.posts.map((post: any) =>
+                post.position === postPosition
+                  ? { ...post, prompt: newPrompt, visualDirection: newPrompt }
+                  : post,
+              ),
+            }
+          }
+          const updatedOutput = { ...p.output, posts: updatedPosts, strategy: updatedStrategy }
+          if (chatId && messageId) {
+            fetch("/api/maya/update-message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                messageId,
+                content: (message as any).content || "",
+                feedCards: [updatedOutput],
+                append: false,
+              }),
+            }).catch((error) => {
+              console.error("[MayaChatInterface] ❌ Error saving edited prompt:", error)
+            })
+          }
+          return { ...p, output: updatedOutput }
+        }
+        return p
+      })
+      return { ...message, parts: updatedParts }
+    }
+    return message
+  })
+}
+
 function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   console.log("[FEED-CARD] 🎨 RENDERING FEED CARD IN CHAT")
   const toolPart = part as any
@@ -1175,29 +1245,7 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
 
   const handleSave = (feedId: number) => {
     console.log("[MayaChatInterface] Feed saved, updating message:", feedId)
-    ctx.setMessages((prevMessages: any[]) => {
-      return prevMessages.map((message) => {
-        if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
-          const updatedParts = message.parts.map((p: any) => {
-            if (p.type === "tool-generateFeed") {
-              const { strategy, ...outputWithoutStrategy } = p.output || {}
-              return {
-                ...p,
-                output: {
-                  ...outputWithoutStrategy,
-                  feedId,
-                  isSaved: true,
-                },
-              }
-            }
-            return { ...p }
-          })
-          console.log("[MayaChatInterface] 🔄 Message updated with feedId:", feedId, "triggering re-save")
-          return { ...message, parts: updatedParts }
-        }
-        return { ...message }
-      })
-    })
+    ctx.setMessages((prevMessages: any[]) => applyFeedSaveToMessages(prevMessages, currentMessageId, feedId))
     if (ctx.onFeedSaved) {
       ctx.onFeedSaved(currentMessageId, feedId)
     }
@@ -1223,56 +1271,9 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
       realismStrength={output.realismStrength ?? 0.8}
       messageId={ctx.msg.id}
       onPromptUpdate={(messageId, postId, newPrompt) => {
-        ctx.setMessages((prevMessages) => {
-          return prevMessages.map((message) => {
-            if (message.id === messageId && message.parts) {
-              return {
-                ...message,
-                parts: message.parts.map((p: any) => {
-                  if (p.type === "tool-generateFeed" && p.output) {
-                    const postToUpdate = (p.output.posts || []).find((post: any) => post.id === postId)
-                    const postPosition = postToUpdate?.position
-                    const updatedPosts = (p.output.posts || []).map((post: any) =>
-                      post.id === postId
-                        ? { ...post, prompt: newPrompt, visualDirection: newPrompt }
-                        : post,
-                    )
-                    let updatedStrategy = p.output.strategy
-                    if (updatedStrategy?.posts && postPosition) {
-                      updatedStrategy = {
-                        ...updatedStrategy,
-                        posts: updatedStrategy.posts.map((post: any) =>
-                          post.position === postPosition
-                            ? { ...post, prompt: newPrompt, visualDirection: newPrompt }
-                            : post,
-                        ),
-                      }
-                    }
-                    const updatedOutput = { ...p.output, posts: updatedPosts, strategy: updatedStrategy }
-                    if (ctx.chatId && messageId) {
-                      fetch("/api/maya/update-message", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        credentials: "include",
-                        body: JSON.stringify({
-                          messageId,
-                          content: message.content || "",
-                          feedCards: [updatedOutput],
-                          append: false,
-                        }),
-                      }).catch((error) => {
-                        console.error("[MayaChatInterface] ❌ Error saving edited prompt:", error)
-                      })
-                    }
-                    return { ...p, output: updatedOutput }
-                  }
-                  return p
-                }),
-              }
-            }
-            return message
-          })
-        })
+        ctx.setMessages((prevMessages) =>
+          applyFeedPromptUpdate(prevMessages, messageId, postId, newPrompt, ctx.chatId),
+        )
       }}
       onViewFullFeed={() => {
         // Navigate will be handled by FeedPreviewCard component
