@@ -459,7 +459,7 @@ function detectAndRefineGuidePrompt(
  * Extracted from POST to reduce cyclomatic complexity.
  */
 function parseLegacyConceptsFromText(text: string): MayaConcept[] {
-  const jsonMatch = /\[\s\S]*\]/.exec(text)
+  const jsonMatch = /\[[\s\S]*\]/.exec(text)
   if (!jsonMatch) {
     console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
     return []
