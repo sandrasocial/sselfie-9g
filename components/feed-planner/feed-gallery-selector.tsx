@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import type { GalleryImage } from "@/lib/data/images"
 
@@ -169,10 +170,15 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     }
   }
 
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
+  useEffect(() => { setPortalTarget(document.body) }, [])
+
   const isPost = type === "post"
   const gridCols = isPost ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-4 sm:grid-cols-6"
 
-  return (
+  if (!portalTarget) return null
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] bg-stone-950/95 backdrop-blur-xl flex items-center justify-center p-4 pb-24 sm:pb-4">
       <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[75vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
@@ -417,6 +423,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    portalTarget
   )
 }

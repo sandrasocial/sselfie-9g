@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
@@ -258,9 +259,12 @@ export default function WelcomeWizard({
   const currentStepData = steps[currentStep]
   const progress = ((currentStep + 1) / steps.length) * 100
 
-  if (!open) return null
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
+  useEffect(() => { setPortalTarget(document.body) }, [])
 
-  return (
+  if (!open || !portalTarget) return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -396,6 +400,7 @@ export default function WelcomeWizard({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    portalTarget
   )
 }
