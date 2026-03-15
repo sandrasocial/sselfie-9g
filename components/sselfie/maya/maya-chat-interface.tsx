@@ -29,6 +29,8 @@ function isFeatureEnabled(value?: string | null): boolean {
   return normalized === "1" || normalized === "true"
 }
 
+type GenerationSource = "selfies" | "custom_model" | "base_model"
+
 interface MayaChatInterfaceProps {
   // Messages
   messages: UIMessage[]
@@ -80,7 +82,7 @@ interface MayaChatInterfaceProps {
   enhancedAuthenticity?: boolean
   userHasTrainedModel?: boolean
   linkedSelfieCount?: number
-  onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
+  onToolSelectGenerationSource?: (source: GenerationSource) => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
   onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
@@ -129,27 +131,27 @@ interface ToolCtx {
   setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>
   uploadedImages: Array<{ url: string; type: "base" | "product"; label?: string; source?: "gallery" | "upload" }>
   setCreditBalance: (balance: number) => void
-  onImageGenerated?: () => void
+  onImageGenerated?: () => void // NOSONAR — prop is passed through to sub-renderers via ctx
   isAdmin: boolean
   selectedGuideId: number | null
   selectedGuideCategory: string | null
-  onSaveToGuide: (concept: any, imageUrl?: string) => void
-  userId?: string
-  user: any | null
-  generationSettings?: {
+  onSaveToGuide: (concept: any, imageUrl?: string) => void // NOSONAR — prop is passed through to sub-renderers via ctx
+  userId?: string // NOSONAR — prop is passed through to sub-renderers via ctx
+  user: any | null // NOSONAR — prop is passed through to sub-renderers via ctx
+  generationSettings?: { // NOSONAR — prop is passed through to sub-renderers via ctx
     styleStrength: number
     promptAccuracy: number
     aspectRatio: string
     realismStrength: number
   }
   enhancedAuthenticity?: boolean
-  userHasTrainedModel: boolean
+  userHasTrainedModel: boolean // NOSONAR — prop is passed through to sub-renderers via ctx
   linkedSelfieCount: number
-  onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
+  onToolSelectGenerationSource?: (source: GenerationSource) => void // NOSONAR — prop is passed through to sub-renderers via ctx
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
   onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
-  onToolStartVideoGeneration?: (input: {
+  onToolStartVideoGeneration?: (input: { // NOSONAR — prop is passed through to sub-renderers via ctx
     messageId: string
     imageId: string
     imageUrl: string
@@ -158,9 +160,9 @@ interface ToolCtx {
     category?: string
   }) => void
   activeTab: MayaSurfaceTab
-  onSwitchTab?: (tab: "photos" | "videos" | "training") => void
-  onFeedSaved?: (messageId: string, feedId: number) => void
-  isLandingPagesUiEnabled: boolean
+  onSwitchTab?: (tab: "photos" | "videos" | "training") => void // NOSONAR — prop is passed through to sub-renderers via ctx
+  onFeedSaved?: (messageId: string, feedId: number) => void // NOSONAR — prop is passed through to sub-renderers via ctx
+  isLandingPagesUiEnabled: boolean // NOSONAR — prop is passed through to sub-renderers via ctx
 }
 
 type ToolRenderer = (part: any, partIndex: number, ctx: ToolCtx) => React.ReactNode
@@ -470,7 +472,7 @@ function removePromptsFromText(text: string, suggestions: Array<{ prompt: string
 
   suggestions.forEach((suggestion) => {
     const prompt = suggestion.prompt
-    const escapedPrompt = prompt.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const escapedPrompt = prompt.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 
     cleanedText = cleanedText.replaceAll(new RegExp(`"${escapedPrompt}"`, "g"), "")
     cleanedText = cleanedText.replaceAll(new RegExp(`'${escapedPrompt}'`, "g"), "")
@@ -481,8 +483,8 @@ function removePromptsFromText(text: string, suggestions: Array<{ prompt: string
     cleanedText = lines
       .filter((line) => {
         const trimmedLine = line.trim()
-        if (trimmedLine.match(/^(Slide|Option|Prompt|\*\*Slide|\*\*Option)/i)) return true
-        if (trimmedLine.match(/^[-*]\s+/) || trimmedLine.length < 50) return true
+        if (/^(Slide|Option|Prompt|\*\*Slide|\*\*Option)/i.exec(trimmedLine)) return true
+        if (/^[-*]\s+/.exec(trimmedLine) || trimmedLine.length < 50) return true
         const lineLower = trimmedLine.toLowerCase()
         const promptLower = prompt.toLowerCase()
         if (promptLower.length > 30) {
@@ -519,7 +521,7 @@ function computeDisplayText(
   if (!proMode && parsedSuggestions.length > 0) {
     parsedSuggestions.forEach((suggestion) => {
       if (suggestion.label.includes("Slide")) {
-        const slideNumMatch = suggestion.label.match(/Slide\s+(\d+)/i)
+        const slideNumMatch = /Slide\s+(\d+)/i.exec(suggestion.label)
         if (slideNumMatch) {
           const slideNum = slideNumMatch[1]
           const slidePattern = new RegExp(
@@ -573,7 +575,7 @@ function applyConceptPromptUpdate(
                 ...p.output,
                 concepts: p.output.concepts.map((c: any) => {
                   const cId =
-                    c.id || `concept-${messageId}-${concepts.findIndex((con: any) => con === c)}`
+                    c.id || `concept-${messageId}-${concepts.indexOf(c)}`
                   return cId === updatedConceptId ? { ...c, fullPrompt: newFullPrompt } : c
                 }),
               },
@@ -879,8 +881,9 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
   const output = (part as any).output || {}
   const selectedSource = output.source || "choose_source"
   const hasLinkedSelfies = ctx.linkedSelfieCount > 0
+  const selfiePlural = ctx.linkedSelfieCount === 1 ? "" : "s"
   const selfieDescription = hasLinkedSelfies
-    ? `Use your ${ctx.linkedSelfieCount} linked selfie${ctx.linkedSelfieCount === 1 ? "" : "s"} right now.`
+    ? `Use your ${ctx.linkedSelfieCount} linked selfie${selfiePlural} right now.`
     : "No linked selfies yet. I'll open upload so we can add them first."
   const modelDescription = ctx.userHasTrainedModel
     ? "Your trained model is ready. I'll keep you in Photos and generate from it."
@@ -982,14 +985,13 @@ function renderSwitchMayaTabTool(part: any, partIndex: number, ctx: ToolCtx): Re
     output.targetTab === "videos" || output.targetTab === "training"
       ? output.targetTab
       : "photos"
+  let ctaLabelFallback = "Go to Photos"
+  if (targetTab === "videos") ctaLabelFallback = "Go to Videos"
+  else if (targetTab === "training") ctaLabelFallback = "Go to Train"
   const ctaLabel =
     typeof output.ctaLabel === "string" && output.ctaLabel.trim().length > 0
       ? output.ctaLabel
-      : targetTab === "videos"
-        ? "Go to Videos"
-        : targetTab === "training"
-          ? "Go to Train"
-          : "Go to Photos"
+      : ctaLabelFallback
 
   return (
     <MayaInlineCard
@@ -1033,14 +1035,13 @@ function renderEditAssetTool(part: any, partIndex: number, ctx: ToolCtx): React.
   const assetType = output.assetType || "page"
   if (assetType === "page" || assetType === "calendar" || assetType === "pdf") return null
 
+  let assetLabelFallback = "Landing Page"
+  if (assetType === "calendar") assetLabelFallback = "Content Calendar"
+  else if (assetType === "pdf") assetLabelFallback = "Workbook"
   const assetLabel =
     typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
       ? output.assetLabel
-      : assetType === "calendar"
-        ? "Content Calendar"
-        : assetType === "pdf"
-          ? "Workbook"
-          : "Landing Page"
+      : assetLabelFallback
   const helperText =
     typeof output.message === "string" && output.message.trim().length > 0
       ? output.message
@@ -1069,14 +1070,13 @@ function renderCreateAssetPreviewTool(part: any, partIndex: number, ctx: ToolCtx
     return null
   }
 
+  let assetLabelFallback2 = "Landing Page"
+  if (assetType === "calendar") assetLabelFallback2 = "Content Calendar"
+  else if (assetType === "pdf") assetLabelFallback2 = "Workbook"
   const assetLabel =
     typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
       ? output.assetLabel
-      : assetType === "calendar"
-        ? "Content Calendar"
-        : assetType === "pdf"
-          ? "Workbook"
-          : "Landing Page"
+      : assetLabelFallback2
   const previewText =
     typeof output.previewText === "string" && output.previewText.trim().length > 0
       ? output.previewText
@@ -1097,7 +1097,7 @@ function renderCreateAssetPreviewTool(part: any, partIndex: number, ctx: ToolCtx
 }
 
 function renderMayaGapOfferTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  const output = (part as any).output || {}
+  const output = part.output || {}
   const dayLabels = Array.isArray(output.dayLabels) ? output.dayLabels : []
   const count = dayLabels.length
   if (count === 0) return null
@@ -1213,7 +1213,7 @@ function applyFeedPromptUpdate(
               credentials: "include",
               body: JSON.stringify({
                 messageId,
-                content: (message as any).content || "",
+                content: message.content || "",
                 feedCards: [updatedOutput],
                 append: false,
               }),
@@ -1296,7 +1296,7 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
 function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const toolPart = part as any
   const output = toolPart.output
-  if (!output || !output.feedId || !output.captions || !Array.isArray(output.captions)) return null
+  if (!output?.feedId || !Array.isArray(output?.captions)) return null
 
   return (
     <div key={partIndex} className="space-y-3">
@@ -1322,8 +1322,7 @@ function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx):
 }
 
 function renderGenerateStrategyTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  const toolPart = part as any
-  const output = toolPart.output
+  const output = part.output
   if (!output || !output.feedId || !output.strategy) return null
 
   return (
@@ -1555,7 +1554,7 @@ function MayaMessageParts(props: MayaMessagePartsProps): React.ReactNode {
   // Fallback: messages with content field but no parts array
   if (!msg.parts || !Array.isArray(msg.parts)) {
     const content = (msg as any).content
-    if (!content || !content.trim()) return null
+    if (!content?.trim()) return null
     return (
       <div
         className={`rounded-xl transition-all duration-300 ${
@@ -1570,9 +1569,9 @@ function MayaMessageParts(props: MayaMessagePartsProps): React.ReactNode {
     )
   }
 
-  const textParts = msg.parts.filter((p) => p && p.type === "text")
-  const imageParts = msg.parts.filter((p) => p && (p as any).type === "image")
-  const otherParts = msg.parts.filter((p) => p && p.type !== "text" && (p as any).type !== "image")
+  const textParts = msg.parts.filter((p) => p?.type === "text")
+  const imageParts = msg.parts.filter((p) => p?.type === "image")
+  const otherParts = msg.parts.filter((p) => p?.type !== "text" && p?.type !== "image")
   const fullMessageText = textParts.map((part: any) => part?.text || "").join("")
   const messageHasFeedArtifacts = hasFeedStrategyArtifacts(fullMessageText)
   const hasFeedCard = msg.parts.some((p: any) => p.type === "tool-generateFeed")
@@ -1610,7 +1609,7 @@ function MayaMessageParts(props: MayaMessagePartsProps): React.ReactNode {
                 if (!imageUrl) return null
                 const isCarousel = imageParts.length > 1 && imageParts.length <= 10
                 return (
-                  <div key={idx} className="relative">
+                  <div key={imageUrl || idx} className="relative">
                     <div
                       className={`relative ${isCarousel ? "aspect-square" : "w-48 h-48 sm:w-40 sm:h-40"} rounded-xl overflow-hidden border border-white/60 shadow-lg`}
                     >
@@ -1656,7 +1655,7 @@ interface MayaTextPartProps {
   promptSuggestions: PromptSuggestion[]
 }
 
-function MayaTextPart(props: MayaTextPartProps): React.ReactNode {
+function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
   const { part, idx, msg, messageHasFeedArtifacts, hasFeedCard, isCreatingFeed, isTyping, proMode, messages, promptSuggestions } = props
   const text = (part as any)?.text || ""
   const shouldShowPendingFeedLoader =
