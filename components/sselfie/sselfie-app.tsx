@@ -1209,15 +1209,14 @@ export default function SselfieApp({
                     <StudioHubScreen />
                   )}
                   {activeTab === "gallery" && (
-                    !access.canUseGenerators ? (
-                      <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
-                    ) : (
-                      <GalleryScreen
-                        user={user}
-                        userId={userId}
-                        hasPaidAccess={access.isMember || isPaidBlueprintUserForAccess}
-                      />
-                    )
+                    // Gallery is always accessible — users must be able to view their images
+                    // even when credits are exhausted or subscription has lapsed.
+                    // canUseGenerators only gates NEW generation, not viewing existing images.
+                    <GalleryScreen
+                      user={user}
+                      userId={userId}
+                      hasPaidAccess={access.isMember || isPaidBlueprintUserForAccess}
+                    />
                   )}
                   {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                   {activeTab === "academy" && (

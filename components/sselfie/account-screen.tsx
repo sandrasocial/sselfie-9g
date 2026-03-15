@@ -111,6 +111,13 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   
   // Shared state
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // Danger zone — delete account
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   const router = useRouter()
 
   // Fetch all data on mount
@@ -395,6 +402,28 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
     } catch (error) {
       console.error("[Account] Error during logout:", error)
       setIsLoggingOut(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return
+    setIsDeletingAccount(true)
+    setDeleteError(null)
+    try {
+      const response = await fetch("/api/user/delete", {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (response.ok) {
+        router.push("/auth/login")
+      } else {
+        const data = await response.json().catch(() => ({}))
+        setDeleteError(data.error ?? "Something went wrong. Please contact support.")
+        setIsDeletingAccount(false)
+      }
+    } catch {
+      setDeleteError("Something went wrong. Please contact support.")
+      setIsDeletingAccount(false)
     }
   }
 
@@ -913,6 +942,72 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
           >
             {isLoggingOut ? "Signing Out..." : "Sign Out"}
           </button>
+
+          {/* Danger Zone */}
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6 border border-red-500/20`}>
+            <p className={sectionLabel}>Danger Zone</p>
+            <p className="text-sm leading-relaxed text-[color:var(--color-whisper)]">
+              Permanently delete your account, all images, and cancel any active subscription. This cannot be undone.
+            </p>
+            <button
+              onClick={() => setDeleteDialogOpen(true)}
+              className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-red-400 transition-colors hover:bg-red-500/20"
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[rgba(13,15,19,0.97)] p-6 shadow-2xl">
+            <h3
+              className="mb-2 text-xl font-light uppercase tracking-[0.15em] text-white"
+              style={{ fontFamily: '"Cormorant Garamond", serif' }}
+            >
+              Delete Account
+            </h3>
+            <p className="mb-5 text-sm leading-relaxed text-white/65">
+              This will permanently delete your account, all generated images, chat history, and brand data, and cancel any active subscription.{" "}
+              <span className="text-white/90">This cannot be undone.</span>
+            </p>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.25em] text-white/50">
+              Type <span className="text-white font-medium">DELETE</span> to confirm
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+              className="mb-4 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-white/30 placeholder:text-white/25"
+            />
+            {deleteError && (
+              <p className="mb-3 text-sm text-red-400">{deleteError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setDeleteDialogOpen(false)
+                  setDeleteConfirmText("")
+                  setDeleteError(null)
+                }}
+                disabled={isDeletingAccount}
+                className="flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.25em] text-white/70 transition-colors hover:bg-white/10 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== "DELETE" || isDeletingAccount}
+                className="flex-1 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.25em] text-red-400 transition-colors hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isDeletingAccount ? "Deleting..." : "Delete Forever"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
