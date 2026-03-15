@@ -554,6 +554,39 @@ function computeDisplayText(
 
 // ── Tool renderer functions ───────────────────────────────────────────────────
 
+function applyConceptPromptUpdate(
+  prevMessages: any[],
+  messageId: string,
+  updatedConceptId: string,
+  newFullPrompt: string,
+  concepts: any[],
+): any[] {
+  return prevMessages.map((message) => {
+    if (message.id === messageId && message.parts) {
+      return {
+        ...message,
+        parts: message.parts.map((p: any) => {
+          if (p.type === "tool-generateConcepts" && p.output?.concepts) {
+            return {
+              ...p,
+              output: {
+                ...p.output,
+                concepts: p.output.concepts.map((c: any) => {
+                  const cId =
+                    c.id || `concept-${messageId}-${concepts.findIndex((con: any) => con === c)}`
+                  return cId === updatedConceptId ? { ...c, fullPrompt: newFullPrompt } : c
+                }),
+              },
+            }
+          }
+          return p
+        }),
+      }
+    }
+    return message
+  })
+}
+
 function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = (part as any).output
   if (!output || output.state !== "ready" || !Array.isArray(output.concepts)) return null
@@ -572,31 +605,9 @@ function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx):
       enhancedAuthenticity={ctx.enhancedAuthenticity}
       messages={ctx.messages}
       onPromptUpdate={(messageId, updatedConceptId, newFullPrompt) => {
-        ctx.setMessages((prevMessages) => {
-          return prevMessages.map((message) => {
-            if (message.id === messageId && message.parts) {
-              return {
-                ...message,
-                parts: message.parts.map((p: any) => {
-                  if (p.type === "tool-generateConcepts" && p.output?.concepts) {
-                    return {
-                      ...p,
-                      output: {
-                        ...p.output,
-                        concepts: p.output.concepts.map((c: any) => {
-                          const cId = c.id || `concept-${messageId}-${concepts.findIndex((con: any) => con === c)}`
-                          return cId === updatedConceptId ? { ...c, fullPrompt: newFullPrompt } : c
-                        }),
-                      },
-                    }
-                  }
-                  return p
-                }),
-              }
-            }
-            return message
-          })
-        })
+        ctx.setMessages((prevMessages) =>
+          applyConceptPromptUpdate(prevMessages, messageId, updatedConceptId, newFullPrompt, concepts),
+        )
       }}
       onImageGenerated={ctx.onImageGenerated}
       isAdmin={ctx.isAdmin}
@@ -1327,12 +1338,129 @@ function renderGenerateStrategyTool(part: any, partIndex: number, ctx: ToolCtx):
   )
 }
 
+function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): React.ReactNode {
+  const imageId = String(image.id || image.imageId || imageIndex)
+  const imageUrl = image.image_url || image.imageUrl || ""
+  const source = String(image.source || "").toLowerCase()
+  const sourceLabel =
+    source === "brand_assets" ? "Uploaded" : source === "generated_images" ? "Generated" : "Gallery"
+  if (!imageUrl) return null
+  return (
+    <button
+      key={`${imageId}-${imageIndex}`}
+      type="button"
+      onClick={() =>
+        ctx.onToolStartVideoGeneration?.({
+          messageId: ctx.msg.id,
+          imageId,
+          imageUrl,
+          prompt: image.prompt || "",
+          description: image.description || "",
+          category: image.category || "",
+        })
+      }
+      className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] hover:border-[rgba(195,190,182,0.40)]"
+    >
+      <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
+      <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8]">Animate</div>
+      <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">{sourceLabel}</div>
+    </button>
+  )
+}
+
+function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
+  return (
+    <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] p-3">
+      <p className="text-xs text-[#d7d7d7]">
+        You don&apos;t have a photo here yet. Make one first, then I can animate it.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          if (ctx.activeTab === "videos" && ctx.onSwitchTab) {
+            ctx.onSwitchTab("photos")
+            return
+          }
+          ctx.onToolPromptSelect?.("Create a photo for my brand")
+        }}
+        className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
+      >
+        {ctx.activeTab === "videos" ? "Go to Photos" : "Create Photo First"}
+      </button>
+      <button
+        type="button"
+        onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
+        className="mt-2 ml-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
+      >
+        Upload Reference
+      </button>
+    </div>
+  )
+}
+
+function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
+  const images = Array.isArray(output.images) ? output.images : []
+  if (ctx.activeTab === "videos") {
+    return (
+      <MayaInlineCard
+        key={partIndex}
+        eyebrow="Videos"
+        title="Choose a photo to animate"
+        subtitle={
+          images.length > 0
+            ? `${images.length} photo${images.length === 1 ? "" : "s"} ready. Scroll down to pick one.`
+            : "Your gallery is right below — pick one to start."
+        }
+        actions={
+          <>
+            <MayaInlineAction onClick={scrollToVideosGallery} variant="primary">
+              View My Photos
+            </MayaInlineAction>
+            <MayaInlineAction onClick={() => ctx.onToolOpenUploadZone?.("selfies")}>
+              Upload a Photo
+            </MayaInlineAction>
+          </>
+        }
+      >
+        <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-(--text-accent)">
+          No stress. Pick one photo below and I&apos;ll take it from there.
+        </div>
+      </MayaInlineCard>
+    )
+  }
+  return (
+    <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+      <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Videos</div>
+      <p className="mt-2 text-sm text-[#d5d5d5]">
+        Pick a photo or upload a new one and I&apos;ll turn it into motion here.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
+          className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
+        >
+          Upload Reference
+        </button>
+      </div>
+      {images.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {images.slice(0, 6).map((image: any, imageIndex: number) =>
+            renderVideoImageButton(image, imageIndex, ctx),
+          )}
+        </div>
+      ) : (
+        renderVideoNoImages(ctx)
+      )}
+    </div>
+  )
+}
+
 function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const toolPart = part as any
   const output = toolPart.output
 
   if (!output) return null
-
   if (output.state === "loading_images") {
     return (
       <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
@@ -1343,124 +1471,7 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
       </div>
     )
   }
-
-  if (output.state === "choose_image") {
-    const images = Array.isArray(output.images) ? output.images : []
-    if (ctx.activeTab === "videos") {
-      return (
-        <MayaInlineCard
-          key={partIndex}
-          eyebrow="Videos"
-          title="Choose a photo to animate"
-          subtitle={
-            images.length > 0
-              ? `${images.length} photo${images.length === 1 ? "" : "s"} ready. Scroll down to pick one.`
-              : "Your gallery is right below — pick one to start."
-          }
-          actions={
-            <>
-              <MayaInlineAction onClick={scrollToVideosGallery} variant="primary">
-                View My Photos
-              </MayaInlineAction>
-              <MayaInlineAction onClick={() => ctx.onToolOpenUploadZone?.("selfies")}>
-                Upload a Photo
-              </MayaInlineAction>
-            </>
-          }
-        >
-          <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-(--text-accent)">
-            No stress. Pick one photo below and I&apos;ll take it from there.
-          </div>
-        </MayaInlineCard>
-      )
-    }
-
-    return (
-      <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-        <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Videos</div>
-        <p className="mt-2 text-sm text-[#d5d5d5]">
-          Pick a photo or upload a new one and I&apos;ll turn it into motion here.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
-            className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
-          >
-            Upload Reference
-          </button>
-        </div>
-        {images.length > 0 ? (
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {images.slice(0, 6).map((image: any, imageIndex: number) => {
-              const imageId = String(image.id || image.imageId || imageIndex)
-              const imageUrl = image.image_url || image.imageUrl || ""
-              const source = String(image.source || "").toLowerCase()
-              const sourceLabel =
-                source === "brand_assets"
-                  ? "Uploaded"
-                  : source === "generated_images"
-                    ? "Generated"
-                    : "Gallery"
-              if (!imageUrl) return null
-              return (
-                <button
-                  key={`${imageId}-${imageIndex}`}
-                  type="button"
-                  onClick={() =>
-                    ctx.onToolStartVideoGeneration?.({
-                      messageId: ctx.msg.id,
-                      imageId,
-                      imageUrl,
-                      prompt: image.prompt || "",
-                      description: image.description || "",
-                      category: image.category || "",
-                    })
-                  }
-                  className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] hover:border-[rgba(195,190,182,0.40)]"
-                >
-                  <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
-                  <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8]">
-                    Animate
-                  </div>
-                  <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">
-                    {sourceLabel}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] p-3">
-            <p className="text-xs text-[#d7d7d7]">
-              You don&apos;t have a photo here yet. Make one first, then I can animate it.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                if (ctx.activeTab === "videos" && ctx.onSwitchTab) {
-                  ctx.onSwitchTab("photos")
-                  return
-                }
-                ctx.onToolPromptSelect?.("Create a photo for my brand")
-              }}
-              className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
-            >
-              {ctx.activeTab === "videos" ? "Go to Photos" : "Create Photo First"}
-            </button>
-            <button
-              type="button"
-              onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
-              className="mt-2 ml-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
-            >
-              Upload Reference
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
+  if (output.state === "choose_image") return renderVideoStateChooseImage(output, partIndex, ctx)
   if (output.state === "processing") {
     return (
       <div key={partIndex} className="mt-3">
@@ -1474,7 +1485,6 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
       </div>
     )
   }
-
   if (output.state === "ready" && output.videoUrl) {
     return (
       <div key={partIndex} className="mt-3">
@@ -1487,7 +1497,6 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
       </div>
     )
   }
-
   if (output.state === "error") {
     return (
       <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
@@ -1496,7 +1505,6 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
       </div>
     )
   }
-
   if (output.state === "loading") {
     return (
       <div key={partIndex} className="mt-3">
@@ -1507,7 +1515,6 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
       </div>
     )
   }
-
   return null
 }
 
