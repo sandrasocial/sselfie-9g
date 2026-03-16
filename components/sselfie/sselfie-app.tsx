@@ -892,6 +892,22 @@ export default function SselfieApp({
         </div>
       )}
 
+      {/* Zero-credit upgrade banner — shown to non-members who've run out of credits */}
+      {creditBalance === 0 && subscriptionStatus !== "active" && subscriptionStatus !== "trialing" && subscriptionStatus !== "past_due" && (
+        <div className="relative z-50 flex items-center justify-between gap-3 bg-[rgba(240,237,232,0.06)] border-b border-[rgba(240,237,232,0.12)] px-4 py-2.5">
+          <p className="text-xs text-[#c8c4bb] leading-snug">
+            <span className="font-medium text-[#f0ede8]">You&apos;re out of credits.</span>{" "}
+            Get Studio to keep generating — 200 credits every month.
+          </p>
+          <a
+            href="/checkout/membership"
+            className="shrink-0 rounded-sm bg-[#f0ede8] hover:opacity-90 px-3 py-1 text-xs font-medium text-[#0d0c0b] transition-opacity whitespace-nowrap"
+          >
+            Get Studio →
+          </a>
+        </div>
+      )}
+
       {/* First-photo celebration toast — fires once when the first credit is spent */}
       {showFirstPhotoToast && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
