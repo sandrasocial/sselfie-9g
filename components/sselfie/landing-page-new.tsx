@@ -202,14 +202,15 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
               backgroundPosition: "50% 25%",
             }}
           />
+          {/* Gradient heavier at the bottom so text sits on a dark base, face stays clear */}
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)",
+              background: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.72) 100%)",
             }}
           />
 
-          <div className="content text-center h-full justify-center">
+          <div className="content text-center h-full justify-end">
             {/* Social proof pill */}
             <div
               className="fade-up inline-flex items-center gap-2 mx-auto mb-6"
