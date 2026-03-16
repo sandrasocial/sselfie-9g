@@ -1393,6 +1393,10 @@ export default function MayaChatScreen({
           body: JSON.stringify({ topic: pendingCaptionTopic }),
         })
         const data = await res.json()
+        if (!res.ok) {
+          console.error("[v0] Caption API error:", res.status, data?.error)
+          throw new Error(data?.error || `HTTP ${res.status}`)
+        }
         const { caption, hashtags } = data
 
         if (caption) {
