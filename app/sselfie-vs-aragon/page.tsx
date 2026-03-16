@@ -106,7 +106,7 @@ export default function SSELFIEvsAragonPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .vs-page {
           background: #0d0c0b;
           color: #f0ede8;
@@ -464,7 +464,7 @@ export default function SSELFIEvsAragonPage() {
           .vs-cta { padding: 36px 24px; }
           .vs-table th, .vs-table td { padding: 12px 14px; }
         }
-      `}</style>
+      ` }} />
 
       <main className="vs-page" style={{ fontFamily: cormorant.style.fontFamily }}>
         {/* — Hero — */}

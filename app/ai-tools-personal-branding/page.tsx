@@ -230,7 +230,7 @@ export default function AIToolsPersonalBrandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .tools-page {
           background: #0d0c0b;
           color: #f0ede8;
@@ -678,7 +678,7 @@ export default function AIToolsPersonalBrandingPage() {
           .tools-cta { padding: 36px 24px; }
           .tool-card-header { flex-direction: column; gap: 8px; }
         }
-      `}</style>
+      ` }} />
 
       <main className="tools-page" style={{ fontFamily: cormorant.style.fontFamily }}>
         {/* — Hero — */}

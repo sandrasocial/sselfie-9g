@@ -349,7 +349,7 @@ export default function AIBrandPhotosPage() {
         <p className="footer-copy">© 2026 SSELFIE Studio · sselfie.ai</p>
       </footer>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .page { background: #0d0c0b; color: #f0ede8; min-height: 100vh; }
 
         /* HEADER */
@@ -489,7 +489,7 @@ export default function AIBrandPhotosPage() {
           .cost-table th, .cost-table td { padding: 10px 10px; }
           .site-footer { padding: 32px 24px; flex-direction: column; align-items: flex-start; gap: 20px; }
         }
-      `}</style>
+      ` }} />
     </main>
   )
 }
