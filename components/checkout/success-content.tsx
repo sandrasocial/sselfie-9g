@@ -401,6 +401,41 @@ export function SuccessContent({
     sessionId,
   ])
 
+  // GA4 purchase conversion event — fires once per unique session_id
+  useEffect(() => {
+    if (!sessionId || typeof window === "undefined") return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (window as any).gtag !== "function") return
+
+    const productPrices: Record<string, number> = {
+      sselfie_studio_membership: 97,
+      selfie_guide: 17,
+      selfie_guide_bundle: 27,
+      brand_strategy_pack: 19,
+      paid_blueprint: 47,
+      credit_topup: 25,
+      one_time_session: 45,
+    }
+    const resolvedType = purchaseType || "unknown"
+    const value = productPrices[resolvedType] ?? 0
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).gtag("event", "purchase", {
+      transaction_id: sessionId,
+      value,
+      currency: "USD",
+      items: [
+        {
+          item_id: resolvedType,
+          item_name: resolvedType.replace(/_/g, " "),
+          price: value,
+          quantity: 1,
+        },
+      ],
+    })
+    console.log("[GA4] Purchase event fired:", { transaction_id: sessionId, value, type: resolvedType })
+  }, [sessionId, purchaseType])
+
   // Poll access status for paid blueprint purchases
   useEffect(() => {
     if (!isPollingAccess || !isAuthenticated || purchaseType !== "paid_blueprint") {
