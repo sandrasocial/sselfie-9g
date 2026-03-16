@@ -111,6 +111,10 @@ export function createMayaOpenRouterProvider() {
   return createOpenAI({
     apiKey,
     baseURL: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
+    // OpenRouter speaks Chat Completions, not the newer OpenAI Responses API.
+    // Without this flag @ai-sdk/openai defaults to the Responses API and throws
+    // "Invalid Responses API request" on every call.
+    compatibility: "compatible",
     headers: {
       "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai",
       "X-Title": process.env.OPENROUTER_APP_NAME || "SSELFIE Maya",

@@ -52,7 +52,9 @@ export default function HashtagStrategyPanel({ businessType = "business" }: Hash
 
   const copyHashtags = (setName: string, hashtags: string[]) => {
     const hashtagString = hashtags.join(" ")
-    navigator.clipboard.writeText(hashtagString)
+    navigator.clipboard.writeText(hashtagString).catch(() => {
+      // Clipboard API requires a user gesture and secure context — silently ignore.
+    })
     setCopiedSet(setName)
     setTimeout(() => setCopiedSet(null), 2000)
   }
