@@ -194,7 +194,7 @@ function stripControlText(text: string): string {
       .replaceAll(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replaceAll(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replaceAll(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replaceAll(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replaceAll(/\[GENERATE_CAPTIONS\]\s*[^\n]*/gi, "")
       .replaceAll(/\[GENERATE_STRATEGY\]/gi, "")
       .replaceAll(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
       .replaceAll(/\n{3,}/g, "\n\n")
@@ -369,7 +369,7 @@ function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
   cleanedText = cleanedText.replaceAll(/"position":\s*\d+[\s\S]*$/g, "").trim()
   cleanedText = cleanedText.replaceAll(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
   cleanedText = cleanedText.trim()
-  cleanedText = cleanedText.replaceAll(/\[GENERATE_CAPTIONS\]/gi, "").trim()
+  cleanedText = cleanedText.replaceAll(/\[GENERATE_CAPTIONS\]\s*[^\n]*/gi, "").trim()
   cleanedText = cleanedText.replaceAll(/\[GENERATE_STRATEGY\]/gi, "").trim()
 
   const inspirationImageMatch = /\[Inspiration Image: (https?:\/\/[^\]]+)\]/.exec(cleanedText)
@@ -518,7 +518,7 @@ function computeDisplayText(
   t = t.replaceAll(/Posts:\s*\{[\s\S]*?\}/g, "").trim()
   t = t.replaceAll(/"position":\s*\d+[\s\S]*$/g, "").trim()
   t = t.replaceAll(/"postType":\s*"[^"]*"[\s\S]*$/g, "").trim()
-  t = t.replaceAll(/\[GENERATE_CAPTIONS\]/gi, "").trim()
+  t = t.replaceAll(/\[GENERATE_CAPTIONS\]\s*[^\n]*/gi, "").trim()
   t = t.replaceAll(/\[GENERATE_STRATEGY\]/gi, "").trim()
   t = t.replaceAll(/\n{3,}/g, "\n\n").trim()
 

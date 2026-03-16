@@ -215,73 +215,8 @@ export function useMayaChat({
         messagesWithFeedCards: feedCardMessages.length,
       })
 
-      // Caption card trigger: detect [GENERATE_CAPTIONS] in the finished assistant message
-      if (message.role === "assistant") {
-        const msgText = (message.parts ?? [])
-          .filter((p: any) => p.type === "text")
-          .map((p: any) => (p as any).text ?? "")
-          .join("")
-        const captionMatch = msgText.match(/\[GENERATE_CAPTIONS\](?:\s+context="([^"]*)")?/i)
-        if (captionMatch) {
-          const topic = captionMatch[1] || "personal branding"
-          const msgId = message.id
-          debugLog("[useMayaChat] Caption card trigger detected", { msgId, topic })
-
-          // Inject loading skeleton immediately so the card area appears right away
-          setMessages((prev: any[]) =>
-            prev.map((m: any) =>
-              m.id === msgId
-                ? {
-                    ...m,
-                    parts: [
-                      ...(m.parts ?? []).filter((p: any) => p.type !== "tool-generateCaptions"),
-                      { type: "tool-generateCaptions", output: { state: "loading" } },
-                    ],
-                  }
-                : m
-            )
-          )
-
-          // Generate the caption via the API
-          fetch("/api/maya/generate-caption", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ topic }),
-          })
-            .then((r) => r.json())
-            .then(({ caption, hashtags }) => {
-              if (!caption) throw new Error("empty caption")
-              setMessages((prev: any[]) =>
-                prev.map((m: any) =>
-                  m.id === msgId
-                    ? {
-                        ...m,
-                        parts: [
-                          ...(m.parts ?? []).filter((p: any) => p.type !== "tool-generateCaptions"),
-                          {
-                            type: "tool-generateCaptions",
-                            output: { state: "ready", caption, hashtags: hashtags ?? [] },
-                          },
-                        ],
-                      }
-                    : m
-                )
-              )
-            })
-            .catch((err) => {
-              console.warn("[useMayaChat] Caption generation failed:", err)
-              // Remove loading skeleton — Maya's text response still visible
-              setMessages((prev: any[]) =>
-                prev.map((m: any) =>
-                  m.id === msgId
-                    ? { ...m, parts: (m.parts ?? []).filter((p: any) => p.type !== "tool-generateCaptions") }
-                    : m
-                )
-              )
-            })
-        }
-      }
+      // Caption card trigger detection is handled in maya-chat-screen.tsx via useEffect
+      // (watches messages + status — proven pattern, same as concept cards)
     },
     onError: (error) => {
       // Simplified error handling - just extract message safely

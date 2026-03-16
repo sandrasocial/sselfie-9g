@@ -366,6 +366,8 @@ export default function MayaChatScreen({
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
+  const [pendingCaptionTopic, setPendingCaptionTopic] = useState<string | null>(null)
+  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false)
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
   const [pendingFeedRequest, setPendingFeedRequest] = useState<{
     strategyJson: string
@@ -438,6 +440,7 @@ export default function MayaChatScreen({
   const processedFeedMessagesRef = useRef<Set<string>>(new Set())
   // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
+  const processedCaptionMessagesRef = useRef<Set<string>>(new Set())
   const processedToolMessagesRef = useRef<Set<string>>(new Set())
   const videoPollIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
   
@@ -664,11 +667,14 @@ export default function MayaChatScreen({
   useEffect(() => {
     processedFeedMessagesRef.current.clear()
     processedConceptMessagesRef.current.clear()
+    processedCaptionMessagesRef.current.clear()
     processedToolMessagesRef.current.clear()
     clearAllVideoPolls()
     setPendingConceptRequest(null) // Clear pending request on chat change
     setPendingFeedRequest(null)
     setIsCreatingFeed(false)
+    setPendingCaptionTopic(null)
+    setIsGeneratingCaption(false)
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
   }, [chatId, clearAllVideoPolls])
 
@@ -1326,13 +1332,37 @@ export default function MayaChatScreen({
       resolvePhaseTwoTools()
     }
 
+    // Caption card trigger: detect [GENERATE_CAPTIONS] in the last assistant message
+    const alreadyHasCaption = lastAssistantMessage.parts?.some(
+      (p: any) => p.type === "tool-generateCaptions" && p.output?.state === "ready",
+    )
+    if (alreadyHasCaption) {
+      // Already restored from DB — mark processed so we don't regenerate
+      processedCaptionMessagesRef.current.add(messageKey)
+    }
+    const captionMatch = textContent.match(/\[GENERATE_CAPTIONS\](?:\s+context="([^"]*)")?/i)
+    if (
+      captionMatch &&
+      !alreadyHasCaption &&
+      !isGeneratingCaption &&
+      !pendingCaptionTopic &&
+      !processedCaptionMessagesRef.current.has(messageKey)
+    ) {
+      const topic = captionMatch[1]?.trim() || "personal branding"
+      processedCaptionMessagesRef.current.add(messageKey)
+      setPendingCaptionTopic(topic)
+      return
+    }
+
     // Feed trigger detection handled inline in message processing
-    // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
+    // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_STRATEGY])
   }, [
     messages,
     status,
     isGeneratingConcepts,
     pendingConceptRequest,
+    isGeneratingCaption,
+    pendingCaptionTopic,
     proMode,
     messagesWithUploadModule,
     activeMayaTab,
@@ -1340,6 +1370,69 @@ export default function MayaChatScreen({
     updateAssistantToolPart,
     isLandingPagesUiEnabled,
   ])
+
+  // Generate caption card when [GENERATE_CAPTIONS] trigger detected
+  useEffect(() => {
+    if (!pendingCaptionTopic || isGeneratingCaption) return
+
+    const generateCaption = async () => {
+      setIsGeneratingCaption(true)
+
+      // Target the last assistant message
+      const lastMsg = [...messages].reverse().find((m: any) => m.role === "assistant")
+      const targetMsgId = lastMsg?.id ?? null
+
+      // Show loading skeleton immediately
+      updateAssistantToolPart("tool-generateCaptions", { state: "loading" }, targetMsgId)
+
+      try {
+        const res = await fetch("/api/maya/generate-caption", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ topic: pendingCaptionTopic }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          console.error("[v0] Caption API error:", res.status, data?.error)
+          throw new Error(data?.error || `HTTP ${res.status}`)
+        }
+        const { caption, hashtags } = data
+
+        if (caption) {
+          updateAssistantToolPart(
+            "tool-generateCaptions",
+            { state: "ready", caption, hashtags: hashtags ?? [] },
+            targetMsgId,
+          )
+          // Persist to DB (fire-and-forget)
+          if (chatId && targetMsgId) {
+            fetch("/api/maya/update-message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                messageId: targetMsgId,
+                chatId,
+                captionCards: [{ caption, hashtags: hashtags ?? [] }],
+              }),
+            }).catch((e) => console.warn("[v0] Caption card persist failed:", e))
+          }
+        } else {
+          // Remove loading skeleton on empty response
+          updateAssistantToolPart("tool-generateCaptions", null, targetMsgId)
+        }
+      } catch (err) {
+        console.warn("[v0] Caption generation error:", err)
+        updateAssistantToolPart("tool-generateCaptions", null, targetMsgId)
+      } finally {
+        setIsGeneratingCaption(false)
+        setPendingCaptionTopic(null)
+      }
+    }
+
+    generateCaption()
+  }, [pendingCaptionTopic, isGeneratingCaption, messages, updateAssistantToolPart, chatId])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -3487,7 +3580,7 @@ export default function MayaChatScreen({
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
-      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replace(/\[GENERATE_CAPTIONS\]\s*[^\n]*/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
       .replace(/\s{2,}/g, " ")

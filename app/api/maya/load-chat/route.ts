@@ -990,7 +990,19 @@ export async function GET(request: NextRequest) {
 
           appendFeedCardParts(parts, feedCardParts, textContent)
         }
-        
+
+        // Restore caption cards (available in any tab)
+        if (msg.caption_cards && Array.isArray(msg.caption_cards) && msg.caption_cards.length > 0) {
+          for (const card of msg.caption_cards) {
+            if (card.caption) {
+              parts.push({
+                type: "tool-generateCaptions",
+                output: { state: "ready", caption: card.caption, hashtags: card.hashtags ?? [] },
+              })
+            }
+          }
+        }
+
         return {
           ...baseMessage,
           parts,
@@ -1157,6 +1169,18 @@ export async function GET(request: NextRequest) {
             parts.push({
               type: "tool-mayaGapOffer",
               output: { dayLabels: marker.dayLabels || [] },
+            })
+          }
+        }
+      }
+
+      // Restore caption cards (available in any tab)
+      if (msg.caption_cards && Array.isArray(msg.caption_cards) && msg.caption_cards.length > 0) {
+        for (const card of msg.caption_cards) {
+          if (card.caption) {
+            parts.push({
+              type: "tool-generateCaptions",
+              output: { state: "ready", caption: card.caption, hashtags: card.hashtags ?? [] },
             })
           }
         }

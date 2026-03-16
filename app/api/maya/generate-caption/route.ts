@@ -31,18 +31,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}))
     const topic: string = body.topic || "personal branding"
 
-    // Load brand profile from Neon
+    // Load brand profile from Neon — SELECT * avoids errors if optional columns don't exist yet
     const [brandProfile] = await sql`
-      SELECT
-        name,
-        business_type,
-        brand_vibe,
-        brand_voice,
-        target_audience,
-        content_pillars,
-        niche,
-        business_description,
-        unique_value_proposition
+      SELECT *
       FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
       LIMIT 1
