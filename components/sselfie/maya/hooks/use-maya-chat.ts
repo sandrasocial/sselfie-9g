@@ -268,6 +268,21 @@ export function useMayaChat({
                     : m
                 )
               )
+              // Persist caption card to DB via update-message (fire-and-forget)
+              if (chatId && msgId) {
+                fetch("/api/maya/update-message", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    messageId: msgId,
+                    chatId,
+                    captionCards: [{ caption, hashtags: hashtags ?? [] }],
+                  }),
+                }).catch((persistErr) => {
+                  console.warn("[useMayaChat] Failed to persist caption card to DB:", persistErr)
+                })
+              }
             })
             .catch((err) => {
               console.warn("[useMayaChat] Caption generation failed:", err)

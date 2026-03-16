@@ -24,6 +24,7 @@ export interface MayaChatMessage {
   content: string
   concept_cards: any[] | null
   feed_cards: any[] | null // Feed cards data (similar to concept_cards)
+  caption_cards: any[] | null // Instagram caption cards generated inline by Maya
   styling_details: any | null // Legacy: kept for backward compatibility, feed cards now use feed_cards column
   created_at: Date
 }
@@ -270,6 +271,7 @@ export async function saveChatMessage(
   content: string,
   conceptCards?: any[],
   feedCards?: any[],
+  captionCards?: any[],
 ): Promise<MayaChatMessage> {
   console.log("[v0] 💾 saveChatMessage called:", {
     chatId,
@@ -279,6 +281,8 @@ export async function saveChatMessage(
     conceptCardsCount: conceptCards?.length || 0,
     hasFeedCards: !!feedCards,
     feedCardsCount: feedCards?.length || 0,
+    hasCaptionCards: !!captionCards,
+    captionCardsCount: captionCards?.length || 0,
   })
 
   const safeContent = content || ""
@@ -287,9 +291,10 @@ export async function saveChatMessage(
     const message = await retryDatabaseOperation(async () => {
       // Use feed_cards column for feed cards (similar to concept_cards)
       const feedCardsJson = feedCards && feedCards.length > 0 ? JSON.stringify(feedCards) : null
+      const captionCardsJson = captionCards && captionCards.length > 0 ? JSON.stringify(captionCards) : null
       return await sql`
-        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards, feed_cards)
-        VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null}, ${feedCardsJson})
+        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards, feed_cards, caption_cards)
+        VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null}, ${feedCardsJson}, ${captionCardsJson})
         RETURNING *
       `
     })

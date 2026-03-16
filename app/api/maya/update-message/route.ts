@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { messageId, chatId, content, append = false, feedCards, conceptCards } = body
+    const { messageId, chatId, content, append = false, feedCards, conceptCards, captionCards } = body
 
     console.log("[update-message] Request received:", {
       messageId,
@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
       feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
       hasConceptCards: !!conceptCards,
       conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
+      hasCaptionCards: captionCards !== undefined,
+      captionCardsCount: Array.isArray(captionCards) ? captionCards.length : 0,
     })
 
     // 🔴 FIX: Allow empty content string (for concept card updates that only update JSONB)
@@ -251,8 +253,33 @@ export async function POST(request: NextRequest) {
         })
         throw dbError
       }
-    } else if (!conceptCards) {
-      // Only update content if neither feedCards nor conceptCards are provided
+    }
+
+    // Update caption_cards JSONB if provided (caption cards are replaced, not merged)
+    if (captionCards !== undefined) {
+      try {
+        const captionCardsJson =
+          captionCards && Array.isArray(captionCards) && captionCards.length > 0
+            ? JSON.stringify(captionCards)
+            : null
+        await sql`
+          UPDATE maya_chat_messages
+          SET caption_cards = ${captionCardsJson}
+          WHERE id = ${messageIdNum}
+        `
+        console.log("[update-message] ✅ Updated message with caption cards:", captionCards?.length ?? 0)
+      } catch (dbError: any) {
+        console.error("[update-message] ❌ Database error updating caption cards:", {
+          error: dbError?.message || String(dbError),
+          messageId: messageIdNum,
+        })
+        throw dbError
+      }
+    }
+
+    // Update content if no JSONB columns were updated, or if content was explicitly provided
+    if (!feedCards && !conceptCards && captionCards === undefined) {
+      // Only update content if no JSONB columns were targeted
       // NOTE: maya_chat_messages table does not have updated_at column
       await sql`
         UPDATE maya_chat_messages
