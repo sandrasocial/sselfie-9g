@@ -1,0 +1,50 @@
+# SSELFIE — robots.txt
+# Explicitly allow all AI search crawlers for citation visibility
+# https://sselfie.ai
+
+User-agent: *
+Allow: /
+
+# Block authenticated/private routes from all crawlers
+Disallow: /studio
+Disallow: /studio/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /strategy/
+Disallow: /selfie-guide/access/
+Disallow: /brand-strategy/setup/
+
+# AI Search Crawlers — explicitly allowed for citation in AI answers
+# OpenAI (ChatGPT)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic (Claude)
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Google (Gemini + AI Overviews)
+User-agent: Google-Extended
+Allow: /
+
+# Microsoft (Copilot via Bing)
+User-agent: Bingbot
+Allow: /
+
+# Block only training-only scrapers (not search bots)
+# Common Crawl — used for training datasets, NOT for search
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://sselfie.ai/sitemap.xml

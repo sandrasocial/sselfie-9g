@@ -122,6 +122,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SSELFIE" />
+        {/* SoftwareApplication schema — accurate pricing in USD, no fabricated ratings */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -129,34 +130,132 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               name: "SSELFIE",
+              url: "https://sselfie.ai",
               applicationCategory: "PhotographyApplication",
               operatingSystem: "Web",
-              offers: {
-                "@type": "AggregateOffer",
-                lowPrice: "24.50",
-                highPrice: "99.50",
-                priceCurrency: "USD",
-                offerCount: "3",
-              },
-              aggregateRating: {
-                "@type": "AggregateRating",
-                ratingValue: "4.8",
-                ratingCount: "127",
-              },
               description:
-                "Create stunning professional brand photos every month with AI. No photographer needed. Just AI selfies that look like you, styled for your brand.",
+                "AI personal branding platform that creates professional brand photos, plans Instagram feeds, and writes captions — without a photographer. Train a custom AI model on your face and generate unlimited on-brand content through Maya, your personal brand AI.",
+              offers: [
+                {
+                  "@type": "Offer",
+                  name: "Selfie Guide",
+                  price: "17",
+                  priceCurrency: "USD",
+                  url: "https://sselfie.ai/selfie-guide",
+                },
+                {
+                  "@type": "Offer",
+                  name: "Brand Strategy Pack",
+                  price: "19",
+                  priceCurrency: "USD",
+                  url: "https://sselfie.ai/brand-strategy",
+                },
+                {
+                  "@type": "Offer",
+                  name: "Studio Membership",
+                  price: "97",
+                  priceCurrency: "USD",
+                  priceSpecification: {
+                    "@type": "UnitPriceSpecification",
+                    price: "97",
+                    priceCurrency: "USD",
+                    unitCode: "MON",
+                  },
+                  url: "https://sselfie.ai/checkout/membership",
+                },
+              ],
               author: {
                 "@type": "Person",
                 name: "Sandra",
-                url: "https://instagram.com/sandra.social",
-              },
-              creator: {
-                "@type": "Person",
-                name: "Sandra",
-                jobTitle: "Founder",
-                description: "Single mom of three who built a business from selfies",
+                url: "https://sselfie.ai",
                 sameAs: ["https://instagram.com/sandra.social", "https://tiktok.com/@sandra.social"],
               },
+            }),
+          }}
+        />
+
+        {/* Organization schema — entity recognition for AI systems */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "SSELFIE",
+              url: "https://sselfie.ai",
+              logo: "https://sselfie.ai/favicon.png",
+              description:
+                "AI personal branding platform helping coaches, consultants, and content creators produce professional brand photos and content without photographers.",
+              founder: {
+                "@type": "Person",
+                name: "Sandra",
+                jobTitle: "Founder & CEO",
+                description:
+                  "Single mother from Iceland who built a 180K+ personal brand using selfies — then built an AI to do it for everyone.",
+                sameAs: ["https://instagram.com/sandra.social", "https://tiktok.com/@sandra.social"],
+              },
+              sameAs: ["https://instagram.com/sselfie.ai", "https://tiktok.com/@sselfie.ai"],
+            }),
+          }}
+        />
+
+        {/* FAQPage schema — surfaces SSELFIE in AI answers for common questions */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "What is SSELFIE?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "SSELFIE is an AI personal branding platform. You upload selfies, train a custom AI model on your face, and then generate unlimited professional brand photos through Maya — your personal brand AI. Maya also plans your Instagram feed and writes captions in your voice. No photographer needed.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How is SSELFIE different from other AI photo tools?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Most AI photo tools use generic models that produce images of a random person. SSELFIE trains a custom LoRA model specifically on your face, so every generated photo looks like you. Maya also knows your brand profile — your voice, colors, and style — so every photo is on-brand, not just on-face.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How much does SSELFIE cost?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "SSELFIE offers three entry points: The Selfie Guide at $17 (one-time), the Brand Strategy Pack at $19 (one-time), and Studio membership at $97/month which includes 200 credits, unlimited brand photo generation, custom model training, feed planning, and caption writing.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Do I need photography or tech skills to use SSELFIE?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "No. Maya guides everything through a chat interface. You upload selfies, describe what you want, and Maya generates the photos. No prompts, no settings, no technical knowledge required.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What is Maya in SSELFIE?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Maya is SSELFIE's AI — the entire interface. Instead of navigating menus and settings, you talk to Maya. She generates photos, plans your feed, writes captions, and remembers your brand preferences across every session.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is SSELFIE only for Instagram?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "No. SSELFIE generates professional brand photos usable on Instagram, LinkedIn, websites, email headers, course platforms, and anywhere else you need to show up professionally.",
+                  },
+                },
+              ],
             }),
           }}
         />
