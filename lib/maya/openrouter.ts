@@ -1,4 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai"
+import { createAnthropic } from "@ai-sdk/anthropic"
 import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
 
 export type MayaRoutingTask =
@@ -102,6 +103,15 @@ export function resolveMayaChatTask(input: {
   return "chat_default"
 }
 
+// Maps OpenRouter model IDs to direct Anthropic API model IDs.
+// Used when OpenRouter is unavailable — ensures Maya always has a working fallback.
+const OPENROUTER_TO_ANTHROPIC_ID: Record<string, string> = {
+  "anthropic/claude-haiku-4.5": "claude-3-5-haiku-20241022",
+  "anthropic/claude-sonnet-4.5": "claude-3-7-sonnet-20250219",
+  "anthropic/claude-sonnet-4": "claude-3-5-sonnet-20241022",
+  "openai/gpt-4o-mini": "claude-3-5-haiku-20241022", // fast/cheap equivalent
+}
+
 export function createMayaOpenRouterProvider() {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
@@ -111,10 +121,6 @@ export function createMayaOpenRouterProvider() {
   return createOpenAI({
     apiKey,
     baseURL: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
-    // OpenRouter speaks Chat Completions, not the newer OpenAI Responses API.
-    // Without this flag @ai-sdk/openai defaults to the Responses API and throws
-    // "Invalid Responses API request" on every call.
-    compatibility: "compatible",
     headers: {
       "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai",
       "X-Title": process.env.OPENROUTER_APP_NAME || "SSELFIE Maya",
@@ -126,10 +132,33 @@ export function getMayaGatewayModel(task: MayaRoutingTask): string {
   return getMayaModelForTask(task)
 }
 
+/**
+ * Creates a model via direct Anthropic API (@ai-sdk/anthropic).
+ * Used as a true fallback when OpenRouter is unavailable.
+ * Returns null if ANTHROPIC_API_KEY is missing.
+ */
+export function createMayaAnthropicModel(task: MayaRoutingTask) {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) return null
+    const openRouterModelId = getMayaModelForTask(task)
+    const anthropicModelId = OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-3-5-haiku-20241022"
+    return createAnthropic({ apiKey })(anthropicModelId)
+  } catch {
+    return null
+  }
+}
+
 export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
   try {
     const provider = createMayaOpenRouterProvider()
-    return provider(getMayaModelForTask(task))
+    // CRITICAL: Must use .chat() — OpenRouter supports Chat Completions only.
+    // In @ai-sdk/openai@3.x, calling provider(modelId) creates an
+    // OpenAIResponsesLanguageModel which POSTs to /v1/responses — an endpoint
+    // OpenRouter does not implement. This causes "Invalid Responses API request"
+    // on every Maya call. provider.chat() creates OpenAIChatLanguageModel
+    // which uses the standard /v1/chat/completions endpoint.
+    return provider.chat(getMayaModelForTask(task))
   } catch {
     return null
   }
@@ -137,10 +166,11 @@ export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
 
 export function createMayaOpenRouterModel(task: MayaRoutingTask) {
   if (!isMayaOpenRouterPrimaryEnabled()) {
-    return getMayaGatewayModel(task)
+    return createMayaAnthropicModel(task) ?? getMayaGatewayModel(task)
   }
 
   const openRouterModel = createMayaOpenRouterFallbackModel(task)
   if (openRouterModel) return openRouterModel
-  return getMayaGatewayModel(task)
+  // OpenRouter unavailable — fall back to direct Anthropic API
+  return createMayaAnthropicModel(task) ?? getMayaGatewayModel(task)
 }
