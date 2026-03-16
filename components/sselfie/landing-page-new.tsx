@@ -210,7 +210,8 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             }}
           />
 
-          <div className="content text-center h-full justify-end">
+          {/* flex:1 fills the section height; justifyContent overrides scoped .content CSS */}
+          <div className="content text-center" style={{ flex: 1, justifyContent: "flex-end" }}>
             {/* Social proof pill */}
             <div
               className="fade-up inline-flex items-center gap-2 mx-auto mb-6"
@@ -236,7 +237,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
               style={{
                 fontStyle: "normal",
                 fontWeight: 300,
-                textShadow: "0 2px 20px rgba(0,0,0,0.3)",
+                textShadow: "0 2px 20px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.4)",
                 fontFamily: "'Cormorant Garamond', serif",
               }}
             >
@@ -245,7 +246,10 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
             <p
               className="description fade-up mx-auto max-w-sm"
-              style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}
+              style={{
+                color: "#c8c4bb",
+                textShadow: "0 1px 8px rgba(0,0,0,0.55)",
+              }}
             >
               Meet Maya. Your personal brand AI. Upload a selfie, and she creates photos, plans your feed, and writes your captions — all in your style.
             </p>
