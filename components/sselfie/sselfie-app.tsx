@@ -876,6 +876,22 @@ export default function SselfieApp({
         </div>
       )}
 
+      {/* Past-due billing banner — shown to users whose payment failed */}
+      {subscriptionStatus === "past_due" && (
+        <div className="relative z-50 flex items-center justify-between gap-3 bg-[rgba(180,80,60,0.18)] border-b border-[rgba(220,100,80,0.35)] px-4 py-2.5">
+          <p className="text-xs text-[#f0ede8] leading-snug">
+            <span className="font-medium">Your last payment didn&apos;t go through.</span>{" "}
+            Update your card to keep your photos and credits.
+          </p>
+          <a
+            href="/studio?tab=settings"
+            className="shrink-0 rounded-sm bg-[rgba(240,237,232,0.12)] hover:bg-[rgba(240,237,232,0.2)] border border-[rgba(240,237,232,0.2)] px-3 py-1 text-xs font-medium text-[#f0ede8] transition-colors whitespace-nowrap"
+          >
+            Update card →
+          </a>
+        </div>
+      )}
+
       {/* First-photo celebration toast — fires once when the first credit is spent */}
       {showFirstPhotoToast && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
