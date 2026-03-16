@@ -82,7 +82,11 @@ export default function FeedPublishingHub({
   const layout = feedLayout.layout
 
   const copyToClipboard = async (text: string, type: "caption" | "hashtags" | "bio") => {
-    await navigator.clipboard.writeText(text)
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      // Clipboard API requires a user gesture and secure context — silently ignore.
+    }
     if (type === "caption") {
       setCopiedCaption(true)
       setTimeout(() => setCopiedCaption(false), 2000)

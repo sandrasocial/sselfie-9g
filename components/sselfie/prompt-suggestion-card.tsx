@@ -35,7 +35,11 @@ export function PromptSuggestionCard({
   const [copied, setCopied] = useState(false)
   
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(suggestion.prompt)
+    try {
+      await navigator.clipboard.writeText(suggestion.prompt)
+    } catch {
+      // Clipboard API requires a user gesture and secure context — silently ignore.
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
