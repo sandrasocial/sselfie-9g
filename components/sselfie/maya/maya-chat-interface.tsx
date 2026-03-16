@@ -8,6 +8,7 @@ import { PromptSuggestionCard as NewPromptSuggestionCard } from "../prompt-sugge
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
 import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
+import MayaCaptionCard from "./maya-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
 import MayaOfferBriefForm from "./maya-offer-brief-form"
@@ -1297,8 +1298,23 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
 }
 
 function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  const toolPart = part
-  const output = toolPart.output
+  const output = part.output
+
+  // ── Standalone Maya caption card (generated inline in chat) ──────────────
+  if (output?.state === "loading") {
+    return <MayaCaptionCard key={partIndex} loading />
+  }
+  if (output?.state === "ready" && output?.caption) {
+    return (
+      <MayaCaptionCard
+        key={partIndex}
+        caption={output.caption}
+        hashtags={output.hashtags ?? []}
+      />
+    )
+  }
+
+  // ── Feed Planner captions (batch, requires feedId) ───────────────────────
   if (!output?.feedId || !Array.isArray(output?.captions)) return null
 
   return (
@@ -1312,12 +1328,8 @@ function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx):
           hashtags={caption.hashtags || []}
           feedId={output.feedId}
           postId={caption.postId}
-          onAddToFeed={async () => {
-            // Will be handled by FeedCaptionCard component
-          }}
-          onRegenerate={async () => {
-            // Regenerate caption for this post
-          }}
+          onAddToFeed={async () => {}}
+          onRegenerate={async () => {}}
         />
       ))}
     </div>
