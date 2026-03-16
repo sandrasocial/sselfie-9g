@@ -47,6 +47,7 @@ import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
 import { isMayaPageRendererV2Enabled } from "@/lib/maya/page-generation/constants"
 import {
+  createMayaAnthropicModel,
   createMayaOpenRouterFallbackModel,
   getMayaGatewayModel,
   getMayaMaxTokensForTask,
@@ -2416,8 +2417,11 @@ You must apply this skill pack for prompt composition while preserving Maya's co
     })
     const selectedModel = getMayaModelForTask(mayaTask)
     const openRouterPrimaryModel = createMayaOpenRouterFallbackModel(mayaTask)
-    const primaryModel = openRouterPrimaryModel || getMayaGatewayModel(mayaTask)
-    const gatewayFallbackModel = openRouterPrimaryModel ? getMayaGatewayModel(mayaTask) : null
+    const anthropicFallbackModel = createMayaAnthropicModel(mayaTask)
+    // primaryModel: OpenRouter (Chat Completions) → direct Anthropic → raw string (last resort)
+    const primaryModel = openRouterPrimaryModel ?? anthropicFallbackModel ?? getMayaGatewayModel(mayaTask)
+    // gatewayFallbackModel: only relevant if primary throws at stream time
+    const gatewayFallbackModel = openRouterPrimaryModel ? (anthropicFallbackModel ?? null) : null
     const maxTokens = getMayaMaxTokensForTask(mayaTask)
     console.log("[Maya Chat] Model routing:", {
       chatType,
