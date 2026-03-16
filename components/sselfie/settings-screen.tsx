@@ -66,6 +66,9 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showCancelIntercept, setShowCancelIntercept] = useState(false)
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
+  const [discountApplied, setDiscountApplied] = useState(false)
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
@@ -162,7 +165,33 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     }
   }
 
+  const handleApplyRetentionDiscount = async () => {
+    setIsApplyingDiscount(true)
+    try {
+      const response = await fetch("/api/stripe/apply-retention-discount", {
+        method: "POST",
+        credentials: "include",
+      })
+      if (response.ok) {
+        setDiscountApplied(true)
+        setTimeout(() => setShowCancelIntercept(false), 3000)
+      } else {
+        const data = await response.json()
+        alert(data.error || "Couldn't apply discount. Please try again.")
+      }
+    } catch {
+      alert("Something went wrong. Please try again.")
+    } finally {
+      setIsApplyingDiscount(false)
+    }
+  }
+
   const handleManageSubscription = async () => {
+    // For active Studio members, show cancel intercept first
+    if (isStudioMembership && hasActiveSubscription) {
+      setShowCancelIntercept(true)
+      return
+    }
     setIsLoadingPortal(true)
     try {
       console.log("[v0] Opening subscription management portal...")
@@ -280,6 +309,89 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
 
   return (
     <div className="flex flex-col h-screen bg-linear-to-b from-stone-50 via-stone-100/50 to-white text-stone-950 relative overflow-hidden">
+
+      {/* Cancel intercept modal */}
+      {showCancelIntercept && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-[#1a1917] border border-[rgba(240,237,232,0.12)] p-6 shadow-2xl">
+            {discountApplied ? (
+              <div className="text-center py-4">
+                <p className="text-2xl mb-3">✓</p>
+                <p className="text-[#f0ede8] font-light text-lg mb-2">Done.</p>
+                <p className="text-[#8a8780] text-sm leading-relaxed">
+                  50% off applied to your next bill. See you next month.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between mb-5">
+                  <h3 className="text-[#f0ede8] font-light text-xl tracking-wide">Before you go.</h3>
+                  <button
+                    onClick={() => setShowCancelIntercept(false)}
+                    className="text-[#8a8780] hover:text-[#f0ede8] transition-colors p-1"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-2 mb-5">
+                  {[
+                    `${creditBalance ?? 0} credits you've built up`,
+                    "Your trained AI model",
+                    "Your Maya chat history and brand memory",
+                    "Access to unlimited photo generation",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-2.5">
+                      <span className="text-[rgba(220,100,80,0.8)] text-xs">✕</span>
+                      <span className="text-[#8a8780] text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-xl border border-[rgba(240,237,232,0.1)] bg-[rgba(240,237,232,0.04)] p-4 mb-5">
+                  <p className="text-[#f0ede8] text-sm font-medium mb-1">Stay for 50% off next month</p>
+                  <p className="text-[#8a8780] text-xs leading-relaxed">
+                    One click. No commitment. If it still doesn&apos;t feel right after that, cancel anytime.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={handleApplyRetentionDiscount}
+                    disabled={isApplyingDiscount}
+                    className="w-full rounded-xl bg-[#f0ede8] text-[#0d0c0b] text-sm font-medium py-3.5 transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isApplyingDiscount ? "Applying..." : "Yes — give me 50% off next month"}
+                  </button>
+                  <button
+                    onClick={() => setShowCancelIntercept(false)}
+                    className="w-full rounded-xl border border-[rgba(240,237,232,0.12)] text-[#c8c4bb] text-sm font-light py-3 transition-colors hover:text-[#f0ede8] hover:border-[rgba(240,237,232,0.25)]"
+                  >
+                    I&apos;ll keep my Studio
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowCancelIntercept(false)
+                      setIsLoadingPortal(true)
+                      try {
+                        const res = await fetch("/api/stripe/create-portal-session", { method: "POST", credentials: "include" })
+                        const data = await res.json()
+                        if (res.ok) window.location.href = data.url
+                      } finally {
+                        setIsLoadingPortal(false)
+                      }
+                    }}
+                    className="w-full text-center text-xs text-[#8a8780] hover:text-[#c8c4bb] py-1 transition-colors"
+                  >
+                    I still want to manage my subscription →
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 pt-4 px-3 sm:px-4 md:px-6 pb-3 bg-white/70 backdrop-blur-xl border-b border-stone-200/50">
         {onBack && (
           <button
