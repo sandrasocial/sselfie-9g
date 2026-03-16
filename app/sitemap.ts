@@ -20,6 +20,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/blueprint", changeFrequency: "weekly", priority: 0.7 },
     { path: "/whats-new", changeFrequency: "weekly", priority: 0.7 },
 
+    // AI SEO content pages — citability targets for ChatGPT, Perplexity, Google AI Overviews
+    { path: "/ai-brand-photos", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/sselfie-vs-aragon", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/ai-tools-personal-branding", changeFrequency: "monthly", priority: 0.7 },
+
     // Content / educational pages
     { path: "/prompt-guides", changeFrequency: "weekly", priority: 0.6 },
     { path: "/academy", changeFrequency: "weekly", priority: 0.6 },
