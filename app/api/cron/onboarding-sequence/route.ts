@@ -8,6 +8,8 @@ import { generateOnboardingDay2Email } from "@/lib/email/templates/onboarding-da
 import { generateOnboardingDay7Email } from "@/lib/email/templates/onboarding-day-7"
 import { generateWelcomeFirstGenerationFollowupEmail } from "@/lib/email/templates/welcome-first-generation-followup"
 import { generatePostActivationUpgradeEmail } from "@/lib/email/templates/post-activation-upgrade"
+import { generateFreeUserDay5Email } from "@/lib/email/templates/free-user-day5"
+import { generateFreeUserDay10Email } from "@/lib/email/templates/free-user-day10"
 import { logAdminError } from "@/lib/admin-error-log"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
@@ -88,6 +90,8 @@ export async function GET(request: Request) {
       firstGenNudge: { found: 0, sent: 0, failed: 0 },
       postActivation: { found: 0, sent: 0, failed: 0 },
       freeWelcome: { found: 0, sent: 0, failed: 0 },
+      freeDay5: { found: 0, sent: 0, failed: 0 },
+      freeDay10: { found: 0, sent: 0, failed: 0 },
       errors: [] as Array<{ email: string; day: number | string; error: string }>,
     }
 
@@ -116,7 +120,7 @@ export async function GET(request: Request) {
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
-      ORDER BY s.created_at ASC
+      ORDER BY subscription_created_at ASC
     `
 
     results.day0.found = day0Users.length
@@ -189,7 +193,7 @@ export async function GET(request: Request) {
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
-      ORDER BY s.created_at ASC
+      ORDER BY subscription_created_at ASC
     `
 
     results.day2.found = day2Users.length
@@ -262,7 +266,7 @@ export async function GET(request: Request) {
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
-      ORDER BY s.created_at ASC
+      ORDER BY subscription_created_at ASC
     `
 
     results.day7.found = day7Users.length
@@ -527,8 +531,130 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent + results.freeWelcome.sent
-    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed + results.freeWelcome.failed
+    // ── Free user Day 5: signed up 5-15 days ago, not subscribed, no day-5 email yet ──
+    const freeDay5Users = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name,
+        u.created_at
+      FROM users u
+      WHERE u.created_at <= NOW() - INTERVAL '5 days'
+        AND u.created_at > NOW() - INTERVAL '15 days'
+        AND u.email IS NOT NULL
+        AND u.email != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM subscriptions s
+          WHERE s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status IN ('active', 'trialing')
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type = 'free-user-day5'
+        )
+      ORDER BY u.created_at DESC
+      LIMIT 100
+    `
+
+    results.freeDay5.found = freeDay5Users.length
+    console.log(`[v0] [CRON] Found ${freeDay5Users.length} free users for Day 5 email`)
+
+    for (const user of freeDay5Users as any[]) {
+      try {
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateFreeUserDay5Email({ firstName })
+
+        const result = await sendEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "free-user-day5",
+          replyTo: "hello@sselfie.ai",
+          tags: ["lifecycle", "free-day5"],
+        })
+
+        if (result.success) {
+          results.freeDay5.sent++
+          console.log(`[v0] [CRON] ✅ Free user Day 5 sent to ${user.email}`)
+        } else {
+          results.freeDay5.failed++
+          results.errors.push({ email: user.email, day: "free-day5", error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Free user Day 5 failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.freeDay5.failed++
+        results.errors.push({ email: user.email, day: "free-day5", error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Free user Day 5 exception for ${user.email}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    // ── Free user Day 10: signed up 10-25 days ago, not subscribed, no day-10 email yet ──
+    const freeDay10Users = await sql`
+      SELECT DISTINCT
+        u.id,
+        u.email,
+        u.display_name,
+        u.created_at
+      FROM users u
+      WHERE u.created_at <= NOW() - INTERVAL '10 days'
+        AND u.created_at > NOW() - INTERVAL '25 days'
+        AND u.email IS NOT NULL
+        AND u.email != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM subscriptions s
+          WHERE s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status IN ('active', 'trialing')
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_logs el
+          WHERE el.user_email = u.email
+            AND el.email_type = 'free-user-day10'
+        )
+      ORDER BY u.created_at DESC
+      LIMIT 100
+    `
+
+    results.freeDay10.found = freeDay10Users.length
+    console.log(`[v0] [CRON] Found ${freeDay10Users.length} free users for Day 10 email`)
+
+    for (const user of freeDay10Users as any[]) {
+      try {
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateFreeUserDay10Email({ firstName })
+
+        const result = await sendEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          emailType: "free-user-day10",
+          replyTo: "hello@sselfie.ai",
+          tags: ["lifecycle", "free-day10"],
+        })
+
+        if (result.success) {
+          results.freeDay10.sent++
+          console.log(`[v0] [CRON] ✅ Free user Day 10 sent to ${user.email}`)
+        } else {
+          results.freeDay10.failed++
+          results.errors.push({ email: user.email, day: "free-day10", error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Free user Day 10 failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.freeDay10.failed++
+        results.errors.push({ email: user.email, day: "free-day10", error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Free user Day 10 exception for ${user.email}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 150))
+    }
+
+    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent + results.freeWelcome.sent + results.freeDay5.sent + results.freeDay10.sent
+    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed + results.freeWelcome.failed + results.freeDay5.failed + results.freeDay10.failed
     const totalSkipped = results.day0.skipped + results.day2.skipped + results.day7.skipped
 
     console.log(
@@ -551,6 +677,10 @@ export async function GET(request: Request) {
       postActivationFailed: results.postActivation.failed,
       freeWelcomeSent: results.freeWelcome.sent,
       freeWelcomeFailed: results.freeWelcome.failed,
+      freeDay5Sent: results.freeDay5.sent,
+      freeDay5Failed: results.freeDay5.failed,
+      freeDay10Sent: results.freeDay10.sent,
+      freeDay10Failed: results.freeDay10.failed,
       totalSent,
       totalFailed,
       totalSkipped,
