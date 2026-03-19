@@ -61,6 +61,7 @@ import {
 import { scheduleStudioTabUpdate } from "@/lib/studio/tab-sync"
 import {
   shouldApplyBlueprintFallbackRouting,
+  shouldArmStudioMemberPostPurchaseOnboarding,
   shouldRouteMemberToFeedPlannerOnMissingOnboarding,
 } from "@/lib/onboarding/studio-onboarding-routing"
 
@@ -140,6 +141,7 @@ export default function SselfieApp({
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  const [pendingPostPurchaseStudioOnboarding, setPendingPostPurchaseStudioOnboarding] = useState(false)
   const [blueprintEntitlementType, setBlueprintEntitlementType] = useState<string | null>(null)
   const simpleFetcher = (url: string) => fetch(url).then((res) => res.json())
   const { data: myProductsData } = useSWR("/api/academy/my-products", simpleFetcher, {
@@ -772,6 +774,10 @@ export default function SselfieApp({
     refreshCredits()
   }
 
+  const handlePostPurchaseStudioOnboardingHandled = useCallback(() => {
+    setPendingPostPurchaseStudioOnboarding(false)
+  }, [])
+
   // Decision 2: Handle purchase success - refresh credits and show success message
   useEffect(() => {
     if (purchaseSuccess && activeTab === "feed-planner") {
@@ -1207,6 +1213,8 @@ export default function SselfieApp({
               isMembership={access.hasFullAccess}
               academyPurchaseProduct={academyPurchaseProduct}
               firstTimeProductUser={firstTimeProductUser}
+              pendingPostPurchaseStudioOnboarding={pendingPostPurchaseStudioOnboarding}
+              onPostPurchaseStudioOnboardingHandled={handlePostPurchaseStudioOnboardingHandled}
             />
           )}
 
@@ -1349,6 +1357,14 @@ export default function SselfieApp({
           productType={pendingWelcomeProduct}
           onDismiss={() => setPendingWelcomeDismissed(true)}
           onNavigate={(tabId) => {
+            if (
+              shouldArmStudioMemberPostPurchaseOnboarding({
+                productType: pendingWelcomeProduct,
+                targetTab: tabId,
+              })
+            ) {
+              setPendingPostPurchaseStudioOnboarding(true)
+            }
             setActiveTab(tabId as StudioTab)
             setPendingWelcomeDismissed(true)
           }}

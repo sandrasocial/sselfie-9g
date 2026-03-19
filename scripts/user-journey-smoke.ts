@@ -1,4 +1,5 @@
 import { chromium } from "@playwright/test"
+import { USER_JOURNEY_SMOKE_FLOWS, type JourneySmokeFlow } from "@/lib/automation/user-journey-smoke-flows"
 import { writeReport } from "./audit/_shared"
 
 const BASE_URL = (process.env.JOURNEY_SMOKE_BASE_URL || "https://sselfie.ai").replace(/\/$/, "")
@@ -15,9 +16,9 @@ type FlowResult = {
 
 async function resolveCheckoutFromCta(input: {
   landingPath: string
-  ctaHref: string
   expectedTitle: RegExp
   name: string
+  trigger: JourneySmokeFlow["trigger"]
 }): Promise<FlowResult> {
   const landingUrl = `${BASE_URL}${input.landingPath}`
   const browser = await chromium.launch({ headless: true })
@@ -41,24 +42,46 @@ async function resolveCheckoutFromCta(input: {
       }
     }
 
-    const cta = page.locator(`a[href="${input.ctaHref}"]`).first()
-    if ((await cta.count()) === 0) {
-      return {
-        name: input.name,
-        status: "fail",
-        landingUrl,
-        checkoutUrl: "",
-        finalUrl: page.url(),
-        detail: `CTA not found: ${input.ctaHref}`,
-      }
-    }
+    let checkoutUrl = ""
 
-    const checkoutUrl = new URL(input.ctaHref, BASE_URL).toString()
-    await page.goto(checkoutUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: NAV_TIMEOUT_MS,
-    })
-    await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+    if (input.trigger.type === "href") {
+      const cta = page.locator(`a[href="${input.trigger.href}"]`).first()
+      if ((await cta.count()) === 0) {
+        return {
+          name: input.name,
+          status: "fail",
+          landingUrl,
+          checkoutUrl: "",
+          finalUrl: page.url(),
+          detail: `CTA not found: ${input.trigger.href}`,
+        }
+      }
+
+      checkoutUrl = new URL(input.trigger.href, BASE_URL).toString()
+      await page.goto(checkoutUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: NAV_TIMEOUT_MS,
+      })
+      await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+    } else {
+      const cta = page.getByRole("button", { name: input.trigger.name }).first()
+      if ((await cta.count()) === 0) {
+        return {
+          name: input.name,
+          status: "fail",
+          landingUrl,
+          checkoutUrl: landingUrl,
+          finalUrl: page.url(),
+          detail: `CTA button not found: ${input.trigger.name}`,
+        }
+      }
+
+      checkoutUrl = landingUrl
+      await Promise.all([
+        page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS }),
+        cta.click(),
+      ])
+    }
 
     const finalUrl = page.url()
     if (/\/auth\/|\/sign-?in|\/sign-?up/i.test(finalUrl)) {
@@ -107,78 +130,7 @@ async function resolveCheckoutFromCta(input: {
       name: input.name,
       status: "fail",
       landingUrl,
-      checkoutUrl: new URL(input.ctaHref, BASE_URL).toString(),
-      finalUrl: page.url(),
-      detail: error instanceof Error ? error.message : "Unknown browser error",
-    }
-  } finally {
-    await browser.close()
-  }
-}
-
-async function resolveDirectCheckout(input: {
-  path: string
-  name: string
-}): Promise<FlowResult> {
-  const landingUrl = `${BASE_URL}${input.path}`
-  const browser = await chromium.launch({ headless: true })
-  const page = await browser.newPage()
-
-  try {
-    await page.goto(landingUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: NAV_TIMEOUT_MS,
-    })
-    await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
-
-    const finalUrl = page.url()
-    if (/\/auth\/|\/sign-?in|\/sign-?up/i.test(finalUrl)) {
-      return {
-        name: input.name,
-        status: "fail",
-        landingUrl,
-        checkoutUrl: landingUrl,
-        finalUrl,
-        detail: "Redirected to auth wall",
-      }
-    }
-
-    if (/\/checkout\/failure/i.test(finalUrl)) {
-      return {
-        name: input.name,
-        status: "fail",
-        landingUrl,
-        checkoutUrl: landingUrl,
-        finalUrl,
-        detail: "Checkout flow landed on failure page",
-      }
-    }
-
-    if (!/client_secret=/.test(finalUrl)) {
-      return {
-        name: input.name,
-        status: "fail",
-        landingUrl,
-        checkoutUrl: landingUrl,
-        finalUrl,
-        detail: "Membership checkout loaded without a client_secret",
-      }
-    }
-
-    return {
-      name: input.name,
-      status: "pass",
-      landingUrl,
-      checkoutUrl: landingUrl,
-      finalUrl,
-      detail: "Direct checkout route resolved successfully",
-    }
-  } catch (error) {
-    return {
-      name: input.name,
-      status: "fail",
-      landingUrl,
-      checkoutUrl: landingUrl,
+      checkoutUrl: input.trigger.type === "href" ? new URL(input.trigger.href, BASE_URL).toString() : landingUrl,
       finalUrl: page.url(),
       detail: error instanceof Error ? error.message : "Unknown browser error",
     }
@@ -190,30 +142,16 @@ async function resolveDirectCheckout(input: {
 async function main() {
   const results: FlowResult[] = []
 
-  results.push(
-    await resolveCheckoutFromCta({
-      name: "Selfie Guide",
-      landingPath: "/selfie-guide",
-      ctaHref: "/checkout/selfie-guide?plan=guide",
-      expectedTitle: /Selfie Guide/i,
-    }),
-  )
-
-  results.push(
-    await resolveCheckoutFromCta({
-      name: "Brand Strategy",
-      landingPath: "/brand-strategy",
-      ctaHref: "/checkout/brand-strategy-pack",
-      expectedTitle: /Brand Strategy/i,
-    }),
-  )
-
-  results.push(
-    await resolveDirectCheckout({
-      name: "Studio Membership",
-      path: "/checkout/membership",
-    }),
-  )
+  for (const flow of USER_JOURNEY_SMOKE_FLOWS) {
+    results.push(
+      await resolveCheckoutFromCta({
+        name: flow.name,
+        landingPath: flow.landingPath,
+        expectedTitle: flow.expectedTitle,
+        trigger: flow.trigger,
+      }),
+    )
+  }
 
   const failed = results.filter((result) => result.status === "fail")
   const lines = [

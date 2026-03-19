@@ -15,6 +15,17 @@ type WelcomeFirstGenerationModalInput = {
   eligible: boolean
 }
 
+type StudioMemberPostPurchaseOnboardingInput = {
+  productType?: string | null
+  targetTab: string
+}
+
+type StudioMemberOnboardingTriggerInput = {
+  isMember: boolean
+  firstTimeProductUser: boolean
+  pendingPostPurchaseOnboarding: boolean
+}
+
 /**
  * Only members should be auto-routed to Feed Planner on Studio load.
  * Free users should stay in Maya and use the welcome-first-generation flow.
@@ -50,4 +61,22 @@ export function shouldOpenWelcomeFirstGenerationModal({
 }: WelcomeFirstGenerationModalInput): boolean {
   void eligible
   return false
+}
+
+export function shouldArmStudioMemberPostPurchaseOnboarding({
+  productType,
+  targetTab,
+}: StudioMemberPostPurchaseOnboardingInput): boolean {
+  return (
+    targetTab === "maya" &&
+    (productType === "sselfie_studio_membership" || productType === "one_time_session")
+  )
+}
+
+export function shouldOpenStudioMemberOnboarding({
+  isMember,
+  firstTimeProductUser,
+  pendingPostPurchaseOnboarding,
+}: StudioMemberOnboardingTriggerInput): boolean {
+  return isMember && (firstTimeProductUser || pendingPostPurchaseOnboarding)
 }

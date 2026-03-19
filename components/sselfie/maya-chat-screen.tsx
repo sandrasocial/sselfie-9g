@@ -67,6 +67,7 @@ import {
   MAYA_SURFACE_TOP_OFFSET,
 } from "@/lib/maya/layout-contract"
 import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
+import { shouldOpenStudioMemberOnboarding } from "@/lib/onboarding/studio-onboarding-routing"
 import MayaUpsellCard from "./maya/maya-upsell-card"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
@@ -139,6 +140,8 @@ interface MayaChatScreenProps {
   isMembership?: boolean // Whether user has membership (for Pro/Classic toggle visibility)
   academyPurchaseProduct?: string
   firstTimeProductUser?: boolean
+  pendingPostPurchaseStudioOnboarding?: boolean
+  onPostPurchaseStudioOnboardingHandled?: () => void
 }
 
 type PhaseTwoGenerationSource = "selfies" | "custom_model" | "base_model"
@@ -168,6 +171,8 @@ export default function MayaChatScreen({
   isMembership = false, // Default to false - only membership users see Pro/Classic toggle
   academyPurchaseProduct,
   firstTimeProductUser = false,
+  pendingPostPurchaseStudioOnboarding = false,
+  onPostPurchaseStudioOnboardingHandled,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const isLandingPagesUiEnabled = false
@@ -685,10 +690,31 @@ export default function MayaChatScreen({
   }, [clearAllVideoPolls])
 
   useEffect(() => {
-    if (isMembership && firstTimeProductUser) {
+    if (
+      shouldOpenStudioMemberOnboarding({
+        isMember: isMembership,
+        firstTimeProductUser,
+        pendingPostPurchaseOnboarding: false,
+      })
+    ) {
       setShowStudioMemberOnboarding(true)
     }
   }, [isMembership, firstTimeProductUser])
+
+  useEffect(() => {
+    if (
+      !shouldOpenStudioMemberOnboarding({
+        isMember: isMembership,
+        firstTimeProductUser: false,
+        pendingPostPurchaseOnboarding: pendingPostPurchaseStudioOnboarding,
+      })
+    ) {
+      return
+    }
+
+    setShowStudioMemberOnboarding(true)
+    onPostPurchaseStudioOnboardingHandled?.()
+  }, [isMembership, onPostPurchaseStudioOnboardingHandled, pendingPostPurchaseStudioOnboarding])
 
   useEffect(() => {
     if (typeof window === "undefined") return

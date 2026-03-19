@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import {
   shouldApplyBlueprintFallbackRouting,
+  shouldArmStudioMemberPostPurchaseOnboarding,
   shouldOpenWelcomeFirstGenerationModal,
+  shouldOpenStudioMemberOnboarding,
   shouldRouteMemberToFeedPlannerOnMissingOnboarding,
 } from "@/lib/onboarding/studio-onboarding-routing"
 
@@ -51,5 +53,33 @@ describe("studio onboarding routing policy", () => {
 
   it("never auto-opens the legacy first-photo modal onboarding flow", () => {
     expect(shouldOpenWelcomeFirstGenerationModal({ eligible: true })).toBe(false)
+  })
+
+  it("arms studio member onboarding after membership purchases that land in Maya", () => {
+    expect(
+      shouldArmStudioMemberPostPurchaseOnboarding({
+        productType: "sselfie_studio_membership",
+        targetTab: "maya",
+      }),
+    ).toBe(true)
+  })
+
+  it("does not arm studio member onboarding for non-Maya destinations", () => {
+    expect(
+      shouldArmStudioMemberPostPurchaseOnboarding({
+        productType: "sselfie_studio_membership",
+        targetTab: "feed-planner",
+      }),
+    ).toBe(false)
+  })
+
+  it("opens studio member onboarding when a post-purchase Maya handoff is pending", () => {
+    expect(
+      shouldOpenStudioMemberOnboarding({
+        isMember: true,
+        firstTimeProductUser: false,
+        pendingPostPurchaseOnboarding: true,
+      }),
+    ).toBe(true)
   })
 })
