@@ -28,7 +28,7 @@ export function generateDormantMemberReengagementEmail(input: {
           Open Maya
         </a>
       </p>
-      <p style="margin:0;font-size:12px;color:#78716c;">You\u2019re a Studio member. This is your space \u2014 use it.</p>
+      <p style="margin:0;font-size:12px;color:#666666;">You\u2019re a Studio member. This is your space \u2014 use it.</p>
     </div>
   `
 
