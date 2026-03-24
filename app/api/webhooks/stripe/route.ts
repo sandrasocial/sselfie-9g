@@ -377,6 +377,11 @@ export async function POST(request: NextRequest) {
           const productType = session.metadata.product_type
           const customerEmail = session.customer_details?.email || session.customer_email
           const source = session.metadata.source
+          const isPublicPaidCheckoutSource =
+            source === "landing_page" ||
+            source === "selfie_guide_paid" ||
+            source === "brand_strategy_paid" ||
+            source === "strategy_result_upsell"
 
           console.log(`[v0] 💳 Payment mode detected`)
           console.log(
@@ -645,7 +650,7 @@ export async function POST(request: NextRequest) {
                   )
                 }
               } else if (
-                source === "landing_page" &&
+                isPublicPaidCheckoutSource &&
                 productType !== "paid_blueprint" &&
                 productType !== "selfie_guide"
               ) {
@@ -703,12 +708,12 @@ export async function POST(request: NextRequest) {
                     `[v0] Failed to send purchase confirmation email: ${emailResult.error}`
                   )
                 }
-              } else if (source === "landing_page" && productType === "paid_blueprint") {
+              } else if (isPublicPaidCheckoutSource && productType === "paid_blueprint") {
                 console.log(
                   `[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`
                 )
               }
-            } else if (source === "landing_page" && productType !== "paid_blueprint") {
+            } else if (isPublicPaidCheckoutSource && productType !== "paid_blueprint") {
               // selfie_guide is intentionally included here — account creation runs, welcome email is skipped above
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 

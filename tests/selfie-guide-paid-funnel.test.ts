@@ -71,6 +71,8 @@ describe("selfie guide paid funnel", () => {
     expect(landingActionContents).not.toContain("optional_items:")
     expect(stripeActionContents).not.toContain("optional_items:")
     expect(landingActionContents).toContain('expand: ["line_items", "line_items.data.price", "customer"]')
+    expect(webhookContents).toContain('source === "selfie_guide_paid"')
+    expect(webhookContents).toContain("isPublicPaidCheckoutSource")
     expect(successContents).toContain('"selfie_guide"')
   })
 
