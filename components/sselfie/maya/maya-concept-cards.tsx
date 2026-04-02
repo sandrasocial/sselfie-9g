@@ -44,6 +44,7 @@ interface MayaConceptCardsProps {
   // User data
   userId?: string
   user?: any
+  userHasTrainedModel?: boolean
 
   // Generation settings (Classic mode)
   generationSettings?: {
@@ -78,6 +79,7 @@ export default function MayaConceptCards({
   onSaveToGuide,
   userId,
   user,
+  userHasTrainedModel = true,
   generationSettings,
   enhancedAuthenticity,
 }: MayaConceptCardsProps) {
@@ -234,6 +236,7 @@ export default function MayaConceptCards({
               onCreditsUpdate={onCreditsUpdate}
               onTrainingRequired={onTrainingRequired}
               studioProMode={false}
+              userHasTrainedModel={userHasTrainedModel}
               baseImages={allBaseImages}
               selfies={[]}
               products={[]}

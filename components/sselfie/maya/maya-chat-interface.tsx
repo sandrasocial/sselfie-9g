@@ -622,6 +622,7 @@ function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx):
       onSaveToGuide={ctx.onSaveToGuide}
       userId={ctx.userId}
       user={ctx.user}
+      userHasTrainedModel={ctx.userHasTrainedModel}
     />
   )
 }

@@ -17,6 +17,7 @@ interface ConceptCardProps {
   onCreditsUpdate?: (newBalance: number) => void
   onTrainingRequired?: () => void
   studioProMode?: boolean
+  userHasTrainedModel?: boolean
   baseImages?: string[] // Base images for Studio Pro mode (actively used)
   selfies?: string[] // Selfie images from upload module
   products?: string[] // Product images from upload module
@@ -44,6 +45,7 @@ export default function ConceptCard({
   onCreditsUpdate, 
   onTrainingRequired,
   studioProMode = false, 
+  userHasTrainedModel = true,
   baseImages = [],
   selfies = [],
   products = [],
@@ -659,9 +661,21 @@ export default function ConceptCard({
     setRequiresTraining(false)
 
     try {
+      const availableSelfies =
+        selfies.length > 0
+          ? selfies
+          : selectedImages.filter((img): img is string => img !== null).length > 0
+            ? selectedImages.filter((img): img is string => img !== null)
+            : baseImages.length > 0
+              ? baseImages
+              : concept.referenceImageUrl
+                ? [concept.referenceImageUrl]
+                : []
+      const shouldUseSelfieFallback = !isProMode && !userHasTrainedModel && availableSelfies.length > 0
+
       // If Studio Pro mode is active, use Nano Banana Pro
       // CLASSIC MODE SAFETY: Use isProMode (normalized boolean)
-      if (isProMode) {
+      if (isProMode || shouldUseSelfieFallback) {
         // ============================================
         // CONCEPT CARD FLOW (Studio Pro Mode):
         // 1. Maya generates concept with detailed prompt (concept.prompt)
@@ -671,7 +685,7 @@ export default function ConceptCard({
         
         // Get images: prefer separate arrays (selfies, products, styleRefs), then fallback to baseImages/selectedImages
         // Use separate arrays if provided, otherwise combine all images
-        const finalSelfies = selfies.length > 0 ? selfies : (selectedImages.filter((img): img is string => img !== null).length > 0 ? selectedImages.filter((img): img is string => img !== null) : (baseImages.length > 0 ? baseImages : (concept.referenceImageUrl ? [concept.referenceImageUrl] : [])))
+        const finalSelfies = availableSelfies
         const finalProducts = products.length > 0 ? products : []
         const finalStyleRefs = styleRefs.length > 0 ? styleRefs : []
 
