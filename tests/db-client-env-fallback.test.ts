@@ -31,8 +31,16 @@ describe("lib/db/client environment fallback", () => {
   })
 
   it("throws only when all supported database env vars are missing", async () => {
-    await expect(import("@/lib/db/client")).rejects.toThrow(
+    const { getDbClient } = await import("@/lib/db/client")
+
+    expect(() => getDbClient()).toThrow(
       /DATABASE_URL environment variable is not set/i,
     )
+  })
+
+  it("does not throw on import when env vars are missing until a query is attempted", async () => {
+    const { sql } = await import("@/lib/db/client")
+
+    expect(() => sql("SELECT 1" as any)).toThrow(/DATABASE_URL environment variable is not set/i)
   })
 })

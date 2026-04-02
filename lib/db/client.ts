@@ -28,8 +28,11 @@ function getOrCreateDb(): SqlClient {
   return dbInstance
 }
 
-/** Canonical singleton DB client. Use this in all new code. */
-export const sql: SqlClient = getOrCreateDb()
+/** Canonical singleton DB client. Lazily resolves the real client on first query. */
+export const sql = (((...args: Parameters<SqlClient>) => {
+  const client = getOrCreateDb()
+  return client(...args)
+}) as unknown) as SqlClient
 
 /** Alias for callers migrated from @/lib/db */
 export function getDb(): SqlClient {
