@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { getSupabaseEnvVars } from "@/lib/env"
 
 export default function SetupPasswordPage() {
   const router = useRouter()
@@ -23,13 +24,18 @@ export default function SetupPasswordPage() {
   const [userEmail, setUserEmail] = useState("")
   const [checkingAuth, setCheckingAuth] = useState(true)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseEnvVars()
+  const supabase =
+    supabaseUrl && supabaseAnonKey ? createBrowserClient(supabaseUrl, supabaseAnonKey) : null
 
   useEffect(() => {
     const checkUser = async () => {
+      if (!supabase) {
+        setError("Authentication is temporarily unavailable. Please request a new setup link or contact support.")
+        setCheckingAuth(false)
+        return
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -45,7 +51,7 @@ export default function SetupPasswordPage() {
     }
 
     checkUser()
-  }, [router, supabase.auth])
+  }, [router, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,6 +71,10 @@ export default function SetupPasswordPage() {
     setLoading(true)
 
     try {
+      if (!supabase) {
+        throw new Error("Authentication is temporarily unavailable. Please request a new setup link.")
+      }
+
       // Update the user's password
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
