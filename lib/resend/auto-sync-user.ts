@@ -6,7 +6,19 @@ import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
 
 const AUDIENCE_ID = "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
-const resend = new Resend(process.env.RESEND_API_KEY!)
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+
+  return resendClient
+}
 
 export interface ResendSyncOptions {
   source?: "app_signup" | "app_update" | "admin_create"
@@ -28,7 +40,9 @@ export async function autoSyncUserToResend(
   firstName: string | null | undefined,
   options: ResendSyncOptions = {}
 ): Promise<{ success: boolean; contactId?: string; error?: string }> {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResendClient()
+
+  if (!resend) {
     console.warn("[RESEND-SYNC] RESEND_API_KEY not configured")
     return { success: false, error: "API key not configured" }
   }
