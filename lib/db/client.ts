@@ -4,12 +4,24 @@ type SqlClient = NeonQueryFunction<false, false>
 
 let dbInstance: SqlClient | null = null
 
+function getDatabaseUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.SUPABASE_POSTGRES_URL
+  )
+}
+
 function getOrCreateDb(): SqlClient {
   if (!dbInstance) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is not set")
+    const databaseUrl = getDatabaseUrl()
+    if (!databaseUrl) {
+      throw new Error(
+        "DATABASE_URL environment variable is not set (checked DATABASE_URL, POSTGRES_URL, POSTGRES_PRISMA_URL, SUPABASE_POSTGRES_URL)",
+      )
     }
-    dbInstance = createNeonClient<false, false>(process.env.DATABASE_URL, {
+    dbInstance = createNeonClient<false, false>(databaseUrl, {
       disableWarningInBrowsers: true,
     })
   }
@@ -31,6 +43,7 @@ export function getDbClient(): SqlClient {
 
 /** Re-export the neon factory for the few callers that need it directly */
 export const neon = createNeonClient
+export { getDatabaseUrl }
 
 /** Batch INSERT helper — kept here as the single canonical location */
 export async function batchInsert<T>(
