@@ -21,4 +21,11 @@ describe("resend auto-sync import safety", () => {
     expect(mod.autoSyncUserToResend).toBeTypeOf("function")
     expect(mockResend).not.toHaveBeenCalled()
   })
+
+  it("keeps the shared Resend client lazy until requested", async () => {
+    const mod = await import("@/lib/resend/client")
+
+    expect(mod.getResendClient()).toBeNull()
+    expect(mockResend).not.toHaveBeenCalled()
+  })
 })

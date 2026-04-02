@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+import { getResendClient } from '@/lib/resend/client'
 
 export async function GET() {
   try {
+    const resend = getResendClient()
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
         { 
@@ -172,4 +171,3 @@ export async function GET() {
     )
   }
 }
-

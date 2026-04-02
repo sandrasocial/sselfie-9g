@@ -1,9 +1,7 @@
-import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { normalizeEmailIdentifier } from "./normalize-identifier"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 
 interface MarketingBroadcastInput {
   campaignKey: string
@@ -140,6 +138,7 @@ function formatTags(tags: Record<string, string>): Array<{ name: string; value: 
 }
 
 async function addContactToSegmentById(contactId: string, segmentId: string, email?: string) {
+  const resend = requireResendClient()
   const { error } = await resend.contacts.segments.add({
     contactId,
     email,
@@ -152,6 +151,7 @@ async function addContactToSegmentById(contactId: string, segmentId: string, ema
 }
 
 async function removeContactFromSegmentById(contactId: string, segmentId: string, email?: string) {
+  const resend = requireResendClient()
   const { error } = await resend.contacts.segments.remove({
     contactId,
     email,
@@ -201,6 +201,7 @@ async function logEmailEvent(input: {
 }
 
 export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
+  const resend = requireResendClient()
   const audienceId = normalizeEmailIdentifier(input.audienceId || EMAIL_ENV.resendAudienceId)
   const segmentId = normalizeEmailIdentifier(input.segmentId)
   const recipientCount = input.estimatedRecipientCount || 0

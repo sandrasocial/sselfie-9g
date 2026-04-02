@@ -6,11 +6,8 @@
  */
 
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
 import { updateContactTags as updateResendContactTags, type ContactTags, addContactToSegment, removeContactFromSegment } from "@/lib/resend/manage-contact"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 
 export interface SegmentResult {
@@ -453,4 +450,3 @@ export async function runSegmentationForEmails(
 
   return results
 }
-

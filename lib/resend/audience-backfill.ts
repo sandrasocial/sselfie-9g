@@ -1,7 +1,5 @@
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 
 const RATE_LIMIT_DELAY_MS = 600
 
@@ -36,6 +34,8 @@ export async function processAudienceBackfillBatch(batchSize = 40) {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_AUDIENCE_ID) {
     return { processed: 0, synced: 0, failed: 0 }
   }
+
+  const resend = requireResendClient()
 
   const [{ count }] = await sql`
     SELECT COUNT(*)::int as count

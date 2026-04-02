@@ -36,12 +36,12 @@ export const sql = (((...args: Parameters<SqlClient>) => {
 
 /** Alias for callers migrated from @/lib/db */
 export function getDb(): SqlClient {
-  return getOrCreateDb()
+  return sql
 }
 
 /** Alias for callers migrated from @/lib/db-singleton */
 export function getDbClient(): SqlClient {
-  return getOrCreateDb()
+  return sql
 }
 
 /** Re-export the neon factory for the few callers that need it directly */

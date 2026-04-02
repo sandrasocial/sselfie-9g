@@ -1,8 +1,6 @@
-import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 
 interface TransactionalEmailInput {
   to: string
@@ -18,6 +16,8 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
   if (!process.env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY not configured")
   }
+
+  const resend = requireResendClient()
 
   if (EMAIL_ENV.dryRun) {
     console.log("[v0] [EMAIL_DRY_RUN] Transactional email suppressed:", {
@@ -69,4 +69,3 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
 
   return result
 }
-

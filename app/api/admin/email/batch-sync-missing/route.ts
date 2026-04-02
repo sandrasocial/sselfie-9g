@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY!)
+import { requireResendClient } from "@/lib/resend/client"
 const AUDIENCE_ID = "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
 
 interface SyncResult {
@@ -17,6 +15,7 @@ const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 async function syncFreebies(): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, failed: 0, total: 0, errors: [] }
+  const resend = requireResendClient()
 
   try {
     // Get all freebies not yet synced to Resend
@@ -85,6 +84,7 @@ async function syncFreebies(): Promise<SyncResult> {
 
 async function syncUsers(): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, failed: 0, total: 0, errors: [] }
+  const resend = requireResendClient()
 
   try {
     // Get all app users not yet synced to Resend
@@ -145,6 +145,7 @@ async function syncUsers(): Promise<SyncResult> {
 
 async function syncStudioMembers(): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, failed: 0, total: 0, errors: [] }
+  const resend = requireResendClient()
 
   try {
     // Get active Studio members not yet synced to Resend

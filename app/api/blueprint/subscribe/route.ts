@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
-
-const resend = new Resend(process.env.RESEND_API_KEY!)
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Blueprint subscribe POST handler called")

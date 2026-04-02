@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { Resend } from "resend"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
-const resend = new Resend(process.env.RESEND_API_KEY)
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 
 /**
@@ -87,4 +85,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

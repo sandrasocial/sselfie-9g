@@ -23,7 +23,8 @@ describe("lib/db/client environment fallback", () => {
 
     const { getDbClient } = await import("@/lib/db/client")
 
-    getDbClient()
+    const sql = getDbClient()
+    sql("SELECT 1" as any)
 
     expect(mockCreateNeonClient).toHaveBeenCalledWith("postgres://fallback-url", {
       disableWarningInBrowsers: true,
@@ -33,14 +34,18 @@ describe("lib/db/client environment fallback", () => {
   it("throws only when all supported database env vars are missing", async () => {
     const { getDbClient } = await import("@/lib/db/client")
 
-    expect(() => getDbClient()).toThrow(
+    const sql = getDbClient()
+
+    expect(() => sql("SELECT 1" as any)).toThrow(
       /DATABASE_URL environment variable is not set/i,
     )
   })
 
-  it("does not throw on import when env vars are missing until a query is attempted", async () => {
-    const { sql } = await import("@/lib/db/client")
+  it("does not initialize the database client until a query is attempted", async () => {
+    const { getDbClient, sql } = await import("@/lib/db/client")
 
+    expect(() => getDbClient()).not.toThrow()
+    expect(mockCreateNeonClient).not.toHaveBeenCalled()
     expect(() => sql("SELECT 1" as any)).toThrow(/DATABASE_URL environment variable is not set/i)
   })
 })

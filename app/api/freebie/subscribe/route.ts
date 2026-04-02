@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
 import { normalizeFreebieEmailTags, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
-
-const resend = new Resend(process.env.RESEND_API_KEY!)
+import { requireResendClient } from "@/lib/resend/client"
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Freebie subscribe POST handler called")
@@ -84,6 +82,7 @@ export async function POST(request: NextRequest) {
         try {
           if (process.env.RESEND_API_KEY) {
             console.log("[v0] Sending guide access email via Resend")
+            const resend = requireResendClient()
 
             const productionUrl =
               process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"

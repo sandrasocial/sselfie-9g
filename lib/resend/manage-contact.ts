@@ -1,7 +1,5 @@
 // Resend Audience Management
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 
 const TEST_EMAIL_DOMAINS = new Set([
@@ -69,6 +67,7 @@ export async function addOrUpdateResendContact(
 
     console.log(`[v0] Adding/updating contact in Resend audience: ${email}`)
     console.log("[v0] Contact tags:", tags)
+    const resend = requireResendClient()
 
     // Format tags as array of {name, value} objects for Resend
     const formattedTags = Object.entries(tags)
@@ -151,6 +150,7 @@ export async function updateContactTags(
 
     console.log(`[v0] Updating tags for contact: ${email}`)
     console.log("[v0] New tags:", newTags)
+    const resend = requireResendClient()
 
     // Get existing contact
     const { data: contacts } = await resend.contacts.list({
@@ -234,6 +234,7 @@ export async function removeResendContact(email: string): Promise<{ success: boo
     }
 
     console.log(`[v0] Removing contact from Resend: ${email}`)
+    const resend = requireResendClient()
 
     // Get existing contact
     const { data: contacts } = await resend.contacts.list({

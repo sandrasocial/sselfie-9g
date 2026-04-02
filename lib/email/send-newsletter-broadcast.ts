@@ -1,11 +1,9 @@
 import "server-only"
-import { Resend } from 'resend'
 import { getDb } from '@/lib/db/client'
 import { processEmailLinks, validateEmailLinks } from './link-library'
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 import { computeBroadcastPreflight } from "@/lib/email/broadcast-preflight"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 
 export interface BroadcastRecipientPreflight {
   totalAudience: number
@@ -56,6 +54,7 @@ export async function sendNewsletterBroadcast(
   preflightInput?: BroadcastRecipientPreflight,
 ): Promise<string> {
   const sql = getDb()
+  const resend = requireResendClient()
 
   console.log(`[Newsletter Broadcast] Starting send for campaign ${campaignId}`)
 

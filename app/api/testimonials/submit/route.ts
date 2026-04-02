@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY!)
+import { requireResendClient } from "@/lib/resend/client"
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,6 +45,7 @@ export async function POST(req: NextRequest) {
     `
 
     // Send admin notification email
+    const resend = requireResendClient()
     await resend.emails.send({
       from: "SSELFIE <hello@sselfie.ai>",
       to: process.env.ADMIN_EMAIL || "hello@sselfie.ai",

@@ -2,9 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY!)
+import { requireResendClient } from "@/lib/resend/client"
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export async function GET(request: Request) {
@@ -88,6 +86,7 @@ export async function POST(request: Request) {
 
     // Only create Resend broadcast for non-template campaigns (newsletter, promotional, etc.)
     if (!isTemplateCampaign && email_body) {
+      const resend = requireResendClient()
       const audienceId = process.env.RESEND_AUDIENCE_ID
 
       if (!audienceId) {

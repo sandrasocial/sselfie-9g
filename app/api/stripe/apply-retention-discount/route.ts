@@ -4,13 +4,12 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-01-27.acacia" })
-
 // Coupon used for cancel-intercept retention offer: 50% off one month
 const RETENTION_COUPON_ID = "COMEBACK50"
 
 export async function POST() {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-01-27.acacia" })
     const supabase = await createServerClient()
     const {
       data: { user },

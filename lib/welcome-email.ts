@@ -1,10 +1,9 @@
-import { Resend } from "resend"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { requireResendClient } from "@/lib/resend/client"
 
 export async function sendWelcomeEmail(email: string, firstName: string): Promise<void> {
   try {
+    const resend = requireResendClient()
     const content = generateWelcomeEmail({
       customerName: firstName,
       customerEmail: email,

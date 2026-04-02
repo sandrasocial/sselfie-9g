@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { getResendClient } from "@/lib/resend/client"
 const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
 
 export async function GET() {
@@ -136,11 +134,15 @@ export async function GET() {
     }
     
     if (alertsToSend.length > 0) {
+      const resend = getResendClient()
       console.log(`[v0] Sending email notifications for ${alertsToSend.length} new alert(s) to admin:`, ADMIN_EMAILS)
       
       // Send email to admin about critical issues
       for (const adminEmail of ADMIN_EMAILS) {
         try {
+          if (!resend) {
+            throw new Error("RESEND_API_KEY not configured")
+          }
           await resend.emails.send({
             from: "sselfie Admin <hello@sselfie.ai>",
             to: adminEmail,
