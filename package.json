@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "type-check": "tsc --noEmit",
+    "verify:repo": "node scripts/verify-repo-invariants.mjs",
     "test": "vitest",
     "e2e": "PLAYWRIGHT_TEST=1 playwright test",
     "test:watch": "vitest --watch",

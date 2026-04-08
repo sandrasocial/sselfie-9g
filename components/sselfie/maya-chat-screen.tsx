@@ -2478,8 +2478,28 @@ export default function MayaChatScreen({
     [proMode, setProMode, setMayaTabAndHash],
   )
 
-  const handlePhaseTwoGenerationSource = useCallback(
-    (source: PhaseTwoGenerationSource) => {
+  const handlePhaseTwoGenerationSourceSelect = useCallback(
+    (messageId: string, source: PhaseTwoGenerationSource | "choose_source") => {
+      updateAssistantToolPart(
+        "tool-generateImage",
+        {
+          state: "ready",
+          source,
+        },
+        messageId,
+      )
+    },
+    [updateAssistantToolPart],
+  )
+
+  const handlePhaseTwoGenerationSourceConfirm = useCallback(
+    (_messageId: string, source: PhaseTwoGenerationSource) => {
+      const queueGenerationPrompt = (prompt: string) => {
+        setTimeout(() => {
+          void handleSendMessage(prompt)
+        }, 0)
+      }
+
       if (source === "selfies") {
         // If the user already has linked selfies, keep them in Photos and continue.
         if (hasImageLibrary && imageLibrary.selfies.length > 0) {
@@ -2489,8 +2509,9 @@ export default function MayaChatScreen({
           setMayaTabAndHash("photos")
           toast({
             title: "Perfect — using your linked selfies",
-            description: "Tell me what you want to create and I’ll build it with your current references.",
+            description: "Starting now with your linked selfies.",
           })
+          queueGenerationPrompt("Use my linked selfies and create one photo I can post this week.")
           return
         }
 
@@ -2508,8 +2529,9 @@ export default function MayaChatScreen({
           setMayaTabAndHash("photos")
           toast({
             title: "My Model is ready",
-            description: "Describe the photo you want and I’ll generate it with your trained model.",
+            description: "Starting now with your trained model.",
           })
+          queueGenerationPrompt("Use My Model and create one polished brand photo I can post this week.")
           return
         }
 
@@ -2527,14 +2549,16 @@ export default function MayaChatScreen({
       setMayaTabAndHash("photos")
       toast({
         title: "Base model ready",
-        description: "Describe the photo you want and Maya will generate it in Classic mode.",
+        description: "Starting now with the base model.",
       })
+      queueGenerationPrompt("Use the base model and create one polished brand photo I can post this week.")
     },
     [
       handlePhaseTwoUploadZone,
       hasImageLibrary,
       hasTrainedModel,
       imageLibrary.selfies.length,
+      handleSendMessage,
       proMode,
       setProMode,
       setMayaTabAndHash,
@@ -4156,7 +4180,8 @@ export default function MayaChatScreen({
           enhancedAuthenticity={enhancedAuthenticity}
           userHasTrainedModel={hasTrainedModel}
           linkedSelfieCount={imageLibrary.selfies.length}
-          onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
+          onToolSelectGenerationSource={handlePhaseTwoGenerationSourceSelect}
+          onToolConfirmGenerationSource={handlePhaseTwoGenerationSourceConfirm}
           onToolOpenUploadZone={handlePhaseTwoUploadZone}
           onToolPromptSelect={handleSendMessage}
           onToolSubmitOfferBrief={handleToolSubmitOfferBrief}

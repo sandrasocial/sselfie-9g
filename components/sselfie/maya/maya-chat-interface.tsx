@@ -83,7 +83,8 @@ interface MayaChatInterfaceProps {
   enhancedAuthenticity?: boolean
   userHasTrainedModel?: boolean
   linkedSelfieCount?: number
-  onToolSelectGenerationSource?: (source: GenerationSource) => void
+  onToolSelectGenerationSource?: (messageId: string, source: GenerationSource) => void
+  onToolConfirmGenerationSource?: (messageId: string, source: GenerationSource) => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
   onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
@@ -151,7 +152,8 @@ interface ToolCtx {
   enhancedAuthenticity?: boolean // NOSONAR
   userHasTrainedModel: boolean // NOSONAR
   linkedSelfieCount: number // NOSONAR
-  onToolSelectGenerationSource?: (source: GenerationSource) => void // NOSONAR
+  onToolSelectGenerationSource?: (messageId: string, source: GenerationSource) => void // NOSONAR
+  onToolConfirmGenerationSource?: (messageId: string, source: GenerationSource) => void // NOSONAR
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void // NOSONAR
   onToolPromptSelect?: (prompt: string) => void // NOSONAR
   onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void // NOSONAR
@@ -885,6 +887,7 @@ function renderSaveToGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Re
 function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = part.output || {}
   const selectedSource = output.source || "choose_source"
+  const messageId = String(ctx.msg.id)
   const hasLinkedSelfies = ctx.linkedSelfieCount > 0
   const selfiePlural = ctx.linkedSelfieCount === 1 ? "" : "s"
   const selfieDescription = hasLinkedSelfies
@@ -935,7 +938,7 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
               <button
                 key={option.id}
                 type="button"
-                onClick={() => ctx.onToolSelectGenerationSource?.(option.id)}
+                onClick={() => ctx.onToolSelectGenerationSource?.(messageId, option.id)}
                 className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                   isSelected
                     ? "border-[rgba(240,237,232,0.18)] bg-[rgba(240,237,232,0.14)]"
@@ -949,6 +952,19 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
           })}
         </div>
       )}
+      {selectedSource !== "choose_source" && selectedOption ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <MayaInlineAction
+            onClick={() => ctx.onToolConfirmGenerationSource?.(messageId, selectedSource)}
+            variant="primary"
+          >
+            Generate Photo
+          </MayaInlineAction>
+          <MayaInlineAction onClick={() => ctx.onToolSelectGenerationSource?.(messageId, "choose_source")}>
+            Change Source
+          </MayaInlineAction>
+        </div>
+      ) : null}
     </MayaInlineCard>
   )
 }
@@ -1821,6 +1837,7 @@ export default function MayaChatInterface({
   userHasTrainedModel = false,
   linkedSelfieCount = 0,
   onToolSelectGenerationSource,
+  onToolConfirmGenerationSource,
   onToolOpenUploadZone,
   onToolPromptSelect,
   onToolSubmitOfferBrief,
@@ -1850,6 +1867,7 @@ export default function MayaChatInterface({
     userHasTrainedModel,
     linkedSelfieCount,
     onToolSelectGenerationSource,
+    onToolConfirmGenerationSource,
     onToolOpenUploadZone,
     onToolPromptSelect,
     onToolSubmitOfferBrief,

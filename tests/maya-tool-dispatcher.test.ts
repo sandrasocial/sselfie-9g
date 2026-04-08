@@ -79,7 +79,7 @@ describe("maya phase 2 tool dispatcher", () => {
     expect(text).toBe("latest message")
   })
 
-  it("hydrates choose-source image intent to custom model when trained model exists", () => {
+  it("keeps choose-source image intent as an explicit confirmation step", () => {
     const hydrated = hydrateMayaToolDispatchIntent({
       tool: "generate_image",
       source: "choose_source",
@@ -104,8 +104,9 @@ describe("maya phase 2 tool dispatcher", () => {
       },
     })
 
-    expect(hydrated.source).toBe("custom_model")
-    expect(hydrated.responseText).toContain("[GENERATE_IMAGE:custom_model]")
+    expect(hydrated.source).toBe("choose_source")
+    expect(hydrated.responseText).toContain("[GENERATE_IMAGE:choose_source]")
+    expect(hydrated.responseText).toContain("Choose the source")
   })
 
   it("hydrates selfie generation to upload zone when no uploads exist", () => {

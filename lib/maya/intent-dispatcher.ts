@@ -220,22 +220,21 @@ export function hydrateMayaToolDispatchIntent(
     }
 
     if (requestedSource === "choose_source") {
-      const hydratedSource = policy.recommendedSource
-      if (hydratedSource !== "base_model") {
-        return {
-          ...intent,
-          source: hydratedSource,
-          responseText:
-            `I checked your profile and assets and picked the best path for you.\n` +
-            `${formatMayaToolMarker("generate_image", hydratedSource)}`,
-        }
+      return {
+        ...intent,
+        source: "choose_source",
+        responseText:
+          `Choose the source you want me to use first, then confirm and I’ll generate from there.\n` +
+          `${formatMayaToolMarker("generate_image", "choose_source")}`,
       }
     }
 
     return {
       ...intent,
       source: policy.effectiveSource,
-      responseText: `${formatMayaToolMarker("generate_image", policy.effectiveSource)}`,
+      responseText:
+        `I found the right source for this. Review it, then confirm before I spend credits.\n` +
+        `${formatMayaToolMarker("generate_image", policy.effectiveSource)}`,
     }
   }
 

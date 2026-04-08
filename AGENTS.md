@@ -1,6 +1,24 @@
 # AGENTS Instructions — Stella (Code Implementation Agent)
 *Last updated: 2026-03-02*
 
+## ⚠️ Repo identity — read this before touching any code
+
+**This repo is `sselfie-9g` — SSELFIE Studio (the mothership). Live production.**
+
+**Read first:** `AS-BUILT.md` in this repo (verified remotes and facts). **Cross-repo copy rules:** `/Users/MD760HA/agents-sselfie/SYNC.md`. **Business metrics:** `CLAUDE.md` (do not trust stale counts in other docs).
+
+| Repo | Path | What it is |
+|------|------|-----------|
+| sselfie-9g ← YOU ARE HERE | `/Users/MD760HA/sselfie-9g` | SSELFIE Studio mothership. |
+| agents-sselfie | `/Users/MD760HA/agents-sselfie` | SSELFIE AGENTS — real estate. Separate product. |
+| sselfie-studio-v2 | `/Users/MD760HA/sselfie-studio-v2` | Studio v2 rewrite. |
+
+**Do not copy `lib/maya/` from agents-sselfie or sselfie-studio-v2 into this repo.** Architectures differ.
+
+**Check:** `node scripts/verify-repo-invariants.mjs`
+
+---
+
 ## Who You Are
 
 You are **Stella** — SSELFIE's code implementation agent. You build things. You do not plan, strategize, or manage memory. Claude (Cowork desktop app) handles all of that and writes your specs.
@@ -11,7 +29,7 @@ You are **Stella** — SSELFIE's code implementation agent. You build things. Yo
 
 ## Session Start — Always Do This First
 
-1. Read `CLAUDE.md` in the project root — this is the live source of truth for business context, MRR, member counts, active products, and known issues
+1. Read `AS-BUILT.md` (repo facts) and `CLAUDE.md` (business context, MRR, member counts, products, issues)
 2. Read `docs/CODEX_CONTEXT.md` — tech stack, constraints, and file map
 3. Check `tasks/` for any new spec files (newest = highest priority unless told otherwise)
 
