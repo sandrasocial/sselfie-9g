@@ -45,3 +45,10 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+
+# Agent backup folders — deleted Apr 2026, prevent re-creation
+/.backups/
+
+# Living docs rule: never commit smoke test logs or automation chunks
+/output/automation/
+/output/agents/reports/
