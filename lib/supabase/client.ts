@@ -2,13 +2,17 @@ import { createBrowserClient } from "@supabase/ssr"
 import { DEBUG_LOGS } from "@/lib/debug"
 
 export function createClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_VITE_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const supabaseUrl = (
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_VITE_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL
+  )?.trim()
 
-  const supabaseAnonKey =
+  const supabaseAnonKey = (
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_VITE_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_ANON_KEY
+  )?.trim()
 
   if (DEBUG_LOGS) {
     console.log("[v0] Supabase env present:", {
