@@ -104,6 +104,13 @@ interface MayaChatInterfaceProps {
 
 const IS_DEV_VIDEO_DEBUG = process.env.NODE_ENV !== "production"
 
+/** Chat chrome: map ad-hoc colors to tokens in [app/globals.css](app/globals.css) (`--text-*`, `--glass-*`, `--color-*`). */
+const MAYA_CHAT_UI = {
+  /** Dev-only video prompt inspector — never shown when IS_DEV_VIDEO_DEBUG is false */
+  videoDebugBorder: "rgba(245,167,66,0.45)",
+  videoDebugBg: "rgba(245,167,66,0.08)",
+} as const
+
 const TOOL_RENDER_TYPES = new Set([
   "tool-generateConcepts",
   "tool-showCapabilities",
@@ -250,8 +257,14 @@ function renderVideoDebugPanel(debug: any): React.ReactNode {
   if (!authorityPrompt && !sourcePrompt && !builder && !category) return null
 
   return (
-    <div className="mt-3 rounded-lg border border-[rgba(245,167,66,0.45)] bg-[rgba(245,167,66,0.08)] p-3 text-[11px] text-[#f5e8d0]">
-      <div className="text-[10px] uppercase tracking-[0.16em] text-[#f5c98a]">Video Debug (Dev Only)</div>
+    <div
+      className="mt-3 rounded-lg border p-3 text-[11px] text-[#f5e8d0]"
+      style={{
+        borderColor: MAYA_CHAT_UI.videoDebugBorder,
+        backgroundColor: MAYA_CHAT_UI.videoDebugBg,
+      }}
+    >
+      <div className="text-[10px] uppercase tracking-[0.16em] text-[#f5c98a]">Video debug (dev only)</div>
       {builder ? <div className="mt-1">Builder: {builder}</div> : null}
       {category ? <div className="mt-1">Category: {category}</div> : null}
       {sourcePrompt ? <div className="mt-1">Source Prompt: {sourcePrompt}</div> : null}
@@ -300,7 +313,7 @@ function renderMarkdownText(text: string): React.ReactNode {
         elements.push(
           <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-2 my-3 ml-6">
             {currentList.map(({ itemKey, nodes }) => (
-              <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
+              <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
                 {nodes}
               </li>
             ))}
@@ -318,7 +331,7 @@ function renderMarkdownText(text: string): React.ReactNode {
         }
         if (trimmedLine.length > 0) {
           elements.push(
-            <p key={`para-${elements.length}`} className="text-[16px] leading-[1.8] font-light text-[#f0ede8] mb-4 last:mb-0">
+            <p key={`para-${elements.length}`} className="text-[16px] leading-[1.8] font-light text-(--text-primary) mb-4 last:mb-0">
               {processedLine}
             </p>
           )
@@ -333,7 +346,7 @@ function renderMarkdownText(text: string): React.ReactNode {
     elements.push(
       <ul key="list-final" className="list-disc list-inside space-y-2 my-3 ml-6">
         {currentList.map(({ itemKey, nodes }) => (
-          <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
+          <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
             {nodes}
           </li>
         ))}
@@ -387,10 +400,16 @@ function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
           </div>
         )}
         <div className="mt-2">
-          <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-white/60 shadow-lg">
-            <img src={imageUrl || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
+          <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-(--glass-border) shadow-lg">
+            <img
+              src={imageUrl || "/placeholder.svg"}
+              alt="Inspiration"
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
-          <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Inspiration Image</p>
+          <p className="text-xs text-(--text-secondary) mt-1.5 tracking-wide">Inspiration image</p>
         </div>
       </div>
     )
@@ -399,11 +418,11 @@ function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
   if (!cleanedText) return null
 
   if (isUser) {
-    return <p className="text-[16px] leading-[1.8] font-light whitespace-pre-wrap text-[#f0ede8]">{removeEmojis(cleanedText)}</p>
+    return <p className="text-[16px] leading-[1.8] font-light whitespace-pre-wrap text-(--text-primary)">{removeEmojis(cleanedText)}</p>
   }
 
   return (
-    <div className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
+    <div className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
       {renderMarkdownText(cleanedText)}
     </div>
   )
@@ -664,9 +683,12 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
   ]
 
   return (
-    <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-      <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Maya Capabilities</div>
-      <p className="mt-2 text-sm text-[#d5d5d5]">
+    <div
+      key={partIndex}
+      className="mt-3 rounded-xl border border-(--glass-input-border) bg-[var(--glass-bg)] p-4"
+    >
+      <div className="text-xs uppercase tracking-[0.2em] text-(--text-secondary)">Maya capabilities</div>
+      <p className="mt-2 text-sm text-(--color-whisper)">
         Pick a workflow and I&apos;ll run it here in chat.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -675,10 +697,10 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
             key={item.title}
             type="button"
             onClick={() => ctx.onToolPromptSelect?.(item.prompt)}
-            className="rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] px-3 py-3 text-left transition-colors hover:bg-[rgba(175,170,162,0.15)]"
+            className="rounded-lg border border-(--glass-input-border) bg-[rgba(175,170,162,0.06)] px-3 py-3 text-left transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.15)]"
           >
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{item.title}</div>
-            <div className="mt-1 text-xs text-[#bdbdbd]">{item.description}</div>
+            <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">{item.title}</div>
+            <div className="mt-1 text-xs text-(--text-accent)">{item.description}</div>
           </button>
         ))}
       </div>
@@ -919,16 +941,16 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
   return (
     <MayaInlineCard
       key={partIndex}
-      eyebrow="Create Photo"
-      title="Choose Your Source"
+      eyebrow="Create photo"
+      title="Choose your source"
       subtitle={sourceSubtitle}
     >
       {selectedSource !== "choose_source" && selectedOption ? (
         <div className="stone-inset-panel rounded-[20px] border border-[rgba(240,237,232,0.16)] bg-[rgba(240,237,232,0.12)] px-4 py-3">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">
             {selectedOption.label} selected
           </div>
-          <div className="mt-1 text-xs text-[#d5d5d5]">{selectedOption.description}</div>
+          <div className="mt-1 text-xs text-(--color-whisper)">{selectedOption.description}</div>
         </div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-3">
@@ -945,8 +967,8 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
                     : "stone-inset-panel hover:bg-[rgba(175,170,162,0.16)]"
                 }`}
               >
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{option.label}</div>
-                <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">{option.label}</div>
+                <div className="mt-1 text-xs text-(--text-accent)">{option.description}</div>
               </button>
             )
           })}
@@ -1192,7 +1214,6 @@ function applyFeedSaveToMessages(prevMessages: any[], currentMessageId: string, 
         }
         return { ...p }
       })
-      console.log("[MayaChatInterface] 🔄 Message updated with feedId:", feedId, "triggering re-save")
       return { ...message, parts: updatedParts }
     }
     return { ...message }
@@ -1253,30 +1274,17 @@ function applyFeedPromptUpdate(
 }
 
 function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
-  console.log("[FEED-CARD] 🎨 RENDERING FEED CARD IN CHAT")
   const toolPart = part
   const output = toolPart.output
 
   if (!output) {
-    console.warn("[FEED-CARD] ⚠️ Feed card part has no output:", part)
     return null
   }
-
-  console.log("[FEED-CARD] ✅ Feed card data:", {
-    feedId: output.feedId,
-    title: output.title,
-    hasPosts: Array.isArray(output.posts),
-    postsCount: output.posts?.length || 0,
-    needsRestore: output._needsRestore,
-    hasStrategy: !!output.strategy,
-    isSaved: output.isSaved,
-  })
 
   const isSaved = output.isSaved !== false && !!output.feedId
   const currentMessageId = ctx.msg.id
 
   const handleSave = (feedId: number) => {
-    console.log("[MayaChatInterface] Feed saved, updating message:", feedId)
     ctx.setMessages((prevMessages: any[]) => applyFeedSaveToMessages(prevMessages, currentMessageId, feedId))
     if (ctx.onFeedSaved) {
       ctx.onFeedSaved(currentMessageId, feedId)
@@ -1314,7 +1322,7 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
   )
 }
 
-function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
+function renderGenerateCaptionsTool(part: any, partIndex: number, _ctx: ToolCtx): React.ReactNode {
   const output = part.output
 
   // ── Standalone Maya caption card (generated inline in chat) ──────────────
@@ -1345,28 +1353,17 @@ function renderGenerateCaptionsTool(part: any, partIndex: number, ctx: ToolCtx):
           hashtags={caption.hashtags || []}
           feedId={output.feedId}
           postId={caption.postId}
-          onAddToFeed={async () => {}}
-          onRegenerate={async () => {}}
         />
       ))}
     </div>
   )
 }
 
-function renderGenerateStrategyTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
+function renderGenerateStrategyTool(part: any, partIndex: number, _ctx: ToolCtx): React.ReactNode {
   const output = part.output
   if (!output?.feedId || !output?.strategy) return null
 
-  return (
-    <FeedStrategyCard
-      key={partIndex}
-      strategy={output.strategy}
-      feedId={output.feedId}
-      onAddToFeed={async () => {
-        // Will be handled by FeedStrategyCard component
-      }}
-    />
-  )
+  return <FeedStrategyCard key={partIndex} strategy={output.strategy} feedId={output.feedId} />
 }
 
 function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): React.ReactNode {
@@ -1393,17 +1390,23 @@ function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): R
       }
       className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] hover:border-[rgba(195,190,182,0.40)]"
     >
-      <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
-      <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8]">Animate</div>
-      <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">{sourceLabel}</div>
+      <img
+        src={imageUrl}
+        alt="Video source"
+        className="h-24 w-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+      <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary)">Animate</div>
+      <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-(--text-accent)">{sourceLabel}</div>
     </button>
   )
 }
 
 function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
   return (
-    <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] p-3">
-      <p className="text-xs text-[#d7d7d7]">
+    <div className="mt-3 rounded-lg border border-(--glass-input-border) bg-[rgba(28,27,25,0.30)] p-3">
+      <p className="text-xs text-(--color-whisper)">
         You don&apos;t have a photo here yet. Make one first, then I can animate it.
       </p>
       <button
@@ -1415,14 +1418,14 @@ function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
           }
           ctx.onToolPromptSelect?.("Create a photo for my brand")
         }}
-        className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
+        className="mt-2 rounded-lg border border-(--glass-border) bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary) transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.22)]"
       >
         {ctx.activeTab === "videos" ? "Go to Photos" : "Create Photo First"}
       </button>
       <button
         type="button"
         onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
-        className="mt-2 ml-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
+        className="mt-2 ml-2 rounded-lg border border-(--glass-border) bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary) transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.22)]"
       >
         Upload Reference
       </button>
@@ -1462,22 +1465,17 @@ function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCt
     )
   }
   return (
-    <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-      <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Videos</div>
-      <p className="mt-2 text-sm text-[#d5d5d5]">
-        Pick a photo or upload a new one and I&apos;ll turn it into motion here.
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
-          className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
-        >
-          Upload Reference
-        </button>
-      </div>
+    <MayaInlineCard
+      key={partIndex}
+      eyebrow="Videos"
+      title="Choose a photo to animate"
+      subtitle="Pick a photo or upload a new one and I&apos;ll turn it into motion here."
+      actions={
+        <MayaInlineAction onClick={() => ctx.onToolOpenUploadZone?.("selfies")}>Upload reference</MayaInlineAction>
+      }
+    >
       {images.length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {images.slice(0, 6).map((image: any, imageIndex: number) =>
             renderVideoImageButton(image, imageIndex, ctx),
           )}
@@ -1485,7 +1483,7 @@ function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCt
       ) : (
         renderVideoNoImages(ctx)
       )}
-    </div>
+    </MayaInlineCard>
   )
 }
 
@@ -1496,12 +1494,12 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
   if (!output) return null
   if (output.state === "loading_images") {
     return (
-      <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-        <div className="flex items-center gap-2 text-[#8a8780]">
-          <div className="w-1.5 h-1.5 border-2 border-[#a8a49c] border-t-transparent rounded-full animate-spin" />
+      <MayaInlineCard key={partIndex} eyebrow="Videos" title="Loading your photos" subtitle="Pulling options you can animate next.">
+        <div className="flex items-center gap-2 text-(--text-secondary)">
+          <div className="w-1.5 h-1.5 border-2 border-(--text-accent) border-t-transparent rounded-full animate-spin" />
           <span className="text-xs tracking-[0.15em] uppercase font-light">Pulling your photo options...</span>
         </div>
-      </div>
+      </MayaInlineCard>
     )
   }
   if (output.state === "choose_image") return renderVideoStateChooseImage(output, partIndex, ctx)
@@ -1532,8 +1530,11 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
   }
   if (output.state === "error") {
     return (
-      <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-        <p className="text-sm text-[#f5c2c2]">{output.message || "Video generation failed."}</p>
+      <div
+        key={partIndex}
+        className="mt-3 rounded-xl border border-(--glass-input-border) bg-[var(--glass-bg)] p-4"
+      >
+        <p className="text-sm text-red-200/90">{output.message || "Video generation failed."}</p>
         {renderVideoDebugPanel(output.debug)}
       </div>
     )
@@ -1541,8 +1542,8 @@ function renderGenerateVideoTool(part: any, partIndex: number, ctx: ToolCtx): Re
   if (output.state === "loading") {
     return (
       <div key={partIndex} className="mt-3">
-        <div className="flex items-center gap-2 text-stone-600">
-          <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center gap-2 text-(--text-secondary)">
+          <div className="w-1.5 h-1.5 border-2 border-(--text-accent) border-t-transparent rounded-full animate-spin" />
           <span className="text-xs tracking-[0.15em] uppercase font-light">Starting video generation...</span>
         </div>
       </div>
@@ -1591,10 +1592,10 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
     if (!content?.trim()) return null
     return (
       <div
-        className={`rounded-xl transition-all duration-300 ${
+        className={`rounded-xl transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
           msg.role === "user"
-            ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-[rgba(195,190,182,0.25)] rounded-2xl rounded-tr-sm text-[#f0ede8] px-4 py-3"
-            : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] rounded-2xl rounded-tl-sm text-[#f0ede8] px-4 py-3"
+            ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-(--glass-border) rounded-2xl rounded-tr-sm text-(--text-primary) px-4 py-3"
+            : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-(--glass-border-subtle) rounded-2xl rounded-tl-sm text-(--text-primary) px-4 py-3"
         }`}
         role={msg.role === "assistant" ? "article" : undefined}
       >
@@ -1614,10 +1615,10 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
     <>
       {(textParts.length > 0 || imageParts.length > 0) && (
         <div
-          className={`transition-all duration-300 ${
+          className={`transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
             msg.role === "user"
-              ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-[rgba(195,190,182,0.25)] rounded-2xl rounded-tr-sm text-[#f0ede8] px-4 py-3"
-              : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] rounded-2xl rounded-tl-sm text-[#f0ede8] px-4 py-3"
+              ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-(--glass-border) rounded-2xl rounded-tr-sm text-(--text-primary) px-4 py-3"
+              : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-(--glass-border-subtle) rounded-2xl rounded-tl-sm text-(--text-primary) px-4 py-3"
           }`}
           role={msg.role === "assistant" ? "article" : undefined}
         >
@@ -1634,6 +1635,7 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
               proMode={props.proMode}
               messages={props.messages}
               promptSuggestions={props.promptSuggestions}
+              onToolPromptSelect={props.onToolPromptSelect}
             />
           ))}
           {imageParts.length > 0 && (
@@ -1645,19 +1647,23 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
                 return (
                   <div key={imageUrl || idx} className="relative">
                     <div
-                      className={`relative ${isCarousel ? "aspect-square" : "w-48 h-48 sm:w-40 sm:h-40"} rounded-xl overflow-hidden border border-white/60 shadow-lg`}
+                      className={`relative ${isCarousel ? "aspect-square" : "w-48 h-48 sm:w-40 sm:h-40"} rounded-xl overflow-hidden border border-(--glass-border) shadow-lg`}
                     >
                       <img
                         src={imageUrl}
                         alt={isCarousel ? `Carousel slide ${idx + 1}` : "Image"}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     {isCarousel && (
-                      <p className="text-xs text-stone-500 mt-1.5 tracking-wide text-center">Slide {idx + 1}</p>
+                      <p className="text-xs text-(--text-secondary) mt-1.5 tracking-wide text-center">
+                        Slide {idx + 1}
+                      </p>
                     )}
                     {!isCarousel && idx === 0 && imageParts.length === 1 && (
-                      <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Image</p>
+                      <p className="text-xs text-(--text-secondary) mt-1.5 tracking-wide">Image</p>
                     )}
                   </div>
                 )
@@ -1687,10 +1693,23 @@ interface MayaTextPartProps {
   proMode: boolean
   messages: UIMessage[]
   promptSuggestions: PromptSuggestion[]
+  onToolPromptSelect?: (prompt: string) => void
 }
 
 function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
-  const { part, idx, msg, messageHasFeedArtifacts, hasFeedCard, isCreatingFeed, isTyping, proMode, messages, promptSuggestions } = props
+  const {
+    part,
+    idx,
+    msg,
+    messageHasFeedArtifacts,
+    hasFeedCard,
+    isCreatingFeed,
+    isTyping,
+    proMode,
+    messages,
+    promptSuggestions,
+    onToolPromptSelect,
+  } = props
   const text = part?.text || ""
   const shouldShowPendingFeedLoader =
     messageHasFeedArtifacts && !hasFeedCard && (isCreatingFeed || isTyping)
@@ -1727,15 +1746,14 @@ function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
 
       {showApiSuggestions && (
         <div className="mt-4 space-y-3">
-          <div className="text-xs text-[#8a8780] mb-1">
+          <div className="text-xs text-(--text-secondary) mb-1">
             Step 2 – Pick a concept you like, then send it to your Workbench below.
           </div>
           {promptSuggestions.map((suggestion) => (
             <NewPromptSuggestionCard
               key={`api-suggestion-${suggestion.id}`}
               suggestion={suggestion}
-              onCopyToWorkbench={() => {}}
-              onUseInWorkbench={() => {}}
+              onUseInWorkbench={(prompt) => onToolPromptSelect?.(prompt)}
             />
           ))}
         </div>
@@ -1778,8 +1796,7 @@ function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
               <NewPromptSuggestionCard
                 key={`parsed-suggestion-${msg.id}-${sugIdx}`}
                 suggestion={fullSuggestion}
-                onCopyToWorkbench={() => {}}
-                onUseInWorkbench={() => {}}
+                onUseInWorkbench={(prompt) => onToolPromptSelect?.(prompt)}
               />
             )
           })}
@@ -1931,7 +1948,7 @@ export default function MayaChatInterface({
                     style={{ animationDelay: "0.4s" }}
                   ></div>
                 </div>
-                <span className="text-xs font-light text-[#8a8780]">Maya is thinking...</span>
+                <span className="text-xs font-light text-(--text-secondary)">Maya is thinking...</span>
               </div>
             </div>
           </div>
@@ -1972,7 +1989,7 @@ export default function MayaChatInterface({
             isAtBottomRef.current = true
             scrollToBottom("smooth")
           }}
-          className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.18)] backdrop-blur-[20px] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.28)] transition-all duration-300 flex items-center justify-center touch-manipulation active:scale-95"
+          className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-(--glass-border) bg-[rgba(175,170,162,0.18)] backdrop-blur-[var(--blur-light)] text-(--text-primary) hover:bg-[rgba(175,170,162,0.28)] transition-[background-color,border-color,transform,opacity] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] flex items-center justify-center touch-manipulation active:scale-95"
           aria-label="Scroll to bottom"
         >
           <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Latest</span>

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "@/hooks/use-toast"
+import { extractHashtagsFromCaption } from "@/lib/feed-planner/caption-writer"
 
 interface FeedCaptionCardProps {
   caption: string
@@ -26,6 +27,13 @@ export default function FeedCaptionCard({
 }: FeedCaptionCardProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const [displayCaption, setDisplayCaption] = useState(caption)
+  const [displayHashtags, setDisplayHashtags] = useState(hashtags)
+
+  useEffect(() => {
+    setDisplayCaption(caption)
+    setDisplayHashtags(hashtags)
+  }, [caption, hashtags, postId])
 
   const handleAddToFeed = async () => {
     if (onAddToFeed) {
@@ -40,7 +48,7 @@ export default function FeedCaptionCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId,
-          caption,
+          caption: displayCaption,
         }),
       })
 
@@ -72,12 +80,41 @@ export default function FeedCaptionCard({
     }
 
     setIsRegenerating(true)
-    // Regeneration will be handled by parent component
-    toast({
-      title: "Regenerating caption",
-      description: "Creating a new caption for this post...",
-    })
-    setIsRegenerating(false)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/regenerate-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to regenerate caption")
+      }
+
+      const data = (await response.json()) as { caption?: string }
+
+      if (data.caption) {
+        setDisplayCaption(data.caption)
+        setDisplayHashtags(extractHashtagsFromCaption(data.caption))
+        toast({
+          title: "Caption regenerated!",
+          description: "Maya created a new caption for this post.",
+        })
+      } else {
+        throw new Error("No caption returned")
+      }
+    } catch (error) {
+      console.error("[FeedCaptionCard] Regenerate caption error:", error)
+      toast({
+        title: "Regeneration failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRegenerating(false)
+    }
   }
 
   return (
@@ -100,14 +137,14 @@ export default function FeedCaptionCard({
       {/* Caption Preview */}
       <div className="mb-4">
         <p className="text-sm text-white/75 leading-relaxed whitespace-pre-wrap">
-          {caption}
+          {displayCaption}
         </p>
       </div>
 
       {/* Hashtags */}
-      {hashtags.length > 0 && (
+      {displayHashtags.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {hashtags.map((tag, index) => (
+          {displayHashtags.map((tag, index) => (
             <span
               key={index}
               className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 border border-white/15 rounded-md text-xs text-white/65"

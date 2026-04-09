@@ -30,7 +30,6 @@ import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 // Note: User type comes from Supabase auth (not next-auth)
-import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
@@ -3684,6 +3683,13 @@ export default function MayaChatScreen({
     !hasVisibleMessages && // No visible messages = new/empty chat
     hasLoadedChatRef.current // Only show empty if we've actually loaded (prevents showing during initial load)
 
+  /**
+   * Empty / home surface precedence (mutually exclusive for chat vs home cards):
+   * - showReturningMemberHome: Studio members with no visible messages → MembershipHomeCard.
+   * - showProEmptyState: Pro-capable user, not returning-home branch, no messages → MayaWelcomePanel (Pro).
+   * - showClassicEmptyState: Classic mode empty chat → classic welcome.
+   * - showAnyEmptyState: any of the above; when true, the main MayaChatInterface is hidden.
+   */
   const showReturningMemberHome =
     isMembership &&
     !firstTimeProductUser &&
