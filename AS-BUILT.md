@@ -2,14 +2,15 @@
 
 **Purpose:** Ground truth for this repo. **Do not trust unverified numbers in other markdown files.**
 
-**Verified:** 2026-04-07 · **Commit:** `ef87920a` (run `git rev-parse --short HEAD` to refresh)
+**Verified:** 2026-04-09 · **Commit:** `aa2e5274` (run `git rev-parse --short HEAD` to refresh)
 
 | Field | Value |
 |--------|--------|
 | **Git remote** | `https://github.com/sandrasocial/sselfie-9g` |
-| **Package name** | `my-v0-project` (npm name; product is still SSELFIE Studio mothership) |
+| **Vercel project** | `sselfie-9g` — live at `https://sselfie.ai` |
+| **Package name** | `my-v0-project` (npm name; product is SSELFIE Studio mothership) |
 | **Product** | SSELFIE Studio (mothership), live production |
-| **Architecture** | **`lib/maya/` is not compatible** with `agents-sselfie` or `sselfie-studio-v2`. Do not copy Maya trees between repos. |
+| **Architecture** | **`lib/maya/` is not compatible** with `agents-sselfie`. Do not copy Maya trees between repos. |
 
 ## Mechanical checks
 
@@ -21,7 +22,12 @@ node scripts/verify-repo-invariants.mjs
 
 | Repo | Notes |
 |------|--------|
-| `agents-sselfie` | Separate live product (AGENTS). Sync policy: `agents-sselfie/SYNC.md`. |
-| `sselfie-studio-v2` | Studio rewrite fork line. Not a feature-complete port of this repo. |
+| `agents-sselfie` | Separate live product (SSELFIE AGENTS). Sync policy: `agents-sselfie/SYNC.md`. |
 
-Refresh live business metrics from **Stripe / dashboard / `CLAUDE.md`**, not from this file, unless you re-verify.
+## Branches
+
+Only `main` branch exists (local + remote). All `codex/` branches are short-lived feature branches — merged or deleted. Never leave stale branches open.
+
+## Business metrics
+
+Refresh live metrics from **Stripe / dashboard / `CLAUDE.md`** — do not use numbers from this file unless you re-verify them yourself.

@@ -1,7 +1,7 @@
 # 📸 SSELFIE Studio
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/sselfie-studio/v0-sselfie)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/M0ivfv4hQpE)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/sselfie-studio/sselfie-9g)
+[![GitHub](https://img.shields.io/badge/Repo-GitHub-black?style=for-the-badge&logo=github)](https://github.com/sandrasocial/sselfie-9g)
 
 > **Turn one good selfie into a full week of brand-consistent content — without overthinking.**
 
@@ -269,7 +269,7 @@ We recently completed a comprehensive cleanup of Maya's concept generation syste
 - ~3,273 lines of code removed
 - Simpler, cleaner architecture
 
-For details, see: [`MAYA_CREATIVITY_CLEANUP_COMPLETE.md`](./MAYA_CREATIVITY_CLEANUP_COMPLETE.md)
+For details, see: [`
 
 ---
 
@@ -427,15 +427,14 @@ You need support.
 
 This project is automatically deployed to Vercel. Any changes pushed to the main branch will trigger a new deployment.
 
-**Live App**: [https://vercel.com/sselfie-studio/v0-sselfie](https://vercel.com/sselfie-studio/v0-sselfie)
+**Live App**: [https://sselfie.ai](https://vercel.com/sselfie-studio/sselfie-9g)
 
-**Continue Building**: [https://v0.app/chat/projects/M0ivfv4hQpE](https://v0.app/chat/projects/M0ivfv4hQpE)
 
 ---
 
 ## 🤝 Contributing
 
-This is a founder-led project built with [v0.app](https://v0.app). Changes are automatically synced from v0 deployments.
+This is a founder-led project. Code changes go through the `main` branch via Vercel auto-deploy.
 
 ---
 
