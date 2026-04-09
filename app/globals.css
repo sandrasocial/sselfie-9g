@@ -37,7 +37,7 @@
     transform: translateX(100%);
   }
   to {
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
@@ -176,6 +176,12 @@
   --font-mono: "Geist Mono", "Courier New", monospace;
 
   --radius-card: 20px;
+
+  /* Motion tokens — prefer ease-out for UI feedback; avoid animating unspecified “all” */
+  --ease-out-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-ui: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-ui-fast: 160ms;
+  --duration-ui: 200ms;
 
   /* shadcn semantic tokens — map to stone */
   --background: 0 0% 5%;
@@ -637,7 +643,9 @@
     border-radius: 50%;
     border: 2px solid #f0ede8;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition:
+      transform var(--duration-ui) var(--ease-out-ui),
+      background-color var(--duration-ui) ease-out;
   }
 
   input[type="range"]::-webkit-slider-thumb:hover {
@@ -665,7 +673,9 @@
     border-radius: 50%;
     border: 2px solid #f0ede8;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition:
+      transform var(--duration-ui) var(--ease-out-ui),
+      background-color var(--duration-ui) ease-out;
     cursor: pointer;
   }
 
@@ -711,4 +721,14 @@
 
 .animate-scroll:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
