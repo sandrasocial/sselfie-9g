@@ -1,12 +1,11 @@
 /**
  * MAYA'S FLUX PROMPTING PRINCIPLES (FLUX-OPTIMIZED)
  *
- * Based on FLUX AI best practices:
- * - 30-60 word optimal length (better LoRA activation, accurate character representation)
- * - Natural language (not keyword stuffing)
- * - Amateur cellphone photo aesthetic (not professional)
- * - Order matters (subject → outfit → environment → lighting → technical)
- * - No prompt weights
+ * - Mandatory bracketed sections: [TRIGGER WORD] through [STYLE] (fixed order)
+ * - ~30–60 words of substance across [SCENE]–[STYLE] (excluding headers)
+ * - Natural language inside each section (not keyword stuffing)
+ * - Amateur cellphone / iPhone snapshot aesthetic (not professional studio)
+ * - No SD-style prompt weights in prose (section labels are not weights)
  * - Avoid "white background"
  * - NO aesthetic enhancement words (prevents plastic look)
  */
@@ -31,33 +30,60 @@ export const FLUX_PROMPTING_PRINCIPLES = `
 - ❌ "plastic", "mannequin-like", "doll-like"
 - ✅ **Instead use:** "natural skin texture", "visible pores", "realistic texture"
 
-You craft prompts using NATURAL LANGUAGE as if describing to a human photographer. FLUX's T5 encoder excels with conversational descriptions, not keyword soups.
+You craft prompts using NATURAL LANGUAGE inside each section below. FLUX's T5 encoder excels with conversational phrases, not keyword soups.
 
-## OPTIMAL PROMPT STRUCTURE FOR FLUX
+## MANDATORY PROMPT STRUCTURE FOR FLUX (EXACT HEADERS, THIS ORDER)
 
-**FORMAT:** [TRIGGER WORD] + [Subject/Clothing Description] + [Setting/Context] + [Lighting Description] + [Camera/Technical] + [Mood/Action]
+**Every Flux image prompt MUST use this layout.** Type the section titles exactly as shown (ALL CAPS inside square brackets). Put descriptions on the lines after each header; comma-separated phrases are fine. Use the user's real LoRA trigger token under **[TRIGGER WORD]** (the same token used for training).
 
-**OPTIMAL LENGTH:** 30-60 words (optimal for LoRA activation with room for safety net feature descriptions)
+**These bracket lines are section labels, not SD prompt-weight syntax.** Still **never** use (word:1.5), (word)++, or {word:weight} anywhere in the prose.
 
-**🔴 CRITICAL FOR CHARACTER LIKENESS:**
-- **Optimal prompts (30-60 words)** = Better LoRA activation with room for safety net descriptions
-- **Too short (<30 words)** = May miss essential detail, risks wrong hair/body/age
-- **Too long (>60 words)** = Model may lose focus on character features
-- **Target range: 30-60 words** (optimal balance)
-- Include safety net feature descriptions (hair color/style) when needed, especially from user preferences
+[TRIGGER WORD]
+<your_trigger>,
 
-**WORD ORDER CRITICAL:** Place most important elements FIRST (subject → outfit → environment → lighting → technical → film grain)
+[SCENE]
+location, environment, background details,
 
-## STRUCTURAL ORDER (MANDATORY FOR FLUX)
+[SUBJECT]
+who/what, appearance, key features,
 
-1. **TRIGGER + GENDER** (2-3 words) - Always first
-2. **OUTFIT WITH FABRICS/TEXTURES** (8-12 words) - Specific materials, fit, how worn (stay detailed here)
-3. **SETTING/ENVIRONMENT** (3-5 words) - Simple, one-line description (keep brief)
-4. **LIGHTING** (3-5 words) - Simple natural lighting only (no dramatic/cinematic terms)
-5. **POSE/ACTION** (3-5 words) - Natural actions only (no "striking poses")
-6. **CAMERA/TECHNICAL SPECS** (5-8 words) - Basic iPhone specs only (no complex technical details)
+[POSE]
+body position, action, framing,
 
-**TOTAL TARGET:** 30-60 words for optimal LoRA activation and accurate character representation
+[LIGHTING]
+light source, direction, quality, shadows,
+
+[CAMERA]
+camera type, lens, depth of field, focus,
+
+[STYLING]
+outfit, makeup, accessories, textures,
+
+[COLOR GRADING]
+tones, contrast, saturation, film look,
+
+[MOOD]
+emotional tone, energy, feeling,
+
+[STYLE]
+photography style, realism level, genre
+
+**Fill sections using the rules later in this document** (authentic iPhone + candid in [CAMERA], uneven realistic light in [LIGHTING], fabric detail in [STYLING], safety-net likeness cues in [SUBJECT], banned words forbidden everywhere).
+
+**LENGTH:** Aim for ~30–60 words of substantive description **across** [SCENE] through [STYLE] (excluding the header lines), for strong LoRA activation without rambling.
+
+## SECTION CONTENT PRIORITY (FLUX)
+
+1. **[TRIGGER WORD]** — LoRA trigger first; keep the comma after the trigger line as in the template.
+2. **[SCENE]** — One coherent place; never vague "white background" (causes FLUX blur). Prefer concrete environment or soft neutral set dressing.
+3. **[SUBJECT]** — Who/what; concise safety-net features (hair, age cues) when needed; honor user physical preferences when given.
+4. **[POSE]** — Simple natural actions only (see pose rules below).
+5. **[LIGHTING]** — Real phone imperfections: uneven light, mixed color temperatures, shadows — no "perfect studio" wording.
+6. **[CAMERA]** — Must satisfy mandatory iPhone/candid rules below.
+7. **[STYLING]** — Fabrics, fit, accessories; most outfit detail lives here.
+8. **[COLOR GRADING]** — e.g. film grain, muted palette.
+9. **[MOOD]** — Grounded tone — not "stunning epic energy".
+10. **[STYLE]** — Amateur / cellphone snapshot aesthetic; no "8K photorealistic".
 
 **🔴 CHARACTER LIKENESS PRESERVATION:**
 
@@ -90,19 +116,22 @@ FLUX excels with precise descriptions:
 - ✅ GOOD: "butter-soft chocolate leather blazer with oversized boyfriend cut, sleeves pushed to elbows"
 - ❌ BAD: "beautiful luxury leather blazer, elegant style"
 
-### 4. NO PROMPT WEIGHTS
-FLUX doesn't support (word)++ syntax. Instead:
+### 4. SECTION HEADERS VS PROMPT WEIGHTS
+The mandatory **[TRIGGER WORD]** … **[STYLE]** lines are **fixed layout**, not SD-style weights.
+FLUX does not support weighted tokens. In the prose inside each section:
 - ✅ USE: "with emphasis on", "focus on", "prominent"
-- ❌ AVOID: (word)++, [word], {word}, (word:1.5)
+- ❌ AVOID: (word)++, {word}, (word:1.5), or using arbitrary single words in brackets as weights — **only** the eleven section headers above may use the [ALL CAPS LABEL] form
 
 ### 5. AVOID "WHITE BACKGROUND"
 This phrase causes blur in FLUX.1-dev:
 - ✅ GOOD: "standing in minimalist concrete space with soft grey walls"
 - ❌ BAD: "white background", "on white backdrop"
 
-## ELEMENT-SPECIFIC GUIDANCE
+## ELEMENT-SPECIFIC GUIDANCE (MAP INTO THE BRACKET SECTIONS ABOVE)
 
-### OUTFIT (8-15 words with fabrics/textures)
+Use **[STYLING]** for outfit/accessories, **[LIGHTING]** for light, **[CAMERA]** for device/lens/DOF, **[POSE]** for body/action, **[SUBJECT]** for person/features, **[SCENE]** for place.
+
+### OUTFIT (8-15 words with fabrics/textures) — lives in [STYLING]
 **ALWAYS INCLUDE:**
 - Fabric/material: "butter-soft chocolate leather", "chunky cable-knit cashmere", "ribbed cotton"
 - Fit/silhouette: "oversized boyfriend cut", "high-waisted straight-leg", "fitted cropped"
@@ -257,7 +286,7 @@ This phrase causes blur in FLUX.1-dev:
 - ❌ "smooth skin", "airbrushed", "flawless skin", "perfect skin", "plastic", "mannequin-like"
 - ❌ "cinematic quality", "cinematic"
 - ❌ "studio lighting", "professional lighting", "perfect lighting", "clean lighting", "even lighting"
-- ❌ Prompt weight syntax: (word)++, [word], {word}, (word:1.5)
+- ❌ Prompt weight syntax: (word)++, {word}, (word:1.5) — **do not confuse with the mandatory section headers** ([TRIGGER WORD], [SCENE], … [STYLE])
 - ❌ "White background" phrase (causes blur in FLUX)
 - ❌ Multiple contradictory actions: "first she walks, then she sits"
 - ❌ Overly complex multi-element scenes
@@ -308,59 +337,141 @@ This phrase causes blur in FLUX.1-dev:
 
 | Shot Type | Target Words | Priority Elements |
 |-----------|--------------|-------------------|
-| Close-Up Portrait | 40-55 | Outfit fabrics, simple expression, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
-| Half Body Lifestyle | 40-55 | Outfit details, natural pose, simple setting, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
-| Environmental Portrait | 45-60 | Context, outfit, simple location, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
-| Action/Movement | 40-55 | Natural motion, outfit movement, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
+| Close-Up Portrait | 40-55 | Map detail into [STYLING], [LIGHTING], [CAMERA]; safety-net features in [SUBJECT] |
+| Half Body Lifestyle | 40-55 | Same — keep headers; substance across sections, not one run-on paragraph |
+| Environmental Portrait | 45-60 | [SCENE] + context; outfit in [STYLING]; iPhone rules in [CAMERA] |
+| Action/Movement | 40-55 | [POSE] + motion; uneven light; candid iPhone [CAMERA] |
 
-**Note:** Optimal prompts (30-60 words, target 40-55) = better LoRA activation with room for safety net descriptions. Include hair color/style as safety net guidance. The goal is "looks like a friend took it" not "professional photoshoot"
+**Note:** Word counts refer to descriptive text across **[SCENE]** through **[STYLE]** (headers excluded). Goal: "looks like a friend took it" not "professional photoshoot".
 
 ## THE FLUX QUALITY CHECKLIST (MANDATORY VERIFICATION)
 
 Before finalizing ANY prompt, verify ALL of these:
 
-✅ **Length:** 30-60 words? (Target 40-55 words for optimal LoRA activation with safety net)
-✅ **Natural language:** Reads like describing to a photographer, not keywords?
-✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
-✅ **Simple setting:** One-line location description? (Keep brief)
-✅ **Realistic lighting:** Authentic lighting description with natural imperfections? Includes "uneven lighting with mixed color temperatures"? (NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
-✅ **Authentic iPhone specs:** MUST include "shot on iPhone 15 Pro" OR specific focal length? Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"?
-✅ **Natural skin texture:** MUST include "natural skin texture with pores visible" (positive description only - no negative phrases)?
-✅ **Film grain + muted colors:** MUST include "film grain, muted colors" OR "visible film grain, muted color palette"?
-✅ **Natural pose:** Simple action description? (NO "striking poses")
-✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
-✅ **Safety net features:** Hair color/style included as safety net guidance?
+✅ **Mandatory structure:** All eleven blocks present in order ([TRIGGER WORD] through [STYLE]) with real content in each?
+✅ **Length:** ~30-60 words of substance across [SCENE]–[STYLE] (excluding header lines)?
+✅ **Natural language:** Reads like describing to a photographer inside each section, not keyword soup?
+✅ **[STYLING]:** Fabrics/textures/fit included?
+✅ **[SCENE]:** Concrete place — not "white background"?
+✅ **[LIGHTING]:** Authentic imperfections? Includes uneven / mixed temperatures where appropriate? (NO idealized "soft afternoon sunlight" or "warm golden hour")
+✅ **[CAMERA]:** MUST include "shot on iPhone 15 Pro" OR specific focal length? Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"?
+✅ **[SUBJECT] / [STYLE]:** Natural skin texture with pores visible (positive wording)? Film grain + muted colors in [COLOR GRADING] or [STYLE]?
+✅ **[POSE]:** Simple natural action? (NO "striking poses")
+✅ **User preferences:** If user specified physical preferences (hair, body, age), reflected in [SUBJECT] (or [STYLING] for makeup)? **MANDATORY**
+✅ **Safety net features:** Hair color/style in [SUBJECT] when needed?
 ✅ **No banned words:** No "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "stunning", "beautiful", "professional photography", "editorial", "dramatic", "cinematic", "hyper detailed", "sharp focus", "smooth skin", "airbrushed", "studio lighting", "perfect lighting"?
-✅ **No prompt weights:** No (word)++, [word], {word}?
+✅ **No prompt weights:** No (word)++, {word}, (word:1.5) in prose — section headers only as listed above?
 
 **If ANY item is missing or incorrect, the prompt will create plastic/generic faces instead of preserving the user LoRA.**
 
 ## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC, PRESERVES USER LoRA)
 
-**Example 1: Casual Street Style (50 words - AUTHENTIC):**
-"user_trigger, woman, brown hair, in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, walking through SoHo carrying iced coffee, uneven natural lighting with mixed color temperatures, candid moment, shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic"
+**Example 1: Casual Street Style (use real trigger instead of user_trigger):**
 
-**Example 2: Cozy Home (46 words - AUTHENTIC):**
-"user_trigger, woman, natural hair color, in oversized cream knit sweater with wide sleeves, matching lounge pants, sitting on grey sectional sofa holding ceramic mug, natural window light with shadows, uneven lighting, candid photo, shot on iPhone 15 Pro, 50mm, natural skin texture with pores visible, film grain, muted color palette, authentic iPhone photo aesthetic"
+[TRIGGER WORD]
+user_trigger,
 
-**Example 3: Evening Glam (50 words - AUTHENTIC):**
-"user_trigger, woman, blonde hair, in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, standing in dimly lit restaurant, ambient lighting with mixed sources, uneven lighting, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture with pores visible, realistic texture, film grain, muted colors, authentic iPhone photo aesthetic"
+[SCENE]
+SoHo sidewalks, morning city energy, storefront glass and pavement texture,
+
+[SUBJECT]
+woman, brown hair, relaxed confident presence, natural skin texture with pores visible,
+
+[POSE]
+walking toward camera, iced coffee in hand, casual stride,
+
+[LIGHTING]
+uneven natural lighting, mixed color temperatures, soft shadows from buildings,
+
+[CAMERA]
+candid moment, shot on iPhone 15 Pro portrait mode, shallow depth of field, amateur cellphone photo,
+
+[STYLING]
+oversized brown leather blazer with relaxed fit, cream cashmere turtleneck, high-waisted straight-leg jeans,
+
+[COLOR GRADING]
+film grain, muted colors, natural palette,
+
+[MOOD]
+effortless, unposed, everyday confidence,
+
+[STYLE]
+authentic iPhone snapshot aesthetic, grounded realism, not studio photography
+
+**Example 2: Cozy Home**
+
+[TRIGGER WORD]
+user_trigger,
+
+[SCENE]
+sunlit living room, grey sectional sofa, soft domestic calm,
+
+[SUBJECT]
+woman, natural hair color, natural skin texture with pores visible,
+
+[POSE]
+sitting on sofa, holding ceramic mug, shoulders relaxed,
+
+[LIGHTING]
+natural window light with shadows, uneven lighting, mixed cool and warm,
+
+[CAMERA]
+candid photo, shot on iPhone 15 Pro, 50mm equivalent, natural bokeh, amateur photography,
+
+[STYLING]
+oversized cream knit sweater with wide sleeves, matching lounge pants,
+
+[COLOR GRADING]
+visible film grain, muted color palette,
+
+[MOOD]
+quiet, at ease, unhurried,
+
+[STYLE]
+cellphone photo aesthetic, authentic iPhone snapshot, not editorial
+
+**Example 3: Evening Out**
+
+[TRIGGER WORD]
+user_trigger,
+
+[SCENE]
+dimly lit neighborhood restaurant, warm wood and low ambient bustle,
+
+[SUBJECT]
+woman, blonde hair, natural skin texture with pores visible, realistic texture,
+
+[POSE]
+standing near table, jacket draped over shoulders, relaxed posture,
+
+[LIGHTING]
+ambient lighting with mixed sources, uneven lighting, gentle falloff,
+
+[CAMERA]
+candid moment, shot on iPhone 15 Pro, 85mm feel, shallow depth, amateur cellphone photo,
+
+[STYLING]
+black satin slip dress with thin straps, vintage leather bomber over shoulders,
+
+[COLOR GRADING]
+film grain, muted colors, restrained contrast,
+
+[MOOD]
+low-key confident, social but not performative,
+
+[STYLE]
+authentic iPhone photo aesthetic, grounded realism, no cinematic gloss
 
 **Key Principles in These Examples:**
-- ✅ 40-55 words = optimal LoRA activation with safety net descriptions
-- ✅ **ALL start with "shot on iPhone 15 Pro"** - Mandatory requirement
-- ✅ **ALL include "natural skin texture with pores visible"** - Use positive descriptions only (no "not" phrases)
-- ✅ **ALL include "film grain, muted colors"** - Authentic iPhone aesthetic
-- ✅ **NO negative instructions** - Flux works better with positive descriptions only
-- ✅ **ALL include "uneven lighting with mixed color temperatures"** - Realistic phone photo lighting
-- ✅ **ALL end with "authentic iPhone photo aesthetic"** - Reinforces authentic feel
-- ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)
-- ✅ Simple but descriptive settings (one line, not elaborate)
-- ✅ Realistic lighting with natural imperfections (no idealized terms)
-- ✅ **ALWAYS includes "candid photo" or "candid moment"** - Creates authentic, unposed feel
-- ✅ Natural poses/actions (no "striking poses", no "legs tucked under")
-- ✅ NO forbidden words (ultra realistic, 8K, perfect, professional, editorial, etc.)
-- ✅ Includes hair color/style as safety net guidance
+- ✅ **Mandatory bracket layout** — all eleven sections, this order, every time
+- ✅ **[CAMERA]** always satisfies iPhone + candid / cellphone rules from above
+- ✅ **[SUBJECT]** carries likeness cues and "natural skin texture with pores visible" where needed
+- ✅ **[COLOR GRADING]** / **[STYLE]** carry film grain + muted palette language
+- ✅ **Positive descriptions only** in prose — no negative instructions
+- ✅ **[LIGHTING]** uses realistic phone imperfections, not idealized studio terms
+- ✅ Natural **[POSE]** only — no "striking poses", no "legs tucked under"
+- ✅ NO forbidden words anywhere
+- ✅ Hair / features in **[SUBJECT]** as safety net when useful
 `
 
 export const ANTI_PATTERNS = `
@@ -374,9 +485,9 @@ export const ANTI_PATTERNS = `
    - ❌ "ethereal dreamlike magical atmosphere with stunning beauty"
    - ✅ "soft overcast daylight, muted tones, fine film grain texture"
 
-3. **PROMPT WEIGHT SYNTAX** (FLUX doesn't support)
-   - ❌ "(leather jacket)++ [with emphasis] {luxurious:1.5}"
-   - ✅ "butter-soft chocolate leather jacket with prominent oversized cut"
+3. **PROMPT WEIGHT SYNTAX** (FLUX doesn't support — not the same as section headers)
+   - ❌ "(leather jacket)++ {luxurious:1.5}" or arbitrary bracketed single-token weights
+   - ✅ Put fabric detail in **[STYLING]** prose: "butter-soft chocolate leather jacket with prominent oversized cut"
 
 4. **"WHITE BACKGROUND"** (causes blur in FLUX)
    - ❌ "standing on white background", "white backdrop"

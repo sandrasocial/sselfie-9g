@@ -3,7 +3,7 @@
  * 
  * Manages Maya generation settings with localStorage persistence:
  * - styleStrength: 0.9-1.2 (default: 1.0)
- * - promptAccuracy: 2.5-5.0 (default: 3.5) - Guidance scale
+ * - promptAccuracy: 2.5-5.0 (default: 2.5) - Guidance scale (matches Flux presets)
  * - aspectRatio: "1:1" | "4:5" | "16:9" (default: "4:5")
  * - realismStrength: 0.0-0.8 (default: 0.2) - Extra LoRA scale
  * - enhancedAuthenticity: boolean (default: false) - Classic mode only
@@ -24,7 +24,7 @@ export interface MayaSettings {
 
 const DEFAULT_SETTINGS: MayaSettings = {
   styleStrength: 1.0,
-  promptAccuracy: 3.5,
+  promptAccuracy: 2.5,
   aspectRatio: "4:5",
   realismStrength: 0.2,
   enhancedAuthenticity: false,
@@ -59,9 +59,12 @@ function loadSettingsFromStorage(): Partial<MayaSettings> {
     const loadedRealismStrength = settings.realismStrength ?? DEFAULT_SETTINGS.realismStrength
     const migratedRealismStrength = loadedRealismStrength === 0.4 ? 0.2 : loadedRealismStrength
 
+    const loadedPromptAccuracy = settings.promptAccuracy ?? DEFAULT_SETTINGS.promptAccuracy
+    const migratedPromptAccuracy = loadedPromptAccuracy === 3.5 ? 2.5 : loadedPromptAccuracy
+
     return {
       styleStrength: migratedStyleStrength,
-      promptAccuracy: settings.promptAccuracy ?? DEFAULT_SETTINGS.promptAccuracy,
+      promptAccuracy: migratedPromptAccuracy,
       aspectRatio: settings.aspectRatio ?? DEFAULT_SETTINGS.aspectRatio,
       realismStrength: migratedRealismStrength,
     }

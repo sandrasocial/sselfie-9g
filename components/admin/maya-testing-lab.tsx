@@ -102,7 +102,7 @@ export function MayaTestingLab({ userId, userName }: MayaTestingLabProps) {
   const [generationSettings, setGenerationSettings] = useState<GenerationSettings>({
     num_inference_steps: 50,
     lora_scale: 1.0,
-    guidance_scale: 3.5,
+    guidance_scale: 2.5,
     extra_lora_enabled: true,
     extra_lora_scale: 0.2,
     aspect_ratio: "4:5",
@@ -993,7 +993,7 @@ export function MayaTestingLab({ userId, userName }: MayaTestingLabProps) {
                     />
                     <div className="flex justify-between text-xs text-stone-500">
                       <span>1.0 (creative)</span>
-                      <span>3.5 (recommended)</span>
+                      <span>2.5 (recommended)</span>
                       <span>7.0 (strict)</span>
                     </div>
                   </div>

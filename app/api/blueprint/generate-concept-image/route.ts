@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         prompt: prompt, // Use the full detailed prompt as-is
         aspect_ratio: aspectRatio,
         num_outputs: 1,
-        guidance: 3.5, // Optimal for FLUX Dev
+        guidance: 2.5, // Aligned with Maya Classic Flux presets
         num_inference_steps: 28, // High quality setting
         output_format: "png",
         output_quality: 100, // Maximum quality
