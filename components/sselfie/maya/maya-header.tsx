@@ -248,18 +248,38 @@ export default function MayaHeaderUnified({
     }
   }, [showNavMenu, isGuideMenuOpen, isDotsMenuOpen])
 
-  // Unified header styling - same for both modes
-  // Mobile optimized: proper touch targets, safe area insets, responsive spacing
-  // Note: border-b removed since tabs section will have its own border
-  const headerClassName = "flex items-center justify-end w-full px-3 sm:px-6 md:px-12 py-3 sm:py-4 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
+  // Single chrome row: Photos/Videos/Train (scroll) + credits, mode, New chat, menus
+  const barClassName =
+    "flex w-full items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
+  const actionsClusterClass =
+    activeTab && onTabChange
+      ? "flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-2 relative"
+      : "flex min-w-0 w-full items-center justify-end gap-1.5 sm:gap-3 md:gap-4 relative"
 
   return (
     <>
-      <div
-        className={headerClassName}
-      >
-        {/* Primary "Maya" label lives in the app top bar; this row is actions only. */}
-        <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-3 md:gap-4 relative">
+      <div className={barClassName}>
+        {activeTab && onTabChange && (
+          <div
+            className="min-w-0 flex-1 overflow-x-auto py-0.5"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            <MayaTabSwitcher
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              photosCount={photosCount}
+              videosCount={videosCount}
+              disableFeedTab={disableFeedTab}
+              className="max-w-full"
+            />
+          </div>
+        )}
+
+        <div className={actionsClusterClass}>
           {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
           {/* Use suppressHydrationWarning to prevent mismatch from isMounted check */}
           <div suppressHydrationWarning>
@@ -407,8 +427,29 @@ export default function MayaHeaderUnified({
             )
           )}
 
-          {/* Dots Menu Button */}
-          {(onSettings || onNewProject || onHistory || onNavigation) && (
+          {/* New chat — compact pill (History lives in ··· or ≡ menu) */}
+          {onNewProject && (
+            <button
+              type="button"
+              onClick={onNewProject}
+              className="touch-manipulation active:scale-95 shrink-0 rounded-md border border-[rgba(195,190,182,0.28)] bg-[rgba(175,170,162,0.14)] px-2 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-2.5 hover:bg-[rgba(175,170,162,0.22)] transition-colors"
+              style={{
+                fontFamily: "var(--font-body, Inter)",
+                fontSize: "9px",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: "#f0ede8",
+              }}
+              aria-label="Start a new chat"
+            >
+              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">New chat</span>
+            </button>
+          )}
+
+          {/* Dots Menu Button — desktop quick actions (History, etc.) */}
+          {(onSettings || onHistory || onNavigation) && (
             <div className="relative hidden sm:block" ref={dotsMenuRef}>
               <button
                 onClick={() => setIsDotsMenuOpen(prev => !prev)}
@@ -441,13 +482,6 @@ export default function MayaHeaderUnified({
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       Photo generation
-                    </button>
-                  )}
-                  {onNewProject && (
-                    <button onClick={() => { onNewProject(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
-                      New Project
                     </button>
                   )}
                   {onHistory && (
@@ -514,64 +548,6 @@ export default function MayaHeaderUnified({
           )}
         </div>
       </div>
-
-      {/* Tab Switcher - Integrated into header */}
-      {activeTab && onTabChange && (
-        <div className="w-full border-t border-[rgba(195,190,182,0.12)] bg-transparent z-[100] relative">
-          <div className="px-3 sm:px-4 md:px-6 py-1.5 flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <MayaTabSwitcher
-                activeTab={activeTab}
-                onTabChange={onTabChange}
-                photosCount={photosCount}
-                videosCount={videosCount}
-                disableFeedTab={disableFeedTab}
-                className="max-w-full"
-              />
-            </div>
-            {(onHistory || onNewProject) && (
-              <div className="shrink-0 flex items-center gap-1.5">
-                {onHistory && (
-                  <button
-                    type="button"
-                    onClick={onHistory}
-                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors"
-                    style={{
-                      fontFamily: "var(--font-body, Inter)",
-                      fontSize: "10px",
-                      fontWeight: 500,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.18em",
-                      color: "#8a8780",
-                    }}
-                    aria-label="Open chat history"
-                  >
-                    History
-                  </button>
-                )}
-                {onNewProject && (
-                  <button
-                    type="button"
-                    onClick={onNewProject}
-                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] hover:bg-[rgba(175,170,162,0.22)] transition-colors"
-                    style={{
-                      fontFamily: "var(--font-body, Inter)",
-                      fontSize: "10px",
-                      fontWeight: 500,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.18em",
-                      color: "#f0ede8",
-                    }}
-                    aria-label="Start a new chat"
-                  >
-                    New Chat
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Navigation Menu Slide-in (shared between both modes) */}
       {showNavMenu && onNavigation && (
@@ -784,7 +760,7 @@ export default function MayaHeaderUnified({
                   Account
                 </button>
 
-                {(onHistory || onNewProject) && (
+                {(onHistory || (onNewProject && !(activeTab && onTabChange))) && (
                   <>
                     <div
                       className="border-t my-2"
@@ -811,7 +787,7 @@ export default function MayaHeaderUnified({
                         History
                       </button>
                     )}
-                    {onNewProject && (
+                    {onNewProject && !(activeTab && onTabChange) && (
                       <button
                         onClick={() => {
                           onNewProject()
