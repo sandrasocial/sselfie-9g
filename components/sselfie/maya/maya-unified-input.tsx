@@ -323,8 +323,15 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* Image + Adjust — compact row under the composer (mobile-first) */}
-        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[rgba(195,190,182,0.12)] pt-2">
+        {/* Image, Adjust, mode toggle, New chat — single toolbar row under the composer */}
+        <div
+          className="mt-2 flex w-full min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide border-t border-[rgba(195,190,182,0.12)] pt-2"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <button
             type="button"
             onClick={handleImageClick}
@@ -366,39 +373,33 @@ export default function MayaUnifiedInput({
               <span className="text-[10px] uppercase tracking-[0.12em] font-medium">Adjust</span>
             </button>
           )}
-        </div>
 
-        {/* Model / Selfie + New chat — under Image / Adjust (credits stay in ≡ menu) */}
-        {(showModeToggle || onNewProject) && (
-          <div
-            className={`mt-2 flex flex-wrap items-center gap-2 border-t border-[rgba(195,190,182,0.12)] pt-2 ${
-              showModeToggle ? "justify-between" : "justify-end"
-            }`}
-          >
-            <div className="min-w-0 flex flex-1 items-center [&_.inline-flex]:max-w-full">
-              {showModeToggle &&
-                (proMode && onSwitchToClassic ? (
-                  <MayaModeToggle
-                    currentMode="pro"
-                    onToggle={() => {
-                      void onSwitchToClassic()
-                    }}
-                    variant="compact"
-                    showModeHint={false}
-                    className="shrink min-w-0"
-                  />
-                ) : !proMode && onModeSwitch ? (
-                  <MayaModeToggle
-                    currentMode="classic"
-                    onToggle={() => {
-                      void onModeSwitch(true)
-                    }}
-                    variant="compact"
-                    showModeHint={false}
-                    className="shrink min-w-0"
-                  />
-                ) : null)}
-            </div>
+          {/* Push toggle + New to the right without a second banner row */}
+          <div className="min-w-[4px] flex-1 shrink basis-0" aria-hidden />
+
+          <div className="flex shrink-0 items-center gap-2 [&_.inline-flex]:max-w-none">
+            {showModeToggle &&
+              (proMode && onSwitchToClassic ? (
+                <MayaModeToggle
+                  currentMode="pro"
+                  onToggle={() => {
+                    void onSwitchToClassic()
+                  }}
+                  variant="compact"
+                  showModeHint={false}
+                  className="shrink-0"
+                />
+              ) : !proMode && onModeSwitch ? (
+                <MayaModeToggle
+                  currentMode="classic"
+                  onToggle={() => {
+                    void onModeSwitch(true)
+                  }}
+                  variant="compact"
+                  showModeHint={false}
+                  className="shrink-0"
+                />
+              ) : null)}
             {onNewProject && (
               <button
                 type="button"
@@ -419,7 +420,7 @@ export default function MayaUnifiedInput({
               </button>
             )}
           </div>
-        )}
+        </div>
 
         {/* History remains in header ··· / ≡ menu */}
       </form>
