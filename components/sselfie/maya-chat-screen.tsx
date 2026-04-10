@@ -3830,9 +3830,9 @@ export default function MayaChatScreen({
       {/* Use a real Tailwind arbitrary z-index so the fixed header stays above cards and drawers. */}
       <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
+        className="fixed left-0 right-0 z-[100] border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
         style={{
-          paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
+          top: "var(--studio-app-header-height, 72px)",
         }}
       >
         <MayaHeader
@@ -4369,7 +4369,7 @@ export default function MayaChatScreen({
           className="fixed left-0 right-0 z-[90] flex flex-col border-t border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.06)] px-3 py-2 backdrop-blur-[30px] sm:px-4 sm:py-2.5"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
-            bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 4px)",
+            bottom: "calc(var(--sselfie-bottom-nav-height, 12px) + 4px)",
             paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
@@ -4455,7 +4455,7 @@ export default function MayaChatScreen({
             className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6"
             style={{
               paddingTop: MAYA_SURFACE_TOP_OFFSET,
-              paddingBottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 24px)",
+              paddingBottom: "calc(var(--sselfie-bottom-nav-height, 12px) + 24px)",
             }}
           >
             <MayaVideosTab

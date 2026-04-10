@@ -15,7 +15,7 @@ describe("FeedbackButton", () => {
 
     expect(button.className).not.toContain("bottom-32")
     expect(button).toHaveStyle({
-      bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + max(0.75rem, env(safe-area-inset-bottom, 0px)))",
+      bottom: "calc(var(--sselfie-bottom-nav-height, 12px) + max(0.75rem, env(safe-area-inset-bottom, 0px)))",
     })
   })
 })

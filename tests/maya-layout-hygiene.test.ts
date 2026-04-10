@@ -24,13 +24,14 @@ describe("maya layout hygiene", () => {
 
   it("keeps mobile input controls compact to avoid horizontal overflow", () => {
     const unifiedInput = read("components/sselfie/maya/maya-unified-input.tsx")
-    expect(unifiedInput).toContain("min-w-[56px] sm:min-w-[92px]")
+    expect(unifiedInput).toContain("secondaryToolbarButtonClass")
+    expect(unifiedInput).toContain("h-9 px-3")
     expect(unifiedInput).toContain("min-w-[56px] sm:min-w-[96px]")
   })
 
   it("uses concise mobile action labels to reduce input bar clutter", () => {
     const unifiedInput = read("components/sselfie/maya/maya-unified-input.tsx")
-    expect(unifiedInput).toContain("sm:hidden\">Image</span>")
+    expect(unifiedInput).toContain("font-medium\">Image</span>")
     expect(unifiedInput).toContain("sm:hidden\">Go</span>")
   })
 
@@ -50,6 +51,8 @@ describe("maya layout hygiene", () => {
     expect(appShell).toContain('"relative h-full overflow-visible"')
     expect(appShell).toContain('`relative h-full ${DesignClasses.container} overflow-hidden`')
     expect(appShell).toContain("overflow-y-auto")
+    expect(appShell).toContain("StudioAppTopBar")
+    expect(appShell).toContain("--studio-app-header-height")
   })
 
   it("always shows the selfie and my model toggle on the Maya photos surface", () => {
@@ -62,6 +65,7 @@ describe("maya layout hygiene", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
     const mayaChatInterface = read("components/sselfie/maya/maya-chat-interface.tsx")
 
+    expect(mayaChatScreen).toContain("--studio-app-header-height")
     expect(mayaChatScreen).toContain("MAYA_SURFACE_TOP_OFFSET")
     expect(mayaChatScreen).not.toContain('calc(var(--maya-header-height, 124px) + 8px)')
     expect(mayaChatScreen).not.toContain("calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))")

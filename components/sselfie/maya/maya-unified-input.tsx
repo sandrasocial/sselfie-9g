@@ -174,8 +174,8 @@ export default function MayaUnifiedInput({
     letterSpacing: Typography.body.letterSpacing,
   }
 
-  const imageButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[92px] h-10 sm:h-11 rounded-lg border border-[rgba(195,190,182,0.15)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] text-[#8a8780] hover:text-[#a8a49c] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-3"
+  const secondaryToolbarButtonClass =
+    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.06)] hover:bg-[rgba(175,170,162,0.12)] text-[#8a8780] hover:text-[#c8c4bb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
@@ -247,54 +247,7 @@ export default function MayaUnifiedInput({
         )}
 
         <div className={`flex min-w-0 ${proMode ? "items-end gap-2 sm:gap-3" : "items-end gap-2"}`}>
-          {/* Image upload button */}
-          <button
-            type="button"
-            onClick={handleImageClick}
-            disabled={isLoading || disabled || isUploadingImage}
-            className={imageButtonClass}
-            style={imageButtonStyle}
-            title="Upload image"
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              disabled={isLoading || disabled || isUploadingImage}
-            />
-            {isUploadingImage ? (
-              proMode ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
-              )
-            ) : (
-              <>
-                <span className="sm:hidden">Image</span>
-                <span className="hidden sm:inline text-[10px] uppercase tracking-[0.16em] font-medium">Add Image</span>
-              </>
-            )}
-          </button>
-
-          {/* Photo generation — visible on Photos tab (Classic + Pro); opens same modal as header Settings */}
-          {showSettingsButton && onSettingsClick && (
-            <button
-              type="button"
-              onClick={() => onSettingsClick()}
-              disabled={isLoading || disabled}
-              className={`${imageButtonClass} flex flex-row items-center justify-center gap-1 min-w-[56px] sm:min-w-[92px] px-1.5`}
-              style={imageButtonStyle}
-              aria-label="Photo generation: style strength, guidance, aspect ratio, realism"
-              title="Style strength, guidance (Flux), aspect ratio, realism boost"
-            >
-              <SlidersHorizontal className="w-4 h-4 shrink-0 opacity-90" aria-hidden />
-              <span className="text-[10px] uppercase tracking-[0.14em] font-medium">Adjust</span>
-            </button>
-          )}
-
-          {/* Text input */}
+          {/* Text input — full width on the main row for a calmer bar */}
           <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
@@ -312,7 +265,7 @@ export default function MayaUnifiedInput({
               className={textareaClass}
               style={{
                 ...textareaStyle,
-                position: 'relative',
+                position: "relative",
                 zIndex: 1,
               }}
               aria-label="Message input"
@@ -357,6 +310,51 @@ export default function MayaUnifiedInput({
                   <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
                 </>
               )}
+            </button>
+          )}
+        </div>
+
+        {/* Image + Adjust — compact row under the composer (mobile-first) */}
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[rgba(195,190,182,0.12)] pt-2">
+          <button
+            type="button"
+            onClick={handleImageClick}
+            disabled={isLoading || disabled || isUploadingImage}
+            className={secondaryToolbarButtonClass}
+            style={imageButtonStyle}
+            title="Upload image"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={isLoading || disabled || isUploadingImage}
+            />
+            {isUploadingImage ? (
+              proMode ? (
+                <LoadingSpinner size="sm" />
+              ) : (
+                <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
+              )
+            ) : (
+              <span className="text-[10px] uppercase tracking-[0.14em] font-medium">Image</span>
+            )}
+          </button>
+
+          {showSettingsButton && onSettingsClick && (
+            <button
+              type="button"
+              onClick={() => onSettingsClick()}
+              disabled={isLoading || disabled}
+              className={secondaryToolbarButtonClass}
+              style={imageButtonStyle}
+              aria-label="Photo generation: style strength, guidance, aspect ratio, realism"
+              title="Style strength, guidance (Flux), aspect ratio, realism boost"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 shrink-0 opacity-90" aria-hidden />
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium">Adjust</span>
             </button>
           )}
         </div>

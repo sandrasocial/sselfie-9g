@@ -10,6 +10,7 @@ import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import StudioHubScreen from "./studio-hub-screen"
+import { StudioAppTopBar } from "./studio-app-top-bar"
 import { FeedPlannerClient } from "../feed-planner" // Use FeedPlannerClient to include wizard logic
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
@@ -209,7 +210,7 @@ export default function SselfieApp({
   const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
   const initialCreditBalanceRef = useRef<number | null>(null)
   const firstPhotoToastShownRef = useRef(false)
-  const bottomNavRef = useRef<HTMLElement | null>(null)
+  const appHeaderRef = useRef<HTMLElement | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const tabFromSearchParams = readStudioTabFromSearchParams(searchParams)
@@ -264,25 +265,33 @@ export default function SselfieApp({
   }, [activeTab])
 
   useEffect(() => {
+    if (typeof document === "undefined") return
+    document.documentElement.style.setProperty(
+      "--sselfie-bottom-nav-height",
+      "max(12px, env(safe-area-inset-bottom, 0px))",
+    )
+  }, [])
+
+  useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return
-    const node = bottomNavRef.current
+    const node = appHeaderRef.current
     if (!node || typeof ResizeObserver === "undefined") return
 
-    const updateBottomNavHeight = () => {
+    const updateAppHeaderHeight = () => {
       const height = Math.ceil(node.getBoundingClientRect().height)
       if (height > 0) {
-        document.documentElement.style.setProperty("--sselfie-bottom-nav-height", `${height}px`)
+        document.documentElement.style.setProperty("--studio-app-header-height", `${height}px`)
       }
     }
 
-    updateBottomNavHeight()
-    const observer = new ResizeObserver(updateBottomNavHeight)
+    updateAppHeaderHeight()
+    const observer = new ResizeObserver(updateAppHeaderHeight)
     observer.observe(node)
-    window.addEventListener("resize", updateBottomNavHeight)
+    window.addEventListener("resize", updateAppHeaderHeight)
 
     return () => {
       observer.disconnect()
-      window.removeEventListener("resize", updateBottomNavHeight)
+      window.removeEventListener("resize", updateAppHeaderHeight)
     }
   }, [])
   
@@ -372,7 +381,6 @@ export default function SselfieApp({
     }
   }
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [isNavVisible, setIsNavVisible] = useState(true)
   const lastScrollY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [creditsFetchFailed, setCreditsFetchFailed] = useState(false)
@@ -739,11 +747,6 @@ export default function SselfieApp({
   }, [])
 
   useEffect(() => {
-    // Always show bottom nav - it should be visible on all tabs
-    setIsNavVisible(true)
-  }, [activeTab])
-
-  useEffect(() => {
     if (shouldShowCheckout && !isLoadingCredits) {
       // Only show modal if explicitly requested via URL param
     }
@@ -819,7 +822,6 @@ export default function SselfieApp({
   const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
   const shouldShowUpgradeBanner =
     ["gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
-  const showShellHeader = activeTab !== "maya"
   const appShellClassName =
     activeTab === "maya"
       ? "relative h-full overflow-visible"
@@ -965,24 +967,22 @@ export default function SselfieApp({
           </div>
         )}
 
-      {showShellHeader && (
-        <header className={`fixed top-0 left-0 right-0 z-[85] border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(50px)' }}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 shrink-0">
-              <div className={`${DesignClasses.typography.heading.h4} text-[#f0ede8]`}>
-                SSELFIE
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* My Feed dropdown - only show in feed planner */}
+      <StudioAppTopBar
+        ref={appHeaderRef}
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(id) => handleTabChange(id as StudioTab)}
+        isNewUser={isNewUser}
+        trailing={
+          activeTab === "maya" ? null : (
+            <>
               {activeTab === "feed-planner" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors text-xs font-medium text-[#f0ede8] min-h-[36px]`}
                       aria-label="My Feed"
-                      style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
+                      style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
                     >
                       <span>Feeds</span>
                     </button>
@@ -1003,22 +1003,20 @@ export default function SselfieApp({
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  // Update search params - router.replace updates URL without navigation
                                   const currentPath = window.location.pathname
                                   router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
                                 }}
-                                className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-[rgba(175,170,162,0.14)]' : ''}`}
+                                className={`cursor-pointer ${currentFeedId === feed.id ? "bg-[rgba(175,170,162,0.14)]" : ""}`}
                               >
                                 <div className="flex items-center gap-2.5 w-full">
-                                  {/* Color indicator - always visible */}
                                   <div
                                     className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
                                     style={{
-                                      backgroundColor: feed.display_color || '#2e2c29',
-                                      borderColor: feed.display_color || '#3a3630',
-                                      borderStyle: feed.display_color ? 'solid' : 'dashed',
+                                      backgroundColor: feed.display_color || "#2e2c29",
+                                      borderColor: feed.display_color || "#3a3630",
+                                      borderStyle: feed.display_color ? "solid" : "dashed",
                                     }}
-                                    title={feed.display_color ? `Color: ${feed.display_color}` : 'No color set'}
+                                    title={feed.display_color ? `Color: ${feed.display_color}` : "No color set"}
                                   >
                                     {!feed.display_color && (
                                       <div className="w-full h-full flex items-center justify-center">
@@ -1028,15 +1026,14 @@ export default function SselfieApp({
                                   </div>
                                   <div className="flex flex-col flex-1 min-w-0">
                                     <span className="text-sm font-medium text-[#f0ede8] truncate">{feed.title || `Feed ${feed.id}`}</span>
-                                    {feed.layout_type === 'preview' ? (
+                                    {feed.layout_type === "preview" ? (
                                       <span className="text-xs text-[#8a8780]">Preview Feed</span>
                                     ) : feed.image_count !== undefined ? (
-                                      <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
+                                      <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === "grid_3x4" ? "12" : "9"} images</span>
                                     ) : null}
                                   </div>
                                 </div>
                               </DropdownMenuItem>
-                              {/* Edit button - appears on hover */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1056,140 +1053,139 @@ export default function SselfieApp({
                 </DropdownMenu>
               )}
 
-              {/* Feed Edit Modal */}
-              <Dialog open={!!editingFeed} onOpenChange={(open) => !open && setEditingFeed(null)}>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Edit Feed</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
-                        Feed Name
-                      </label>
-                      <Input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        placeholder="Enter feed name"
-                        className="w-full"
-                        maxLength={50}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
-                        Color
-                      </label>
-                      <div className="grid grid-cols-6 gap-2">
-                        {presetColors.map((color) => (
-                          <button
-                            key={color.value || "none"}
-                            onClick={() => setEditColor(color.value)}
-                            className={`w-10 h-10 rounded-full border-2 transition-all ${
-                              editColor === color.value
-                                ? 'border-[#f0ede8] scale-110'
-                                : 'border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]'
-                            }`}
-                            style={{
-                              backgroundColor: color.value || 'transparent',
-                              borderStyle: color.value ? 'solid' : 'dashed',
-                            }}
-                            aria-label={color.name}
-                            title={color.name}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <button
-                      onClick={() => setEditingFeed(null)}
-                      className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveFeed}
-                      disabled={isSaving}
-                      className={`px-4 py-2 text-sm font-medium rounded-md ${
-                        isSaving
-                          ? 'bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed'
-                          : 'bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]'
-                      }`}
-                    >
-                      {isSaving ? "Saving..." : "Save"}
-                    </button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
               <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
-                  aria-label="Menu"
-                  style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
-                >
-                  <span className="text-base leading-none text-[#f0ede8]">≡</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
-                <div className="px-3 py-2">
-                  <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary}`}>
-                    Your Credits
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
+                    aria-label="Menu"
+                    style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
+                  >
+                    <span className="text-base leading-none text-[#f0ede8]">≡</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
+                  <div className="px-3 py-2">
+                    <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary}`}>
+                      Your Credits
+                    </div>
+                    <div className={`text-2xl font-serif font-extralight ${DesignClasses.text.primary} tabular-nums mt-1`}>
+                      {creditBalance.toFixed(1)}
+                    </div>
                   </div>
-                  <div className={`text-2xl font-serif font-extralight ${DesignClasses.text.primary} tabular-nums mt-1`}>
-                    {creditBalance.toFixed(1)}
+                  <DropdownMenuSeparator />
+                  <div className="px-3 py-2">
+                    <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {tabs.map((tab) => {
+                        return (
+                          <button
+                            key={`menu-${tab.id}`}
+                            onClick={() => {
+                              handleTabChange(tab.id)
+                              setIsMenuOpen(false)
+                            }}
+                            className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
+                          >
+                            <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-                <DropdownMenuSeparator />
-                <div className="px-3 py-2">
-                  <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {tabs.map((tab) => {
-                      return (
-                        <button
-                          key={`menu-${tab.id}`}
-                          onClick={() => {
-                            handleTabChange(tab.id)
-                            setIsMenuOpen(false)
-                          }}
-                          className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
-                        >
-                          <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    setShowBuyCreditsModal(true)
-                    setIsMenuOpen(false)
-                  }}
-                  className="cursor-pointer"
-                >
-                  <span className="text-sm">Buy More Credits</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <div className="cursor-pointer">
-                    <InstallButton variant="menu" />
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                >
-                  <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setShowBuyCreditsModal(true)
+                      setIsMenuOpen(false)
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <span className="text-sm">Buy More Credits</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <div className="cursor-pointer">
+                      <InstallButton variant="menu" />
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                  >
+                    <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )
+        }
+      />
+
+      <Dialog open={!!editingFeed} onOpenChange={(open) => !open && setEditingFeed(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Feed</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
+                Feed Name
+              </label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Enter feed name"
+                className="w-full"
+                maxLength={50}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
+                Color
+              </label>
+              <div className="grid grid-cols-6 gap-2">
+                {presetColors.map((color) => (
+                  <button
+                    key={color.value || "none"}
+                    onClick={() => setEditColor(color.value)}
+                    className={`w-10 h-10 rounded-full border-2 transition-all ${
+                      editColor === color.value
+                        ? "border-[#f0ede8] scale-110"
+                        : "border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]"
+                    }`}
+                    style={{
+                      backgroundColor: color.value || "transparent",
+                      borderStyle: color.value ? "solid" : "dashed",
+                    }}
+                    aria-label={color.name}
+                    title={color.name}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </header>
-      )}
+          <DialogFooter>
+            <button
+              onClick={() => setEditingFeed(null)}
+              className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveFeed}
+              disabled={isSaving}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                isSaving
+                  ? "bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed"
+                  : "bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]"
+              }`}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="relative h-full overflow-hidden lg:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={appShellClassName}>
@@ -1222,7 +1218,7 @@ export default function SselfieApp({
           {activeTab !== "maya" && (
             <div
               ref={scrollContainerRef}
-              className={`h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
+              className={`h-full ${DesignClasses.spacing.paddingX.md} pb-8 sm:pb-10 md:pb-12 pt-[calc(var(--studio-app-header-height,80px)+0.5rem)] sm:pt-[calc(var(--studio-app-header-height,80px)+0.75rem)] overflow-y-auto`}
             >
               {shouldShowUpgradeBanner && activeUpgrade && (
                 <div className="mb-4">
@@ -1273,60 +1269,6 @@ export default function SselfieApp({
           )}
         </div>
       </main>
-
-      <nav
-          ref={bottomNavRef}
-          className={`fixed bottom-0 left-0 right-0 z-[70] px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
-            isNavVisible ? "translate-y-0" : "translate-y-full"
-          }`}
-          style={{
-            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-          }}
-          aria-label="Main navigation"
-          aria-hidden={!isNavVisible}
-        >
-          <div className={`${DesignClasses.radius.xl} ${DesignClasses.shadows.container}`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(60px)', border: '1px solid rgba(195,190,182,0.15)' }}>
-            <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
-              <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.id
-                  // Gated tabs are visible to all users but show a lock indicator for free users
-                  // who haven't generated their first photo yet. Showing them creates aspiration.
-                  const isGated = isNewUser && ["studio", "gallery", "feed-planner", "academy"].includes(tab.id)
-
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleTabChange(tab.id)}
-                      className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 ${DesignClasses.radius.lg} transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
-                        isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
-                      } ${isGated ? "opacity-50" : ""}`}
-                      aria-label={isGated ? `${tab.label} — unlocks as you create with Maya` : `Navigate to ${tab.label}`}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {isActive && (
-                        <div className={`absolute inset-0 ${DesignClasses.radius.lg} ${DesignClasses.shadows.card}`} style={{ background: 'rgba(175,170,162,0.18)', border: '1px solid rgba(195,190,182,0.25)' }}></div>
-                      )}
-                      <span
-                        className={`relative z-10 px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-full text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${
-                          isActive ? "text-[#f0ede8]" : "text-[#8a8780]"
-                        }`}
-                        style={isActive ? { background: "rgba(175,170,162,0.18)", border: "1px solid rgba(195,190,182,0.25)" } : { background: "rgba(175,170,162,0.06)", border: "1px solid rgba(195,190,182,0.12)" }}
-                      >
-                        {tab.label}{isGated ? <span className="ml-0.5 text-[8px] opacity-60">🔒</span> : null}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            {isNewUser && (
-              <p className="text-xs text-center py-1" style={{ color: '#8a8780' }}>
-                Create with Maya to unlock Gallery, Feed &amp; Academy
-              </p>
-            )}
-          </div>
-        </nav>
 
       <InstallPrompt />
 

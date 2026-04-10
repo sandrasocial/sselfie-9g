@@ -251,29 +251,14 @@ export default function MayaHeaderUnified({
   // Unified header styling - same for both modes
   // Mobile optimized: proper touch targets, safe area insets, responsive spacing
   // Note: border-b removed since tabs section will have its own border
-  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-6 md:px-12 py-4 sm:py-5 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
+  const headerClassName = "flex items-center justify-end w-full px-3 sm:px-6 md:px-12 py-3 sm:py-4 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
 
   return (
     <>
       <div
         className={headerClassName}
       >
-        {/* Left: Maya title */}
-        <div className="flex items-center shrink-0 min-h-[44px]">
-          <h1
-            className="text-xl uppercase text-[#f0ede8]"
-            style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond')",
-              fontWeight: 300,
-              letterSpacing: "0.3em",
-              lineHeight: 1,
-            }}
-          >
-            MAYA
-          </h1>
-        </div>
-
-        {/* Right: Credits and Mode Toggle - Simple, clean layout */}
+        {/* Primary "Maya" label lives in the app top bar; this row is actions only. */}
         <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-3 md:gap-4 relative">
           {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
           {/* Use suppressHydrationWarning to prevent mismatch from isMounted check */}
