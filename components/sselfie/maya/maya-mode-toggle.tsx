@@ -1,44 +1,30 @@
 "use client"
 
-import type React from "react"
-
 interface MayaModeToggleProps {
   currentMode: "classic" | "pro"
   onToggle: () => void
   variant?: "button" | "compact"
   className?: string
+  /** When false, hides the one-line legend under the compact control (e.g. Feed Planner header). Default true. */
+  showModeHint?: boolean
 }
 
 /**
- * Maya Mode Toggle Component
- * 
- * Segmented control for switching between MY MODEL and SELFIE modes.
- * Shows both options with the active one highlighted.
- * 
- * **Pro Features Include:**
- * - Image library management (upload, organize, and reuse images)
- * - Enhanced concept generation with linked images
- * - Library-based image selection for concepts
- * 
- * **Classic Mode:**
- * - Basic chat interface
- * - Simple image generation
- * - Standard concept cards
- * 
- * NO ICONS - uses clear text labels only, following design system guidelines.
+ * Segmented control: **My Model** (classic) vs **Selfie** (pro).
+ * - My Model: photos lean on your trained likeness.
+ * - Selfie: library images, references, and uploads in chat.
  */
 export default function MayaModeToggle({
   currentMode,
   onToggle,
   variant = "button",
   className = "",
+  showModeHint = true,
 }: MayaModeToggleProps) {
   const isProMode = currentMode === "pro"
   const isClassicMode = currentMode === "classic"
 
-  // Compact variant (for Pro Mode header) - segmented control showing both options
   if (variant === "compact") {
-    // If pointer-events-none is in className, render as div (for use in menu items)
     if (className.includes("pointer-events-none")) {
       return (
         <div className={`flex items-center ${className}`}>
@@ -49,25 +35,32 @@ export default function MayaModeToggle({
       )
     }
 
-    // Segmented control: shows both MY MODEL and SELFIE, with active one highlighted
-    // When in SELFIE mode, clicking MY MODEL switches modes. Clicking SELFIE does nothing (already active)
-    // Mobile optimized: min 44px touch targets, responsive text sizes
-    return (
-      <div className={`inline-flex max-w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-0.5 ${className}`}>
+    const myModelActive = !isProMode
+    const selfieActive = isProMode
+
+    const control = (
+      <div
+        className={`inline-flex max-w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-0.5 ${className}`}
+      >
         <button
+          type="button"
           onClick={() => {
-            // Only toggle if not already in MY MODEL mode
             if (isProMode) {
               onToggle()
             }
           }}
-          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
+          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0 ${
             isProMode
               ? "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
               : "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
           }`}
-          aria-label="Switch to MY MODEL - Use your trained model for consistent results"
-          title="Switch to MY MODEL - Use your trained model for consistent results"
+          aria-pressed={myModelActive}
+          aria-label={
+            myModelActive
+              ? "My Model — active. Photos use your trained likeness."
+              : "Switch to My Model — photos use your trained likeness."
+          }
+          title="My Model: one trained face across your photos. Best when you have finished training."
           disabled={!isProMode}
         >
           <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
@@ -76,19 +69,24 @@ export default function MayaModeToggle({
           </span>
         </button>
         <button
+          type="button"
           onClick={() => {
-            // Only toggle if not already in SELFIE mode
             if (!isProMode) {
               onToggle()
             }
           }}
-          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
+          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0 ${
             isProMode
               ? "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
               : "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
           }`}
-          aria-label="Switch to SELFIE - Use linked references or upload selfies"
-          title="Switch to SELFIE - Use linked references or upload selfies"
+          aria-pressed={selfieActive}
+          aria-label={
+            selfieActive
+              ? "Selfie mode — active. Library, references, and uploads in chat."
+              : "Switch to Selfie mode — library, references, and uploads in chat."
+          }
+          title="Selfie: use your image library, reference uploads, and chat-first workflow (no training required)."
           disabled={isProMode}
         >
           <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
@@ -98,25 +96,51 @@ export default function MayaModeToggle({
         </button>
       </div>
     )
+
+    if (!showModeHint) {
+      return control
+    }
+
+    return (
+      <div className="flex flex-col items-stretch gap-1">
+        {control}
+        <p className="hidden sm:block text-[9px] leading-snug text-[#8a8780] max-w-[14rem] md:max-w-[16rem]">
+          <span className="font-medium text-[#a8a49c]">My model</span> uses your trained look.
+          <span className="mx-1 text-[#666666]">·</span>
+          <span className="font-medium text-[#a8a49c]">Selfie</span> uses references and uploads.
+        </p>
+      </div>
+    )
   }
 
-  // Button variant (for Classic Mode header) - single button
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex flex-col items-stretch gap-1 ${className}`}>
       <button
+        type="button"
         onClick={onToggle}
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-[rgba(175,170,162,0.10)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] min-h-[36px]"
-        aria-label={isClassicMode
-          ? "Switch to SELFIE - Use linked references or upload selfies"
-          : "Switch to MY MODEL - Use your trained model for consistent results"}
-        title={isClassicMode
-          ? "Switch to SELFIE - Use linked references or upload selfies"
-          : "Switch to MY MODEL - Use your trained model for consistent results"}
+        aria-label={
+          isClassicMode
+            ? "Switch to Selfie mode — library, references, and uploads in chat"
+            : "Switch to My Model — trained likeness in every photo"
+        }
+        title={
+          isClassicMode
+            ? "Selfie: library images, references, and uploads. No training required."
+            : "My Model: uses your trained likeness once training is complete."
+        }
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
-          {isClassicMode ? "Switch to SELFIE" : "Switch to MY MODEL"}
+          {isClassicMode ? "Switch to Selfie mode" : "Switch to My Model"}
         </span>
       </button>
+      {showModeHint ? (
+        <p className="text-[9px] leading-snug text-[#8a8780] max-w-[17rem]">
+          {isClassicMode
+            ? "You are in My Model. Tap to use Selfie (library and uploads)."
+            : "You are in Selfie. Tap to use My Model (trained likeness)."}
+        </p>
+      ) : null}
     </div>
   )
 }

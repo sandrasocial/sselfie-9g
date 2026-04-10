@@ -25,6 +25,7 @@ import { MayaInlineAction, MayaInlineCard } from "./maya/maya-inline-card"
 import StudioMemberOnboarding from "./maya/studio-member-onboarding"
 import MembershipHomeCard from "./maya/membership-home-card"
 import MayaWelcomePanel from "./maya/maya-welcome-panel"
+import MayaPhotosSetupDisclosure from "./maya/maya-photos-setup-disclosure"
 import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
@@ -3893,74 +3894,17 @@ export default function MayaChatScreen({
           className="shrink-0"
           style={{ marginTop: MAYA_SURFACE_TOP_OFFSET }}
         >
-          {/* Credit welcome banner — shown to non-members with credits on an empty session.
-              Creates urgency and clarity: "you have X free photos, go use them." */}
-          {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
-            <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#f0ede8] mb-0.5">
-                    You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
-                  </p>
-                  <p className="text-xs text-[#8a8780] leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
-              has exhausted their credits on the Photos tab. */}
-          {!isMembership && creditBalance === 0 && !dismissedUpsells.has("zero_credits") && (
-            <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#f0ede8] mb-0.5">You&apos;ve used your free photos</p>
-                  <p className="text-xs text-[#8a8780] leading-relaxed">
-                    Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => void handleOpenStudioCheckout("maya_zero_credits_nudge")}
-                      className="shrink-0 text-xs font-medium text-[#0d0c0b] bg-[#c8c4bb] rounded-lg px-3 py-1.5 hover:bg-[#f0ede8] transition-colors whitespace-nowrap"
-                    >
-                      Upgrade to Studio →
-                    </button>
-                    <button
-                      onClick={() => setShowBuyCreditsModal(true)}
-                      className="shrink-0 text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-lg px-3 py-1.5 hover:bg-[rgba(175,170,162,0.18)] transition-colors whitespace-nowrap"
-                    >
-                      Buy credits
-                    </button>
-                    <button
-                      onClick={() => dismissUpsellCard("zero_credits")}
-                      className="shrink-0 text-xs font-medium text-[#8a8780] rounded-lg px-3 py-1.5 hover:text-[#f0ede8] transition-colors whitespace-nowrap"
-                    >
-                      Not now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Training Prompt - shown as a secondary option when user has no trained model.
-              Does NOT block the interface — Pro mode is always available without training. */}
-          {!hasTrainedModel && (
-            <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#f0ede8] mb-0.5">Train your personal AI</p>
-                  <p className="text-xs text-[#8a8780] leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
-                </div>
-                <button
-                  onClick={() => setMayaTabAndHash("training")}
-                  className="shrink-0 text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-lg px-3 py-1.5 hover:bg-[rgba(175,170,162,0.18)] transition-colors whitespace-nowrap"
-                >
-                  Train →
-                </button>
-              </div>
-            </div>
-          )}
+          <MayaPhotosSetupDisclosure
+            isMembership={isMembership}
+            creditBalance={creditBalance}
+            isMessageListEmpty={!messages || messages.length === 0}
+            showZeroCreditsNudge={!isMembership && creditBalance === 0 && !dismissedUpsells.has("zero_credits")}
+            onDismissZeroCredits={() => dismissUpsellCard("zero_credits")}
+            hasTrainedModel={hasTrainedModel}
+            onGoToTraining={() => setMayaTabAndHash("training")}
+            onOpenStudioCheckout={handleOpenStudioCheckout}
+            onOpenBuyCredits={() => setShowBuyCreditsModal(true)}
+          />
         </div>
       )}
 

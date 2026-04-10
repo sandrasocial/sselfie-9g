@@ -525,6 +525,7 @@ export default function FeedHeader({
                   currentMode={generationMode}
                   onToggle={onToggleGenerationMode}
                   variant="compact"
+                  showModeHint={false}
                 />
               </div>
             )}

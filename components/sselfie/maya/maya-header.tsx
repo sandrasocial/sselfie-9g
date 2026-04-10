@@ -889,7 +889,7 @@ export default function MayaHeaderUnified({
                   </>
                 )}
 
-                {/* Switch Mode - SELFIE mode shows "Switch to MY MODEL" in menu on mobile (membership only) */}
+                {/* Switch Mode — Selfie → My Model (membership, mobile menu) */}
                 {showModeToggle && proMode && onSwitchToClassic && (
                   <>
                     <div
@@ -913,7 +913,7 @@ export default function MayaHeaderUnified({
                         letterSpacing: "0.12em",
                       }}
                     >
-                      Switch to MY MODEL
+                      Switch to My Model
                     </button>
                   </>
                 )}
