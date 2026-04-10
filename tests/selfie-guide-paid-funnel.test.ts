@@ -66,6 +66,7 @@ describe("selfie guide paid funnel", () => {
     const stripeActionContents = fs.readFileSync(path.join(ROOT, "app/actions/stripe.ts"), "utf8")
 
     expect(webhookContents).toContain("bought_selfie_guide")
+    expect(webhookContents).toContain("selfie_guide_bundle")
     expect(webhookContents).toContain("SELFIE_GUIDE_PRESET_DOWNLOAD_URL")
     expect(webhookContents).toContain("boughtBrandStrategyBump")
     expect(landingActionContents).not.toContain("optional_items:")

@@ -47,7 +47,7 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's ready for you now. This is the framework I built when I needed better brand photos without making it a whole production.</p>
     ${guidePanel}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your Selfie Guide", accessUrl)}</div>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#a8a49c;">Start with chapter one. Then take one new photo today while it's fresh.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#a8a49c;">Start with the first part in the sidebar. Then take one new photo today while it's fresh.</p>
     ${presetPackBlock}
     ${passwordBlock}
     ${renderStonePanel(
@@ -74,7 +74,7 @@ It's ready for you now. This is the framework I built when I needed better brand
 
 Open your Selfie Guide: ${accessUrl}
 
-Start with chapter one. Then take one new photo today while it's fresh.
+Start with the first part in the sidebar. Then take one new photo today while it's fresh.
 
 ${
     presetPackUrl

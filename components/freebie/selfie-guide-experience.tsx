@@ -632,6 +632,8 @@ interface SelfieGuideExperienceProps {
   checkoutSessionId?: string
   brandStrategyBumpSelected?: boolean
   presetDownloadUrl?: string
+  /** When true (bundle, prior BSP purchase, etc.), hide hard sell to checkout Brand Strategy. */
+  hasBrandStrategyAccess?: boolean
 }
 
 export default function SelfieGuideExperience({
@@ -640,6 +642,7 @@ export default function SelfieGuideExperience({
   checkoutSessionId,
   brandStrategyBumpSelected = false,
   presetDownloadUrl,
+  hasBrandStrategyAccess = false,
 }: SelfieGuideExperienceProps) {
   const chapters = useMemo(() => {
     const parsed = parseSelfieGuideChapters(guideMarkdown)
@@ -845,7 +848,9 @@ export default function SelfieGuideExperience({
       {/* ── Sidebar ─────────────────────────────────── */}
       <aside className={`sg-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Guide navigation">
         <div className="sg-sidebar-logo">
-          <a href="https://sselfie.ai" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</a>
+          <Link href="/" className={`sg-logo-text ${cormorant.className}`}>
+            SSELFIE
+          </Link>
           <p className="sg-logo-sub">INTERACTIVE SELFIE GUIDE</p>
         </div>
 
@@ -854,7 +859,7 @@ export default function SelfieGuideExperience({
           <div className="sg-progress-track">
             <div className="sg-progress-fill" style={{ width: `${progressPercent}%` }} />
           </div>
-          <p className="sg-progress-pct">{partNumber} of {chapters.length} chapters</p>
+          <p className="sg-progress-pct">{partNumber} of {chapters.length} sections</p>
         </div>
 
         <nav className="sg-sidebar-nav">
@@ -887,7 +892,9 @@ export default function SelfieGuideExperience({
             <span />
             <span />
           </button>
-          <a href="https://sselfie.ai" className={`sg-mobile-logo ${cormorant.className}`}>SSELFIE</a>
+          <Link href="/" className={`sg-mobile-logo ${cormorant.className}`}>
+            SSELFIE
+          </Link>
           <span className="sg-mobile-progress">{partNumber}/{chapters.length}</span>
         </header>
 
@@ -914,7 +921,7 @@ export default function SelfieGuideExperience({
               Built for {firstName}
             </p>
             <p className="sg-hero-sub">
-              8 chapters. Real techniques. One phone. No excuses.
+              Eight technique parts in the guide, plus intro sections — one phone, real techniques.
             </p>
             <div className="sg-hero-badges">
               <span>Studio-looking results</span>
@@ -934,7 +941,9 @@ export default function SelfieGuideExperience({
 
           {/* Chapter header */}
           <header className="sg-chapter-header">
-            <p className="sg-eyebrow">Part {String(partNumber).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</p>
+            <p className="sg-eyebrow">
+              Section {String(partNumber).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
+            </p>
             {currentChapterMood && (
               <p className="sg-chapter-eyebrow">{currentChapterMood.eyebrow}</p>
             )}
@@ -980,7 +989,7 @@ export default function SelfieGuideExperience({
                 window.scrollTo({ top: 0, behavior: "smooth" })
               }}
             >
-              <span>{activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Next Chapter"}</span>
+              <span>{activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Next section"}</span>
               <span>{activeChapterIndex === chapters.length - 1 ? "" : "→"}</span>
             </button>
           </div>
@@ -989,39 +998,67 @@ export default function SelfieGuideExperience({
         {/* ── Funnel CTA ────────────────────────────── */}
         <section className="sg-funnel">
           <div className="sg-funnel-inner">
-            <p className="sg-eyebrow">Next step</p>
-            <h3 className={`sg-funnel-title ${cormorant.className}`}>
-              Get your Brand Strategy
-            </h3>
-            <p className="sg-funnel-copy">
-              Turn the visuals into a message people actually remember.
-            </p>
-            <div className="sg-funnel-ctas">
-              {presetDownloadUrl ? (
-                <a
-                  href={presetDownloadUrl}
-                  className="sg-cta-secondary"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open preset pack
-                </a>
-              ) : null}
-              {brandStrategySetupToken ? (
-                <Link href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`} className="sg-cta-primary">
-                  Build My Brand Strategy
-                </Link>
-              ) : brandStrategyBumpSelected ? (
-                <button type="button" className="sg-cta-primary is-disabled" disabled>
-                  Preparing your Brand Strategy...
-                </button>
-              ) : (
-                <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
-                  Checkout Brand Strategy Pack
-                </Link>
-              )}
-            </div>
-            {brandStrategyBumpSelected ? <p className="sg-funnel-status">{brandStrategyStatus}</p> : null}
+            {hasBrandStrategyAccess && !brandStrategyBumpSelected ? (
+              <>
+                <p className="sg-eyebrow">Brand Strategy</p>
+                <h3 className={`sg-funnel-title ${cormorant.className}`}>You&apos;re already covered</h3>
+                <p className="sg-funnel-copy">
+                  Your account includes Brand Strategy access. Open Academy to continue your setup or revisit your
+                  strategy anytime.
+                </p>
+                <div className="sg-funnel-ctas">
+                  {presetDownloadUrl ? (
+                    <a
+                      href={presetDownloadUrl}
+                      className="sg-cta-secondary"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open preset pack
+                    </a>
+                  ) : null}
+                  <Link href="/academy" className="sg-cta-primary">
+                    Open Academy
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="sg-eyebrow">Next step</p>
+                <h3 className={`sg-funnel-title ${cormorant.className}`}>
+                  Get your Brand Strategy
+                </h3>
+                <p className="sg-funnel-copy">
+                  Turn the visuals into a message people actually remember.
+                </p>
+                <div className="sg-funnel-ctas">
+                  {presetDownloadUrl ? (
+                    <a
+                      href={presetDownloadUrl}
+                      className="sg-cta-secondary"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open preset pack
+                    </a>
+                  ) : null}
+                  {brandStrategySetupToken ? (
+                    <Link href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`} className="sg-cta-primary">
+                      Build My Brand Strategy
+                    </Link>
+                  ) : brandStrategyBumpSelected ? (
+                    <button type="button" className="sg-cta-primary is-disabled" disabled>
+                      Preparing your Brand Strategy...
+                    </button>
+                  ) : (
+                    <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
+                      Checkout Brand Strategy Pack
+                    </Link>
+                  )}
+                </div>
+                {brandStrategyBumpSelected ? <p className="sg-funnel-status">{brandStrategyStatus}</p> : null}
+              </>
+            )}
           </div>
         </section>
       </main>
@@ -1029,19 +1066,19 @@ export default function SelfieGuideExperience({
       {/* ── Styles ──────────────────────────────────── */}
       <style jsx global>{`
         html, body {
-          background: #0d0c0b;
+          background: #0a0a0a;
           margin: 0;
           padding: 0;
         }
 
         .sg {
-          --c-black:   #0d0c0b;
+          --c-black:   #0a0a0a;
           --c-surface: #161514;
           --c-char:    #1c1b19;
           --c-border:  rgba(168, 164, 156, 0.14);
-          --c-stone:   #a8a49c;
-          --c-smoke:   #8a8780;
-          --c-cream:   #f0ede8;
+          --c-stone:   #e5e5e5;
+          --c-smoke:   #f5f5f5;
+          --c-cream:   #ffffff;
           --c-pale:    rgba(240, 237, 232, 0.72);
           --sidebar-w: 260px;
           --prose-w:   700px;

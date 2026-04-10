@@ -5,6 +5,9 @@ import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
 /** Sales copy: eight ## PART sections in content-templates/selfie-guide-content-v3.md — keep in sync. */
+/** On #0a0a0a backgrounds, use light text only (no gray hex) for WCAG contrast. */
+const ON_DARK = "#ffffff"
+const ON_DARK_MUTED = "rgba(255, 255, 255, 0.88)"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -188,7 +191,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
       <style jsx>{`
         .selfie-guide-page {
           background: #0a0a0a;
-          color: #f5f5f5;
+          color: ${ON_DARK};
           min-height: 100vh;
         }
 
@@ -210,7 +213,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-size: 17px;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #f5f5f5;
+          color: ${ON_DARK};
           text-decoration: none;
         }
 
@@ -219,7 +222,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .hero {
@@ -267,7 +270,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .hero-title {
@@ -277,14 +280,14 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           line-height: 1.08;
           letter-spacing: -0.02em;
           text-transform: none;
-          color: #ffffff;
+          color: ${ON_DARK};
         }
 
         .hero-copy {
           margin: 24px 0 0;
           font-size: 16px;
           line-height: 1.8;
-          color: #666666;
+          color: ${ON_DARK};
           max-width: 680px;
         }
 
@@ -300,7 +303,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
           padding-bottom: 16px;
           border-bottom: 1px solid rgba(175, 170, 162, 0.12);
         }
@@ -343,7 +346,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .intro-heading {
@@ -352,7 +355,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 300;
           line-height: 1.3;
           letter-spacing: -0.01em;
-          color: #f5f5f5;
+          color: ${ON_DARK};
         }
 
         .intro-list {
@@ -363,7 +366,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
 
         .intro-list li {
           font-size: 14px;
-          color: #666666;
+          color: ${ON_DARK};
           line-height: 1.75;
           padding: 6px 0 6px 18px;
           position: relative;
@@ -378,7 +381,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           content: "→";
           position: absolute;
           left: 0;
-          color: #e5e5e5;
+          color: ${ON_DARK};
         }
 
         .purchase-panel {
@@ -396,7 +399,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .price-row {
@@ -418,19 +421,19 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 300;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .purchase-desc {
           margin: 0;
           font-size: 14px;
           line-height: 1.75;
-          color: #666666;
+          color: ${ON_DARK};
         }
 
         .error-msg {
           margin: 0;
-          color: #e5e5e5;
+          color: ${ON_DARK};
           font-size: 13px;
         }
 
@@ -470,7 +473,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           position: relative;
           padding-left: 22px;
           font-size: 13px;
-          color: #666666;
+          color: ${ON_DARK};
           line-height: 1.5;
         }
 
@@ -481,7 +484,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           top: 0.35em;
           width: 5px;
           height: 9px;
-          border: solid #e5e5e5;
+          border: solid ${ON_DARK};
           border-width: 0 1.5px 1.5px 0;
           transform: rotate(45deg);
         }
@@ -508,7 +511,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-size: 9px;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .journey-title {
@@ -516,7 +519,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-size: 26px;
           line-height: 1.1;
           text-transform: uppercase;
-          color: #f5f5f5;
+          color: ${ON_DARK};
           font-weight: 300;
         }
 
@@ -524,7 +527,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           margin: 0;
           font-size: 14px;
           line-height: 1.7;
-          color: #666666;
+          color: ${ON_DARK};
         }
 
         .studio-followon {
@@ -541,14 +544,14 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         .studio-followon-copy {
           margin: 0 0 16px;
           font-size: 14px;
           line-height: 1.75;
-          color: #666666;
+          color: ${ON_DARK};
           max-width: 640px;
         }
 
@@ -557,7 +560,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           font-weight: 500;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #f5f5f5;
+          color: ${ON_DARK};
           text-decoration: none;
           border-bottom: 1px solid rgba(245, 245, 245, 0.35);
           padding-bottom: 2px;
@@ -601,7 +604,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           padding: 14px 16px 16px;
           font-size: 13px;
           line-height: 1.55;
-          color: #666666;
+          color: ${ON_DARK};
         }
 
         .footer {
@@ -612,7 +615,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
 
         .footer-note {
           font-size: 12px;
-          color: #666666;
+          color: ${ON_DARK_MUTED};
         }
 
         @media (max-width: 900px) {

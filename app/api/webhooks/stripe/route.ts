@@ -653,9 +653,10 @@ export async function POST(request: NextRequest) {
               } else if (
                 isPublicPaidCheckoutSource &&
                 productType !== "paid_blueprint" &&
-                productType !== "selfie_guide"
+                productType !== "selfie_guide" &&
+                productType !== "selfie_guide_bundle"
               ) {
-                // ⚠️ Skip for paid_blueprint / selfie_guide - delivery email is sent separately
+                // ⚠️ Skip for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
                 console.log(
                   `[v0] Sending purchase confirmation email to existing user ${customerEmail}`
                 )
@@ -822,8 +823,12 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Step 7: Generated password setup link`)
 
-                  // ⚠️ Skip welcome email for paid_blueprint / selfie_guide - delivery email is sent separately
-                  if (productType === "paid_blueprint" || productType === "selfie_guide") {
+                  // ⚠️ Skip welcome email for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
+                  if (
+                    productType === "paid_blueprint" ||
+                    productType === "selfie_guide" ||
+                    productType === "selfie_guide_bundle"
+                  ) {
                     console.log(
                       `[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`
                     )
@@ -1689,14 +1694,17 @@ export async function POST(request: NextRequest) {
                 // best effort only
               }
             }
-          } else if (productType === "selfie_guide") {
-            // ✨ SELFIE GUIDE: Log payment, grant access, send delivery email with access link
+          } else if (productType === "selfie_guide" || productType === "selfie_guide_bundle") {
+            // ✨ SELFIE GUIDE (+ optional bundle with Brand Strategy): payment, access, delivery email
             if (!isPaymentPaid) {
               console.log(
                 `[v0] ⚠️ Selfie Guide checkout completed but payment not confirmed (status: '${session.payment_status}').`
               )
             } else {
-              console.log(`[v0] 📖 Selfie Guide purchase from ${customerEmail} - Payment confirmed`)
+              const isSelfieGuideBundle = productType === "selfie_guide_bundle"
+              console.log(
+                `[v0] 📖 ${isSelfieGuideBundle ? "Selfie Guide bundle" : "Selfie Guide"} purchase from ${customerEmail} - Payment confirmed`
+              )
 
               const isTestMode = !event.livemode
               const paymentIntentId =
@@ -1712,11 +1720,13 @@ export async function POST(request: NextRequest) {
                   : session.customer?.id || null
               let boughtBrandStrategyBump = false
               let brandStrategyBumpAmountCents = 0
+              let fulfillBrandStrategyPack = isSelfieGuideBundle
 
               try {
                 const hydratedSession = await getExpandedSession()
                 const lineItems = hydratedSession.line_items?.data || []
                 const selfieGuidePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE?.trim()
+                const selfieGuideBundlePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE_BUNDLE?.trim()
                 const brandStrategyPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
 
                 const selfieGuideLineItem = lineItems.find((item: any) => {
@@ -1724,12 +1734,19 @@ export async function POST(request: NextRequest) {
                   return linePriceId === selfieGuidePriceId
                 })
 
+                const selfieGuideBundleLineItem = lineItems.find((item: any) => {
+                  const linePriceId = typeof item.price === "string" ? item.price : item.price?.id
+                  return linePriceId === selfieGuideBundlePriceId
+                })
+
                 const brandStrategyLineItem = lineItems.find((item: any) => {
                   const linePriceId = typeof item.price === "string" ? item.price : item.price?.id
                   return linePriceId === brandStrategyPriceId
                 })
 
-                if (typeof selfieGuideLineItem?.amount_total === "number") {
+                if (isSelfieGuideBundle && typeof selfieGuideBundleLineItem?.amount_total === "number") {
+                  paymentAmountCents = selfieGuideBundleLineItem.amount_total
+                } else if (typeof selfieGuideLineItem?.amount_total === "number") {
                   paymentAmountCents = selfieGuideLineItem.amount_total
                 }
 
@@ -1737,12 +1754,26 @@ export async function POST(request: NextRequest) {
                   boughtBrandStrategyBump = true
                   brandStrategyBumpAmountCents = brandStrategyLineItem.amount_total ?? 0
                 }
+
+                fulfillBrandStrategyPack = isSelfieGuideBundle || boughtBrandStrategyBump
               } catch (lineItemError: any) {
                 console.error(
                   `[v0] Error expanding Selfie Guide checkout line items:`,
                   lineItemError.message
                 )
               }
+
+              const guideProductType = isSelfieGuideBundle ? "selfie_guide_bundle" : "selfie_guide"
+              const guidePaymentDescription = isSelfieGuideBundle
+                ? "Selfie Guide + Brand Strategy Bundle"
+                : "Selfie Guide"
+              const guideUserTag = isSelfieGuideBundle ? "bought_selfie_guide_bundle" : "bought_selfie_guide"
+              const guideUserTagSource = isSelfieGuideBundle
+                ? "selfie_guide_bundle_purchase"
+                : "selfie_guide_purchase"
+              const guideWebhookSource = isSelfieGuideBundle
+                ? "stripe_webhook:selfie_guide_bundle"
+                : "stripe_webhook:selfie_guide"
 
               if (paymentIntentId) {
                 try {
@@ -1785,9 +1816,9 @@ export async function POST(request: NextRequest) {
                       ${paymentAmountCents},
                       'usd',
                       'succeeded',
-                      'selfie_guide',
-                      'selfie_guide',
-                      ${"Selfie Guide"},
+                      ${guideProductType},
+                      ${guideProductType},
+                      ${guidePaymentDescription},
                       ${JSON.stringify(session.metadata || {})},
                       NOW(),
                       ${isTestMode},
@@ -1816,8 +1847,8 @@ export async function POST(request: NextRequest) {
                 )
                 SELECT
                   ${userId},
-                  'selfie_guide',
-                  'selfie_guide',
+                  ${guideProductType},
+                  ${guideProductType},
                   'active',
                   ${customerId},
                   NOW(),
@@ -1826,7 +1857,7 @@ export async function POST(request: NextRequest) {
                   SELECT 1
                   FROM subscriptions
                   WHERE user_id = ${userId}
-                    AND product_type = 'selfie_guide'
+                    AND product_type = ${guideProductType}
                     AND status = 'active'
                 )
               `
@@ -1835,8 +1866,8 @@ export async function POST(request: NextRequest) {
                 INSERT INTO user_tags (user_id, tag, source, metadata)
                 VALUES (
                   ${userId},
-                  'bought_selfie_guide',
-                  ${"selfie_guide_purchase"},
+                  ${guideUserTag},
+                  ${guideUserTagSource},
                   ${JSON.stringify({
                     stripe_session_id: session.id,
                     stripe_payment_id: paymentIdForStorage,
@@ -1847,19 +1878,34 @@ export async function POST(request: NextRequest) {
 
               await upsertPurchaseEntitlement({
                 userId: String(userId),
-                productId: "selfie_guide",
+                productId: guideProductType,
                 sourceRef: paymentIdForStorage,
                 metadata: {
-                  source: "stripe_webhook:selfie_guide",
+                  source: guideWebhookSource,
                   stripe_session_id: session.id,
                 },
               })
 
-              if (boughtBrandStrategyBump && customerEmail) {
+              if (fulfillBrandStrategyPack && customerEmail) {
                 try {
+                  const bspSourceProductType = isSelfieGuideBundle ? "selfie_guide_bundle" : "selfie_guide"
+                  const bspPackDescription = isSelfieGuideBundle
+                    ? "Brand Strategy Pack (included in Selfie Guide bundle)"
+                    : "Brand Strategy Pack (Selfie Guide order bump)"
+                  const bspUserTagSource = isSelfieGuideBundle
+                    ? "selfie_guide_bundle_included"
+                    : "selfie_guide_order_bump"
+                  const bspEntitlementSource = isSelfieGuideBundle
+                    ? "stripe_webhook:selfie_guide_bundle_brand_strategy"
+                    : "stripe_webhook:selfie_guide_order_bump"
+                  const bspAnalyticsSource = isSelfieGuideBundle ? "selfie_guide_bundle" : "selfie_guide_order_bump"
                   const brandStrategyPaymentId = paymentIntentId
                     ? `${paymentIntentId}:brand_strategy_pack`
                     : `${session.id}:brand_strategy_pack`
+                  const brandStrategyStoredAmountCents =
+                    boughtBrandStrategyBump && brandStrategyBumpAmountCents > 0
+                      ? brandStrategyBumpAmountCents
+                      : 0
 
                   if (customerId) {
                     await sql`
@@ -1883,17 +1929,17 @@ export async function POST(request: NextRequest) {
                         ${brandStrategyPaymentId},
                         ${customerId},
                         ${userId},
-                        ${brandStrategyBumpAmountCents},
+                        ${brandStrategyStoredAmountCents},
                         'usd',
                         'succeeded',
                         'brand_strategy_pack',
                         'brand_strategy_pack',
-                        ${"Brand Strategy Pack (Selfie Guide order bump)"},
+                        ${bspPackDescription},
                         ${JSON.stringify({
                           ...(session.metadata || {}),
                           source_session_id: session.id,
                           source_payment_id: paymentIdForStorage,
-                          source_product_type: "selfie_guide",
+                          source_product_type: bspSourceProductType,
                         })},
                         NOW(),
                         ${isTestMode},
@@ -1902,7 +1948,7 @@ export async function POST(request: NextRequest) {
                       )
                       ON CONFLICT (stripe_payment_id)
                       DO UPDATE SET
-                        amount_cents = ${brandStrategyBumpAmountCents},
+                        amount_cents = ${brandStrategyStoredAmountCents},
                         status = 'succeeded',
                         updated_at = NOW()
                     `
@@ -1940,11 +1986,11 @@ export async function POST(request: NextRequest) {
                     VALUES (
                       ${userId},
                       'bought_brand_strategy_pack',
-                      ${"selfie_guide_order_bump"},
+                      ${bspUserTagSource},
                       ${JSON.stringify({
                         stripe_session_id: session.id,
                         stripe_payment_id: brandStrategyPaymentId,
-                        source_product_type: "selfie_guide",
+                        source_product_type: bspSourceProductType,
                       })}
                     )
                     ON CONFLICT (user_id, tag) DO NOTHING
@@ -1955,9 +2001,9 @@ export async function POST(request: NextRequest) {
                     productId: "brand_strategy_pack",
                     sourceRef: brandStrategyPaymentId,
                     metadata: {
-                      source: "stripe_webhook:selfie_guide_order_bump",
+                      source: bspEntitlementSource,
                       stripe_session_id: session.id,
-                      source_product_type: "selfie_guide",
+                      source_product_type: bspSourceProductType,
                     },
                   })
 
@@ -1995,7 +2041,9 @@ export async function POST(request: NextRequest) {
                     subject: setupEmailContent.subject,
                     html: setupEmailContent.html,
                     text: setupEmailContent.text,
-                    tags: ["brand-strategy-setup", "selfie-guide-order-bump"],
+                    tags: isSelfieGuideBundle
+                      ? ["brand-strategy-setup", "selfie-guide-bundle"]
+                      : ["brand-strategy-setup", "selfie-guide-order-bump"],
                     emailType: "brand-strategy-setup",
                   })
 
@@ -2004,13 +2052,13 @@ export async function POST(request: NextRequest) {
                       eventName: "brand_strategy_pack_checkout_success",
                       userId: String(userId),
                       properties: {
-                        source: "selfie_guide_order_bump",
+                        source: bspAnalyticsSource,
                         product_type: "brand_strategy_pack",
-                        value: brandStrategyBumpAmountCents / 100,
+                        value: brandStrategyStoredAmountCents / 100,
                         currency: "usd",
                         stripe_session_id: session.id,
                         stripe_payment_id: brandStrategyPaymentId,
-                        source_product_type: "selfie_guide",
+                        source_product_type: bspSourceProductType,
                         is_test_mode: isTestMode,
                       },
                     })
@@ -2018,7 +2066,9 @@ export async function POST(request: NextRequest) {
                     // best effort only
                   }
 
-                  console.log(`[v0] ✅ Brand Strategy order bump fulfilled for ${customerEmail}`)
+                  console.log(
+                    `[v0] ✅ Brand Strategy fulfilled for ${customerEmail} (${isSelfieGuideBundle ? "bundle" : "order bump"})`
+                  )
                 } catch (bumpError: any) {
                   console.error(
                     `[v0] Error fulfilling Brand Strategy order bump:`,
@@ -2120,7 +2170,7 @@ export async function POST(request: NextRequest) {
                   userId: String(userId),
                   properties: {
                     source: source || "landing_page",
-                    product_type: "selfie_guide",
+                    product_type: guideProductType,
                     value: paymentAmountCents / 100,
                     currency: "usd",
                     stripe_session_id: session.id,

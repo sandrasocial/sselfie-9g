@@ -2,6 +2,9 @@
  * SSELFIE Design Tokens
  *
  * Dark glass design primitives aligned to the current app chrome.
+ *
+ * On near-black surfaces (#0a0a0a–#0d0c0b), prefer white / porcelain for body copy — avoid mid-gray text
+ * (e.g. #666, #8a8780) which fails contrast.
  */
 
 const cardClass = [

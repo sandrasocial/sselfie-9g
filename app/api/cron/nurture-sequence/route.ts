@@ -108,7 +108,7 @@ async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivati
     FROM subscriptions s
     INNER JOIN users u ON u.id::varchar = s.user_id
     INNER JOIN freebie_subscribers fs ON LOWER(fs.email) = LOWER(u.email)
-    WHERE s.product_type = 'selfie_guide'
+    WHERE s.product_type IN ('selfie_guide', 'selfie_guide_bundle')
       AND s.status = 'active'
       AND s.created_at <= NOW()
       AND s.created_at > NOW() - INTERVAL '3 days'

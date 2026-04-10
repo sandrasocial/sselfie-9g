@@ -92,6 +92,39 @@ async function getSubscriber(token: string): Promise<{
   }
 }
 
+async function emailHasBrandStrategyAccess(email: string | null | undefined): Promise<boolean> {
+  const trimmed = typeof email === "string" ? email.trim() : ""
+  if (!trimmed) return false
+  try {
+    const rows = await sql`
+      SELECT 1
+      FROM users u
+      WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(${trimmed}))
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM user_entitlements ue
+            WHERE ue.user_id = u.id
+              AND ue.product_id IN ('brand_strategy_pack', 'selfie_guide_bundle')
+              AND ue.status = 'active'
+              AND (ue.valid_until IS NULL OR ue.valid_until > NOW())
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM subscriptions s
+            WHERE s.user_id = u.id::varchar
+              AND s.product_type = 'brand_strategy_pack'
+              AND s.status = 'active'
+          )
+        )
+      LIMIT 1
+    `
+    return rows.length > 0
+  } catch {
+    return false
+  }
+}
+
 function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title: string; body: string; ctaLabel?: string }) {
   return (
     <main className={`status-page ${inter.className}`}>
@@ -107,8 +140,8 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
       <style>{`
         .status-page {
           min-height: 100vh;
-          background: #0d0c0b;
-          color: #f0ede8;
+          background: #0a0a0a;
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -117,8 +150,8 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
 
         .status-card {
           max-width: 580px;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          background: rgba(175, 170, 162, 0.1);
+          border: 1px solid rgba(229, 229, 229, 0.2);
+          background: rgba(245, 245, 245, 0.06);
           backdrop-filter: blur(42px);
           padding: 38px 32px;
           border-radius: 18px;
@@ -130,7 +163,7 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: rgba(255, 255, 255, 0.88);
         }
 
         h1 {
@@ -139,7 +172,7 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
           font-weight: 300;
           text-transform: uppercase;
           letter-spacing: 0.03em;
-          color: #f0ede8;
+          color: #ffffff;
           line-height: 1;
         }
 
@@ -147,14 +180,14 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
           margin: 16px 0 0;
           font-size: 15px;
           line-height: 1.8;
-          color: #c8c4bb;
+          color: #ffffff;
         }
 
         .status-cta {
           margin-top: 22px;
           display: inline-block;
-          color: #0d0c0b;
-          background: #c8c4bb;
+          color: #0a0a0a;
+          background: #e5e5e5;
           padding: 12px 16px;
           font-size: 10px;
           letter-spacing: 0.28em;
@@ -190,6 +223,8 @@ export default async function SelfieGuideAccessPage({ params, searchParams }: Pa
     return <StatusView title="UNAVAILABLE" body="We couldn't load your guide right now. Please try again in a moment." />
   }
 
+  const hasBrandStrategyAccess = await emailHasBrandStrategyAccess(result.data.email)
+
   return (
     <SelfieGuideExperience
       firstName={upperName(result.data.name)}
@@ -197,6 +232,7 @@ export default async function SelfieGuideAccessPage({ params, searchParams }: Pa
       checkoutSessionId={typeof query.checkout_session === "string" ? query.checkout_session : undefined}
       brandStrategyBumpSelected={query.brand_strategy_bump === "1"}
       presetDownloadUrl={process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL || undefined}
+      hasBrandStrategyAccess={hasBrandStrategyAccess}
     />
   )
 }

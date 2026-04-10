@@ -522,7 +522,7 @@ export function SuccessContent({
       <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-[#f0ede8]">{selfieGuideStatus}</p>
-        <p className="text-sm text-[#8a8780]">
+        <p className="text-sm text-[#f5f5f5]">
           Estimated time remaining: {Math.max(0, 120 - (selfieGuidePollAttempts * 2))}s
         </p>
         <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
@@ -542,7 +542,7 @@ export function SuccessContent({
           <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
             Your guide is still syncing
           </h2>
-          <p className="text-[#8a8780] max-w-md">{selfieGuideRecoveryMessage}</p>
+          <p className="text-[#f5f5f5] max-w-md">{selfieGuideRecoveryMessage}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
@@ -574,7 +574,7 @@ export function SuccessContent({
       <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-[#f0ede8]">{brandStrategyStatus}</p>
-        <p className="text-sm text-[#8a8780]">
+        <p className="text-sm text-[#f5f5f5]">
           Estimated time remaining: {Math.max(0, 120 - (brandStrategyPollAttempts * 2))}s
         </p>
         <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
@@ -594,7 +594,7 @@ export function SuccessContent({
           <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
             Your strategy is still syncing
           </h2>
-          <p className="text-[#8a8780] max-w-md">
+          <p className="text-[#f5f5f5] max-w-md">
             Your payment went through. We&apos;re still preparing your private setup link.
           </p>
         </div>
@@ -625,9 +625,9 @@ export function SuccessContent({
             Explore Studio
           </Button>
         </div>
-        <p className="text-sm text-[#8a8780]">
+        <p className="text-sm text-[#f5f5f5]">
           We also sent your setup link by email. If you still need help,{" "}
-          <a href="mailto:support@sselfie.ai" className="underline text-[#a8a49c] hover:text-[#f0ede8]">
+          <a href="mailto:support@sselfie.ai" className="underline text-[#f5f5f5] hover:text-white">
             contact support
           </a>
           .
@@ -645,7 +645,7 @@ export function SuccessContent({
       <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-[#f0ede8]">{pollingMessage}</p>
-        <p className="text-sm text-[#8a8780]">
+        <p className="text-sm text-[#f5f5f5]">
           {timeRemaining > 0 ? `Estimated time remaining: ${timeRemaining}s` : "Please wait..."}
         </p>
         <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
@@ -666,7 +666,7 @@ export function SuccessContent({
           <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
             Payment Processing
           </h2>
-          <p className="text-[#8a8780] max-w-md">
+          <p className="text-[#f5f5f5] max-w-md">
             Your payment was successful. Access is syncing and should complete within a few minutes.
           </p>
         </div>
@@ -686,9 +686,9 @@ export function SuccessContent({
             Continue to Feed Planner
           </Button>
         </div>
-        <p className="text-sm text-[#8a8780]">
+        <p className="text-sm text-[#f5f5f5]">
           If access is not available after 5 minutes, please{" "}
-          <a href="mailto:support@sselfie.ai" className="underline text-[#a8a49c] hover:text-[#f0ede8]">
+          <a href="mailto:support@sselfie.ai" className="underline text-[#f5f5f5] hover:text-white">
             contact support
           </a>
         </p>
@@ -778,7 +778,7 @@ export function SuccessContent({
             <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
               ALL SET
             </h1>
-            <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
+            <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
               Your credits have been added to your account. Redirecting you back to the studio...
             </p>
           </div>
@@ -822,7 +822,7 @@ export function SuccessContent({
           <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4">
             YOU&apos;RE IN
           </h1>
-          <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto mb-8">
+          <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto mb-8">
             We&apos;ve received your payment. You&apos;ll get onboarding details by email soon.
           </p>
           <button
@@ -847,7 +847,7 @@ export function SuccessContent({
           <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4 animate-pulse">
             PREPARING YOUR PURCHASE
           </div>
-          <div className="text-xs sm:text-sm text-[#8a8780] font-light">Finalizing everything for you...</div>
+          <div className="text-xs sm:text-sm text-[#f5f5f5] font-light">Finalizing everything for you...</div>
         </div>
       </div>
     )
@@ -860,7 +860,7 @@ export function SuccessContent({
           <div className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl md:text-5xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4 sm:mb-6">
             PAYMENT PENDING
           </div>
-          <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed mb-6 sm:mb-8 px-4">
+          <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed mb-6 sm:mb-8 px-4">
             Your payment is being processed. Check your email for confirmation.
           </p>
           <button
@@ -900,7 +900,7 @@ export function SuccessContent({
             <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
               LET&apos;S GET YOU STARTED
             </h1>
-            <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
+            <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
               Add your password so you can open everything inside SSELFIE. This takes less than a minute.
             </p>
           </div>
@@ -910,7 +910,7 @@ export function SuccessContent({
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Your Name
                 </label>
@@ -920,7 +920,7 @@ export function SuccessContent({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                   placeholder="What should we call you?"
                 />
               </div>
@@ -928,7 +928,7 @@ export function SuccessContent({
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Email
                 </label>
@@ -937,14 +937,14 @@ export function SuccessContent({
                   id="email"
                   value={userInfo.email || initialEmail}
                   disabled
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#8a8780] text-sm sm:text-base font-light"
+                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#f5f5f5] text-sm sm:text-base font-light"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Choose Password
                 </label>
@@ -955,7 +955,7 @@ export function SuccessContent({
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                   placeholder="At least 8 characters"
                 />
               </div>
@@ -963,7 +963,7 @@ export function SuccessContent({
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Confirm Password
                 </label>
@@ -974,7 +974,7 @@ export function SuccessContent({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                   placeholder="One more time"
                 />
               </div>
@@ -993,14 +993,14 @@ export function SuccessContent({
                 {isSubmitting ? "SETTING UP..." : "LET'S GO"}
               </button>
 
-              <p className="text-[10px] sm:text-xs text-[#8a8780] font-light text-center leading-relaxed">
+              <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light text-center leading-relaxed">
                 By continuing, you agree to our Terms of Service and Privacy Policy
               </p>
             </form>
           </div>
 
           <div className="mt-6 sm:mt-8 text-center">
-            <p className="text-xs sm:text-sm text-[#8a8780] font-light leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#f5f5f5] font-light leading-relaxed">
               Check your email for your receipt and welcome message from Sandra
             </p>
           </div>
@@ -1038,7 +1038,7 @@ export function SuccessContent({
               <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
                 LET&apos;S GET YOU STARTED
               </h1>
-              <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
+              <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
                 Add your password so you can open everything inside SSELFIE. This takes less than a minute.
               </p>
             </div>
@@ -1048,7 +1048,7 @@ export function SuccessContent({
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Your Name
                   </label>
@@ -1058,7 +1058,7 @@ export function SuccessContent({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                     placeholder="What should we call you?"
                   />
                 </div>
@@ -1066,7 +1066,7 @@ export function SuccessContent({
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Email
                   </label>
@@ -1075,14 +1075,14 @@ export function SuccessContent({
                     id="email"
                     value={userInfo.email || initialEmail}
                     disabled
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#8a8780] text-sm sm:text-base font-light"
+                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#f5f5f5] text-sm sm:text-base font-light"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Choose Password
                   </label>
@@ -1093,7 +1093,7 @@ export function SuccessContent({
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                     placeholder="At least 8 characters"
                   />
                 </div>
@@ -1101,7 +1101,7 @@ export function SuccessContent({
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Confirm Password
                   </label>
@@ -1112,7 +1112,7 @@ export function SuccessContent({
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-[#8a8780]"
+                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
                     placeholder="One more time"
                   />
                 </div>
@@ -1131,14 +1131,14 @@ export function SuccessContent({
                   {isSubmitting ? "SETTING UP..." : "LET'S GO"}
                 </button>
 
-                <p className="text-[10px] sm:text-xs text-[#8a8780] font-light text-center leading-relaxed">
+                <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light text-center leading-relaxed">
                   By continuing, you agree to our Terms of Service and Privacy Policy
                 </p>
               </form>
             </div>
 
             <div className="mt-6 sm:mt-8 text-center">
-              <p className="text-xs sm:text-sm text-[#8a8780] font-light leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#f5f5f5] font-light leading-relaxed">
                 Check your email for your receipt and welcome message from Sandra
               </p>
             </div>
@@ -1149,7 +1149,7 @@ export function SuccessContent({
               <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
                 {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
-              <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
+              <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
                 {isPollingAccess
                   ? `Setting up your paid access... (${pollAttempts + 1}/${MAX_POLL_ATTEMPTS})`
                   : isAuthenticated
@@ -1164,28 +1164,28 @@ export function SuccessContent({
               </h2>
               <div className="space-y-4 sm:space-y-5">
                 <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                  <span className="text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase">Product</span>
+                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Product</span>
                   <span className="text-sm sm:text-base text-[#f0ede8] font-light">
                     {getProductLabel(userInfo.productType || purchaseType)}
                   </span>
                 </div>
                 {userInfo.credits && Number(userInfo.credits) > 0 && (
                   <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                    <span className="text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase">
+                    <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">
                       {userInfo.productType === "sselfie_studio_membership" ? "Monthly Credits" : "Credits Included"}
                     </span>
                     <span className="text-sm sm:text-base text-[#f0ede8] font-light">{userInfo.credits} credits</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                  <span className="text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase">Email</span>
+                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Email</span>
                   <span className="text-sm sm:text-base text-[#f0ede8] font-light">
                     {userInfo.email || initialEmail}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase">Status</span>
-                  <span className="text-sm sm:text-base text-[#a8a49c] font-light">Active</span>
+                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Status</span>
+                  <span className="text-sm sm:text-base text-[#f5f5f5] font-light">Active</span>
                 </div>
               </div>
             </div>
@@ -1221,7 +1221,7 @@ export function SuccessContent({
                   </button>
                 </div>
               ) : null}
-              <p className="text-[10px] sm:text-xs text-[#8a8780] font-light mt-4 sm:mt-6">
+              <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light mt-4 sm:mt-6">
                 A confirmation email has been sent to {userInfo.email || initialEmail}
               </p>
             </div>
