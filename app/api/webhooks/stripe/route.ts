@@ -142,7 +142,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (idempotencyError: any) {
     console.error("[v0] Idempotency check error:", idempotencyError.message)
-    // Continue processing if idempotency check fails (better to risk duplicate than miss event)
+    // Return 500 so Stripe retries — better to delay than risk double credit grants
+    return NextResponse.json({ error: "Idempotency check failed" }, { status: 500 })
   }
 
   const customerId = event.data.object.customer || event.data.object.id

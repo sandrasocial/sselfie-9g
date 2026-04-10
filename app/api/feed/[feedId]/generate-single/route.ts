@@ -585,6 +585,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // Feed Planner prompts from prompt-shaper.ts are already correct
       const cleanedPrompt = finalPrompt // Use prompt as-is from authority
       
+      // Deduct credits BEFORE calling NanoBanana — once generation starts, API cost is incurred
+      const deduction = await deductCredits(
+        user.id.toString(),
+        getStudioProCreditCost('2K'),
+        "image",
+        `Feed post generation (Pro Mode) - ${post.post_type}`,
+      )
+      if (!deduction.success) {
+        console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits before generation:", deduction.error)
+        return Response.json(
+          {
+            error: "Could not deduct credits",
+            code: "credit_deduction_failed",
+            message: deduction.error ?? "Credit deduction failed. Please try again.",
+          },
+          { status: 402 },
+        )
+      }
+
       let generation
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -609,7 +628,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       if (!generation) {
         throw new Error("Failed to generate image")
       }
-      
+
       await sql`
         UPDATE feed_posts
         SET generation_status = 'generating',
@@ -618,18 +637,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             updated_at = NOW()
         WHERE id = ${postId}
       `
-      
-      const deduction = await deductCredits(
-        user.id.toString(),
-        getStudioProCreditCost('2K'),
-        "image",
-        `Feed post generation (Pro Mode) - ${post.post_type}`,
-        generation.predictionId,
-      )
-      
-      if (!deduction.success) {
-        console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits:", deduction.error)
-      }
       
       return Response.json({ 
         predictionId: generation.predictionId,

@@ -224,40 +224,43 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Deduct credits BEFORE calling NanoBanana — once generation starts, API cost is incurred
+    if (userId) {
+      const creditDeduction = await deductCredits(
+        userId,
+        gridGenerationCost,
+        "image",
+        `Blueprint grid generation`,
+      )
+      if (!creditDeduction.success) {
+        console.error(`[Blueprint] ⚠️ Failed to deduct credits before generation: ${creditDeduction.error}`)
+        return NextResponse.json(
+          {
+            error: "Could not deduct credits",
+            code: "credit_deduction_failed",
+            message: creditDeduction.error ?? "Credit deduction failed. Please try again.",
+          },
+          { status: 402 },
+        )
+      }
+      console.log(`[Blueprint] ✅ Credits deducted: ${gridGenerationCost} credits for user ${userId} (balance: ${creditDeduction.newBalance})`)
+    }
+
     // Generate grid with Nano Banana Pro
     const result = await generateWithNanoBanana({
       prompt,
       image_input: validImageUrls,
       aspect_ratio: "1:1",
-      resolution: "2K", // Free tier - 2K resolution
+      resolution: "2K",
       output_format: "png",
       safety_filter_level: "block_only_high",
     })
 
     console.log(`[Blueprint] Grid generation started: ${result.predictionId} for`, userId ? `user_id: ${userId}` : `email: ${email}`)
 
-    // Save prediction ID to database (will be updated when grid completes)
-    // Decision 1: Deduct credits when grid generation starts (only for authenticated users)
+    // Save prediction ID to database
     try {
       if (userId) {
-        // Deduct credits for grid generation (2 credits = 2 images × 1 credit each)
-        const creditDeduction = await deductCredits(
-          userId,
-          gridGenerationCost,
-          "image",
-          `Blueprint grid generation (${result.predictionId})`,
-          result.predictionId,
-        )
-        
-        if (creditDeduction.success) {
-          console.log(`[Blueprint] ✅ Credits deducted: ${gridGenerationCost} credits for user ${userId} (balance: ${creditDeduction.newBalance})`)
-        } else {
-          console.error(`[Blueprint] ⚠️ Failed to deduct credits: ${creditDeduction.error}`)
-          // Don't fail generation if credit deduction fails - credits may have already been deducted
-          // But log the error for monitoring
-        }
-        
-        // Save prediction ID
         await sql`
           UPDATE blueprint_subscribers
           SET grid_prediction_id = ${result.predictionId}
@@ -265,7 +268,6 @@ export async function POST(req: NextRequest) {
         `
       } else {
         // Email-based (backward compatibility): Just save prediction ID (no credit deduction)
-        // Note: Guest flow will be deprecated in Phase 4
         await sql`
           UPDATE blueprint_subscribers
           SET grid_prediction_id = ${result.predictionId}

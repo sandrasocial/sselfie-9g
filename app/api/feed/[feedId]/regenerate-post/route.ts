@@ -146,6 +146,26 @@ async function handleRegeneratePost(
         console.log(`[v0] [REGENERATE-POST] ✅ Regenerated prompt via V2 (${feedLayout.layout_type || 'grid_3x3'})`)
       }
       
+      // Deduct credits BEFORE calling NanoBanana — once generation starts, API cost is incurred
+      const deduction = await deductCredits(
+        neonUser.id.toString(),
+        getStudioProCreditCost('2K'),
+        "image",
+        `Feed post regeneration (Pro Mode) - ${post.post_type}`,
+      )
+      if (!deduction.success) {
+        console.error("[v0] [REGENERATE-POST] Failed to deduct credits before generation:", deduction.error)
+        return NextResponse.json(
+          {
+            error: "Could not deduct credits",
+            code: "credit_deduction_failed",
+            message: deduction.error ?? "Credit deduction failed. Please try again.",
+          },
+          { status: 402 },
+        )
+      }
+      console.log("[v0] [REGENERATE-POST] ✅ Credits deducted:", deduction.newBalance)
+
       // Generate with Nano Banana Pro
       const generation = await generateWithNanoBanana({
         prompt: finalPrompt,
@@ -155,32 +175,17 @@ async function handleRegeneratePost(
         output_format: 'png',
         safety_filter_level: 'block_only_high',
       })
-      
+
       // Update post with new prediction
       await sql`
         UPDATE feed_posts
-        SET 
+        SET
           prediction_id = ${generation.predictionId},
           generation_status = 'generating',
           prompt = ${finalPrompt},
           updated_at = NOW()
         WHERE id = ${postId}
       `
-      
-      // Deduct Pro Mode credits (2 credits)
-      const deduction = await deductCredits(
-        neonUser.id.toString(),
-        getStudioProCreditCost('2K'),
-        "image",
-        `Feed post regeneration (Pro Mode) - ${post.post_type}`,
-        generation.predictionId,
-      )
-      
-      if (!deduction.success) {
-        console.error("[v0] [REGENERATE-POST] Failed to deduct credits:", deduction.error)
-      } else {
-        console.log("[v0] [REGENERATE-POST] ✅ Credits deducted:", deduction.newBalance)
-      }
       
       return NextResponse.json({
         success: true,

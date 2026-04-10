@@ -162,33 +162,24 @@ export async function addCredits(
       options,
     })
 
-    let currentBalance = 0
-    try {
-      currentBalance = await getUserCredits(userId)
-      console.log("[v0] [CREDITS] Current balance before adding:", currentBalance)
-    } catch (balanceError) {
-      console.error("[v0] [CREDITS] Error getting current balance, will initialize:", balanceError)
-      // If user doesn't exist, we'll create them with the new balance
-      currentBalance = 0
-    }
-
-    const newBalance = currentBalance + amount
-
-    await sql`
+    // Atomic upsert: balance uses SQL addition (not app-calculated value) to prevent lost-update race
+    const upsertResult = await sql`
       INSERT INTO user_credits (user_id, balance, total_purchased, total_used, created_at, updated_at)
-      VALUES (${userId}, ${newBalance}, ${amount}, 0, NOW(), NOW())
-      ON CONFLICT (user_id) 
-      DO UPDATE SET 
-        balance = ${newBalance},
+      VALUES (${userId}, ${amount}, ${amount}, 0, NOW(), NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        balance = user_credits.balance + ${amount},
         total_purchased = user_credits.total_purchased + ${amount},
         updated_at = NOW()
+      RETURNING balance
     `
 
-    console.log("[v0] [CREDITS] Updated balance in database")
+    const newBalance = Number(upsertResult[0].balance)
+    console.log("[v0] [CREDITS] Updated balance in database. New balance:", newBalance)
 
     await sql`
       INSERT INTO credit_transactions (
-        user_id, amount, transaction_type, description, 
+        user_id, amount, transaction_type, description,
         stripe_payment_id, balance_after, is_test_mode, created_at
       )
       VALUES (
@@ -275,82 +266,59 @@ export async function deductCredits(
           }
         }
         
-        // Atomic UPDATE: only succeeds if balance >= amount
-        // This prevents race condition - if two requests run concurrently,
-        // only one will succeed (the one that sees balance >= amount)
-        const updateResult = await sql`
-          UPDATE user_credits
-          SET 
-            balance = balance - ${amount},
-            total_used = total_used + ${amount},
-            updated_at = NOW()
-          WHERE user_id = ${userId}
-            AND balance >= ${amount}
-          RETURNING balance
+        // Single atomic CTE: UPDATE balance + INSERT ledger record in one transaction.
+        // If the INSERT fails, the UPDATE rolls back — ledger and balance stay in sync.
+        const result = await sql`
+          WITH deduction AS (
+            UPDATE user_credits
+            SET
+              balance = balance - ${amount},
+              total_used = total_used + ${amount},
+              updated_at = NOW()
+            WHERE user_id = ${userId}
+              AND balance >= ${amount}
+            RETURNING balance
+          ),
+          log_entry AS (
+            INSERT INTO credit_transactions (
+              user_id, amount, transaction_type, description,
+              reference_id, balance_after
+            )
+            SELECT
+              ${userId}, ${-amount}, ${type}, ${description},
+              ${referenceId || null}, balance
+            FROM deduction
+          )
+          SELECT balance FROM deduction
         `
-        
-        // If UPDATE affected 0 rows, either:
-        // 1. Balance was insufficient (shouldn't happen after check, but possible with race)
-        // 2. Concurrent update changed balance between check and update
-        if (updateResult.length === 0) {
+
+        // 0 rows = UPDATE matched nothing (insufficient funds or concurrent deduction)
+        if (result.length === 0) {
           attempts++
-          
-          // Re-check balance to determine reason
+
           const recheckBalance = await getUserCredits(userId)
-          
           if (recheckBalance < amount) {
-            // Insufficient credits (race condition: another request deducted first)
             return {
               success: false,
               newBalance: recheckBalance,
               error: `Insufficient credits. You have ${recheckBalance} credits but need ${amount}.`,
             }
           }
-          
-          // Concurrent update detected - retry
+
+          // Concurrent update — retry with backoff
           if (attempts < maxAttempts) {
-            const delayMs = 100 * Math.pow(2, attempts - 1) // 100ms, 200ms, 400ms
+            const delayMs = 100 * Math.pow(2, attempts - 1)
             console.log(`[v0] [CREDITS] ⏳ Concurrent update detected, retrying in ${delayMs}ms...`)
             await new Promise(resolve => setTimeout(resolve, delayMs))
-            continue // Retry
+            continue
           } else {
             finalError = `Failed to deduct credits after ${maxAttempts} attempts due to concurrent updates`
             console.error("[v0] [CREDITS] ❌ All retry attempts exhausted")
             break
           }
         }
-        
-        // UPDATE succeeded - get new balance
-        const newBalance = updateResult[0].balance
-        
-        // Record transaction (after successful UPDATE)
-        // ⚠️ RISK: If INSERT fails here, credits are deducted but no ledger record exists
-        // This is rare but possible. Mitigation: Log error prominently, repair tool available
-        try {
-          await sql`
-            INSERT INTO credit_transactions (
-              user_id, amount, transaction_type, description, 
-              reference_id, balance_after
-            )
-            VALUES (
-              ${userId}, ${-amount}, ${type}, ${description},
-              ${referenceId || null}, ${newBalance}
-            )
-          `
-        } catch (insertError: any) {
-          // Credits already deducted, but transaction log failed
-          // Log prominently for manual repair if needed
-          console.error(`[v0] [CREDITS] ❌ CRITICAL: Credits deducted but transaction log failed:`, {
-            userId,
-            amount,
-            newBalance,
-            error: insertError.message,
-            referenceId,
-          })
-          // Continue - credits are deducted, user can use them
-          // Admin can repair transaction log later using repair tool
-        }
-        
+
+        const newBalance = Number(result[0].balance)
         finalBalance = newBalance
         success = true
         

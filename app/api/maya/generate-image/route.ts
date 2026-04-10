@@ -329,8 +329,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const seed =
-      customSettings?.seed ?? (qualitySettings as any).seed ?? randomInt(1_000_000)
+    const seed = customSettings?.seed ?? randomInt(1_000_000)
     const predictionInput = buildClassicModeReplicateInput({
       prompt: finalPrompt,
       qualitySettings,
@@ -340,22 +339,30 @@ export async function POST(request: NextRequest) {
       extraLoraDisabled: lora.shouldDisableExtraLora,
     })
 
-    const prediction = await replicate.predictions.create({
-      version: model.replicateVersionId,
-      input: predictionInput,
-    })
-
-    // ── Credits + DB record ────────────────────────────────────────────────
+    // ── Deduct credits BEFORE submitting to Replicate ─────────────────────
+    // Must happen first: once a prediction is created, the API cost is incurred.
     const deductionResult = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
       "image",
       `Generated: ${conceptTitle}`,
-      prediction.id,
     )
     if (!deductionResult.success) {
-      console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
+      console.error("[v0] [CREDITS] Failed to deduct credits before generation:", deductionResult.error)
+      return NextResponse.json(
+        {
+          error: "Could not deduct credits",
+          code: "credit_deduction_failed",
+          message: deductionResult.error ?? "Credit deduction failed. Please try again.",
+        },
+        { status: 402 },
+      )
     }
+
+    const prediction = await replicate.predictions.create({
+      version: model.replicateVersionId,
+      input: predictionInput,
+    })
 
     const insertResult = await sql`
       INSERT INTO generated_images (
@@ -405,7 +412,7 @@ export async function POST(request: NextRequest) {
       status: "processing",
       textOverlay: addTextOverlay ? textOverlayConfig : null,
       creditsDeducted: CREDIT_COSTS.IMAGE,
-      newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
+      newBalance: deductionResult.newBalance,
     })
   } catch (error) {
     return handleGenerationError(error)
