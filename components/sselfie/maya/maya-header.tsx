@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import type React from "react"
 import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
 import { useToast } from '@/hooks/use-toast'
-import MayaModeToggle from "./maya-mode-toggle"
 import MayaTabSwitcher from "./maya-tab-switcher"
 
 interface Guide {
@@ -23,7 +22,8 @@ interface MayaHeaderUnifiedProps {
   chatTitle: string
   showNavMenu: boolean
   onToggleNavMenu: () => void
-  onModeSwitch: (enable: boolean) => void
+  /** Classic → Pro; mode control is on the chat input bar — kept optional for older call sites. */
+  onModeSwitch?: (enable: boolean) => void
   
   // Pro Mode props
   libraryCount?: number
@@ -89,7 +89,6 @@ export default function MayaHeaderUnified({
   chatTitle,
   showNavMenu,
   onToggleNavMenu,
-  onModeSwitch,
   libraryCount = 0,
   credits = 0,
   onManageLibrary,
@@ -126,9 +125,6 @@ export default function MayaHeaderUnified({
   const guidePanelRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const formattedCredits = Number.isFinite(credits) ? Math.round(credits).toLocaleString() : "0"
-  const compactCredits = Number.isFinite(credits)
-    ? new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Math.round(credits))
-    : "0"
   const hasLibraryActions = Boolean(onManageLibrary || onAddImages || onEditIntent || onStartFresh)
 
   useEffect(() => {
@@ -248,7 +244,7 @@ export default function MayaHeaderUnified({
     }
   }, [showNavMenu, isGuideMenuOpen, isDotsMenuOpen])
 
-  // Single chrome row: Photos/Videos/Train (scroll) + credits, mode, New chat, menus
+  // Single chrome row: Photos/Videos/Train (scroll) + quick menus (credits / mode / new chat live under the composer)
   const barClassName =
     "flex w-full items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
   const actionsClusterClass =
@@ -385,68 +381,6 @@ export default function MayaHeaderUnified({
               </>
             )}
           </div>
-
-          {/* Credits Display - Always show when available */}
-          {credits !== undefined && (
-            <button
-              type="button"
-              onClick={() => onOpenCredits?.()}
-              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] min-h-[36px] sm:min-h-[40px] shrink-0 hover:bg-[rgba(175,170,162,0.18)] transition-colors"
-              aria-label="Open credits and top-up options"
-            >
-              <span className="hidden sm:inline text-[10px] md:text-xs font-light text-[#8a8780] uppercase tracking-wider">
-                Credits
-              </span>
-              <span className="sm:hidden text-[11px] font-semibold text-[#f0ede8] tabular-nums">
-                {compactCredits}
-              </span>
-              <span className="hidden sm:inline text-xs sm:text-sm md:text-base font-semibold text-[#f0ede8] tabular-nums">
-                {formattedCredits}
-              </span>
-              <span className="text-[10px] sm:text-xs font-medium text-[#a8a49c] uppercase tracking-[0.14em]">+</span>
-            </button>
-          )}
-
-          {/* Mode Toggle - segmented control showing both options
-              Progressive enhancement: Same component, different state based on current mode */}
-          {showModeToggle && (
-            proMode ? (
-              onSwitchToClassic && (
-                <MayaModeToggle
-                  currentMode="pro"
-                  onToggle={onSwitchToClassic}
-                  variant="compact"
-                />
-              )
-            ) : (
-              <MayaModeToggle
-                currentMode="classic"
-                onToggle={() => onModeSwitch(true)}
-                variant="compact"
-              />
-            )
-          )}
-
-          {/* New chat — compact pill (History lives in ··· or ≡ menu) */}
-          {onNewProject && (
-            <button
-              type="button"
-              onClick={onNewProject}
-              className="touch-manipulation active:scale-95 shrink-0 rounded-md border border-[rgba(195,190,182,0.28)] bg-[rgba(175,170,162,0.14)] px-2 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-2.5 hover:bg-[rgba(175,170,162,0.22)] transition-colors"
-              style={{
-                fontFamily: "var(--font-body, Inter)",
-                fontSize: "9px",
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "#f0ede8",
-              }}
-              aria-label="Start a new chat"
-            >
-              <span className="sm:hidden">New</span>
-              <span className="hidden sm:inline">New chat</span>
-            </button>
-          )}
 
           {/* Dots Menu Button — desktop quick actions (History, etc.) */}
           {(onSettings || onHistory || onNavigation) && (
@@ -634,6 +568,18 @@ export default function MayaHeaderUnified({
                     >
                       {formattedCredits}
                     </div>
+                    {onOpenCredits && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenCredits()
+                          onToggleNavMenu()
+                        }}
+                        className="mt-4 w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] py-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.16)] transition-colors touch-manipulation"
+                      >
+                        Get credits
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -641,6 +587,18 @@ export default function MayaHeaderUnified({
                     <div className="text-3xl font-serif font-extralight text-[#f0ede8] tabular-nums">
                       {formattedCredits}
                     </div>
+                    {onOpenCredits && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenCredits()
+                          onToggleNavMenu()
+                        }}
+                        className="mt-4 w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] py-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.14)] transition-colors touch-manipulation"
+                      >
+                        Get credits
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -760,7 +718,8 @@ export default function MayaHeaderUnified({
                   Account
                 </button>
 
-                {(onHistory || (onNewProject && !(activeTab && onTabChange))) && (
+                {(onHistory ||
+                  (onNewProject && !(activeTab === "photos" || activeTab === "feed"))) && (
                   <>
                     <div
                       className="border-t my-2"
@@ -787,7 +746,7 @@ export default function MayaHeaderUnified({
                         History
                       </button>
                     )}
-                    {onNewProject && !(activeTab && onTabChange) && (
+                    {onNewProject && !(activeTab === "photos" || activeTab === "feed") && (
                       <button
                         onClick={() => {
                           onNewProject()

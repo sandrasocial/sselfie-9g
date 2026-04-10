@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { SlidersHorizontal } from "lucide-react"
 import LoadingSpinner from "../loading-spinner"
+import MayaModeToggle from "./maya-mode-toggle"
 import { Typography, Colors, BorderRadius } from "@/lib/maya/pro/design-system"
 
 /**
@@ -60,6 +61,11 @@ interface MayaUnifiedInputProps {
   // Navigation buttons (replaces Open Library, consistent in both modes)
   onNewProject?: () => void
   onHistory?: () => void
+
+  /** Photos tab — My Model / Selfie toggle (same as former header control). */
+  showModeToggle?: boolean
+  onModeSwitch?: (enablePro: boolean) => void | Promise<void>
+  onSwitchToClassic?: () => void | Promise<void>
   
   // Styling
   proMode?: boolean
@@ -83,6 +89,9 @@ export default function MayaUnifiedInput({
   onManageLibrary,
   onNewProject,
   onHistory,
+  showModeToggle = false,
+  onModeSwitch,
+  onSwitchToClassic,
   proMode = false,
   imageCount = 0,
 }: MayaUnifiedInputProps) {
@@ -359,7 +368,60 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* New Project / History moved to header ··· menu */}
+        {/* Model / Selfie + New chat — under Image / Adjust (credits stay in ≡ menu) */}
+        {(showModeToggle || onNewProject) && (
+          <div
+            className={`mt-2 flex flex-wrap items-center gap-2 border-t border-[rgba(195,190,182,0.12)] pt-2 ${
+              showModeToggle ? "justify-between" : "justify-end"
+            }`}
+          >
+            <div className="min-w-0 flex flex-1 items-center [&_.inline-flex]:max-w-full">
+              {showModeToggle &&
+                (proMode && onSwitchToClassic ? (
+                  <MayaModeToggle
+                    currentMode="pro"
+                    onToggle={() => {
+                      void onSwitchToClassic()
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="shrink min-w-0"
+                  />
+                ) : !proMode && onModeSwitch ? (
+                  <MayaModeToggle
+                    currentMode="classic"
+                    onToggle={() => {
+                      void onModeSwitch(true)
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="shrink min-w-0"
+                  />
+                ) : null)}
+            </div>
+            {onNewProject && (
+              <button
+                type="button"
+                onClick={onNewProject}
+                className="touch-manipulation active:scale-95 shrink-0 rounded-md border border-[rgba(195,190,182,0.28)] bg-[rgba(175,170,162,0.14)] px-2 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-2.5 hover:bg-[rgba(175,170,162,0.22)] transition-colors"
+                style={{
+                  fontFamily: "var(--font-body, Inter)",
+                  fontSize: "9px",
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  color: "#f0ede8",
+                }}
+                aria-label="Start a new chat"
+              >
+                <span className="sm:hidden">New</span>
+                <span className="hidden sm:inline">New chat</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* History remains in header ··· / ≡ menu */}
       </form>
     </div>
   )

@@ -3840,7 +3840,6 @@ export default function MayaChatScreen({
           chatTitle={chatTitle}
           showNavMenu={showNavMenu}
           onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
-          onModeSwitch={handleModeSwitch}
           libraryCount={libraryTotalImages}
           credits={creditBalance}
           onManageLibrary={undefined}
@@ -4440,6 +4439,9 @@ export default function MayaChatScreen({
               onManageLibrary={undefined} // Removed - image icon handles library access
               onNewProject={handleNewChat}
               onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
+              showModeToggle={activeMayaTab === "photos"}
+              onModeSwitch={handleModeSwitch}
+              onSwitchToClassic={() => handleModeSwitch(false)}
               proMode={proMode}
               imageCount={hasProFeatures ? libraryTotalImages : undefined}
             />
