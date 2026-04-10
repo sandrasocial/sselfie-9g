@@ -2,13 +2,13 @@ import type { Metadata } from "next"
 import SelfieGuidePaidLanding from "@/components/selfie-guide/selfie-guide-paid-landing"
 
 export const metadata: Metadata = {
-  title: "The Selfie Guide — Camera Angles, Lighting & Posing for Personal Brand Content",
+  title: "The Selfie Guide — Selfies You Feel Good Posting",
   description:
-    "Learn the exact selfie framework Sandra uses to create scroll-stopping brand content without a photographer. Camera angles, natural lighting, and posing techniques for personal brands.",
+    "Sandra’s eight-part interactive selfie guide: phone settings, light, angles, editing, confidence, content rhythm, a 7-day challenge, and optional Studio. One-time $17, instant access.",
   openGraph: {
-    title: "The Selfie Guide — Stop Guessing. Start Showing Up.",
+    title: "The Selfie Guide — Selfies you feel good posting",
     description:
-      "The exact selfie framework for content creators who want professional-looking photos without a professional photographer.",
+      "Eight guided parts, instant access. Phone, natural light, no photographer — the same framework Sandra uses for brand photos.",
     url: "https://sselfie.ai/selfie-guide",
     type: "website",
     images: [
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Selfie Guide — Stop Guessing. Start Showing Up.",
+    title: "The Selfie Guide — Selfies you feel good posting",
     description:
-      "The exact selfie framework for personal brand content. No photographer needed.",
+      "Eight-part interactive guide — light, angles, editing, confidence, and a 7-day challenge. $17 one-time.",
     images: ["https://sselfie.ai/og-image.png"],
   },
   alternates: {
