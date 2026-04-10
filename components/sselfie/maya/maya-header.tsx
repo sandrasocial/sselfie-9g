@@ -451,11 +451,11 @@ export default function MayaHeaderUnified({
                     boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
                   }}
                 >
-                  {onSettings && (
+                  {onSettings && activeTab === "photos" && (
                     <button onClick={() => { onSettings(); setIsDotsMenuOpen(false) }}
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
-                      Settings
+                      Photo generation
                     </button>
                   )}
                   {onNewProject && (
@@ -848,25 +848,45 @@ export default function MayaHeaderUnified({
                   </>
                 )}
 
-                {/* Pro Mode: Generation Settings */}
-                {proMode && onSettings && (
+                {/* Photo generation (Flux) — Photos tab, Classic + Pro (mobile menu) */}
+                {onSettings && activeTab === "photos" && (
+                  <>
+                    <div
+                      className="border-t my-2"
+                      style={{
+                        borderColor: "rgba(195,190,182,0.15)",
+                      }}
+                    />
                   <button
                     onClick={() => {
                       onSettings()
                       onToggleNavMenu()
                     }}
                     className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
-                    style={{
-                      fontFamily: Typography.ui.fontFamily,
-                      fontSize: Typography.ui.sizes.md,
-                      fontWeight: Typography.ui.weights.medium,
-                      color: "#f0ede8",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.12em",
-                    }}
+                    style={
+                      proMode
+                        ? {
+                            fontFamily: Typography.ui.fontFamily,
+                            fontSize: Typography.ui.sizes.md,
+                            fontWeight: Typography.ui.weights.medium,
+                            color: "#f0ede8",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                          }
+                        : {}
+                    }
                   >
-                    Settings
+                    <span
+                      className={
+                        proMode
+                          ? ""
+                          : "text-sm font-serif font-extralight tracking-[0.2em] uppercase text-[#f0ede8]"
+                      }
+                    >
+                      Photo generation
+                    </span>
                   </button>
+                  </>
                 )}
 
                 {/* Switch Mode - SELFIE mode shows "Switch to MY MODEL" in menu on mobile (membership only) */}

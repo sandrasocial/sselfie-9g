@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import LoadingSpinner from '../loading-spinner'
-import { Typography, Colors, BorderRadius } from '@/lib/maya/pro/design-system'
+import { useState, useRef } from "react"
+import { SlidersHorizontal } from "lucide-react"
+import LoadingSpinner from "../loading-spinner"
+import { Typography, Colors, BorderRadius } from "@/lib/maya/pro/design-system"
 
 /**
  * Maya Unified Input Component
@@ -19,7 +19,7 @@ import { Typography, Colors, BorderRadius } from '@/lib/maya/pro/design-system'
  * 
  * **Classic Mode Features:**
  * - Text input with image upload
- * - Settings button (opens settings panel)
+ * - Photo generation button (opens generation settings panel)
  * - Send button
  * 
  * **Pro Mode Features (when enabled):**
@@ -49,11 +49,10 @@ interface MayaUnifiedInputProps {
   isUploadingImage?: boolean
   onRemoveImage?: () => void
   
-  // Classic Mode features
+  /** When true, shows a visible "Photo generation" control (Photos tab — opens generation settings). */
   showSettingsButton?: boolean
   onSettingsClick?: () => void
-  showChatMenu?: boolean // Pass menu state from parent
-  
+
   // Pro Mode features
   showLibraryButton?: boolean
   onManageLibrary?: () => void
@@ -80,7 +79,6 @@ export default function MayaUnifiedInput({
   placeholder = "Message Maya...",
   showSettingsButton = false,
   onSettingsClick,
-  showChatMenu = false,
   showLibraryButton = false,
   onManageLibrary,
   onNewProject,
@@ -203,45 +201,6 @@ export default function MayaUnifiedInput({
     className={inputContainerClass}
     style={{ ...inputContainerStyle, position: 'relative' }}
   >
-      {/* Chat Menu Dropdown - Rendered via portal to avoid positioning issues (Classic Mode only) */}
-      {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
-        <div 
-          className="fixed bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden shadow-xl shadow-stone-950/30 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
-          style={{
-            bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + var(--input-bar-height, 168px) - 8px)",
-            left: '12px',
-            right: '12px',
-            maxWidth: 'calc(100vw - 24px)',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => {
-              if (onSettingsClick) {
-                onSettingsClick() // This will close the menu and open settings (handled by parent)
-              }
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-[#f0ede8] hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
-          >
-            <span className="font-medium uppercase tracking-[0.2em] text-[11px]">Generation Settings</span>
-          </button>
-        </div>,
-        document.body
-      )}
-      
-      {/* Click outside to close menu */}
-      {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-[60]"
-          onClick={() => {
-            if (onSettingsClick) {
-              onSettingsClick() // Close menu when clicking outside
-            }
-          }}
-        />,
-        document.body
-      )}
-      
       <form onSubmit={handleSubmit} className={inputWrapperClass}>
         {/* Uploaded image preview */}
         {uploadedImage && (
@@ -287,7 +246,7 @@ export default function MayaUnifiedInput({
           </div>
         )}
 
-        <div className={`flex min-w-0 ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
+        <div className={`flex min-w-0 ${proMode ? "items-end gap-2 sm:gap-3" : "items-end gap-2"}`}>
           {/* Image upload button */}
           <button
             type="button"
@@ -318,6 +277,22 @@ export default function MayaUnifiedInput({
               </>
             )}
           </button>
+
+          {/* Photo generation — visible on Photos tab (Classic + Pro); opens same modal as header Settings */}
+          {showSettingsButton && onSettingsClick && (
+            <button
+              type="button"
+              onClick={() => onSettingsClick()}
+              disabled={isLoading || disabled}
+              className={`${imageButtonClass} flex flex-row items-center justify-center gap-1 min-w-[56px] sm:min-w-[92px] px-1.5`}
+              style={imageButtonStyle}
+              aria-label="Photo generation: style strength, guidance, aspect ratio, realism"
+              title="Style strength, guidance (Flux), aspect ratio, realism boost"
+            >
+              <SlidersHorizontal className="w-4 h-4 shrink-0 opacity-90" aria-hidden />
+              <span className="text-[10px] uppercase tracking-[0.14em] font-medium">Adjust</span>
+            </button>
+          )}
 
           {/* Text input */}
           <div className="flex-1 min-w-0">

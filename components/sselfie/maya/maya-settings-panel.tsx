@@ -62,13 +62,19 @@ export default function MayaSettingsPanel({
       {/* Settings Panel */}
       <div className="fixed inset-x-4 top-20 bottom-4 sm:bottom-auto sm:max-h-[85vh] bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-xl shadow-black/40 animate-in slide-in-from-top-2 duration-300 z-[101] max-w-md mx-auto flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 p-6 pb-4 flex-shrink-0">
-          <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">
-            Generation Settings
-          </h3>
+        <div className="flex items-start justify-between gap-4 mb-4 p-6 pb-4 flex-shrink-0">
+          <div className="min-w-0 pr-2">
+            <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">
+              Photo generation
+            </h3>
+            <p className="text-[11px] text-white/50 mt-1 tracking-wide">
+              How strongly Maya follows your prompt and trained look
+            </p>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="shrink-0 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Close settings"
           >
             <span className="text-[10px] uppercase tracking-[0.2em] text-white/75">Close</span>

@@ -4484,11 +4484,10 @@ export default function MayaChatScreen({
               isLoading={isTyping || isGeneratingConcepts}
               disabled={isTyping || isGeneratingConcepts}
               placeholder={getMayaInputPlaceholder(activeMayaTab as any)}
-              showSettingsButton={!hasProFeatures}
+              showSettingsButton={activeMayaTab === "photos"}
               onSettingsClick={() => {
                 setShowSettings(true)
               }}
-              showChatMenu={false}
               showLibraryButton={false} // Removed - image icon handles library access
               onManageLibrary={undefined} // Removed - image icon handles library access
               onNewProject={handleNewChat}
