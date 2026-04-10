@@ -5,7 +5,7 @@ export interface NurtureStrategyEmailProps {
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-const GUIDE_FALLBACK_URL = `${SITE_URL}/selfie-guide`
+const STRATEGY_FALLBACK_URL = `${SITE_URL}/brand-strategy`
 const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN2Email({
@@ -18,7 +18,7 @@ export function generateNurtureStrategyN2Email({
   subject: string
 } {
   const name = firstName?.trim() || recipientEmail.split("@")[0] || "friend"
-  const guideUrl = strategyUrl || GUIDE_FALLBACK_URL
+  const strategyLink = strategyUrl || STRATEGY_FALLBACK_URL
 
   const html = `<!DOCTYPE html>
 <html>
@@ -47,7 +47,7 @@ export function generateNurtureStrategyN2Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Not because I suddenly had more hours. But because I stopped using my brain for the stuff AI could do better and faster.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">That's what I want to show you next.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If someone close to you needs this too, your invite link lives here: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
-              <p style="margin:0 0 18px;"><a href="${guideUrl}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Go back and read your guide -></a></p>
+              <p style="margin:0 0 18px;"><a href="${strategyLink}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Go back to your strategy -></a></p>
               <p style="margin:0;font-size:16px;line-height:1.7;">Sandra</p>
             </td>
           </tr>
@@ -84,7 +84,7 @@ That's what I want to show you next.
 
 If someone close to you needs this too, your invite link lives here: ${REFERRAL_URL}
 
-Go back and read your guide -> ${guideUrl}
+Go back to your strategy -> ${strategyLink}
 
 Sandra`
 

@@ -56,6 +56,6 @@ Sandra`
   return {
     html,
     text,
-    subject: "Welcome to The Visibility Studio — let's make you visible",
+    subject: "Welcome to Studio — let's get your first result today",
   }
 }

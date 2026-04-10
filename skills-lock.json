@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "5c03ee454d24c886cad3d1687a4f3da893edeaad05ee5aebb0eb19a515324a3e"
     },
+    "agent-email-inbox": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "computedHash": "b8cba75884e4e239be7c84c3e96e636e94cdef8c097dca66d0a7a562d93cfb20"
+    },
     "animate": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
@@ -55,6 +60,11 @@
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "computedHash": "2937d567b86a6e48c7338731c7dcc4edbe1ffb2058f9502d2b94e5ef81a8ce13"
+    },
+    "email-best-practices": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "computedHash": "8984234c4a261c45edb6290155b058f29cc7fb1c995e898c3143f6d5b6d9a3ae"
     },
     "emil-design-eng": {
       "source": "emilkowalski/skill",
@@ -126,10 +136,25 @@
       "sourceType": "github",
       "computedHash": "79087d2724b1c35b300a69a3cb1f71bae89f2231b10d53a367457e3c15399051"
     },
+    "react-email": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "computedHash": "93c0c459feff02042922f08171b4053e3c359fced686c5ca75dc1b9426233fc5"
+    },
     "redesign-existing-projects": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "computedHash": "b405eee0e0e80fc243f731d9aa368bca307e356db7e6157d27101d369dac6726"
+    },
+    "resend": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "computedHash": "f9b9da21da1ccaa4ff9f64bf87b8327c29ec5addb0f328011e2d42cf60a5ed19"
+    },
+    "resend-cli": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "computedHash": "f00e40b99bee14350b5e9c8e1368394dc9f011d0327206229abb1e1ac8c56830"
     },
     "shape": {
       "source": "pbakaus/impeccable",

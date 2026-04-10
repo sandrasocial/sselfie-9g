@@ -30,15 +30,51 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
     return { success: true, dryRun: true }
   }
 
-  const result = await resend.emails.send({
-    from: input.from || EMAIL_CONFIG.transactional.from,
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-    reply_to: input.replyTo || EMAIL_CONFIG.transactional.replyTo,
-    tags: [{ name: "type", value: input.emailType }],
-  })
+  const MAX_ATTEMPTS = 3
+  const BACKOFF_MS = [1000, 2000, 4000]
+  let lastResult: Awaited<ReturnType<typeof resend.emails.send>> | undefined
+  let lastError: string | undefined
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      lastResult = await resend.emails.send({
+        from: input.from || EMAIL_CONFIG.transactional.from,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+        reply_to: input.replyTo || EMAIL_CONFIG.transactional.replyTo,
+        tags: [{ name: "type", value: input.emailType }],
+      })
+
+      if (lastResult?.error) {
+        lastError = lastResult.error.message || "Resend error"
+        const isRetryable =
+          lastError.includes("rate") ||
+          lastError.includes("429") ||
+          lastError.includes("timeout") ||
+          lastError.includes("network")
+        if (isRetryable && attempt < MAX_ATTEMPTS) {
+          console.warn(`[v0] [transactional] Attempt ${attempt} failed (retryable): ${lastError}`)
+          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+          continue
+        }
+        break
+      }
+
+      // Success
+      lastError = undefined
+      break
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err)
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(`[v0] [transactional] Attempt ${attempt} threw: ${lastError}`)
+        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+      }
+    }
+  }
+
+  const result = lastResult
 
   try {
     await sql`
@@ -57,8 +93,8 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
         ${input.emailType},
         ${result?.data?.id || null},
         1,
-        ${result?.error ? "failed" : "success"},
-        ${result?.error?.message || null},
+        ${result?.error || lastError ? "failed" : "success"},
+        ${result?.error?.message || lastError || null},
         ${JSON.stringify({ to: input.to, subject: input.subject })},
         NOW()
       )

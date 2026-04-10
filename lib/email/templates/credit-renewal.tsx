@@ -11,7 +11,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
   const { firstName, creditsGranted } = params
   const displayName = firstName || "there"
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const studioUrl = `${siteUrl}/studio`
+  const studioUrl = `${siteUrl}/studio?tab=maya`
 
   const html = `
 <!DOCTYPE html>
@@ -66,7 +66,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${studioUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  Go to The Studio →
+                  Open Maya &rarr;
                 </a>
               </div>
               
@@ -83,7 +83,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
                 Questions? Just reply to this email - I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                XoXo Sandra 💋
+                Sandra
               </p>
               <p style="margin: 16px 0 0; color: #a8a29e; font-size: 11px; font-weight: 300;">
                 © ${new Date().getFullYear()} SSELFIE. All rights reserved.
@@ -114,13 +114,13 @@ Ready for your next photoshoot
 
 That means it's the perfect time for a new photoshoot or content drop. Your credits are waiting in The Studio.
 
-Go to The Studio →: ${studioUrl}
+Open Maya: ${studioUrl}
 
 P.S. These credits don't roll over, so use them while you have them. Time to create something beautiful.
 
 Questions? Just reply to this email - I read every message.
 
-XoXo Sandra 💋
+Sandra
 
 © ${new Date().getFullYear()} SSELFIE. All rights reserved.
   `

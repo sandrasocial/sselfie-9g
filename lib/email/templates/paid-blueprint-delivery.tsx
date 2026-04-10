@@ -2,40 +2,19 @@ export interface PaidBlueprintDeliveryParams {
   firstName?: string
   email: string
   accessToken: string
-  photoPreviewUrls?: string[] // Optional: up to 4 preview images
 }
 
-export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your SSELFIE Brand Blueprint is ready 📸"
+export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your Feed Blueprint is ready 🗓️"
 
 export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDeliveryParams): {
   html: string
   text: string
 } {
-  const { firstName, email, accessToken, photoPreviewUrls } = params
+  const { firstName, email, accessToken } = params
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
-  // Canonical destination: feed planner shell (legacy /blueprint/paid is deprecated)
-  const paidBlueprintUrl = `${siteUrl}/feed-planner?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=delivery`
-
-  // Build photo preview grid if provided (max 4 images)
-  const previewImages = photoPreviewUrls?.slice(0, 4) || []
-  const photoPreviewHtml = previewImages.length > 0 ? `
-              <div style="margin: 24px 0;">
-                <p style="margin: 0 0 12px; color: #292524; font-size: 14px; font-weight: 300; line-height: 1.7;">
-                  Here's a preview of your photos:
-                </p>
-                <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    ${previewImages.map((url, idx) => `
-                    <td style="padding: ${idx < previewImages.length - 1 ? "0 8px 0 0" : "0"}; width: ${100 / previewImages.length}%;">
-                      <img src="${url}" alt="Photo ${idx + 1}" style="width: 100%; height: auto; border-radius: 8px; display: block;" />
-                    </td>
-                    `).join("")}
-                  </tr>
-                </table>
-              </div>
-  ` : ""
+  const feedPlannerUrl = `${siteUrl}/feed-planner?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=delivery`
 
   const html = `
 <!DOCTYPE html>
@@ -43,81 +22,89 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your SSELFIE Brand Blueprint is ready</title>
+  <title>Your Feed Blueprint is ready</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
-          
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e7e5e4;">
+
           <!-- Header -->
           <tr>
-            <td style="padding: 40px 30px 20px; text-align: center;">
-              <h1 style="margin: 0 0 20px; color: #1c1917; font-size: 28px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: 'Cormorant Garamond', Georgia, serif;">
+            <td style="background-color: #0c0a09; padding: 40px 24px; text-align: center;">
+              <h1 style="margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 32px; font-weight: 200; letter-spacing: 0.3em; color: #fafaf9; text-transform: uppercase;">
                 S S E L F I E
               </h1>
-              <h2 style="margin: 0; color: #292524; font-size: 24px; font-weight: 300; line-height: 1.4; font-family: 'Cormorant Garamond', Georgia, serif;">
-                Hi ${displayName}! Your 30 Photos Are Ready
-              </h2>
             </td>
           </tr>
-          
+
           <!-- Main Content -->
           <tr>
-            <td style="padding: 0 30px 30px;">
-              <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                I'm so excited to share your personalized brand blueprint photos with you! You now have 30 professional photos ready to use, all based on your brand strategy.
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
+                Hey ${displayName},
               </p>
-              
-              <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                Here's what you got:
+
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
+                Your Feed Blueprint is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
               </p>
-              
-              <ul style="margin: 0 0 24px; padding-left: 20px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.8;">
-                <li style="margin-bottom: 12px;">30 custom photos that match your brand aesthetic</li>
-                <li style="margin-bottom: 12px;">Ready to download and use immediately</li>
-                <li style="margin-bottom: 12px;">Perfect for Instagram, LinkedIn, or your website</li>
-                <li style="margin-bottom: 12px;">All photos look like you - no generic stock photos</li>
-              </ul>
-              
-              ${photoPreviewHtml}
-              
-              <div style="background-color: #fafaf9; border-left: 3px solid #292524; padding: 20px; margin: 24px 0; border-radius: 4px;">
-                <p style="margin: 0 0 12px; color: #292524; font-size: 14px; font-weight: 300; line-height: 1.7; font-style: italic;">
-                  "Your photos are ready. Now it's time to show up consistently."
-                </p>
-                <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                  - Sandra
-                </p>
-              </div>
-              
-              <p style="margin: 24px 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                Click below to view and download all 30 photos. You can start using them right away!
+
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
+                Here's where to start:
               </p>
-              
+
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 0 0 24px;">
+                <tr>
+                  <td style="padding: 16px 20px; background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4;">
+                    <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #8a8780; letter-spacing: 0.1em; text-transform: uppercase;">Step 1</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">Open your Feed Planner and review your 9-post grid. Get familiar with the layout before you start filling it in.</p>
+                  </td>
+                </tr>
+                <tr><td style="height: 10px;"></td></tr>
+                <tr>
+                  <td style="padding: 16px 20px; background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4;">
+                    <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #8a8780; letter-spacing: 0.1em; text-transform: uppercase;">Step 2</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">Pick one post slot. Write the caption. Don't try to do all nine at once — one caption today builds the habit.</p>
+                  </td>
+                </tr>
+                <tr><td style="height: 10px;"></td></tr>
+                <tr>
+                  <td style="padding: 16px 20px; background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4;">
+                    <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #8a8780; letter-spacing: 0.1em; text-transform: uppercase;">Step 3</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">Come back tomorrow and do one more. In a week you'll have your whole month planned.</p>
+                  </td>
+                </tr>
+              </table>
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${paidBlueprintUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  View My 30 Photos →
+                <a href="${feedPlannerUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">
+                  Open your Feed Blueprint &rarr;
                 </a>
               </div>
+
+              <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #57534e;">
+                If you hit a wall or have questions, just reply here. I read every message.
+              </p>
+
+              <p style="margin: 0; font-size: 16px; color: #1c1917;">
+                Sandra
+              </p>
             </td>
           </tr>
-          
+
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
-              <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6;">
-                Questions? Just reply to this email - I read every message.
+            <td style="padding: 24px 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 11px; color: #a8a29e;">
+                SSELFIE Studio &bull; Fauskevegen 121, 6230 Sykkylven, Norway
               </p>
-              <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                XoXo Sandra 💋
-              </p>
-              <p style="margin: 16px 0 0; color: #a8a29e; font-size: 11px; font-weight: 300;">
-                © ${new Date().getFullYear()} SSELFIE. All rights reserved.
+              <p style="margin: 0; font-size: 11px; color: #a8a29e;">
+                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #a8a29e; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
@@ -126,33 +113,28 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 </html>
   `
 
-  const text = `
-S S E L F I E
+  const text = `S S E L F I E
 
-Hi ${displayName}! Your 30 Photos Are Ready
+Hey ${displayName},
 
-I'm so excited to share your personalized brand blueprint photos with you! You now have 30 professional photos ready to use, all based on your brand strategy.
+Your Feed Blueprint is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
 
-Here's what you got:
+Here's where to start:
 
-• 30 custom photos that match your brand aesthetic
-• Ready to download and use immediately
-• Perfect for Instagram, LinkedIn, or your website
-• All photos look like you - no generic stock photos
+Step 1 — Open your Feed Planner and review your 9-post grid. Get familiar with the layout before you start filling it in.
 
-"Your photos are ready. Now it's time to show up consistently."
-- Sandra
+Step 2 — Pick one post slot. Write the caption. Don't try to do all nine at once — one caption today builds the habit.
 
-Click below to view and download all 30 photos. You can start using them right away!
+Step 3 — Come back tomorrow and do one more. In a week you'll have your whole month planned.
 
-View My 30 Photos →: ${paidBlueprintUrl}
+Open your Feed Blueprint: ${feedPlannerUrl}
 
-Questions? Just reply to this email - I read every message.
+If you hit a wall or have questions, just reply here. I read every message.
 
-XoXo Sandra 💋
+Sandra
 
-© ${new Date().getFullYear()} SSELFIE. All rights reserved.
-  `
+SSELFIE Studio · Fauskevegen 121, 6230 Sykkylven, Norway
+Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return { html, text }
 }

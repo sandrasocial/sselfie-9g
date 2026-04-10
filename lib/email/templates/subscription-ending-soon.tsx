@@ -56,7 +56,7 @@ export function generateSubscriptionEndingSoonEmail(params: SubscriptionEndingSo
           </tr>
           <tr>
             <td style="padding: 0 30px 30px; color: #8a8780; font-size: 13px; line-height: 1.6;">
-              Need help? Reply to this email and we’ll take care of you.
+              Need help? Reply to this email and I’ll sort it out.
             </td>
           </tr>
         </table>
@@ -74,7 +74,7 @@ Your current Studio access is set to end on ${periodEndDate}.
 If you want to keep creating without interruption, you can manage your subscription here:
 ${manageBillingUrl}
 
-Need help? Reply to this email and we’ll take care of you.
+Need help? Reply to this email and I’ll sort it out.
 `
 
   return { subject, html, text }

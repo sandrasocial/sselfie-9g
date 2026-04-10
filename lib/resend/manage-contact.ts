@@ -294,6 +294,7 @@ export async function addContactToSegment(
 
     console.log(`[v0] Adding contact ${email} to segment ${segmentId}`)
 
+    const resend = requireResendClient()
     // Use the Resend API to add contact to segment (SDK typings may lag)
     const { error } = await (resend as any).contacts.segments.add({
       email,
@@ -348,7 +349,8 @@ export async function removeContactFromSegment(
 
     console.log(`[v0] Removing contact ${email} from segment ${segmentId}`)
 
-    const { error } = await resend.contacts.segments.remove({
+    const resend = requireResendClient()
+    const { error } = await (resend as any).contacts.segments.remove({
       email,
       segmentId,
     })

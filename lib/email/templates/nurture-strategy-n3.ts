@@ -36,10 +36,10 @@ export function generateNurtureStrategyN3Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You know that brand strategy Maya built for you?</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Imagine if you had an AI that actually remembered all of that. Your pillars. Your voice. Your audience. Your story.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And every time you needed to create content - a caption, a reel script, a post idea - it already knew who you were. You didn't have to explain yourself from scratch every single time.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">That's what Creator Studio is.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">That's what Studio is.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">It's where your brand strategy becomes your content engine.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You get Maya trained on your brand, a full content system that works with how you actually post, AI photo generation so you never run out of visuals, and monthly drops with new tools and templates.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">$97/month. Cancel anytime.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You get Maya — an AI that already knows your brand pillars, your voice, your aesthetic. A full content system. AI photo generation trained on your face so you never run out of visuals.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">€97/month. Cancel anytime.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Know someone who'd love this? Share your invite link here: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
               <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Take a look -></a></p>
@@ -61,13 +61,13 @@ Imagine if you had an AI that actually remembered all of that. Your pillars. You
 
 And every time you needed to create content - a caption, a reel script, a post idea - it already knew who you were. You didn't have to explain yourself from scratch every single time.
 
-That's what Creator Studio is.
+That's what Studio is.
 
 It's where your brand strategy becomes your content engine.
 
-You get Maya trained on your brand, a full content system that works with how you actually post, AI photo generation so you never run out of visuals, and monthly drops with new tools and templates.
+You get Maya — an AI that already knows your brand pillars, your voice, your aesthetic. A full content system. AI photo generation trained on your face so you never run out of visuals.
 
-$97/month. Cancel anytime.
+€97/month. Cancel anytime.
 
 I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.
 

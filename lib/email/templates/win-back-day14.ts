@@ -115,7 +115,7 @@ export function generateWinBackDay14Email(params: WinBackDay14Params): {
           <tr>
             <td style="padding: 30px; background-color: #f5f5f5; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 8px; font-size: 12px; color: #8a8780;">
-                SSELFIE Studio &mdash; Where Visibility Meets Financial Freedom
+                SSELFIE Studio &bull; sselfie.ai
               </p>
               <p style="margin: 0; font-size: 12px; color: #8a8780;">
                 <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #8a8780; text-decoration: underline;">Unsubscribe</a>
@@ -160,7 +160,7 @@ Come back whenever you're ready: ${rejoinLink}
 
 XoXo Sandra
 
-SSELFIE Studio — Where Visibility Meets Financial Freedom
+SSELFIE Studio · sselfie.ai
 Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return {

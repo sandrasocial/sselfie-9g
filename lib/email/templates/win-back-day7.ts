@@ -119,7 +119,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
               </p>
 
               <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                So I want to make it easy: come back and try it free. ${offerCode ? `Use code <strong>${offerCode}</strong> at checkout for a 7-day free restart &mdash; no charge until you decide to stay.` : "I'll add credits to your account so you can pick up where you left off, on me."}
+                So I want to make it easy to come back. ${offerCode ? `Use code <strong>${offerCode}</strong> at checkout for a 7-day free restart &mdash; no charge until you decide to stay.` : "No pitch. No awkward re-join process. Just click the button and you're back in."}
               </p>
 
               <div style="text-align: center; margin: 0 0 32px;">
@@ -142,7 +142,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
           <tr>
             <td style="padding: 30px; background-color: #f5f5f5; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 8px; font-size: 12px; color: #8a8780;">
-                SSELFIE Studio &mdash; Where Visibility Meets Financial Freedom
+                SSELFIE Studio &bull; sselfie.ai
               </p>
               <p style="margin: 0; font-size: 12px; color: #8a8780;">
                 <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #8a8780; text-decoration: underline;">Unsubscribe</a>
@@ -159,7 +159,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
 
   const trialOffer = offerCode
     ? `Use code ${offerCode} at checkout for a 7-day free restart — no charge until you decide to stay.`
-    : "I'll add credits to your account so you can pick up where you left off, on me."
+    : "No pitch. No awkward re-join process. Just click the button and you're back in."
 
   const text = `S S E L F I E
 
@@ -188,7 +188,7 @@ If you've already moved on, I completely understand. But if there's still a part
 
 XoXo Sandra
 
-SSELFIE Studio — Where Visibility Meets Financial Freedom
+SSELFIE Studio · sselfie.ai
 Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return {

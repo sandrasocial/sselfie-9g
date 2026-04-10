@@ -55,6 +55,18 @@
     {
       "path": "/api/cron/sync-audience-segments",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/blueprint-followup-sequence",
+      "schedule": "10 10 * * *"
+    },
+    {
+      "path": "/api/cron/send-scheduled-newsletters",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-segments",
+      "schedule": "0 3 * * *"
     }
   ]
 }

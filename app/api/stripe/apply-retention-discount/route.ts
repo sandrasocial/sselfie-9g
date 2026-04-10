@@ -9,7 +9,7 @@ const RETENTION_COUPON_ID = "COMEBACK50"
 
 export async function POST() {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-01-27.acacia" })
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" as any })
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -49,8 +49,8 @@ export async function POST() {
 
     // Apply coupon to subscription (applies on next invoice)
     await stripe.subscriptions.update(subscriptionId, {
-      coupon: RETENTION_COUPON_ID,
-    })
+      discounts: [{ coupon: RETENTION_COUPON_ID }],
+    } as any)
 
     console.log(`[retention] Applied ${RETENTION_COUPON_ID} to subscription ${subscriptionId} for ${neonUser.email}`)
 

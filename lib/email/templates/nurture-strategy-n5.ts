@@ -38,11 +38,11 @@ export function generateNurtureStrategyN5Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">But here's what I do know.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You took the time to build a brand strategy with Maya. You cared enough to do that. That tells me you're not just scrolling - you're actually trying to build something real.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And doing that alone is hard. Not impossible. But hard.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system, an AI that knows their brand, and a community of women building the same thing.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system and an AI that already knows their brand — so they can just show up and create.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If that's you - the door is open.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And if you know someone who needs this, share your invite link: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
-              <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Creator Studio -></a></p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If it's not the right time - no pressure at all. Your guide is yours. Use it. Build with it. Come back when you're ready.</p>
+              <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Studio -></a></p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If it's not the right time - no pressure at all. Your strategy is yours. Use it. Build with it. Come back when you're ready.</p>
               <p style="margin:0;font-size:16px;line-height:1.7;">I'll be here.<br/><br/>Sandra</p>
             </td>
           </tr>
@@ -65,15 +65,15 @@ You took the time to build a brand strategy with Maya. You cared enough to do th
 
 And doing that alone is hard. Not impossible. But hard.
 
-Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system, an AI that knows their brand, and a community of women building the same thing.
+Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system and an AI that already knows their brand — so they can just show up and create.
 
 If that's you - the door is open.
 
 And if you know someone who needs this, share your invite link: ${REFERRAL_URL}
 
-Join Creator Studio -> ${MEMBERSHIP_URL}
+Join Studio -> ${MEMBERSHIP_URL}
 
-If it's not the right time - no pressure at all. Your guide is yours. Use it. Build with it. Come back when you're ready.
+If it's not the right time - no pressure at all. Your strategy is yours. Use it. Build with it. Come back when you're ready.
 
 I'll be here.
 

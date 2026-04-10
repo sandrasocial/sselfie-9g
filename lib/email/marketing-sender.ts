@@ -109,17 +109,24 @@ async function resendFetchWithRetry(
 
 function ensureComplianceHtml(html: string): string {
   if (html.includes("RESEND_UNSUBSCRIBE_URL")) {
+    // Unsubscribe link already present; still append address if missing
+    if (!html.includes("SSELFIE Studio")) {
+      return `${html}\n${EMAIL_CONFIG.compliance.addressHtml}`
+    }
     return html
   }
-  return `${html}\n${EMAIL_CONFIG.compliance.unsubscribeHtml}`
+  return `${html}\n${EMAIL_CONFIG.compliance.unsubscribeHtml}\n${EMAIL_CONFIG.compliance.addressHtml}`
 }
 
 function ensureComplianceText(text?: string): string | undefined {
   if (!text) return undefined
   if (text.includes("RESEND_UNSUBSCRIBE_URL")) {
+    if (!text.includes("SSELFIE Studio")) {
+      return `${text}\n\n${EMAIL_CONFIG.compliance.addressText}`
+    }
     return text
   }
-  return `${text}\n\n${EMAIL_CONFIG.compliance.unsubscribeText}`
+  return `${text}\n\n${EMAIL_CONFIG.compliance.unsubscribeText}\n${EMAIL_CONFIG.compliance.addressText}`
 }
 
 function toTagMap(tags: any[] | undefined): Record<string, string> {

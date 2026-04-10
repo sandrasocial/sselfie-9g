@@ -33,6 +33,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip auth for routes authenticated via x-cron-secret (admin automation endpoints)
+  if (request.headers.get("x-cron-secret") === process.env.CRON_SECRET) {
+    return NextResponse.next()
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/freebie/")) {
     if (DEBUG_LOGS) {
       console.log("[v0] Skipping auth middleware for public freebie API")

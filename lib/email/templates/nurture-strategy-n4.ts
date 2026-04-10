@@ -41,8 +41,8 @@ export function generateNurtureStrategyN4Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">It hasn't.</p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.7;">If you're ready to stop figuring it out alone, Studio is where you come.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If a friend comes to mind, send her your invite link: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
-              <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Creator Studio -></a></p>
-              <p style="margin:0;font-size:16px;line-height:1.7;">$97/month. Cancel any time. I'm in there every day.<br/><br/>Sandra</p>
+              <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Studio -></a></p>
+              <p style="margin:0;font-size:16px;line-height:1.7;">€97/month. Cancel any time.<br/><br/>Sandra</p>
             </td>
           </tr>
         </table>
@@ -70,9 +70,9 @@ If you're ready to stop figuring it out alone, Studio is where you come.
 
 If a friend comes to mind, send her your invite link: ${REFERRAL_URL}
 
-Join Creator Studio -> ${MEMBERSHIP_URL}
+Join Studio -> ${MEMBERSHIP_URL}
 
-$97/month. Cancel any time. I'm in there every day.
+€97/month. Cancel any time.
 
 Sandra`
 
