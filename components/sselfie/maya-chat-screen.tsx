@@ -142,6 +142,9 @@ interface MayaChatScreenProps {
   firstTimeProductUser?: boolean
   pendingPostPurchaseStudioOnboarding?: boolean
   onPostPurchaseStudioOnboardingHandled?: () => void
+  /** When set, Maya ≡ is rendered in StudioAppTopBar; drawer state is controlled by the parent. */
+  mayaNavMenuOpen?: boolean
+  onMayaNavMenuOpenChange?: (open: boolean) => void
 }
 
 type PhaseTwoGenerationSource = "selfies" | "custom_model" | "base_model"
@@ -173,6 +176,8 @@ export default function MayaChatScreen({
   firstTimeProductUser = false,
   pendingPostPurchaseStudioOnboarding = false,
   onPostPurchaseStudioOnboardingHandled,
+  mayaNavMenuOpen,
+  onMayaNavMenuOpenChange,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const isLandingPagesUiEnabled = false
@@ -181,7 +186,23 @@ export default function MayaChatScreen({
   )
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
-  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [internalNavMenuOpen, setInternalNavMenuOpen] = useState(false)
+  const shellControlsMayaNav = onMayaNavMenuOpenChange != null
+  const showNavMenu = shellControlsMayaNav ? Boolean(mayaNavMenuOpen) : internalNavMenuOpen
+  const toggleNavMenu = () => {
+    if (shellControlsMayaNav) {
+      onMayaNavMenuOpenChange!(!Boolean(mayaNavMenuOpen))
+    } else {
+      setInternalNavMenuOpen((v) => !v)
+    }
+  }
+  const closeNavMenu = () => {
+    if (shellControlsMayaNav) {
+      onMayaNavMenuOpenChange!(false)
+    } else {
+      setInternalNavMenuOpen(false)
+    }
+  }
   // savedMessageIds is now provided by useMayaChat hook
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -3126,7 +3147,7 @@ export default function MayaChatScreen({
     }
     // Update URL without triggering a page reload (matches sselfie-app.tsx pattern)
     window.history.pushState(null, "", `#${tab}`)
-    setShowNavMenu(false)
+    closeNavMenu()
   }
 
   const closeTrainingTab = () => {
@@ -3839,7 +3860,8 @@ export default function MayaChatScreen({
           proMode={proMode}
           chatTitle={chatTitle}
           showNavMenu={showNavMenu}
-          onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
+          onToggleNavMenu={toggleNavMenu}
+          hideMenuButton={shellControlsMayaNav}
           libraryCount={libraryTotalImages}
           credits={creditBalance}
           onManageLibrary={undefined}

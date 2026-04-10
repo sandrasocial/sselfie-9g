@@ -207,6 +207,8 @@ export default function SselfieApp({
   }, [feedPlannerProMode])
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  /** Maya ≡ slide menu — control lives in StudioAppTopBar while on Maya tab */
+  const [mayaNavMenuOpen, setMayaNavMenuOpen] = useState(false)
   const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
   const initialCreditBalanceRef = useRef<number | null>(null)
   const firstPhotoToastShownRef = useRef(false)
@@ -262,6 +264,10 @@ export default function SselfieApp({
         source: "studio_maya_tab_load",
       },
     })
+  }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab !== "maya") setMayaNavMenuOpen(false)
   }, [activeTab])
 
   useEffect(() => {
@@ -974,7 +980,18 @@ export default function SselfieApp({
         onTabChange={(id) => handleTabChange(id as StudioTab)}
         isNewUser={isNewUser}
         trailing={
-          activeTab === "maya" ? null : (
+          activeTab === "maya" ? (
+            <button
+              type="button"
+              onClick={() => setMayaNavMenuOpen((o) => !o)}
+              className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation active:scale-95`}
+              style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
+              aria-label="Menu"
+              aria-expanded={mayaNavMenuOpen}
+            >
+              <span className="text-base leading-none text-[#f0ede8]">≡</span>
+            </button>
+          ) : (
             <>
               {activeTab === "feed-planner" && (
                 <DropdownMenu>
@@ -1211,6 +1228,8 @@ export default function SselfieApp({
               firstTimeProductUser={firstTimeProductUser}
               pendingPostPurchaseStudioOnboarding={pendingPostPurchaseStudioOnboarding}
               onPostPurchaseStudioOnboardingHandled={handlePostPurchaseStudioOnboardingHandled}
+              mayaNavMenuOpen={mayaNavMenuOpen}
+              onMayaNavMenuOpenChange={setMayaNavMenuOpen}
             />
           )}
 

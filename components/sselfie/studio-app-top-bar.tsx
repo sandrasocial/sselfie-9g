@@ -13,7 +13,7 @@ interface StudioAppTopBarProps {
   activeTab: string
   onTabChange: (id: string) => void
   isNewUser: boolean
-  /** Credits / Feeds / account menu — hidden on Maya (Maya has its own header actions). */
+  /** Maya: ≡ menu. Other tabs: Feeds + account menu, etc. */
   trailing?: ReactNode
 }
 

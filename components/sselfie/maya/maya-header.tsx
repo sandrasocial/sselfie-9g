@@ -57,6 +57,8 @@ interface MayaHeaderUnifiedProps {
   
   // Access Control
   showModeToggle?: boolean // Show Selfie/My Model toggle
+  /** When true, ≡ is rendered in StudioAppTopBar instead of this header */
+  hideMenuButton?: boolean
 }
 
 /**
@@ -114,6 +116,7 @@ export default function MayaHeaderUnified({
   photosCount,
   videosCount,
   disableFeedTab = false,
+  hideMenuButton = false,
 }: MayaHeaderUnifiedProps) {
   const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
   const [isDotsMenuOpen, setIsDotsMenuOpen] = useState(false)
@@ -437,49 +440,48 @@ export default function MayaHeaderUnified({
             </div>
           )}
 
-          {/* Menu Button */}
-          {onNavigation ? (
-            // Pro Mode: 3 dots menu button
-            <button
-              onClick={onToggleNavMenu}
-              data-menu-trigger
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] px-2.5 sm:px-4"
-              style={proMode ? {
-                minHeight: '44px',
-                borderRadius: BorderRadius.buttonSm,
-                border: `1px solid rgba(195,190,182,0.20)`,
-                backgroundColor: 'transparent',
-                color: '#8a8780',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              } : {}}
-              onMouseEnter={proMode ? (e) => {
-                e.currentTarget.style.backgroundColor = "rgba(175,170,162,0.12)"
-                e.currentTarget.style.borderColor = "rgba(195,190,182,0.30)"
-              } : undefined}
-              onMouseLeave={proMode ? (e) => {
-                e.currentTarget.style.backgroundColor = "transparent"
-                e.currentTarget.style.borderColor = "rgba(195,190,182,0.20)"
-              } : undefined}
-              aria-label="Navigation menu"
-              aria-expanded={showNavMenu}
-            >
-              <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
-              <span className="hidden sm:inline text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#8a8780]">Menu</span>
-            </button>
-          ) : (
-            // Classic Mode: Simple menu button (fallback)
-            <button
-              onClick={onToggleNavMenu}
-              data-menu-trigger
-              className="flex items-center justify-center px-2.5 sm:px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation active:scale-95"
-              aria-label="Navigation menu"
-              aria-expanded={showNavMenu}
-            >
-              <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
-              <span className="hidden sm:inline text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#8a8780] uppercase">Menu</span>
-            </button>
-          )}
+          {/* Menu Button — omitted when StudioAppTopBar owns ≡ */}
+          {!hideMenuButton &&
+            (onNavigation ? (
+              <button
+                onClick={onToggleNavMenu}
+                data-menu-trigger
+                className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] px-2.5 sm:px-4"
+                style={proMode ? {
+                  minHeight: '44px',
+                  borderRadius: BorderRadius.buttonSm,
+                  border: `1px solid rgba(195,190,182,0.20)`,
+                  backgroundColor: 'transparent',
+                  color: '#8a8780',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                } : {}}
+                onMouseEnter={proMode ? (e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(175,170,162,0.12)"
+                  e.currentTarget.style.borderColor = "rgba(195,190,182,0.30)"
+                } : undefined}
+                onMouseLeave={proMode ? (e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                  e.currentTarget.style.borderColor = "rgba(195,190,182,0.20)"
+                } : undefined}
+                aria-label="Navigation menu"
+                aria-expanded={showNavMenu}
+              >
+                <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
+                <span className="hidden sm:inline text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#8a8780]">Menu</span>
+              </button>
+            ) : (
+              <button
+                onClick={onToggleNavMenu}
+                data-menu-trigger
+                className="flex items-center justify-center px-2.5 sm:px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation active:scale-95"
+                aria-label="Navigation menu"
+                aria-expanded={showNavMenu}
+              >
+                <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
+                <span className="hidden sm:inline text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#8a8780] uppercase">Menu</span>
+              </button>
+            ))}
         </div>
       </div>
 
