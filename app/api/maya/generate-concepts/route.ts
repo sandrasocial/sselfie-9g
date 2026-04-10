@@ -485,14 +485,32 @@ function parseLegacyConceptsFromText(text: string): MayaConcept[] {
  * Apply minimal syntax cleanup to a concept prompt.
  * Extracted from POST nested function to top-level.
  */
+const FLUX_SECTION_LABEL =
+  /\[(?:TRIGGER WORD|SCENE|SUBJECT|POSE|LIGHTING|CAMERA|STYLING|COLOR GRADING|MOOD|STYLE)\]\s*/gi
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/** Remove accidental [SCENE]-style labels; collapse whitespace; ensure trigger prefix; dedupe trigger token. */
 function minimalSyntaxCleanup(prompt: string, triggerWord: string): string {
-  let clean = prompt
-    .replace(/,\s*,/g, ',')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (triggerWord && !clean.toLowerCase().startsWith(triggerWord.toLowerCase())) {
-    clean = `${triggerWord}, ${clean}`
+  let clean = prompt.replace(FLUX_SECTION_LABEL, "").replace(/,\s*,/g, ",").trim()
+  clean = clean.replace(/\s+/g, " ")
+
+  if (triggerWord) {
+    if (!clean.toLowerCase().startsWith(triggerWord.toLowerCase())) {
+      clean = `${triggerWord}, ${clean}`
+    }
+    const twRe = new RegExp(`\\b${escapeRegExp(triggerWord)}\\b`, "gi")
+    let n = 0
+    clean = clean.replace(twRe, (m) => {
+      n += 1
+      return n === 1 ? m : ""
+    })
+    clean = clean.replace(/\s{2,}/g, " ").replace(/,\s*,/g, ",").trim()
+    clean = clean.replace(new RegExp(`^(${escapeRegExp(triggerWord)}),\\s*,`, "i"), "$1,")
   }
+
   return clean
 }
 
@@ -968,27 +986,16 @@ ${userContext}
 **Generate 3-6 diverse concept cards** (you decide the right number).
 
 ${!isProMode ? `
-**CRITICAL - CLASSIC MODE RULES (TESTED & VERIFIED):**
+**CRITICAL - CLASSIC MODE (CUSTOM FLUX LoRA):**
 
-❌ NEVER DESCRIBE:
-- Expressions (smile, laugh, looking away, direct gaze, etc.)
-- Poses (relaxed posture, confident stride, etc.)
-- Emotional states (serene, thoughtful, confident, etc.)
-- Specific iPhone models (say "iPhone" only)
+Every concept \`prompt\` is **one FLUX-ready string**: **trigger token once** at the start (\`${triggerWord},\`), then **1–2 short paragraphs of storytelling prose** that weave scene, outfit, pose, light, camera, palette, and mood — see FLUX PROMPTING MASTERY below.
 
-✅ ALWAYS INCLUDE:
-- End with: "grainy iphone photo IMG_XXXX.HEIC" OR "IMG_XXXX.HEIC amateur photo"
-- Random IMG number (make it authentic)
-- "shot on iPhone" (no model number)
-- "shallow depth of field"
+❌ **Do NOT** output \`[TRIGGER WORD]\`, \`[SCENE]\`, \`[CAMERA]\`, or any \`[ALL CAPS]\` labels — those are **planning aids only**, never user-facing prompt text.
+❌ **Do NOT** repeat the trigger token, gender/ethnicity, or the same camera line twice.
+❌ **Do NOT** use legacy one-liners that are only \`IMG_XXXX.HEIC\` tags.
+✅ **Do** write **~90–150 words** of vivid, non-repetitive narrative after the trigger comma.
 
-✅ DESCRIBE ONLY:
-- Hair style (not color)
-- Essential outfit pieces
-- Basic location (minimal)
-- Lighting type (simple)
-
-The LoRA model handles ALL expressions, poses, and personality. Don't override it.
+**Pose / expression:** Simple natural actions (no big smile / laughing; avoid cramped limb poses). LoRA carries likeness; your story carries place, styling, and light.
 ` : ''}
 
 **Variety Checklist:**
@@ -1511,98 +1518,23 @@ ${getNanoBananaPerfectExamples()}
 `
     : `=== YOUR FLUX PROMPTING MASTERY FOR CLASSIC MODE ===
 
-🔴 CRITICAL: Classic Mode = SHORT, NATURAL LANGUAGE PROMPTS (30-60 words)
+Classic (custom LoRA) prompts read like **short scene writing**, not labeled spec sheets. The rulebook below is authoritative.
 
-**CLASSIC MODE PROMPT FORMAT:**
-[TRIGGER], [gender], [hair - 2-3 words], [outfit - 4-6 words], [pose/action - 3-5 words], [location - 2-4 words], [lighting - 2-3 words], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors
+${getFluxPromptingPrinciples()}
 
-**WORD COUNT TARGET: 30-60 words (STRICT LIMIT)**
-- 30-40 words: Optimal
-- 40-50 words: Good
-- 50-60 words: Maximum
-- 60+ words: TOO LONG - WILL FAIL
+---
 
-**DESCRIPTION STYLE:**
-- Natural language (like texting a friend)
-- Simple adjectives (1-2 max per item)
-- NO structured sections (no "POSE:", "SETTING:", etc.)
-- NO redundant descriptors (ultra-realistic, influencer style, natural bokeh)
-- NO duplicate camera specs
+## CLASSIC CONCEPT CARDS — OUTPUT CONTRACT
 
-**WHAT TO INCLUDE:**
-1. Trigger word (always first)
-2. Gender + ethnicity (if applicable)
-3. Hair: 2-3 words max (color, style)
-4. Outfit: 4-6 words (key pieces only, simple materials/colors)
-5. Pose/Action: 3-5 words (what they're doing)
-6. Location: 2-4 words (where they are)
-7. Lighting: 2-3 words (simple, natural)
-8. Camera: "shot on iPhone 15 Pro portrait mode" (ONCE only)
-9. Authenticity: "candid photo, natural skin texture with pores visible, film grain, muted colors" (ONCE only)
+Each concept \`prompt\` = **\`${triggerWord},\` + storytelling body** (one flowing paragraph or two tight paragraphs). **No** \`[BRACKET]\` section headers in the string.
 
-**WHAT NOT TO INCLUDE:**
-❌ NO "ultra-realistic" / "photorealistic" / "high quality"
-❌ NO "influencer selfie style" / "natural bokeh" (redundant with iPhone spec)
-❌ NO "authentic iPhone photo aesthetic" (redundant with candid photo)
-❌ NO structured sections (POSE:, SETTING:, LIGHTING:)
-❌ NO duplicate iPhone specs (say it ONCE)
-❌ NO long outfit descriptions (keep to 4-6 words total)
-❌ NO verbose location descriptions
+**Gender / ethnicity / physical preferences:** Fold into the narrative **once** each where needed; convert instruction phrasing per PHYSICAL PREFERENCES rules — never strip user intent.
 
-**GOOD EXAMPLES (30-60 words):**
+**Length:** **90–150 words** after the trigger comma. Thin, repetitive drafts are invalid — add **new** sensory detail instead of restating the same clause.
 
-Example 1 (42 words):
-"user42585527, White woman, long dark hair in ponytail, cream tank top, black Lululemon belt bag, arm extended selfie at mountain summit with valley view, natural hiking light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+**Hard reject:** Any literal \`[SCENE]\`, \`[CAMERA]\`, etc.; trigger token appearing twice; duplicate gender line; same camera specs repeated; keyword list then paraphrased list.
 
-Example 2 (38 words):
-"user42585527, Asian woman, shoulder-length black hair, navy Alo yoga set, sitting cross-legged on yoga mat in bright studio, soft window lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture, film grain, muted colors"
-
-Example 3 (45 words):
-"user42585527, Latina woman, wavy brown hair down, oversized beige blazer with white tee, walking through SoHo street with coffee cup, overcast daylight, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-
-**BAD EXAMPLES (TOO LONG/DETAILED):**
-
-Bad Example 1 (78 words - TOO LONG):
-"user42585527, White woman, long dark brown hair pulled back in ponytail, in cream ribbed cotton tank top, black Lululemon Everywhere Belt Bag across chest, arm extended holding iPhone for selfie, standing at mountain summit with valley view behind, mixed color temperatures from tree coverage, natural hiking glow, ultra-realistic iPhone 15 Pro front camera selfie, influencer selfie style, natural bokeh, shot on iPhone 15 Pro portrait mode, shallow depth of field, subtle film grain, muted colors, authentic iPhone photo aesthetic"
-❌ Way too long
-❌ Too many redundant descriptors
-❌ Duplicate iPhone specs
-❌ Unnecessary detail
-
-**COMPRESSION TECHNIQUE:**
-If your first draft is too long, compress like this:
-
-Before (too detailed):
-"long dark brown hair pulled back in ponytail"
-After (compressed):
-"long dark hair in ponytail"
-
-Before (too detailed):
-"in cream ribbed cotton tank top"
-After (compressed):
-"cream tank top"
-
-Before (too detailed):
-"black Lululemon Everywhere Belt Bag across chest"
-After (compressed):
-"black Lululemon belt bag"
-
-Before (too detailed):
-"ultra-realistic iPhone 15 Pro front camera selfie, influencer selfie style, natural bokeh"
-After (compressed):
-"shot on iPhone 15 Pro portrait mode" (ONE mention only)
-
-**YOUR TASK:**
-Generate ${count} concepts with prompts that are:
-- 30-60 words (STRICT)
-- Natural language (no structured sections)
-- Simple, clear, concise
-- NO redundancy
-- NO verbose descriptions
-
-Count your words before finalizing. If over 60, compress further.
-
-${getFluxPromptingPrinciples()}`
+Before returning JSON, re-read the FLUX quality checklist (story flow + no duplicates + no labels).`
 }
 
 === RULES FOR THIS GENERATION ===
@@ -1611,32 +1543,21 @@ ${
   !studioProMode ? `
 🔴 CLASSIC MODE SPECIFIC RULES:
 
-**TRIGGER WORD:** "${triggerWord}" (MUST be first word)
+**TRIGGER TOKEN:** "${triggerWord}," **once** at the very start of every \`prompt\`.
 **GENDER:** "${userGender}"
-${userEthnicity ? `**ETHNICITY:** "${userEthnicity}" (include after trigger)` : ''}
-${physicalPreferences ? `**PHYSICAL PREFERENCES:** "${physicalPreferences}" (convert to simple descriptors, no instruction phrases)` : ''}
+${userEthnicity ? `**ETHNICITY:** "${userEthnicity}" — mention **at most once** in the narrative if needed.` : ''}
+${physicalPreferences ? `**PHYSICAL PREFERENCES:** "${physicalPreferences}" — weave into the story as description; never drop user intent.` : ''}
 
-**MANDATORY FORMAT:**
-${triggerWord}, ${userEthnicity ? userEthnicity + ' ' : ''}${userGender}, [hair], [outfit], [pose], [location], [lighting], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors
+**FORMAT:** Storytelling prose only — **zero** \`[LABEL]\` lines.
 
-**WORD COUNT VALIDATION:**
-After writing each prompt, count the words. If over 60, compress until it's 30-60.
-
-**COMPRESSION CHECKLIST:**
-- Remove redundant adjectives (beautiful, amazing, incredible)
-- Simplify outfit descriptions (keep brand names, remove fabric details)
-- Shorten location descriptions (2-4 words max)
-- Remove duplicate camera specs
-- Remove redundant authenticity markers
+**LENGTH CHECK:** ~90–150 words after the trigger comma; if short, deepen scene/outfit/light — do **not** repeat prior sentences.
 
 **QUALITY CHECK:**
-✅ Starts with trigger word?
-✅ 30-60 words total?
-✅ Natural language (no structured sections)?
-✅ Simple, clear descriptions?
-✅ No redundancy?
-✅ Camera specs mentioned ONCE?
-✅ Authenticity markers mentioned ONCE?
+✅ No bracket tags in the output?
+✅ Trigger exactly once?
+✅ No duplicated gender/ethnicity/camera blocks?
+✅ iPhone + candid rules satisfied once in the story (unless reference/user overrides)?
+✅ No banned quality / studio / plastic-skin wording?
 
 ` : ''
 }
@@ -1665,8 +1586,8 @@ ${
   - "natural hair color" → keep as "natural hair color" to preserve intent (don't just remove)
   - "keep my natural hair color" → Convert to "natural hair color" (preserve the intent, don't just omit)
   - "dont change the face" → keep as guidance, don't remove (face is preserved by trigger word, but user intent matters)
-- Include them right after the gender/ethnicity descriptor as descriptive features, not instructions
-- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [descriptive appearance features from user preferences], [rest of prompt]"
+- Weave them into the **narrative body** after the trigger (Classic storytelling prompts), not as instruction prefixes
+- Format: one natural sentence or clause that carries converted descriptors (e.g. natural hair color, body cues) alongside "${userGender}"${userEthnicity ? ` / ${userEthnicity} when relevant` : ""} — **once**, not repeated
 - Examples of correct conversion:
   - "Always keep my natural features, dont change the face" → Keep as guidance, preserve any specific feature descriptions
   - "keep my natural hair color" → "natural hair color" (preserve intent, don't just omit)
@@ -1689,12 +1610,9 @@ ${
    - OR: "Maintain exactly the characteristics of the person in the attachment (face, body, skin tone, hair and visual identity). Do not copy the original photo."
    - Never write: "A White woman, long dark brown hair" or similar assumptions
    - Always write: "Woman, maintaining exactly the characteristics from Image 1" or "Maintain exactly the characteristics of the person in the attachment"`
-    : `1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
+    : `1. **Trigger line:** Start every Classic prompt with "${triggerWord}," then continue in **storytelling prose** — no \`[SECTION]\` labels, no second copy of the trigger.
 
-   **Trigger word placement:**
-   - Trigger word must be the first word in every prompt
-   - This is required for character likeness preservation
-   - Format: "${triggerWord}, [rest of prompt]"`
+   **Person / prefs:** Fold "${userGender}"${userEthnicity ? `, ${userEthnicity}` : ""}${physicalPreferences ? `, and converted physical preferences` : ""} into the narrative **once** using descriptive prose only.`
 }
 
    **Character feature guidance:**
@@ -1778,14 +1696,14 @@ ${
      * **More film grain:** Use "visible film grain", "prominent film grain", "grainy texture" (stronger than normal)
      * These keywords help prevent plastic/fake-looking images by emphasizing authentic, phone-camera aesthetic
    ` : ''}
-   - Keep prompts detailed (30-60 words, target 40-55) for better LoRA activation
+   - Classic prompts stay detailed in flowing prose (see 90–150 word substance after trigger)
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic, but ALWAYS include natural skin texture requirements above.
 
 11. **Prompt Length:** ${
   studioProMode
     ? `50-80 words (optimal for Nano Banana Pro - rich scene descriptions with detail)`
-    : `30-60 words (optimal range 40-55 for LoRA activation and accurate character representation, with room for safety net descriptions)`
+    : `90-150 words of storytelling prose after the trigger comma (no [LABEL] headers) for strong custom LoRA activation`
 }
 
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
@@ -1864,23 +1782,18 @@ ${
 
 **Total target: 80-120 words for carousel slides (includes detailed text overlay instructions)**
 `
-    : `1. **TRIGGER WORD** (first position - MANDATORY)
-2. **GENDER/ETHNICITY** (2-3 words)
-3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
-4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
-5. **LIGHTING** (realistic, authentic - 3-6 words, NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
-6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
-7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
-8. **No text overlay**
-   - Do not include any text overlay instructions, sections, or mentions
-   - Do not include: "TEXT OVERLAY:", "text placement:", "font size:", "text color:", "text overlay reading", "text positioned", or any text-related instructions
-   - This is a regular concept card - it should be a pure lifestyle/brand photo with no text
-   - Only include text overlays if: workflowType is explicitly "carousel-slides", "reel-cover", or "text-overlay" (which it is not for default concept cards)
-   - If workflowType is null/undefined/default (which it is for regular concept cards): No text overlays
-   - The prompt should end after camera specs and natural skin texture - no text overlay section
+    : studioProMode
+      ? `**STUDIO PRO (non-carousel, default concept cards):** Follow the Nano Banana Pro instructions in "YOUR NANO BANANA PRO PROMPTING MASTERY" above. No LoRA trigger token. No FLUX bracket layout. Keep prompts as natural-language photography briefs unless a workflow type adds overlays.`
+      : `**CLASSIC / FLUX CUSTOM LoRA:** \`${triggerWord},\` then **storytelling prose** per FLUX PROMPTING MASTERY — **no** \`[SCENE]\`/\`[CAMERA]\` tags.
 
-**Total target: 30-60 words (optimal 40-55) for optimal LoRA activation and accurate character representation, with room for safety net descriptions**
-`
+1. Trigger **once**, comma, then narrative
+2. Gender, ethnicity, prefs woven **once** where needed
+3. Rich place, outfit, light, and candid iPhone camera feel in flowing sentences (not duplicated)
+4. Simple natural pose; no cramped / hidden-leg setups
+5. Film grain / muted palette / mood woven in **once**
+6. **No text overlay** for default concept cards
+
+**Total target:** 90-150 words after the trigger comma.`
 }
 
 **If any requirement is missing, the prompt may produce AI-looking results.**
@@ -2162,7 +2075,7 @@ Return ONLY valid JSON array, no markdown:
 - If template examples are provided, match their color treatment (don't add B&W if examples don't have it)
 
 DO NOT add "with visible pores" at the end - use "natural skin texture with visible pores" in proper location.`
-        : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}`
+        : `YOUR CRAFTED FLUX PROMPT - ${triggerWord}, then storytelling prose per FLUX PROMPTING MASTERY; NO [SCENE]/[CAMERA] labels; fold ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? " + converted prefs" : ""} into narrative once; 90-150 words; no repeated trigger or duplicate camera lines; no text overlay`
     }"
   }
 ]
@@ -2201,52 +2114,18 @@ Return ONLY valid JSON array, no markdown:
         : `COMPLETE FINAL PROMPT for image generation (Classic Mode - LoRA/Flux)
 
 **PROMPT REQUIREMENTS (Classic Mode):**
-- Format: Natural language, 30-60 words (optimal 40-55 words)
-- Structure: [trigger], [person], [outfit], [pose/action], [location], [lighting], camera specs
-- MUST start with "${triggerWord}" (first word, required)
-- Person: ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences.replace(/\b(don't|do not|doesn't|keep my|maintain|preserve|keep the|the same)\s+/gi, '').trim()}` : ""}
-- Always end with: "shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-- NO structured sections (no "POSE:", "OUTFIT:", etc.)
-- Direct, natural language only
-- NO text overlays (this is a regular concept card)
+- **Format:** **${triggerWord},** + **1–2 paragraphs of storytelling prose** — **zero** \`[LABEL]\` section headers in the string (see FLUX PROMPTING MASTERY + PERFECT EXAMPLES).
+- **Trigger:** **Exactly once** at the start; never repeated mid-prompt.
+- **Person / prefs:** ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? ` — merge converted preferences into the story once (strip instruction phrases)` : ""} — no duplicate demographic lines.
+- **Length:** **90-150 words** after the trigger comma. Thin or copy-paste repeated clauses are invalid.
+- **Camera / look:** Candid + iPhone rules from principles, **said once** in the narrative, unless reference/user overrides.
+- **NO** bare \`IMG_XXXX.HEIC\`-only prompts, **NO** text overlays for default cards.
 
-**DIVERSITY & VARIETY:**
-- Create naturally diverse concepts with varied settings, poses, and moments
-- Avoid repetitive scenarios (no "sitting on couch with mug" in multiple concepts)
-- Mix indoor/outdoor, static/active, cozy/energetic, casual/sophisticated
-- Include variety in:
-  * Settings: home, outdoor, urban, nature, work, social venues
-  * Poses: sitting, standing, walking, working, active, relaxed, social
-  * Moments: daily life, work, travel, wellness, social, creative pursuits
-  * Props: naturally varied (not just mugs/books/phones)
-  * Times: morning, afternoon, evening, golden hour, blue hour
-- Draw from your 2026 luxury influencer knowledge for current, fresh scenarios
-- Trust your creativity - no templates or forced patterns
+**DIVERSITY & VARIETY:** Vary scenes, outfits, activities across concepts while keeping **story** format (not repeated templates).
 
-**AVOID REPETITION:**
-- ❌ Don't create multiple "sitting on sofa" concepts
-- ❌ Don't default to "holding mug/teacup" repeatedly  
-- ❌ Don't use "reading book" in multiple concepts
-- ✅ Create fresh, unique moments for each concept
-- ✅ Show variety in activities and settings
-- ✅ Make each concept feel distinct
+**SELFIE HANDLING:** Weave front-camera / mirror beats into the story (e.g. arm extended with phone, mirror edge visible) — **do not** use "ultra-realistic".
 
-**EXAMPLE PROMPT STRUCTURE:**
-"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in [outfit description], [pose and action], [setting description], [lighting description], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-
-**EXAMPLE OF COMPLETE PROMPT:**
-"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in elegant black turtleneck and wide-leg trousers, standing by window holding notebook, modern minimalist apartment with natural light, afternoon sun streaming through sheer curtains, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-
-**SELFIE HANDLING:**
-If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
-- Replace "shot on iPhone 15 Pro portrait mode" with "ultra-realistic iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie reflection"
-- Add selfie-specific details like "arm extended holding phone" or "mirror visible in frame"
-- Maintain same quality and authentic aesthetic
-
-**CRITICAL:**
-- This prompt field should be FINAL and ready for Replicate - no transformation needed
-- Generate the complete prompt directly - do not generate a description that needs to be transformed
-- The prompt must be usable as-is for image generation`
+**CRITICAL:** Prompt must be FINAL for Replicate/Flux — no downstream rewriting.`
     }"
   }
 ]`

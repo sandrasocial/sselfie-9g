@@ -5,7 +5,7 @@
  * The ONLY difference between modes is technical formatting.
  * 
  * Maya's intelligence stays the same whether she's generating:
- * - Classic Mode (Flux LoRA, 30-60 words)
+ * - Classic Mode (Flux LoRA, storytelling prose ~85–170 words after trigger; no [LABEL] headers)
  * - Pro Mode (Nano Banana, 150-200 words)
  * - Feed Planner prompts
  * - Chat responses

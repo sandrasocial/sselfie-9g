@@ -119,6 +119,7 @@
     "import-in-the-middle": "^2.0.1",
     "input-otp": "1.4.1",
     "jszip": "latest",
+    "konva": "^10.2.3",
     "lenis": "^1.3.21",
     "lucide-react": "^0.454.0",
     "next": "16.0.7",
@@ -131,6 +132,7 @@
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.60.0",
+    "react-konva": "^19.2.3",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
@@ -145,6 +147,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "latest",
+    "use-image": "^1.1.4",
     "vaul": "^0.9.9",
     "zod": "3.25.76",
     "zod-to-json-schema": "^3.25.0"

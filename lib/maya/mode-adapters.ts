@@ -18,9 +18,10 @@ export interface MayaModeConfig {
 
 export const MAYA_CLASSIC_CONFIG: MayaModeConfig = {
   mode: 'classic',
-  promptLength: { min: 30, max: 60 },
+  /** Word budget = text after the trigger comma (storytelling body, no [LABEL] headers). */
+  promptLength: { min: 85, max: 170 },
   openingFormat: 'trigger_word',
-  detailLevel: 'essential',
+  detailLevel: 'comprehensive',
   photographyMix: ['candid iPhone', 'amateur cellphone', 'natural moment'],
   brandApproach: 'subtle_aesthetic'
 }
@@ -81,77 +82,24 @@ Decision rules:
 function getModeSpecificInstructions(config: MayaModeConfig): string {
   if (config.mode === 'classic') {
     return `
-## CLASSIC MODE - Technical Requirements (Flux LoRA)
+## CLASSIC MODE - Technical Requirements (Flux LoRA / custom model)
 
-**CRITICAL - TESTED RULES:**
+When you write **Classic (Flux) image prompts**, output **\`trigger_token,\` + short storytelling** (one or two tight paragraphs). **Never** print fake section headers like \`[SCENE]\` or \`[CAMERA]\` — those are internal planning concepts only.
 
-❌ **NEVER DESCRIBE:**
-- Expressions (smile, laugh, serene, thoughtful, confident, etc.)
-- Poses (looking away, direct gaze, relaxed posture, etc.)
-- Emotional states or personality traits
-- Specific iPhone models (iPhone 15 Pro, iPhone 14, etc.)
+**Trigger token:** Exactly **once** at the start, immediately followed by the story. Do not repeat the token later. Do not restate gender/ethnicity in a second full clause unless absolutely necessary.
 
-✅ **ALWAYS INCLUDE:**
-- End every prompt with: "grainy iphone photo IMG_XXXX.HEIC" OR "IMG_XXXX.HEIC amateur photo"
-- Random IMG number (3-4 digits, make it authentic)
-- "shot on iPhone" (no model number)
-- "shallow depth of field"
+**Length target:** ~${config.promptLength.min}–${config.promptLength.max} words **after** the trigger comma. If it feels thin, add **new** sensory detail (place, fabric, light) — not a second version of the same sentence.
 
-**Format (30-45 words):**
-woman, [hair style - no color], in [outfit - essential only], [location - minimal], 
-[lighting - simple], shot on iPhone [portrait mode optional], shallow depth of field, 
-grainy iphone photo IMG_XXXX.HEIC
+**Weave into the narrative (no labels):** concrete place; who (prefs / safety-net hair when known — never invent traits); simple natural pose; uneven realistic light; outfit with fabrics and fit; candid iPhone phrasing **once**; film grain / muted palette / grounded mood **once**.
 
-**Essential Elements (Keep Minimal):**
-1. woman (no trigger word needed)
-2. Hair STYLE only (messy bun, sleek ponytail, loose waves) - NO COLOR
-3. Outfit essentials (ribbed athletic set, cashmere turtleneck, denim jacket)
-4. Location (minimal - "modern hotel lobby", "outdoor café", "home setting")
-5. Lighting (simple - "natural window light", "golden hour", "soft morning light")
-6. Camera style (shot on iPhone, portrait mode optional)
-7. Depth of field (always "shallow depth of field")
-8. Ending tag (grainy iphone photo IMG_XXXX.HEIC)
+**Do NOT:**
+- Duplicate trigger, demographics, or camera specs.
+- Use SD-style weights \`(word:1.5)\` or output \`[ALL CAPS]\` tags.
+- Use banned quality soup: ultra-realistic, 8K, flawless skin, cinematic studio lighting clichés, etc.
 
-**What the LoRA Handles (DON'T Override):**
-- All facial expressions
-- All poses and body language
-- Personality and vibe
-- Emotional energy
-- Detailed styling choices
+**Brand approach:** Prefer aesthetic + material language; add explicit brand names only when the user wants them.
 
-**Brand Approach:**
-Describe the AESTHETIC, not brand names:
-- "ribbed athletic set" not "Alo Yoga set"
-- "cashmere turtleneck" not "The Row turtleneck"
-- "tailored blazer" not "Saint Laurent blazer"
-
-**Hair Color Rule:**
-NEVER describe hair color. Say "sleek ponytail" not "blonde sleek ponytail."
-
-**Examples of CORRECT Prompts:**
-
-✅ woman, high messy bun, in ribbed sage green athletic set with matching zip jacket, minimal gold hoops, walking through modern hotel lobby, natural window lighting, shot on iPhone, shallow depth of field, IMG_3621.HEIC amateur photo
-
-✅ woman, soft waves, in striped top with dark jeans, red lipstick, sitting at outdoor café table, golden hour side lighting, shot on iPhone portrait mode, shallow depth of field, IMG_4102.HEIC amateur photo
-
-✅ woman, sleek ponytail, in black turtleneck with high-waisted jeans, layered chains, clean neutral interior, soft uneven lighting, shot on iPhone, shallow depth of field, grainy iphone photo IMG_3847.HEIC
-
-**Examples of WRONG Prompts:**
-
-❌ woman, sleek ponytail, in black turtleneck, looking away with confident smile, relaxed posture, shot on iPhone 15 Pro...
-(Why wrong: describes expression and pose - LoRA handles this)
-
-❌ woman, blonde hair in ponytail, in The Row cashmere turtleneck, shot on iPhone 15 Pro portrait mode...
-(Why wrong: describes hair color, uses brand name, uses iPhone model number)
-
-❌ woman in cashmere turtleneck, serene and composed, thoughtful expression, authentic moment...
-(Why wrong: describes emotional state and personality - LoRA handles this)
-
-**Remember:**
-- The LoRA model trained on the user's photos handles all personality, expressions, and poses
-- Your job: describe the SETTING and OUTFIT only
-- Keep it minimal - 30-45 words max
-- Always end with grainy iphone photo IMG_XXXX.HEIC
+**LoRA balance:** The trained model carries likeness; the story still needs enough **scene + wardrobe + light + camera** to activate Flux reliably.
 `
   } else {
     return `

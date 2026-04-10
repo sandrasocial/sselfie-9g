@@ -1,80 +1,28 @@
 /**
- * FLUX LORA PERFECT EXAMPLES (TESTED & VERIFIED)
- * 
- * CRITICAL RULES FROM TESTING:
- * - NO expressions (LoRA handles this)
- * - iPhone only (not iPhone 15 Pro)
- * - Minimal descriptions (don't override LoRA)
- * - ALWAYS end with "grainy iphone photo IMG_XXXX.HEIC" or "IMG_XXXX.HEIC amateur photo"
- * - NO hair colors
- * - Let LoRA do the work - describe setting/outfit only
+ * FLUX LoRA — concept-card examples (storytelling prose, no section labels)
+ *
+ * Aligns with lib/maya/flux-prompting-principles.ts — trigger once, then narrative.
  */
 
 export function getFluxPerfectExamples(): string {
   return `
-**EXAMPLE 1 - Quiet Luxury:**
-woman, sleek low ponytail, in cream cashmere turtleneck, tailored camel coat, delicate gold jewelry, walking on cobblestone street, soft overcast lighting, shot on iPhone portrait mode, shallow depth of field, grainy iphone photo IMG_2847.HEIC
+**EXAMPLE A — Morning coffee run (replace user_trigger with the real token):**
 
-**EXAMPLE 2 - Athletic Luxe:**
-woman, high messy bun, in ribbed sage green athletic set with matching zip jacket, minimal gold hoops, walking through modern hotel lobby, natural window lighting with soft shadows, shot on iPhone, shallow depth of field, IMG_3621.HEIC amateur photo
+user_trigger, Golden side light hits the sidewalk while she crosses toward the camera with a takeaway cup, hair in a sleek low ponytail and natural skin texture with visible pores. She's wearing a cream cashmere turtleneck under a tailored camel coat, straight-leg denim, minimal gold at her ears; the block feels alive with glass storefronts and soft pedestrian blur behind her. Uneven daylight mixes cool sky with warm bounce from windows. Candid moment on iPhone 15 Pro portrait mode, shallow depth of field, amateur cellphone photo — muted colors and fine film grain keep it honest, like a friend caught the stride mid-step.
 
-**EXAMPLE 3 - Parisian Chic:**
-woman, soft waves with middle part, in striped top with dark jeans, red lipstick, sitting at outdoor café table, golden hour side lighting, shot on iPhone portrait mode, shallow depth of field, IMG_4102.HEIC amateur photo
+**EXAMPLE B — Quiet at home:**
 
-**EXAMPLE 4 - Cozy Lifestyle:**
-woman, loose tousled hair, in oversized cream knit sweater with black leather pants, holding coffee cup, natural home setting, soft morning light through windows, shot on iPhone, shallow depth of field, IMG_1893.HEIC amateur photo
+user_trigger, Sun pools across a linen sofa and pale oak while she sits on the edge with a ceramic mug, shoulders loose, hair in natural color, pores and real skin catching the window. An oversized cream knit with wide sleeves and matching lounge pants wrinkles where she leans forward. Light falls unevenly — cooler by the glass, warmer across the rug — with soft shadows under her cheekbones. Shot on iPhone 15 Pro with a 50mm-equivalent feel and natural bokeh, amateur photography; visible film grain and a restrained palette hold the weekend stillness without polishing it.
 
-**EXAMPLE 5 - Editorial Casual:**
-woman, slicked back low bun, in black blazer with white tank underneath, gold layered necklaces, neutral minimal background, even natural lighting, shot on iPhone portrait mode, shallow depth of field, grainy iphone photo IMG_5234.HEIC
+**EXAMPLE C — City evening:**
 
-**EXAMPLE 6 - It-Girl Airport:**
-woman, loose hair, in leather jacket with graphic tee, oversized sunglasses, pulling carry-on, bright airport terminal lighting, walking naturally mid-stride, shot on iPhone, shallow depth of field, grainy iphone photo IMG_6891.HEIC
-
-**EXAMPLE 7 - Romantic Feminine:**
-woman, soft curls, in flowing midi dress with delicate print, gold jewelry, walking through sunlit garden, dappled natural light through trees, shot on iPhone portrait mode, shallow depth of field, grainy iphone photo IMG_2156.HEIC
-
-**EXAMPLE 8 - Minimal Chic:**
-woman, straight hair, in white button-down with tailored black trousers, simple gold watch, modern office space, natural window light, shot on iPhone, shallow depth of field, grainy iphone photo IMG_7432.HEIC
-
-**EXAMPLE 9 - Weekend Ease:**
-woman, messy bun, in oversized denim jacket with ribbed tank, minimal jewelry, urban scandinavian setting, natural daylight, shot on iPhone portrait mode, shallow depth of field, grainy iphone photo IMG_9124.HEIC
-
-**EXAMPLE 10 - Elevated Basics:**
-woman, sleek ponytail, in black turtleneck with high-waisted jeans, layered chains, clean neutral interior, soft uneven lighting, shot on iPhone, shallow depth of field, grainy iphone photo IMG_3847.HEIC
+user_trigger, She pauses on a rain-dark crosswalk, trench draped over a ribbed black dress and boots, crossbody bag catching a sliver of storefront neon. Wind-tousled hair frames natural skin texture; mixed streetlight and shop spill create mottled color on her face. She's mid-stride, glancing off-camera, unposed. Candid photo on iPhone 15 Pro, shallow depth, cellphone energy, not a campaign — film grain, muted contrast, grounded mood.
 
 ---
 
-**CRITICAL RULES - WHAT YOU LEARNED FROM TESTING:**
-
-❌ NEVER DO:
-- Describe expressions (genuine laugh, smile, looking away naturally, etc.)
-- Use specific iPhone models (iPhone 15 Pro, iPhone 14, etc.)
-- Over-describe settings or fashion details
-- Override what LoRA handles (facial expressions, poses, personality)
-- Use emotional descriptors (confident, serene, thoughtful, etc.)
-
-✅ ALWAYS DO:
-- Say "iPhone" only (no model number)
-- End with "grainy iphone photo IMG_XXXX.HEIC" or "IMG_XXXX.HEIC amateur photo"
-- Keep descriptions minimal (hair style, outfit, location, lighting)
-- Let LoRA handle: expressions, poses, personality, detailed styling
-- Random IMG numbers (make it feel authentic)
-
-**Structure (30-45 words max):**
-woman, [hair style - no color], in [outfit - essential pieces only], [location - minimal], [lighting - simple], shot on iPhone [portrait mode optional], shallow depth of field, grainy iphone photo IMG_XXXX.HEIC
-
-**What the LoRA Does (Don't Describe):**
-- Facial expressions
-- Exact pose details
-- Emotional energy
-- Personality/vibe
-- Fine details of styling
-
-**What You Describe (Keep Minimal):**
-- Hair style (not color)
-- Essential outfit pieces
-- Basic location
-- Lighting type
-- Camera style
+**What to copy from these:**
+- **Opening:** trigger token, comma, then **one** continuous story (or two short paragraphs) — **never** lines like \`[SCENE]\` or \`[CAMERA]\`.
+- **No repeats:** say the trigger **once**; say gender/ethnicity **once** if you use them; say iPhone/candid language **once**.
+- **Voice:** reads like a short scene, not a spec duplicated under fake headings.
 `
 }
