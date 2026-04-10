@@ -16,7 +16,7 @@ export interface MayaPhotosSetupDisclosureProps {
 
 /**
  * Collapses credits, upgrade, and training nudges into one calm "Setup" surface.
- * Opens automatically when only one item needs attention.
+ * Starts collapsed; user expands to see details.
  */
 export default function MayaPhotosSetupDisclosure({
   isMembership,
@@ -32,7 +32,7 @@ export default function MayaPhotosSetupDisclosure({
   const showCreditsReady = !isMembership && creditBalance > 0 && isMessageListEmpty
   const showTraining = !hasTrainedModel
 
-  const { digest, defaultOpen } = useMemo(() => {
+  const digest = useMemo(() => {
     const parts: string[] = []
     if (showCreditsReady) {
       parts.push(`${creditBalance} credit${creditBalance !== 1 ? "s" : ""} ready`)
@@ -43,17 +43,8 @@ export default function MayaPhotosSetupDisclosure({
     if (showTraining) {
       parts.push("Optional: train your look")
     }
-    const count = [showCreditsReady, showZeroCreditsNudge, showTraining].filter(Boolean).length
-    return {
-      digest: parts.join(" · "),
-      defaultOpen: count <= 1,
-    }
-  }, [
-    showCreditsReady,
-    showZeroCreditsNudge,
-    showTraining,
-    creditBalance,
-  ])
+    return parts.join(" · ")
+  }, [showCreditsReady, showZeroCreditsNudge, showTraining, creditBalance])
 
   if (!showCreditsReady && !showZeroCreditsNudge && !showTraining) {
     return null
@@ -61,10 +52,7 @@ export default function MayaPhotosSetupDisclosure({
 
   return (
     <div className="mx-3 sm:mx-4 mb-1">
-      <details
-        className="group border border-[rgba(195,190,182,0.18)] bg-[rgba(14,12,10,0.45)] rounded-lg overflow-hidden"
-        defaultOpen={defaultOpen}
-      >
+      <details className="group border border-[rgba(195,190,182,0.18)] bg-[rgba(14,12,10,0.45)] rounded-lg overflow-hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none [&::-webkit-details-marker]:hidden">
           <div className="min-w-0 flex-1 text-left">
             <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Setup</span>
