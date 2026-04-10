@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
+const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+async function requireAdmin(): Promise<{ error: NextResponse } | { error: null }> {
+  const { user, error: authError } = await getAuthenticatedUser()
+  if (authError || !user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  const neonUser = await getUserByAuthId(user.id)
+  if (!neonUser || neonUser.email !== ADMIN_EMAIL) return { error: NextResponse.json({ error: "Admin access required" }, { status: 403 }) }
+  return { error: null }
+}
 
 export async function GET() {
+  const guard = await requireAdmin()
+  if (guard.error) return guard.error
   try {
     const stories = await sql`
       SELECT * FROM admin_personal_story 
@@ -24,6 +37,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin()
+  if (guard.error) return guard.error
   try {
     const body = await request.json()
     const { type, data } = body
@@ -58,6 +73,8 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const guard = await requireAdmin()
+  if (guard.error) return guard.error
   try {
     const body = await request.json()
     const { type, id, data } = body
@@ -103,6 +120,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const guard = await requireAdmin()
+  if (guard.error) return guard.error
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type")

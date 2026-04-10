@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db/client"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getUserByAuthId } from "@/lib/user-mapping"
+
+const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+async function requireAdmin(): Promise<NextResponse | null> {
+  const { user, error: authError } = await getAuthenticatedUser()
+  if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const neonUser = await getUserByAuthId(user.id)
+  if (!neonUser || neonUser.email !== ADMIN_EMAIL) return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+  return null
+}
 
 /**
  * PATCH /api/admin/tasks/[id]
@@ -9,6 +21,8 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const authError = await requireAdmin()
+  if (authError) return authError
   try {
     // Handle both Next.js 14 and 15 params format
     const params = await Promise.resolve(context.params)
@@ -110,6 +124,8 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const authError = await requireAdmin()
+  if (authError) return authError
   try {
     // Handle both Next.js 14 and 15 params format
     const params = await Promise.resolve(context.params)

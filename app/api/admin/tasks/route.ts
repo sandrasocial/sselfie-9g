@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db/client"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getUserByAuthId } from "@/lib/user-mapping"
+
+const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+async function requireAdmin(): Promise<NextResponse | null> {
+  const { user, error: authError } = await getAuthenticatedUser()
+  if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const neonUser = await getUserByAuthId(user.id)
+  if (!neonUser || neonUser.email !== ADMIN_EMAIL) return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+  return null
+}
 
 /**
  * GET /api/admin/tasks
@@ -97,6 +109,8 @@ export async function GET(req: NextRequest) {
  * Create a new task
  */
 export async function POST(req: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
   try {
     const body = await req.json()
     const {
