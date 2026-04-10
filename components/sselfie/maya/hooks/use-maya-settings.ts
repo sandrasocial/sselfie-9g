@@ -4,7 +4,7 @@
  * Manages Maya generation settings with localStorage persistence:
  * - styleStrength: 0.9-1.2 (default: 1.0)
  * - promptAccuracy: 2.5-5.0 (default: 2.5) - Guidance scale (matches Flux presets)
- * - aspectRatio: "1:1" | "4:5" | "16:9" (default: "4:5")
+ * - aspectRatio: "1:1" | "4:5" | "9:16" | "16:9" (default: "4:5")
  * - realismStrength: 0.0-0.8 (default: 0.2) - Extra LoRA scale
  * - enhancedAuthenticity: boolean (default: false) - Classic mode only
  * 

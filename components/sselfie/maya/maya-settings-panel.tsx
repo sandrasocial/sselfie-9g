@@ -1,6 +1,12 @@
 "use client"
 
-import type React from "react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface MayaSettingsPanelProps {
   isOpen: boolean
@@ -50,6 +56,11 @@ export default function MayaSettingsPanel({
   studioProMode = false,
 }: MayaSettingsPanelProps) {
   if (!isOpen) return null
+
+  const aspectOptions = ["1:1", "4:5", "9:16", "16:9"] as const
+  const aspectValue = aspectOptions.includes(aspectRatio as (typeof aspectOptions)[number])
+    ? aspectRatio
+    : "4:5"
 
   return (
     <>
@@ -136,18 +147,43 @@ export default function MayaSettingsPanel({
               <p className="text-xs text-white/55 mt-1">Higher = more photorealistic, lower = more stylized</p>
             </div>
 
-            {/* Aspect Ratio */}
+            {/* Aspect Ratio — Radix select so list items are readable (native select can be white-on-white in dark UI) */}
             <div>
               <label className="text-xs tracking-wider uppercase text-white/65 mb-2 block">Aspect Ratio</label>
-              <select
-                value={aspectRatio}
-                onChange={(e) => onAspectRatioChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-white/15 rounded-lg text-sm text-white"
-              >
-                <option value="1:1">Square (1:1)</option>
-                <option value="4:5">Portrait (4:5)</option>
-                <option value="16:9">Landscape (16:9)</option>
-              </select>
+              <Select value={aspectValue} onValueChange={onAspectRatioChange}>
+                <SelectTrigger className="h-auto w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white shadow-none ring-offset-0 focus:ring-2 focus:ring-white/25 data-[placeholder]:text-white/50 [&>svg]:text-white/60">
+                  <SelectValue placeholder="Choose ratio" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  className="z-[200] border border-white/15 bg-[#141414] text-white shadow-lg"
+                >
+                  <SelectItem
+                    value="1:1"
+                    className="cursor-pointer text-white focus:bg-white/10 focus:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                  >
+                    Square (1:1)
+                  </SelectItem>
+                  <SelectItem
+                    value="4:5"
+                    className="cursor-pointer text-white focus:bg-white/10 focus:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                  >
+                    Portrait (4:5)
+                  </SelectItem>
+                  <SelectItem
+                    value="9:16"
+                    className="cursor-pointer text-white focus:bg-white/10 focus:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                  >
+                    Story / Reel (9:16)
+                  </SelectItem>
+                  <SelectItem
+                    value="16:9"
+                    className="cursor-pointer text-white focus:bg-white/10 focus:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                  >
+                    Landscape (16:9)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Enhanced Authenticity Toggle - Only show in Classic mode */}
