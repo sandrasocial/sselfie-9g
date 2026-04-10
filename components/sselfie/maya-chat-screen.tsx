@@ -3701,6 +3701,9 @@ export default function MayaChatScreen({
   const showProEmptyState = !showReturningMemberHome && !isLoadingChat && !hasVisibleMessages && hasProFeatures && !isTyping
   const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
+  /** Welcome / home surfaces already include starters — hide duplicate chip row above input */
+  const showInputBarQuickPrompts =
+    shouldShowInputPrompts && !(activeMayaTab === "photos" && showAnyEmptyState)
   const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
   const linkedSelfieCount = imageLibrary?.selfies?.length ?? 0
   const hasLinkedSelfies = linkedSelfieCount > 0
@@ -4242,13 +4245,13 @@ export default function MayaChatScreen({
           {showProEmptyState && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
               <div
-                className="mx-auto w-full max-w-2xl pt-4 pb-6 sm:pb-8"
+                className="mx-auto w-full max-w-xl pt-4 pb-6 sm:pb-8"
                 style={{
                   paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-                <div className="max-w-2xl w-full space-y-8">
+                <div className="w-full space-y-10">
                   <MayaWelcomePanel
                     eyebrow="Maya"
                     title={
@@ -4347,7 +4350,7 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-                <div className="w-full max-w-2xl space-y-8">
+                <div className="w-full max-w-xl space-y-10">
                   <MayaWelcomePanel
                     eyebrow="Maya"
                     title={
@@ -4431,7 +4434,7 @@ export default function MayaChatScreen({
             {/* showCalendarSuggestion && (...) */}
 
             {/* Quick Actions */}
-            {shouldShowInputPrompts ? (
+            {showInputBarQuickPrompts ? (
               <MayaQuickPrompts
                 prompts={currentPrompts}
                 onSelect={(prompt) => {
@@ -4446,16 +4449,17 @@ export default function MayaChatScreen({
                 isEmpty={isEmpty}
                 uploadedImage={uploadedImage}
               />
-            ) : (
+            ) : shouldCollapseInputPrompts ? (
               <div className="mb-2 mt-1">
                 <button
+                  type="button"
                   onClick={() => setShowCollapsedPrompts(true)}
-                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(195,190,182,0.20)] rounded-full bg-[rgba(175,170,162,0.08)] hover:bg-[rgba(175,170,162,0.15)] text-[#8a8780]"
+                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(195,190,182,0.20)] rounded-md bg-[rgba(175,170,162,0.08)] hover:bg-[rgba(175,170,162,0.15)] text-[#8a8780]"
                 >
                   Prompts
                 </button>
               </div>
-            )}
+            ) : null}
 
             {/* Input Area - Unified for both Classic and Pro Mode */}
             {/* Unified Input Component - Works for Photos and Feed tabs */}

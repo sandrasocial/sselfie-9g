@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
 
 interface QuickPrompt {
   label: string
@@ -69,22 +70,38 @@ export default function MayaQuickPrompts({
     "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-accent)] transition-colors min-h-[40px] hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
 
   if (variant === "empty-state") {
+    const INITIAL = 4
+    const [expanded, setExpanded] = useState(false)
+    const visible = expanded ? prompts : prompts.slice(0, INITIAL)
+    const hasMore = prompts.length > INITIAL
+
     return (
-      <div className="relative w-full max-w-2xl px-2 sm:px-4 -mx-2">
-        <div className={wrapperClass}>
-          <div className={`${railClass} pb-1`}>
-            {prompts.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => onSelect(item.prompt)}
-                className={pillClass}
-                disabled={disabled}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+      <div className="relative w-full max-w-xl -mx-1">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)] mb-3 px-1">
+          Or tap a starter
+        </p>
+        <div className="border-t border-[rgba(195,190,182,0.14)]">
+          {visible.map((item, index) => (
+            <button
+              key={`${item.label}-${index}`}
+              type="button"
+              onClick={() => onSelect(item.prompt)}
+              disabled={disabled}
+              className="flex w-full text-left border-b border-[rgba(195,190,182,0.1)] px-1 py-3.5 text-sm font-light leading-snug text-[color:var(--color-porcelain)] hover:bg-[rgba(175,170,162,0.06)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
+        {hasMore ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            className="mt-3 w-full py-2 text-center text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] transition-colors"
+          >
+            {expanded ? "Show fewer" : `Show ${prompts.length - INITIAL} more`}
+          </button>
+        ) : null}
       </div>
     )
   }

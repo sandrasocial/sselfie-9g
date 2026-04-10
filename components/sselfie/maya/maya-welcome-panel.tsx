@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { MayaInlineAction, MayaInlineCard, MayaInlinePill } from "./maya-inline-card"
 
 interface MayaWelcomeAction {
@@ -23,6 +24,14 @@ const FALLBACK_PREVIEWS = [
   "/assets/brand-strategy/pillar1.png",
 ]
 
+function splitPrimaryAction(actions: MayaWelcomeAction[]) {
+  const primaryIndex = actions.findIndex((a) => a.variant === "primary")
+  const idx = primaryIndex >= 0 ? primaryIndex : 0
+  const primary = actions[idx]!
+  const rest = actions.filter((_, i) => i !== idx)
+  return { primary, rest }
+}
+
 export default function MayaWelcomePanel({
   eyebrow = "Maya",
   title,
@@ -31,59 +40,76 @@ export default function MayaWelcomePanel({
   actions,
   previewImageUrls = [],
 }: MayaWelcomePanelProps) {
+  const [moreOpen, setMoreOpen] = useState(false)
   const images = (previewImageUrls.length > 0 ? previewImageUrls : FALLBACK_PREVIEWS).slice(0, 3)
+  const { primary, rest } = useMemo(() => splitPrimaryAction(actions), [actions])
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full max-w-xl">
       <MayaInlineCard
         eyebrow={eyebrow}
         title={title}
         subtitle={subtitle}
-        aside={<MayaInlinePill tone="strong">Chat-first</MayaInlinePill>}
-        actions={actions.map((action) => (
-          <MayaInlineAction
-            key={action.label}
-            onClick={action.onClick}
-            variant={action.variant || "secondary"}
-          >
-            {action.label}
-          </MayaInlineAction>
-        ))}
-      >
-        <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-3">
-            <div className="rounded-[22px] border border-[rgba(195,190,182,0.16)] bg-[rgba(175,170,162,0.12)] px-4 py-3 text-right text-sm text-[color:var(--color-porcelain)]">
-              I need one photo for Monday&apos;s post
-            </div>
-            <div className="stone-inset-panel rounded-[22px] px-4 py-4">
-              <div className="text-sm leading-relaxed text-[color:var(--color-porcelain)]">
-                Perfect. I&apos;ll make the photo, map the week, and keep everything moving right here with you.
-              </div>
-            </div>
-            {uploadHint ? (
-              <div className="rounded-[22px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.08)] px-4 py-3 text-xs leading-relaxed text-[color:var(--text-accent)]">
-                {uploadHint}
+        surface="plain"
+        actionsLayout="column"
+        actions={
+          <>
+            <MayaInlineAction onClick={primary.onClick} variant="primary" className="w-full">
+              {primary.label}
+            </MayaInlineAction>
+            {rest.length > 0 ? (
+              <div className="w-full max-w-md border-t border-[rgba(195,190,182,0.12)] pt-4 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((o) => !o)}
+                  className="flex w-full items-center justify-between py-2 text-left text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] transition-colors"
+                  aria-expanded={moreOpen}
+                >
+                  <span>{moreOpen ? "Hide" : "Other ways to start"}</span>
+                  <span className="text-[#8a8780] tabular-nums">{moreOpen ? "−" : "+"}</span>
+                </button>
+                {moreOpen ? (
+                  <div className="mt-1 flex flex-col border-t border-[rgba(195,190,182,0.08)]">
+                    {rest.map((action) => (
+                      <MayaInlineAction key={action.label} onClick={action.onClick} variant="ghost">
+                        {action.label}
+                      </MayaInlineAction>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : null}
-          </div>
+          </>
+        }
+      >
+        <div className="space-y-6 border-t border-[rgba(195,190,182,0.12)] pt-6">
+          <p className="text-sm leading-relaxed text-[color:var(--text-accent)]">
+            Type in the bar below. I reply here and show each photo when it&apos;s ready — no extra screens.
+          </p>
 
-          <div className="stone-inset-panel rounded-[24px] px-4 py-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Your preview</div>
-              <MayaInlinePill tone="muted">3 photos</MayaInlinePill>
+          {uploadHint ? (
+            <p className="text-xs leading-relaxed text-[color:var(--color-smoke)] border-l-2 border-[rgba(195,190,182,0.25)] pl-3">
+              {uploadHint}
+            </p>
+          ) : null}
+
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Preview</span>
+              <MayaInlinePill tone="muted">Sample look</MayaInlinePill>
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               {images.map((imageUrl, index) => (
-                <div key={`${imageUrl}-${index}`} className="overflow-hidden rounded-[18px] border border-[rgba(195,190,182,0.14)] bg-[rgba(18,16,13,0.82)]">
+                <div
+                  key={`${imageUrl}-${index}`}
+                  className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.14)] bg-[rgba(18,16,13,0.82)]"
+                >
                   <div className="aspect-[4/5] overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imageUrl} alt="" className="h-full w-full object-cover opacity-95" />
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover opacity-90" />
                   </div>
                 </div>
               ))}
-            </div>
-            <div className="mt-3 text-xs leading-relaxed text-[color:var(--text-accent)]">
-              I&apos;ll show each result right here so you can tweak it, save it, or publish—no jumping to other screens.
             </div>
           </div>
         </div>
