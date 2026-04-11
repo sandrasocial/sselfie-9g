@@ -16,6 +16,28 @@ interface Concept {
   linkedImages?: string[]
 }
 
+const STUDIO_PRO_ASPECT_RATIOS = new Set(["1:1", "4:5", "9:16", "16:9", "4:3", "3:4"])
+
+/** Aspect ratio from Adjust panel (props) or localStorage; validates for Nano Banana / Replicate. */
+function resolveStudioProAspectRatio(generationSettings?: { aspectRatio?: string }): string {
+  const fromProps = generationSettings?.aspectRatio
+  if (typeof fromProps === "string" && STUDIO_PRO_ASPECT_RATIOS.has(fromProps)) {
+    return fromProps
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const parsed = JSON.parse(localStorage.getItem("mayaGenerationSettings") || "{}")
+      const ar = parsed?.aspectRatio
+      if (typeof ar === "string" && STUDIO_PRO_ASPECT_RATIOS.has(ar)) {
+        return ar
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return "1:1"
+}
+
 interface MayaConceptCardsProps {
   // Message data
   messageId: string
@@ -155,10 +177,13 @@ export default function MayaConceptCards({
                     ? concept.linkedImages
                     : []
 
+                  const aspectRatio = resolveStudioProAspectRatio(generationSettings)
+
                   console.log('[Pro Mode] 📤 Calling /api/maya/pro/generate-image with:', {
                     conceptTitle: currentConcept.title || concept.title,
                     promptLength: promptToUse.length,
                     linkedImagesCount: conceptLinkedImages?.length || 0,
+                    aspectRatio,
                   })
 
                   try {
@@ -173,7 +198,7 @@ export default function MayaConceptCards({
                         category: concept.category || 'concept',
                         linkedImages: conceptLinkedImages,
                         resolution: '2K',
-                        aspectRatio: '1:1',
+                        aspectRatio,
                       }),
                     })
 

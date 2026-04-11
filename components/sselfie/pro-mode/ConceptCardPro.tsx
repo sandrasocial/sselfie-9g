@@ -78,7 +78,7 @@ export default function ConceptCardPro({
   chatId,
 }: ConceptCardProProps) {
   const { toast } = useToast()
-  const PRO_MODE_GENERATION_CREDITS = 2
+  const PRO_MODE_GENERATION_CREDITS = 2 // keep in sync with getStudioProCreditCost for 2K
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [isEditingPrompt, setIsEditingPrompt] = useState(false)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
@@ -1299,168 +1299,44 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {/* Images Linked */}
         {concept.linkedImages && concept.linkedImages.length > 0 && (
           <div className="space-y-2">
-            <p
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.sm,
-                fontWeight: Typography.ui.weights.medium,
-                color: PRO_TEXT_PRIMARY,
-              }}
-            >
-              {UILabels.imagesLinked(concept.linkedImages.length)}
+            <p className="text-[10px] tracking-[0.15em] uppercase font-light text-[#8a8780]">
+              Reference images · {concept.linkedImages.length}
             </p>
             <ImageThumbnailsGrid images={concept.linkedImages} />
           </div>
         )}
 
-        {/* Category */}
-        {concept.category && (
-          <div className="space-y-1">
-            <p
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.xs,
-                fontWeight: Typography.ui.weights.medium,
-                color: PRO_TEXT_SECONDARY,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {UILabels.category(concept.category)}
-            </p>
-          </div>
-        )}
+        {/* Category / aesthetic: available inside View Prompt — keeps card surface aligned with Classic concept cards */}
 
-        {/* Aesthetic */}
-        {concept.aesthetic && (
-          <div className="space-y-1">
-            <p
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.xs,
-                fontWeight: Typography.ui.weights.medium,
-                color: PRO_TEXT_SECONDARY,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {UILabels.aesthetic(concept.aesthetic)}
-            </p>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-          {/* View Prompt button */}
+        {/* Action buttons — same row layout / rhythm as Classic ConceptCard */}
+        <div className="flex flex-wrap gap-2 pt-2">
           <button
+            type="button"
             onClick={handleViewPrompt}
-            className="touch-manipulation active:scale-95"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: 'clamp(13px, 3vw, 14px)',
-              fontWeight: Typography.ui.weights.medium,
-              letterSpacing: '0.01em',
-              color: PRO_TEXT_PRIMARY,
-              backgroundColor: PRO_INPUT_BG,
-              padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
-              minHeight: '44px',
-              borderRadius: BorderRadius.button,
-              border: `1px solid ${PRO_INPUT_BORDER}`,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              flex: 1,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.22)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = PRO_INPUT_BG
-              e.currentTarget.style.borderColor = PRO_INPUT_BORDER
-            }}
+            className="touch-manipulation active:scale-95 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
           >
             {ButtonLabels.viewPrompt}
           </button>
 
-          {/* Generate button */}
           <button
+            type="button"
             onClick={handleGenerate}
             disabled={isGenerating || isGeneratingState}
-            className="touch-manipulation active:scale-95 disabled:active:scale-100"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: 'clamp(13px, 3vw, 14px)',
-              fontWeight: Typography.ui.weights.medium,
-              letterSpacing: '0.01em',
-              color: PRO_TEXT_PRIMARY,
-              backgroundColor: (isGenerating || isGeneratingState) ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)",
-              padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
-              minHeight: '44px',
-              borderRadius: BorderRadius.button,
-              border: `1px solid ${PRO_INPUT_BORDER}`,
-              cursor: (isGenerating || isGeneratingState) ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              flex: 1,
-              opacity: (isGenerating || isGeneratingState) ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!isGenerating && !isGeneratingState) {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isGenerating && !isGeneratingState) {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
-                e.currentTarget.style.borderColor = PRO_INPUT_BORDER
-              }
-            }}
+            title={`Uses ${PRO_MODE_GENERATION_CREDITS} credits per image`}
+            className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 border border-[rgba(195,190,182,0.25)] disabled:cursor-not-allowed disabled:opacity-70 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] disabled:bg-[rgba(175,170,162,0.15)] disabled:text-[#8a8780]"
           >
-            {(isGenerating || isGeneratingState) ? 'Generating...' : ButtonLabels.generate}
+            {(isGenerating || isGeneratingState) ? "Generating..." : ButtonLabels.generate}
           </button>
-          <p className="text-center text-xs mt-1 sm:mt-0 sm:w-full sm:basis-full" style={{ color: PRO_TEXT_MUTED }}>
-            Uses {PRO_MODE_GENERATION_CREDITS} credits
-          </p>
 
-          {/* Save to Guide button (admin only) */}
           {isAdmin && (
             <button
+              type="button"
               onClick={handleSaveToGuide}
               disabled={!selectedGuideId || isSavingToGuide}
-              className="touch-manipulation active:scale-95 disabled:active:scale-100"
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: 'clamp(13px, 3vw, 14px)',
-                fontWeight: Typography.ui.weights.medium,
-                letterSpacing: '0.01em',
-                color: PRO_TEXT_PRIMARY,
-                backgroundColor: (!selectedGuideId || isSavingToGuide) ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)",
-                padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
-                minHeight: '44px',
-                borderRadius: BorderRadius.button,
-                border: `1px solid ${PRO_INPUT_BORDER}`,
-                cursor: (!selectedGuideId || isSavingToGuide) ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                flex: 1,
-                opacity: (!selectedGuideId || isSavingToGuide) ? 0.7 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedGuideId && !isSavingToGuide) {
-                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedGuideId && !isSavingToGuide) {
-                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
-                }
-              }}
+              className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 border border-[rgba(195,190,182,0.25)] disabled:cursor-not-allowed disabled:opacity-70 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] disabled:bg-[rgba(175,170,162,0.15)]"
               title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
             >
-              <span>{isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with Image" : "Save Prompt"}</span>
+              {isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with image" : "Save prompt"}
             </button>
           )}
         </div>

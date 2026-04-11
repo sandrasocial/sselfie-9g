@@ -79,7 +79,9 @@ export default function MayaSettingsPanel({
               Photo generation
             </h3>
             <p className="text-[11px] text-white/50 mt-1 tracking-wide">
-              How strongly Maya follows your prompt and trained look
+              {studioProMode
+                ? "Aspect ratio applies to Studio Pro (Nano Banana). Sliders below apply only to Classic (My Model)."
+                : "How strongly Maya follows your prompt and trained look"}
             </p>
           </div>
           <button
@@ -95,57 +97,59 @@ export default function MayaSettingsPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
           <div className="space-y-6">
-            {/* Style Strength */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-white/65">Style Strength</label>
-                <span className="text-sm font-medium text-white">{styleStrength.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min="0.9"
-                max="1.2"
-                step="0.05"
-                value={styleStrength}
-                onChange={(e) => onStyleStrengthChange(Number.parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
+            {/* Flux / LoRA sliders — Classic (My Model) only; hidden in Studio Pro / Selfie + Pro cards */}
+            {!studioProMode && (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs tracking-wider uppercase text-white/65">Style Strength</label>
+                    <span className="text-sm font-medium text-white">{styleStrength.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.9"
+                    max="1.2"
+                    step="0.05"
+                    value={styleStrength}
+                    onChange={(e) => onStyleStrengthChange(Number.parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
 
-            {/* Prompt Accuracy */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-white/65">Prompt Accuracy</label>
-                <span className="text-sm font-medium text-white">{promptAccuracy.toFixed(1)}</span>
-              </div>
-              <input
-                type="range"
-                min="2.5"
-                max="5.0"
-                step="0.5"
-                value={promptAccuracy}
-                onChange={(e) => onPromptAccuracyChange(Number.parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs tracking-wider uppercase text-white/65">Prompt Accuracy</label>
+                    <span className="text-sm font-medium text-white">{promptAccuracy.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="2.5"
+                    max="5.0"
+                    step="0.5"
+                    value={promptAccuracy}
+                    onChange={(e) => onPromptAccuracyChange(Number.parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
 
-            {/* Realism Boost */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-white/65">Realism Boost</label>
-                <span className="text-sm font-medium text-white">{realismStrength.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min="0.0"
-                max="0.8"
-                step="0.1"
-                value={realismStrength}
-                onChange={(e) => onRealismStrengthChange(Number.parseFloat(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-xs text-white/55 mt-1">Higher = more photorealistic, lower = more stylized</p>
-            </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs tracking-wider uppercase text-white/65">Realism Boost</label>
+                    <span className="text-sm font-medium text-white">{realismStrength.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.0"
+                    max="0.8"
+                    step="0.1"
+                    value={realismStrength}
+                    onChange={(e) => onRealismStrengthChange(Number.parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-white/55 mt-1">Higher = more photorealistic, lower = more stylized</p>
+                </div>
+              </>
+            )}
 
             {/* Aspect Ratio — Radix select so list items are readable (native select can be white-on-white in dark UI) */}
             <div>

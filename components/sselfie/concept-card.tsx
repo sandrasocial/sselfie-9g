@@ -717,6 +717,26 @@ export default function ConceptCard({
           startsWithAttachmentRef: /^Woman, maintaining exactly the characteristics/i.test(userRequest.trim())
         })
         
+        const allowedProAspect = new Set(["1:1", "4:5", "9:16", "16:9", "4:3", "3:4"])
+        let storedGenerationAspect: string | undefined
+        try {
+          const raw = localStorage.getItem("mayaGenerationSettings")
+          if (raw) {
+            const s = JSON.parse(raw)
+            if (typeof s?.aspectRatio === "string") storedGenerationAspect = s.aspectRatio
+          }
+        } catch {
+          storedGenerationAspect = undefined
+        }
+        const aspectCandidate =
+          generationSettings?.aspectRatio ||
+          storedGenerationAspect ||
+          (concept as any).customSettings?.aspectRatio
+        const aspectRatio =
+          typeof aspectCandidate === "string" && allowedProAspect.has(aspectCandidate)
+            ? aspectCandidate
+            : "1:1"
+
         const response = await fetch("/api/maya/generate-studio-pro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -730,7 +750,7 @@ export default function ConceptCard({
               styleRefs: finalStyleRefs.map(url => ({ url, type: 'style-reference' }))
             },
             resolution: "2K",
-            aspectRatio: (concept as any).customSettings?.aspectRatio || "1:1"
+            aspectRatio,
           }),
         })
 

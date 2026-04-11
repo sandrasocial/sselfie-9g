@@ -4040,7 +4040,7 @@ export default function MayaChatScreen({
         onAspectRatioChange={setAspectRatio}
         onRealismStrengthChange={setRealismStrength}
         onEnhancedAuthenticityChange={setEnhancedAuthenticity}
-        proMode={proMode}
+        studioProMode={proMode}
       />
 
       {/* Tab Content - Photos Tab */}
