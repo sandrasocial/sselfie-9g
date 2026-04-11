@@ -17,6 +17,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Feed layout ID is required" }, { status: 400 })
     }
 
+    const [ownedFeed] = await sql`
+      SELECT id
+      FROM feed_layouts
+      WHERE id = ${feedLayoutId}
+      AND user_id = ${user.id}
+      LIMIT 1
+    `
+
+    if (!ownedFeed) {
+      return NextResponse.json({ error: "Feed not found" }, { status: 404 })
+    }
+
     console.log("[v0] Batch Generation: Starting for", postIds?.length || "all", "posts")
 
     // Get posts to generate
@@ -25,11 +37,13 @@ export async function POST(request: NextRequest) {
           SELECT * FROM feed_posts
           WHERE feed_layout_id = ${feedLayoutId}
           AND id = ANY(${postIds})
+          AND user_id = ${user.id}
           AND generation_status = 'pending'
         `
       : await sql`
           SELECT * FROM feed_posts
           WHERE feed_layout_id = ${feedLayoutId}
+          AND user_id = ${user.id}
           AND generation_status = 'pending'
           ORDER BY position ASC
         `
@@ -40,16 +54,19 @@ export async function POST(request: NextRequest) {
 
     // Trigger generation for each post
     const predictions = []
+    const failures: Array<{ postId: number; position: number; error: string }> = []
+    const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+    const cookieHeader = request.headers.get("cookie") || ""
     for (const post of posts) {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL}/api/feed/${feedLayoutId}/generate-single`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ postId: post.id }),
+        const response = await fetch(`${origin}/api/feed/${feedLayoutId}/generate-single`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: cookieHeader,
           },
-        )
+          body: JSON.stringify({ postId: post.id }),
+        })
 
         if (response.ok) {
           const data = await response.json()
@@ -58,9 +75,20 @@ export async function POST(request: NextRequest) {
             predictionId: data.predictionId,
             position: post.position,
           })
+        } else {
+          failures.push({
+            postId: post.id,
+            position: post.position,
+            error: `Generation failed with status ${response.status}`,
+          })
         }
       } catch (error) {
         console.error("[v0] Batch Generation: Error generating post", post.id, error)
+        failures.push({
+          postId: post.id,
+          position: post.position,
+          error: error instanceof Error ? error.message : "Unknown error",
+        })
       }
 
       // Add small delay to avoid rate limits
@@ -68,8 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
+      success: predictions.length > 0,
       predictions,
+      failures,
       total: posts.length,
     })
   } catch (error) {

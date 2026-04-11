@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { createFeedFromStrategyHandler, type CreateFeedOptions, type FeedStrategy } from "@/lib/maya/feed-generation-handler"
 import type { FeedPost } from "@/components/feed-planner/feed-preview-types"
+import { randomFeedPlannerIdempotencyKey, stableFeedPlannerIdempotencyKey } from "@/lib/feed-planner/idempotency"
 
 interface UseFeedActionsParams {
   feedId: number | null
@@ -87,6 +88,11 @@ export function useFeedActions(params: UseFeedActionsParams) {
 
     params.setIsSaving(true)
     try {
+      const createIdempotencyKey = stableFeedPlannerIdempotencyKey("feed-create", {
+        saveToPlanner: true,
+        strategy: params.strategy,
+        mode: params.proMode ? "pro" : "classic",
+      })
       const options: CreateFeedOptions = {
         userModePreference: params.proMode ? "pro" : "classic",
         customSettings: {
@@ -95,6 +101,7 @@ export function useFeedActions(params: UseFeedActionsParams) {
           aspectRatio: params.aspectRatio,
           realismStrength: params.realismStrength,
         },
+        idempotencyKey: createIdempotencyKey,
       }
 
       const result = await createFeedFromStrategyHandler(params.strategy, {
@@ -111,7 +118,14 @@ export function useFeedActions(params: UseFeedActionsParams) {
       params.setSavedFeedId(newFeedId)
       params.setFeedStatus("saved")
       params.onSave?.(newFeedId)
-      toast({ title: "Feed saved", description: "Your feed has been saved to Feed Planner." })
+      if (result.idempotentReplay) {
+        toast({
+          title: "Feed already created",
+          description: result.message || "Reopened your existing feed from this request.",
+        })
+      } else {
+        toast({ title: "Feed saved", description: "Your feed has been saved to Feed Planner." })
+      }
     } catch (error) {
       toast({
         title: "Failed to save feed",
@@ -148,19 +162,31 @@ export function useFeedActions(params: UseFeedActionsParams) {
     }
   }
 
-  const handleGenerateFeedWithId = async (feedIdToUse: number) => {
+  const handleGenerateFeedWithId = async (feedIdToUse: number, queueIdempotencyKey?: string) => {
     params.setIsGenerating(true)
     params.setIsSaving(false)
 
     try {
       const response = await fetch(`/api/feed-planner/queue-all-images`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-idempotency-key": queueIdempotencyKey || randomFeedPlannerIdempotencyKey(`feed-queue-${feedIdToUse}`),
+        },
         credentials: "include",
         body: JSON.stringify({ feedLayoutId: feedIdToUse }),
       })
 
       if (!response.ok) {
+        if (response.status === 409) {
+          const conflictData = await response.json().catch(() => ({}))
+          toast({
+            title: "Already processing",
+            description: conflictData.error || "This feed is already generating. We kept the current run.",
+          })
+          params.setIsGenerating(false)
+          return
+        }
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || errorData.error || "Failed to generate feed images")
       }
@@ -208,9 +234,18 @@ export function useFeedActions(params: UseFeedActionsParams) {
         }
 
         params.setIsSaving(true)
+        const createIdempotencyKey = stableFeedPlannerIdempotencyKey("feed-create", {
+          saveToPlanner: false,
+          strategy: params.strategy,
+          mode: params.proMode ? "pro" : "classic",
+        })
+        const queueIdempotencyKey = randomFeedPlannerIdempotencyKey("feed-queue")
         const saveResponse = await fetch("/api/feed-planner/create-from-strategy", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-idempotency-key": createIdempotencyKey,
+          },
           credentials: "include",
           body: JSON.stringify({
             strategy: params.strategy,
@@ -222,6 +257,7 @@ export function useFeedActions(params: UseFeedActionsParams) {
               realismStrength: params.realismStrength,
             },
             saveToPlanner: false,
+            idempotencyKey: createIdempotencyKey,
           }),
         })
 
@@ -235,11 +271,17 @@ export function useFeedActions(params: UseFeedActionsParams) {
         params.markJustSaved()
         params.setSavedFeedId(newFeedId)
         params.onSave?.(newFeedId)
-        await handleGenerateFeedWithId(newFeedId)
+        if (saveData.idempotentReplay) {
+          toast({
+            title: "Feed already created",
+            description: saveData.message || "Reopened your existing feed from this request.",
+          })
+        }
+        await handleGenerateFeedWithId(newFeedId, queueIdempotencyKey)
         return
       }
 
-      await handleGenerateFeedWithId(params.feedId)
+      await handleGenerateFeedWithId(params.feedId, randomFeedPlannerIdempotencyKey(`feed-queue-${params.feedId}`))
     } catch (error) {
       params.setIsGenerating(false)
       params.setIsSaving(false)

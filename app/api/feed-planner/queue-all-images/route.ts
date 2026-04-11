@@ -3,6 +3,7 @@ import { queueAllImagesForFeed } from "@/lib/feed-planner/queue-images"
 import { withAuth } from "@/lib/auth/with-auth"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateAndStoreFeedCaptions } from "@/lib/feed-planner/generate-feed-captions"
+import { sql } from "@/lib/db/client"
 
 /**
  * Queue all images for a feed layout automatically
@@ -16,6 +17,8 @@ async function handleQueueAllImages({
   authUser: { id: string }
   user: { id: string | number }
 }) {
+  let advisoryLockKey: string | null = null
+  let advisoryLockAcquired = false
   try {
     console.log("[v0] ==================== QUEUE ALL IMAGES API CALLED ====================")
 
@@ -29,6 +32,7 @@ async function handleQueueAllImages({
     if (!Number.isFinite(normalizedFeedLayoutId) || normalizedFeedLayoutId <= 0) {
       return NextResponse.json({ error: "Invalid feed layout ID" }, { status: 400 })
     }
+    const idempotencyKey = (request.headers.get("x-idempotency-key") || "").trim().slice(0, 120)
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
 
@@ -36,6 +40,24 @@ async function handleQueueAllImages({
       const neonUser = await getUserByAuthId(authUser.id)
       if (!neonUser) {
         return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+
+      if (idempotencyKey) {
+        advisoryLockKey = `feed-queue:${neonUser.id}:${normalizedFeedLayoutId}:${idempotencyKey}`
+        const [lockResult] = await sql`
+          SELECT pg_try_advisory_lock(hashtext(${advisoryLockKey})) AS locked
+        `
+        advisoryLockAcquired = Boolean(lockResult?.locked)
+        if (!advisoryLockAcquired) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Queue request already in progress for this key.",
+              retryable: true,
+            },
+            { status: 409 },
+          )
+        }
       }
 
       // Generate weak/missing captions before image queueing so default "Generate Feed"
@@ -75,6 +97,14 @@ async function handleQueueAllImages({
       },
       { status: 500 },
     )
+  } finally {
+    if (advisoryLockAcquired && advisoryLockKey) {
+      try {
+        await sql`SELECT pg_advisory_unlock(hashtext(${advisoryLockKey}))`
+      } catch (unlockError) {
+        console.warn("[v0] Queue all images unlock failed:", unlockError)
+      }
+    }
   }
 }
 

@@ -26,6 +26,18 @@ import { isSupportedFeedPlanPostCount } from "@/lib/maya/feed-strategy"
 
 export const maxDuration = 300
 
+function buildFeedCreateIdempotencyPrefix(userId: number, key: string): string {
+  return `feed-create:${userId}:${key}`
+}
+
+function parseFeedIdFromReference(referenceId?: string | null): number | null {
+  if (!referenceId) return null
+  const match = /:feed:(\d+)$/.exec(referenceId)
+  if (!match) return null
+  const feedId = Number(match[1])
+  return Number.isFinite(feedId) ? feedId : null
+}
+
 // Helper function to safely truncate strings
 function truncate(str: string | null | undefined, maxLength: number, defaultValue: string = ''): string {
   if (!str) return defaultValue
@@ -73,6 +85,8 @@ function getLayoutType(gridPattern: string | undefined, posts: any[]): string {
  * This endpoint accepts a complete strategy from the conversational flow
  */
 export async function POST(request: NextRequest) {
+  let advisoryLockKey: string | null = null
+  let advisoryLockAcquired = false
   try {
     console.log("[FEED-FROM-STRATEGY] ==================== START ====================")
 
@@ -88,7 +102,83 @@ export async function POST(request: NextRequest) {
     const neonUserId = neonUser.id
 
     // Get Maya's strategy from request
-    const { strategy, customSettings, userModePreference, imageLibrary, saveToPlanner = false } = await request.json()
+    const {
+      strategy,
+      customSettings,
+      userModePreference,
+      imageLibrary,
+      saveToPlanner = false,
+      idempotencyKey: bodyIdempotencyKey,
+    } = await request.json()
+
+    const headerIdempotencyKey = request.headers.get("x-idempotency-key")
+    const idempotencyKeyRaw = (typeof bodyIdempotencyKey === "string" ? bodyIdempotencyKey : headerIdempotencyKey || "").trim()
+    const idempotencyKey = idempotencyKeyRaw.length > 0 ? idempotencyKeyRaw.slice(0, 120) : null
+
+    if (idempotencyKey) {
+      const idempotencyPrefix = buildFeedCreateIdempotencyPrefix(neonUser.id, idempotencyKey)
+      const [existingCharge] = await sql`
+        SELECT reference_id
+        FROM credit_transactions
+        WHERE user_id = ${neonUser.id.toString()}
+        AND reference_id LIKE ${`${idempotencyPrefix}:feed:%`}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      const existingFeedId = parseFeedIdFromReference(existingCharge?.reference_id)
+      if (existingFeedId) {
+        const [existingFeed] = await sql`
+          SELECT id, status
+          FROM feed_layouts
+          WHERE id = ${existingFeedId}
+          AND user_id = ${neonUser.id}
+          LIMIT 1
+        `
+        if (existingFeed) {
+          return NextResponse.json({
+            success: true,
+            feedLayoutId: existingFeed.id,
+            message: "Feed already created for this request.",
+            status: existingFeed.status || (saveToPlanner ? "saved" : "chat"),
+            idempotentReplay: true,
+          })
+        }
+      }
+
+      advisoryLockKey = idempotencyPrefix
+      const [lockResult] = await sql`
+        SELECT pg_try_advisory_lock(hashtext(${advisoryLockKey})) AS locked
+      `
+      advisoryLockAcquired = Boolean(lockResult?.locked)
+
+      if (!advisoryLockAcquired) {
+        const [inFlightCharge] = await sql`
+          SELECT reference_id
+          FROM credit_transactions
+          WHERE user_id = ${neonUser.id.toString()}
+          AND reference_id LIKE ${`${idempotencyPrefix}:feed:%`}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+        const inFlightFeedId = parseFeedIdFromReference(inFlightCharge?.reference_id)
+        if (inFlightFeedId) {
+          return NextResponse.json({
+            success: true,
+            feedLayoutId: inFlightFeedId,
+            message: "Feed already created for this request.",
+            status: saveToPlanner ? "saved" : "chat",
+            idempotentReplay: true,
+          })
+        }
+        return NextResponse.json(
+          {
+            error: "Feed creation already in progress for this request.",
+            retryable: true,
+          },
+          { status: 409 }
+        )
+      }
+    }
     
     // CRITICAL: saveToPlanner determines if feed appears in Feed Planner screen
     // - saveToPlanner: false → status: 'chat' (feed saved for persistence, but NOT in planner)
@@ -281,22 +371,8 @@ export async function POST(request: NextRequest) {
     console.log("[FEED-FROM-STRATEGY] ✅ All prerequisites validated - proceeding with feed creation")
     // ==================== END PREREQUISITE VALIDATION ====================
 
-    // Deduct credits upfront for entire feed
-    const deduction = await deductCredits(
-      neonUser.id.toString(),
-      totalCredits,
-      "image",
-      "Feed Planner - Complete feed strategy"
-    )
-
-    if (!deduction.success) {
-      return NextResponse.json(
-        { error: "Failed to deduct credits" },
-        { status: 500 }
-      )
-    }
-
-    console.log("[FEED-FROM-STRATEGY] Credits deducted. New balance:", deduction.newBalance)
+    // Credits are validated upfront, then charged only after rows are created successfully.
+    // This prevents charging users for feeds that fail during persistence.
 
     // Get user's brand profile with all fields needed for caption generation
     const [brandProfile] = await sql`
@@ -621,6 +697,11 @@ export async function POST(request: NextRequest) {
     
     if (actualPostCount === 0) {
       console.error(`[FEED-FROM-STRATEGY] ❌ CRITICAL: No posts were created! All inserts failed.`)
+      await sql`
+        DELETE FROM feed_layouts
+        WHERE id = ${feedLayout.id}
+        AND user_id = ${neonUser.id}
+      `
       return NextResponse.json(
         {
           success: false,
@@ -629,6 +710,41 @@ export async function POST(request: NextRequest) {
           message: "We couldn't create any posts for your feed. This might be a temporary issue. Please try again, or contact support if the problem continues.",
           failedPosts: failedPosts,
           canRetry: true,
+        },
+        { status: 500 }
+      )
+    }
+
+    // Charge only for persisted rows (strategy + created posts).
+    const creditsToCharge = strategyCredits + (actualPostCount * getStudioProCreditCost('2K'))
+    const deductionReferenceId = idempotencyKey
+      ? `${buildFeedCreateIdempotencyPrefix(neonUser.id, idempotencyKey)}:feed:${feedLayout.id}`
+      : undefined
+    const deduction = await deductCredits(
+      neonUser.id.toString(),
+      creditsToCharge,
+      "image",
+      `Feed Planner - Strategy + ${actualPostCount} post(s)`,
+      deductionReferenceId
+    )
+
+    if (!deduction.success) {
+      // Compensation path: remove partially created feed if billing failed.
+      await sql`
+        DELETE FROM feed_posts
+        WHERE feed_layout_id = ${feedLayout.id}
+        AND user_id = ${neonUser.id}
+      `
+      await sql`
+        DELETE FROM feed_layouts
+        WHERE id = ${feedLayout.id}
+        AND user_id = ${neonUser.id}
+      `
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to charge credits for feed creation",
+          message: deduction.error || "Unable to charge credits. No feed was saved.",
         },
         { status: 500 }
       )
@@ -646,6 +762,7 @@ export async function POST(request: NextRequest) {
         status: "partial",
         createdCount: actualPostCount,
         expectedCount: strategy.posts.length,
+        creditsCharged: creditsToCharge,
         failedPosts: failedPosts,
         warning: `${failedCount} post(s) could not be created. You can regenerate them later.`,
       })
@@ -675,6 +792,7 @@ export async function POST(request: NextRequest) {
       feedLayoutId: feedLayout.id,
       message: "Feed saved! Click 'Generate Feed' to create images and captions.",
       status: feedStatus, // Feed status: 'chat' (not in planner) or 'saved' (in planner)
+      creditsCharged: creditsToCharge,
     })
   } catch (error) {
     console.error("[FEED-FROM-STRATEGY] Error:", error)
@@ -712,6 +830,14 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
+  } finally {
+    if (advisoryLockAcquired && advisoryLockKey) {
+      try {
+        await sql`SELECT pg_advisory_unlock(hashtext(${advisoryLockKey}))`
+      } catch (unlockError) {
+        console.warn("[FEED-FROM-STRATEGY] Failed to release advisory lock:", unlockError)
+      }
+    }
   }
 }
 

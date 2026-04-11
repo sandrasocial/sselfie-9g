@@ -72,6 +72,7 @@ vi.mock("@/lib/maya/studio-pro-system-prompt", () => ({
 }))
 
 vi.mock("@/lib/maya/openrouter", () => ({
+  createMayaAnthropicModel: vi.fn(() => "anthropic-fallback-model"),
   createMayaOpenRouterFallbackModel: vi.fn(() => null),
   getMayaGatewayModel: vi.fn(() => "gateway-model"),
   getMayaMaxTokensForTask: vi.fn(() => 8192),

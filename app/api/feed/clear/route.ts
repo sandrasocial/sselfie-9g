@@ -21,13 +21,24 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // Get existing feed
-    const existingFeedResult = await sql`
-      SELECT id FROM feed_layouts
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
+    const body = await req.json().catch(() => ({}))
+    const requestedFeedId = body?.feedId ? Number(body.feedId) : null
+
+    // If a feedId is provided, clear that exact feed (ownership-scoped).
+    // Fallback to latest feed for backwards compatibility.
+    const existingFeedResult = requestedFeedId
+      ? await sql`
+          SELECT id FROM feed_layouts
+          WHERE user_id = ${user.id}
+          AND id = ${requestedFeedId}
+          LIMIT 1
+        `
+      : await sql`
+          SELECT id FROM feed_layouts
+          WHERE user_id = ${user.id}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
 
     if (existingFeedResult.length === 0) {
       return NextResponse.json({ error: "No feed found" }, { status: 404 })

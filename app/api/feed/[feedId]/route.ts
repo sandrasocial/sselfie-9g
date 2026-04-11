@@ -211,8 +211,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ fe
     const { bio } = body
     const sql = getDb()
 
+    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
+    if (authError || !authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     if (!bio || typeof bio !== "string") {
       return Response.json({ error: "Bio is required" }, { status: 400 })
+    }
+
+    const [ownedFeed] = await sql`
+      SELECT id FROM feed_layouts
+      WHERE id = ${feedId}
+      AND user_id = ${user.id}
+      LIMIT 1
+    ` as any[]
+
+    if (!ownedFeed) {
+      return Response.json({ error: "Feed not found" }, { status: 404 })
     }
 
     // Update or insert bio
@@ -250,8 +271,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ f
     console.log("[v0] DELETE feed request for feedId:", feedId)
     const sql = getDb()
 
-    const supabase = await createServerClient()
-
     const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
 
     if (authError || !authUser) {
@@ -268,9 +287,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ f
 
     console.log("[v0] Deleting feed for user:", user.id)
 
+    const ownedFeed = await sql`
+      SELECT id
+      FROM feed_layouts
+      WHERE id = ${feedId}
+      AND user_id = ${user.id}
+      LIMIT 1
+    ` as any[]
+
+    if (ownedFeed.length === 0) {
+      return Response.json({ error: "Feed not found" }, { status: 404 })
+    }
+
     await sql`
       DELETE FROM feed_posts
       WHERE feed_layout_id = ${feedId}
+      AND user_id = ${user.id}
     `
     console.log("[v0] Deleted feed posts")
 

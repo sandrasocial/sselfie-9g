@@ -82,6 +82,7 @@ describe("POST /api/maya/save-message inline feed persistence", () => {
       "Here is your feed",
       undefined,
       [{ feedId: 44 }],
+      undefined,
     )
   })
 })

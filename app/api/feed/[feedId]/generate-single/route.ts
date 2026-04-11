@@ -83,6 +83,8 @@ interface Model {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+  let claimedPostId: number | null = null
+  let claimedUserId: number | null = null
   try {
     console.log("[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ====================")
     
@@ -217,11 +219,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     const [post] = await sql`
       SELECT * FROM feed_posts
-      WHERE feed_layout_id = ${feedIdInt} AND id = ${postId}
+      WHERE feed_layout_id = ${feedIdInt}
+      AND id = ${postId}
+      AND user_id = ${user.id}
     `
 
     if (!post) {
       return Response.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    if (post.image_url) {
+      return Response.json({
+        success: true,
+        alreadyGenerated: true,
+        imageUrl: post.image_url,
+        predictionId: post.prediction_id || null,
+      })
+    }
+
+    if (post.prediction_id && post.generation_status !== "failed") {
+      return Response.json({
+        success: true,
+        alreadyGenerating: true,
+        predictionId: post.prediction_id,
+      })
     }
 
     // Check generation mode (Pro Mode vs Classic Mode)
@@ -255,6 +276,53 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
+    const claimRows = await sql`
+      UPDATE feed_posts
+      SET generation_status = 'generating',
+          generation_mode = ${generationMode},
+          updated_at = NOW()
+      WHERE id = ${postId}
+      AND user_id = ${user.id}
+      AND image_url IS NULL
+      AND prediction_id IS NULL
+      AND (generation_status IS NULL OR generation_status IN ('pending', 'failed'))
+      RETURNING id
+    `
+
+    if (claimRows.length === 0) {
+      const [currentPost] = await sql`
+        SELECT prediction_id, image_url, generation_status
+        FROM feed_posts
+        WHERE id = ${postId}
+        AND user_id = ${user.id}
+        LIMIT 1
+      `
+      if (currentPost?.image_url) {
+        return Response.json({
+          success: true,
+          alreadyGenerated: true,
+          imageUrl: currentPost.image_url,
+          predictionId: currentPost.prediction_id || null,
+        })
+      }
+      if (currentPost?.prediction_id) {
+        return Response.json({
+          success: true,
+          alreadyGenerating: true,
+          predictionId: currentPost.prediction_id,
+        })
+      }
+      return Response.json(
+        {
+          error: "Generation already in progress",
+          retryable: true,
+        },
+        { status: 409 },
+      )
+    }
+    claimedPostId = Number(postId)
+    claimedUserId = user.id
+
     // Query feed_layouts with feed_style and layout_type (handle case where column might not exist yet)
     let feedLayout: FeedLayout | undefined
     try {
@@ -262,6 +330,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style
         FROM feed_layouts 
         WHERE id = ${feedIdInt}
+        AND user_id = ${user.id}
       `
       feedLayout = result[0] as FeedLayout | undefined
       
@@ -287,6 +356,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, layout_type
           FROM feed_layouts 
           WHERE id = ${feedIdInt}
+          AND user_id = ${user.id}
         `
         feedLayout = result[0]
         feedLayout.feed_style = null // Set to null if column doesn't exist
@@ -294,6 +364,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       } else {
         throw error // Re-throw if it's a different error
       }
+    }
+
+    if (!feedLayout) {
+      return Response.json({ error: "Feed not found" }, { status: 404 })
     }
 
     // Only fetch model for Classic Mode (Pro Mode doesn't need custom model)
@@ -342,17 +416,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // Route to Pro Mode or Classic Mode based on generation_mode
     if (generationMode === 'pro') {
       console.log("[v0] [GENERATE-SINGLE] 🎨 Pro Mode post detected - routing to Nano Banana Pro")
-      
-      // CRITICAL FIX: Mark post as generating IMMEDIATELY before any processing
-      // This ensures frontend shows loading state right away, even if template extraction takes time
-      await sql`
-        UPDATE feed_posts
-        SET generation_status = 'generating',
-            generation_mode = ${generationMode},
-            updated_at = NOW()
-        WHERE id = ${postId}
-      `
-      console.log(`[v0] [GENERATE-SINGLE] ✅ Marked post ${postId} as generating immediately`)
       
       // Fetch user's avatar images for Pro Mode
       const avatarImages = await sql`
@@ -486,6 +549,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 UPDATE feed_posts
                 SET prompt = ${finalPrompt}
                 WHERE id = ${postId}
+                AND user_id = ${user.id}
               `
             } catch (v2Error) {
               const errorMessage = v2Error instanceof Error ? v2Error.message : "Unknown error"
@@ -594,6 +658,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
       if (!deduction.success) {
         console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits before generation:", deduction.error)
+        await sql`
+          UPDATE feed_posts
+          SET generation_status = 'failed',
+              updated_at = NOW()
+          WHERE id = ${postId}
+          AND user_id = ${user.id}
+          AND prediction_id IS NULL
+          AND image_url IS NULL
+        `
         return Response.json(
           {
             error: "Could not deduct credits",
@@ -636,6 +709,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             prompt = ${cleanedPrompt},
             updated_at = NOW()
         WHERE id = ${postId}
+        AND user_id = ${user.id}
       `
       
       return Response.json({ 
@@ -930,6 +1004,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         image_url = NULL,
         updated_at = NOW()
       WHERE id = ${postId}
+      AND user_id = ${user.id}
     `
 
     console.log("[v0] [GENERATE-SINGLE] ✅ Database updated with prediction_id:", prediction.id, "for post:", postId)
@@ -940,6 +1015,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       message: "Image generation started",
     })
   } catch (error: unknown) {
+    if (claimedPostId && claimedUserId) {
+      try {
+        await sql`
+          UPDATE feed_posts
+          SET generation_status = 'failed',
+              updated_at = NOW()
+          WHERE id = ${claimedPostId}
+          AND user_id = ${claimedUserId}
+          AND prediction_id IS NULL
+          AND image_url IS NULL
+        `
+      } catch (recoveryError) {
+        console.error("[v0] [GENERATE-SINGLE] Failed to mark post as failed after error:", recoveryError)
+      }
+    }
     const err = error as { message?: string; stack?: string }
     console.error("[v0] [GENERATE-SINGLE] Error generating single post:", err.message || String(error))
     

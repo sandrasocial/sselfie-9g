@@ -23,6 +23,7 @@ import {
   type FeedPromptParams
 } from '@/lib/feed-planner/feed-prompt-expert'
 import { isSupportedFeedPlanPostCount } from "@/lib/maya/feed-strategy"
+import { stableFeedPlannerIdempotencyKey } from "@/lib/feed-planner/idempotency"
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -776,6 +777,7 @@ export interface CreateFeedOptions {
   userModePreference?: 'classic' | 'pro' | null
   imageLibrary?: any
   saveToPlanner?: boolean // CRITICAL: If false, feed saved with status='chat' (not in planner). If true, status='saved' (in planner)
+  idempotencyKey?: string
 }
 
 /**
@@ -791,14 +793,25 @@ export async function createFeedFromStrategyHandler(
   feed?: any
   posts?: any[]
   error?: string
+  message?: string
+  idempotentReplay?: boolean
+  retryable?: boolean
 }> {
   try {
     console.log('[FEED-HANDLER] Creating feed from strategy via API...')
+    const idempotencyKey =
+      options.idempotencyKey ||
+      stableFeedPlannerIdempotencyKey("feed-create", {
+        saveToPlanner: options.saveToPlanner ?? false,
+        userModePreference: options.userModePreference || null,
+        strategy,
+      })
 
     const response = await fetch('/api/feed-planner/create-from-strategy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-idempotency-key': idempotencyKey,
       },
       body: JSON.stringify({
         strategy,
@@ -806,6 +819,7 @@ export async function createFeedFromStrategyHandler(
         userModePreference: options.userModePreference,
         imageLibrary: options.imageLibrary,
         saveToPlanner: options.saveToPlanner ?? false, // Default to false (chat feed, not in planner)
+        idempotencyKey,
       }),
     })
 
@@ -815,6 +829,8 @@ export async function createFeedFromStrategyHandler(
       return {
         success: false,
         error: errorData.error || errorData.message || 'Failed to create feed',
+        message: errorData.message,
+        retryable: Boolean(errorData.retryable),
       }
     }
 
@@ -895,6 +911,8 @@ export async function createFeedFromStrategyHandler(
       feedId: data.feedLayoutId?.toString(),
       feed: feedData,
       posts: postsData,
+      message: data.message,
+      idempotentReplay: Boolean(data.idempotentReplay),
     }
   } catch (error) {
     console.error('[FEED-HANDLER] Error creating feed:', error)

@@ -33,26 +33,31 @@ export async function POST(req: NextRequest) {
 
     console.log(`[FEED EXPANSION] Client-side expansion for feed ${feedId}, user ${user.id}`)
 
+    const [ownedFeedLayout] = await sql`
+      SELECT id, feed_style
+      FROM feed_layouts
+      WHERE id = ${feedId}
+      AND user_id = ${user.id}
+      LIMIT 1
+    ` as any[]
+
+    if (!ownedFeedLayout) {
+      return NextResponse.json({ error: "Feed not found" }, { status: 404 })
+    }
+
     // Check current post count
     const existingPosts = await sql`
       SELECT position
       FROM feed_posts
       WHERE feed_layout_id = ${feedId}
+      AND user_id = ${user.id}
       ORDER BY position ASC
     ` as any[]
 
     const existingPositions = existingPosts.map((p: any) => p.position)
     console.log(`[FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
 
-    // Get feed_style from feed_layouts to pre-generate prompts
-    const [feedLayout] = await sql`
-      SELECT feed_style
-      FROM feed_layouts
-      WHERE id = ${feedId}
-      LIMIT 1
-    ` as any[]
-
-    if (!feedLayout?.feed_style) {
+    if (!ownedFeedLayout.feed_style) {
       return NextResponse.json(
         { error: "FEED_STYLE_REQUIRED", details: "Feed style is required for paid blueprint generation." },
         { status: 422 }
