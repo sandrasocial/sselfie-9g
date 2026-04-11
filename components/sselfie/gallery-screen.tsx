@@ -31,6 +31,9 @@ interface GalleryScreenProps {
   user: any
   userId: string | number
   hasPaidAccess?: boolean
+  hubImageId?: string | null
+  hubImageUrl?: string | null
+  hubVideoId?: string | null
 }
 
 interface GeneratedVideo {
@@ -198,15 +201,15 @@ function GalleryContentEmptyState({
   if (contentFilter === "videos") {
     return (
       <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
-        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Videos</div>
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Reels</div>
         <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-          No Videos Yet
+          No reels yet
         </h3>
         <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-          Bring your photos to life! Go to Maya and ask her to animate any of your images into stunning videos.
+          Pick a photo and ask Maya to turn it into a reel.
         </p>
         <button type="button" onClick={onGoToMaya} className={baseButtonClass}>
-          Go to Maya
+          Open Maya
         </button>
       </div>
     )
@@ -217,13 +220,13 @@ function GalleryContentEmptyState({
       <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
         <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Feed</div>
         <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-          No Feed Images Yet
+          No feed picks yet
         </h3>
         <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-          Create your first Instagram feed with the Feed Planner to see your feed images here.
+          Build your first feed plan and your picks will show here.
         </p>
         <button type="button" onClick={onGoToFeedPlanner} className={baseButtonClass}>
-          Go to Feed Planner
+          Open Feed Planner
         </button>
       </div>
     )
@@ -234,13 +237,13 @@ function GalleryContentEmptyState({
       <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
         <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Search</div>
         <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-          No Results Found
+          No matches yet
         </h3>
         <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-          No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
+          I couldn&apos;t find anything for &quot;{searchQuery}&quot;. Try another word.
         </p>
         <button type="button" onClick={onClearSearch} className={baseButtonClass}>
-          Clear Search
+          Clear search
         </button>
       </div>
     )
@@ -250,9 +253,9 @@ function GalleryContentEmptyState({
     return (
       <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
         <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Saved</div>
-        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No Favorites Yet</h3>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No saved photos yet</h3>
         <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-          Save any image to add it to your favorites collection.
+          Save the looks you love and they&apos;ll stay here.
         </p>
       </div>
     )
@@ -265,15 +268,34 @@ function GalleryContentEmptyState({
   )
 }
 
-export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = false }: Readonly<GalleryScreenProps>) {
+export default function GalleryScreen({
+  user,
+  userId: _userId,
+  hasPaidAccess = false,
+  hubImageId = null,
+  hubImageUrl = null,
+  hubVideoId = null,
+}: Readonly<GalleryScreenProps>) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
   const [isPulling, setIsPulling] = useState(false)
+  const [viewMode, setViewMode] = useState<"moodboard" | "grid">("moodboard")
+  const [showRefine, setShowRefine] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [pullDistance, setPullDistance] = useState(0)
+  const consumedHubDeepLinkRef = useRef(false)
+
+  const clearHubDeepLinkParams = useCallback(() => {
+    if (typeof window === "undefined") return
+    const url = new URL(window.location.href)
+    url.searchParams.delete("hubImageId")
+    url.searchParams.delete("hubImageUrl")
+    url.searchParams.delete("hubVideoId")
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
+  }, [])
 
 
   // Use hooks for data fetching and state management
@@ -317,7 +339,7 @@ export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = f
     // Users can manually refresh if needed, or stats update on navigation
   })
 
-  const allVideos: GeneratedVideo[] = videosData?.videos || []
+  const allVideos: GeneratedVideo[] = useMemo(() => videosData?.videos || [], [videosData?.videos])
 
   // Use selection mode hook
   const {
@@ -465,6 +487,41 @@ export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = f
   }, [userData]) // Only userData - this effect syncs API data to state, not vice versa
 
   useFirstImageGeneratedToast(allImages, toast)
+
+  useEffect(() => {
+    consumedHubDeepLinkRef.current = false
+  }, [hubImageId, hubImageUrl, hubVideoId])
+
+  useEffect(() => {
+    if (consumedHubDeepLinkRef.current) return
+    if (!hubImageId && !hubImageUrl) return
+    if (!displayImages || displayImages.length === 0) return
+
+    const matchById = hubImageId ? displayImages.find((image) => image.id === hubImageId) : undefined
+    const matchByUrl = !matchById && hubImageUrl
+      ? displayImages.find((image) => image.image_url === hubImageUrl)
+      : undefined
+
+    const target = matchById || matchByUrl
+    if (!target) return
+
+    consumedHubDeepLinkRef.current = true
+    setLightboxImage(target)
+    clearHubDeepLinkParams()
+  }, [hubImageId, hubImageUrl, displayImages, clearHubDeepLinkParams])
+
+  useEffect(() => {
+    if (consumedHubDeepLinkRef.current) return
+    if (!hubVideoId) return
+    if (!allVideos || allVideos.length === 0) return
+
+    const target = allVideos.find((video) => String(video.id) === String(hubVideoId))
+    if (!target) return
+
+    consumedHubDeepLinkRef.current = true
+    setPreviewVideo(target)
+    clearHubDeepLinkParams()
+  }, [hubVideoId, allVideos, clearHubDeepLinkParams])
 
   // Filtering and sorting is now handled by useGalleryFilters hook
 
@@ -627,6 +684,10 @@ export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = f
           sortBy={sortBy}
           onSortChange={setSortBy}
           onSelectClick={() => setSelectionMode(true)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showRefine={showRefine}
+          onToggleRefine={() => setShowRefine((state) => !state)}
         />
       )}
 
@@ -670,6 +731,7 @@ export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = f
           longPressImageId={longPressImageId}
           onLongPressStart={handleLongPressStart}
           onLongPressEnd={handleLongPressEnd}
+          viewMode={viewMode}
         />
       ) : (
         <GalleryContentEmptyState

@@ -10,10 +10,10 @@ export function GalleryFilters({
   onContentFilterChange,
 }: GalleryFiltersProps) {
   const filters = [
-    { key: "photos" as const, label: "Photos" },
-    { key: "videos" as const, label: "Videos" },
-    { key: "feed" as const, label: "Feed" },
-    { key: "favorited" as const, label: "Favourited" },
+    { key: "photos" as const, label: "All photos" },
+    { key: "videos" as const, label: "Reels" },
+    { key: "feed" as const, label: "Feed picks" },
+    { key: "favorited" as const, label: "Saved" },
   ]
 
   return (
@@ -23,7 +23,7 @@ export function GalleryFilters({
           <button
             key={filter.key}
             onClick={() => onContentFilterChange(filter.key)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.28em] transition-colors duration-200 border ${
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em] transition-colors duration-200 border ${
               contentFilter === filter.key
                 ? "bg-[rgba(175,170,162,0.20)] border-[rgba(195,190,182,0.40)] text-[#f0ede8]"
                 : "bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.20)] text-[#8a8780] hover:text-[#a8a49c]"

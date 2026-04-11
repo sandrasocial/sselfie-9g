@@ -16,6 +16,7 @@ interface GalleryImageCardProps {
   longPressImageId: React.MutableRefObject<string | null>
   onLongPressStart: (imageId: string) => void
   onLongPressEnd: () => void
+  className?: string
 }
 
 function GalleryImageCardComponent({
@@ -29,6 +30,7 @@ function GalleryImageCardComponent({
   longPressImageId,
   onLongPressStart,
   onLongPressEnd,
+  className = "",
 }: GalleryImageCardProps) {
   const handleClick = useCallback(() => {
     // If this was a long-press, don't handle click (long-press already handled it)
@@ -70,7 +72,7 @@ function GalleryImageCardComponent({
       onMouseDown={handleMouseDown}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
-      className="relative aspect-square overflow-hidden bg-[rgba(175,170,162,0.08)] border border-[rgba(195,190,182,0.15)] rounded-xl"
+      className={`relative aspect-square overflow-hidden bg-[rgba(175,170,162,0.08)] border border-[rgba(195,190,182,0.15)] rounded-xl ${className}`}
     >
       <ProgressiveImage
         src={image.image_url || "/placeholder.svg"}
@@ -87,9 +89,9 @@ function GalleryImageCardComponent({
         </>
       )}
       {!selectionMode && (
-        <div className="absolute inset-0 flex items-end bg-[rgba(13,12,11,0)] opacity-0 transition-all duration-300 hover:bg-[rgba(13,12,11,0.7)] hover:backdrop-blur-sm hover:opacity-100">
+        <div className="absolute inset-0 flex items-end bg-[rgba(13,12,11,0)] opacity-0 transition-all duration-300 hover:bg-[rgba(13,12,11,0.45)] hover:backdrop-blur-sm hover:opacity-100">
           <div className="m-2 rounded-full border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.15)] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#f0ede8] backdrop-blur-sm">
-            VIEW
+            Open
           </div>
         </div>
       )}
@@ -108,7 +110,8 @@ export const GalleryImageCard = React.memo(GalleryImageCardComponent, (prevProps
     prevProps.image.id === nextProps.image.id &&
     prevProps.image.image_url === nextProps.image.image_url &&
     prevProps.isSelected === nextProps.isSelected &&
-    prevProps.selectionMode === nextProps.selectionMode
+    prevProps.selectionMode === nextProps.selectionMode &&
+    prevProps.className === nextProps.className
     // Function props and refs are intentionally omitted:
     // - Functions are created inline in map() so checking them would prevent memoization
     // - Refs are stable references that don't change

@@ -104,10 +104,51 @@ const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
 
 const academyPromoCardClass = "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
 
-const academyFeatureCardClass =
-  "stone-panel rounded-2xl p-8 text-left transition-all hover:bg-[rgba(175,170,162,0.16)] sm:p-10"
-
 const academyStatCardClass = "stone-panel rounded-[18px] p-3 text-center sm:p-4"
+
+const academyCollectionCardClass =
+  "group relative min-h-[220px] overflow-hidden rounded-2xl border border-white/10 p-6 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20"
+
+const academyCollections: Array<{
+  view: Exclude<AcademyView, "overview">
+  title: string
+  description: string
+  cta: string
+  image: string
+}> = [
+  {
+    view: "courses",
+    title: "Courses",
+    description: "Step-by-step lessons to help you show up, sell, and stay consistent.",
+    cta: "Open courses",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png",
+  },
+  {
+    view: "templates",
+    title: "Templates",
+    description: "Ready-to-use Canva and PDF assets you can open and post fast.",
+    cta: "Browse templates",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-WK6zYM31cXxUOP8ZIy4vGzN60qYe75.png",
+  },
+  {
+    view: "monthly-drops",
+    title: "Monthly drops",
+    description: "Fresh files and prompts added each month for Studio members.",
+    cta: "See this month",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/885-BRNmqKHXcPLB1Ff5XK1UYWRrSOnfVm-iOOarwktPIBXUZk0hyYqzL3ycGL9Ab.png",
+  },
+  {
+    view: "flatlay-images",
+    title: "Flatlay library",
+    description: "Soft luxury flatlays for story slides, promos, and launch graphics.",
+    cta: "Open flatlays",
+    image:
+      "url('/flatlay-luxury-planning.jpg'), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg')",
+  },
+]
 
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
@@ -421,12 +462,9 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">
-                Studio Membership Required
-              </h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
               <p className="text-sm text-white/70 leading-relaxed">
-                Access exclusive templates, monthly drops, and flatlay images with a Studio
-                Membership
+                This library is part of Studio. Upgrade to unlock templates, drops, and flatlays.
               </p>
             </div>
             <button
@@ -451,9 +489,11 @@ export default function AcademyScreen() {
           </div>
 
           <div className="space-y-3">
-            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Templates</h1>
+            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+              Template library
+            </h1>
             <p className="text-white/70 text-base font-light leading-relaxed">
-              Select a category to explore professional templates
+              Pick a category and grab what you need for your next post.
             </p>
           </div>
 
@@ -507,14 +547,14 @@ export default function AcademyScreen() {
               "Templates"}
           </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
-            Download professional templates for your brand
+            Find a template and make it yours.
           </p>
         </div>
 
         <div className={academySearchShellClass}>
           <input
             type="text"
-            placeholder="Search templates..."
+            placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
@@ -524,7 +564,7 @@ export default function AcademyScreen() {
         {filteredTemplates.length === 0 ? (
           <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">
-              No templates found in this category. Try adjusting your search.
+              No templates match that yet. Try another keyword.
             </p>
           </div>
         ) : (
@@ -555,11 +595,9 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">
-                Studio Membership Required
-              </h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
               <p className="text-sm text-white/70 leading-relaxed">
-                Get exclusive monthly content drops with a Studio Membership
+                Monthly drops are part of Studio membership.
               </p>
             </div>
             <button
@@ -584,17 +622,17 @@ export default function AcademyScreen() {
 
         <div className="space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
-            Monthly Drops
+            Monthly drops
           </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
-            Exclusive monthly resources and content drops for Studio Members
+            Fresh resources curated for your current season.
           </p>
         </div>
 
         <div className={academySearchShellClass}>
           <input
             type="text"
-            placeholder="Search monthly drops..."
+            placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
@@ -604,7 +642,7 @@ export default function AcademyScreen() {
         {filteredMonthlyDrops.length === 0 ? (
           <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">
-              No monthly drops found. Try adjusting your search.
+              No drops found for that search. Try another phrase.
             </p>
           </div>
         ) : (
@@ -635,11 +673,9 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">
-                Studio Membership Required
-              </h3>
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
               <p className="text-sm text-white/70 leading-relaxed">
-                Access professional flatlay images with a Studio Membership
+                Flatlay packs are included with Studio membership.
               </p>
             </div>
             <button
@@ -664,17 +700,17 @@ export default function AcademyScreen() {
 
         <div className="space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
-            Flatlay Images
+            Flatlay images
           </h1>
           <p className="text-white/70 text-base font-light leading-relaxed">
-            Professional flatlay images for your content and brand aesthetic
+            Ready-to-use flatlays for stories, posts, and promos.
           </p>
         </div>
 
         <div className={academySearchShellClass}>
           <input
             type="text"
-            placeholder="Search flatlay images..."
+            placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
@@ -684,7 +720,7 @@ export default function AcademyScreen() {
         {filteredFlatlayImages.length === 0 ? (
           <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">
-              No flatlay images found. Try adjusting your search.
+              No flatlays match that yet. Try another keyword.
             </p>
           </div>
         ) : (
@@ -963,7 +999,15 @@ export default function AcademyScreen() {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(240,237,232,0.08)_0%,rgba(44,36,28,0.28)_34%,rgba(17,14,12,0.62)_100%)]" />
             <div className="absolute inset-y-0 left-[12%] hidden w-[34%] bg-[linear-gradient(90deg,transparent,rgba(240,237,232,0.20),transparent)] opacity-60 blur-3xl sm:block" />
             <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-              <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
+              <div className="space-y-3">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white/80">Maya Academy</p>
+                <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white/95">
+                  Your learning library
+                </h1>
+                <p className="mx-auto max-w-xl text-sm text-white/88 sm:text-base">
+                  Everything you need to build your brand, in one calm place.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -971,7 +1015,7 @@ export default function AcademyScreen() {
             <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
               <div className={academyStatCardClass}>
                 <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
-                  Your Plan
+                  Plan
                 </div>
                 <div className="font-serif text-base text-white sm:text-lg">
                   {getFriendlyTierName(userTier)}
@@ -987,7 +1031,7 @@ export default function AcademyScreen() {
               </div>
               <div className={academyStatCardClass}>
                 <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
-                  Learning
+                  In progress
                 </div>
                 <div className="font-serif text-base text-white sm:text-lg">
                   {inProgressCourses.length}
@@ -1004,7 +1048,7 @@ export default function AcademyScreen() {
                   className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
                   style={{ letterSpacing: "0.2em" }}
                 >
-                  YOU HAVE ACCESS
+                  Your products
                 </h2>
                 <div
                   className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
@@ -1040,7 +1084,7 @@ export default function AcademyScreen() {
                   className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
                   style={{ letterSpacing: "0.2em" }}
                 >
-                  GET MORE COURSES & RESOURCES
+                  Add more to your library
                 </h2>
                 <div className="grid grid-cols-2 gap-4 max-w-[360px]">
                   {availableProducts.map(
@@ -1059,66 +1103,35 @@ export default function AcademyScreen() {
               </section>
             )}
 
-            <button
-              onClick={() => setSelectedView("courses")}
-              className={`w-full ${academyFeatureCardClass}`}
-            >
-              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
-                Browse Courses
-              </h2>
-              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-                Explore our complete library of courses designed to help you master professional
-                photography and personal branding
-              </p>
-              <div className="text-xs tracking-wider uppercase text-white/70">
-                See All Courses →
-              </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedView("templates")}
-              className={`w-full ${academyFeatureCardClass}`}
-            >
-              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
-                Templates
-              </h2>
-              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-                Download professional templates for Canva, PDFs, and more to elevate your brand
-              </p>
-              <div className="text-xs tracking-wider uppercase text-white/70">
-                Browse Templates →
-              </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedView("monthly-drops")}
-              className={`w-full ${academyFeatureCardClass}`}
-            >
-              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
-                Monthly Drops
-              </h2>
-              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-                Exclusive monthly resources and content drops for Studio Members
-              </p>
-              <div className="text-xs tracking-wider uppercase text-white/70">
-                View Monthly Drops →
-              </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedView("flatlay-images")}
-              className={`w-full ${academyFeatureCardClass}`}
-            >
-              <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">
-                Flatlay Images
-              </h2>
-              <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
-                Professional flatlay images to elevate your content and brand aesthetic
-              </p>
-              <div className="text-xs tracking-wider uppercase text-white/70">
-                Browse Flatlay Images →
-              </div>
-            </button>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {academyCollections.map(collection => (
+                <button
+                  key={collection.view}
+                  onClick={() => setSelectedView(collection.view)}
+                  className={academyCollectionCardClass}
+                  style={{
+                    backgroundImage:
+                      typeof collection.image === "string" && collection.image.startsWith("url(")
+                        ? `linear-gradient(180deg, rgba(13,12,11,0.26) 0%, rgba(13,12,11,0.82) 100%), ${collection.image}`
+                        : `linear-gradient(180deg, rgba(13,12,11,0.26) 0%, rgba(13,12,11,0.82) 100%), url('${collection.image}')`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="space-y-3">
+                    <h2 className="font-serif text-2xl tracking-wider text-white/95 sm:text-[30px]">
+                      {collection.title}
+                    </h2>
+                    <p className="max-w-sm text-sm leading-relaxed text-white/88">
+                      {collection.description}
+                    </p>
+                    <div className="pt-4 text-[11px] uppercase tracking-[0.16em] text-white/82">
+                      {collection.cta} →
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
 
             {(inProgressCourses[0] || allCourses[0]) && (
               <div className="stone-panel-strong rounded-2xl p-8 text-white sm:p-10">

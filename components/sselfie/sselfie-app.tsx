@@ -329,6 +329,9 @@ export default function SselfieApp({
   )
   const feeds = feedListData?.feeds || []
   const currentFeedId = searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null
+  const hubImageIdFromSearchParams = searchParams.get("hubImageId")
+  const hubImageUrlFromSearchParams = searchParams.get("hubImageUrl")
+  const hubVideoIdFromSearchParams = searchParams.get("hubVideoId")
 
   // Feed edit modal state
   const [editingFeed, setEditingFeed] = useState<{ id: number; title: string; display_color: string | null } | null>(null)
@@ -1271,6 +1274,9 @@ export default function SselfieApp({
                       user={user}
                       userId={userId}
                       hasPaidAccess={access.isMember || isPaidBlueprintUserForAccess}
+                      hubImageId={hubImageIdFromSearchParams}
+                      hubImageUrl={hubImageUrlFromSearchParams}
+                      hubVideoId={hubVideoIdFromSearchParams}
                     />
                   )}
                   {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}

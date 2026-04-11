@@ -25,7 +25,6 @@ import {
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface SettingsScreenProps {
   onBack?: () => void // Made onBack optional since it's not always provided
@@ -307,8 +306,22 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     }
   }
 
+  const displayMembership =
+    userInfo?.product_type === "sselfie_studio_membership"
+      ? "Studio Member"
+      : userInfo?.product_type === "one_time_session"
+        ? "One-Time Session"
+        : "Free"
+
+  const settingsCardClass =
+    "rounded-[22px] border border-white/10 bg-[rgba(25,23,21,0.82)] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6 md:p-8"
+  const settingsIconShellClass =
+    "p-2.5 sm:p-3 rounded-xl border border-white/14 bg-white/10 text-[color:var(--color-porcelain)]"
+  const settingsSectionTitleClass =
+    "text-base sm:text-lg md:text-xl font-semibold text-[color:var(--color-porcelain)]"
+
   return (
-    <div className="flex flex-col h-screen bg-linear-to-b from-stone-50 via-stone-100/50 to-white text-stone-950 relative overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#0d0c0b] text-[color:var(--color-porcelain)]">
 
       {/* Cancel intercept modal */}
       {showCancelIntercept && (
@@ -392,47 +405,82 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-4 px-3 sm:px-4 md:px-6 pb-3 bg-white/70 backdrop-blur-xl border-b border-stone-200/50">
+      <div
+        className="mx-3 mt-4 rounded-2xl border border-white/10 px-3 pb-4 pt-4 sm:mx-4 sm:px-4 md:mx-6 md:px-6"
+        style={{
+          backgroundImage:
+            "linear-gradient(180deg, rgba(13,12,11,0.14) 0%, rgba(13,12,11,0.72) 100%), url('/flatlay-luxury-planning.jpg'), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="flex items-center gap-4">
         {onBack && (
           <button
             onClick={onBack}
-            className="p-3 bg-white/70 rounded-xl border border-stone-200/50 hover:bg-white/90 hover:border-stone-300/60 transition-all duration-200 shadow-sm"
+            className="rounded-xl border border-white/20 bg-black/25 p-3 transition-all duration-200 hover:bg-black/40"
           >
-            <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
+            <ChevronRight
+              size={18}
+              className="rotate-180 text-[color:var(--color-porcelain)]"
+              strokeWidth={1.5}
+            />
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+          <h2 className="text-2xl font-serif font-extralight uppercase tracking-[0.24em] text-[color:var(--color-porcelain)] sm:text-4xl">
             Settings
           </h2>
-          <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Your Preferences</p>
+          <p className="mt-2 text-xs font-light uppercase tracking-[0.15em] text-white/80">
+            Calm control over your account
+          </p>
         </div>
         <button
           onClick={() => setShowNavMenu(true)}
-          className="font-serif text-sm tracking-[0.3em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-4 py-2 rounded-xl border border-transparent hover:border-stone-200 bg-white/60 hover:bg-white/90 shadow-sm"
+          className="rounded-xl border border-white/20 bg-black/25 px-4 py-2 font-serif text-sm uppercase tracking-[0.3em] text-white/85 transition-colors hover:bg-black/40"
         >
           MENU
         </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/65">Plan</p>
+            <p className="mt-1 text-sm text-white">{displayMembership}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/65">Credits</p>
+            <p className="mt-1 text-sm text-white tabular-nums">{creditBalance?.toFixed(0) || "0"}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/65">Status</p>
+            <p className="mt-1 text-sm text-white capitalize">{subscriptionInfo?.status || "ready"}</p>
+          </div>
+        </div>
       </div>
 
       {showNavMenu && (
         <>
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50" onClick={() => setShowNavMenu(false)} />
-          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white z-50 shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-stone-200/40">
-              <h2 className="font-serif text-xl tracking-[0.3em] uppercase text-stone-950">MENU</h2>
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-white/10 bg-[#12100f] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 p-6">
+              <h2 className="font-serif text-xl uppercase tracking-[0.3em] text-[color:var(--color-porcelain)]">
+                MENU
+              </h2>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+                className="rounded-lg p-2 transition-colors hover:bg-white/10"
               >
-                <X size={20} className="text-stone-600" />
+                <X size={20} className="text-white/70" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6">
               <div className="mb-8">
-                <p className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">YOUR CREDITS</p>
-                <p className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                <p className="mb-2 text-[10px] font-light uppercase tracking-[0.15em] text-white/60">
+                  YOUR CREDITS
+                </p>
+                <p className="text-3xl font-serif font-extralight tabular-nums text-[color:var(--color-porcelain)]">
                   {creditBalance?.toFixed(1) || "0.0"}
                 </p>
               </div>
@@ -440,26 +488,26 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               <nav className="space-y-2">
                 <button
                   onClick={() => navigateToTab("studio")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Home size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Studio</span>
+                  <Home size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Studio</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("training")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Aperture size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Training</span>
+                  <Aperture size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Training</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("maya")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <MessageCircle size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Maya</span>
+                  <MessageCircle size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Maya</span>
                 </button>
 
                 {/* Videos moved to Maya Videos tab */}
@@ -468,67 +516,67 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                     window.location.hash = "#maya/videos"
                     window.location.reload()
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Film size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Videos</span>
+                  <Film size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Videos</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("feed-planner")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Grid size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Feed Planner</span>
+                  <Grid size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Feed Planner</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("gallery")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <ImageIcon size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Gallery</span>
+                  <ImageIcon size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Gallery</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("academy")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Grid size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Academy</span>
+                  <Grid size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Academy</span>
                 </button>
 
                 <button
                   onClick={() => navigateToTab("profile")}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <User size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Profile</span>
+                  <User size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white/90">Profile</span>
                 </button>
 
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-100/50 border-l-2 border-stone-950 text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-l-2 border-[color:var(--color-porcelain)] bg-white/10 text-left"
                   disabled
                 >
-                  <SettingsIcon size={20} className="text-stone-950" />
-                  <span className="text-sm font-medium text-stone-900">Settings</span>
+                  <SettingsIcon size={20} className="text-[color:var(--color-porcelain)]" />
+                  <span className="text-sm font-medium text-[color:var(--color-porcelain)]">Settings</span>
                 </button>
 
                 <button
                   onClick={handleAdminAccess}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/8 transition-colors text-left"
                 >
-                  <Lock size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-950">Admin Dashboard</span>
+                  <Lock size={20} className="text-white/65" />
+                  <span className="text-sm font-medium text-white">Admin Dashboard</span>
                 </button>
               </nav>
             </div>
 
-            <div className="p-6 border-t border-stone-200/40">
+            <div className="p-6 border-t border-white/10">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-500/10 rounded-xl transition-colors disabled:opacity-50"
               >
                 <LogOut size={18} />
                 {isLoggingOut ? "Signing Out..." : "Sign Out"}
@@ -538,43 +586,37 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </>
       )}
 
-      <div className="px-3 py-4 sm:p-8 md:p-12 overflow-y-auto flex-1 space-y-4 sm:space-y-6 md:space-y-8 pb-24 sm:pb-32">
+      <div className="flex-1 space-y-4 overflow-y-auto px-3 py-4 pb-24 sm:space-y-6 sm:p-8 sm:pb-32 md:space-y-8 md:p-12">
 
         {userInfo && (
-          <div className={DesignClasses.card}>
+          <div className={settingsCardClass}>
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <User size={18} className="text-white" strokeWidth={2.5} />
+              <div className={settingsIconShellClass}>
+                <User size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
               </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Account Information</h3>
+              <h3 className={settingsSectionTitleClass}>Account Information</h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-3 py-3">
-                <Mail size={16} className="text-stone-500" />
+                <Mail size={16} className="text-white/55" />
                 <div>
-                  <p className="text-xs text-stone-500 uppercase tracking-wider">Email</p>
-                  <p className="text-sm font-medium text-stone-950">{userInfo.email}</p>
+                  <p className="text-xs text-white/55 uppercase tracking-wider">Email</p>
+                  <p className="text-sm font-medium text-[color:var(--color-porcelain)]">{userInfo.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 py-3">
-                <CreditCard size={16} className="text-stone-500" />
+                <CreditCard size={16} className="text-white/55" />
                 <div>
-                  <p className="text-xs text-stone-500 uppercase tracking-wider">Membership</p>
-                  <p className="text-sm font-medium text-stone-950 uppercase">
-                    {userInfo.product_type === "sselfie_studio_membership"
-                      ? "Studio Member"
-                      : userInfo.product_type === "one_time_session"
-                        ? "One-Time Session"
-                        : "Free"}
-                  </p>
+                  <p className="text-xs text-white/55 uppercase tracking-wider">Membership</p>
+                  <p className="text-sm font-medium uppercase text-[color:var(--color-porcelain)]">{displayMembership}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 py-3">
-                <Calendar size={16} className="text-stone-500" />
+                <Calendar size={16} className="text-white/55" />
                 <div>
-                  <p className="text-xs text-stone-500 uppercase tracking-wider">Member Since</p>
-                  <p className="text-sm font-medium text-stone-950">{formatDate(userInfo.memberSince)}</p>
+                  <p className="text-xs text-white/55 uppercase tracking-wider">Member Since</p>
+                  <p className="text-sm font-medium text-[color:var(--color-porcelain)]">{formatDate(userInfo.memberSince)}</p>
                 </div>
               </div>
             </div>
@@ -582,21 +624,21 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         )}
 
         {userInfo?.product_type === "sselfie_studio_membership" && (
-          <div className={DesignClasses.card}>
+          <div className={settingsCardClass}>
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              <div className={settingsIconShellClass}>
+                <CreditCard size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
               </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Subscription Management</h3>
+              <h3 className={settingsSectionTitleClass}>Subscription Management</h3>
             </div>
 
             <div className="space-y-4">
               {subscriptionInfo?.current_period_end && (
                 <div className="flex items-center gap-3 py-3">
-                  <Calendar size={16} className="text-stone-500" />
+                  <Calendar size={16} className="text-white/55" />
                   <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider">Next Billing Date</p>
-                    <p className="text-sm font-medium text-stone-950">
+                    <p className="text-xs text-white/55 uppercase tracking-wider">Next Billing Date</p>
+                    <p className="text-sm font-medium text-[color:var(--color-porcelain)]">
                       {formatRenewalDate(subscriptionInfo.current_period_end)}
                     </p>
                   </div>
@@ -606,13 +648,13 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               <button
                 onClick={handleManageSubscription}
                 disabled={isLoadingPortal}
-                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-5 text-sm font-light uppercase tracking-[0.15em] text-white/85 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ExternalLink size={16} />
                 {isLoadingPortal ? "Opening..." : "Manage Subscription"}
               </button>
 
-              <p className="text-xs text-stone-500 text-center">
+              <p className="text-xs text-center text-white/60">
                 Update your payment method, view billing history, or cancel your membership anytime
               </p>
             </div>
@@ -620,16 +662,14 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         )}
 
         {userInfo && upgradeTargetTier && (
-          <div className="bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-stone-200/60 shadow-xl shadow-stone-900/10">
+          <div className={settingsCardClass}>
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-900 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              <div className={settingsIconShellClass}>
+                <CreditCard size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">
-                  Upgrade to Creator Studio
-                </h3>
-                <p className="text-sm text-stone-600">More credits, premium features, priority support.</p>
+                <h3 className={settingsSectionTitleClass}>Upgrade to Creator Studio</h3>
+                <p className="text-sm text-white/65">More credits, premium features, priority support.</p>
               </div>
             </div>
 
@@ -661,34 +701,34 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 console.log("[SETTINGS] Upgrade button clicked, opening modal")
                 setShowUpgradeModal(true)
               }}
-              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/12 py-4 text-sm font-medium uppercase tracking-[0.15em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/18 active:scale-[0.98]"
             >
               Upgrade now
               <ChevronRight size={14} />
             </button>
 
-            <p className="text-xs text-stone-500 text-center mt-3">
+            <p className="mt-3 text-center text-xs text-white/60">
               We’ll prorate the change automatically. You can switch back anytime in Stripe.
             </p>
           </div>
         )}
 
         {((hasActiveSubscription || userInfo?.stripe_customer_id) && !isStudioMembership) && (
-          <div className={DesignClasses.card}>
+          <div className={settingsCardClass}>
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              <div className={settingsIconShellClass}>
+                <CreditCard size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
               </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Billing & Invoices</h3>
+              <h3 className={settingsSectionTitleClass}>Billing & Invoices</h3>
             </div>
 
             <div className="space-y-4">
               {subscriptionInfo?.current_period_end && (
                 <div className="flex items-center gap-3 py-3">
-                  <Calendar size={16} className="text-stone-500" />
+                  <Calendar size={16} className="text-white/55" />
                   <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider">Session Expires</p>
-                    <p className="text-sm font-medium text-stone-950">
+                    <p className="text-xs uppercase tracking-wider text-white/55">Session Expires</p>
+                    <p className="text-sm font-medium text-[color:var(--color-porcelain)]">
                       {formatRenewalDate(subscriptionInfo.current_period_end)}
                     </p>
                   </div>
@@ -699,14 +739,14 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 <button
                   onClick={handleManageSubscription}
                   disabled={isLoadingPortal}
-                  className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-5 text-sm font-light uppercase tracking-[0.15em] text-white/85 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ExternalLink size={16} />
                   {isLoadingPortal ? "Opening..." : "View Invoices"}
                 </button>
               )}
 
-              <p className="text-xs text-stone-500 text-center">
+              <p className="text-center text-xs text-white/60">
                 {userInfo?.stripe_customer_id
                   ? "View your invoices and billing history in Stripe"
                   : "Manage your session details and billing information"}
@@ -715,12 +755,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         )}
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <Bell size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <Bell size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Notifications</h3>
+            <h3 className={settingsSectionTitleClass}>Notifications</h3>
           </div>
 
           <div className="space-y-1 sm:space-y-2">
@@ -745,12 +785,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <Aperture size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <Aperture size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Generation Preferences</h3>
+            <h3 className={settingsSectionTitleClass}>Generation Preferences</h3>
           </div>
 
           <div className="space-y-1 sm:space-y-2">
@@ -766,12 +806,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <Shield size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <Shield size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Privacy & Data</h3>
+            <h3 className={settingsSectionTitleClass}>Privacy & Data</h3>
           </div>
 
           <div className="space-y-1 sm:space-y-2">
@@ -787,48 +827,48 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <Package size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <Package size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Brand Assets</h3>
+            <h3 className={settingsSectionTitleClass}>Brand Assets</h3>
           </div>
           <BrandAssetsManager />
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <Lock size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <Lock size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Admin Access</h3>
+            <h3 className={settingsSectionTitleClass}>Admin Access</h3>
           </div>
 
           <div className="space-y-4">
             <button
               onClick={handleAdminAccess}
-              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40"
+              className="w-full flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-5 text-sm font-light uppercase tracking-[0.15em] text-white/85 transition-colors hover:bg-white/12"
             >
               <Lock size={16} />
               Admin Dashboard
             </button>
 
-            <p className="text-xs text-stone-500 text-center">Access admin tools and content management</p>
+            <p className="text-center text-xs text-white/60">Access admin tools and content management</p>
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className={settingsCardClass}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-              <User size={18} className="text-white" strokeWidth={2.5} />
+            <div className={settingsIconShellClass}>
+              <User size={18} className="text-[color:var(--color-porcelain)]" strokeWidth={2} />
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Model Information</h3>
+            <h3 className={settingsSectionTitleClass}>Model Information</h3>
           </div>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Gender</label>
+              <label className="mb-3 block text-xs uppercase tracking-wider text-white/55">Gender</label>
               <div className="grid grid-cols-3 gap-2">
                 {["woman", "man", "non-binary"].map((option) => (
                   <button
@@ -836,8 +876,8 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                     onClick={() => setGender(option)}
                     className={`px-4 py-3 text-sm rounded-xl border transition-all ${
                       gender === option
-                        ? "bg-stone-950 text-white border-stone-950"
-                        : "bg-white text-stone-600 border-stone-300/40 hover:border-stone-400"
+                        ? "border-white/35 bg-white/16 text-[color:var(--color-porcelain)]"
+                        : "border-white/14 bg-white/6 text-white/80 hover:bg-white/10"
                     }`}
                   >
                     {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -847,11 +887,13 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </div>
 
             <div>
-              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Ethnicity (Optional)</label>
+              <label className="mb-3 block text-xs uppercase tracking-wider text-white/55">
+                Ethnicity (Optional)
+              </label>
               <select
                 value={ethnicity}
                 onChange={(e) => setEthnicity(e.target.value)}
-                className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all"
+                className="w-full rounded-xl border border-white/14 bg-white/6 px-4 py-3 text-sm text-[color:var(--color-porcelain)] transition-all focus:border-white/30 focus:outline-none"
               >
                 <option value="">Select ethnicity</option>
                 <option value="Black">Black</option>
@@ -867,7 +909,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </div>
 
             <div>
-              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">
+              <label className="mb-3 block text-xs uppercase tracking-wider text-white/55">
                 Physical Preferences (Optional)
               </label>
               <textarea
@@ -875,9 +917,9 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 onChange={(e) => setPhysicalPreferences(e.target.value)}
                 placeholder="e.g., curvier body type, fuller bust, lighter blonde hair, athletic build"
                 rows={3}
-                className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all resize-none"
+                className="w-full resize-none rounded-xl border border-white/14 bg-white/6 px-4 py-3 text-sm text-[color:var(--color-porcelain)] transition-all focus:border-white/30 focus:outline-none"
               />
-              <p className="mt-2 text-xs text-stone-500">
+              <p className="mt-2 text-xs text-white/60">
                 Describe how you&apos;d like to appear in your photos. These preferences will be applied to all future image
                 generations.
               </p>
@@ -886,12 +928,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             <button
               onClick={handleUpdateDemographics}
               disabled={isUpdatingDemographics || !gender}
-              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-white hover:bg-stone-950 min-h-[56px] text-stone-950 border-stone-950 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-5 text-sm font-light uppercase tracking-[0.15em] text-white/85 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isUpdatingDemographics ? "Updating..." : "Update Model Information"}
             </button>
 
-            <p className="text-xs text-stone-500 text-center">
+            <p className="text-center text-xs text-white/60">
               This information helps Maya generate accurate AI images that represent you. Physical preferences will be
               applied to all future generations. No retraining required.
             </p>
@@ -899,11 +941,11 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </div>
       </div>
 
-      <div className="pt-6 border-t border-stone-200/30 space-y-3">
+      <div className="mx-3 mb-4 mt-2 space-y-3 border-t border-white/10 pt-6 sm:mx-4 md:mx-6">
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border border-white/18 bg-white/5 py-5 text-sm font-light uppercase tracking-[0.15em] text-white/75 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <LogOut size={16} />
           {isLoggingOut ? "Signing Out..." : "Sign Out"}
@@ -936,19 +978,21 @@ function ToggleItem({
   return (
     <div
       onClick={() => onChange(!value)}
-      className="flex items-start justify-between py-3 sm:py-5 hover:bg-white/30 rounded-lg sm:rounded-[1.25rem] px-3 sm:px-6 -mx-3 sm:-mx-6 transition-all duration-300 cursor-pointer group min-h-[68px] sm:min-h-[80px]"
+      className="group -mx-3 flex min-h-[68px] cursor-pointer items-start justify-between rounded-lg px-3 py-3 transition-all duration-300 hover:bg-white/8 sm:-mx-6 sm:min-h-[80px] sm:rounded-[1.25rem] sm:px-6 sm:py-5"
     >
       <div className="flex-1 min-w-0 pr-4">
-        <p className="text-xs sm:text-sm md:text-base text-stone-950 font-medium">{label}</p>
-        <p className="text-[10px] sm:text-xs text-stone-500 mt-1">{description}</p>
+        <p className="text-xs font-medium text-[color:var(--color-porcelain)] sm:text-sm md:text-base">
+          {label}
+        </p>
+        <p className="mt-1 text-[10px] text-white/60 sm:text-xs">{description}</p>
       </div>
       <div
-        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
-          value ? "bg-stone-950 shadow-stone-900/30" : "bg-stone-300/60"
+        className={`relative h-7 w-12 shrink-0 cursor-pointer rounded-full border transition-all duration-300 sm:h-8 sm:w-14 md:h-9 md:w-16 ${
+          value ? "border-white/28 bg-white/22" : "border-white/14 bg-white/8"
         }`}
       >
         <div
-          className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full shadow-lg transition-all duration-300 ${
+          className={`absolute top-1 h-5 w-5 rounded-full bg-[color:var(--color-porcelain)] transition-all duration-300 sm:h-6 sm:w-6 md:h-7 md:w-7 ${
             value ? "translate-x-6 sm:translate-x-7 md:translate-x-8" : "translate-x-1"
           }`}
         ></div>
@@ -959,9 +1003,9 @@ function ToggleItem({
 
 function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white/70 px-4 py-3 space-y-1">
-      <p className="text-[10px] uppercase tracking-[0.15em] text-stone-500">{label}</p>
-      <p className="text-sm font-semibold text-stone-900">{value}</p>
+    <div className="space-y-1 rounded-xl border border-white/14 bg-white/6 px-4 py-3">
+      <p className="text-[10px] uppercase tracking-[0.15em] text-white/55">{label}</p>
+      <p className="text-sm font-semibold text-[color:var(--color-porcelain)]">{value}</p>
     </div>
   )
 }

@@ -31,6 +31,7 @@ interface GalleryImageGridProps {
   longPressImageId: React.MutableRefObject<string | null>
   onLongPressStart: (imageId: string) => void
   onLongPressEnd: () => void
+  viewMode: "moodboard" | "grid"
 }
 
 function GalleryImageGridComponent({
@@ -50,6 +51,7 @@ function GalleryImageGridComponent({
   longPressImageId,
   onLongPressStart,
   onLongPressEnd,
+  viewMode,
 }: GalleryImageGridProps) {
   const handleVideoClick = useCallback((video: GeneratedVideo) => {
     triggerHaptic("light")
@@ -58,8 +60,8 @@ function GalleryImageGridComponent({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-0">
-        {images.map((image) => (
+      <div className={viewMode === "moodboard" ? "grid grid-cols-2 gap-2 sm:grid-cols-3" : "grid grid-cols-3 gap-0"}>
+        {images.map((image, index) => (
           <GalleryImageCard
             key={`img-${image.id}`}
             image={image}
@@ -72,6 +74,14 @@ function GalleryImageGridComponent({
             longPressImageId={longPressImageId}
             onLongPressStart={onLongPressStart}
             onLongPressEnd={onLongPressEnd}
+            className={
+              viewMode === "moodboard"
+                ? "aspect-auto min-h-[140px] sm:min-h-[180px] " +
+                  (index === 0
+                    ? "col-span-2 sm:col-span-2 sm:row-span-2 sm:min-h-[370px]"
+                    : "col-span-1")
+                : ""
+            }
           />
         ))}
 
@@ -85,6 +95,8 @@ function GalleryImageGridComponent({
               video={video}
               posterImage={posterImage}
               onVideoClick={handleVideoClick}
+              className={viewMode === "moodboard" ? "aspect-auto min-h-[190px] col-span-1" : ""}
+              label="Reel"
             />
           )
         })}
@@ -113,10 +125,14 @@ function VideoThumbnail({
   video,
   posterImage,
   onVideoClick,
+  className = "",
+  label = "REEL",
 }: {
   video: GeneratedVideo
   posterImage?: string
   onVideoClick: (video: GeneratedVideo) => void
+  className?: string
+  label?: string
 }) {
   const [isVisible, setIsVisible] = useState(false)
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
@@ -152,7 +168,7 @@ function VideoThumbnail({
     <button
       ref={containerRef}
       onClick={() => onVideoClick(video)}
-      className="relative aspect-[9/16] overflow-hidden bg-[rgba(175,170,162,0.08)] rounded-xl border border-[color:var(--glass-border-subtle)]"
+      className={`relative aspect-[9/16] overflow-hidden bg-[rgba(175,170,162,0.08)] rounded-xl border border-[color:var(--glass-border-subtle)] ${className}`}
     >
       {posterImage ? (
         // Show poster image as thumbnail (lazy loaded)
@@ -177,7 +193,7 @@ function VideoThumbnail({
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/55" />
       <div className="absolute bottom-2 left-2 rounded-full border border-[color:var(--glass-border)] bg-[rgba(28,27,25,0.48)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/90 backdrop-blur-xl">
-        ANIMATE -&gt;
+        {label}
       </div>
     </button>
   )

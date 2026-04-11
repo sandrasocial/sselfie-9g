@@ -461,27 +461,65 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.5em] text-[color:var(--color-whisper)]"
   const actionButton =
     "w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+  const accountHeroBackground =
+    "url('/flatlay-luxury-planning.jpg'), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg')"
 
   return (
     <div className="space-y-6 pb-28">
-      <div className={`${sectionWrap} pt-4`}>
-        <div className="flex items-end gap-8 border-b border-white/10">
+      <div className={`${sectionWrap} pt-4 space-y-4`}>
+        <div
+          className={`${glassCard} relative overflow-hidden p-6 sm:p-8`}
+          style={{
+            backgroundImage: `linear-gradient(180deg, rgba(13,12,11,0.24) 0%, rgba(13,12,11,0.82) 100%), ${accountHeroBackground}`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="relative z-10 space-y-5">
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-white/75">Account</p>
+              <h1 className="display-header text-3xl font-light text-white/95 sm:text-5xl">
+                {displayName}
+              </h1>
+              <p className="max-w-xl text-sm leading-relaxed text-white/90">
+                Keep your profile, brand assets, and settings in one place.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.26em] text-white/65">Plan</p>
+                <p className="mt-1 text-sm text-white">{displayPlan}</p>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.26em] text-white/65">Photos</p>
+                <p className="mt-1 text-sm text-white">{stats?.totalGenerations || 0}</p>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.26em] text-white/65">Assets</p>
+                <p className="mt-1 text-sm text-white">{personalPages.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 sm:w-fit">
           <button
             onClick={() => setActiveSection("profile")}
-            className={`pb-4 text-[11px] font-medium uppercase tracking-[0.5em] transition-colors ${
+            className={`rounded-xl px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
               activeSection === "profile"
-                ? "border-b border-[color:var(--color-porcelain)] text-[color:var(--color-porcelain)]"
-                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)]"
+                ? "bg-white/16 text-[color:var(--color-porcelain)]"
+                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)] hover:bg-white/10"
             }`}
           >
             Profile
           </button>
           <button
             onClick={() => setActiveSection("settings")}
-            className={`pb-4 text-[11px] font-medium uppercase tracking-[0.5em] transition-colors ${
+            className={`rounded-xl px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
               activeSection === "settings"
-                ? "border-b border-[color:var(--color-porcelain)] text-[color:var(--color-porcelain)]"
-                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)]"
+                ? "bg-white/16 text-[color:var(--color-porcelain)]"
+                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)] hover:bg-white/10"
             }`}
           >
             Settings
@@ -513,7 +551,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
               <div className="space-y-3">
                 <h2 className="display-header text-3xl font-light text-[color:var(--color-porcelain)] sm:text-5xl">
-                  {displayName}
+                  Your profile
                 </h2>
                 {profileInfo?.bio && (
                   <p className="mx-auto max-w-xl text-sm leading-relaxed text-[color:var(--color-whisper)]">{profileInfo.bio}</p>
@@ -682,6 +720,15 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
       {activeSection === "settings" && (
         <div className={`${sectionWrap} space-y-4 sm:space-y-5`}>
+          <div className={`${glassCard} space-y-2 p-5 sm:p-6`}>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--color-whisper)]">
+              Account settings
+            </p>
+            <h2 className="display-header text-2xl font-light text-[color:var(--color-porcelain)] sm:text-3xl">
+              Billing, preferences, and model controls
+            </h2>
+          </div>
+
           {isPastDue && (
             <div className="rounded-[20px] border border-amber-300/35 bg-amber-500/10 p-4">
               <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-amber-100">Payment issue</p>

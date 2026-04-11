@@ -12,6 +12,7 @@ interface HubFeedRow {
   created_at: string | null
   image_count: number | string | null
   post_count: number | string | null
+  preview_images: string[] | null
 }
 
 interface HubPageRow {
@@ -48,7 +49,7 @@ function toInt(value: unknown): number {
 
 function toIso(value: unknown): string {
   if (typeof value === "string" && value.trim().length > 0) return value
-  return new Date(0).toISOString()
+  return new Date().toISOString()
 }
 
 function isMissingRelationError(error: unknown): boolean {
@@ -101,7 +102,8 @@ async function handleGetStudioHub({
             fl.updated_at,
             fl.created_at,
             COALESCE(posts.image_count, 0) AS image_count,
-            COALESCE(posts.post_count, 0) AS post_count
+            COALESCE(posts.post_count, 0) AS post_count,
+            COALESCE(preview.preview_images, ARRAY[]::text[]) AS preview_images
           FROM feed_layouts fl
           LEFT JOIN (
             SELECT
@@ -111,6 +113,13 @@ async function handleGetStudioHub({
             FROM feed_posts
             GROUP BY feed_layout_id
           ) posts ON posts.feed_layout_id = fl.id
+          LEFT JOIN LATERAL (
+            SELECT
+              ARRAY_AGG(fp.image_url ORDER BY COALESCE(fp.position, 9999), fp.id DESC)
+                FILTER (WHERE fp.image_url IS NOT NULL) AS preview_images
+            FROM feed_posts fp
+            WHERE fp.feed_layout_id = fl.id
+          ) preview ON true
           WHERE fl.user_id = ${userId}
             AND fl.status IN ('saved', 'completed', 'draft')
           ORDER BY fl.updated_at DESC NULLS LAST, fl.created_at DESC
@@ -226,6 +235,7 @@ async function handleGetStudioHub({
       layoutType: feed.layout_type || "grid_3x3",
       imageCount: toInt(feed.image_count),
       postCount: toInt(feed.post_count),
+      previewImageUrls: Array.isArray(feed.preview_images) ? feed.preview_images.filter(Boolean).slice(0, 3) : [],
       updatedAt: toIso(feed.updated_at || feed.created_at),
       openUrl: `/studio?tab=feed-planner&feedId=${feed.id}#feed-planner`,
       manageUrl: `/studio?tab=feed-planner&feedId=${feed.id}#feed-planner`,
