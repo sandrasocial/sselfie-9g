@@ -123,6 +123,36 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       contextParts.push("")
     }
 
+    // Appearance / body notes from Account or Maya tools — MUST apply even when the
+    // brand wizard is incomplete (is_completed is often false for INSERT-only rows).
+    if (personalBrand?.physical_preferences) {
+      const raw = String(personalBrand.physical_preferences)
+      const corruptedSlashes = (raw.match(/\\\\/g) || []).length > 50
+      const safePhysical =
+        corruptedSlashes || raw.length > 10000
+          ? null
+          : raw.length > 2000
+            ? `${raw.substring(0, 2000)}...`
+            : raw
+      if (safePhysical) {
+        contextParts.push(`\n**🎯 PHYSICAL APPEARANCE PREFERENCES (MANDATORY - APPLY TO ALL IMAGES):**`)
+        contextParts.push(safePhysical)
+        contextParts.push(``)
+        contextParts.push(
+          `⚠️ CRITICAL: These are user-requested body/appearance modifications that MUST be applied to EVERY image generation.`,
+        )
+        contextParts.push(`- Include these modifications in EVERY FLUX prompt you create`)
+        contextParts.push(
+          `- Examples: "curvier body type", "blonde hair instead of brown", "fuller bust", "athletic build"`,
+        )
+        contextParts.push(`- DO NOT generate images without these modifications - they are NON-NEGOTIABLE`)
+        contextParts.push(`- If user requests changes to their appearance, update physical_preferences immediately`)
+        contextParts.push("")
+      } else if (corruptedSlashes || raw.length > 10000) {
+        console.warn("[v0] getUserContextForMaya: Skipping corrupted physical_preferences")
+      }
+    }
+
     if (personalBrand && personalBrand.is_completed) {
       console.log("[v0] getUserContextForMaya: Processing personal brand data...")
       
@@ -322,20 +352,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         }
       }
 
-      if (personalBrand.physical_preferences) {
-        contextParts.push(`\n**🎯 PHYSICAL APPEARANCE PREFERENCES (MANDATORY - APPLY TO ALL IMAGES):**`)
-        contextParts.push(`${personalBrand.physical_preferences}`)
-        contextParts.push(``)
-        contextParts.push(
-          `⚠️ CRITICAL: These are user-requested body/appearance modifications that MUST be applied to EVERY image generation.`,
-        )
-        contextParts.push(`- Include these modifications in EVERY FLUX prompt you create`)
-        contextParts.push(
-          `- Examples: "curvier body type", "blonde hair instead of brown", "fuller bust", "athletic build"`,
-        )
-        contextParts.push(`- DO NOT generate images without these modifications - they are NON-NEGOTIABLE`)
-        contextParts.push(`- If user requests changes to their appearance, update physical_preferences immediately`)
-      }
+      // physical_preferences: injected above for ALL users with a row (not only is_completed)
 
       if (personalBrand.visual_aesthetic) {
         try {
