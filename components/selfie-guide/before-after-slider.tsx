@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 type BeforeAfterSliderProps = {
   beforeSrc: string
@@ -25,6 +25,7 @@ export default function BeforeAfterSlider({
   height,
 }: BeforeAfterSliderProps) {
   const [position, setPosition] = useState(50) // percent
+  const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
 
@@ -36,48 +37,72 @@ export default function BeforeAfterSlider({
     setPosition((x / rect.width) * 100)
   }, [])
 
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      dragging.current = true
-      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-      updatePosition(e.clientX)
-    },
-    [updatePosition],
-  )
-
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging.current) return
-      updatePosition(e.clientX)
-    },
-    [updatePosition],
-  )
-
-  const onPointerUp = useCallback(() => {
+  const stopDragging = useCallback(() => {
     dragging.current = false
+    setIsDragging(false)
   }, [])
+
+  const startDragging = useCallback(
+    (clientX: number) => {
+      dragging.current = true
+      setIsDragging(true)
+      updatePosition(clientX)
+    },
+    [updatePosition],
+  )
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      startDragging(e.clientX)
+    },
+    [startDragging],
+  )
+
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!dragging.current) return
+      updatePosition(event.clientX)
+    }
+
+    const handleMouseUp = () => {
+      stopDragging()
+    }
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!dragging.current || event.touches.length === 0) return
+      event.preventDefault()
+      updatePosition(event.touches[0].clientX)
+    }
+
+    const handleTouchEnd = () => {
+      stopDragging()
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+    window.addEventListener("touchmove", handleTouchMove, { passive: false })
+    window.addEventListener("touchend", handleTouchEnd)
+    window.addEventListener("touchcancel", handleTouchEnd)
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+      window.removeEventListener("touchmove", handleTouchMove)
+      window.removeEventListener("touchend", handleTouchEnd)
+      window.removeEventListener("touchcancel", handleTouchEnd)
+    }
+  }, [isDragging, stopDragging, updatePosition])
 
   const onTouchStart = useCallback(
-    (e: React.TouchEvent) => {
+    (e: React.TouchEvent<HTMLDivElement>) => {
       if (e.touches.length === 0) return
-      dragging.current = true
-      updatePosition(e.touches[0].clientX)
+      startDragging(e.touches[0].clientX)
     },
-    [updatePosition],
+    [startDragging],
   )
-
-  const onTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (!dragging.current || e.touches.length === 0) return
-      e.preventDefault()
-      updatePosition(e.touches[0].clientX)
-    },
-    [updatePosition],
-  )
-
-  const onTouchEnd = useCallback(() => {
-    dragging.current = false
-  }, [])
 
   const aspectRatio = height / width
 
@@ -102,17 +127,11 @@ export default function BeforeAfterSlider({
         style={{
           position: "relative",
           paddingBottom: `${aspectRatio * 100}%`,
-          cursor: dragging.current ? "grabbing" : "ew-resize",
+          cursor: isDragging ? "grabbing" : "ew-resize",
         }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onPointerLeave={onPointerUp}
+        onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
+        onClick={(e) => updatePosition(e.clientX)}
       >
         {/* After image (full, underneath) */}
         <div
@@ -127,6 +146,8 @@ export default function BeforeAfterSlider({
             fill
             loading="lazy"
             sizes="(max-width: 600px) 100vw, 600px"
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
             style={{ objectFit: "cover" }}
           />
         </div>
@@ -137,7 +158,8 @@ export default function BeforeAfterSlider({
             position: "absolute",
             inset: 0,
             clipPath: `inset(0 ${100 - position}% 0 0)`,
-            transition: dragging.current ? "none" : "clip-path 0.04s linear",
+            WebkitClipPath: `inset(0 ${100 - position}% 0 0)`,
+            transition: isDragging ? "none" : "clip-path 0.04s linear",
           }}
         >
           <Image
@@ -146,6 +168,8 @@ export default function BeforeAfterSlider({
             fill
             loading="lazy"
             sizes="(max-width: 600px) 100vw, 600px"
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
             style={{ objectFit: "cover" }}
           />
         </div>
