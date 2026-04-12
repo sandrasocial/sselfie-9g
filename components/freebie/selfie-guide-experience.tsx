@@ -9,7 +9,17 @@ import {
   extractImageMarker,
   parseSelfieGuideChapters,
   type SelfieGuideChapter,
+  type GuidePersonalization,
+  type GuidePhoneType,
+  type GuidePostingFrequency,
+  getGuideProgress,
+  saveGuideProgress,
 } from "@/lib/selfie-guide/experience"
+import ChapterProgressBar from "@/components/selfie-guide/chapter-progress-bar"
+import BeforeAfterSlider from "@/components/selfie-guide/before-after-slider"
+import ChallengeTracker from "@/components/selfie-guide/challenge-tracker"
+import MayaMoment from "@/components/selfie-guide/maya-moment"
+import OnboardingQuiz from "@/components/selfie-guide/onboarding-quiz"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -448,6 +458,35 @@ function getChapterMood(title: string) {
   return CHAPTER_MOOD_LIBRARY.find(spec => spec.match.test(title)) || null
 }
 
+const PHONE_TIP: Record<GuidePhoneType, string> = {
+  "iphone-15-16": "Use the 1x camera, turn your grid on, and lock exposure before each shot.",
+  "iphone-13-14": "Tap to focus on your eye, lower exposure slightly, and keep the phone at eye level or above.",
+  android: "Use your rear camera with a timer when possible and disable heavy beauty filters.",
+  "not-sure": "Start simple: natural window light, grid on, and at least 10 shots before you choose.",
+}
+
+const FREQUENCY_TIP: Record<GuidePostingFrequency, string> = {
+  never: "Pick one selfie from this chapter and treat it as your first visibility rep. No pressure for perfect.",
+  sometimes: "Batch two selfies now and save one as your backup post for the next low-energy day.",
+  regularly: "Reuse this chapter's setup as your weekly baseline so your feed stays consistent without overthinking.",
+}
+
+function getQuickWinTip(chapterTitle: string, personalization: GuidePersonalization): string {
+  const base = `${PHONE_TIP[personalization.phoneType]} ${FREQUENCY_TIP[personalization.postingFrequency]}`
+
+  if (/light/i.test(chapterTitle)) {
+    return `${base} Quick win: stand 45 degrees to a window and capture 5 variations before moving on.`
+  }
+  if (/edit/i.test(chapterTitle)) {
+    return `${base} Quick win: do one gentle edit pass only, then compare against the original before exporting.`
+  }
+  if (/challenge/i.test(chapterTitle)) {
+    return `${base} Quick win: finish Day 1 today even if the rest of the week is messy.`
+  }
+
+  return `${base} Quick win: complete this chapter and mark it done before you close the tab.`
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ChapterImages({ spec }: { spec: ChapterMoodSpec }) {
@@ -587,43 +626,6 @@ function LightingComparisonVisual() {
   )
 }
 
-function SevenDayChallenge() {
-  const [completedDays, setCompletedDays] = useState<Set<number>>(() => new Set())
-
-  return (
-    <div className="challenge">
-      <p className="challenge-eyebrow">Your 7-Day Practice Plan</p>
-      <div className="challenge-grid">
-        {SEVEN_DAY_CHALLENGE_DAYS.map((item, index) => {
-          const dayNumber = index + 1
-          const isComplete = completedDays.has(dayNumber)
-          return (
-            <button
-              key={item.day}
-              type="button"
-              className={`challenge-card ${isComplete ? "is-done" : ""}`}
-              onClick={() => {
-                setCompletedDays(prev => {
-                  const next = new Set(prev)
-                  if (next.has(dayNumber)) next.delete(dayNumber)
-                  else next.add(dayNumber)
-                  return next
-                })
-              }}
-              aria-pressed={isComplete}
-              aria-label={`Mark ${item.day} as ${isComplete ? "incomplete" : "complete"}`}
-            >
-              <span className="challenge-num">{isComplete ? "✓" : String(dayNumber).padStart(2, "0")}</span>
-              <span className="challenge-title">{item.title}</span>
-              <span className="challenge-desc">{item.description}</span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 interface SelfieGuideExperienceProps {
@@ -634,6 +636,7 @@ interface SelfieGuideExperienceProps {
   presetDownloadUrl?: string
   /** When true (bundle, prior BSP purchase, etc.), hide hard sell to checkout Brand Strategy. */
   hasBrandStrategyAccess?: boolean
+  token?: string
 }
 
 export default function SelfieGuideExperience({
@@ -643,6 +646,7 @@ export default function SelfieGuideExperience({
   brandStrategyBumpSelected = false,
   presetDownloadUrl,
   hasBrandStrategyAccess = false,
+  token,
 }: SelfieGuideExperienceProps) {
   const chapters = useMemo(() => {
     const parsed = parseSelfieGuideChapters(guideMarkdown)
@@ -651,28 +655,41 @@ export default function SelfieGuideExperience({
   }, [guideMarkdown])
 
   const [activeChapterIndex, setActiveChapterIndex] = useState(0)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [completedChapters, setCompletedChapters] = useState<number[]>([])
+  const [challengeDays, setChallengeDays] = useState<number[]>([])
+  const [personalization, setPersonalization] = useState<GuidePersonalization | null>(null)
+  const [guideComplete, setGuideComplete] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
   const [brandStrategySetupToken, setBrandStrategySetupToken] = useState<string | null>(null)
   const [brandStrategyStatus, setBrandStrategyStatus] = useState(
     brandStrategyBumpSelected ? "Preparing your Brand Strategy..." : "",
   )
 
+  // Restore progress from localStorage on mount
+  useEffect(() => {
+    const progress = getGuideProgress()
+    setActiveChapterIndex(Math.min(progress.chapterIndex, chapters.length - 1))
+    setCompletedChapters(Array.from({ length: Math.min(progress.chapterIndex, chapters.length) }, (_, index) => index))
+    setChallengeDays(progress.challengeDays)
+    setPersonalization(progress.personalization)
+    if (progress.chapterIndex >= chapters.length) setGuideComplete(true)
+    setHydrated(true)
+  }, [chapters.length])
+
   const currentChapter = chapters[Math.min(activeChapterIndex, Math.max(chapters.length - 1, 0))]
   const currentChapterTitle = normalizeChapterTitle(currentChapter.title)
   const currentChapterComparable = normalizeComparableText(currentChapterTitle)
-  const progressPercent =
-    chapters.length > 1 ? Math.round(((activeChapterIndex + 1) / chapters.length) * 100) : 100
   const showSevenDayChallenge = /7[-\s]?day|challenge/i.test(currentChapter.title)
+  const isMayaChapter = activeChapterIndex === 7 || /maya/i.test(currentChapter.title)
+  const isEditChapter = activeChapterIndex === 3 || /edit/i.test(currentChapter.title)
   const currentChapterMood = getChapterMood(currentChapter.title)
   const partNumber = activeChapterIndex + 1
+  const quickWinTip = personalization ? getQuickWinTip(currentChapterTitle, personalization) : null
 
-  useEffect(() => {
-    const hash = window.location.hash.replace("#", "")
-    if (!hash) return
-    const index = chapters.findIndex(ch => ch.id === hash)
-    if (index >= 0) setActiveChapterIndex(index)
-  }, [chapters])
+  function persistProgress(nextChapterIndex: number, nextChallengeDays: number[]) {
+    saveGuideProgress(nextChapterIndex, nextChallengeDays, personalization)
+  }
 
   useEffect(() => {
     const target = chapters[activeChapterIndex]
@@ -739,11 +756,35 @@ export default function SelfieGuideExperience({
     }
   }, [brandStrategyBumpSelected, brandStrategySetupToken, checkoutSessionId])
 
-  // Close sidebar on chapter select (mobile)
-  function goToChapter(index: number) {
-    setActiveChapterIndex(index)
-    setSidebarOpen(false)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+  function markChapterComplete() {
+    const nextIndex = activeChapterIndex + 1
+    const newCompleted = [...completedChapters, activeChapterIndex].filter((v, i, a) => a.indexOf(v) === i)
+    setCompletedChapters(newCompleted)
+
+    const isLastChapter = activeChapterIndex === chapters.length - 1
+
+    if (isLastChapter) {
+      setGuideComplete(true)
+      persistProgress(chapters.length, challengeDays)
+      if (token) {
+        fetch("/api/selfie-guide/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, chapterIndex: chapters.length, challengeDays, completed: true }),
+        }).catch(() => {})
+      }
+    } else {
+      setActiveChapterIndex(nextIndex)
+      persistProgress(nextIndex, challengeDays)
+      if (token) {
+        fetch("/api/selfie-guide/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, chapterIndex: nextIndex, challengeDays }),
+        }).catch(() => {})
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
   }
 
   const markdownComponents = useMemo<Components>(
@@ -834,70 +875,135 @@ export default function SelfieGuideExperience({
     [checkedChecklistItems, currentChapterComparable],
   )
 
+  // Don't render chapter content until hydrated (avoids SSR/localStorage mismatch)
+  if (!hydrated) {
+    return (
+      <div className={`sg ${inter.className}`} style={{ minHeight: "100vh", background: "#0a0a0a" }}>
+        <style jsx global>{`html,body{background:#0a0a0a;margin:0;padding:0;}`}</style>
+      </div>
+    )
+  }
+
+  if (!guideComplete && !personalization) {
+    return (
+      <OnboardingQuiz
+        onComplete={({ phone, frequency }) => {
+          const nextPersonalization: GuidePersonalization = {
+            phoneType: phone,
+            postingFrequency: frequency,
+          }
+          setPersonalization(nextPersonalization)
+          saveGuideProgress(activeChapterIndex, challengeDays, nextPersonalization)
+        }}
+      />
+    )
+  }
+
+  // Guide completion screen
+  if (guideComplete) {
+    return (
+      <div className={`sg ${inter.className}`}>
+        {/* ── Sticky top bar ────────────────────────── */}
+        <header className="sg-topbar">
+          <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
+          <span className="sg-topbar-label">Selfie Guide · Complete</span>
+        </header>
+
+        {/* ── Completion card ───────────────────────── */}
+        <main className="sg-main sg-main-centered">
+          <div className="sg-complete-card">
+            <p className="sg-eyebrow">You did it</p>
+            <h1 className={`sg-complete-title ${cormorant.className}`}>You finished it.</h1>
+            <p className="sg-complete-sub">Now let&apos;s see what Maya can do with your selfie.</p>
+            <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
+              <Link href="/checkout/membership" className="sg-cta-primary">
+                Open Studio
+              </Link>
+            </div>
+            <p className="sg-complete-member">
+              Already a Studio member?{" "}
+              <Link href="/studio?tab=maya" className="prose-link">Open Maya →</Link>
+            </p>
+          </div>
+        </main>
+
+        <style jsx global>{`
+          html, body { background: #0a0a0a; margin: 0; padding: 0; }
+          .sg {
+            --c-black: #0a0a0a; --c-surface: #161514; --c-char: #1c1b19;
+            --c-border: rgba(168,164,156,0.14); --c-stone: #e5e5e5;
+            --c-smoke: #f5f5f5; --c-cream: #ffffff; --c-pale: rgba(240,237,232,0.72);
+            --prose-w: 700px;
+            min-height: 100vh; background: var(--c-black); color: var(--c-cream);
+          }
+          .sg-topbar {
+            position: sticky; top: 0; z-index: 60;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px clamp(24px,5vw,64px);
+            background: rgba(13,12,11,0.92); border-bottom: 1px solid var(--c-border);
+            backdrop-filter: blur(20px);
+          }
+          .sg-logo-text {
+            font-size: 17px; font-weight: 300; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--c-cream); text-decoration: none;
+          }
+          .sg-topbar-label {
+            font-size: 9px; font-weight: 500; letter-spacing: 0.38em;
+            text-transform: uppercase; color: var(--c-smoke);
+          }
+          .sg-main-centered {
+            display: flex; align-items: center; justify-content: center;
+            min-height: calc(100vh - 60px); padding: 64px clamp(24px,5vw,64px);
+          }
+          .sg-complete-card {
+            max-width: var(--prose-w); width: 100%;
+            padding: 48px 40px;
+            background: rgba(28,27,25,0.8);
+            border: 1px solid rgba(195,190,182,0.25);
+            border-radius: 3px;
+          }
+          .sg-complete-title {
+            font-size: clamp(42px,7vw,88px); font-weight: 300;
+            line-height: 0.96; letter-spacing: -0.02em; text-transform: uppercase;
+            color: var(--c-cream); margin: 10px 0 16px;
+          }
+          .sg-complete-sub {
+            font-size: 16px; font-weight: 300; line-height: 1.8;
+            color: var(--c-stone); max-width: 44ch; margin: 0;
+          }
+          .sg-complete-member {
+            margin-top: 20px; font-size: 13px; font-weight: 300;
+            color: rgba(200,196,187,0.7);
+          }
+          .sg-eyebrow {
+            display: block; font-size: 9px; font-weight: 500; letter-spacing: 0.48em;
+            text-transform: uppercase; color: var(--c-stone); margin-bottom: 14px;
+          }
+          .sg-funnel-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+          .sg-cta-primary, .sg-cta-secondary {
+            display: inline-block; padding: 13px 22px; text-decoration: none;
+            font-size: 9px; font-weight: 500; letter-spacing: 0.36em;
+            text-transform: uppercase; border-radius: 999px;
+            transition: opacity 0.18s ease; text-align: center;
+          }
+          .sg-cta-primary { background: var(--c-cream); color: var(--c-black); border: none; }
+          .sg-cta-primary:hover { opacity: 0.88; }
+          .prose-link { color: var(--c-cream); text-underline-offset: 3px; }
+        `}</style>
+      </div>
+    )
+  }
+
   return (
     <div className={`sg ${inter.className}`}>
-      {/* ── Sidebar overlay (mobile) ────────────────── */}
-      {sidebarOpen && (
-        <div
-          className="sg-overlay"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden
-        />
-      )}
-
-      {/* ── Sidebar ─────────────────────────────────── */}
-      <aside className={`sg-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Guide navigation">
-        <div className="sg-sidebar-logo">
-          <Link href="/" className={`sg-logo-text ${cormorant.className}`}>
-            SSELFIE
-          </Link>
-          <p className="sg-logo-sub">INTERACTIVE SELFIE GUIDE</p>
-        </div>
-
-        <div className="sg-sidebar-progress">
-          <p className="sg-progress-label">Progress</p>
-          <div className="sg-progress-track">
-            <div className="sg-progress-fill" style={{ width: `${progressPercent}%` }} />
-          </div>
-          <p className="sg-progress-pct">{partNumber} of {chapters.length} sections</p>
-        </div>
-
-        <nav className="sg-sidebar-nav">
-          {chapters.map((chapter, index) => (
-            <button
-              key={chapter.id}
-              type="button"
-              className={`sg-nav-item ${index === activeChapterIndex ? "is-active" : ""} ${index < activeChapterIndex ? "is-done" : ""}`}
-              onClick={() => goToChapter(index)}
-              aria-current={index === activeChapterIndex ? "step" : undefined}
-            >
-              <span className="sg-nav-num">{String(index + 1).padStart(2, "0")}</span>
-              <span className="sg-nav-title">{normalizeChapterTitle(chapter.title)}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      {/* ── Sticky top bar (replaces sidebar) ───────── */}
+      <header className="sg-topbar">
+        <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
+        <span className="sg-topbar-label">Selfie Guide · 2026</span>
+      </header>
 
       {/* ── Main ────────────────────────────────────── */}
       <main className="sg-main">
-        {/* Mobile header */}
-        <header className="sg-mobile-header">
-          <button
-            type="button"
-            className="sg-menu-btn"
-            onClick={() => setSidebarOpen(prev => !prev)}
-            aria-label="Toggle chapter navigation"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-          <Link href="/" className={`sg-mobile-logo ${cormorant.className}`}>
-            SSELFIE
-          </Link>
-          <span className="sg-mobile-progress">{partNumber}/{chapters.length}</span>
-        </header>
-
         {/* ── Hero ──────────────────────────────────── */}
         <section className="sg-hero" aria-label="Guide hero">
           <div className="sg-hero-image-fill">
@@ -936,6 +1042,16 @@ export default function SelfieGuideExperience({
           </div>
         </section>
 
+        {/* ── Progress bar ──────────────────────────── */}
+        <div className="sg-progress-wrap">
+          <ChapterProgressBar
+            currentIndex={activeChapterIndex}
+            totalChapters={chapters.length}
+            currentTitle={currentChapterTitle}
+            completedChapters={completedChapters}
+          />
+        </div>
+
         {/* ── Chapter ───────────────────────────────── */}
         <section className="sg-chapter" id={currentChapter.id}>
 
@@ -951,6 +1067,24 @@ export default function SelfieGuideExperience({
             {currentChapterMood && (
               <p className={`sg-chapter-sub ${cormorant.className}`}>{currentChapterMood.copy}</p>
             )}
+            {quickWinTip && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  maxWidth: "620px",
+                  border: "1px solid rgba(168,164,156,0.2)",
+                  background: "rgba(28,27,25,0.72)",
+                  padding: "14px 16px",
+                }}
+              >
+                <p style={{ margin: "0 0 6px", fontSize: "9px", letterSpacing: "0.36em", textTransform: "uppercase", color: "rgba(240,237,232,0.7)" }}>
+                  Your quick win
+                </p>
+                <p style={{ margin: 0, fontSize: "14px", lineHeight: 1.7, color: "rgba(240,237,232,0.86)" }}>
+                  {quickWinTip}
+                </p>
+              </div>
+            )}
           </header>
 
           {/* Chapter images — editorial pair */}
@@ -961,10 +1095,68 @@ export default function SelfieGuideExperience({
             <ReactMarkdown components={markdownComponents}>{currentChapter.markdown}</ReactMarkdown>
           </div>
 
-          {/* 7-day challenge (if applicable) */}
-          {showSevenDayChallenge && <SevenDayChallenge />}
+          {/* Before/After slider for Part 4 (editing chapter) */}
+          {/* TODO (Sandra): Replace before-placeholder.svg and after-placeholder.svg in public/images/selfie-guide/ with real photos. See tasks/SELFIE-GUIDE-02-phase-b.md — "B2. Real before/after pair in Part 4" for specs. */}
+          {isEditChapter && (
+            <div className="sg-prose" style={{ marginTop: "32px" }}>
+              <BeforeAfterSlider
+                beforeSrc="/images/selfie-guide/before-placeholder.svg"
+                afterSrc="/images/selfie-guide/after-placeholder.svg"
+                beforeAlt="Before editing — placeholder, Sandra to replace with real image"
+                afterAlt="After editing — placeholder, Sandra to replace with real image"
+                beforeLabel="Before"
+                afterLabel="After edit"
+                width={360}
+                height={640}
+              />
+            </div>
+          )}
 
-          {/* Chapter navigation */}
+          {/* 7-day challenge tracker (if applicable) */}
+          {showSevenDayChallenge && (
+            <div className="challenge">
+              <p className="challenge-eyebrow">Your 7-Day Practice Plan</p>
+              <ChallengeTracker
+                completedDays={challengeDays}
+                onDayComplete={(day) => {
+                  const next = [...challengeDays, day].filter((v, i, a) => a.indexOf(v) === i)
+                  setChallengeDays(next)
+                  persistProgress(activeChapterIndex, next)
+                  if (token) {
+                    fetch("/api/selfie-guide/progress", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ token, chapterIndex: activeChapterIndex, challengeDays: next }),
+                    }).catch(() => {})
+                  }
+                }}
+                onChallengeComplete={(completedDays) => {
+                  persistProgress(activeChapterIndex, completedDays)
+                  if (token) {
+                    fetch("/api/selfie-guide/progress", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        token,
+                        chapterIndex: activeChapterIndex,
+                        challengeDays: completedDays,
+                        challengeComplete: true,
+                      }),
+                    }).catch(() => {})
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Maya moment (if this is the Maya chapter) */}
+          {isMayaChapter && (
+            <div className="sg-prose">
+              <MayaMoment token={token} />
+            </div>
+          )}
+
+          {/* Mark complete + navigation */}
           <div className="sg-chapter-nav">
             <button
               type="button"
@@ -983,14 +1175,10 @@ export default function SelfieGuideExperience({
 
             <button
               type="button"
-              className="sg-nav-btn sg-nav-next"
-              onClick={() => {
-                setActiveChapterIndex(prev => Math.min(prev + 1, chapters.length - 1))
-                window.scrollTo({ top: 0, behavior: "smooth" })
-              }}
+              className="sg-nav-btn sg-nav-complete"
+              onClick={markChapterComplete}
             >
-              <span>{activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Next section"}</span>
-              <span>{activeChapterIndex === chapters.length - 1 ? "" : "→"}</span>
+              <span>{activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Mark complete →"}</span>
             </button>
           </div>
         </section>
@@ -1080,7 +1268,6 @@ export default function SelfieGuideExperience({
           --c-smoke:   #f5f5f5;
           --c-cream:   #ffffff;
           --c-pale:    rgba(240, 237, 232, 0.72);
-          --sidebar-w: 260px;
           --prose-w:   700px;
           --gap:       clamp(24px, 5vw, 64px);
           min-height: 100vh;
@@ -1088,15 +1275,56 @@ export default function SelfieGuideExperience({
           color: var(--c-cream);
         }
 
-        /* ── Sidebar ──────────────────── */
+        /* ── Top bar (replaces sidebar) ─────────── */
+
+        .sg-topbar {
+          position: sticky;
+          top: 0;
+          z-index: 60;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px clamp(24px, 5vw, 64px);
+          background: rgba(13, 12, 11, 0.92);
+          border-bottom: 1px solid var(--c-border);
+          backdrop-filter: blur(20px);
+        }
+
+        .sg-logo-text {
+          font-size: 17px;
+          font-weight: 300;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          text-decoration: none;
+        }
+
+        .sg-topbar-label {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.38em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+        }
+
+        /* ── Progress bar wrap ────────── */
+
+        .sg-progress-wrap {
+          max-width: var(--prose-w);
+          margin: 0 auto;
+          padding: 28px clamp(24px, 5vw, 64px) 0;
+        }
+
+        /* ── Sidebar (kept for legacy, hidden) ─── */
 
         .sg-sidebar {
+          display: none;
           position: fixed;
           left: 0; top: 0; bottom: 0;
-          width: var(--sidebar-w);
+          width: 260px;
           background: var(--c-char);
           border-right: 1px solid var(--c-border);
-          display: flex;
+          flex-direction: column;
           flex-direction: column;
           z-index: 80;
           overflow-y: auto;
@@ -1277,7 +1505,7 @@ export default function SelfieGuideExperience({
         /* ── Main ────────────────────── */
 
         .sg-main {
-          margin-left: var(--sidebar-w);
+          margin-left: 0;
           min-height: 100vh;
         }
 
@@ -1898,6 +2126,7 @@ export default function SelfieGuideExperience({
 
         .sg-nav-prev { margin-right: auto; }
         .sg-nav-next { margin-left: auto; }
+        .sg-nav-complete { margin-left: auto; }
 
         .sg-nav-divider {
           width: 1px;
@@ -1991,28 +2220,6 @@ export default function SelfieGuideExperience({
         /* ── Mobile responsive ────────── */
 
         @media (max-width: 900px) {
-          .sg-sidebar {
-            transform: translateX(-100%);
-            transition: transform 0.28s ease;
-            z-index: 90;
-          }
-
-          .sg-sidebar.is-open {
-            transform: translateX(0);
-          }
-
-          .sg-overlay {
-            display: block;
-          }
-
-          .sg-mobile-header {
-            display: flex;
-          }
-
-          .sg-main {
-            margin-left: 0;
-          }
-
           .sg-hero {
             height: 90vh;
           }

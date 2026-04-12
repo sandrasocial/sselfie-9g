@@ -70,3 +70,71 @@ export function extractImageMarker(value: string): string | null {
   const match = text.match(/\[IMAGE:\s*([^\s\]]+)/i)
   return match?.[1]?.trim().toLowerCase() || null
 }
+
+const PROGRESS_KEY = "sselfie-guide-progress"
+
+export interface GuideProgress {
+  chapterIndex: number
+  challengeDays: number[]
+  personalization: GuidePersonalization | null
+}
+
+export type GuidePhoneType = "iphone-15-16" | "iphone-13-14" | "android" | "not-sure"
+export type GuidePostingFrequency = "never" | "sometimes" | "regularly"
+
+export interface GuidePersonalization {
+  phoneType: GuidePhoneType
+  postingFrequency: GuidePostingFrequency
+}
+
+function isGuidePhoneType(value: unknown): value is GuidePhoneType {
+  return (
+    value === "iphone-15-16" ||
+    value === "iphone-13-14" ||
+    value === "android" ||
+    value === "not-sure"
+  )
+}
+
+function isGuidePostingFrequency(value: unknown): value is GuidePostingFrequency {
+  return value === "never" || value === "sometimes" || value === "regularly"
+}
+
+function normalizePersonalization(value: unknown): GuidePersonalization | null {
+  if (!value || typeof value !== "object") return null
+  const candidate = value as Record<string, unknown>
+  if (!isGuidePhoneType(candidate.phoneType) || !isGuidePostingFrequency(candidate.postingFrequency)) {
+    return null
+  }
+  return {
+    phoneType: candidate.phoneType,
+    postingFrequency: candidate.postingFrequency,
+  }
+}
+
+export function getGuideProgress(): GuideProgress {
+  if (typeof window === "undefined") return { chapterIndex: 0, challengeDays: [], personalization: null }
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY)
+    if (!raw) return { chapterIndex: 0, challengeDays: [], personalization: null }
+    const parsed = JSON.parse(raw) as Partial<GuideProgress>
+    return {
+      chapterIndex: typeof parsed.chapterIndex === "number" ? parsed.chapterIndex : 0,
+      challengeDays: Array.isArray(parsed.challengeDays)
+        ? parsed.challengeDays.filter((item): item is number => typeof item === "number")
+        : [],
+      personalization: normalizePersonalization(parsed.personalization),
+    }
+  } catch {
+    return { chapterIndex: 0, challengeDays: [], personalization: null }
+  }
+}
+
+export function saveGuideProgress(
+  chapterIndex: number,
+  challengeDays: number[],
+  personalization: GuidePersonalization | null = null,
+): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify({ chapterIndex, challengeDays, personalization }))
+}

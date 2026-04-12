@@ -12,6 +12,7 @@ type LandingCheckoutOptions = {
   source?: string
   referralCode?: string | null
   returnTo?: string
+  bonusCredits?: number
 }
 
 export async function createLandingCheckoutSession(
@@ -32,6 +33,10 @@ export async function createLandingCheckoutSession(
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
   const allowManualPromotionCodes = !isSubscription
   const checkoutSource = options?.source?.trim() || "landing_page"
+  const bonusCredits =
+    typeof options?.bonusCredits === "number" && Number.isFinite(options.bonusCredits) && options.bonusCredits > 0
+      ? Math.floor(options.bonusCredits)
+      : 0
   const cookieStore = await cookies()
   const referralCode =
     normalizeReferralCode(options?.referralCode || null) ||
@@ -154,6 +159,7 @@ export async function createLandingCheckoutSession(
           product_id: productId,
           product_type: product.type,
           credits: product.credits?.toString() || "0",
+          ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
           source: checkoutSource,
           ...(referralCode && { referral_code: referralCode }),
           ...(options?.returnTo && { return_to: options.returnTo }),
@@ -164,6 +170,7 @@ export async function createLandingCheckoutSession(
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
+      ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
       source: checkoutSource,
       ...(referralCode && { referral_code: referralCode }),
       ...(customerEmail && { customer_email: customerEmail }),

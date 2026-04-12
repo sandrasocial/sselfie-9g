@@ -233,6 +233,7 @@ export default async function SelfieGuideAccessPage({ params, searchParams }: Pa
       brandStrategyBumpSelected={query.brand_strategy_bump === "1"}
       presetDownloadUrl={process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL || undefined}
       hasBrandStrategyAccess={hasBrandStrategyAccess}
+      token={token}
     />
   )
 }

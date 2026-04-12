@@ -3946,6 +3946,60 @@ export async function POST(request: NextRequest) {
                     `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`
                   )
 
+                  // Optional one-time welcome bonus from checkout metadata (e.g. ?bonus=4credits).
+                  // Only grant on the first paid invoice for a new subscription.
+                  if (invoice.billing_reason === "subscription_create") {
+                    try {
+                      const stripeSubscription = (await stripe.subscriptions.retrieve(invoice.subscription)) as any
+                      const bonusCredits = Number.parseInt(
+                        String(stripeSubscription?.metadata?.bonus_credits || "0"),
+                        10
+                      )
+
+                      if (bonusCredits > 0) {
+                        const existingBonusGrant = await sql`
+                          SELECT id
+                          FROM credit_transactions
+                          WHERE user_id = ${sub.user_id}
+                            AND transaction_type = 'bonus'
+                            AND stripe_payment_id = ${invoiceId}
+                          LIMIT 1
+                        `
+
+                        if (existingBonusGrant.length === 0) {
+                          const bonusResult = await addCredits(
+                            sub.user_id,
+                            bonusCredits,
+                            "bonus",
+                            `Selfie Guide membership bonus (${bonusCredits} credits)`,
+                            invoiceId,
+                            false,
+                            { source: "stripe_webhook:selfie_guide_bonus" }
+                          )
+
+                          if (bonusResult.success) {
+                            console.log(
+                              `[v0] ✅ Granted one-time checkout bonus (${bonusCredits} credits) for invoice ${invoiceId}`
+                            )
+                          } else {
+                            console.error(
+                              `[v0] ❌ Failed to grant one-time checkout bonus for invoice ${invoiceId}: ${bonusResult.error}`
+                            )
+                          }
+                        } else {
+                          console.log(
+                            `[v0] ⏭️ Bonus credits already granted for invoice ${invoiceId}; skipping duplicate bonus grant.`
+                          )
+                        }
+                      }
+                    } catch (bonusError: any) {
+                      console.error(
+                        `[v0] ⚠️ Failed applying optional checkout bonus credits for invoice ${invoiceId}:`,
+                        bonusError.message
+                      )
+                    }
+                  }
+
                   // Send credit renewal notification email
                   try {
                     const userRecord = await sql`

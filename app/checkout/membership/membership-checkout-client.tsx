@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 
 interface Props {
   promoCode?: string
+  bonus?: string
 }
 
-export default function MembershipCheckoutClient({ promoCode }: Props) {
+export default function MembershipCheckoutClient({ promoCode, bonus }: Props) {
   const [interval, setInterval] = useState<"month" | "year">("month")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function MembershipCheckoutClient({ promoCode }: Props) {
     const params = new URLSearchParams()
     params.set("interval", interval)
     if (promoCode) params.set("promo", promoCode)
+    if (bonus) params.set("bonus", bonus)
     router.push(`/checkout/membership?${params.toString()}`)
   }
 

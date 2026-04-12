@@ -14,6 +14,10 @@ import { generateNurtureStrategyN3Email } from "@/lib/email/templates/nurture-st
 import { generateNurtureStrategyN4Email } from "@/lib/email/templates/nurture-strategy-n4"
 import { generateNurtureStrategyN5Email } from "@/lib/email/templates/nurture-strategy-n5"
 import { generateSelfieGuideActivationDay0Email } from "@/lib/email/templates/selfie-guide-activation-day0"
+import { generateSelfieGuideDay3CheckinEmail } from "@/lib/email/templates/selfie-guide-day3-checkin"
+import { generateSelfieGuideDay7ChallengeEmail } from "@/lib/email/templates/selfie-guide-day7-challenge"
+import { generateSelfieGuideDay14MayaBridgeEmail } from "@/lib/email/templates/selfie-guide-day14-maya-bridge"
+import { generateSelfieGuideDay21FinalEmail } from "@/lib/email/templates/selfie-guide-day21-final"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const STRATEGY_FALLBACK_URL = `${SITE_URL}/brand-strategy`
@@ -31,6 +35,13 @@ interface StrategyLeadCandidate {
 }
 
 interface SelfieGuideActivationCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  subscription_created_at: string
+}
+
+interface SelfieGuideTouchCandidate {
   email: string
   name: string | null
   access_token: string | null
@@ -208,6 +219,79 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
   }
 }
 
+async function getSelfieGuideTouchCandidates(days: number, emailType: string): Promise<SelfieGuideTouchCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(u.email))
+      u.email,
+      COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name,
+      fs.access_token,
+      s.created_at AS subscription_created_at
+    FROM subscriptions s
+    INNER JOIN users u ON u.id::varchar = s.user_id
+    INNER JOIN freebie_subscribers fs ON LOWER(fs.email) = LOWER(u.email)
+    WHERE s.product_type IN ('selfie_guide', 'selfie_guide_bundle')
+      AND s.status = 'active'
+      AND s.created_at <= NOW() - (${`${days} days`}::interval)
+      AND u.email IS NOT NULL
+      AND u.email <> ''
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(u.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered')
+      )
+    ORDER BY LOWER(u.email), s.created_at DESC
+    LIMIT 200
+  `) as SelfieGuideTouchCandidate[]
+}
+
+function formatExpiryDate(subscriptionCreatedAt: string, daysAfterPurchase: number): string {
+  const purchaseDate = new Date(subscriptionCreatedAt)
+  const expiryDate = new Date(purchaseDate.getTime() + daysAfterPurchase * 24 * 60 * 60 * 1000)
+  return expiryDate.toLocaleDateString("en-GB", { month: "long", day: "numeric" })
+}
+
+async function sendSelfieGuideTouchEmail(
+  emailType: string,
+  candidate: SelfieGuideTouchCandidate,
+  accessUrl: string,
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "selfie-guide-day3-checkin":
+      email = generateSelfieGuideDay3CheckinEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "selfie-guide-day7-challenge":
+      email = generateSelfieGuideDay7ChallengeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "selfie-guide-day14-maya-bridge":
+      email = generateSelfieGuideDay14MayaBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "selfie-guide-day21-final": {
+      const expiryDate = formatExpiryDate(candidate.subscription_created_at, 28)
+      email = generateSelfieGuideDay21FinalEmail({ firstName, recipientEmail: candidate.email, accessUrl, expiryDate })
+      break
+    }
+    default:
+      throw new Error(`Unknown selfie guide email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["selfie-guide", emailType],
+  })
+}
+
 async function sendSelfieGuideActivationEmail(candidate: SelfieGuideActivationCandidate) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
   const email = generateSelfieGuideActivationDay0Email({
@@ -250,6 +334,10 @@ export async function GET(request: Request) {
 
     const results = {
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
+      selfieGuideDay3: { found: 0, sent: 0, failed: 0 },
+      selfieGuideDay7: { found: 0, sent: 0, failed: 0 },
+      selfieGuideDay14: { found: 0, sent: 0, failed: 0 },
+      selfieGuideDay21: { found: 0, sent: 0, failed: 0 },
       n1: { found: 0, sent: 0, failed: 0 },
       n2: { found: 0, sent: 0, failed: 0 },
       n3: { found: 0, sent: 0, failed: 0 },
@@ -258,6 +346,7 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; touch: string; error: string }>,
     }
 
+    // Day 0 activation
     const selfieGuideCandidates = await getSelfieGuideActivationCandidates()
     results.selfieGuideDay0.found = selfieGuideCandidates.length
 
@@ -284,6 +373,47 @@ export async function GET(request: Request) {
       }
 
       await sleep(150)
+    }
+
+    // Day 3, 7, 14, 21 timed touches — skip Day 0 (index 0) since it's handled above
+    const selfieGuideTouchResultKeys = [
+      "selfieGuideDay3",
+      "selfieGuideDay7",
+      "selfieGuideDay14",
+      "selfieGuideDay21",
+    ] as const
+    const selfieGuideTouches = SELFIE_GUIDE_EMAIL_TOUCHES.slice(1) // skip Day 0
+
+    for (const [index, touch] of selfieGuideTouches.entries()) {
+      const resultKey = selfieGuideTouchResultKeys[index]
+      const candidates = await getSelfieGuideTouchCandidates(touch.days, touch.emailType)
+      results[resultKey].found = candidates.length
+
+      for (const candidate of candidates) {
+        const accessUrl = selfieGuideAccessUrl(candidate)
+        try {
+          const result = await sendSelfieGuideTouchEmail(touch.emailType, candidate, accessUrl)
+          if (result.success) {
+            results[resultKey].sent += 1
+          } else {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: result.error || "unknown",
+            })
+          }
+        } catch (error: unknown) {
+          results[resultKey].failed += 1
+          results.errors.push({
+            email: candidate.email,
+            touch: touch.emailType,
+            error: errorMessage(error),
+          })
+        }
+
+        await sleep(150)
+      }
     }
 
     for (const [index, touch] of FREEBIE_STRATEGY_EMAIL_TOUCHES.entries()) {
@@ -319,6 +449,10 @@ export async function GET(request: Request) {
 
     const totalSent =
       results.selfieGuideDay0.sent +
+      results.selfieGuideDay3.sent +
+      results.selfieGuideDay7.sent +
+      results.selfieGuideDay14.sent +
+      results.selfieGuideDay21.sent +
       results.n1.sent +
       results.n2.sent +
       results.n3.sent +
@@ -326,6 +460,10 @@ export async function GET(request: Request) {
       results.n5.sent
     const totalFailed =
       results.selfieGuideDay0.failed +
+      results.selfieGuideDay3.failed +
+      results.selfieGuideDay7.failed +
+      results.selfieGuideDay14.failed +
+      results.selfieGuideDay21.failed +
       results.n1.failed +
       results.n2.failed +
       results.n3.failed +
@@ -334,6 +472,10 @@ export async function GET(request: Request) {
 
     await cronLogger.success({
       selfieGuideDay0: results.selfieGuideDay0,
+      selfieGuideDay3: results.selfieGuideDay3,
+      selfieGuideDay7: results.selfieGuideDay7,
+      selfieGuideDay14: results.selfieGuideDay14,
+      selfieGuideDay21: results.selfieGuideDay21,
       n1: results.n1,
       n2: results.n2,
       n3: results.n3,

@@ -109,6 +109,27 @@ type ActivationKpiReport = {
   }
 }
 
+type SelfieGuideAnalyticsReport = {
+  totals: {
+    buyers: number
+    guideOpened: number
+    guideCompleted: number
+    challengeCompleted: number
+    studioConverted: number
+  }
+  rates: {
+    guideOpenRate: number
+    guideCompletionRate: number
+    challengeCompletionRate: number
+    studioConversionRate: number
+  }
+  chapterFunnel: Array<{
+    chapter: number
+    reached: number
+    dropOffFromPrevious: number
+  }>
+}
+
 type StoredReportRow = {
   id: number
   report_type: string
@@ -129,6 +150,7 @@ export default function AnalyticsPage() {
   const [arpuReports, setArpuReports] = useState<StoredReportRow[]>([])
   const [deliveryLatest, setDeliveryLatest] = useState<CohortDeliveryReport | null>(null)
   const [activationKpi, setActivationKpi] = useState<ActivationKpiReport | null>(null)
+  const [selfieGuideAnalytics, setSelfieGuideAnalytics] = useState<SelfieGuideAnalyticsReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState({
@@ -138,6 +160,7 @@ export default function AnalyticsPage() {
     arpu: false,
     delivery: false,
     activationKpi: false,
+    selfieGuide: false,
   })
   const [deliveryForm, setDeliveryForm] = useState({
     mode: "live" as "live" | "async",
@@ -153,13 +176,14 @@ export default function AnalyticsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes] = await Promise.all([
+        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes, selfieGuideRes] = await Promise.all([
           fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
           fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
           fetch("/api/admin/analytics/arpu-churn-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
           fetch("/api/admin/analytics/activation-kpi-7d").then((r) => r.json()),
+          fetch("/api/admin/analytics/selfie-guide").then((r) => r.json()),
         ])
         if (cancelled) return
 
@@ -169,6 +193,7 @@ export default function AnalyticsPage() {
         setArpuReports(Array.isArray(arpuRes?.reports) ? arpuRes.reports : [])
         setDeliveryLatest(deliveryRes?.latest || null)
         setActivationKpi(activationKpiRes?.report || null)
+        setSelfieGuideAnalytics(selfieGuideRes?.totals ? selfieGuideRes : null)
       } catch (e: any) {
         if (cancelled) return
         setError(e?.message || "Failed to load analytics")
@@ -302,6 +327,20 @@ export default function AnalyticsPage() {
     }
   }
 
+  const runSelfieGuideAnalyticsNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, selfieGuide: true }))
+      const res = await fetch("/api/admin/analytics/selfie-guide")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to refresh selfie guide analytics")
+      setSelfieGuideAnalytics(data?.totals ? data : null)
+    } catch (e: any) {
+      setError(e?.message || "Failed to refresh selfie guide analytics")
+    } finally {
+      setIsRunning((s) => ({ ...s, selfieGuide: false }))
+    }
+  }
+
   const submitDeliveryLog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     try {
@@ -403,6 +442,13 @@ export default function AnalyticsPage() {
                 >
                   {isRunning.activationKpi ? "Refreshing TTFI..." : "Refresh 7D TTFI KPI"}
                 </button>
+                <button
+                  onClick={runSelfieGuideAnalyticsNow}
+                  disabled={isRunning.selfieGuide}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.selfieGuide ? "Refreshing Guide..." : "Refresh Selfie Guide Analytics"}
+                </button>
               </div>
             </div>
           )}
@@ -499,6 +545,26 @@ export default function AnalyticsPage() {
                 : "Refresh 7D TTFI KPI"
             }
           />
+          <AdminMetricCard
+            label="Guide Completion"
+            value={selfieGuideAnalytics ? `${selfieGuideAnalytics.rates.guideCompletionRate}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={
+              selfieGuideAnalytics
+                ? `${selfieGuideAnalytics.totals.guideCompleted}/${selfieGuideAnalytics.totals.buyers} buyers`
+                : "Refresh Selfie Guide analytics"
+            }
+          />
+          <AdminMetricCard
+            label="Guide -> Studio"
+            value={selfieGuideAnalytics ? `${selfieGuideAnalytics.rates.studioConversionRate}%` : "--"}
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle={
+              selfieGuideAnalytics
+                ? `${selfieGuideAnalytics.totals.studioConverted} converted`
+                : "Refresh Selfie Guide analytics"
+            }
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
@@ -571,6 +637,66 @@ export default function AnalyticsPage() {
               <p className="text-xs text-stone-600">Run the cohort report to populate this section.</p>
             )}
           </div>
+        </div>
+
+        <div className="bg-white border border-stone-200 p-6 rounded-none mb-10">
+          <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+            Selfie Guide Funnel
+          </h2>
+          {selfieGuideAnalytics ? (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <AdminMetricCard
+                  label="Guide Buyers"
+                  value={String(selfieGuideAnalytics.totals.buyers)}
+                  subtitle={`Opened: ${selfieGuideAnalytics.totals.guideOpened}`}
+                />
+                <AdminMetricCard
+                  label="Guide Open Rate"
+                  value={`${selfieGuideAnalytics.rates.guideOpenRate}%`}
+                  subtitle="Opened / buyers"
+                />
+                <AdminMetricCard
+                  label="Guide Completed"
+                  value={String(selfieGuideAnalytics.totals.guideCompleted)}
+                  subtitle={`${selfieGuideAnalytics.rates.guideCompletionRate}%`}
+                />
+                <AdminMetricCard
+                  label="Challenge Completed"
+                  value={String(selfieGuideAnalytics.totals.challengeCompleted)}
+                  subtitle={`${selfieGuideAnalytics.rates.challengeCompletionRate}%`}
+                />
+                <AdminMetricCard
+                  label="Studio Converted"
+                  value={String(selfieGuideAnalytics.totals.studioConverted)}
+                  subtitle={`${selfieGuideAnalytics.rates.studioConversionRate}%`}
+                />
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-[10px] tracking-[0.12em] uppercase text-stone-500 border-b border-stone-200">
+                      <th className="text-left py-2 pr-3">Chapter</th>
+                      <th className="text-right py-2 px-2">Reached</th>
+                      <th className="text-right py-2 px-2">Drop-off</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selfieGuideAnalytics.chapterFunnel.map((row) => (
+                      <tr key={row.chapter} className="border-b border-stone-100 text-stone-700">
+                        <td className="py-2 pr-3 font-mono text-[11px]">Chapter {row.chapter}</td>
+                        <td className="py-2 px-2 text-right font-mono text-[11px]">{row.reached}</td>
+                        <td className="py-2 px-2 text-right font-mono text-[11px]">{row.dropOffFromPrevious}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-stone-600">Refresh Selfie Guide analytics to populate this section.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">

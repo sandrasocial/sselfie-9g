@@ -46,6 +46,11 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 | `tasks/ACADEMY-01-foundation.md` | Academy foundation | Planned |
 | `tasks/ACADEMY-02-CODEX-SPEC.md` | Academy Codex spec | Planned |
 
+### Selfie Guide Status (April 2026)
+
+- `tasks/SELFIE-GUIDE-02-phase-b.md` — **Implemented** (chapter flow, challenge tracking + Day 14 trigger, Maya preview API, analytics API + admin UI, email templates)
+- Remaining polish is content/ops validation (real before/after assets swap, end-to-end smoke checks in prod-like environment)
+
 **Completed sprints (do not re-open):**
 - V-02 Full Funnel Hardening ✅ (2026-03-09)
 - Maya UX Stabilization ✅ (2026-03-11, commit `b950f1db`)
