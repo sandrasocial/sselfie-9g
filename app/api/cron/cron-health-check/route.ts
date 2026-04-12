@@ -10,6 +10,8 @@ const ANOMALY_THRESHOLDS = {
   welcomeCreditsMax: Number(process.env.CRON_ANOM_WELCOME_CREDITS_MAX || 20),
   membershipReconcileMax: Number(process.env.CRON_ANOM_MEMBERSHIP_RECONCILE_MAX || 20),
   backfillPaymentsMax: Number(process.env.CRON_ANOM_BACKFILL_PAYMENTS_MAX || 50),
+  /** Min failed runs in 7d before emailing about failedRunsLast7d (reduces one-off noise). */
+  minFailedRunsForAlert: Number(process.env.CRON_ANOM_MIN_FAILED_RUNS || 2),
   errorsAny: process.env.CRON_ANOM_ERRORS_ANY !== "false",
 }
 
@@ -230,7 +232,10 @@ export async function GET(request: NextRequest) {
       if (counts.backfilledPayments > ANOMALY_THRESHOLDS.backfillPaymentsMax) {
         reasons.push(`backfilledPayments=${counts.backfilledPayments} (max ${ANOMALY_THRESHOLDS.backfillPaymentsMax})`)
       }
-      if (ANOMALY_THRESHOLDS.errorsAny && entry.failedRuns > 0) {
+      if (
+        ANOMALY_THRESHOLDS.errorsAny &&
+        entry.failedRuns >= ANOMALY_THRESHOLDS.minFailedRunsForAlert
+      ) {
         reasons.push(`failedRunsLast7d=${entry.failedRuns}`)
       }
 

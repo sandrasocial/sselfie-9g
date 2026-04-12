@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { getResendApiKey, hasResendApiKey } from "./api-key"
 
 let resendClient: Resend | null | undefined
 
@@ -7,7 +8,7 @@ export function getResendClient(): Resend | null {
     return resendClient
   }
 
-  resendClient = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+  resendClient = hasResendApiKey() ? new Resend(getResendApiKey()) : null
   return resendClient
 }
 

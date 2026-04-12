@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { requireResendClient } from "@/lib/resend/client"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 
 const RATE_LIMIT_DELAY_MS = 600
 
@@ -31,7 +32,7 @@ export async function seedAudienceBackfillQueue() {
 }
 
 export async function processAudienceBackfillBatch(batchSize = 40) {
-  if (!process.env.RESEND_API_KEY || !process.env.RESEND_AUDIENCE_ID) {
+  if (!hasResendApiKey() || !process.env.RESEND_AUDIENCE_ID) {
     return { processed: 0, synced: 0, failed: 0 }
   }
 

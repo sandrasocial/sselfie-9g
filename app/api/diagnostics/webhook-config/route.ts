@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
+import { getResendApiKey } from "@/lib/resend/api-key"
 
 export async function GET() {
+  const resendKey = getResendApiKey()
   const diagnostics = {
     timestamp: new Date().toISOString(),
     environment: {
@@ -10,8 +12,8 @@ export async function GET() {
       STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET
         ? `✓ Set (${process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10)}...${process.env.STRIPE_WEBHOOK_SECRET.slice(-4)})`
         : "✗ Not set",
-      RESEND_API_KEY: process.env.RESEND_API_KEY
-        ? `✓ Set (${process.env.RESEND_API_KEY.substring(0, 7)}...)`
+      RESEND_API_KEY: resendKey
+        ? `✓ Set (${resendKey.substring(0, 7)}...)`
         : "✗ Not set",
       DATABASE_URL: process.env.DATABASE_URL ? "✓ Set" : "✗ Not set",
       SUPABASE_URL: process.env.SUPABASE_URL ? "✓ Set" : "✗ Not set",

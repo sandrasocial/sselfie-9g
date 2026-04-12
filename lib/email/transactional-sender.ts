@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { requireResendClient } from "@/lib/resend/client"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 
 interface TransactionalEmailInput {
   to: string
@@ -13,7 +14,7 @@ interface TransactionalEmailInput {
 }
 
 export async function sendTransactionalEmail(input: TransactionalEmailInput) {
-  if (!process.env.RESEND_API_KEY) {
+  if (!hasResendApiKey()) {
     throw new Error("RESEND_API_KEY not configured")
   }
 

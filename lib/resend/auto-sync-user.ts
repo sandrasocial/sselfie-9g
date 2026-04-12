@@ -4,6 +4,7 @@
  */
 import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
+import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 
 // Canonical audience ID. RESEND_AUDIENCE_ID env var takes precedence so local/staging
 // environments can override it, but must match the production value in Vercel:
@@ -12,12 +13,12 @@ const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || "3cd6c5e3-fdf9-4744-b7f3-f
 let resendClient: Resend | null = null
 
 function getResendClient(): Resend | null {
-  if (!process.env.RESEND_API_KEY) {
+  if (!hasResendApiKey()) {
     return null
   }
 
   if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY)
+    resendClient = new Resend(getResendApiKey())
   }
 
   return resendClient

@@ -2,6 +2,7 @@ import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { normalizeEmailIdentifier } from "./normalize-identifier"
 import { requireResendClient } from "@/lib/resend/client"
+import { getResendApiKey } from "@/lib/resend/api-key"
 
 interface MarketingBroadcastInput {
   campaignKey: string
@@ -389,7 +390,7 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
               {
                 method: "DELETE",
                 headers: {
-                  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                  Authorization: `Bearer ${getResendApiKey()}`,
                   "Content-Type": "application/json",
                 },
               },
@@ -405,7 +406,7 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
               {
                 method: "POST",
                 headers: {
-                  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                  Authorization: `Bearer ${getResendApiKey()}`,
                   "Content-Type": "application/json",
                 },
               },

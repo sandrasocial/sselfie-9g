@@ -1,3 +1,5 @@
+import { getResendApiKey } from "./api-key"
+
 export interface ResendBroadcastSummary {
   id: string
   name?: string | null
@@ -8,10 +10,6 @@ export interface ResendBroadcastSummary {
   scheduled_at?: string | null
   audience_id?: string | null
   segment_id?: string | null
-}
-
-function getResendApiKey() {
-  return process.env.RESEND_API_KEY || ""
 }
 
 export async function getRecentBroadcasts(limit = 10): Promise<ResendBroadcastSummary[]> {

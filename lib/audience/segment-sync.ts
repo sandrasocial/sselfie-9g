@@ -8,6 +8,7 @@
 import { sql } from "@/lib/db/client"
 import { updateContactTags as updateResendContactTags, type ContactTags, addContactToSegment, removeContactFromSegment } from "@/lib/resend/manage-contact"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 
 export interface SegmentResult {
@@ -32,7 +33,7 @@ export interface SegmentResult {
  */
 export async function getAllResendContacts(): Promise<Array<{ email: string; id: string; tags?: any[] }>> {
   try {
-    if (!process.env.RESEND_API_KEY || !audienceId) {
+    if (!hasResendApiKey() || !audienceId) {
       throw new Error("Resend not configured")
     }
 
@@ -235,7 +236,7 @@ export async function updateContactTags(email: string, segments: {
   cold_users: boolean
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!process.env.RESEND_API_KEY || !audienceId) {
+    if (!hasResendApiKey() || !audienceId) {
       return { success: false, error: "Resend not configured" }
     }
 

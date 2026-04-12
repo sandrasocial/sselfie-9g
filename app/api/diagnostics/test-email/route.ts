@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { createApiLogger } from "@/lib/api-logger"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 
 export async function GET(request: Request) {
   const apiLogger = createApiLogger(request)
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     console.log("[v0] Testing email sending...")
 
     // Check if RESEND_API_KEY is configured
-    if (!process.env.RESEND_API_KEY) {
+    if (!hasResendApiKey()) {
       return NextResponse.json(
         {
           success: false,

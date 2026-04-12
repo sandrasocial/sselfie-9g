@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
+import { getResendApiKey } from "@/lib/resend/api-key"
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+const resend = new Resend(getResendApiKey())
 const AUDIENCE_ID = "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
 
 interface SyncResult {

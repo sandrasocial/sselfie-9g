@@ -60,7 +60,7 @@ export class CronLogger {
     try {
       const result = await sql`
         INSERT INTO admin_cron_runs (job_name, status, started_at)
-        VALUES (${this.jobName}, 'ok', NOW())
+        VALUES (${this.jobName}, 'running', NOW())
         RETURNING id
       `
       this.cronRunId = result[0]?.id || null

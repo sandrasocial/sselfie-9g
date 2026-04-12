@@ -1,3 +1,5 @@
+import { hasResendApiKey } from "@/lib/resend/api-key"
+
 export async function GET() {
   return Response.json({
     status: "ok",
@@ -6,7 +8,7 @@ export async function GET() {
     env: {
       hasStripeSecret: !!process.env.STRIPE_SECRET_KEY,
       hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-      hasResendKey: !!process.env.RESEND_API_KEY,
+      hasResendKey: hasResendApiKey(),
       hasDatabaseUrl: !!process.env.DATABASE_URL,
     },
   })

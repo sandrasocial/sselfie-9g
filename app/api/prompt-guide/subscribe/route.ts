@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 import { cookies } from "next/headers"
 
 // Free Prompt Guide segment ID (hardcoded for reliability)
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       `
 
       // Add to Resend contact list if tag provided
-      if (emailListTag && process.env.RESEND_API_KEY) {
+      if (emailListTag && hasResendApiKey()) {
         try {
           const firstName = name.split(" ")[0] || name
           const result = await addOrUpdateResendContact(email, firstName, {

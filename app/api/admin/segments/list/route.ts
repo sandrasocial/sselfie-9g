@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getResendClient } from '@/lib/resend/client'
+import { getResendApiKey, hasResendApiKey } from '@/lib/resend/api-key'
 
 export async function GET() {
   try {
     const resend = getResendClient()
-    if (!process.env.RESEND_API_KEY) {
+    if (!hasResendApiKey()) {
       return NextResponse.json(
         { 
           error: 'RESEND_API_KEY not configured', 
@@ -92,7 +93,7 @@ export async function GET() {
             const apiResponse = await fetch(segmentsUrl, {
               method: 'GET',
               headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'Authorization': `Bearer ${getResendApiKey()}`,
                 'Content-Type': 'application/json',
               },
             })

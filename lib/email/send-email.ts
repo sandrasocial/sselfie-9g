@@ -1,5 +1,6 @@
 // Email sending utilities using Resend
 import { Resend } from "resend"
+import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
 import { sql } from "@/lib/db/client"
 
@@ -19,8 +20,8 @@ export interface EmailOptions {
 // Initialize Resend client - will be null if API key is missing
 let resend: Resend | null = null
 try {
-  if (process.env.RESEND_API_KEY) {
-    resend = new Resend(process.env.RESEND_API_KEY)
+  if (hasResendApiKey()) {
+    resend = new Resend(getResendApiKey())
   } else {
     console.error("[v0] ⚠️ RESEND_API_KEY environment variable is not set!")
   }
@@ -46,7 +47,7 @@ async function sendEmailWithRetry(
       })
 
       // Validate Resend API key and client
-      if (!process.env.RESEND_API_KEY) {
+      if (!hasResendApiKey()) {
         lastError = "RESEND_API_KEY environment variable is not set"
         console.error(`[v0] ❌ Resend API key missing - cannot send email`)
         break

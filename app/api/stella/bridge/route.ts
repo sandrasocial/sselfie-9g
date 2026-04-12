@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
+import { getResendApiKey } from "@/lib/resend/api-key"
 import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 import { getEmailQueue } from "@/lib/stella/email-queue"
 import { renderEmailTemplate } from "@/lib/stella/email-render"
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO email_logs (user_email, email_type, status, error_message, sent_at)
         VALUES (${email}, 'suppressed', 'complained', ${reason || "agent_suppress"}, NOW())
       `
-      const resendKey = process.env.RESEND_API_KEY
+      const resendKey = getResendApiKey()
       if (resendKey && process.env.RESEND_AUDIENCE_ID) {
         try {
           const resend = new Resend(resendKey)

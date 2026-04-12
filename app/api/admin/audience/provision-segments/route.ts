@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 
 /**
  * One-time admin endpoint to provision Resend audience segments.
@@ -55,7 +56,7 @@ const SEGMENTS = [
 ] as const
 
 async function resendFetch(path: string, options: RequestInit = {}) {
-  const apiKey = process.env.RESEND_API_KEY
+  const apiKey = getResendApiKey()
   if (!apiKey) throw new Error("RESEND_API_KEY not configured")
 
   const res = await fetch(`https://api.resend.com${path}`, {
@@ -85,8 +86,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
+  if (!hasResendApiKey()) {
     return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 })
   }
 

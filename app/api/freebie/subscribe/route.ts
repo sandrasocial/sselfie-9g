@@ -5,6 +5,7 @@ import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-e
 import { sendEmail } from "@/lib/email/send-email"
 import { normalizeFreebieEmailTags, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
 import { requireResendClient } from "@/lib/resend/client"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Freebie subscribe POST handler called")
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         `
       }
 
-      if (process.env.RESEND_API_KEY) {
+      if (hasResendApiKey()) {
         const firstName = subscriber.name?.split(" ")[0] || name.split(" ")[0] || name
         const resendResult = await addOrUpdateResendContact(email, firstName, {
           source: "freebie-selfie-guide",
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
         let emailError = null
 
         try {
-          if (process.env.RESEND_API_KEY) {
+          if (hasResendApiKey()) {
             console.log("[v0] Sending guide access email via Resend")
             const resend = requireResendClient()
 
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
     let emailSent = false
     let emailError = null
     try {
-      if (process.env.RESEND_API_KEY) {
+      if (hasResendApiKey()) {
         console.log("[v0] Sending guide access email via Resend")
 
         const productionUrl =

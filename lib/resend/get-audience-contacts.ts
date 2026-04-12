@@ -1,4 +1,5 @@
 import { getOrFetch, CACHE_TTL } from "@/lib/cache"
+import { getResendApiKey } from "@/lib/resend/api-key"
 
 export interface ResendAudienceContact {
   id: string
@@ -64,7 +65,7 @@ async function fetchWithRetry(
 }
 
 export async function getAudienceContacts(audienceId: string): Promise<ResendAudienceContact[]> {
-  const resendApiKey = process.env.RESEND_API_KEY
+  const resendApiKey = getResendApiKey()
 
   if (!resendApiKey) {
     throw new Error("RESEND_API_KEY is not configured")

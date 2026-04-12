@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { requireResendClient } from "@/lib/resend/client"
+import { hasResendApiKey } from "@/lib/resend/api-key"
 const RATE_LIMIT_DELAY_MS = 600
 
 function humanizeSequenceTag(tagKey: string) {
@@ -41,7 +42,7 @@ export async function addContactsToHistorySegment(
   tagKey: string,
   contacts: Array<{ email: string; firstName?: string | null }>,
 ) {
-  if (!process.env.RESEND_API_KEY) return
+  if (!hasResendApiKey()) return
   const resend = requireResendClient()
   const segmentId = await getOrCreateHistorySegment(tagKey)
 

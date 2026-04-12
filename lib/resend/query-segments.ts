@@ -1,11 +1,9 @@
+import { getResendApiKey } from "./api-key"
+
 export interface ResendSegmentSummary {
   id: string
   name: string
   size: number
-}
-
-function getResendApiKey() {
-  return process.env.RESEND_API_KEY || ""
 }
 
 export async function getSegmentSizes(): Promise<ResendSegmentSummary[]> {
