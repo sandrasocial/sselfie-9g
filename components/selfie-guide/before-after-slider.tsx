@@ -57,6 +57,28 @@ export default function BeforeAfterSlider({
     dragging.current = false
   }, [])
 
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 0) return
+      dragging.current = true
+      updatePosition(e.touches[0].clientX)
+    },
+    [updatePosition],
+  )
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!dragging.current || e.touches.length === 0) return
+      e.preventDefault()
+      updatePosition(e.touches[0].clientX)
+    },
+    [updatePosition],
+  )
+
+  const onTouchEnd = useCallback(() => {
+    dragging.current = false
+  }, [])
+
   const aspectRatio = height / width
 
   return (
@@ -68,6 +90,7 @@ export default function BeforeAfterSlider({
         position: "relative",
         userSelect: "none",
         WebkitUserSelect: "none",
+        touchAction: "none",
         borderRadius: "3px",
         overflow: "hidden",
         border: "1px solid rgba(195,190,182,0.25)",
@@ -79,12 +102,17 @@ export default function BeforeAfterSlider({
         style={{
           position: "relative",
           paddingBottom: `${aspectRatio * 100}%`,
-          cursor: "ew-resize",
+          cursor: dragging.current ? "grabbing" : "ew-resize",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onPointerLeave={onPointerUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
       >
         {/* After image (full, underneath) */}
         <div

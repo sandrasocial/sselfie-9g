@@ -1099,8 +1099,8 @@ export default function SelfieGuideExperience({
           {isEditChapter && (
             <div className="sg-prose" style={{ marginTop: "32px" }}>
               <BeforeAfterSlider
-                beforeSrc="/images/selfie-guide/before-real.png"
-                afterSrc="/images/selfie-guide/after-real.png"
+                beforeSrc="/images/selfie-guide/after-real.png"
+                afterSrc="/images/selfie-guide/before-real.png"
                 beforeAlt="Before edit portrait"
                 afterAlt="After edit portrait"
                 beforeLabel="Before"
