@@ -1096,14 +1096,13 @@ export default function SelfieGuideExperience({
           </div>
 
           {/* Before/After slider for Part 4 (editing chapter) */}
-          {/* TODO (Sandra): Replace before-placeholder.svg and after-placeholder.svg in public/images/selfie-guide/ with real photos. See tasks/SELFIE-GUIDE-02-phase-b.md — "B2. Real before/after pair in Part 4" for specs. */}
           {isEditChapter && (
             <div className="sg-prose" style={{ marginTop: "32px" }}>
               <BeforeAfterSlider
-                beforeSrc="/images/selfie-guide/before-placeholder.svg"
-                afterSrc="/images/selfie-guide/after-placeholder.svg"
-                beforeAlt="Before editing — placeholder, Sandra to replace with real image"
-                afterAlt="After editing — placeholder, Sandra to replace with real image"
+                beforeSrc="/images/selfie-guide/before-real.png"
+                afterSrc="/images/selfie-guide/after-real.png"
+                beforeAlt="Before edit portrait"
+                afterAlt="After edit portrait"
                 beforeLabel="Before"
                 afterLabel="After edit"
                 width={360}
