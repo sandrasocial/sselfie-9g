@@ -9,7 +9,11 @@ import {
   resolveFluxPromptForMotion,
 } from "@/lib/maya/video-motion-context"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
-import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
+import {
+  createMayaOpenRouterModel,
+  getMayaModelForTask,
+  MAYA_LLM_NOT_CONFIGURED,
+} from "@/lib/maya/openrouter"
 
 const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
 
@@ -95,6 +99,13 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("[v0] Error generating motion prompt:", error)
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes(MAYA_LLM_NOT_CONFIGURED)) {
+      return NextResponse.json(
+        { error: "AI is temporarily unavailable. Please try again in a few minutes." },
+        { status: 503 },
+      )
+    }
     return NextResponse.json({ error: "Failed to generate motion prompt" }, { status: 500 })
   }
 }

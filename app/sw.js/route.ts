@@ -4,8 +4,8 @@ export const dynamic = "force-static"
 
 export async function GET() {
   const swCode = `
-// SSELFIE Service Worker - v2
-const CACHE_VERSION = "sselfie-v2"
+// SSELFIE Service Worker - v3 (Google Fonts bypass + cache bust)
+const CACHE_VERSION = "sselfie-v3"
 const STATIC_CACHE = CACHE_VERSION + "-static"
 const DYNAMIC_CACHE = CACHE_VERSION + "-dynamic"
 const MAX_DYNAMIC_CACHE_SIZE = 50
@@ -31,7 +31,7 @@ const limitCacheSize = (cacheName, maxSize) => {
 
 // Install event - cache static assets
 self.addEventListener("install", (event) => {
-  console.log("[SW] Installing service worker v2...")
+  console.log("[SW] Installing service worker v3...")
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log("[SW] Caching static assets")
@@ -64,7 +64,7 @@ self.addEventListener("install", (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating service worker v2...")
+  console.log("[SW] Activating service worker v3...")
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -98,6 +98,12 @@ self.addEventListener("fetch", (event) => {
 
   // Skip chrome extensions and other protocols
   if (!url.protocol.startsWith("http")) return
+
+  // Let the browser fetch Google Fonts directly. Intercepting with fetch() here runs under
+  // connect-src and breaks CSS/font loads (see CSP in middleware).
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
+    return
+  }
 
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
@@ -192,7 +198,7 @@ self.addEventListener("message", (event) => {
   }
 })
 
-console.log("[SW] Service worker v2 script loaded")
+console.log("[SW] Service worker v3 script loaded")
 `
 
   return new NextResponse(swCode, {

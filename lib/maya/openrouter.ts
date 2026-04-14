@@ -164,13 +164,21 @@ export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
   }
 }
 
+/** Thrown when neither OpenRouter nor Anthropic can be constructed (never return a raw model id string). */
+export const MAYA_LLM_NOT_CONFIGURED = "MAYA_LLM_NOT_CONFIGURED"
+
 export function createMayaOpenRouterModel(task: MayaRoutingTask) {
   if (!isMayaOpenRouterPrimaryEnabled()) {
-    return createMayaAnthropicModel(task) ?? getMayaGatewayModel(task)
+    const anthropic = createMayaAnthropicModel(task)
+    if (anthropic) return anthropic
+    const openRouterWhenPrimaryOff = createMayaOpenRouterFallbackModel(task)
+    if (openRouterWhenPrimaryOff) return openRouterWhenPrimaryOff
+    throw new Error(`${MAYA_LLM_NOT_CONFIGURED}: Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY.`)
   }
 
   const openRouterModel = createMayaOpenRouterFallbackModel(task)
   if (openRouterModel) return openRouterModel
-  // OpenRouter unavailable — fall back to direct Anthropic API
-  return createMayaAnthropicModel(task) ?? getMayaGatewayModel(task)
+  const anthropic = createMayaAnthropicModel(task)
+  if (anthropic) return anthropic
+  throw new Error(`${MAYA_LLM_NOT_CONFIGURED}: Set OPENROUTER_API_KEY or ANTHROPIC_API_KEY.`)
 }
