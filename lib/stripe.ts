@@ -4,9 +4,18 @@ import Stripe from "stripe"
 
 let _stripe: Stripe | null = null
 
+/** Dashboard / Vercel pastes sometimes include trailing newlines; Stripe rejects those. */
+export function getStripeSecretKey(): string {
+  return (process.env.STRIPE_SECRET_KEY ?? "").replace(/\r|\n|\t/g, "").trim()
+}
+
+export function getStripeWebhookSecret(): string {
+  return (process.env.STRIPE_WEBHOOK_SECRET ?? "").replace(/\r|\n|\t/g, "").trim()
+}
+
 export function getStripe(): Stripe {
   if (!_stripe) {
-    const apiKey = process.env.STRIPE_SECRET_KEY
+    const apiKey = getStripeSecretKey()
     if (!apiKey) {
       throw new Error("STRIPE_SECRET_KEY environment variable is not set")
     }

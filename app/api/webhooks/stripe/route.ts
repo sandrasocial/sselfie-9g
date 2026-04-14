@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
-import { stripe } from "@/lib/stripe"
+import { getStripeWebhookSecret, stripe } from "@/lib/stripe"
 import {
   addCredits,
   grantOneTimeSessionCredits,
@@ -76,6 +76,20 @@ async function maybeTrackCheckoutReferralSignup(
   console.log(`[v0] Referral signup tracking result from ${source}:`, trackingResult.status)
 }
 
+/** Stable id for Redis webhook rate limit — never bucket unrelated traffic on "undefined". */
+function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<string, unknown> } }): string {
+  const obj = event.data?.object ?? {}
+  const c = obj.customer
+  if (typeof c === "string" && c.length > 0) return c
+  if (c && typeof c === "object" && "id" in c) {
+    const cid = (c as { id?: unknown }).id
+    if (typeof cid === "string" && cid.length > 0) return cid
+  }
+  const oid = obj.id
+  if (typeof oid === "string" && oid.length > 0) return oid
+  return event.id
+}
+
 export async function POST(request: NextRequest) {
   console.log("=".repeat(80))
   console.log("[v0] 🔔 WEBHOOK RECEIVED at:", new Date().toISOString())
@@ -89,13 +103,13 @@ export async function POST(request: NextRequest) {
   console.log("[v0] Signature present:", !!signature)
   console.log("[v0] Signature length:", signature?.length || 0)
   console.log("[v0] Body length:", body.length)
-  console.log("[v0] Webhook secret configured:", !!process.env.STRIPE_WEBHOOK_SECRET)
-  console.log("[v0] Webhook secret length:", process.env.STRIPE_WEBHOOK_SECRET?.length || 0)
-  if (process.env.STRIPE_WEBHOOK_SECRET) {
-    const secret = process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecret = getStripeWebhookSecret()
+  console.log("[v0] Webhook secret configured:", webhookSecret.length > 0)
+  console.log("[v0] Webhook secret length:", webhookSecret.length)
+  if (webhookSecret) {
     console.log(
       "[v0] Webhook secret preview:",
-      `${secret.substring(0, 10)}...${secret.substring(secret.length - 4)}`
+      `${webhookSecret.substring(0, 10)}...${webhookSecret.substring(webhookSecret.length - 4)}`
     )
   }
 
@@ -104,7 +118,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No signature" }, { status: 400 })
   }
 
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  if (!webhookSecret) {
     console.error("[v0] ❌ ERROR: STRIPE_WEBHOOK_SECRET environment variable not set")
     return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
   }
@@ -112,7 +126,7 @@ export async function POST(request: NextRequest) {
   let event: any
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
     console.log("[v0] ✅ Webhook signature verified successfully")
   } catch (err: any) {
     console.error("[v0] ❌ Webhook signature verification failed:", err.message)
@@ -146,11 +160,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Idempotency check failed" }, { status: 500 })
   }
 
-  const customerId = event.data.object.customer || event.data.object.id
-  const rateLimit = await checkWebhookRateLimit(customerId)
+  const rateLimitKey = stripeWebhookRateLimitKey(event)
+  const rateLimit = await checkWebhookRateLimit(rateLimitKey)
 
   if (!rateLimit.success) {
-    console.log(`[v0] Webhook rate limit exceeded for customer ${customerId}`)
+    console.log(`[v0] Webhook rate limit exceeded for key ${rateLimitKey}`)
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
   }
 
