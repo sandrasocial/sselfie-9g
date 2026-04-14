@@ -3,6 +3,8 @@ import {
   buildMayaMotionPromptInput,
   buildMayaMotionSnapshotContext,
   cleanGeneratedMotionPrompt,
+  DEFAULT_MOTION_FLUX_PROMPT,
+  resolveFluxPromptForMotion,
 } from "@/lib/maya/video-motion-context"
 import type { MayaUserSnapshot } from "@/lib/maya/user-snapshot"
 
@@ -68,6 +70,19 @@ describe("maya video motion context", () => {
   it("cleans markdown wrappers from generated motion prompt", () => {
     const cleaned = cleanGeneratedMotionPrompt("**Motion:** Head turns gently toward the window, soft breeze lifts hair.")
     expect(cleaned).toBe("Head turns gently toward the window, soft breeze lifts hair.")
+  })
+
+  it("resolveFluxPromptForMotion prefers prompt, then description, then default when image URL present", () => {
+    expect(resolveFluxPromptForMotion({ fluxPrompt: "  Cafe scene  ", description: "ignored", imageUrl: "" })).toBe("Cafe scene")
+    expect(resolveFluxPromptForMotion({ fluxPrompt: "", description: "Soft light", imageUrl: "" })).toBe("Soft light")
+    expect(
+      resolveFluxPromptForMotion({
+        fluxPrompt: "",
+        description: "",
+        imageUrl: "https://blob.example.com/a.jpg",
+      }),
+    ).toBe(DEFAULT_MOTION_FLUX_PROMPT)
+    expect(resolveFluxPromptForMotion({ fluxPrompt: "", description: "", imageUrl: "" })).toBe("")
   })
 })
 

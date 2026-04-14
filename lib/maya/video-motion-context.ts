@@ -2,6 +2,41 @@ import type { MayaUserSnapshot } from "@/lib/maya/user-snapshot"
 
 const MAX_MEMORY_NOTES = 4
 
+/** Matches `/api/maya/generate-motion-prompt` vision input rules. */
+export function isMotionPromptReferenceImageUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false
+  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:")
+}
+
+/**
+ * When gallery rows or chat shares omit `prompt`, motion generation still needs scene text.
+ * Aligns with Maya chat tool fallback ("Cinematic lifestyle scene").
+ */
+export const DEFAULT_MOTION_FLUX_PROMPT = "Cinematic lifestyle scene"
+
+/**
+ * Resolves the FLUX / scene string sent to motion prompt generation.
+ * Prefers stored prompt, then description, then a safe default when an image URL is present.
+ */
+export function resolveFluxPromptForMotion(input: {
+  fluxPrompt?: unknown
+  description?: unknown
+  imageUrl?: unknown
+}): string {
+  if (typeof input.fluxPrompt === "string") {
+    const trimmed = input.fluxPrompt.replace(/\s+/g, " ").trim()
+    if (trimmed) return trimmed
+  }
+  if (typeof input.description === "string") {
+    const trimmed = input.description.replace(/\s+/g, " ").trim()
+    if (trimmed) return trimmed
+  }
+  if (isMotionPromptReferenceImageUrl(input.imageUrl)) {
+    return DEFAULT_MOTION_FLUX_PROMPT
+  }
+  return ""
+}
+
 function normalizeLine(value: unknown): string {
   if (typeof value !== "string") return ""
   return value.replace(/\s+/g, " ").trim()

@@ -199,11 +199,16 @@ export default function MayaVideosTab({
         }),
       })
 
+      const motionPayload = await motionResponse.json().catch(() => ({}))
       if (!motionResponse.ok) {
-        throw new Error("Failed to generate motion prompt")
+        const message =
+          typeof motionPayload?.error === "string" && motionPayload.error.trim()
+            ? motionPayload.error.trim()
+            : "Failed to generate motion prompt"
+        throw new Error(message)
       }
 
-      const { motionPrompt } = await motionResponse.json()
+      const { motionPrompt } = motionPayload
       console.log("[MayaVideosTab] Received intelligent motion prompt:", motionPrompt)
 
       setAnalyzingMotion((prev) => {

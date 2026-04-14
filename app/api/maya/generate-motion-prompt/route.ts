@@ -2,7 +2,12 @@ import { NextResponse } from "next/server"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
-import { buildMayaMotionPromptInput, cleanGeneratedMotionPrompt } from "@/lib/maya/video-motion-context"
+import {
+  buildMayaMotionPromptInput,
+  cleanGeneratedMotionPrompt,
+  isMotionPromptReferenceImageUrl,
+  resolveFluxPromptForMotion,
+} from "@/lib/maya/video-motion-context"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
@@ -16,11 +21,6 @@ Rules:
 - Avoid adding new people, outfits, locations, products, or scene changes.
 - Avoid cinematic jargon overload and avoid generic hype language.
 - Output exactly one line with no markdown, bullets, headings, or quotes.`
-
-function hasValidImageInput(value: unknown): value is string {
-  if (typeof value !== "string") return false
-  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:")
-}
 
 export async function POST(request: Request) {
   try {
@@ -38,23 +38,27 @@ export async function POST(request: Request) {
 
     const { fluxPrompt, description, category, imageUrl } = await request.json()
 
-    if (!fluxPrompt) {
-      return NextResponse.json({ error: "FLUX prompt is required" }, { status: 400 })
+    const effectiveFluxPrompt = resolveFluxPromptForMotion({ fluxPrompt, description, imageUrl })
+    if (!effectiveFluxPrompt) {
+      return NextResponse.json(
+        { error: "FLUX prompt or description is required (or provide a valid image URL)" },
+        { status: 400 },
+      )
     }
 
     const snapshot = await getMayaUserSnapshot(neonUser.id)
     const promptInput = buildMayaMotionPromptInput({
-      fluxPrompt: String(fluxPrompt),
+      fluxPrompt: effectiveFluxPrompt,
       description: typeof description === "string" ? description : "",
       category: typeof category === "string" ? category : "",
-      imageUrl: hasValidImageInput(imageUrl) ? imageUrl : "",
+      imageUrl: isMotionPromptReferenceImageUrl(imageUrl) ? imageUrl : "",
       snapshot,
     })
 
     const content: Array<{ type: "text"; text: string } | { type: "image"; image: string }> = [
       { type: "text", text: promptInput },
     ]
-    if (hasValidImageInput(imageUrl)) {
+    if (isMotionPromptReferenceImageUrl(imageUrl)) {
       content.push({ type: "image", image: imageUrl })
     }
 
@@ -67,7 +71,7 @@ export async function POST(request: Request) {
       userId: neonUser.id,
       builder: selectedModel,
       prompt: `${MOTION_PROMPT_SYSTEM}\n\n${promptInput}`,
-      input: { hasImage: hasValidImageInput(imageUrl), category, description },
+      input: { hasImage: isMotionPromptReferenceImageUrl(imageUrl), category, description },
       startedAt,
     })
 
