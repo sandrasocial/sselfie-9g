@@ -235,7 +235,7 @@ export default function MayaChatScreen({
     simpleFetcher,
   )
   const { data: monthlyDropsData } = useSWR<MonthlyDropsResponse>(
-    user && isMembership ? "/api/academy/monthly-drops" : null,
+    user && myProductsData?.hasStudioMembership ? "/api/academy/monthly-drops" : null,
     simpleFetcher,
   )
   const ownedMiniProductIds = useMemo<Set<MiniProductId>>(() => {

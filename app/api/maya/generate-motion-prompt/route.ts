@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 import {
@@ -8,12 +7,9 @@ import {
   isMotionPromptReferenceImageUrl,
   resolveFluxPromptForMotion,
 } from "@/lib/maya/video-motion-context"
+import { generateMotionPromptWithVisionFallbacks } from "@/lib/maya/motion-prompt-llm"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
-import {
-  createMayaOpenRouterModel,
-  getMayaModelForTask,
-  MAYA_LLM_NOT_CONFIGURED,
-} from "@/lib/maya/openrouter"
+import { getMayaModelForTask, MAYA_LLM_NOT_CONFIGURED } from "@/lib/maya/openrouter"
 
 const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
 
@@ -40,7 +36,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { fluxPrompt, description, category, imageUrl } = await request.json()
+    let body: Record<string, unknown>
+    try {
+      body = (await request.json()) as Record<string, unknown>
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+    }
+
+    const { fluxPrompt, description, category, imageUrl } = body
 
     const effectiveFluxPrompt = resolveFluxPromptForMotion({ fluxPrompt, description, imageUrl })
     if (!effectiveFluxPrompt) {
@@ -59,13 +62,6 @@ export async function POST(request: Request) {
       snapshot,
     })
 
-    const content: Array<{ type: "text"; text: string } | { type: "image"; image: string }> = [
-      { type: "text", text: promptInput },
-    ]
-    if (isMotionPromptReferenceImageUrl(imageUrl)) {
-      content.push({ type: "image", image: imageUrl })
-    }
-
     const startedAt = Date.now()
     const selectedModel = getMayaModelForTask("chat_pro")
     auditPromptRoute({
@@ -79,17 +75,11 @@ export async function POST(request: Request) {
       startedAt,
     })
 
-    const { text: generatedPrompt } = await generateText({
-      model: createMayaOpenRouterModel("chat_pro"),
-      system: MOTION_PROMPT_SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content,
-        },
-      ],
-      temperature: 0.65,
-    })
+    const generatedPrompt = await generateMotionPromptWithVisionFallbacks(
+      MOTION_PROMPT_SYSTEM,
+      promptInput,
+      isMotionPromptReferenceImageUrl(imageUrl) ? imageUrl : undefined,
+    )
 
     const finalPrompt = cleanGeneratedMotionPrompt(generatedPrompt)
 
