@@ -28,6 +28,8 @@ export default function InstagramReelCard({
   const [isVideoReady, setIsVideoReady] = useState(false)
   const [videoError, setVideoError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  /** Mobile browsers often fire touch + synthetic click; without this, play() then pause() looks like a dead tap. */
+  const lastPlayPausePointerRef = useRef(0)
 
   const normalizedVideoUrl = useMemo(() => {
     const raw = (videoUrl || "").trim()
@@ -36,9 +38,7 @@ export default function InstagramReelCard({
     return raw
   }, [videoUrl])
 
-  const handlePlayPause = async (e?: React.MouseEvent | React.TouchEvent) => {
-    e?.stopPropagation()
-
+  const runPlayPause = async () => {
     const video = videoRef.current
     if (!video) return
 
@@ -62,6 +62,19 @@ export default function InstagramReelCard({
         setVideoError((retryError || error)?.message || "Failed to play video")
       }
     }
+  }
+
+  const PLAY_PAUSE_DEBOUNCE_MS = 450
+
+  const handlePointerPlayPause = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return
+    e.stopPropagation()
+
+    const now = Date.now()
+    if (now - lastPlayPausePointerRef.current < PLAY_PAUSE_DEBOUNCE_MS) return
+    lastPlayPausePointerRef.current = now
+
+    void runPlayPause()
   }
 
   const handleLike = () => {
@@ -221,14 +234,13 @@ export default function InstagramReelCard({
       <video
         ref={videoRef}
         src={normalizedVideoUrl}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover touch-manipulation"
         loop
         playsInline
         webkit-playsinline="true"
         muted={isMuted}
         preload="metadata"
-        onClick={handlePlayPause}
-        onTouchEnd={handlePlayPause}
+        onPointerUp={handlePointerPlayPause}
         onError={(e) => {
           const video = e.currentTarget
           const error = video.error
@@ -281,15 +293,14 @@ export default function InstagramReelCard({
       )}
 
       {!isPlaying && isVideoReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.20)] z-10">
+        <div className="pointer-events-none absolute inset-0 z-[25] flex items-center justify-center bg-[rgba(13,12,11,0.20)]">
           <button
-            onClick={handlePlayPause}
-            onTouchEnd={handlePlayPause}
-            className="w-16 h-16 bg-[rgba(175,170,162,0.20)] backdrop-blur-sm rounded-full border border-[rgba(195,190,182,0.25)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform touch-manipulation"
-            aria-label="Play video"
             type="button"
+            onPointerUp={handlePointerPlayPause}
+            className="pointer-events-auto flex min-h-[120px] min-w-[120px] cursor-pointer touch-manipulation items-center justify-center rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.20)] backdrop-blur-sm p-6 transition-transform active:scale-95"
+            aria-label="Play video"
           >
-            <span className="text-[11px] tracking-[0.2em] uppercase text-[#f0ede8]">Play</span>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-[#f0ede8]">Play</span>
           </button>
         </div>
       )}
