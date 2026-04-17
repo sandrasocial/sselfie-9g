@@ -155,7 +155,7 @@ export default function BlueprintLanding() {
             className="block mb-2 sm:mb-4 text-xs sm:text-base font-light tracking-[0.2em] uppercase text-white"
             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
           >
-            YOUR FREE BLUEPRINT
+            YOUR FREE VISIBILITY PLAN
           </span>
           <h1
             style={{
@@ -166,13 +166,13 @@ export default function BlueprintLanding() {
             }}
             className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-2 sm:mb-6 text-white leading-[1.1] tracking-tight"
           >
-            Plan your Instagram feed for free
+            Your 30-day plan to show up consistently
           </h1>
           <p
             className="text-sm sm:text-lg md:text-xl leading-relaxed mb-4 sm:mb-8 max-w-xl mx-auto text-white"
             style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}
           >
-            Create your feed layout, get caption templates, and see your content strategy. Start planning your Instagram today.
+            Map your content for the next 30 days, get caption templates, and build a posting rhythm that doesn&apos;t collapse when life gets busy.
           </p>
 
           {/* CTA Button */}

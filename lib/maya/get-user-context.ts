@@ -496,6 +496,42 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         contextParts.push("When the user asks for updates, continue editing this active workspace unless they switch assets.")
       }
 
+      // Weekly energy state
+      const weeklyEnergyState = typeof memoryData?.weekly_energy_state === "string" ? memoryData.weekly_energy_state : null
+      const energySetAt = typeof memoryData?.weekly_energy_state_set_at === "string" ? memoryData.weekly_energy_state_set_at : null
+      if (weeklyEnergyState && energySetAt) {
+        const setDate = new Date(energySetAt)
+        const ageDays = (Date.now() - setDate.getTime()) / (1000 * 60 * 60 * 24)
+        if (ageDays < 8) {
+          const stateLabel = weeklyEnergyState === "high" ? "HIGH" : weeklyEnergyState === "managing" ? "MANAGING" : "SURVIVAL"
+          const daysAgoText = Math.floor(ageDays) === 0 ? "today" : `${Math.floor(ageDays)} day${Math.floor(ageDays) === 1 ? "" : "s"} ago`
+          contextParts.push("=== ENERGY STATE THIS WEEK ===")
+          contextParts.push(`User's current energy state: ${stateLabel}`)
+          contextParts.push(`Set: ${setDate.toLocaleDateString("en-GB")} (${daysAgoText})`)
+          if (stateLabel === "HIGH") {
+            contextParts.push("She's in high-energy mode. Push for bolder concepts. Suggest a 7-day posting plan. Give her a stretch prompt — something slightly beyond her comfort zone.")
+          } else if (stateLabel === "MANAGING") {
+            contextParts.push("She's in managing mode. Offer 3 solid, safe posts for the week. Familiar angles, reliable formats. Keep the week achievable, not impressive.")
+          } else {
+            contextParts.push("She's in survival mode. One post. That's the win. Tell her explicitly: one post this week is enough. Give her the easiest possible concept — something she's done before that worked.")
+          }
+          contextParts.push("")
+        }
+      }
+
+      // Identity notes
+      const identityNotes = Array.isArray(memoryData?.identity_notes)
+        ? (memoryData.identity_notes as unknown[]).map((n) => String(n).trim()).filter(Boolean).slice(0, 10)
+        : []
+      if (identityNotes.length > 0) {
+        contextParts.push("=== YOUR BRAND IDENTITY (user-defined) ===")
+        for (const note of identityNotes) {
+          contextParts.push(`- ${note}`)
+        }
+        contextParts.push("These notes come from the user's own words. Reference them when generating concepts, captions, or giving strategic advice.")
+        contextParts.push("")
+      }
+
       const insights = memory.personal_insights as any
       if (insights) {
         if (insights.concepts_generated > 0) {

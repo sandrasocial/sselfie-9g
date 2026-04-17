@@ -843,25 +843,25 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
           <div className="relative z-10 mx-auto flex min-h-screen max-w-[1440px] flex-col justify-end px-5 pb-14 pt-28 md:px-10 md:pb-20">
             <div className="max-w-[52rem]">
               <p className="hero-eyebrow eyebrow mb-6" style={{ color: "rgba(244,240,230,0.38)" }}>
-                For founders and creators who are done hiding behind the logo
+                For women rebuilding their visibility
               </p>
               <div ref={heroLineOneRef} className="editorial-title" style={{ color: "#F4F0E6" }}>
-                {splitWords(["Brand photos,"])}
+                {splitWords(["Stay visible,"])}
               </div>
               <div ref={heroLineTwoRef} className="editorial-title" style={{ color: "#F4F0E6" }}>
-                {splitWords(["feed plans,"])}
+                {splitWords(["even when you"])}
                 <span className="hero-word" style={{ color: "transparent", WebkitTextStroke: "1.5px #F4F0E6" }}>
-                  and
+                  &apos;re
                 </span>
               </div>
               <div ref={heroLineThreeRef} className="editorial-title mb-7" style={{ color: "#F4F0E6" }}>
-                {splitWords(["captions that sound like you."])}
+                {splitWords(["running on empty."])}
               </div>
               <p
                 className="hero-subhead max-w-[29rem] text-[0.96rem] leading-[1.9]"
                 style={{ color: "rgba(244,240,230,0.56)" }}
               >
-                Meet Maya — your brand AI inside SSELFIE Studio. She remembers your style, generates new photos, plans your grid, and writes in your voice.
+                Maya is your personal brand AI. She remembers who you are, generates photos of your face, plans your content, and writes in your voice — so your presence doesn&apos;t disappear when life gets heavy.
               </p>
               <div className="hero-ctas mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -1778,7 +1778,7 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
                 </div>
                 <p className="mt-1.5 text-sm" style={{ color: "rgba(26,23,20,0.3)" }}>per month, cancel anytime</p>
                 <p className="mt-6 text-[0.95rem] leading-[1.9]" style={{ color: "rgba(26,23,20,0.54)" }}>
-                  Maya, Feed Planner, Academy, and fresh credits every month.
+                  Your personal brand AI — photos, feed plan, captions, and coaching — all in one place. She gets smarter the longer you use her.
                 </p>
                 <ul className="mt-6 space-y-3 text-[0.95rem]" style={{ color: "rgba(26,23,20,0.62)" }}>
                   {[

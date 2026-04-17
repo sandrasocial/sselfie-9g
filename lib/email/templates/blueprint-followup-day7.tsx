@@ -20,9 +20,9 @@ export function generateBlueprintFollowupDay7Email(params: BlueprintFollowupDay7
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One week with your Feed Blueprint. How's it going?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Feed Planner gives you the strategy layer — the <em>what to post and when</em>. But a lot of people reach this point and hit a wall: the photos don't look like them.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's what Studio is for. Inside, you get access to Maya — your personal AI that generates brand photos trained on <em>your</em> face and aesthetic. No stock. No generic AI slop. Yours.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One week into your Visibility Reset. How's it going?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Reset gives you the plan — the <em>what to post and when</em>. But a lot of people reach this point and hit a wall: the photos don't look like them.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Studio gives you the AI that makes showing up feel lighter every single week. Inside, you get Maya — your personal AI that generates brand photos trained on <em>your</em> face and aesthetic. She gets smarter the longer you use her.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 8px;font-size:15px;line-height:1.75;color:#f0ede8;">What Studio members get:</p>
        <p style="margin:0 0 6px;font-size:14px;line-height:1.8;color:#a8a49c;">→ AI photos trained on your face</p>
@@ -38,20 +38,20 @@ export function generateBlueprintFollowupDay7Email(params: BlueprintFollowupDay7
 
   const html = renderStoneShell({
     title: "One week in — what's next?",
-    eyebrow: "Feed Planner · Day 7",
+    eyebrow: "Visibility Reset · Day 7",
     subtitle: "The strategy is there. Now let's make the visuals match.",
     bodyHtml,
   })
 
-  const text = `Feed Planner · Day 7
+  const text = `Visibility Reset · Day 7
 
 Hey ${displayName},
 
-One week with your Feed Blueprint. How's it going?
+One week into your Visibility Reset. How's it going?
 
-The Feed Planner gives you the strategy layer — the what to post and when. But a lot of people reach this point and hit a wall: the photos don't look like them.
+The Reset gives you the plan — the what to post and when. But a lot of people reach this point and hit a wall: the photos don't look like them.
 
-That's what Studio is for. Inside, you get access to Maya — your personal AI that generates brand photos trained on your face and aesthetic. No stock. No generic AI slop. Yours.
+Studio gives you the AI that makes showing up feel lighter every single week. Inside, you get Maya — your personal AI that generates brand photos trained on your face and aesthetic. She gets smarter the longer you use her.
 
 What Studio members get:
 → AI photos trained on your face
@@ -69,6 +69,6 @@ Sandra`
   return {
     html,
     text,
-    subject: "One week with your Feed Blueprint — what's next?",
+    subject: "One week in — here's what comes next",
   }
 }

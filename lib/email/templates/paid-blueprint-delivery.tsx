@@ -4,7 +4,7 @@ export interface PaidBlueprintDeliveryParams {
   accessToken: string
 }
 
-export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your Feed Blueprint is ready 🗓️"
+export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your 30-Day Visibility Reset is ready"
 
 export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDeliveryParams): {
   html: string
@@ -22,7 +22,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Feed Blueprint is ready</title>
+  <title>Your 30-Day Visibility Reset is ready</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -47,7 +47,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
-                Your Feed Blueprint is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
+                Your 30-Day Visibility Reset is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
@@ -79,7 +79,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${feedPlannerUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">
-                  Open your Feed Blueprint &rarr;
+                  Open your Visibility Reset &rarr;
                 </a>
               </div>
 
@@ -127,7 +127,7 @@ Step 2 — Pick one post slot. Write the caption. Don't try to do all nine at on
 
 Step 3 — Come back tomorrow and do one more. In a week you'll have your whole month planned.
 
-Open your Feed Blueprint: ${feedPlannerUrl}
+Open your Visibility Reset: ${feedPlannerUrl}
 
 If you hit a wall or have questions, just reply here. I read every message.
 

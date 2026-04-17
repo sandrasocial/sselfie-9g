@@ -116,8 +116,8 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
   {
     id: "paid_blueprint",
     name: "Brand Blueprint - Paid",
-    displayName: "SSELFIE Brand Blueprint",
-    description: "30 custom photos based on your brand strategy",
+    displayName: "30-Day Visibility Reset",
+    description: "A 30-day program to restore your consistent, recognizable presence — 60 credits to generate brand photos across the full month",
     priceInCents: 4700, // $47 one-time
     type: "paid_blueprint",
     credits: 60, // 30 images × 2 credits per image

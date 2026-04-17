@@ -15,6 +15,7 @@ import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
+import { MayaIdentityNotes } from "./maya/maya-identity-notes"
 import { trackCTAClick } from "@/lib/analytics"
 
 interface AccountScreenProps {
@@ -888,6 +889,10 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
           <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
             <p className={sectionLabel}>Brand Assets</p>
             <BrandAssetsManager />
+          </div>
+
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+            <MayaIdentityNotes />
           </div>
 
           <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>

@@ -19,7 +19,7 @@ export function generateBlueprintFollowupDay1Email(params: BlueprintFollowupDay1
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your Feed Blueprint is live. Have you had a chance to open it yet?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your Visibility Reset is live. Have you had a chance to open it yet?</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, here's where to start: open the Feed Planner, look at the 9-post grid, and pick one post to write today. Just one. Don't plan the whole month yet.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">The quickest win:</p>
@@ -31,17 +31,17 @@ export function generateBlueprintFollowupDay1Email(params: BlueprintFollowupDay1
   `
 
   const html = renderStoneShell({
-    title: "Your Feed Blueprint is waiting",
-    eyebrow: "Feed Planner",
+    title: "Your Visibility Reset is waiting",
+    eyebrow: "30-Day Visibility Reset",
     subtitle: "Start with one post. Build from there.",
     bodyHtml,
   })
 
-  const text = `Feed Planner
+  const text = `30-Day Visibility Reset
 
 Hey ${displayName},
 
-Your Feed Blueprint is live. Have you had a chance to open it yet?
+Your Visibility Reset is live. Have you had a chance to open it yet?
 
 If not, here's where to start: open the Feed Planner, look at the 9-post grid, and pick one post to write today. Just one. Don't plan the whole month yet.
 
@@ -57,6 +57,6 @@ Sandra`
   return {
     html,
     text,
-    subject: "Your Feed Blueprint is ready — start here",
+    subject: "Your Visibility Reset starts today",
   }
 }

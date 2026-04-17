@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
@@ -21,6 +21,7 @@ import {
 } from "@/lib/maya/feed-strategy"
 import { MAYA_CHAT_SCROLL_TOP_OFFSET } from "@/lib/maya/layout-contract"
 import type { MayaSurfaceTab } from "@/lib/maya/tab-scope"
+import { MayaEnergyCheckIn } from "./maya-energy-check-in"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
@@ -1864,6 +1865,23 @@ export default function MayaChatInterface({
 }: MayaChatInterfaceProps) {
   const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
 
+  // Energy check-in state — only shown on Photos tab when state is unset or stale (>6 days)
+  const [showEnergyCheckIn, setShowEnergyCheckIn] = useState(false)
+  useEffect(() => {
+    if (activeTab !== "photos") return
+    fetch("/api/maya/energy-state")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data || !data.energyState || !data.setAt) {
+          setShowEnergyCheckIn(true)
+          return
+        }
+        const ageDays = (Date.now() - new Date(data.setAt).getTime()) / (1000 * 60 * 60 * 24)
+        if (ageDays >= 6) setShowEnergyCheckIn(true)
+      })
+      .catch(() => {/* silent — energy check-in is a nice-to-have */})
+  }, [activeTab])
+
   const ctx: ToolCtx = {
     msg: null as any, // overridden per message in the map below
     proMode,
@@ -1909,6 +1927,12 @@ export default function MayaChatInterface({
         aria-live="polite"
         aria-label="Chat messages"
       >
+        {showEnergyCheckIn && activeTab === "photos" && (
+          <MayaEnergyCheckIn
+            onSelect={() => setShowEnergyCheckIn(false)}
+          />
+        )}
+
         {filteredMessages &&
           Array.isArray(filteredMessages) &&
           filteredMessages
