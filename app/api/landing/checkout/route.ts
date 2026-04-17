@@ -3,12 +3,35 @@ import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
 export async function POST(request: NextRequest) {
   try {
-    const { productId } = await request.json()
+    const {
+      productId,
+      offerSlug,
+      source,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      campaignId,
+      referralCode,
+      returnTo,
+      entryPath,
+    } = await request.json()
     if (!productId) {
       return NextResponse.json({ error: "productId is required" }, { status: 400 })
     }
 
-    const clientSecret = await createLandingCheckoutSession(productId)
+    const clientSecret = await createLandingCheckoutSession(productId, undefined, undefined, {
+      offerSlug,
+      source,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      campaignId,
+      referralCode,
+      returnTo,
+      entryPath,
+    })
     return NextResponse.json({ clientSecret })
   } catch (error: any) {
     console.error("[v0] [LANDING_CHECKOUT] Error creating checkout session:", error)

@@ -7,13 +7,16 @@ import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 import { normalizeReferralCode, REFERRAL_COOKIE_NAME } from "@/lib/referrals/routing"
+import {
+  buildCheckoutAttributionMetadata,
+  normalizeCheckoutAttribution,
+  type CheckoutAttributionInput,
+  upsertCheckoutAttribution,
+} from "@/lib/revenue-engine/checkout-attribution"
 
 type LandingCheckoutOptions = {
-  source?: string
-  referralCode?: string | null
-  returnTo?: string
   bonusCredits?: number
-}
+} & CheckoutAttributionInput
 
 export async function createLandingCheckoutSession(
   productId: string,
@@ -41,6 +44,11 @@ export async function createLandingCheckoutSession(
   const referralCode =
     normalizeReferralCode(options?.referralCode || null) ||
     normalizeReferralCode(cookieStore.get(REFERRAL_COOKIE_NAME)?.value || null)
+  const attribution = normalizeCheckoutAttribution(productId, {
+    ...options,
+    source: checkoutSource,
+    referralCode,
+  })
 
   const actualPrice = product.priceInCents
 
@@ -160,9 +168,11 @@ export async function createLandingCheckoutSession(
           product_type: product.type,
           credits: product.credits?.toString() || "0",
           ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
-          source: checkoutSource,
-          ...(referralCode && { referral_code: referralCode }),
-          ...(options?.returnTo && { return_to: options.returnTo }),
+          ...buildCheckoutAttributionMetadata(productId, {
+            ...options,
+            source: attribution.source,
+            referralCode: attribution.referralCode,
+          }),
         },
       },
     }),
@@ -171,11 +181,13 @@ export async function createLandingCheckoutSession(
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
-      source: checkoutSource,
-      ...(referralCode && { referral_code: referralCode }),
+      ...buildCheckoutAttributionMetadata(productId, {
+        ...options,
+        source: attribution.source,
+        referralCode: attribution.referralCode,
+      }),
       ...(customerEmail && { customer_email: customerEmail }),
       ...(promoCode && { promo_code: promoCode }),
-      ...(options?.returnTo && { return_to: options.returnTo }),
     },
   }
 
@@ -183,6 +195,25 @@ export async function createLandingCheckoutSession(
     const session = await stripe.checkout.sessions.create(sessionConfig)
     console.log("[v0] Checkout session created successfully:", session.id)
     console.log("[v0] Client secret generated:", !!session.client_secret)
+    await upsertCheckoutAttribution({
+      sessionId: session.id,
+      checkoutOrigin: "guest",
+      productId,
+      productType: product.type,
+      offerSlug: attribution.offerSlug,
+      funnelStage: attribution.funnelStage,
+      source: attribution.source,
+      utmSource: attribution.utmSource,
+      utmMedium: attribution.utmMedium,
+      utmCampaign: attribution.utmCampaign,
+      utmContent: attribution.utmContent,
+      campaignId: attribution.campaignId,
+      referralCode: attribution.referralCode,
+      returnTo: attribution.returnTo,
+      entryPath: attribution.entryPath,
+      userEmail: customerEmail || null,
+      stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
+    })
     return session.client_secret
   } catch (error: any) {
     console.error("[v0] Stripe API error creating checkout session:", {

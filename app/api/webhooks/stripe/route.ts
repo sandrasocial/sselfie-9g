@@ -44,6 +44,7 @@ import {
   trackReferralSignup,
 } from "@/lib/referrals/service"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
+import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
 
 async function maybeTrackCheckoutReferralSignup(
   referredUserId: string | null | undefined,
@@ -74,6 +75,51 @@ async function maybeTrackCheckoutReferralSignup(
   })
 
   console.log(`[v0] Referral signup tracking result from ${source}:`, trackingResult.status)
+}
+
+async function markRevenueEnginePurchase(params: {
+  sessionId?: string | null
+  stripeSubscriptionId?: string | null
+  userId?: string | null
+  userEmail?: string | null
+  stripeCustomerId?: string | null
+  stripePaymentId?: string | null
+  stripeInvoiceId?: string | null
+  purchaseValueCents?: number | null
+  purchaseCurrency?: string | null
+  purchasedAt?: Date | string | null
+  campaignId?: string | null
+}) {
+  await markCheckoutAttributionCompleted({
+    sessionId: params.sessionId || null,
+    stripeSubscriptionId: params.stripeSubscriptionId || null,
+    userId: params.userId || null,
+    userEmail: params.userEmail || null,
+    stripeCustomerId: params.stripeCustomerId || null,
+    stripePaymentId: params.stripePaymentId || null,
+    stripeInvoiceId: params.stripeInvoiceId || null,
+    purchaseValueCents: params.purchaseValueCents || null,
+    purchaseCurrency: params.purchaseCurrency || null,
+    purchasedAt: params.purchasedAt || null,
+  })
+
+  const campaignId = params.campaignId ? Number.parseInt(params.campaignId, 10) : Number.NaN
+  if (!params.userEmail || !Number.isFinite(campaignId) || campaignId <= 0) {
+    return
+  }
+
+  try {
+    await sql`
+      UPDATE email_logs
+      SET
+        converted = TRUE,
+        converted_at = COALESCE(converted_at, NOW())
+      WHERE LOWER(user_email) = LOWER(${params.userEmail})
+        AND campaign_id = ${campaignId}
+    `
+  } catch (error) {
+    console.error("[v0] Failed to mark email conversion attribution:", error)
+  }
 }
 
 /** Stable id for Redis webhook rate limit — never bucket unrelated traffic on "undefined". */
@@ -1280,6 +1326,14 @@ export async function POST(request: NextRequest) {
                       currency: "usd",
                       stripe_payment_id: paymentIntentId,
                       stripe_session_id: session.id,
+                      offer_slug: session.metadata?.offer_slug || null,
+                      funnel_stage: session.metadata?.funnel_stage || null,
+                      attribution_source: session.metadata?.source || null,
+                      utm_source: session.metadata?.utm_source || null,
+                      utm_medium: session.metadata?.utm_medium || null,
+                      utm_campaign: session.metadata?.utm_campaign || null,
+                      campaign_id: session.metadata?.campaign_id || null,
+                      referral_code: session.metadata?.referral_code || null,
                       is_test_mode: isTestMode,
                     },
                   })
@@ -1468,6 +1522,14 @@ export async function POST(request: NextRequest) {
                       credits: credits ?? null,
                       stripe_payment_id: paymentIntentId,
                       stripe_session_id: session.id,
+                      offer_slug: session.metadata?.offer_slug || null,
+                      funnel_stage: session.metadata?.funnel_stage || null,
+                      attribution_source: session.metadata?.source || null,
+                      utm_source: session.metadata?.utm_source || null,
+                      utm_medium: session.metadata?.utm_medium || null,
+                      utm_campaign: session.metadata?.utm_campaign || null,
+                      campaign_id: session.metadata?.campaign_id || null,
+                      referral_code: session.metadata?.referral_code || null,
                       is_test_mode: isTestMode,
                     },
                   })
@@ -2330,6 +2392,14 @@ export async function POST(request: NextRequest) {
                         currency: "usd",
                         stripe_payment_id: paymentIdForStorage,
                         stripe_session_id: session.id,
+                        offer_slug: session.metadata?.offer_slug || null,
+                        funnel_stage: session.metadata?.funnel_stage || null,
+                        attribution_source: session.metadata?.source || null,
+                        utm_source: session.metadata?.utm_source || null,
+                        utm_medium: session.metadata?.utm_medium || null,
+                        utm_campaign: session.metadata?.utm_campaign || null,
+                        campaign_id: session.metadata?.campaign_id || null,
+                        referral_code: session.metadata?.referral_code || null,
                         is_test_mode: isTestMode,
                       },
                     })
@@ -2963,6 +3033,25 @@ export async function POST(request: NextRequest) {
                 // But log it prominently so we can debug
               }
             }
+          }
+
+          try {
+            await markRevenueEnginePurchase({
+              sessionId: session.id,
+              userId: referralPurchaseUserId || null,
+              userEmail: customerEmail || null,
+              stripeCustomerId:
+                typeof session.customer === "string" ? session.customer : session.customer?.id || null,
+              purchaseValueCents: session.amount_total ?? null,
+              purchaseCurrency: typeof session.currency === "string" ? session.currency : null,
+              purchasedAt: new Date(),
+              campaignId: session.metadata?.campaign_id || null,
+            })
+          } catch (attributionError: any) {
+            console.error(
+              `[v0] Failed to persist revenue engine attribution after ${productType} purchase:`,
+              attributionError.message
+            )
           }
 
           try {
@@ -3808,6 +3897,8 @@ export async function POST(request: NextRequest) {
                   stripe_payment_id: paymentId,
                   stripe_invoice_id: invoice.id,
                   stripe_subscription_id: subscriptionId,
+                  offer_slug: sub?.product_type === "sselfie_studio_membership" ? "sselfie-studio-membership" : null,
+                  funnel_stage: "studio_membership",
                   is_test_mode: isTestMode,
                 },
               })
@@ -3839,6 +3930,25 @@ export async function POST(request: NextRequest) {
 
         const paidAt = new Date(invoice.status_transitions.paid_at * 1000)
         console.log(`[v0] Payment confirmed at: ${paidAt.toISOString()}`)
+
+        try {
+          await markRevenueEnginePurchase({
+            stripeSubscriptionId: subscriptionId,
+            userId: sub?.user_id ? String(sub.user_id) : null,
+            userEmail: sub?.email || null,
+            stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
+            stripePaymentId: paymentId,
+            stripeInvoiceId: invoice.id,
+            purchaseValueCents: invoice.amount_paid ?? null,
+            purchaseCurrency: typeof invoice.currency === "string" ? invoice.currency : null,
+            purchasedAt: paidAt,
+          })
+        } catch (attributionError: any) {
+          console.error(
+            `[v0] Failed to persist revenue engine attribution after subscription payment:`,
+            attributionError.message
+          )
+        }
 
         if (isReferralPurchaseEligible(invoice.amount_paid)) {
           try {

@@ -130,6 +130,57 @@ type SelfieGuideAnalyticsReport = {
   }>
 }
 
+type RevenueEngineReport = {
+  periodStart: string
+  periodEnd: string
+  summary: {
+    sessions: number
+    purchases: number
+    conversionPct: number
+    revenueCents: number
+    averageOrderValueCents: number
+    emailAttributedPurchases: number
+    emailAttributedRevenueCents: number
+    referralPurchases: number
+    referralRevenueCents: number
+    bridgeToStudioUsers: number
+    bridgeToStudioRatePct: number
+  }
+  offers: Array<{
+    offerSlug: string
+    funnelStage: string
+    sessions: number
+    purchases: number
+    conversionPct: number
+    revenueCents: number
+    averageOrderValueCents: number
+  }>
+  channels: Array<{
+    utmSource: string
+    utmMedium: string
+    utmCampaign: string
+    sessions: number
+    purchases: number
+    revenueCents: number
+  }>
+  lifecycle: Array<{
+    campaignId: number | null
+    utmCampaign: string
+    purchases: number
+    revenueCents: number
+  }>
+  referrals: {
+    signups: number
+    completed: number
+    influencedPurchases: number
+    influencedRevenueCents: number
+  }
+  topDropoffs: Array<{
+    offerSlug: string
+    dropoffCount: number
+  }>
+}
+
 type StoredReportRow = {
   id: number
   report_type: string
@@ -151,6 +202,7 @@ export default function AnalyticsPage() {
   const [deliveryLatest, setDeliveryLatest] = useState<CohortDeliveryReport | null>(null)
   const [activationKpi, setActivationKpi] = useState<ActivationKpiReport | null>(null)
   const [selfieGuideAnalytics, setSelfieGuideAnalytics] = useState<SelfieGuideAnalyticsReport | null>(null)
+  const [revenueEngineReports, setRevenueEngineReports] = useState<StoredReportRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState({
@@ -161,6 +213,7 @@ export default function AnalyticsPage() {
     delivery: false,
     activationKpi: false,
     selfieGuide: false,
+    revenueEngine: false,
   })
   const [deliveryForm, setDeliveryForm] = useState({
     mode: "live" as "live" | "async",
@@ -176,7 +229,7 @@ export default function AnalyticsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes, selfieGuideRes] = await Promise.all([
+        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes, selfieGuideRes, revenueEngineRes] = await Promise.all([
           fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
           fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
@@ -184,6 +237,7 @@ export default function AnalyticsPage() {
           fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
           fetch("/api/admin/analytics/activation-kpi-7d").then((r) => r.json()),
           fetch("/api/admin/analytics/selfie-guide").then((r) => r.json()),
+          fetch("/api/admin/analytics/revenue-engine").then((r) => r.json()),
         ])
         if (cancelled) return
 
@@ -194,6 +248,7 @@ export default function AnalyticsPage() {
         setDeliveryLatest(deliveryRes?.latest || null)
         setActivationKpi(activationKpiRes?.report || null)
         setSelfieGuideAnalytics(selfieGuideRes?.totals ? selfieGuideRes : null)
+        setRevenueEngineReports(Array.isArray(revenueEngineRes?.reports) ? revenueEngineRes.reports : [])
       } catch (e: any) {
         if (cancelled) return
         setError(e?.message || "Failed to load analytics")
@@ -233,6 +288,12 @@ export default function AnalyticsPage() {
     return `$${(n / 100).toFixed(0)}`
   }, [latestFunnel])
 
+  const latestRevenueEngine = useMemo(() => {
+    const row = revenueEngineReports[0]
+    if (!row?.payload) return null
+    return row.payload as RevenueEngineReport
+  }, [revenueEngineReports])
+
   const runFunnelNow = async () => {
     try {
       setIsRunning((s) => ({ ...s, funnel: true }))
@@ -245,6 +306,21 @@ export default function AnalyticsPage() {
       setError(e?.message || "Failed to run funnel report")
     } finally {
       setIsRunning((s) => ({ ...s, funnel: false }))
+    }
+  }
+
+  const runRevenueEngineNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, revenueEngine: true }))
+      const res = await fetch("/api/admin/analytics/revenue-engine", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to refresh revenue engine report")
+      const refreshed = await fetch("/api/admin/analytics/revenue-engine").then((r) => r.json())
+      setRevenueEngineReports(Array.isArray(refreshed?.reports) ? refreshed.reports : [])
+    } catch (e: any) {
+      setError(e?.message || "Failed to refresh revenue engine report")
+    } finally {
+      setIsRunning((s) => ({ ...s, revenueEngine: false }))
     }
   }
 
@@ -408,6 +484,13 @@ export default function AnalyticsPage() {
                   {isRunning.funnel ? "Running Funnel..." : "Run Funnel Report"}
                 </button>
                 <button
+                  onClick={runRevenueEngineNow}
+                  disabled={isRunning.revenueEngine}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.revenueEngine ? "Refreshing Revenue..." : "Refresh Revenue Engine"}
+                </button>
+                <button
                   onClick={runCohortsNow}
                   disabled={isRunning.cohorts}
                   className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
@@ -478,6 +561,50 @@ export default function AnalyticsPage() {
             value={latestFunnel ? String(latestFunnel.metrics.aiImagesCreated) : "--"}
             icon={<Instagram className="w-5 h-5" />}
             subtitle={latestFunnel ? `Trackers: ${latestFunnel.metrics.generationTrackersCreated}` : "Run report for live data"}
+          />
+          <AdminMetricCard
+            label="Revenue Sessions"
+            value={latestRevenueEngine ? String(latestRevenueEngine.summary.sessions) : "--"}
+            icon={<Mail className="w-5 h-5" />}
+            subtitle={
+              latestRevenueEngine
+                ? `Purchases: ${latestRevenueEngine.summary.purchases}`
+                : "Refresh revenue engine"
+            }
+          />
+          <AdminMetricCard
+            label="Revenue Conv."
+            value={latestRevenueEngine ? `${latestRevenueEngine.summary.conversionPct}%` : "--"}
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle={
+              latestRevenueEngine
+                ? `AOV: €${(latestRevenueEngine.summary.averageOrderValueCents / 100).toFixed(0)}`
+                : "Refresh revenue engine"
+            }
+          />
+          <AdminMetricCard
+            label="Email Revenue"
+            value={
+              latestRevenueEngine
+                ? `€${(latestRevenueEngine.summary.emailAttributedRevenueCents / 100).toFixed(0)}`
+                : "--"
+            }
+            icon={<Mail className="w-5 h-5" />}
+            subtitle={
+              latestRevenueEngine
+                ? `Purchases: ${latestRevenueEngine.summary.emailAttributedPurchases}`
+                : "Refresh revenue engine"
+            }
+          />
+          <AdminMetricCard
+            label="Bridge -> Studio"
+            value={latestRevenueEngine ? `${latestRevenueEngine.summary.bridgeToStudioRatePct}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={
+              latestRevenueEngine
+                ? `Users: ${latestRevenueEngine.summary.bridgeToStudioUsers}`
+                : "Refresh revenue engine"
+            }
           />
           <AdminMetricCard
             label="90D Applications"
@@ -568,6 +695,74 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white border border-stone-200 p-6 rounded-none lg:col-span-2">
+            <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              Revenue Engine
+            </h2>
+            {latestRevenueEngine ? (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Top Offers</p>
+                  {latestRevenueEngine.offers.slice(0, 5).map((offer) => (
+                    <div key={`${offer.offerSlug}-${offer.funnelStage}`} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <div>
+                        <p className="font-medium">{offer.offerSlug}</p>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">{offer.funnelStage}</p>
+                      </div>
+                      <div className="text-right font-mono text-[11px]">
+                        <p>{offer.purchases}/{offer.sessions}</p>
+                        <p>{offer.conversionPct}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Top Channels</p>
+                  {latestRevenueEngine.channels.slice(0, 5).map((channel) => (
+                    <div key={`${channel.utmSource}-${channel.utmMedium}-${channel.utmCampaign}`} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <div>
+                        <p className="font-medium">{channel.utmSource} / {channel.utmMedium}</p>
+                        <p className="text-[10px] text-stone-500">{channel.utmCampaign}</p>
+                      </div>
+                      <div className="text-right font-mono text-[11px]">
+                        <p>{channel.purchases}/{channel.sessions}</p>
+                        <p>€{(channel.revenueCents / 100).toFixed(0)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Lifecycle + Referral</p>
+                  <div className="border-b border-stone-100 pb-3 text-xs text-stone-700">
+                    <p className="font-medium">Referral loop</p>
+                    <p>Signups: {latestRevenueEngine.referrals.signups}</p>
+                    <p>Completed: {latestRevenueEngine.referrals.completed}</p>
+                    <p>Influenced purchases: {latestRevenueEngine.referrals.influencedPurchases}</p>
+                    <p>Influenced revenue: €{(latestRevenueEngine.referrals.influencedRevenueCents / 100).toFixed(0)}</p>
+                  </div>
+                  {latestRevenueEngine.lifecycle.slice(0, 4).map((campaign) => (
+                    <div key={`${campaign.campaignId ?? "none"}-${campaign.utmCampaign}`} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <div>
+                        <p className="font-medium">{campaign.utmCampaign}</p>
+                        <p className="text-[10px] text-stone-500">Campaign ID: {campaign.campaignId ?? "n/a"}</p>
+                      </div>
+                      <div className="text-right font-mono text-[11px]">
+                        <p>{campaign.purchases} purchases</p>
+                        <p>€{(campaign.revenueCents / 100).toFixed(0)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pt-1 text-xs text-stone-700">
+                    <p className="font-medium">Biggest drop-offs</p>
+                    <p>{latestRevenueEngine.topDropoffs.map((item) => `${item.offerSlug} (${item.dropoffCount})`).join(", ") || "None"}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-600">Refresh the revenue engine report to populate this section.</p>
+            )}
+          </div>
+
           <div className="bg-white border border-stone-200 p-6 rounded-none">
             <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               Funnel (Daily)

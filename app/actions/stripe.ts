@@ -6,6 +6,12 @@ import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 import { sql } from "@/lib/db/client"
+import {
+  buildCheckoutAttributionMetadata,
+  normalizeCheckoutAttribution,
+  type CheckoutAttributionInput,
+  upsertCheckoutAttribution,
+} from "@/lib/revenue-engine/checkout-attribution"
 
 export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {
   const creditPackage = getCreditPackageById(packageId)
@@ -86,7 +92,7 @@ export async function startCreditCheckoutSession(packageId: string, promoCode?: 
 export async function startProductCheckoutSession(
   productId: string,
   promoCode?: string,
-  options?: { source?: string; returnTo?: string },
+  options?: CheckoutAttributionInput,
 ) {
   const product = getProductById(productId)
   if (!product) {
@@ -110,6 +116,10 @@ export async function startProductCheckoutSession(
   const isSubscription = product.type === "sselfie_studio_membership"
   const allowManualPromotionCodes = !isSubscription
   const checkoutSource = options?.source?.trim() || "app"
+  const attribution = normalizeCheckoutAttribution(productId, {
+    ...options,
+    source: checkoutSource,
+  })
   
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
   let validatedCoupon: string | null = null
@@ -273,9 +283,11 @@ export async function startProductCheckoutSession(
           product_id: productId,
           product_type: product.type,
           credits: product.credits?.toString() || "0",
-          source: checkoutSource,
+          ...buildCheckoutAttributionMetadata(productId, {
+            ...options,
+            source: attribution.source,
+          }),
           ...(promoCode && { promo_code: promoCode }),
-          ...(options?.returnTo && { return_to: options.returnTo }),
         },
       },
     }),
@@ -284,9 +296,11 @@ export async function startProductCheckoutSession(
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
-      source: checkoutSource,
+      ...buildCheckoutAttributionMetadata(productId, {
+        ...options,
+        source: attribution.source,
+      }),
       ...(promoCode && { promo_code: promoCode }),
-      ...(options?.returnTo && { return_to: options.returnTo }),
     },
   }
 
@@ -304,6 +318,26 @@ export async function startProductCheckoutSession(
   }
 
   const session = await stripe.checkout.sessions.create(sessionConfig)
+  await upsertCheckoutAttribution({
+    sessionId: session.id,
+    checkoutOrigin: "authenticated",
+    productId,
+    productType: product.type,
+    offerSlug: attribution.offerSlug,
+    funnelStage: attribution.funnelStage,
+    source: attribution.source,
+    utmSource: attribution.utmSource,
+    utmMedium: attribution.utmMedium,
+    utmCampaign: attribution.utmCampaign,
+    utmContent: attribution.utmContent,
+    campaignId: attribution.campaignId,
+    referralCode: attribution.referralCode,
+    returnTo: attribution.returnTo,
+    entryPath: attribution.entryPath,
+    userId: user.id,
+    userEmail: user.email,
+    stripeCustomerId: typeof session.customer === "string" ? session.customer : customerId || null,
+  })
 
   return session.client_secret
 }

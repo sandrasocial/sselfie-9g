@@ -3,10 +3,18 @@ import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { startProductCheckoutSession } from "@/app/actions/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
 
 type BrandStrategyPackCheckoutParams = {
   returnTo?: string
   strategyToken?: string
+  source?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_content?: string
+  campaign_id?: string
+  ref?: string
 }
 
 function resolveReturnTo(params: BrandStrategyPackCheckoutParams) {
@@ -40,7 +48,10 @@ export default async function BrandStrategyPackCheckoutPage({
 }) {
   const params = await searchParams
   const returnTo = resolveReturnTo(params)
-  const source = resolveSource(params)
+  const attribution = getCheckoutAttributionFromParams(params, {
+    source: resolveSource(params),
+    returnTo,
+  })
 
   const supabase = await createServerClient()
   const {
@@ -50,12 +61,10 @@ export default async function BrandStrategyPackCheckoutPage({
   try {
     const clientSecret = authUser
       ? await startProductCheckoutSession("brand_strategy_pack", undefined, {
-          source,
-          returnTo,
+          ...attribution,
         })
       : await createLandingCheckoutSession("brand_strategy_pack", undefined, null, {
-          source,
-          returnTo,
+          ...attribution,
         })
 
     if (clientSecret) {

@@ -3,12 +3,28 @@ import { createServerClient } from "@/lib/supabase/server"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
 
 
 export default async function BlueprintCheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; promo?: string; promoCode?: string; code?: string; discount?: string }>
+  searchParams: Promise<{
+    email?: string
+    promo?: string
+    promoCode?: string
+    code?: string
+    discount?: string
+    source?: string
+    utm_source?: string
+    utm_medium?: string
+    utm_campaign?: string
+    utm_content?: string
+    campaign_id?: string
+    ref?: string
+    returnTo?: string
+    return_to?: string
+  }>
 }) {
   const params = await searchParams
   const email = params?.email
@@ -19,6 +35,9 @@ export default async function BlueprintCheckoutPage({
     email: email || "none",
     promoCode: promoCode || "none",
     hasPromo: !!promoCode,
+  })
+  const attribution = getCheckoutAttributionFromParams(params, {
+    source: "blueprint_checkout",
   })
 
   // Decision 2: Check if user is authenticated - use authenticated checkout flow if logged in
@@ -50,11 +69,11 @@ export default async function BlueprintCheckoutPage({
       // Authenticated user: Use startProductCheckoutSession (includes user_id in metadata)
       console.log("[Blueprint Checkout] ✅ Authenticated user, using product checkout session", promoCode ? `with promo: ${promoCode}` : "without promo code")
       const { startProductCheckoutSession } = await import("@/app/actions/stripe")
-      clientSecret = await startProductCheckoutSession("paid_blueprint", promoCode)
+      clientSecret = await startProductCheckoutSession("paid_blueprint", promoCode, attribution)
     } else {
       // Unauthenticated user: Use landing checkout session (guest checkout)
       console.log("[Blueprint Checkout] 👤 Unauthenticated user, using landing checkout session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "without promo code")
-      clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode, email || null)
+      clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode, email || null, attribution)
     }
 
     if (clientSecret) {

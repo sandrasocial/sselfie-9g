@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { buildEmbeddedCheckoutUrl, openEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { buildEmbeddedCheckoutUrl, openEmbeddedCheckout, startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 describe("start embedded checkout helpers", () => {
   const fetchMock = vi.fn()
@@ -35,5 +35,37 @@ describe("start embedded checkout helpers", () => {
       }),
     )
     expect(navigate).toHaveBeenCalledWith("/checkout?client_secret=secret_123")
+  })
+
+  it("sends a normalized attribution payload from the browser context", async () => {
+    window.history.pushState({}, "", "/why-studio?utm_source=instagram&utm_medium=social&utm_campaign=spring_launch&campaign_id=12&ref=sse123456")
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ clientSecret: "secret_456" }),
+    })
+
+    await startEmbeddedCheckout("sselfie_studio_membership", {
+      source: "pricing_section",
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/landing/checkout",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          productId: "sselfie_studio_membership",
+          offerSlug: null,
+          source: "pricing_section",
+          utmSource: "instagram",
+          utmMedium: "social",
+          utmCampaign: "spring_launch",
+          utmContent: null,
+          campaignId: "12",
+          referralCode: "SSE123456",
+          returnTo: null,
+          entryPath: "/why-studio?utm_source=instagram&utm_medium=social&utm_campaign=spring_launch&campaign_id=12&ref=sse123456",
+        }),
+      }),
+    )
   })
 })
