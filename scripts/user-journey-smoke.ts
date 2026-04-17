@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test"
+import { chromium, type Page } from "@playwright/test"
 import { USER_JOURNEY_SMOKE_FLOWS, type JourneySmokeFlow } from "@/lib/automation/user-journey-smoke-flows"
 import { writeReport } from "./audit/_shared"
 
@@ -12,6 +12,20 @@ type FlowResult = {
   checkoutUrl: string
   finalUrl: string
   detail: string
+}
+
+async function readStableTitle(page: Page) {
+  try {
+    return await page.title()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes("Execution context was destroyed")) {
+      throw error
+    }
+
+    await page.waitForLoadState("domcontentloaded", { timeout: NAV_TIMEOUT_MS })
+    return page.title()
+  }
 }
 
 async function resolveCheckoutFromCta(input: {
@@ -30,7 +44,7 @@ async function resolveCheckoutFromCta(input: {
       timeout: NAV_TIMEOUT_MS,
     })
 
-    const title = await page.title()
+    const title = await readStableTitle(page)
     if (!input.expectedTitle.test(title)) {
       return {
         name: input.name,
