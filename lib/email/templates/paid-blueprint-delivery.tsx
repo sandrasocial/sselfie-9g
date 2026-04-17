@@ -2,6 +2,7 @@ export interface PaidBlueprintDeliveryParams {
   firstName?: string
   email: string
   accessToken: string
+  photoPreviewUrls?: string[]
 }
 
 export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your 30-Day Visibility Reset is ready"

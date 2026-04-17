@@ -19,7 +19,8 @@ describe("selfie guide public landing", () => {
     expect(fs.existsSync(componentPath)).toBe(true)
 
     const component = fs.readFileSync(componentPath, "utf8")
-    expect(component).toContain("BECOME A SELFIE QUEEN")
+    expect(component).toContain("Selfies you feel good posting.")
+    expect(component).toContain("This is the calmest place to start.")
     expect(component).toContain("ONE-TIME · $17")
     expect(component).toContain("GET INSTANT ACCESS")
     expect(component).toContain("THE SELFIE GUIDE")

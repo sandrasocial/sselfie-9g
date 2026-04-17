@@ -53,8 +53,8 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           <p className="hero-eyebrow">ONE-TIME · $17</p>
           <h1 className={`hero-title ${cormorant.className}`}>Selfies you feel good posting.</h1>
           <p className="hero-copy">
-            The exact selfie framework Sandra uses for confident brand photos — phone, natural light, no photographer.
-            Instant access.
+            You do not need to be more photogenic. You need a way to stop disappearing every time it&apos;s your turn to
+            post. This is the calmest place to start.
           </p>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
                 <li>Confidence on camera — the part no one teaches</li>
                 <li>Turning one selfie session into a week of content</li>
                 <li>A 7-day challenge to lock in the habit</li>
-                <li>When you&apos;re ready: how Maya fits with Studio</li>
+                <li>When you&apos;re ready: the next step if the words still feel hard</li>
               </ul>
             </div>
           </div>
@@ -99,7 +99,8 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
               <span className="price-label">one-time · instant access</span>
             </div>
             <p className="purchase-desc">
-              Secure checkout via Stripe. You&apos;ll get instant access to the full interactive course right after payment.
+              Secure checkout via Stripe. You&apos;ll get instant access right after payment and can move through it at
+              your own pace.
             </p>
 
             {checkoutFailed ? <p className="error-msg">Something went wrong with checkout. Please try again.</p> : null}
@@ -111,7 +112,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
             <ul className="trust-list">
               <li>Instant access after checkout</li>
               <li>Works on any phone or camera</li>
-              <li>No subscription required</li>
+              <li>No subscription pressure</li>
             </ul>
           </div>
         </div>
@@ -143,13 +144,13 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
         </div>
 
         <div className="studio-followon">
-          <p className="studio-followon-label">Want help every week?</p>
+          <p className="studio-followon-label">When the photo part feels easier</p>
           <p className="studio-followon-copy">
-            Studio is optional. When you&apos;re ready, Maya can help you generate on-brand photos and ideas on top of
-            what you learned here.
+            The next thing that usually gets hard is knowing what to say. Brand Strategy Pack helps you get clear on
+            your message before you move into the full Studio system.
           </p>
-          <Link href="/checkout/membership" className="studio-followon-link">
-            Explore Studio membership →
+          <Link href="/checkout/brand-strategy-pack?source=selfie_guide_followon&utm_source=site&utm_medium=upsell&utm_campaign=selfie_guide_to_brand_strategy" className="studio-followon-link">
+            Add Brand Strategy Pack →
           </Link>
         </div>
       </section>

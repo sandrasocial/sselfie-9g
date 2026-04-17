@@ -1,5 +1,6 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
+import { buildRevenueEmailLink } from "./revenue-links"
 
 export interface SelfieGuideDay14MayaBridgeParams {
   firstName?: string
@@ -7,7 +8,7 @@ export interface SelfieGuideDay14MayaBridgeParams {
   accessUrl: string
 }
 
-const STUDIO_CHECKOUT_URL = "https://sselfie.ai/checkout/membership"
+const BRAND_STRATEGY_URL = "https://sselfie.ai/checkout/brand-strategy-pack"
 
 export function generateSelfieGuideDay14MayaBridgeEmail({
   firstName,
@@ -19,30 +20,37 @@ export function generateSelfieGuideDay14MayaBridgeEmail({
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
+  const trackedGuideUrl = buildRevenueEmailLink(accessUrl, {
+    campaign: "selfie_guide_day14_brand_strategy",
+    content: "return_to_guide",
+  })
+  const trackedBrandStrategyUrl = buildRevenueEmailLink(BRAND_STRATEGY_URL, {
+    campaign: "selfie_guide_day14_brand_strategy",
+    content: "brand_strategy_checkout",
+    source: "selfie_guide_day14_email",
+  })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've had the guide for two weeks.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">By now, you've probably taken at least one selfie you actually liked. Maybe more.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I want to show you what happens next.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The guide taught you how to take the photo. Maya takes that photo and turns it into a full visual brand.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not stock photos. Not someone else's face. Yours. In any setting, any mood, any aesthetic — in under 10 minutes.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If the photo part is starting to feel easier, this is usually the next wall.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You have something to post. You just do not fully know what you want to say.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is what Brand Strategy Pack is for.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">Here's what that looks like in practice:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">You take the window light selfie you practiced in Part 2.<br />You upload it to Maya.<br />You type: "editorial portrait, warm studio light, minimal background."<br />Twenty minutes later, you have 20 professional brand photos — all with your face, all consistent, all ready to post.</p>`,
-      "Maya in action",
+      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">What it helps with:</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Your message. Your pillars. The part of your brand that still feels blurry when you sit down to write. It gives you language you can actually build content from.</p>`,
+      "Next Step",
     )}
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">That's a month of content from one selfie. As a guide buyer, your first two photos are free when you sign up.</p>
-    <div style="margin:26px 0 16px;">${renderStoneButton("Try Maya in Studio", STUDIO_CHECKOUT_URL)}</div>
-    <p style="margin:0 0 4px;font-size:14px;line-height:1.7;text-align:center;"><a href="${accessUrl}" style="color:#a8a49c;text-decoration:underline;">See how Maya works first &rarr;</a></p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">The guide helps you show your face. Brand Strategy Pack helps you stop second-guessing your voice.</p>
+    <div style="margin:26px 0 16px;">${renderStoneButton("Add Brand Strategy Pack", trackedBrandStrategyUrl)}</div>
+    <p style="margin:0 0 4px;font-size:14px;line-height:1.7;text-align:center;"><a href="${trackedGuideUrl}" style="color:#a8a49c;text-decoration:underline;">Go back to the guide first &rarr;</a></p>
   `
 
   const html = renderStoneShell({
-    title: "Here's what happens after the selfie.",
+    title: "The photo is not the hard part now.",
     eyebrow: "Selfie Guide",
-    subtitle: "The guide taught you how. Maya takes it from here.",
+    subtitle: "Usually the next thing that gets hard is the message.",
     bodyHtml,
-    footerLead: "Reply if you have questions about Studio. I'll give you an honest answer.",
+    footerLead: "Reply if you want me to tell you whether this is the right next step.",
     footerSignoff: "Sandra x",
   })
 
@@ -50,35 +58,28 @@ export function generateSelfieGuideDay14MayaBridgeEmail({
 
 Hi ${name},
 
-You've had the guide for two weeks.
+If the photo part is starting to feel easier, this is usually the next wall.
 
-By now, you've probably taken at least one selfie you actually liked. Maybe more.
+You have something to post. You just do not fully know what you want to say.
 
-I want to show you what happens next.
+That is what Brand Strategy Pack is for.
 
-The guide taught you how to take the photo. Maya takes that photo and turns it into a full visual brand.
+What it helps with:
 
-Not stock photos. Not someone else's face. Yours. In any setting, any mood, any aesthetic — in under 10 minutes.
+Your message. Your pillars. The part of your brand that still feels blurry when you sit down to write. It gives you language you can actually build content from.
 
-Here's what that looks like in practice:
+The guide helps you show your face. Brand Strategy Pack helps you stop second-guessing your voice.
 
-You take the window light selfie you practiced in Part 2.
-You upload it to Maya.
-You type: "editorial portrait, warm studio light, minimal background."
-Twenty minutes later, you have 20 professional brand photos — all with your face, all consistent, all ready to post.
+Add Brand Strategy Pack: ${trackedBrandStrategyUrl}
 
-That's a month of content from one selfie. As a guide buyer, your first two photos are free when you sign up.
+Go back to the guide first: ${trackedGuideUrl}
 
-Try Maya in Studio: ${STUDIO_CHECKOUT_URL}
-
-See how Maya works first: ${accessUrl}
-
-Reply if you have questions about Studio. I'll give you an honest answer.
+Reply if you want me to tell you whether this is the right next step.
 Sandra x`
 
   return {
     html,
     text,
-    subject: "Here's what happens after the selfie",
+    subject: "The photo is not the hard part now",
   }
 }

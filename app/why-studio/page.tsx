@@ -201,10 +201,13 @@ export default function WhyStudioPage() {
                 fontFamily: "'Times New Roman', serif",
               }}
             >
-              Stop hiding. Start showing up beautifully.
+              You didn&apos;t stop caring.
+              <br />
+              You just got tired.
             </h1>
             <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              SSELFIE Studio helps you create your own brand photos, plan your social feed, and stay visible, all in one simple system.
+              Somewhere between real life and trying to stay visible online, showing up started to feel heavier than it
+              should. This is the system for coming back without forcing it.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
               <a
@@ -220,7 +223,7 @@ export default function WhyStudioPage() {
               </a>
             </div>
             <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
-              No photographers. No stress. No more overthinking what to post.
+              Start with the guide. Add the deeper system when you need it.
             </p>
           </div>
         </section>
@@ -251,7 +254,7 @@ export default function WhyStudioPage() {
                 fontStyle: "normal",
               }}
             >
-              Visibility changes everything.
+              Visibility changes more than the feed.
             </h2>
             <blockquote
               className="hero-title fade-up"
@@ -313,10 +316,13 @@ export default function WhyStudioPage() {
                   fontWeight: "normal",
                 }}
               >
-                You don&apos;t need another AI app. You need a visibility system.
+                You don&apos;t need more pressure.
+                <br />
+                You need less friction.
               </h2>
               <p className="description fade-up text-sm md:text-base" style={{ color: "#d6d3d1" }}>
-                Most people struggle to stay consistent online. SSELFIE Studio makes it easy to keep showing up with confidence.
+                The problem is rarely ideas. It&apos;s having to become your own strategist, photographer, writer, and
+                motivator every time you want to post.
               </p>
               <div className="fade-up mt-6">
                 <a
@@ -441,7 +447,7 @@ export default function WhyStudioPage() {
             </div>
           </div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-black border border-white/20 px-4 py-1.5 rounded-full shadow-xl">
-            <span className="text-[9px] uppercase tracking-widest text-white whitespace-nowrap">Everything you need to stay visible</span>
+            <span className="text-[9px] uppercase tracking-widest text-white whitespace-nowrap">A system for the days you would normally disappear</span>
           </div>
         </section>
 
@@ -555,12 +561,13 @@ export default function WhyStudioPage() {
           }}
         >
           <div className="content h-full justify-center">
-            <span className="label fade-up text-center w-full">Choose your visibility plan</span>
+            <span className="label fade-up text-center w-full">Start where the resistance is</span>
             <h2 className="hero-title text-center mb-4 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
-              Choose your visibility plan
+              Start where the resistance is
             </h2>
               <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-                Start with the guide. Step into Studio when you want the full visibility system.
+                Most people do not need everything on day one. They need one small yes. Then clarity. Then the full
+                system.
               </p>
             <div
               style={{
@@ -575,11 +582,11 @@ export default function WhyStudioPage() {
             >
               {/* Selfie Guide */}
               <div className="pricing-card fade-up relative overflow-hidden group flex-1">
-                <h3 className="text-lg font-serif text-white mb-4">Selfie Guide — Start your visibility system</h3>
+                <h3 className="text-lg font-serif text-white mb-4">Selfie Guide — Start with your face</h3>
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                  <p>• Sandra&apos;s exact selfie framework</p>
-                  <p>• 7-day challenge to help you show up fast</p>
-                  <p>• Instant access right after payment</p>
+                  <p>• A calm way back into posting yourself</p>
+                  <p>• 7-day challenge to build real momentum</p>
+                  <p>• Then add Brand Strategy Pack if the words still feel muddy</p>
                 </div>
                 <div className="mb-6">
                   <span className="text-xl font-serif text-white">$17</span>
@@ -599,13 +606,12 @@ export default function WhyStudioPage() {
               {/* Full Membership */}
               <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                 <div className="absolute top-0 left-0 w-1 h-full bg-white" />
-                <h3 className="text-lg font-serif text-white mb-4">Studio Membership — Join the Visibility System</h3>
+                <h3 className="text-lg font-serif text-white mb-4">Studio Membership — Let the system hold you</h3>
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
                   <p>• 200 credits every month</p>
-                  <p>• Full Maya AI assistant</p>
-                  <p>• Complete Brand Academy</p>
-                  <p>• Feed Designer</p>
-                  <p>• Monthly strategy drops</p>
+                  <p>• Maya remembers your brand</p>
+                  <p>• Photos, planning, captions, Academy</p>
+                  <p>• Built for consistency when life is full</p>
                 </div>
                 <div className="mb-6">
                   <span className="text-xl font-serif text-white">$97</span>
@@ -652,7 +658,7 @@ export default function WhyStudioPage() {
               What members are saying
             </h2>
             <p className="description fade-up text-center mb-6" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-              Real stories from creators and coaches using SSELFIE to grow their brands.
+              Real stories from women who stopped trying to do all of this alone.
             </p>
             <div className="w-full overflow-hidden">
               <TestimonialGrid />
@@ -685,12 +691,13 @@ export default function WhyStudioPage() {
           />
           <div className="h-full w-full overflow-y-auto relative z-10">
             <div className="content h-full justify-center min-h-[100dvh]">
-              <span className="label text-center w-full fade-up mt-8 md:mt-0">Join The Visibility Studio</span>
+              <span className="label text-center w-full fade-up mt-8 md:mt-0">When you want this held with you</span>
               <h2 className="hero-title text-center mb-4 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
-                Join The Visibility Studio
+                When you want this held with you
               </h2>
               <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-                Start with the guide. Step into Studio when you want everything in one place.
+                Start with the guide. Add brand clarity next. Step into Studio when you want the full system in one
+                place.
               </p>
 
               <div
@@ -709,7 +716,7 @@ export default function WhyStudioPage() {
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h3 className="text-lg font-serif text-white">Selfie Guide</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Start Here</p>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Entry Offer</p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-serif">$17</span>
@@ -717,8 +724,8 @@ export default function WhyStudioPage() {
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• The exact framework Sandra uses</p>
-                    <p>• 7-day challenge + preset bonus</p>
+                    <p>• Learn how to stop hiding from the camera</p>
+                    <p>• Build one repeatable selfie rhythm</p>
                     <p>• Instant access right after payment</p>
                   </div>
                   <Link
@@ -738,7 +745,7 @@ export default function WhyStudioPage() {
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h3 className="text-lg font-serif text-white">Studio Membership</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Next Step</p>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Studio Conversion</p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-serif">$97</span>
@@ -747,9 +754,9 @@ export default function WhyStudioPage() {
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
                     <p>• Monthly photo credits</p>
-                    <p>• Feed planning tools</p>
-                    <p>• Full Academy access</p>
-                    <p>• New content ideas every month</p>
+                    <p>• Feed planning, captions, Academy</p>
+                    <p>• Maya remembers your brand voice</p>
+                    <p>• Ongoing support when consistency slips</p>
                   </div>
                   <button
                     onClick={() => handleStartCheckout("sselfie_studio_membership")}

@@ -46,6 +46,7 @@ async function resolveCheckoutFromCta(input: {
 
     if (input.trigger.type === "href") {
       const cta = page.locator(`a[href="${input.trigger.href}"]`).first()
+      await cta.waitFor({ state: "attached", timeout: NAV_TIMEOUT_MS }).catch(() => null)
       if ((await cta.count()) === 0) {
         return {
           name: input.name,
@@ -65,6 +66,7 @@ async function resolveCheckoutFromCta(input: {
       await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
     } else {
       const cta = page.getByRole("button", { name: input.trigger.name }).first()
+      await cta.waitFor({ state: "visible", timeout: NAV_TIMEOUT_MS }).catch(() => null)
       if ((await cta.count()) === 0) {
         return {
           name: input.name,

@@ -29,9 +29,11 @@ describe("usd pricing copy", () => {
 
     expect(freebieStrategyEmail).toContain("Join Studio — $97/month")
     expect(freebieStrategyEmail).not.toContain("Join Studio — €97/month")
-    expect(nurtureN3).toContain("$97/month. Cancel anytime.")
+    expect(nurtureN3).toContain("/checkout/membership")
     expect(nurtureN3).not.toContain("EUR 97/month")
-    expect(nurtureN4).toContain("$97/month. Cancel any time.")
+    expect(nurtureN4).toContain("/checkout/membership")
     expect(nurtureN4).not.toContain("EUR 97/month")
+    expect(nurtureN3).not.toContain("€97")
+    expect(nurtureN4).not.toContain("€97")
   })
 })

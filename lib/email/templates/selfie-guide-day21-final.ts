@@ -1,5 +1,6 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
+import { buildRevenueEmailLink } from "./revenue-links"
 
 export interface SelfieGuideDay21FinalParams {
   firstName?: string
@@ -21,26 +22,33 @@ export function generateSelfieGuideDay21FinalEmail({
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
+  const trackedStudioUrl = buildRevenueEmailLink(STUDIO_CHECKOUT_URL, {
+    campaign: "selfie_guide_day21_studio",
+    content: "studio_checkout_bonus",
+    source: "selfie_guide_day21_email",
+  })
+  const trackedGuideUrl = buildRevenueEmailLink(accessUrl, {
+    campaign: "selfie_guide_day21_studio",
+    content: "return_to_guide",
+  })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Three weeks since you got the guide.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I hope you've taken the selfie. I hope you even posted it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">But if you haven't — if the guide is still sitting there, half-read — I'm not going to make you feel bad about that.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">What I will say is this:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The women who actually build an audience aren't the ones who learn everything first. They're the ones who start before they're ready and figure it out as they go.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One selfie. Posted. Imperfectly. Consistently.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's the whole system.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want the "consistently" part handled for you — so you always have content even on the days when you have nothing — that's exactly what Studio is for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Join this week and I'll make sure you get 4 bonus credits instead of the usual 2. That's two full AI photo sessions on me.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">The offer's good until ${expiryDate}.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Join Studio with 4 Bonus Credits", STUDIO_CHECKOUT_URL)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you did not need more time.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you needed less pressure. Less starting over. Less having to become the whole system by yourself every single time.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is the real job of Studio.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not to make you more motivated. To make it easier to keep showing up when motivation is gone.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you join this week, I&apos;ll keep the 4 bonus credits offer open for you until ${expiryDate}.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That gives you room to test the system with your own face, your own brand, and your own content rhythm.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">The offer&apos;s good until ${expiryDate}.</p>
+    <div style="margin:26px 0 14px;">${renderStoneButton("Join Studio with 4 Bonus Credits", trackedStudioUrl)}</div>
+    <p style="margin:0;font-size:14px;line-height:1.7;text-align:center;"><a href="${trackedGuideUrl}" style="color:#a8a49c;text-decoration:underline;">Need to go back to the guide first? That&apos;s fine.</a></p>
   `
 
   const html = renderStoneShell({
     title: "Three weeks in.",
     eyebrow: "Selfie Guide",
-    subtitle: "One thing I want you to see.",
+    subtitle: "This is the part about staying visible when life gets loud.",
     bodyHtml,
     footerLead: "Reply if you want to talk it through before you decide.",
     footerSignoff: "Sandra x",
@@ -50,27 +58,23 @@ export function generateSelfieGuideDay21FinalEmail({
 
 Hi ${name},
 
-Three weeks since you got the guide.
+Maybe you did not need more time.
 
-I hope you've taken the selfie. I hope you even posted it.
+Maybe you needed less pressure. Less starting over. Less having to become the whole system by yourself every single time.
 
-But if you haven't — if the guide is still sitting there, half-read — I'm not going to make you feel bad about that.
+That is the real job of Studio.
 
-What I will say is this:
+Not to make you more motivated. To make it easier to keep showing up when motivation is gone.
 
-The women who actually build an audience aren't the ones who learn everything first. They're the ones who start before they're ready and figure it out as they go.
+If you join this week, I'll keep the 4 bonus credits offer open for you until ${expiryDate}.
 
-One selfie. Posted. Imperfectly. Consistently.
-
-That's the whole system.
-
-If you want the "consistently" part handled for you — so you always have content even on the days when you have nothing — that's exactly what Studio is for.
-
-Join this week and I'll make sure you get 4 bonus credits instead of the usual 2. That's two full AI photo sessions on me.
+That gives you room to test the system with your own face, your own brand, and your own content rhythm.
 
 The offer's good until ${expiryDate}.
 
-Join Studio with 4 Bonus Credits: ${STUDIO_CHECKOUT_URL}
+Join Studio with 4 Bonus Credits: ${trackedStudioUrl}
+
+Need to go back to the guide first? ${trackedGuideUrl}
 
 Reply if you want to talk it through before you decide.
 Sandra x`
@@ -78,6 +82,6 @@ Sandra x`
   return {
     html,
     text,
-    subject: "Three weeks in. One thing I want you to see.",
+    subject: "Maybe you did not need more time",
   }
 }

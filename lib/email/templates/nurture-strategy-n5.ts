@@ -1,3 +1,6 @@
+import { renderStoneButton, renderStoneShell } from "./stone-email"
+import { buildRevenueEmailLink } from "./revenue-links"
+
 export interface NurtureStrategyEmailProps {
   firstName?: string
   recipientEmail: string
@@ -6,7 +9,6 @@ export interface NurtureStrategyEmailProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const MEMBERSHIP_URL = `${SITE_URL}/checkout/membership`
-const REFERRAL_URL = `${SITE_URL}/studio?tab=account`
 
 export function generateNurtureStrategyN5Email({
   firstName,
@@ -17,67 +19,46 @@ export function generateNurtureStrategyN5Email({
   subject: string
 } {
   const name = firstName?.trim() || recipientEmail.split("@")[0] || "friend"
+  const trackedMembershipUrl = buildRevenueEmailLink(MEMBERSHIP_URL, {
+    campaign: "brand_strategy_day20_studio_final",
+    content: "studio_checkout_final",
+    source: "brand_strategy_day20_email",
+  })
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>I'm going to be honest with you</title>
-</head>
-<body style="margin:0;padding:0;background:#fafaf9;font-family:Inter,Arial,sans-serif;color:#1c1917;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fafaf9;">
-    <tr>
-      <td align="center" style="padding:24px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #e7e5e4;">
-          <tr>
-            <td style="padding:28px;">
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Hi ${name},</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">This is the last email I'll send you about Studio.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And I want to be honest: I don't know if it's right for you. Only you know that.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">But here's what I do know.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You took the time to build a brand strategy with Maya. You cared enough to do that. That tells me you're not just scrolling - you're actually trying to build something real.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And doing that alone is hard. Not impossible. But hard.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system and an AI that already knows their brand — so they can just show up and create.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If that's you - the door is open.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">And if you know someone who needs this, share your invite link: <a href="${REFERRAL_URL}" style="color:#0a0a0a;font-weight:600;">Open referrals -></a></p>
-              <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Join Studio -></a></p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">If it's not the right time - no pressure at all. Your strategy is yours. Use it. Build with it. Come back when you're ready.</p>
-              <p style="margin:0;font-size:16px;line-height:1.7;">I'll be here.<br/><br/>Sandra</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the last note I&apos;ll send you about Studio.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I do not know if it is the right time. Only you know that.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">What I do know is this. Doing all of this alone is heavier than most people admit.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want the system, the door is open. If not, keep your strategy and use it well.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Join Studio", trackedMembershipUrl)}</div>
+    <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">No pressure. Just a clear door if you want it.</p>
+  `
+
+  const html = renderStoneShell({
+    title: "The door is open.",
+    eyebrow: "Studio",
+    subtitle: "If you want the system, it is here. If not, use what you already have well.",
+    bodyHtml,
+    footerLead: "No pressure from me.",
+    footerSignoff: "Sandra",
+  })
 
   const text = `Hi ${name},
 
-This is the last email I'll send you about Studio.
+This is the last note I'll send you about Studio.
 
-And I want to be honest: I don't know if it's right for you. Only you know that.
+I do not know if it is the right time. Only you know that.
 
-But here's what I do know.
+What I do know is this. Doing all of this alone is heavier than most people admit.
 
-You took the time to build a brand strategy with Maya. You cared enough to do that. That tells me you're not just scrolling - you're actually trying to build something real.
+If you want the system, the door is open. If not, keep your strategy and use it well.
 
-And doing that alone is hard. Not impossible. But hard.
+Join Studio: ${trackedMembershipUrl}
 
-Studio isn't for everyone. It's for the women who are done doing it alone. Who want a system and an AI that already knows their brand — so they can just show up and create.
-
-If that's you - the door is open.
-
-And if you know someone who needs this, share your invite link: ${REFERRAL_URL}
-
-Join Studio -> ${MEMBERSHIP_URL}
-
-If it's not the right time - no pressure at all. Your strategy is yours. Use it. Build with it. Come back when you're ready.
-
-I'll be here.
+No pressure. Just a clear door if you want it.
 
 Sandra`
 
-  return { html, text, subject: "I'm going to be honest with you" }
+  return { html, text, subject: "The door is open" }
 }

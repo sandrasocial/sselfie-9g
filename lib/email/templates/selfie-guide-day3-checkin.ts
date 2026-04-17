@@ -1,5 +1,6 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
+import { buildRevenueEmailLink } from "./revenue-links"
 
 export interface SelfieGuideDay3CheckinParams {
   firstName?: string
@@ -17,27 +18,27 @@ export function generateSelfieGuideDay3CheckinEmail({
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
+  const trackedAccessUrl = buildRevenueEmailLink(accessUrl, {
+    campaign: "selfie_guide_day3_checkin",
+    content: "part_2_window_light",
+  })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Three days ago you picked up the Selfie Guide.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I wanted to check in.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you've already read through it — brilliant. If it's sitting in a tab you keep meaning to get back to — that's fine too. I built this to be useful when you're ready, not something to binge and feel guilty about.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">But if you've only got 5 minutes today, here's the one thing worth doing right now:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Go to Part 2. Read the section called "The Free Light You Already Have."</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Then take one selfie in natural window light. Just one. With whatever you're wearing. No preparation.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That one photo will show you more about what makes a selfie work than anything I could write.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's it. Five minutes. One selfie.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Go.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open Part 2", accessUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is usually where people disappear.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not because they don&apos;t care. Because it gets awkward when it is finally time to put your own face in the frame.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So make today smaller.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open Part 2. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Five minutes is enough.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open Part 2", trackedAccessUrl)}</div>
   `
 
   const html = renderStoneShell({
-    title: "Five minutes. One selfie.",
+    title: "Five minutes. One photo.",
     eyebrow: "Selfie Guide",
-    subtitle: "You don't need to be ready. Just start.",
+    subtitle: "You do not need to be ready. Just begin smaller.",
     bodyHtml,
-    footerLead: "Reply if you get stuck — tell me what feels hard.",
+    footerLead: "Reply if you get stuck. Tell me what feels hard.",
     footerSignoff: "Sandra x",
   })
 
@@ -45,32 +46,24 @@ export function generateSelfieGuideDay3CheckinEmail({
 
 Hi ${name},
 
-Three days ago you picked up the Selfie Guide.
+This is usually where people disappear.
 
-I wanted to check in.
+Not because they don't care. Because it gets awkward when it is finally time to put your own face in the frame.
 
-If you've already read through it — brilliant. If it's sitting in a tab you keep meaning to get back to — that's fine too. I built this to be useful when you're ready, not something to binge and feel guilty about.
+So make today smaller.
 
-But if you've only got 5 minutes today, here's the one thing worth doing right now:
+Open Part 2. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.
 
-Go to Part 2. Read the section called "The Free Light You Already Have."
+Five minutes is enough.
 
-Then take one selfie in natural window light. Just one. With whatever you're wearing. No preparation.
+Open Part 2: ${trackedAccessUrl}
 
-That one photo will show you more about what makes a selfie work than anything I could write.
-
-That's it. Five minutes. One selfie.
-
-Go.
-
-Open Part 2: ${accessUrl}
-
-Reply if you get stuck — tell me what feels hard.
+Reply if you get stuck. Tell me what feels hard.
 Sandra x`
 
   return {
     html,
     text,
-    subject: "You've had it for 3 days — did you try this?",
+    subject: "This is usually where people disappear",
   }
 }

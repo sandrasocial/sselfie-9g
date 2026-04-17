@@ -1,5 +1,6 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
+import { buildRevenueEmailLink } from "./revenue-links"
 
 export interface SelfieGuideDay7ChallengeParams {
   firstName?: string
@@ -17,27 +18,30 @@ export function generateSelfieGuideDay7ChallengeEmail({
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
+  const trackedAccessUrl = buildRevenueEmailLink(accessUrl, {
+    campaign: "selfie_guide_day7_challenge",
+    content: "start_challenge",
+  })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One week with the guide.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Today I want you to do something different.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Forget everything except Part 7. The 7-day challenge. Start it today — Day 1 is just one selfie in window light, 10 shots minimum.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've already read how to do it. Now I want you to actually do it.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You do not need another tip.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You need the part where it becomes real.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Go straight to the 7-day challenge. Day 1 is simple. Window light. Ten shots. No pressure to like all of them.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">Here's why the challenge matters:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Reading about selfies is one thing. Taking them is another. Every day of the challenge builds one skill on top of the last. By Day 7, you'll have a photo worth posting and a system you can repeat.</p>`,
+      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">Why this matters:</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">The challenge gets you out of the loop of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you would not have taken a week ago.</p>`,
       "The 7-Day Challenge",
     )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the guide and go straight to Part 7. The challenge is waiting.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">One week from now, you'll have your first brand selfie. Let's go.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Start the 7-Day Challenge", accessUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the guide and start there.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">This is the part that changes things.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Start the 7-Day Challenge", trackedAccessUrl)}</div>
   `
 
   const html = renderStoneShell({
     title: "This is your Day 1.",
     eyebrow: "Selfie Guide",
-    subtitle: "Reading about selfies is one thing. Taking them is another.",
+    subtitle: "Thinking about it is one thing. Doing it is the shift.",
     bodyHtml,
     footerLead: "Reply and tell me how Day 1 goes. I want to know.",
     footerSignoff: "Sandra x",
@@ -47,23 +51,21 @@ export function generateSelfieGuideDay7ChallengeEmail({
 
 Hi ${name},
 
-One week with the guide.
+You do not need another tip.
 
-Today I want you to do something different.
+You need the part where it becomes real.
 
-Forget everything except Part 7. The 7-day challenge. Start it today — Day 1 is just one selfie in window light, 10 shots minimum.
+Go straight to the 7-day challenge. Day 1 is simple. Window light. Ten shots. No pressure to like all of them.
 
-You've already read how to do it. Now I want you to actually do it.
+Why this matters:
 
-Here's why the challenge matters:
+The challenge gets you out of the loop of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you would not have taken a week ago.
 
-Reading about selfies is one thing. Taking them is another. Every day of the challenge builds one skill on top of the last. By Day 7, you'll have a photo worth posting and a system you can repeat.
+Open the guide and start there.
 
-Open the guide and go straight to Part 7. The challenge is waiting.
+This is the part that changes things.
 
-One week from now, you'll have your first brand selfie. Let's go.
-
-Start the 7-Day Challenge: ${accessUrl}
+Start the 7-Day Challenge: ${trackedAccessUrl}
 
 Reply and tell me how Day 1 goes. I want to know.
 Sandra x`
@@ -71,6 +73,6 @@ Sandra x`
   return {
     html,
     text,
-    subject: "This is your Day 1",
+    subject: "You do not need another tip",
   }
 }

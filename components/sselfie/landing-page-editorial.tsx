@@ -861,24 +861,25 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
                 className="hero-subhead max-w-[29rem] text-[0.96rem] leading-[1.9]"
                 style={{ color: "rgba(244,240,230,0.56)" }}
               >
-                Maya is your personal brand AI. She remembers who you are, generates photos of your face, plans your content, and writes in your voice — so your presence doesn&apos;t disappear when life gets heavy.
+                Some seasons make you disappear a little. Not because you stopped caring. Because showing your face,
+                finding the words, and staying consistent gets heavy. SSELFIE gives you a way back in.
               </p>
               <div className="hero-ctas mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="#pricing"
+                  href={selfieGuideHref}
                   className="eyebrow inline-flex items-center justify-center"
                   style={{ borderRadius: 0, background: "#F4F0E6", color: "#0F0D0B", padding: "1rem 1.9rem", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(0,0,0,0.12), 0 12px 40px rgba(0,0,0,0.4)", textShadow: "0 1px 1px rgba(0,0,0,0.1)" }}
-                  onClick={() => trackCTAClick("hero", "Get started", "#pricing")}
+                  onClick={() => trackSelfieGuideEntryClick("hero_editorial")}
                 >
-                  Get started
+                  Start with the Selfie Guide
                 </Link>
                 <Link
                   href="#demo"
                   className="eyebrow inline-flex items-center justify-center"
                   style={{ borderRadius: 0, border: "1px solid rgba(244,240,230,0.18)", color: "rgba(244,240,230,0.54)", padding: "1rem 1.9rem" }}
-                  onClick={() => trackCTAClick("hero", "See how it works", "#demo")}
+                  onClick={() => trackCTAClick("hero", "See how Studio works", "#demo")}
                 >
-                  See how it works
+                  See how Studio works
                 </Link>
               </div>
             </div>
@@ -1708,7 +1709,7 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
                 fontStyle: "italic",
               }}
             >
-              Everything you need to show up. Already done.
+              A softer way back into visibility.
             </p>
           </div>
 
@@ -1725,9 +1726,9 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
             <div data-reveal className="mb-10">
               <p className="eyebrow mb-4" style={{ color: "rgba(244,240,230,0.28)" }}>Pricing</p>
               <h2 className="editorial-title" style={{ color: "#F4F0E6", fontSize: "clamp(2.5rem,7vw,5.8rem)" }}>
-                Simple pricing.
+                Start small.
                 <br />
-                No surprises.
+                Build from there.
               </h2>
             </div>
 
@@ -1740,13 +1741,13 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
                 </div>
                 <p className="mt-1.5 text-sm" style={{ color: "rgba(244,240,230,0.26)" }}>one-time, no subscription</p>
                 <p className="mt-6 text-[0.95rem] leading-[1.9]" style={{ color: "rgba(244,240,230,0.44)" }}>
-                  Sandra&apos;s framework to get you moving — before you open Studio.
+                  Start here when showing your face still feels like the hard part.
                 </p>
                 <ul className="mt-6 space-y-3 text-[0.95rem]" style={{ color: "rgba(244,240,230,0.5)" }}>
                   {[
-                    "7-day structure you can finish at your pace",
+                    "7-day structure you can do at your own pace",
                     "Instant access after checkout",
-                    "A gentle on-ramp if Maya feels new",
+                    "A gentle first yes before the full system",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <span style={{ color: "rgba(244,240,230,0.24)", marginTop: "0.12em", flexShrink: 0 }}>+</span>
@@ -1778,12 +1779,13 @@ export default function LandingPageEditorial({ referralCode }: { referralCode?: 
                 </div>
                 <p className="mt-1.5 text-sm" style={{ color: "rgba(26,23,20,0.3)" }}>per month, cancel anytime</p>
                 <p className="mt-6 text-[0.95rem] leading-[1.9]" style={{ color: "rgba(26,23,20,0.54)" }}>
-                  Your personal brand AI — photos, feed plan, captions, and coaching — all in one place. She gets smarter the longer you use her.
+                  Come here when you want the full system to hold the weight with you. Maya remembers your brand,
+                  helps with the words, the visuals, and the staying consistent part.
                 </p>
                 <ul className="mt-6 space-y-3 text-[0.95rem]" style={{ color: "rgba(26,23,20,0.62)" }}>
                   {[
                     "Maya with brand memory",
-                    "Brand photos + Feed Planner + captions",
+                    "Brand photos + planning + captions",
                     "Academy included",
                     "Cancel from account settings",
                   ].map((item) => (
