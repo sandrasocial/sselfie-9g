@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
-import SelfieGuidePaidLanding from "@/components/selfie-guide/selfie-guide-paid-landing"
+import SelfieGuideFree from "@/components/freebie/selfie-guide-free-landing"
 
 export const metadata: Metadata = {
-  title: "The Selfie Guide — Selfies You Feel Good Posting",
+  title: "Free Selfie Guide — Selfies You Feel Good Posting",
   description:
-    "Sandra’s eight-part interactive selfie guide: phone settings, light, angles, editing, confidence, content rhythm, a 7-day challenge, and optional Studio. One-time $17, instant access.",
+    "Sandra's free eight-part selfie guide: phone settings, light, angles, editing, confidence, and a 7-day challenge. Instant access.",
   openGraph: {
-    title: "The Selfie Guide — Selfies you feel good posting",
+    title: "Free Selfie Guide — Selfies you feel good posting",
     description:
-      "Eight guided parts, instant access. Phone, natural light, no photographer — the same framework Sandra uses for brand photos.",
+      "Eight guided parts, free instant access. Phone, natural light, no photographer — Sandra's selfie framework.",
     url: "https://sselfie.ai/selfie-guide",
     type: "website",
     images: [
@@ -16,15 +16,15 @@ export const metadata: Metadata = {
         url: "https://sselfie.ai/og-image.png",
         width: 1200,
         height: 630,
-        alt: "SSELFIE Selfie Guide",
+        alt: "SSELFIE Free Selfie Guide",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Selfie Guide — Selfies you feel good posting",
+    title: "Free Selfie Guide — Selfies you feel good posting",
     description:
-      "Eight-part interactive guide — light, angles, editing, confidence, and a 7-day challenge. $17 one-time.",
+      "Eight-part interactive guide — light, angles, editing, confidence, and a 7-day challenge. Free.",
     images: ["https://sselfie.ai/og-image.png"],
   },
   alternates: {
@@ -32,11 +32,6 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function SelfieGuidePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ checkout?: string }>
-}) {
-  const params = await searchParams
-  return <SelfieGuidePaidLanding checkoutFailed={params.checkout === "failed"} />
+export default function SelfieGuidePage() {
+  return <SelfieGuideFree />
 }
