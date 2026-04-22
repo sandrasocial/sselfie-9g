@@ -127,12 +127,21 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
               </p>
             </td>
           </tr>
+
+          <!-- PS — Paid Upsell -->
+          <tr>
+            <td style="padding: 0 30px 32px;">
+              <p style="margin: 0; color: #78716c; font-size: 13px; font-weight: 300; line-height: 1.7;">
+                <em>P.S. If you want to go deeper — angles for every body type, my full confidence framework, and how to turn one shoot into a month of content — I built a full course called <a href="https://sselfie.ai/selfie-guide" style="color: #1c1917; text-decoration: underline;">The Selfie Method</a>. It's €97 one-time. No subscription. I'll talk more about it in the coming days, but if you're already ready — the link is right there.</em>
+              </p>
+            </td>
+          </tr>
           
           <!-- Footer -->
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Questions? Just reply to this email-I read every message.
+                Questions? Just reply to this email — I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
                 XoXo Sandra 💋
@@ -176,7 +185,9 @@ READ YOUR GUIDE: ${guideAccessLink}
 
 This link gives you lifetime access to your guide.
 
-Questions? Just reply to this email-I read every message.
+P.S. If you want to go deeper — angles for every body type, my full confidence framework, and how to turn one shoot into a month of content — I built a full course called The Selfie Method. It's €97 one-time. No subscription. I'll talk more about it in the coming days, but if you're already ready: https://sselfie.ai/selfie-guide
+
+Questions? Just reply to this email — I read every message.
 
 XoXo Sandra 💋
 

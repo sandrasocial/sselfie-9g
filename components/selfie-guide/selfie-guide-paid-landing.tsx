@@ -50,7 +50,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
         </div>
         <div className="hero-overlay" />
         <div className="hero-content">
-          <p className="hero-eyebrow">ONE-TIME · $17</p>
+          <p className="hero-eyebrow">ONE-TIME · €97</p>
           <h1 className={`hero-title ${cormorant.className}`}>Selfies you feel good posting.</h1>
           <p className="hero-copy">
             You do not need to be more photogenic. You need a way to stop disappearing every time it&apos;s your turn to
@@ -95,7 +95,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
           <div className="purchase-panel">
             <p className="purchase-eyebrow">YOUR INVESTMENT</p>
             <div className="price-row">
-              <span className={`price-amount ${cormorant.className}`}>$17</span>
+              <span className={`price-amount ${cormorant.className}`}>€97</span>
               <span className="price-label">one-time · instant access</span>
             </div>
             <p className="purchase-desc">
@@ -106,7 +106,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
             {checkoutFailed ? <p className="error-msg">Something went wrong with checkout. Please try again.</p> : null}
 
             <a href="/checkout/selfie-guide?plan=guide" className="btn-primary">
-              GET INSTANT ACCESS — $17 →
+              GET INSTANT ACCESS — €97 →
             </a>
 
             <ul className="trust-list">
