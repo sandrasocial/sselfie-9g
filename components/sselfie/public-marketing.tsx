@@ -4,19 +4,20 @@ import { useEffect, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 
-// ─── Vercel Blob images (real, approved) ──────────────────────────────────────
+// ─── Vercel Blob images ────────────────────────────────────────────────────────
+const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
 const IMG = {
-  hero:        "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/30vxpdwy61rmw0cvdxj8apjzgc-xG6gcWZ8hR4QLToseBbqTGM0dPr9NM.png",
-  before:      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-generations/8239-hQrbpFYBbCHzcY8YQ95YKqqpZmbdbW.png",
-  after:       "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mg0q5j29yhrmr0cvh4gax57cnr-p22TsIJ1grFHwnQrt2tXZ5foPm1vvv.png",
-  founder:     "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png",
-  feed:        "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png",
-  dark:        "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-generations/8227-Y8Hi0TmnDBrZmgOGBbRXt1jk4eigZR.png",
-  pricingBg:   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/xjn21cxbtdrmt0cvdxpsx38cnw-Z4oXOAZDQKa9g4KGDjiEYtRGQl5moM.png",
-  whoItsFor:   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/tmpbmq4nfg7.png",
-  presetBeige: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/Beige%20Aesthetic.png",
-  presetLight: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/Light%20%26%20Minimalistic.png",
-  presetDark:  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/darkandmoody.png",
+  hero:        `${BLOB}/sandra-portrait-after.jpg`,
+  before:      `${BLOB}/sandra-portrait-before.jpg`,
+  after:       `${BLOB}/sandra-portrait-after.jpg`,
+  founder:     `${BLOB}/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png`,
+  feed:        `${BLOB}/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png`,
+  dark:        `${BLOB}/maya-generations/8227-Y8Hi0TmnDBrZmgOGBbRXt1jk4eigZR.png`,
+  pricingBg:   `${BLOB}/maya-pro-generations/xjn21cxbtdrmt0cvdxpsx38cnw-Z4oXOAZDQKa9g4KGDjiEYtRGQl5moM.png`,
+  whoItsFor:   `${BLOB}/tmpbmq4nfg7.png`,
+  presetBeige: `${BLOB}/Beige%20Aesthetic.png`,
+  presetLight: `${BLOB}/Light%20%26%20Minimalistic.png`,
+  presetDark:  `${BLOB}/darkandmoody.png`,
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -84,6 +85,57 @@ const t = {
     fontWeight: 300,
     color:      C.textMuted,
   },
+}
+
+// ─── Before / After drag slider ──────────────────────────────────────────────
+function BeforeAfterSlider({ before, after, beforeLabel = "Before", afterLabel = "After" }: {
+  before: string; after: string; beforeLabel?: string; afterLabel?: string
+}) {
+  const [pos, setPos] = useState(50)
+
+  return (
+    <div className="mf relative overflow-hidden select-none"
+      style={{ aspectRatio: "3/4", borderRadius: "8px", cursor: "ew-resize", touchAction: "none" }}
+    >
+      {/* After (right side, full width beneath) */}
+      <img src={after} alt={afterLabel} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+
+      {/* Before (left side, clipped) */}
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
+        <img src={before} alt={beforeLabel} className="absolute inset-0 h-full object-cover"
+          style={{ width: `${10000 / pos}%`, maxWidth: "none" }} draggable={false} />
+      </div>
+
+      {/* Divider line + handle */}
+      <div className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
+        style={{ left: `${pos}%`, transform: "translateX(-50%)", zIndex: 10 }}
+      >
+        <div className="w-px h-full" style={{ background: "rgba(255,255,255,0.7)" }} />
+        <div className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
+          style={{ width: "36px", height: "36px", borderRadius: "50%", background: "rgba(255,255,255,0.95)", boxShadow: "0 2px 12px rgba(0,0,0,0.4)" }}
+        >
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+            <path d="M1 5h12M1 5L4 2M1 5l3 3M13 5l-3-3M13 5l-3 3" stroke="#0d0c0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Labels */}
+      <span className="absolute top-4 left-4 pointer-events-none"
+        style={{ ...t.eyebrow, color: "rgba(255,255,255,0.85)", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", padding: "4px 10px", borderRadius: "100px" }}
+      >{beforeLabel}</span>
+      <span className="absolute top-4 right-4 pointer-events-none"
+        style={{ ...t.eyebrow, color: "rgba(255,255,255,0.85)", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", padding: "4px 10px", borderRadius: "100px" }}
+      >{afterLabel}</span>
+
+      {/* Invisible range input captures all drag/touch */}
+      <input type="range" min={2} max={98} value={pos}
+        onChange={(e) => setPos(Number(e.target.value))}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
+        style={{ zIndex: 20 }}
+      />
+    </div>
+  )
 }
 
 // ─── Card style ───────────────────────────────────────────────────────────────
@@ -437,22 +489,9 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       />
 
       {/* BEFORE / AFTER — preset example */}
-      <Section eyebrow="It works" title={<>Same phone. Same face. Better system.</>}>
-        <div className="grid gap-4 md:grid-cols-2 mf">
-          {[
-            { label: "Before",  img: IMG.before, note: "Original photo — no edits" },
-            { label: "After",   img: IMG.after,  note: "With presets + guide method" },
-          ].map((item) => (
-            <div key={item.label} style={{ ...card, padding: "16px" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span style={t.eyebrow}>{item.label}</span>
-                <span style={{ ...t.body, fontSize: "12px" }}>{item.note}</span>
-              </div>
-              <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", borderRadius: "6px" }}>
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover" />
-              </div>
-            </div>
-          ))}
+      <Section eyebrow="It works" title={<>Same photo. Two edits. Drag to compare.</>}>
+        <div className="max-w-sm mx-auto">
+          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="No edit" afterLabel="With preset" />
         </div>
       </Section>
 
@@ -584,23 +623,10 @@ export function StarterKitPageContent() {
         </div>
       </Section>
 
-      {/* BEFORE / AFTER */}
-      <Section eyebrow="Proof" title="Same photo. Better finish.">
-        <div className="grid gap-4 md:grid-cols-2 mf">
-          {[
-            { label: "Before", img: IMG.before, note: "Original — no edit" },
-            { label: "After",  img: IMG.after,  note: "Starter Kit presets applied" },
-          ].map((item) => (
-            <div key={item.label} style={{ ...card, padding: "16px" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span style={t.eyebrow}>{item.label}</span>
-                <span style={{ ...t.body, fontSize: "12px" }}>{item.note}</span>
-              </div>
-              <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", borderRadius: "6px" }}>
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover" />
-              </div>
-            </div>
-          ))}
+      {/* BEFORE / AFTER SLIDER */}
+      <Section eyebrow="Proof" title="Same photo. Drag to see the difference.">
+        <div className="max-w-sm mx-auto">
+          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="Original" afterLabel="Preset applied" />
         </div>
       </Section>
 
