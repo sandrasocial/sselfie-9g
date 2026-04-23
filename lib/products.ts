@@ -28,6 +28,8 @@ export interface PricingProduct {
     | "brand_strategy_pack"
     | "selfie_guide_bundle"
     | "selfie_guide"
+    | "starter_kit"
+    | "masterclass"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -130,6 +132,36 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     priceInCents: 1900, // $19 one-time
     type: "brand_strategy_pack",
     tag: "bought_brand_strategy_pack",
+  },
+  {
+    id: "starter_kit",
+    name: "Selfie Starter Kit",
+    displayName: "Selfie Starter Kit",
+    description: "The presets, quick-start, and guide Sandra uses to help you get a better photo faster.",
+    priceInCents: 3700, // $37 one-time
+    type: "starter_kit",
+    tag: "bought_starter_kit",
+    features: [
+      "Starter Kit access page",
+      "Preset download link",
+      "Quick-start checklist for your next selfie",
+      "Guide link for the full selfie method",
+    ],
+  },
+  {
+    id: "masterclass",
+    name: "Selfie Masterclass",
+    displayName: "Selfie Masterclass",
+    description: "Sandra's full method for light, pose, edit, post, and repeat.",
+    priceInCents: 14700, // $147 one-time
+    type: "masterclass",
+    tag: "bought_masterclass",
+    features: [
+      "Full method walkthrough",
+      "Module-based training access",
+      "Academy entitlement unlock",
+      "Next-step support toward Studio or 1:1",
+    ],
   },
   {
     id: "selfie_guide_bundle",

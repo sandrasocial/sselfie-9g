@@ -40,6 +40,20 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying the Brand Strategy Pack with encrypted Stripe checkout.",
     footer: "Digital purchase. Your Brand Strategy access is delivered right after payment.",
   },
+  starter_kit: {
+    heroTitle: "Complete your Starter Kit order",
+    heroBody: "Get the presets, quick-start, and guide support in one place.",
+    heading: "Secure checkout",
+    blurb: "You are buying the Selfie Starter Kit with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your Starter Kit access is delivered right after payment.",
+  },
+  masterclass: {
+    heroTitle: "Complete your Masterclass order",
+    heroBody: "Unlock Sandra's full selfie method right after payment.",
+    heading: "Secure checkout",
+    blurb: "You are buying the Selfie Masterclass with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
+  },
 }
 
 function CheckoutContent() {

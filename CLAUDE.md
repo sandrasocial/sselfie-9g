@@ -46,6 +46,19 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 | `tasks/ACADEMY-01-foundation.md` | Academy foundation | Planned |
 | `tasks/ACADEMY-02-CODEX-SPEC.md` | Academy Codex spec | Planned |
 
+### Selfie Education Reposition (April 23, 2026)
+
+- Approved direction: `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
+- New public ladder: Free Selfie Guide -> Starter Kit ($37) -> Masterclass ($147) -> Studio (€97/mo) -> 1:1
+- Lifecycle owner: `app/api/cron/nurture-sequence/route.ts`
+- Delivery model:
+  - Free Guide -> `freebie_subscribers` token -> `/selfie-guide/access/[token]`
+  - Starter Kit -> tokenized access route at `/access/starter-kit/[token]`
+  - Masterclass -> Academy entitlement + lifecycle delivery
+- Public marketing routes now live in repo: `/starter-kit`, `/masterclass`, `/join/studio`, `/work-with-me`
+- Checkout routes now live in repo: `/checkout/starter-kit`, `/checkout/masterclass`
+- Keep outbound copy draft-safe until Sandra approves final launch copy and ops confirms production env vars
+
 ### Selfie Guide Status (April 2026)
 
 - `tasks/SELFIE-GUIDE-02-phase-b.md` — **Implemented** (chapter flow, challenge tracking + Day 14 trigger, Maya preview API, analytics API + admin UI, email templates)
@@ -175,6 +188,13 @@ Target: €197/month minimum. Not €97. Not €27.
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
 | Selfie Guide checkout URL | `https://sselfie.ai/checkout/selfie-guide` |
 | Selfie Guide access URL | `https://sselfie.ai/selfie-guide/access/[token]` |
+| Starter Kit landing URL | `https://sselfie.ai/starter-kit` |
+| Starter Kit checkout URL | `https://sselfie.ai/checkout/starter-kit` |
+| Starter Kit access URL | `https://sselfie.ai/access/starter-kit/[token]` |
+| Masterclass landing URL | `https://sselfie.ai/masterclass` |
+| Masterclass checkout URL | `https://sselfie.ai/checkout/masterclass` |
+| Studio join URL | `https://sselfie.ai/join/studio` |
+| Work With Me URL | `https://sselfie.ai/work-with-me` |
 | Brand Strategy landing URL | `https://sselfie.ai/brand-strategy` ($19 paid) |
 | Brand Strategy checkout URL | `https://sselfie.ai/checkout/brand-strategy-pack` |
 | Brand Strategy setup URL | `https://sselfie.ai/brand-strategy/setup/[setupToken]` |
@@ -205,6 +225,9 @@ Target: €197/month minimum. Not €97. Not €27.
 
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
+| Free Selfie Guide | Free | 🚧 Reposition in progress | Lead magnet + email capture front door |
+| Starter Kit | $37 | 🚧 Reposition in progress | One-time. Tokenized delivery path planned |
+| Masterclass | $147 | 🚧 Reposition in progress | One-time. Academy-style fulfillment planned |
 | Studio membership | €97/mo | ✅ Active | Cancel anytime |
 | Selfie Guide | €17 | ✅ Active | Interactive course, token access flow |
 | Selfie Guide Bundle | €27 | ✅ Active | Guide + extras |
@@ -229,6 +252,7 @@ Target: €197/month minimum. Not €97. Not €27.
 - Feb 28, 2026: First Studio membership email — Broadcast ID `8cacda39-7495-47a6-8505-c6985df7eaeb`
 - Mar 02, 2026: SEQ-01 Nurture sequence approved (5 emails, Day 2/5/9/14/20 for Selfie Guide buyers) — templates renamed `nurture-strategy-n*.ts`
 - Mar 09, 2026: Legacy manual/scheduled campaign stack removed from repo. Only live email paths remain.
+- Apr 23, 2026: Selfie education ladder approved. `nurture-sequence` now owns draft lifecycle for Free Guide -> Starter Kit -> Masterclass plus the legacy Brand Strategy follow-up until checkout/webhook migration completes.
 
 ---
 

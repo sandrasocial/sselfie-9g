@@ -122,6 +122,115 @@ async function markRevenueEnginePurchase(params: {
   }
 }
 
+async function upsertStarterKitSubscriber(email: string, name?: string | null) {
+  const resolvedName = (name || email.split("@")[0] || "Starter Kit buyer").trim()
+  const existingSubscriber = await sql`
+    SELECT id, access_token, email_tags
+    FROM freebie_subscribers
+    WHERE LOWER(email) = LOWER(${email})
+    LIMIT 1
+  `
+
+  const existing = existingSubscriber[0] as
+    | { id: number; access_token?: string | null; email_tags?: string[] | null }
+    | undefined
+  const accessToken = existing?.access_token?.trim() || randomUUID()
+  const tags = new Set(Array.isArray(existing?.email_tags) ? existing.email_tags : [])
+  tags.add("purchased")
+  tags.add("customer")
+  tags.add("starter-kit-paid")
+  const normalizedTags = Array.from(tags)
+
+  if (existing) {
+    await sql`
+      UPDATE freebie_subscribers
+      SET
+        name = COALESCE(NULLIF(${resolvedName}, ''), name),
+        source = 'starter-kit-paid',
+        access_token = ${accessToken},
+        email_tags = ${normalizedTags}::text[],
+        converted_to_user = TRUE,
+        converted_at = COALESCE(converted_at, NOW()),
+        updated_at = NOW()
+      WHERE id = ${existing.id}
+    `
+
+    return { subscriberId: existing.id, accessToken }
+  }
+
+  const inserted = await sql`
+    INSERT INTO freebie_subscribers (
+      email,
+      name,
+      source,
+      access_token,
+      email_tags,
+      converted_to_user,
+      converted_at,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${email},
+      ${resolvedName},
+      'starter-kit-paid',
+      ${accessToken},
+      ${normalizedTags}::text[],
+      TRUE,
+      NOW(),
+      NOW(),
+      NOW()
+    )
+    RETURNING id
+  `
+
+  return { subscriberId: inserted[0].id as number, accessToken }
+}
+
+async function generatePasswordSetupLinkForPurchase(userId: string | null | undefined, email: string) {
+  if (!userId) {
+    return undefined
+  }
+
+  try {
+    const userRecord = await sql`
+      SELECT password_setup_complete FROM users WHERE id = ${userId} LIMIT 1
+    `
+
+    if (userRecord[0]?.password_setup_complete !== false) {
+      return undefined
+    }
+
+    const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+    const supabaseAdmin = createAdminClient()
+    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${productionUrl}/auth/setup-password` },
+    })
+
+    if (resetError || !resetData?.properties?.action_link) {
+      return undefined
+    }
+
+    let link = resetData.properties.action_link
+
+    if (link.includes("localhost") || link.includes("supabase.co")) {
+      const url = new URL(link)
+      const token = url.searchParams.get("token")
+      const type = url.searchParams.get("type") || "recovery"
+      if (token) {
+        link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+      }
+    }
+
+    return link
+  } catch (error: any) {
+    console.error("[v0] Error generating password setup link for purchase:", error.message)
+    return undefined
+  }
+}
+
 /** Stable id for Redis webhook rate limit — never bucket unrelated traffic on "undefined". */
 function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<string, unknown> } }): string {
   const obj = event.data?.object ?? {}
@@ -291,6 +400,10 @@ export async function POST(request: NextRequest) {
               productTag = "paid-blueprint"
             } else if (productType === "brand_strategy_pack") {
               productTag = "brand-strategy-pack"
+            } else if (productType === "starter_kit") {
+              productTag = "starter-kit"
+            } else if (productType === "masterclass") {
+              productTag = "masterclass"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -442,7 +555,9 @@ export async function POST(request: NextRequest) {
             source === "landing_page" ||
             source === "selfie_guide_paid" ||
             source === "brand_strategy_paid" ||
-            source === "strategy_result_upsell"
+            source === "strategy_result_upsell" ||
+            source === "starter_kit_paid" ||
+            source === "masterclass_paid"
 
           console.log(`[v0] 💳 Payment mode detected`)
           console.log(
@@ -714,7 +829,9 @@ export async function POST(request: NextRequest) {
                 isPublicPaidCheckoutSource &&
                 productType !== "paid_blueprint" &&
                 productType !== "selfie_guide" &&
-                productType !== "selfie_guide_bundle"
+                productType !== "selfie_guide_bundle" &&
+                productType !== "starter_kit" &&
+                productType !== "masterclass"
               ) {
                 // ⚠️ Skip for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
                 console.log(
@@ -887,7 +1004,9 @@ export async function POST(request: NextRequest) {
                   if (
                     productType === "paid_blueprint" ||
                     productType === "selfie_guide" ||
-                    productType === "selfie_guide_bundle"
+                    productType === "selfie_guide_bundle" ||
+                    productType === "starter_kit" ||
+                    productType === "masterclass"
                   ) {
                     console.log(
                       `[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`
@@ -2247,6 +2366,442 @@ export async function POST(request: NextRequest) {
                   properties: {
                     source: source || "landing_page",
                     product_type: guideProductType,
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                    is_test_mode: isTestMode,
+                  },
+                })
+              } catch {
+                // best effort only
+              }
+            }
+          } else if (productType === "starter_kit") {
+            if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Starter Kit checkout completed but payment not confirmed (status: '${session.payment_status}').`
+              )
+            } else {
+              console.log(`[v0] 📦 Starter Kit purchase from ${customerEmail} - Payment confirmed`)
+
+              const isTestMode = !event.livemode
+              const paymentIntentId =
+                typeof session.payment_intent === "string"
+                  ? session.payment_intent
+                  : session.payment_intent?.id
+              const paymentIdForStorage = paymentIntentId || session.id
+              let customerId =
+                typeof session.customer === "string"
+                  ? session.customer
+                  : session.customer?.id || null
+              let paymentAmountCents = session.amount_total || 0
+
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                  customerId =
+                    typeof paymentIntent.customer === "string"
+                      ? paymentIntent.customer
+                      : paymentIntent.customer?.id || customerId
+                } catch (piError: any) {
+                  console.error(
+                    `[v0] Error retrieving payment intent for starter kit:`,
+                    piError.message
+                  )
+                }
+              }
+
+              if (customerId) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForStorage},
+                      ${customerId},
+                      ${userId},
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'starter_kit',
+                      'starter_kit',
+                      'Selfie Starter Kit',
+                      ${JSON.stringify(session.metadata || {})},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id)
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing starter kit payment:`, paymentError.message)
+                }
+              }
+
+              await sql`
+                INSERT INTO subscriptions (
+                  user_id,
+                  product_type,
+                  plan,
+                  status,
+                  stripe_customer_id,
+                  created_at,
+                  updated_at
+                )
+                SELECT
+                  ${userId},
+                  'starter_kit',
+                  'starter_kit',
+                  'active',
+                  ${customerId},
+                  NOW(),
+                  NOW()
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM subscriptions
+                  WHERE user_id = ${userId}
+                    AND product_type = 'starter_kit'
+                    AND status = 'active'
+                )
+              `
+
+              await sql`
+                INSERT INTO user_tags (user_id, tag, source, metadata)
+                VALUES (
+                  ${userId},
+                  'bought_starter_kit',
+                  'starter_kit_purchase',
+                  ${JSON.stringify({
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                  })}
+                )
+                ON CONFLICT (user_id, tag) DO NOTHING
+              `
+
+              await upsertPurchaseEntitlement({
+                userId: String(userId),
+                productId: "starter_kit",
+                sourceRef: paymentIdForStorage,
+                metadata: {
+                  source: "stripe_webhook:starter_kit",
+                  stripe_session_id: session.id,
+                },
+              })
+
+              try {
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                const presetPackUrl =
+                  process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
+                  process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL ||
+                  undefined
+                const subscriberRecord = await upsertStarterKitSubscriber(
+                  customerEmail!,
+                  session.customer_details?.name
+                )
+                const accessUrl = `${productionUrl}/access/starter-kit/${subscriberRecord.accessToken}`
+                const guideUrl = `${productionUrl}/selfie-guide/access/${subscriberRecord.accessToken}`
+                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(userId, customerEmail!)
+                const firstName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail!,
+                })
+
+                const emailHtml = `
+                  <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
+                    <p>Hi ${firstName},</p>
+                    <p>Your Starter Kit is ready.</p>
+                    <p>Start with the quick-start page, download your presets, and use the guide when you want the fuller method.</p>
+                    <p><a href="${accessUrl}" style="color: #1c1917;">Open your Starter Kit</a></p>
+                    <p><a href="${guideUrl}" style="color: #1c1917;">Open the Selfie Guide</a></p>
+                    ${
+                      presetPackUrl
+                        ? `<p><a href="${presetPackUrl}" style="color: #1c1917;">Download your presets</a></p>`
+                        : ""
+                    }
+                    ${
+                      passwordSetupLink
+                        ? `<p><a href="${passwordSetupLink}" style="color: #1c1917;">Set your password</a></p>`
+                        : ""
+                    }
+                    <p>Sandra</p>
+                  </div>
+                `
+                const emailText = [
+                  `Hi ${firstName},`,
+                  "",
+                  "Your Starter Kit is ready.",
+                  "Start with the quick-start page, download your presets, and use the guide when you want the fuller method.",
+                  `Open your Starter Kit: ${accessUrl}`,
+                  `Open the Selfie Guide: ${guideUrl}`,
+                  ...(presetPackUrl ? [`Download your presets: ${presetPackUrl}`] : []),
+                  ...(passwordSetupLink ? [`Set your password: ${passwordSetupLink}`] : []),
+                  "",
+                  "Sandra",
+                ].join("\n")
+
+                const emailResult = await sendEmail({
+                  to: customerEmail!,
+                  subject: "Your Starter Kit is ready",
+                  html: emailHtml,
+                  text: emailText,
+                  emailType: "starter_kit_delivery",
+                  tags: ["starter-kit", "delivery"],
+                })
+
+                if (!emailResult.success) {
+                  console.error(
+                    `[v0] ❌ Failed to send Starter Kit delivery email: ${emailResult.error}`
+                  )
+                }
+              } catch (emailError: any) {
+                console.error(`[v0] Error sending Starter Kit delivery email:`, emailError.message)
+              }
+
+              await updateTags(customerEmail!, {
+                product: "starter-kit",
+                journey: "starter_kit",
+                bought_starter_kit: "true",
+              }).catch((tagError) => {
+                console.error("[v0] Failed to update Starter Kit tags:", tagError)
+              })
+
+              try {
+                await logAnalyticsEvent({
+                  eventName: "starter_kit_checkout_success",
+                  userId: String(userId),
+                  properties: {
+                    source: source || "landing_page",
+                    product_type: "starter_kit",
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                    is_test_mode: isTestMode,
+                  },
+                })
+              } catch {
+                // best effort only
+              }
+            }
+          } else if (productType === "masterclass") {
+            if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Masterclass checkout completed but payment not confirmed (status: '${session.payment_status}').`
+              )
+            } else {
+              console.log(`[v0] 🎓 Masterclass purchase from ${customerEmail} - Payment confirmed`)
+
+              const isTestMode = !event.livemode
+              const paymentIntentId =
+                typeof session.payment_intent === "string"
+                  ? session.payment_intent
+                  : session.payment_intent?.id
+              const paymentIdForStorage = paymentIntentId || session.id
+              let customerId =
+                typeof session.customer === "string"
+                  ? session.customer
+                  : session.customer?.id || null
+              let paymentAmountCents = session.amount_total || 0
+
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                  customerId =
+                    typeof paymentIntent.customer === "string"
+                      ? paymentIntent.customer
+                      : paymentIntent.customer?.id || customerId
+                } catch (piError: any) {
+                  console.error(
+                    `[v0] Error retrieving payment intent for masterclass:`,
+                    piError.message
+                  )
+                }
+              }
+
+              if (customerId) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForStorage},
+                      ${customerId},
+                      ${userId},
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'masterclass',
+                      'masterclass',
+                      'Selfie Masterclass',
+                      ${JSON.stringify(session.metadata || {})},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id)
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing masterclass payment:`, paymentError.message)
+                }
+              }
+
+              await sql`
+                INSERT INTO subscriptions (
+                  user_id,
+                  product_type,
+                  plan,
+                  status,
+                  stripe_customer_id,
+                  created_at,
+                  updated_at
+                )
+                SELECT
+                  ${userId},
+                  'masterclass',
+                  'masterclass',
+                  'active',
+                  ${customerId},
+                  NOW(),
+                  NOW()
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM subscriptions
+                  WHERE user_id = ${userId}
+                    AND product_type = 'masterclass'
+                    AND status = 'active'
+                )
+              `
+
+              await sql`
+                INSERT INTO user_tags (user_id, tag, source, metadata)
+                VALUES (
+                  ${userId},
+                  'bought_masterclass',
+                  'masterclass_purchase',
+                  ${JSON.stringify({
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                  })}
+                )
+                ON CONFLICT (user_id, tag) DO NOTHING
+              `
+
+              await upsertPurchaseEntitlement({
+                userId: String(userId),
+                productId: "masterclass",
+                sourceRef: paymentIdForStorage,
+                metadata: {
+                  source: "stripe_webhook:masterclass",
+                  stripe_session_id: session.id,
+                },
+              })
+
+              try {
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                const academyUrl = `${productionUrl}/academy`
+                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(userId, customerEmail!)
+                const firstName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail!,
+                })
+                const emailHtml = `
+                  <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
+                    <p>Hi ${firstName},</p>
+                    <p>Your Masterclass is unlocked.</p>
+                    <p>You can head into Academy for the next step, and your purchase is now linked to your account.</p>
+                    <p><a href="${academyUrl}" style="color: #1c1917;">Open Academy</a></p>
+                    ${
+                      passwordSetupLink
+                        ? `<p><a href="${passwordSetupLink}" style="color: #1c1917;">Set your password</a></p>`
+                        : ""
+                    }
+                    <p>Sandra</p>
+                  </div>
+                `
+                const emailText = [
+                  `Hi ${firstName},`,
+                  "",
+                  "Your Masterclass is unlocked.",
+                  "You can head into Academy for the next step, and your purchase is now linked to your account.",
+                  `Open Academy: ${academyUrl}`,
+                  ...(passwordSetupLink ? [`Set your password: ${passwordSetupLink}`] : []),
+                  "",
+                  "Sandra",
+                ].join("\n")
+
+                const emailResult = await sendEmail({
+                  to: customerEmail!,
+                  subject: "Your Masterclass is unlocked",
+                  html: emailHtml,
+                  text: emailText,
+                  emailType: "masterclass_delivery",
+                  tags: ["masterclass", "delivery"],
+                })
+
+                if (!emailResult.success) {
+                  console.error(
+                    `[v0] ❌ Failed to send Masterclass delivery email: ${emailResult.error}`
+                  )
+                }
+              } catch (emailError: any) {
+                console.error(`[v0] Error sending Masterclass delivery email:`, emailError.message)
+              }
+
+              await updateTags(customerEmail!, {
+                product: "masterclass",
+                journey: "masterclass",
+                bought_masterclass: "true",
+              }).catch((tagError) => {
+                console.error("[v0] Failed to update Masterclass tags:", tagError)
+              })
+
+              try {
+                await logAnalyticsEvent({
+                  eventName: "masterclass_checkout_success",
+                  userId: String(userId),
+                  properties: {
+                    source: source || "landing_page",
+                    product_type: "masterclass",
                     value: paymentAmountCents / 100,
                     currency: "usd",
                     stripe_session_id: session.id,
