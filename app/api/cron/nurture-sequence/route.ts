@@ -379,7 +379,8 @@ function starterKitAccessUrl(_candidate: StarterKitCandidate): string {
 }
 
 function masterclassAccessUrl(_candidate: MasterclassCandidate): string {
-  return MASTERCLASS_FALLBACK_URL
+  // Masterclass content lives inside the authenticated Academy — send buyers there, not back to the landing page
+  return `${SITE_URL}/academy`
 }
 
 async function sendStarterKitTouchEmail(
