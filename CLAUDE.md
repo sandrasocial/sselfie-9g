@@ -64,6 +64,18 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 - `tasks/SELFIE-GUIDE-02-phase-b.md` — **Implemented** (chapter flow, challenge tracking + Day 14 trigger, Maya preview API, analytics API + admin UI, email templates)
 - Remaining polish is content/ops validation (real before/after assets swap, end-to-end smoke checks in prod-like environment)
 
+### Academy Library Status (April 23, 2026)
+
+- `tasks/ACADEMY-03-course-library-ui.md` — **Implemented on `codex/academy-course-library`**
+- `/academy` is now the authenticated course library, not the old mini-product wall
+- New surfaces:
+  - `/academy/courses/[courseId]`
+  - `/academy/courses/[courseId]/lessons/[lessonId]`
+  - `/api/academy/lessons/[lessonId]/notes`
+- Lesson companion data is seeded into `academy_lessons.content`
+- New per-user lesson state table: `user_lesson_notes`
+- Maya profile sync from Academy lessons writes into `user_personal_brand` for whitelisted brand fields
+
 **Completed sprints (do not re-open):**
 - V-02 Full Funnel Hardening ✅ (2026-03-09)
 - Maya UX Stabilization ✅ (2026-03-11, commit `b950f1db`)
