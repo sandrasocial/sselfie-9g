@@ -7,7 +7,7 @@ type FailurePageProps = {
 }
 
 const RETRY_PATHS: Record<string, string> = {
-  sselfie_studio_membership: "/checkout/membership",
+  sselfie_studio_membership: "/private-shoot",
   one_time_session: "/checkout/one-time",
 }
 

@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
-import LandingPage from "@/components/sselfie/landing-page-editorial"
+import LandingPage from "@/components/sselfie/landing-page-education"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
 

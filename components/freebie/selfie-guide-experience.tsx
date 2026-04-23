@@ -916,8 +916,8 @@ export default function SelfieGuideExperience({
             <h1 className={`sg-complete-title ${cormorant.className}`}>You finished it.</h1>
             <p className="sg-complete-sub">Now let&apos;s see what Maya can do with your selfie.</p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
-              <Link href="/checkout/membership" className="sg-cta-primary">
-                Open Studio
+              <Link href="/private-shoot" className="sg-cta-primary">
+                Book the Private Offer
               </Link>
             </div>
             <p className="sg-complete-member">

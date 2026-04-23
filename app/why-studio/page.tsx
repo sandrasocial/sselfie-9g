@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { trackCTAClick, trackPricingView, trackCheckoutStart, trackSelfieGuideEntryClick } from "@/lib/analytics"
-import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
-import { handleCheckoutFailure } from "@/lib/checkout-failure"
+import { trackCTAClick, trackPricingView, trackSelfieGuideEntryClick } from "@/lib/analytics"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 
 export default function WhyStudioPage() {
   const [activeScene, setActiveScene] = useState(0)
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [showStickyFooter, setShowStickyFooter] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
@@ -79,33 +76,6 @@ export default function WhyStudioPage() {
 
     return () => observer.disconnect()
   }, [])
-
-  const handleStartCheckout = async (tierId: string) => {
-    try {
-      setCheckoutLoading(tierId)
-      
-      const productNames: Record<string, string> = {
-        sselfie_studio_membership: "Studio Membership",
-      }
-      const productName = productNames[tierId] || tierId
-      trackCheckoutStart(tierId, undefined)
-      trackCTAClick("pricing", productName, "/checkout")
-      
-      const clientSecret = await startEmbeddedCheckout(tierId)
-      window.location.href = `/checkout?client_secret=${clientSecret}`
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Checkout error:", error)
-      }
-      handleCheckoutFailure({
-        error,
-        source: "why_studio_pricing",
-        productId: tierId,
-        fallbackPath: "/checkout/membership",
-      })
-      setCheckoutLoading(null)
-    }
-  }
 
   const scrollToPricing = () => {
     const pricingSection = document.getElementById("pricing")
@@ -603,27 +573,27 @@ export default function WhyStudioPage() {
                 </Link>
               </div>
 
-              {/* Full Membership */}
+              {/* Private Offer */}
               <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                 <div className="absolute top-0 left-0 w-1 h-full bg-white" />
-                <h3 className="text-lg font-serif text-white mb-4">Studio Membership — Let the system hold you</h3>
+                <h3 className="text-lg font-serif text-white mb-4">Private Brand Shoot — Let this be held with you</h3>
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                  <p>• 200 credits every month</p>
-                  <p>• Maya remembers your brand</p>
-                  <p>• Photos, planning, captions, Academy</p>
-                  <p>• Built for consistency when life is full</p>
+                  <p>• Private, guided delivery</p>
+                  <p>• Maya still powers the visuals behind the scenes</p>
+                  <p>• Brand photos plus support around the words</p>
+                  <p>• Built for seasons when you need less complexity</p>
                 </div>
                 <div className="mb-6">
-                  <span className="text-xl font-serif text-white">$97</span>
-                  <span className="text-[9px] uppercase text-stone-500 block">/ month</span>
+                  <span className="text-xl font-serif text-white">Private</span>
+                  <span className="text-[9px] uppercase text-stone-500 block">quoted after inquiry</span>
                 </div>
-                <button
-                  onClick={() => handleStartCheckout("sselfie_studio_membership")}
-                  disabled={checkoutLoading === "sselfie_studio_membership"}
-                  className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                <Link
+                  href="/private-shoot"
+                  className="btn w-full text-[10px] text-center"
+                  onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/private-shoot")}
                 >
-                  {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "Join the Studio →"}
-                </button>
+                  Book the Private Offer →
+                </Link>
               </div>
             </div>
           </div>
@@ -696,8 +666,8 @@ export default function WhyStudioPage() {
                 When you want this held with you
               </h2>
               <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-                Start with the guide. Add brand clarity next. Step into Studio when you want the full system in one
-                place.
+                Start with the guide. Add brand clarity next. Move into the private offer when you
+                want this held with you.
               </p>
 
               <div
@@ -739,32 +709,32 @@ export default function WhyStudioPage() {
                   </Link>
                 </div>
 
-                {/* Studio Card */}
+                {/* Private Offer Card */}
                 <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                   <div className="absolute top-0 left-0 w-1 h-full bg-white" />
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-lg font-serif text-white">Studio Membership</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Studio Conversion</p>
+                      <h3 className="text-lg font-serif text-white">Private Brand Shoot</h3>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Guided Offer</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-serif">$97</span>
-                      <span className="text-[9px] uppercase text-stone-500 block">/ month</span>
+                      <span className="text-xl font-serif">Private</span>
+                      <span className="text-[9px] uppercase text-stone-500 block">quoted after inquiry</span>
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• Monthly photo credits</p>
-                    <p>• Feed planning, captions, Academy</p>
-                    <p>• Maya remembers your brand voice</p>
-                    <p>• Ongoing support when consistency slips</p>
+                    <p>• Private brand image direction</p>
+                    <p>• AI-supported brand photos</p>
+                    <p>• Help shaping the content around them</p>
+                    <p>• A smaller, calmer delivery path</p>
                   </div>
-                  <button
-                    onClick={() => handleStartCheckout("sselfie_studio_membership")}
-                    disabled={checkoutLoading === "sselfie_studio_membership"}
-                    className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  <Link
+                    href="/private-shoot"
+                    className="btn w-full text-[10px] text-center"
+                    onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/private-shoot")}
                   >
-                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "Join the Studio →"}
-                  </button>
+                    Book the Private Offer →
+                  </Link>
                 </div>
               </div>
 

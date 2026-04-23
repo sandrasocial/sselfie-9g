@@ -784,8 +784,8 @@ export default function SSELFIEvsAragonPage() {
               <Link href="/selfie-guide" className="vs-btn-primary" style={{ fontFamily: inter.style.fontFamily }}>
                 Start with Selfie Guide — $17
               </Link>
-              <Link href="/checkout/membership" className="vs-btn-secondary" style={{ fontFamily: inter.style.fontFamily }}>
-                Join Studio — $97/mo
+              <Link href="/private-shoot" className="vs-btn-secondary" style={{ fontFamily: inter.style.fontFamily }}>
+                Book the Private Offer
               </Link>
             </div>
           </div>

@@ -73,6 +73,10 @@ export async function createLandingCheckoutSession(
             ? "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE"
             : product.type === "selfie_guide"
               ? "STRIPE_PRICE_SELFIE_GUIDE"
+              : product.type === "starter_kit"
+                ? "STRIPE_PRICE_STARTER_KIT"
+                : product.type === "masterclass"
+                  ? "STRIPE_PRICE_MASTERCLASS"
               : product.type === "sselfie_studio_membership_annual"
                 ? "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID"
                 : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
@@ -92,6 +96,10 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE_BUNDLE
   } else if (product.type === "selfie_guide") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE
+  } else if (product.type === "starter_kit") {
+    stripePriceId = process.env.STRIPE_PRICE_STARTER_KIT
+  } else if (product.type === "masterclass") {
+    stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   }
   stripePriceId = stripePriceId?.trim()
 

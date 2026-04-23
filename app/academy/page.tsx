@@ -1,12 +1,15 @@
-"use client"
-
-import { useState } from "react"
+import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
-import { useRouter } from "next/navigation"
+
+import {
+  formatDurationLabel,
+  getAccessibleLibraryCourses,
+  requireAcademyPageUser,
+} from "@/app/academy/_lib/course-library"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300"],
+  weight: ["200", "300"],
 })
 
 const inter = Inter({
@@ -14,164 +17,132 @@ const inter = Inter({
   weight: ["300", "500"],
 })
 
-type ProductId = "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
-
-const PRODUCTS: {
-  id: ProductId
-  name: string
-  description: string
-  price: number
-}[] = [
-  {
-    id: "what_to_say",
-    name: "What To Say",
-    description: "Know exactly what to post without staring at a blank screen.",
-    price: 17,
-  },
-  {
-    id: "show_up",
-    name: "Show Up",
-    description: "Build your 30-day content rhythm so visibility compounds weekly.",
-    price: 27,
-  },
-  {
-    id: "get_paid",
-    name: "Get Paid",
-    description: "Turn your audience attention into your first consistent online income.",
-    price: 47,
-  },
-  {
-    id: "ai_photo_prompts",
-    name: "AI Photo Prompt Pack",
-    description: "Generate stronger brand photos from your phone with guided prompts.",
-    price: 17,
-  },
-]
-
-function BuyButton({
-  productId,
-  price,
-}: {
-  productId: ProductId
-  price: number
-}) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleBuy() {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch("/api/academy/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/auth/login?redirect=/academy")
-          return
-        }
-        throw new Error(data.error || "Something went wrong")
-      }
-      window.location.href = data.url
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
-      setLoading(false)
-    }
-  }
+export default async function AcademyPage() {
+  const { neonUser } = await requireAcademyPageUser("/academy")
+  const { hasAccess, courses } = await getAccessibleLibraryCourses(neonUser.id)
 
   return (
-    <div className="mt-5">
-      <button
-        onClick={handleBuy}
-        disabled={loading}
-        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#c8c4bb] hover:text-[#f0ede8] disabled:opacity-50`}
-        style={{ fontWeight: 500 }}
-      >
-        {loading ? "Opening checkout" : `Get it -> ${price} EUR`}
-      </button>
-      {error && <p className={`${inter.className} mt-2 text-xs text-red-400`}>{error}</p>}
-    </div>
-  )
-}
-
-export default function AcademyPage() {
-  return (
-    <main className="min-h-screen min-w-[375px] bg-[#0d0c0b] text-[#f0ede8]">
-      <section className="px-6 py-16 md:px-20 md:py-20 border-b border-[rgba(195,190,182,0.15)]">
-        <p className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
-          SSELFIE Academy
+    <main className="min-h-screen bg-[#0d0c0b] text-[#f0ede8]">
+      <section className="border-b border-[rgba(195,190,182,0.15)] px-6 py-14 md:px-20 md:py-20">
+        <p
+          className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
+          style={{ fontWeight: 500 }}
+        >
+          My Library
         </p>
         <h1
-          className={`${cormorant.className} mt-6 uppercase text-[#f0ede8] text-5xl md:text-7xl`}
-          style={{ fontWeight: 200, lineHeight: 0.95 }}
+          className={`${cormorant.className} mt-6 text-5xl uppercase md:text-7xl`}
+          style={{ fontWeight: 200, lineHeight: 0.92 }}
         >
-          From 12 EUR
+          Your courses.
           <br />
-          To A Live App
-          <br />
-          In 8 Months.
+          All in one place.
         </h1>
       </section>
 
       <section className="px-6 py-10 md:px-20 md:py-14">
-        <ol className="space-y-0 border-t border-[rgba(195,190,182,0.15)]">
-          {PRODUCTS.map((product, index) => (
-            <li
-              key={product.id}
-              className="grid grid-cols-[80px_1fr] gap-4 border-b border-[rgba(195,190,182,0.15)] py-8 md:grid-cols-[120px_1fr] md:gap-6"
+        {!hasAccess ? (
+          <div className="max-w-3xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-8 backdrop-blur-[50px]">
+            <p
+              className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
+              style={{ fontWeight: 500 }}
             >
-              <p
-                className={`${cormorant.className} text-4xl md:text-5xl text-[#c8c4bb]`}
-                style={{ fontWeight: 300, lineHeight: 1 }}
-              >
-                {String(index + 1).padStart(2, "0")}
-              </p>
+              Locked
+            </p>
+            <p
+              className={`${inter.className} mt-4 max-w-xl text-sm leading-8 text-[#c8c4bb]`}
+              style={{ fontWeight: 300 }}
+            >
+              Your courses will appear here once you have access.
+            </p>
+            <Link
+              href="/join/studio"
+              className={`${inter.className} mt-8 inline-flex rounded-full border border-[rgba(195,190,182,0.25)] px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.15)]`}
+              style={{ fontWeight: 500 }}
+            >
+              Join Studio
+            </Link>
+          </div>
+        ) : (
+          <ol className="space-y-0 border-t border-[rgba(195,190,182,0.15)]">
+            {courses.map((course, index) => {
+              const actionLabel = course.started ? "Continue" : "Start"
+              const targetLessonId = course.firstIncompleteLessonId
+              const href = targetLessonId
+                ? `/academy/courses/${course.id}/lessons/${targetLessonId}`
+                : `/academy/courses/${course.id}`
 
-              <div>
-                <p
-                  className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#f0ede8]`}
-                  style={{ fontWeight: 500 }}
+              return (
+                <li
+                  key={course.id}
+                  className="border-b border-[rgba(195,190,182,0.15)] py-8 md:py-10"
                 >
-                  {product.name}
-                </p>
-                <p className={`${inter.className} mt-3 text-sm text-[#8a8780] max-w-xl`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
-                  {product.description}
-                </p>
-                <p className={`${inter.className} mt-4 text-[10px] uppercase tracking-[0.5em] text-[#f0ede8]`} style={{ fontWeight: 500 }}>
-                  {product.price} EUR
-                </p>
-                <BuyButton productId={product.id} price={product.price} />
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+                  <div className="grid gap-5 md:grid-cols-[88px_minmax(0,1fr)_220px] md:items-start md:gap-6">
+                    <p
+                      className={`${cormorant.className} text-4xl text-[#c8c4bb] md:text-5xl`}
+                      style={{ fontWeight: 300, lineHeight: 1 }}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
 
-      <section className="px-6 pb-16 md:px-20 md:pb-20">
-        <div className="grid grid-cols-3 gap-3 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] p-5 md:gap-6 md:p-8 rounded-2xl">
-          <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>180K+</p>
-            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
-              Audience
-            </p>
-          </div>
-          <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>12 EUR</p>
-            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
-              Starting Point
-            </p>
-          </div>
-          <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>8 Months</p>
-            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
-              Build Window
-            </p>
-          </div>
-        </div>
+                    <div className="space-y-3">
+                      <Link href={`/academy/courses/${course.id}`} className="block">
+                        <h2
+                          className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#f0ede8] transition-opacity hover:opacity-80`}
+                          style={{ fontWeight: 500 }}
+                        >
+                          {course.title}
+                        </h2>
+                      </Link>
+                      {course.description ? (
+                        <p
+                          className={`${inter.className} max-w-2xl text-sm leading-8 text-[#c8c4bb]`}
+                          style={{ fontWeight: 300 }}
+                        >
+                          {course.description}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-4 md:text-right">
+                      <p
+                        className={`${inter.className} text-[10px] uppercase tracking-[0.4em] text-[#8a8780]`}
+                        style={{ fontWeight: 500 }}
+                      >
+                        {course.lessonCount} lessons · {formatDurationLabel(course.totalDurationSeconds)}
+                      </p>
+
+                      {course.started ? (
+                        <div className="space-y-2">
+                          <div className="h-[3px] w-full bg-[rgba(195,190,182,0.12)]">
+                            <div
+                              className="h-full bg-[#c9a96e]"
+                              style={{ width: `${Math.max(course.progressPercentage, 4)}%` }}
+                            />
+                          </div>
+                          <p
+                            className={`${inter.className} text-[10px] uppercase tracking-[0.35em] text-[#8a8780]`}
+                            style={{ fontWeight: 500 }}
+                          >
+                            {course.progressPercentage}% complete
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <Link
+                        href={href}
+                        className={`${inter.className} inline-flex text-[11px] uppercase tracking-[0.35em] text-[#f0ede8] transition-opacity hover:opacity-80`}
+                        style={{ fontWeight: 500 }}
+                      >
+                        → {actionLabel}
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        )}
       </section>
     </main>
   )

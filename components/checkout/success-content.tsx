@@ -59,18 +59,18 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       href: resolvedReturnTo,
       label: "Open your strategy",
       helper: "We're getting your private setup link ready now. This usually takes a few seconds.",
-      secondaryHref: "/checkout/membership",
-      secondaryLabel: "Explore Studio",
+      secondaryHref: "/private-shoot",
+      secondaryLabel: "Private Offer",
       secondaryEventName: "brand_strategy_pack_studio_click",
     }
   }
 
   if (productType === "one_time_session") {
     return {
-      href: "/checkout/membership",
-      label: "Join Studio",
+      href: "/private-shoot",
+      label: "Private Offer",
       helper:
-        "Your photoshoot is confirmed. If you want monthly photos, planning, and credits, Studio is the next step.",
+        "Your photoshoot is confirmed. If you want more guided support around the visuals and content, the private offer is the next step.",
       eventName: "one_time_session_studio_click",
     }
   }
@@ -617,12 +617,12 @@ export function SuccessContent({
                 source_product: "brand_strategy_pack",
                 source_surface: "checkout_timeout",
               })
-              router.push("/checkout/membership")
+              router.push("/private-shoot")
             }}
             variant="outline"
             className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
           >
-            Explore Studio
+            Private Offer
           </Button>
         </div>
         <p className="text-sm text-[#f5f5f5]">

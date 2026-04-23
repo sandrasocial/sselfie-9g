@@ -33,8 +33,8 @@ export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategy
       <a href={checkoutHref} className="btn-primary" onClick={handleCheckoutClick}>
         Get your Brand Strategy Pack instantly — $19
       </a>
-      <a href="/checkout/membership" className="btn-secondary">
-        Join Studio — $97/month
+      <a href="/private-shoot" className="btn-secondary">
+        Book the Private Offer
       </a>
     </div>
   )

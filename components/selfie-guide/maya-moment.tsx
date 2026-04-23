@@ -315,10 +315,10 @@ export default function MayaMoment({ token }: MayaMomentProps) {
                 color: "rgba(200,196,187,0.7)",
               }}
             >
-              Want to turn this into a real photo?
+              Want help turning this into real brand content?
             </p>
             <Link
-              href="/checkout/membership"
+              href="/private-shoot"
               style={{
                 display: "inline-block",
                 padding: "12px 22px",

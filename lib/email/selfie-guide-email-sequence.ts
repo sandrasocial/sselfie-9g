@@ -1,12 +1,12 @@
 /**
- * Revenue ladder email sequence — Selfie Guide -> Brand Strategy Pack -> Studio
+ * Revenue ladder email sequence — Free Selfie Guide -> Starter Kit -> Studio
  *
- * Timed sequence (queued on purchase, processed by /api/cron/nurture-sequence):
+ * Timed sequence (queued on purchase/opt-in, processed by /api/cron/nurture-sequence):
  *   Day 0  — selfie-guide-activation-day0    Delivery + quick-start nudge
- *   Day 3  — selfie-guide-day3-checkin        "5 minutes, one window-light selfie"
- *   Day 7  — selfie-guide-day7-challenge      "Start the 7-day challenge today"
- *   Day 14 — selfie-guide-day14-maya-bridge   Brand Strategy Pack bridge
- *   Day 21 — selfie-guide-day21-final         Studio invitation
+ *   Day 3  — selfie-guide-day3-checkin       "5 minutes, one window-light selfie"
+ *   Day 7  — selfie-guide-day7-challenge     "Start the 7-day challenge today"
+ *   Day 14 — selfie-guide-day14-maya-bridge  Starter Kit bridge
+ *   Day 21 — selfie-guide-day21-final        Studio invitation
  *
  * Event-based (triggered from /api/selfie-guide/progress when guide_completed_at is first set):
  *   selfie-guide-complete — "You finished it." + Studio CTA
