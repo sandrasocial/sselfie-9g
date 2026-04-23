@@ -128,11 +128,11 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
             </td>
           </tr>
 
-          <!-- PS — Paid Upsell -->
+          <!-- PS — Upsell -->
           <tr>
             <td style="padding: 0 30px 32px;">
               <p style="margin: 0; color: #78716c; font-size: 13px; font-weight: 300; line-height: 1.7;">
-                <em>P.S. If you want to go deeper — angles for every body type, my full confidence framework, and how to turn one shoot into a month of content — I built a full course called <a href="https://sselfie.ai/selfie-guide" style="color: #1c1917; text-decoration: underline;">The Selfie Method</a>. It's €97 one-time. No subscription. I'll talk more about it in the coming days, but if you're already ready — the link is right there.</em>
+                <em>P.S. Once you've worked through the guide, the next question is what to say around the photo — your message, your audience, your positioning. I built something for that: the <a href="https://sselfie.ai/checkout/brand-strategy-pack" style="color: #1c1917; text-decoration: underline;">Brand Strategy Pack</a>. $19. Takes 10 minutes. You get a full personal brand strategy document you keep forever.</em>
               </p>
             </td>
           </tr>
@@ -185,7 +185,7 @@ READ YOUR GUIDE: ${guideAccessLink}
 
 This link gives you lifetime access to your guide.
 
-P.S. If you want to go deeper — angles for every body type, my full confidence framework, and how to turn one shoot into a month of content — I built a full course called The Selfie Method. It's €97 one-time. No subscription. I'll talk more about it in the coming days, but if you're already ready: https://sselfie.ai/selfie-guide
+P.S. Once you've worked through the guide, the next question is what to say around the photo — your message, your audience, your positioning. I built something for that: the Brand Strategy Pack. $19. Takes 10 minutes. You get a full personal brand strategy document you keep forever: https://sselfie.ai/checkout/brand-strategy-pack
 
 Questions? Just reply to this email — I read every message.
 

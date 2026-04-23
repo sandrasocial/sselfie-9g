@@ -8,7 +8,7 @@ export interface SelfieGuideDay14MayaBridgeParams {
   accessUrl: string
 }
 
-const SELFIE_METHOD_URL = "https://sselfie.ai/selfie-guide"
+const BRAND_STRATEGY_URL = "https://sselfie.ai/checkout/brand-strategy-pack"
 
 export function generateSelfieGuideDay14MayaBridgeEmail({
   firstName,
@@ -24,33 +24,34 @@ export function generateSelfieGuideDay14MayaBridgeEmail({
     campaign: "selfie_guide_day14_upsell",
     content: "return_to_guide",
   })
-  const trackedCourseUrl = buildRevenueEmailLink(SELFIE_METHOD_URL, {
+  const trackedStrategyUrl = buildRevenueEmailLink(BRAND_STRATEGY_URL, {
     campaign: "selfie_guide_day14_upsell",
-    content: "selfie_method_checkout",
+    content: "brand_strategy_checkout",
     source: "selfie_guide_day14_email",
   })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Two weeks in. Here is what I have seen happen with people who stick with this:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free guide gave you the foundations. Light, angles, how to stop avoiding the camera. But the women who see a real change are the ones who go deeper — the ones who learn the full system.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Two weeks in. You have the light. You have the angle. You know how to show up on camera.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The next question is harder: what do you say around the photo?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">What is your message? Who is it for? What makes someone stop scrolling when they see you?</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">The Selfie Method — full course</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Everything in the free guide, plus: advanced angles for every body type, the confidence framework I use before every shoot, how to turn one 20-minute session into a month of content, and the editing workflow that keeps photos looking like you — not filtered.</p>`,
-      "What's inside",
+      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">Brand Strategy Pack — $19</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Answer a short set of questions about who you are and who you serve. My AI builds your full brand strategy — your positioning, your content voice, your audience, your offer angle. Delivered as a personal document you keep forever.</p>`,
+      "What it is",
     )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is €97. One time. No subscription.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">If you are ready to stop experimenting and actually have a repeatable system — this is it.</p>
-    <div style="margin:26px 0 16px;">${renderStoneButton("Get The Selfie Method — €97", trackedCourseUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is $19. One time.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Most people post good photos with nothing behind them. This is the thing that makes the photo mean something.</p>
+    <div style="margin:26px 0 16px;">${renderStoneButton("Get Your Brand Strategy — $19", trackedStrategyUrl)}</div>
     <p style="margin:0 0 4px;font-size:14px;line-height:1.7;text-align:center;"><a href="${trackedGuideUrl}" style="color:#a8a49c;text-decoration:underline;">Go back to the free guide &rarr;</a></p>
   `
 
   const html = renderStoneShell({
-    title: "Ready to go further?",
+    title: "The photo is done. Now what do you say?",
     eyebrow: "Selfie Guide",
-    subtitle: "The free guide started it. The full course finishes it.",
+    subtitle: "The guide taught you to show up. This teaches you what to say.",
     bodyHtml,
-    footerLead: "Reply if you have questions before buying. I read every one.",
+    footerLead: "Reply if you have questions. I read every one.",
     footerSignoff: "Sandra x",
   })
 
@@ -58,23 +59,25 @@ export function generateSelfieGuideDay14MayaBridgeEmail({
 
 Hi ${name},
 
-Two weeks in. Here is what I have seen happen with people who stick with this:
+Two weeks in. You have the light. You have the angle. You know how to show up on camera.
 
-The free guide gave you the foundations. Light, angles, how to stop avoiding the camera. But the women who see a real change are the ones who go deeper — the ones who learn the full system.
+The next question is harder: what do you say around the photo?
 
-The Selfie Method — full course
+What is your message? Who is it for? What makes someone stop scrolling when they see you?
 
-Everything in the free guide, plus: advanced angles for every body type, the confidence framework I use before every shoot, how to turn one 20-minute session into a month of content, and the editing workflow that keeps photos looking like you — not filtered.
+Brand Strategy Pack — $19
 
-It is €97. One time. No subscription.
+Answer a short set of questions about who you are and who you serve. My AI builds your full brand strategy — your positioning, your content voice, your audience, your offer angle. Delivered as a personal document you keep forever.
 
-If you are ready to stop experimenting and actually have a repeatable system — this is it.
+It is $19. One time.
 
-Get The Selfie Method — €97: ${trackedCourseUrl}
+Most people post good photos with nothing behind them. This is the thing that makes the photo mean something.
+
+Get Your Brand Strategy — $19: ${trackedStrategyUrl}
 
 Go back to the free guide: ${trackedGuideUrl}
 
-Reply if you have questions before buying. I read every one.
+Reply if you have questions. I read every one.
 Sandra x`
 
   return {
