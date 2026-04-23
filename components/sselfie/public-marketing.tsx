@@ -568,7 +568,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       {/* Free guide CTA */}
       <SplitSection
         eyebrow="Not ready to buy?"
-        title="Start here. It&apos;s free."
+        title="Start here. It's free."
         body={<p>The free Selfie Guide gives you the basics: light, angles, edits, and what to do first.</p>}
         imageSrc="/images/selfie-guide/ring-light-guide-portrait.png"
         imageAlt="Selfie guide portrait"
