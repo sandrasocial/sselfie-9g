@@ -153,14 +153,14 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               Creator Studio Membership
             </h2>
             <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
-              All products, all tools, one workflow.
+              The calmer next step if you want guided help around the visuals and content.
             </p>
             <Link
-              href="/checkout/membership"
+              href="/private-shoot"
               className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
               style={{ fontWeight: 500 }}
             >
-              Join the Membership {"->"}
+              Book the Private Offer {"->"}
             </Link>
           </section>
         ) : null}

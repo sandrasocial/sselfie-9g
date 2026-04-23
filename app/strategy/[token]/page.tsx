@@ -474,14 +474,14 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         <div className="upsell-overlay" />
         <div className="upsell-content">
           <p className="upsell-eyebrow">READY TO GO FURTHER?</p>
-          <h2 className={`upsell-heading ${cormorant.className}`}>Join SSELFIE Studio</h2>
+          <h2 className={`upsell-heading ${cormorant.className}`}>Want more support?</h2>
           <p className="upsell-body">
-            Turn this strategy into real content. Every month: new AI tools, live sessions with Sandra, your Feed
-            Planner, and a community of women building their brand.
+            Turn this strategy into real content with a smaller, more supported SSELFIE path. If
+            you want private help around the visuals and content, start there.
           </p>
           <div className="upsell-buttons">
-            <a href="https://sselfie.ai/checkout/membership" className="btn-primary">
-              Join Studio — $97/month
+            <a href="https://sselfie.ai/private-shoot" className="btn-primary">
+              Book the Private Offer
             </a>
             <a href="https://sselfie.ai/checkout/blueprint" className="btn-secondary">
               Try Feed Planner first

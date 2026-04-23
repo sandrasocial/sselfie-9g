@@ -435,14 +435,18 @@ function FaqGrid({ items }: { items: Array<{ question: string; answer: string }>
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 const FAQS = {
   starterKit: [
-    { question: "Do I need Lightroom already?",         answer: "No. The kit walks you through what to download and how to use it. It takes five minutes." },
-    { question: "Will this work on iPhone photos?",     answer: "Yes. That's the whole point. Same phone. Better result." },
-    { question: "Is this for complete beginners?",      answer: "Yes. It's for the person who knows how to take a photo and still doesn't like what comes out." },
+    { question: "Do I need Lightroom already?",        answer: "No. The masterclass walks you through downloading it and importing the presets step by step. Takes about five minutes." },
+    { question: "Will this work on my iPhone?",        answer: "Yes. Every tutorial in the editing masterclass uses a phone. No camera, no desktop software." },
+    { question: "What apps do I need?",                answer: "Lightroom Mobile, Hypic, and CapCut — all free. The masterclass shows you exactly how to use each one." },
+    { question: "Is this just presets?",               answer: "No. The presets are included, but the main thing is the editing masterclass — six video walkthroughs showing you exactly how I edit." },
+    { question: "What if I'm a complete beginner?",    answer: "Good. There's also a Canva crash course for beginners, a posing cheat sheet, and caption prompts. You don't need to know anything going in." },
   ],
   masterclass: [
-    { question: "Do I need the Starter Kit first?",    answer: "No. But it helps if you want the fastest first win." },
-    { question: "Is this just more presets?",           answer: "No. This is the method — how to get light, pose, edit, and posting to work together." },
-    { question: "How is this different from Studio?",  answer: "The Masterclass teaches the method once. Studio is the AI layer you use every week after that." },
+    { question: "Do I need the Starter Kit first?",    answer: "No. The Starter Kit is about editing. The Masterclass is about building your brand and showing up. Different things." },
+    { question: "Is this a photography course?",       answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online — your brand, your pillars, your content system." },
+    { question: "How long does it take?",              answer: "Fourteen lessons. Most are under 10 minutes. You can go through it in a weekend or take one lesson a day — up to you." },
+    { question: "How is this different from Studio?",  answer: "The Masterclass is the education — you do the work once and it's yours. Studio is the AI layer for when you want the tools to run it weekly." },
+    { question: "What if I've never posted consistently?", answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
   ],
   studio: [
     { question: "Who is Studio for?",                  answer: "For creators who already know the look they want and need speed, consistency, and memory inside the workflow." },
@@ -523,7 +527,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           {[
             { title: "Free Guide",       price: "Free",         body: "Light, angles, and what to do first. Start here.", href: "/selfie-guide" },
             { title: "Starter Kit",      price: "$37",          body: "Sixteen presets and the guide. One time.", href: "/starter-kit" },
-            { title: "Masterclass",      price: "$147",         body: "The full method, from first photo to a look you can repeat.", href: "/masterclass" },
+            { title: "Masterclass",      price: "$147",         body: "14 lessons on brand, content, and showing up consistently. The course that makes it click.", href: "/masterclass" },
             { title: "Studio",           price: "€97/mo",       body: "Maya, image generation, Feed Planner, and Academy.", href: "/join/studio" },
             { title: "1:1 with Sandra",  price: "From $2,000",  body: "Two or three people at a time. Direct eyes on your whole brand.", href: "/work-with-me" },
           ].map((p) => (
@@ -580,32 +584,51 @@ export function StarterKitPageContent() {
 
       <Hero
         eyebrow="Starter Kit — $37"
-        title={<>The presets I actually use. For $37.</>}
-        body={<p>Sixteen Lightroom presets, the selfie guide, and a quick-start you can use in the next hour.</p>}
+        title={<>The editing walkthrough. The presets. Everything.</>}
+        body={<p>Six video tutorials showing exactly how I edit. My preset collection. The posing cheat sheet. Caption prompts. All in one kit, for $37.</p>}
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit — $37" }}
-        secondary={{ href: "/selfie-guide",       label: "Start free first" }}
+        secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
       />
 
       {/* PROBLEM */}
-      <Section eyebrow="You already know" title="You know when it's close. But not close enough." narrow alt>
+      <Section eyebrow="The real issue" title="You know how to take a photo. You just don't know how to finish it." narrow alt>
         <div className="mf space-y-3" style={{ ...t.body, fontSize: "16px" }}>
-          <p>You don't need a new face or a different phone.</p>
-          <p>You need better light, a cleaner edit, and a faster way to stop second-guessing the result.</p>
+          <p>The photo looks close. But something's off — the tone, the skin, the overall feel.</p>
+          <p>That's an editing problem. Not a camera problem. Not a face problem.</p>
+          <p>This kit fixes that. Step by step, on your phone, using apps that are free.</p>
         </div>
       </Section>
 
-      {/* WHAT'S INSIDE */}
-      <Section eyebrow="What's included" title="Three things. That's it.">
-        <div className="grid gap-4 md:grid-cols-3">
-          <FCard title="16 Lightroom Presets" body="The exact edits that make a phone photo look finished. Import once, use forever." />
-          <FCard title="The Selfie Guide"     body="Light, angles, poses, and what to do in the first few minutes. Clear and simple." />
-          <FCard title="Quick-Start Guide"    body="One page. The fastest way from camera roll to a photo you actually want to post." />
+      {/* EDITING MASTERCLASS — HERO FEATURE */}
+      <Section eyebrow="The main event" title="Six editing walkthroughs. My exact formulas.">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {[
+            { num: "01", title: "Lightroom with presets",    body: "How to import the preset collection, apply it, and adjust the strength for your specific photo and skin tone." },
+            { num: "02", title: "iPhone native editing",     body: "My exact formula — exposure, brilliance, highlights, shadows, vignette. Copy and paste to every photo in seconds." },
+            { num: "03", title: "Hypic for portraits",       body: "The app nobody's talking about. How I get that clean, glowing skin tone without looking over-edited." },
+            { num: "04", title: "CapCut for video",          body: "My exact settings: contrast, sharpen, clarity, vignette. How I export at 4K every time." },
+            { num: "05", title: "Save a custom preset",      body: "How to build your own preset from a photo you love, so every future edit starts from the right place." },
+            { num: "06", title: "Apply edits in bulk",       body: "Copy one edit and paste it to every photo in your session. Your whole camera roll, done in 30 seconds." },
+          ].map((m) => (
+            <article key={m.num} className="mf" style={{ ...card, padding: "20px 24px" }}>
+              <p style={{ ...t.eyebrow, marginBottom: "12px" }}>{m.num}</p>
+              <p style={{ ...t.h3, fontSize: "17px", marginBottom: "8px" }}>{m.title}</p>
+              <p style={{ ...t.body, fontSize: "13px" }}>{m.body}</p>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      {/* BEFORE / AFTER SLIDER */}
+      <Section eyebrow="Before and after" title="Same photo. Drag to see the difference." alt>
+        <div className="max-w-sm mx-auto">
+          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="Original" afterLabel="Preset applied" />
         </div>
       </Section>
 
       {/* PRESET STYLES */}
-      <Section eyebrow="Three styles" title="Pick the one that feels most like you." alt>
+      <Section eyebrow="The preset collection" title="Three styles. Pick the one that feels most like you.">
         <div className="grid gap-4 md:grid-cols-3">
           {[
             { label: "Beige & warm",    img: IMG.presetBeige, note: "Soft, golden, editorial" },
@@ -623,22 +646,25 @@ export function StarterKitPageContent() {
         </div>
       </Section>
 
-      {/* BEFORE / AFTER SLIDER */}
-      <Section eyebrow="Proof" title="Same photo. Drag to see the difference.">
-        <div className="max-w-sm mx-auto">
-          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="Original" afterLabel="Preset applied" />
+      {/* EVERYTHING ELSE IN THE KIT */}
+      <Section eyebrow="Also included" title="The rest of the kit." alt>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <FCard title="Selfie Posing Cheat Sheet"       body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
+          <FCard title="Branding Planner Template"       body="Your brand colours, fonts, feed aesthetic, and visual direction — planned in one place." />
+          <FCard title="Storytelling Captions + Hooks"   body="Caption formulas and scroll-stopping text overlays. Includes my ChatGPT prompts for writing captions that actually connect." />
+          <FCard title="Canva Crash Course"              body="Never opened Canva? This walks you through the basics so you can create content without getting stuck on the tools." />
         </div>
       </Section>
 
       {/* FAQ */}
-      <Section eyebrow="FAQ" title="A few things people ask." alt>
+      <Section eyebrow="FAQ" title="A few things people ask.">
         <FaqGrid items={FAQS.starterKit} />
       </Section>
 
       <CtaClose
-        title="Start with the part that changes the result fastest."
+        title="Everything you need to go from camera roll to content you're proud of."
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit — $37" }}
-        secondary={{ href: "/masterclass",         label: "See the Masterclass" }}
+        secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
       />
 
       <PublicFooter />
@@ -655,34 +681,71 @@ export function MasterclassPageContent() {
 
       <Hero
         eyebrow="Masterclass — $147"
-        title={<>The full method. From first shot to a look you can repeat.</>}
-        body={<p>Not just how to edit one photo. How to get light, pose, edit, and posting to work together every time.</p>}
+        title={<>Fourteen lessons. From invisible to showing up like you mean it.</>}
+        body={<p>Not just how to look good in a photo. How to build the brand around it — your positioning, your pillars, your content system — and keep showing up.</p>}
         primary={{ href: "/checkout/masterclass", label: "Enroll — $147" }}
-        secondary={{ href: "/starter-kit",        label: "Start with the kit" }}
+        secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
       />
 
-      {/* MODULES */}
-      <Section eyebrow="What's inside" title="Light. Pose. Edit. Post. Repeat." alt>
-        <div className="grid gap-4 md:grid-cols-5">
+      {/* THE REAL PROBLEM */}
+      <Section eyebrow="What's actually going on" title="It's not that you don't know what to post. It's that you don't know who you are online yet." narrow alt>
+        <div className="mf space-y-3" style={{ ...t.body, fontSize: "16px" }}>
+          <p>So you post something, it doesn't land, and you tell yourself you're not consistent enough.</p>
+          <p>But consistency isn't the problem. Clarity is.</p>
+          <p>When you know exactly who you are, what you stand for, and what you're building — showing up gets easier. This course gets you there.</p>
+        </div>
+      </Section>
+
+      {/* COURSE MODULES */}
+      <Section eyebrow="Inside the course" title="Five areas. Fourteen lessons. One clear direction.">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
-            { title: "Light",  body: "How to find it, use it, and stop losing photos to bad overhead." },
-            { title: "Pose",   body: "The angle that works. What to do with your body between shots." },
-            { title: "Edit",   body: "A five-step process that gets you to a finished photo faster." },
-            { title: "Post",   body: "When to post it, how to write around it, what makes people save it." },
-            { title: "Repeat", body: "How to make this fast enough that you actually do it every week." },
+            { title: "Who You Are",        body: "Brand positioning, mission, and how to explain what you do in a sentence that actually resonates." },
+            { title: "How You Show Up",    body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait." },
+            { title: "Your Visual Brand",  body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they see your name." },
+            { title: "Your Content System",body: "Brand pillars, content planning, and how to batch content so you're never scrambling on a Sunday night." },
+            { title: "Growth & Reels",     body: "What makes reels perform, how to structure a hook, and what consistency actually looks like in a real week." },
           ].map((m) => <FCard key={m.title} title={m.title} body={m.body} />)}
+        </div>
+      </Section>
+
+      {/* LESSON LIST */}
+      <Section eyebrow="All fourteen lessons" title="Here's exactly what's covered." alt>
+        <div className="grid gap-2 md:grid-cols-2">
+          {[
+            { num: "01", title: "Welcome & What This Changes" },
+            { num: "02", title: "Introduction to Personal Branding" },
+            { num: "03", title: "Starting to Show Up" },
+            { num: "04", title: "Your Energy on Camera" },
+            { num: "05", title: "The Camera Hack" },
+            { num: "06", title: "Personal Branding 101" },
+            { num: "07", title: "Design Your Brand" },
+            { num: "08", title: "Design Your Instagram Feed" },
+            { num: "09", title: "Create Your Brand Pillars" },
+            { num: "10", title: "Start Showing Up" },
+            { num: "11", title: "The Content System" },
+            { num: "12", title: "High Quality Selfies" },
+            { num: "13", title: "Instagram Reels" },
+            { num: "14", title: "Content Planning" },
+          ].map((l) => (
+            <div key={l.num} className="mf flex items-baseline gap-4 py-3"
+              style={{ borderBottom: `1px solid ${C.divider}` }}>
+              <span style={{ ...t.eyebrow, color: C.textFaint, minWidth: "28px", flexShrink: 0 }}>{l.num}</span>
+              <span style={{ ...t.body, fontSize: "14px", color: C.textSub }}>{l.title}</span>
+            </div>
+          ))}
         </div>
       </Section>
 
       {/* FOUNDER SPLIT */}
       <Split
-        title={<>This is the part that took me longer to figure out than I want it to take you.</>}
+        title={<>I built 180K followers without a photographer, a studio, or a clue about what I was doing at the start.</>}
         body={
           <div className="space-y-3">
-            <p>I didn't have a guide. I deleted hundreds of photos before I understood why they felt off.</p>
-            <p>The method is simple once you see it. Before that, it feels random.</p>
-            <p>This stops it feeling random.</p>
+            <p>I figured it out over years. The positioning. The pillars. The content system that actually holds up when life gets messy.</p>
+            <p>This course is everything I wish someone had put in front of me in the first six months.</p>
+            <p>One time. Then it's yours.</p>
           </div>
         }
         imgSrc={IMG.dark}
@@ -690,12 +753,12 @@ export function MasterclassPageContent() {
       />
 
       {/* WHO IT'S FOR */}
-      <Section eyebrow="Who it's for" title="You're tired of hoping a good photo just happens." alt>
+      <Section eyebrow="Who this is for" title="You want to build something. You just haven't had a clear starting point." alt>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            "You post less than you want to because you can't get a photo you like.",
-            "You know your photos could feel more like you — but you don't know what to change.",
-            "You want a method you understand, not a filter you apply and hope for the best.",
+            "You show up when inspiration strikes — and disappear for weeks when it doesn't. You need a system.",
+            "You know what you want to build but every time you sit down to post, it feels like starting from zero.",
+            "You want to be known for something specific. You just haven't figured out exactly what that is yet.",
           ].map((line) => (
             <article key={line} className="mf" style={card}>
               <p style={{ ...t.body, fontSize: "15px" }}>{line}</p>
@@ -704,15 +767,25 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
+      {/* WHAT YOU LEAVE WITH */}
+      <Section eyebrow="After the course" title="What you'll have that you don't have now.">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <FCard title="Your brand positioning" body="One clear sentence that explains who you are and who you're for. No more trailing off when someone asks what you do." />
+          <FCard title="Your brand pillars"     body="The three topics you always come back to. Every content idea filters through these." />
+          <FCard title="Your content system"    body="How many times you post, in what format, on what days. Built around your actual life." />
+          <FCard title="A complete first week"  body="You won't finish this course with notes. You'll finish it with content already made." />
+        </div>
+      </Section>
+
       {/* FAQ */}
-      <Section eyebrow="FAQ" title="A few things before you enroll.">
+      <Section eyebrow="FAQ" title="A few things before you enroll." alt>
         <FaqGrid items={FAQS.masterclass} />
       </Section>
 
       <CtaClose
-        title="Learn the method once. Use it every time."
+        title="Do this once. Then you'll know exactly what you're building."
         primary={{ href: "/checkout/masterclass", label: "Enroll — $147" }}
-        secondary={{ href: "/join/studio",         label: "See Studio" }}
+        secondary={{ href: "/join/studio",          label: "See Studio" }}
       />
 
       <PublicFooter />

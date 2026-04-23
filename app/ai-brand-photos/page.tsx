@@ -103,7 +103,7 @@ export default function AIBrandPhotosPage() {
       {/* HEADER */}
       <header className="site-header">
         <Link href="/" className={`logo ${cormorant.className}`}>SSELFIE</Link>
-        <Link href="/checkout/membership" className="header-cta">Start Free →</Link>
+        <Link href="/private-shoot" className="header-cta">Private Offer →</Link>
       </header>
 
       {/* HERO */}
@@ -310,7 +310,7 @@ export default function AIBrandPhotosPage() {
               },
               {
                 q: "What's the difference between the Selfie Guide and Studio?",
-                a: "The Selfie Guide ($17, one-time) teaches you Sandra's exact framework for taking selfies that work for personal brand content — plus gives you access to try SSELFIE. Studio ($97/month) is the full membership with 200 credits, unlimited generation, and Maya remembering your brand across every session.",
+                a: "The Selfie Guide ($17, one-time) teaches you Sandra's exact framework for taking selfies that work for personal brand content. If you want more support after that, SSELFIE now points you into a smaller guided offer instead of a broad self-serve membership.",
               },
               {
                 q: "Can I cancel Studio anytime?",
@@ -331,7 +331,7 @@ export default function AIBrandPhotosPage() {
           <p>Start with the $17 Selfie Guide and take your first AI brand photo today.</p>
           <div className="cta-group">
             <Link href="/selfie-guide" className="btn-primary">Start with Selfie Guide — $17</Link>
-            <Link href="/checkout/membership" className="btn-outline">Join Studio — $97/mo</Link>
+            <Link href="/private-shoot" className="btn-outline">Book the Private Offer</Link>
           </div>
         </section>
 

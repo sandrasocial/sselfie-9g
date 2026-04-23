@@ -995,8 +995,8 @@ export default function AIToolsPersonalBrandingPage() {
               <Link href="/selfie-guide" className="tools-btn-primary" style={{ fontFamily: inter.style.fontFamily }}>
                 Get the Selfie Guide — $17
               </Link>
-              <Link href="/checkout/membership" className="tools-btn-secondary" style={{ fontFamily: inter.style.fontFamily }}>
-                Join Studio — $97/mo
+              <Link href="/private-shoot" className="tools-btn-secondary" style={{ fontFamily: inter.style.fontFamily }}>
+                Book the Private Offer
               </Link>
             </div>
           </div>
