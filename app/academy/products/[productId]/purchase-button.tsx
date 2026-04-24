@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Inter } from "next/font/google"
 
-const inter = Inter({ subsets: ["latin"], weight: ["300", "500"] })
+const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
 export default function PurchaseButton({
   productId,
@@ -42,16 +42,31 @@ export default function PurchaseButton({
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <button
+        type="button"
         onClick={handleBuy}
         disabled={loading}
-        className={`${inter.className} w-full rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.22em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.20)] disabled:opacity-50`}
-        style={{ fontWeight: 500 }}
+        className={`${inter.className} px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90 disabled:opacity-40`}
+        style={{
+          background: "#EDE9E2",
+          color: "#0F0D0B",
+          fontWeight: 600,
+          border: "1px solid transparent",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+        }}
       >
-        {loading ? "Opening checkout" : `Get it -> ${price} EUR`}
+        {loading ? "Opening checkout..." : `Get it · ${price} EUR`}
       </button>
-      {error ? <p className={`${inter.className} mt-2 text-xs text-red-400`}>{error}</p> : null}
+      {error ? (
+        <p
+          className={`${inter.className} mt-3 text-[12px]`}
+          style={{ color: "#E57373", fontWeight: 300 }}
+        >
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -8,13 +8,26 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300"],
+  weight: ["300", "400"],
 })
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "500", "600"],
 })
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  ink: "#0F0D0B",
+  inkSoft: "#1E1A15",
+  cream: "#EDE9E2",
+  stone: "#C4B5A0",
+  muted: "#7A6F63",
+  div: "rgba(237,233,226,0.10)",
+}
+
+const LP =
+  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 
 export default async function AcademyStarterKitAccessPage() {
   const supabase = await createServerClient()
@@ -45,122 +58,230 @@ export default async function AcademyStarterKitAccessPage() {
   const firstName = displayName.split(" ")[0]?.toUpperCase() || "FRIEND"
 
   return (
-    <main className={`min-h-screen bg-[#0f0d0b] px-6 py-14 text-[#f4f0e6] md:px-20 md:py-20 ${inter.className}`}>
-      <section className="mx-auto max-w-5xl">
-        <p className="text-[11px] uppercase tracking-[0.35em] text-[rgba(244,240,230,0.52)]">
+    <main
+      className={`min-h-screen ${inter.className}`}
+      style={{ background: C.ink, color: C.cream }}
+    >
+      {/* ─── Hero ─────────────────────────────────────────────────────────── */}
+      <section
+        className="px-6 py-16 md:px-20 md:py-24"
+        style={{ borderBottom: `1px solid ${C.div}` }}
+      >
+        <p
+          className="text-[10px] uppercase tracking-[0.5em]"
+          style={{ color: C.muted, fontWeight: 600 }}
+        >
           Starter Kit Access
         </p>
         <h1
-          className={`${cormorant.className} mt-6 text-[clamp(3rem,7vw,5.3rem)] uppercase`}
-          style={{ fontWeight: 300, lineHeight: 0.95, letterSpacing: "-0.04em" }}
+          className={`${cormorant.className} mt-6 uppercase`}
+          style={{
+            fontWeight: 300,
+            fontSize: "clamp(36px, 7vw, 70px)",
+            lineHeight: 1.03,
+            letterSpacing: "-0.02em",
+            textShadow: LP,
+          }}
         >
-          Welcome, {firstName}
+          Welcome,
+          <br />
+          {firstName}
         </h1>
-        <p className="mt-5 max-w-3xl text-[15px] leading-8 text-[rgba(244,240,230,0.78)]">
+        <p
+          className="mt-6 max-w-2xl text-[15px] leading-[1.78]"
+          style={{ color: C.stone, fontWeight: 300 }}
+        >
           Your Starter Kit lives inside SSELFIE now. Start with the quick win, download your
           presets, and open the guide when you want the fuller method.
         </p>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-6xl gap-5 lg:grid-cols-3">
-        <article className="border border-[rgba(244,240,230,0.14)] bg-[rgba(175,170,162,0.08)] p-6">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[rgba(244,240,230,0.52)]">
-            Start Here
-          </p>
-          <h2
-            className={`${cormorant.className} mt-4 text-3xl uppercase`}
-            style={{ fontWeight: 300, lineHeight: 0.98 }}
+      {/* ─── Content cards ────────────────────────────────────────────────── */}
+      <section className="px-6 py-12 md:px-20 md:py-16">
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Start here */}
+          <article
+            className="p-7"
+            style={{ background: C.inkSoft, border: `1px solid ${C.div}` }}
           >
-            Your first quick win
-          </h2>
-          <ol className="mt-4 space-y-3 text-sm leading-8 text-[rgba(244,240,230,0.78)]">
-            <li>Find soft window light and take 10 photos instead of judging the first one.</li>
-            <li>Pick the image that already feels closest to you before you edit.</li>
-            <li>Use one preset lightly. Stop before the photo stops feeling real.</li>
-            <li>Come back tomorrow and do it again with less overthinking.</li>
-          </ol>
-        </article>
-
-        <article className="border border-[rgba(244,240,230,0.14)] bg-[rgba(175,170,162,0.08)] p-6">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[rgba(244,240,230,0.52)]">
-            Downloads
-          </p>
-          <h2
-            className={`${cormorant.className} mt-4 text-3xl uppercase`}
-            style={{ fontWeight: 300, lineHeight: 0.98 }}
-          >
-            Your preset pack
-          </h2>
-          <p className="mt-4 text-sm leading-8 text-[rgba(244,240,230,0.78)]">
-            Keep the edit simple. The goal is a photo that looks like you on a good day, not a
-            different person.
-          </p>
-          {presetDownloadUrl ? (
-            <a
-              href={presetDownloadUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-6 inline-flex rounded-full border border-[rgba(244,240,230,0.18)] bg-[rgba(175,170,162,0.14)] px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-[#f4f0e6] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
+            <p
+              className="text-[10px] uppercase tracking-[0.5em]"
+              style={{ color: C.muted, fontWeight: 600 }}
             >
-              Download Presets
-            </a>
-          ) : (
-            <p className="mt-6 text-xs uppercase tracking-[0.22em] text-[rgba(244,240,230,0.46)]">
-              Preset file will appear here when connected.
+              Start Here
             </p>
-          )}
-        </article>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(19px, 2.5vw, 26px)",
+                lineHeight: 1.18,
+                textShadow: LP,
+              }}
+            >
+              Your first quick win
+            </h2>
+            <ol
+              className="mt-5 space-y-4 text-[14px] leading-[1.72]"
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
+              <li>Find soft window light. Take 10 photos instead of judging the first one.</li>
+              <li>Pick the image that already feels closest to you before you edit.</li>
+              <li>Use one preset lightly. Stop before the photo stops feeling real.</li>
+              <li>Come back tomorrow and do it again with less overthinking.</li>
+            </ol>
+          </article>
 
-        <article className="border border-[rgba(244,240,230,0.14)] bg-[rgba(175,170,162,0.08)] p-6">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[rgba(244,240,230,0.52)]">
-            Guide
+          {/* Preset download */}
+          <article
+            className="p-7"
+            style={{ background: C.inkSoft, border: `1px solid ${C.div}` }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.5em]"
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
+              Downloads
+            </p>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(19px, 2.5vw, 26px)",
+                lineHeight: 1.18,
+                textShadow: LP,
+              }}
+            >
+              Your preset pack
+            </h2>
+            <p
+              className="mt-4 text-[14px] leading-[1.72]"
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
+              Keep the edit simple. The goal is a photo that looks like you on a good day, not a
+              different person.
+            </p>
+            {presetDownloadUrl ? (
+              <a
+                href={presetDownloadUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-7 inline-flex px-7 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+                style={{
+                  background: C.cream,
+                  color: C.ink,
+                  fontWeight: 600,
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+                }}
+              >
+                ↓ Download Presets
+              </a>
+            ) : (
+              <p
+                className="mt-7 text-[10px] uppercase tracking-[0.35em]"
+                style={{ color: C.muted, fontWeight: 600 }}
+              >
+                Preset file will appear here when connected.
+              </p>
+            )}
+          </article>
+
+          {/* Selfie guide */}
+          <article
+            className="p-7"
+            style={{ background: C.inkSoft, border: `1px solid ${C.div}` }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.5em]"
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
+              Guide
+            </p>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(19px, 2.5vw, 26px)",
+                lineHeight: 1.18,
+                textShadow: LP,
+              }}
+            >
+              The fuller method
+            </h2>
+            <p
+              className="mt-4 text-[14px] leading-[1.72]"
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
+              The Starter Kit includes the Selfie Guide. Use it when you want the longer framework,
+              not just the first result.
+            </p>
+            <Link
+              href="/academy/access/selfie-guide"
+              className="mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70"
+              style={{ color: C.cream, fontWeight: 600 }}
+            >
+              → Open The Guide
+            </Link>
+          </article>
+        </div>
+
+        {/* ─── Next step ──────────────────────────────────────────────────── */}
+        <div
+          className="mt-4 p-8 md:p-10"
+          style={{ border: `1px solid ${C.div}` }}
+        >
+          <p
+            className="text-[10px] uppercase tracking-[0.5em]"
+            style={{ color: C.muted, fontWeight: 600 }}
+          >
+            Next Step
           </p>
           <h2
-            className={`${cormorant.className} mt-4 text-3xl uppercase`}
-            style={{ fontWeight: 300, lineHeight: 0.98 }}
+            className={`${cormorant.className} mt-5 uppercase`}
+            style={{
+              fontWeight: 300,
+              fontSize: "clamp(28px, 4.5vw, 48px)",
+              lineHeight: 1.07,
+              letterSpacing: "-0.015em",
+              textShadow: LP,
+            }}
           >
-            The fuller method
+            Go deeper with the Masterclass
           </h2>
-          <p className="mt-4 text-sm leading-8 text-[rgba(244,240,230,0.78)]">
-            The Starter Kit includes the Selfie Guide. Use it when you want the longer framework,
-            not just the first result.
+          <p
+            className="mt-5 max-w-2xl text-[15px] leading-[1.78]"
+            style={{ color: C.stone, fontWeight: 300 }}
+          >
+            Starter Kit gives you the first cleaner result. The Masterclass gives you the full
+            system for light, pose, edit, post, and repeat.
           </p>
-          <Link
-            href="/academy/access/selfie-guide"
-            className="mt-6 inline-flex rounded-full border border-[rgba(244,240,230,0.18)] px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-[#f4f0e6] transition-colors hover:bg-[rgba(175,170,162,0.14)]"
-          >
-            Open The Guide
-          </Link>
-        </article>
-      </section>
-
-      <section className="mx-auto mt-6 max-w-6xl border border-[rgba(244,240,230,0.14)] bg-[rgba(175,170,162,0.08)] p-6 md:p-8">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-[rgba(244,240,230,0.52)]">
-          Next Step
-        </p>
-        <h2
-          className={`${cormorant.className} mt-4 text-4xl uppercase`}
-          style={{ fontWeight: 300, lineHeight: 0.98 }}
-        >
-          Go deeper with the Masterclass
-        </h2>
-        <p className="mt-4 max-w-3xl text-sm leading-8 text-[rgba(244,240,230,0.78)]">
-          Starter Kit gives you the first cleaner result. The Masterclass gives you the full
-          system for light, pose, edit, post, and repeat.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/masterclass"
-            className="inline-flex rounded-full border border-[rgba(244,240,230,0.18)] bg-[rgba(175,170,162,0.14)] px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-[#f4f0e6] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
-          >
-            See Masterclass
-          </Link>
-          <Link
-            href="/academy"
-            className="inline-flex rounded-full border border-[rgba(244,240,230,0.18)] px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-[#f4f0e6] transition-colors hover:bg-[rgba(175,170,162,0.14)]"
-          >
-            Back To Library
-          </Link>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/masterclass"
+              className="inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+              style={{
+                background: C.cream,
+                color: C.ink,
+                fontWeight: 600,
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+              }}
+            >
+              See Masterclass
+            </Link>
+            <Link
+              href="/academy"
+              className="inline-flex px-6 py-3 text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-80"
+              style={{
+                color: C.cream,
+                border: "1px solid rgba(237,233,226,0.22)",
+                fontWeight: 600,
+              }}
+            >
+              Back to Library
+            </Link>
+          </div>
         </div>
       </section>
     </main>

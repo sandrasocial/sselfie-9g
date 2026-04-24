@@ -16,9 +16,23 @@ const cormorant = Cormorant_Garamond({
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "500"],
+  weight: ["300", "500", "600"],
 })
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  ink: "#0F0D0B",
+  inkSoft: "#1E1A15",
+  cream: "#EDE9E2",
+  stone: "#C4B5A0",
+  muted: "#7A6F63",
+  div: "rgba(237,233,226,0.10)",
+}
+
+const LP =
+  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 type ActionLevel = "bare_minimum" | "bold_move" | "bonus_vibe"
 type MobileTab = "lesson" | "action" | "resources"
 
@@ -40,21 +54,44 @@ type LessonNotesResponse = {
   profile_answer: string | null
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function parseVimeoId(url: string | null | undefined): string | null {
   if (!url) return null
   const match = url.match(/vimeo\.com\/(\d+)/)
   return match ? match[1] : null
 }
 
-function pillClass(active: boolean) {
-  return [
-    "rounded-full border px-5 py-2 text-[11px] uppercase tracking-[0.3em] transition-colors",
-    active
-      ? "border-[rgba(195,190,182,0.5)] bg-[rgba(175,170,162,0.20)] text-[#f0ede8]"
-      : "border-[rgba(195,190,182,0.25)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.15)]",
-  ].join(" ")
+function TabChip({
+  active,
+  onClick,
+  children,
+  className = "",
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${inter.className} px-5 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-colors ${className}`}
+      style={{
+        fontWeight: 600,
+        border: active
+          ? `1px solid rgba(237,233,226,0.35)`
+          : `1px solid rgba(237,233,226,0.14)`,
+        background: active ? "rgba(237,233,226,0.07)" : "transparent",
+        color: active ? C.cream : C.muted,
+      }}
+    >
+      {children}
+    </button>
+  )
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export function LessonViewerClient({
   course,
   lesson,
@@ -140,9 +177,7 @@ export function LessonViewerClient({
 
   function showSavedFlash() {
     setSavedFlash(true)
-    if (savedFlashTimer.current) {
-      clearTimeout(savedFlashTimer.current)
-    }
+    if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current)
     savedFlashTimer.current = setTimeout(() => setSavedFlash(false), 1500)
   }
 
@@ -175,10 +210,7 @@ export function LessonViewerClient({
   }
 
   function handleReflectionBlur() {
-    if (reflectionSaveTimer.current) {
-      clearTimeout(reflectionSaveTimer.current)
-    }
-
+    if (reflectionSaveTimer.current) clearTimeout(reflectionSaveTimer.current)
     reflectionSaveTimer.current = setTimeout(() => {
       startTransition(async () => {
         try {
@@ -224,18 +256,13 @@ export function LessonViewerClient({
   }
 
   function handleSaveProfileAnswer() {
-    if (!hasProfileField || !profileAnswer.trim()) {
-      return
-    }
-
+    if (!hasProfileField || !profileAnswer.trim()) return
     setError(null)
     setProfileSaved(false)
     startTransition(async () => {
       try {
         const result = await saveNotes({ profile_answer: profileAnswer })
-        if (result.profileUpdated) {
-          setProfileSaved(true)
-        }
+        if (result.profileUpdated) setProfileSaved(true)
       } catch (saveError) {
         setError(
           saveError instanceof Error ? saveError.message : "Failed to save to Maya profile"
@@ -251,50 +278,55 @@ export function LessonViewerClient({
     actionStep.bonus_vibe ||
     ""
 
+  // ─── Sidebar lesson list ───────────────────────────────────────────────────
   const desktopLessonList = (
-    <div className="border-b border-[rgba(195,190,182,0.12)] pb-6">
+    <div className="pb-6" style={{ borderBottom: `1px solid ${C.div}` }}>
       <button
         type="button"
         onClick={() => setSidebarCollapsed(current => !current)}
         className="flex w-full items-center justify-between"
       >
         <span
-          className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-          style={{ fontWeight: 500 }}
+          className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+          style={{ color: C.muted, fontWeight: 600 }}
         >
           Course Lessons
         </span>
-        <span className="text-sm text-[#8a8780]">{sidebarCollapsed ? "↓" : "↑"}</span>
+        <span style={{ color: C.muted, fontSize: 14 }}>{sidebarCollapsed ? "↓" : "↑"}</span>
       </button>
 
       {!sidebarCollapsed ? (
-        <div className="mt-5 space-y-2">
+        <div className="mt-5 space-y-1">
           {lessonStates.map((item) => (
             <Link
               key={item.id}
               href={`/academy/courses/${course.id}/lessons/${item.id}`}
-              className={`grid grid-cols-[18px_40px_minmax(0,1fr)_52px] items-center gap-3 rounded-[18px] px-3 py-2 transition-colors ${
-                item.current ? "bg-[rgba(175,170,162,0.12)]" : "hover:bg-[rgba(175,170,162,0.08)]"
-              }`}
+              className="grid grid-cols-[16px_36px_minmax(0,1fr)_46px] items-center gap-3 px-3 py-2 transition-colors"
+              style={{
+                background: item.current ? "rgba(237,233,226,0.06)" : "transparent",
+              }}
             >
-              <span className="text-sm text-[#c9a96e]">
+              <span
+                className={`${inter.className} text-[10px]`}
+                style={{ color: item.completed ? C.stone : "transparent", fontWeight: 600 }}
+              >
                 {item.completed ? "✓" : item.current ? "→" : ""}
               </span>
               <span
-                className={`${cormorant.className} text-2xl text-[#c8c4bb]`}
-                style={{ fontWeight: 300 }}
+                className={`${cormorant.className}`}
+                style={{ fontWeight: 300, fontSize: 22, color: C.stone, lineHeight: 1 }}
               >
                 {String(item.lesson_number).padStart(2, "0")}
               </span>
               <span
-                className={`${inter.className} truncate text-sm text-[#c8c4bb]`}
-                style={{ fontWeight: 300 }}
+                className={`${inter.className} truncate text-[13px]`}
+                style={{ color: item.current ? C.cream : C.stone, fontWeight: 300 }}
               >
                 {item.title}
               </span>
               <span
-                className={`${inter.className} text-right text-[11px] uppercase tracking-[0.25em] text-[#8a8780]`}
-                style={{ fontWeight: 500 }}
+                className={`${inter.className} text-right text-[10px] uppercase tracking-[0.2em]`}
+                style={{ color: C.muted, fontWeight: 600 }}
               >
                 {formatLessonDuration(item.durationSeconds)}
               </span>
@@ -303,8 +335,8 @@ export function LessonViewerClient({
         </div>
       ) : (
         <p
-          className={`${inter.className} mt-3 text-xs text-[#8a8780]`}
-          style={{ fontWeight: 300 }}
+          className={`${inter.className} mt-3 text-[13px]`}
+          style={{ color: C.muted, fontWeight: 300 }}
         >
           {lessonStates.length} lessons
         </p>
@@ -312,26 +344,30 @@ export function LessonViewerClient({
     </div>
   )
 
+  // ─── Key takeaways ────────────────────────────────────────────────────────
   const keyTakeawaysSection = keyTakeaways.length > 0 ? (
-    <section className="space-y-5 border-t border-[rgba(195,190,182,0.12)] pt-6">
+    <section
+      className="space-y-5 pt-6"
+      style={{ borderTop: `1px solid ${C.div}` }}
+    >
       <p
-        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-        style={{ fontWeight: 500 }}
+        className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+        style={{ color: C.muted, fontWeight: 600 }}
       >
         Key Takeaways
       </p>
-      <div className="space-y-4">
+      <div className="space-y-5">
         {keyTakeaways.map((takeaway, index) => (
-          <div key={`${takeaway}-${index}`} className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
+          <div key={`${takeaway}-${index}`} className="grid grid-cols-[32px_minmax(0,1fr)] gap-3">
             <span
-              className={`${cormorant.className} text-3xl text-[#c8c4bb]`}
-              style={{ fontWeight: 300, lineHeight: 1 }}
+              className={`${cormorant.className}`}
+              style={{ fontWeight: 300, fontSize: 26, color: C.stone, textShadow: LP, lineHeight: 1 }}
             >
               {String(index + 1).padStart(2, "0")}
             </span>
             <p
-              className={`${inter.className} text-[13px] leading-7 text-[#c8c4bb]`}
-              style={{ fontWeight: 300 }}
+              className={`${inter.className} text-[13px] leading-[1.72]`}
+              style={{ color: C.stone, fontWeight: 300 }}
             >
               {takeaway}
             </p>
@@ -341,95 +377,94 @@ export function LessonViewerClient({
     </section>
   ) : null
 
+  // ─── Action step ──────────────────────────────────────────────────────────
   const actionSection = (
-    <section className="space-y-5 border-t border-[rgba(195,190,182,0.12)] pt-6">
+    <section
+      className="space-y-5 pt-6"
+      style={{ borderTop: `1px solid ${C.div}` }}
+    >
       <p
-        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-        style={{ fontWeight: 500 }}
+        className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+        style={{ color: C.muted, fontWeight: 600 }}
       >
         Your Action Step
       </p>
 
+      {/* Tab selector */}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className={pillClass(selectedActionTab === "bare_minimum")}
-          onClick={() => setSelectedActionTab("bare_minimum")}
-        >
-          Bare Minimum
-        </button>
-        <button
-          type="button"
-          className={pillClass(selectedActionTab === "bold_move")}
-          onClick={() => setSelectedActionTab("bold_move")}
-        >
-          Bold Move
-        </button>
-        <button
-          type="button"
-          className={pillClass(selectedActionTab === "bonus_vibe")}
-          onClick={() => setSelectedActionTab("bonus_vibe")}
-        >
-          Bonus Vibe
-        </button>
+        {(["bare_minimum", "bold_move", "bonus_vibe"] as ActionLevel[]).map((level) => (
+          <TabChip
+            key={level}
+            active={selectedActionTab === level}
+            onClick={() => setSelectedActionTab(level)}
+          >
+            {level === "bare_minimum"
+              ? "Bare Minimum"
+              : level === "bold_move"
+              ? "Bold Move"
+              : "Bonus Vibe"}
+          </TabChip>
+        ))}
       </div>
 
       <p
-        className={`${inter.className} text-sm leading-8 text-[#c8c4bb]`}
-        style={{ fontWeight: 300 }}
+        className={`${inter.className} text-[14px] leading-[1.78]`}
+        style={{ color: C.stone, fontWeight: 300 }}
       >
         {selectedActionText}
       </p>
 
+      {/* Commitment */}
       <div className="space-y-3">
         <p
-          className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-          style={{ fontWeight: 500 }}
+          className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+          style={{ color: C.muted, fontWeight: 600 }}
         >
           Which level did you choose?
         </p>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={pillClass(chosenActionLevel === "bare_minimum")}
-            onClick={() => handleChooseActionLevel("bare_minimum")}
-          >
-            Bare Minimum
-          </button>
-          <button
-            type="button"
-            className={pillClass(chosenActionLevel === "bold_move")}
-            onClick={() => handleChooseActionLevel("bold_move")}
-          >
-            Bold Move
-          </button>
-          <button
-            type="button"
-            className={pillClass(chosenActionLevel === "bonus_vibe")}
-            onClick={() => handleChooseActionLevel("bonus_vibe")}
-          >
-            Bonus Vibe
-          </button>
+          {(["bare_minimum", "bold_move", "bonus_vibe"] as ActionLevel[]).map((level) => (
+            <TabChip
+              key={level}
+              active={chosenActionLevel === level}
+              onClick={() => handleChooseActionLevel(level)}
+            >
+              {level === "bare_minimum"
+                ? "Bare Minimum"
+                : level === "bold_move"
+                ? "Bold Move"
+                : "Bonus Vibe"}
+            </TabChip>
+          ))}
         </div>
         {savedFlash ? (
-          <p className="text-xs text-[#c8c4bb]">Saved</p>
+          <p
+            className={`${inter.className} text-[12px] uppercase tracking-[0.3em]`}
+            style={{ color: C.stone, fontWeight: 600 }}
+          >
+            Saved
+          </p>
         ) : null}
       </div>
     </section>
   )
 
+  // ─── Reflection ───────────────────────────────────────────────────────────
   const reflectionSection = (
-    <section className="space-y-5 border-t border-[rgba(195,190,182,0.12)] pt-6">
+    <section
+      className="space-y-5 pt-6"
+      style={{ borderTop: `1px solid ${C.div}` }}
+    >
       <p
-        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-        style={{ fontWeight: 500 }}
+        className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+        style={{ color: C.muted, fontWeight: 600 }}
       >
         Your Reflection
       </p>
       {lessonContent.reflection_prompt ? (
         <p
-          className={`${inter.className} text-sm leading-8 text-[#8a8780]`}
-          style={{ fontWeight: 300 }}
+          className={`${inter.className} text-[14px] leading-[1.78]`}
+          style={{ color: C.muted, fontWeight: 300 }}
         >
           {lessonContent.reflection_prompt}
         </p>
@@ -439,22 +474,36 @@ export function LessonViewerClient({
         onChange={(event) => setReflection(event.target.value)}
         onBlur={handleReflectionBlur}
         placeholder="Write your thoughts here..."
-        className={`${inter.className} min-h-40 w-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] px-4 py-4 text-sm leading-7 text-[#f0ede8] outline-none placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.45)]`}
-        style={{ fontWeight: 300 }}
+        className={`${inter.className} min-h-36 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
+        style={{
+          background: "rgba(237,233,226,0.04)",
+          border: `1px solid ${C.div}`,
+          color: C.cream,
+          fontWeight: 300,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = "rgba(237,233,226,0.28)"
+        }}
+        onBlurCapture={(e) => {
+          e.currentTarget.style.borderColor = C.div
+        }}
       />
 
       {hasProfileField ? (
-        <div className="space-y-5 border-t border-[rgba(195,190,182,0.12)] pt-6">
+        <div
+          className="space-y-5 pt-6"
+          style={{ borderTop: `1px solid ${C.div}` }}
+        >
           <p
-            className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-            style={{ fontWeight: 500 }}
+            className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+            style={{ color: C.muted, fontWeight: 600 }}
           >
             Save to Your Maya Profile
           </p>
           {lessonContent.profile_question ? (
             <p
-              className={`${inter.className} text-sm leading-8 text-[#8a8780]`}
-              style={{ fontWeight: 300 }}
+              className={`${inter.className} text-[14px] leading-[1.78]`}
+              style={{ color: C.muted, fontWeight: 300 }}
             >
               {lessonContent.profile_question}
             </p>
@@ -466,23 +515,34 @@ export function LessonViewerClient({
               if (profileSaved) setProfileSaved(false)
             }}
             placeholder="Write your answer here..."
-            className={`${inter.className} min-h-32 w-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] px-4 py-4 text-sm leading-7 text-[#f0ede8] outline-none placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.45)]`}
-            style={{ fontWeight: 300 }}
+            className={`${inter.className} min-h-28 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
+            style={{
+              background: "rgba(237,233,226,0.04)",
+              border: `1px solid ${C.div}`,
+              color: C.cream,
+              fontWeight: 300,
+            }}
           />
           <button
             type="button"
             onClick={handleSaveProfileAnswer}
-            className={pillClass(false)}
             disabled={isPending || !profileAnswer.trim()}
+            className={`${inter.className} px-6 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-opacity disabled:opacity-40`}
+            style={{
+              border: `1px solid rgba(237,233,226,0.22)`,
+              color: C.cream,
+              fontWeight: 600,
+              background: "transparent",
+            }}
           >
             Save to Maya Profile
           </button>
           {profileSaved ? (
             <p
-              className={`${inter.className} text-sm leading-7 text-[#c9a96e]`}
-              style={{ fontWeight: 500 }}
+              className={`${inter.className} text-[12px] uppercase tracking-[0.3em]`}
+              style={{ color: C.stone, fontWeight: 600 }}
             >
-              ✓ Saved to your Maya profile — Maya will use this in every session.
+              ✓ Saved — Maya will use this in every session.
             </p>
           ) : null}
         </div>
@@ -490,32 +550,46 @@ export function LessonViewerClient({
     </section>
   )
 
+  // ─── Resources / downloads ────────────────────────────────────────────────
   const resourcesSection = resources.length > 0 ? (
-    <section className="space-y-5 border-t border-[rgba(195,190,182,0.12)] pt-6">
+    <section
+      className="space-y-5 pt-6"
+      style={{ borderTop: `1px solid ${C.div}` }}
+    >
       <p
-        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-        style={{ fontWeight: 500 }}
+        className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+        style={{ color: C.muted, fontWeight: 600 }}
       >
         Downloads
       </p>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {resources.map((resource) => (
           <a
             key={`${resource.title}-${resource.url}`}
             href={resource.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-between gap-4 border border-[rgba(195,190,182,0.15)] px-4 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+            className="flex items-center justify-between gap-4 px-4 py-4 transition-colors"
+            style={{
+              border: `1px solid ${C.div}`,
+              color: C.stone,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(237,233,226,0.05)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+            }}
           >
             <span
-              className={`${inter.className} text-sm leading-7 text-[#c8c4bb]`}
-              style={{ fontWeight: 300 }}
+              className={`${inter.className} text-[14px] leading-[1.72]`}
+              style={{ color: C.stone, fontWeight: 300 }}
             >
               {resource.title}
             </span>
             <span
-              className={`${inter.className} shrink-0 text-[11px] uppercase tracking-[0.3em] text-[#f0ede8]`}
-              style={{ fontWeight: 500 }}
+              className={`${inter.className} shrink-0 text-[10px] uppercase tracking-[0.35em]`}
+              style={{ color: C.cream, fontWeight: 600 }}
             >
               ↓ Download
             </span>
@@ -525,20 +599,31 @@ export function LessonViewerClient({
     </section>
   ) : null
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-[#0d0c0b] text-[#f0ede8]">
-      <div className="mx-auto max-w-[1500px] px-6 py-8 md:px-10 md:py-10">
-        <div className="grid gap-10 md:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
+    <main
+      className="min-h-screen"
+      style={{ background: C.ink, color: C.cream }}
+    >
+      <div className="mx-auto max-w-[1480px] px-6 py-10 md:px-10 md:py-12">
+        <div className="grid gap-10 md:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
+
+          {/* ── Main column ── */}
           <section className="space-y-6">
+            {/* Back link */}
             <Link
               href={`/academy/courses/${course.id}`}
-              className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780] transition-opacity hover:opacity-80`}
-              style={{ fontWeight: 500 }}
+              className={`${inter.className} text-[10px] uppercase tracking-[0.5em] transition-opacity hover:opacity-70`}
+              style={{ color: C.muted, fontWeight: 600 }}
             >
-              ← Back to {course.title}
+              ← {course.title}
             </Link>
 
-            <div className="relative overflow-hidden border border-[rgba(195,190,182,0.15)] bg-black" style={{ aspectRatio: "16 / 9" }}>
+            {/* Video */}
+            <div
+              className="relative overflow-hidden"
+              style={{ aspectRatio: "16 / 9", background: "#000" }}
+            >
               {vimeoId ? (
                 <iframe
                   src={`https://player.vimeo.com/video/${vimeoId}?badge=0&autopause=0&player_id=0&app_id=58479`}
@@ -548,56 +633,91 @@ export function LessonViewerClient({
                   allowFullScreen
                 />
               ) : (
-                <div className="flex h-full items-center justify-center px-6 text-center text-[#8a8780]">
+                <div
+                  className="flex h-full items-center justify-center px-6 text-center"
+                  style={{ color: C.muted }}
+                >
                   Lesson video unavailable.
                 </div>
               )}
             </div>
 
+            {/* Lesson meta */}
             <div className="space-y-4">
               <p
-                className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`}
-                style={{ fontWeight: 500 }}
+                className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+                style={{ color: C.muted, fontWeight: 600 }}
               >
-                Lesson {String(lesson.lesson_number).padStart(2, "0")} · {formatLessonDuration(lesson.durationSeconds)}
+                Lesson {String(lesson.lesson_number).padStart(2, "0")} ·{" "}
+                {formatLessonDuration(lesson.durationSeconds)}
               </p>
               <h1
-                className={`${cormorant.className} text-4xl uppercase md:text-6xl`}
-                style={{ fontWeight: 300, lineHeight: 0.95 }}
+                className={`${cormorant.className} uppercase`}
+                style={{
+                  fontWeight: 300,
+                  fontSize: "clamp(28px, 5vw, 52px)",
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.01em",
+                  textShadow: LP,
+                }}
               >
                 {lesson.title}
               </h1>
             </div>
 
-            <div className="flex items-center justify-between gap-6 border-t border-[rgba(195,190,182,0.12)] pt-6">
+            {/* Prev / Next */}
+            <div
+              className="flex items-center justify-between gap-6 pt-6"
+              style={{ borderTop: `1px solid ${C.div}` }}
+            >
               {previousLesson ? (
                 <Link
                   href={`/academy/courses/${course.id}/lessons/${previousLesson.id}`}
-                  className={`${inter.className} text-[11px] uppercase tracking-[0.3em] text-[#8a8780] transition-colors hover:text-[#f0ede8]`}
-                  style={{ fontWeight: 500 }}
+                  className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                  style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  ← Previous lesson
+                  ← Previous
                 </Link>
               ) : (
                 <span />
               )}
-
               {nextLesson ? (
                 <Link
                   href={`/academy/courses/${course.id}/lessons/${nextLesson.id}`}
-                  className={`${inter.className} text-[11px] uppercase tracking-[0.3em] text-[#8a8780] transition-colors hover:text-[#f0ede8]`}
-                  style={{ fontWeight: 500 }}
+                  className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                  style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  Next lesson →
+                  Next →
                 </Link>
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 border-t border-[rgba(195,190,182,0.12)] pt-6">
+            {/* Complete toggle */}
+            <div
+              className="flex flex-wrap items-center gap-4 pt-6"
+              style={{ borderTop: `1px solid ${C.div}` }}
+            >
               <button
                 type="button"
                 onClick={handleToggleComplete}
-                className={pillClass(currentLessonCompleted)}
+                className={`${inter.className} px-6 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
+                style={
+                  currentLessonCompleted
+                    ? {
+                        background: C.cream,
+                        color: C.ink,
+                        border: "1px solid transparent",
+                        fontWeight: 600,
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+                      }
+                    : {
+                        background: "transparent",
+                        color: C.cream,
+                        border: `1px solid rgba(237,233,226,0.22)`,
+                        fontWeight: 600,
+                      }
+                }
               >
                 {currentLessonCompleted ? "✓ Completed" : "Mark as complete"}
               </button>
@@ -605,37 +725,29 @@ export function LessonViewerClient({
                 <button
                   type="button"
                   onClick={handleToggleComplete}
-                  className={`${inter.className} text-[11px] uppercase tracking-[0.3em] text-[#8a8780] transition-colors hover:text-[#f0ede8]`}
-                  style={{ fontWeight: 500 }}
+                  className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                  style={{ color: C.muted, fontWeight: 600, background: "none", border: "none" }}
                 >
                   Mark incomplete
                 </button>
               ) : null}
             </div>
 
-            <div className="border-t border-[rgba(195,190,182,0.12)] pt-6 md:hidden">
+            {/* ── Mobile tab bar ── */}
+            <div
+              className="pt-6 md:hidden"
+              style={{ borderTop: `1px solid ${C.div}` }}
+            >
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={pillClass(mobileTab === "lesson")}
-                  onClick={() => setMobileTab("lesson")}
-                >
-                  Lesson
-                </button>
-                <button
-                  type="button"
-                  className={pillClass(mobileTab === "action")}
-                  onClick={() => setMobileTab("action")}
-                >
-                  Action
-                </button>
-                <button
-                  type="button"
-                  className={pillClass(mobileTab === "resources")}
-                  onClick={() => setMobileTab("resources")}
-                >
-                  Resources
-                </button>
+                {(["lesson", "action", "resources"] as MobileTab[]).map((tab) => (
+                  <TabChip
+                    key={tab}
+                    active={mobileTab === tab}
+                    onClick={() => setMobileTab(tab)}
+                  >
+                    {tab === "lesson" ? "Lesson" : tab === "action" ? "Action" : "Resources"}
+                  </TabChip>
+                ))}
               </div>
 
               <div className="mt-6 space-y-6">
@@ -647,20 +759,29 @@ export function LessonViewerClient({
                   </>
                 ) : null}
                 {mobileTab === "action" ? actionSection : null}
-                {mobileTab === "resources" ? resourcesSection || (
-                  <p
-                    className={`${inter.className} text-sm text-[#8a8780]`}
-                    style={{ fontWeight: 300 }}
-                  >
-                    Nothing to download for this lesson yet.
-                  </p>
-                ) : null}
+                {mobileTab === "resources"
+                  ? resourcesSection || (
+                      <p
+                        className={`${inter.className} text-[14px]`}
+                        style={{ color: C.muted, fontWeight: 300 }}
+                      >
+                        Nothing to download for this lesson yet.
+                      </p>
+                    )
+                  : null}
               </div>
             </div>
           </section>
 
+          {/* ── Desktop sidebar ── */}
           <aside className="hidden md:block">
-            <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.10)] p-6 backdrop-blur-[50px]">
+            <div
+              className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto p-6"
+              style={{
+                background: C.inkSoft,
+                border: `1px solid ${C.div}`,
+              }}
+            >
               <div className="space-y-6">
                 {desktopLessonList}
                 {keyTakeawaysSection}
@@ -672,10 +793,11 @@ export function LessonViewerClient({
           </aside>
         </div>
 
+        {/* ── Error / loading states ── */}
         {error ? (
           <p
-            className={`${inter.className} mt-6 text-sm text-red-400`}
-            style={{ fontWeight: 300 }}
+            className={`${inter.className} mt-6 text-[13px]`}
+            style={{ color: "#E57373", fontWeight: 300 }}
           >
             {error}
           </p>
@@ -683,10 +805,10 @@ export function LessonViewerClient({
 
         {!notesLoaded ? (
           <p
-            className={`${inter.className} mt-6 text-xs uppercase tracking-[0.3em] text-[#8a8780]`}
-            style={{ fontWeight: 500 }}
+            className={`${inter.className} mt-6 text-[10px] uppercase tracking-[0.4em]`}
+            style={{ color: C.muted, fontWeight: 600 }}
           >
-            Loading lesson companion…
+            Loading lesson companion...
           </p>
         ) : null}
       </div>

@@ -5,8 +5,20 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAcademyProducts } from "@/lib/academy-products"
 import PurchaseButton from "../products/[productId]/purchase-button"
 
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
-const inter = Inter({ subsets: ["latin"], weight: ["300", "500"] })
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
+const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
+
+const C = {
+  ink: "#0F0D0B",
+  inkSoft: "#1E1A15",
+  cream: "#EDE9E2",
+  stone: "#C4B5A0",
+  muted: "#7A6F63",
+  div: "rgba(237,233,226,0.10)",
+}
+
+const LP =
+  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 
 const NEXT_STEP_BY_PRODUCT: Record<
   string,
@@ -80,33 +92,62 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
     : null
 
   return (
-    <main className="min-h-screen min-w-[375px] bg-[#0d0c0b] text-[#f0ede8]">
-      <div className="mx-auto max-w-4xl px-6 py-16 md:px-20 md:py-20">
-        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
+    <main className="min-h-screen" style={{ background: C.ink, color: C.cream }}>
+      <div className="mx-auto max-w-4xl px-6 py-16 md:px-20 md:py-24">
+        <p
+          className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+          style={{ color: C.muted, fontWeight: 600 }}
+        >
           SSELFIE Academy
         </p>
         <h1
-          className={`${cormorant.className} mt-6 text-5xl uppercase md:text-7xl`}
-          style={{ fontWeight: 200, lineHeight: 0.95 }}
+          className={`${cormorant.className} mt-6 uppercase`}
+          style={{
+            fontWeight: 300,
+            fontSize: "clamp(36px, 7vw, 70px)",
+            lineHeight: 1.03,
+            letterSpacing: "-0.02em",
+            textShadow: LP,
+          }}
         >
-          {firstName ? `${firstName}, You&apos;re In.` : "You&apos;re In."}
+          {firstName ? `${firstName}, You're In.` : "You're In."}
         </h1>
 
         {product ? (
-          <p className={`${inter.className} mt-4 text-sm text-[#8a8780]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+          <p
+            className={`${inter.className} mt-6 text-[15px] leading-[1.78]`}
+            style={{ color: C.stone, fontWeight: 300 }}
+          >
             {product.name} is unlocked in your library.
           </p>
         ) : null}
 
         {product && NEXT_STEP_BY_PRODUCT[product.id] ? (
-          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
+          <section
+            className="mt-10 p-7"
+            style={{ background: C.inkSoft, border: `1px solid ${C.div}` }}
+          >
+            <p
+              className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
               Next Step
             </p>
-            <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(28px, 4.5vw, 40px)",
+                lineHeight: 1.07,
+                textShadow: LP,
+              }}
+            >
               {NEXT_STEP_BY_PRODUCT[product.id].headline}
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+            <p
+              className={`${inter.className} mt-4 text-[14px] leading-[1.72]`}
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
               {NEXT_STEP_BY_PRODUCT[product.id].subText}
             </p>
             <Link
@@ -115,52 +156,100 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               )}&source=academy_purchase&product=${encodeURIComponent(
                 product.id,
               )}&first_time_product_user=true`}
-              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
-              style={{ fontWeight: 500 }}
+              className={`${inter.className} mt-7 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
+              style={{
+                background: C.cream,
+                color: C.ink,
+                fontWeight: 600,
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+              }}
             >
-              {NEXT_STEP_BY_PRODUCT[product.id].cta} {"->"}
+              {NEXT_STEP_BY_PRODUCT[product.id].cta} →
             </Link>
           </section>
         ) : (
           <Link
             href="/academy"
-            className={`${inter.className} mt-8 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
-            style={{ fontWeight: 500 }}
+            className={`${inter.className} mt-8 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
+            style={{
+              background: C.cream,
+              color: C.ink,
+              fontWeight: 600,
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+            }}
           >
-            Go to Academy {"->"}
+            Go to Academy →
           </Link>
         )}
 
         {upsell ? (
-          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
+          <section
+            className="mt-4 p-7"
+            style={{ border: `1px solid ${C.div}` }}
+          >
+            <p
+              className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
               Ready for the next step
             </p>
-            <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(19px, 2.5vw, 26px)",
+                lineHeight: 1.18,
+                textShadow: LP,
+              }}
+            >
               {upsell.name}
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
+            <p
+              className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
               {upsell.tagline}
             </p>
-            <PurchaseButton productId={upsell.id} price={upsell.price / 100} />
+            <div className="mt-6">
+              <PurchaseButton productId={upsell.id} price={upsell.price / 100} />
+            </div>
           </section>
         ) : upsellName === MEMBERSHIP_UPSELL_NAME ? (
-          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
+          <section
+            className="mt-4 p-7"
+            style={{ border: `1px solid ${C.div}` }}
+          >
+            <p
+              className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
               Ready for everything
             </p>
-            <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
+            <h2
+              className={`${cormorant.className} mt-5 uppercase`}
+              style={{
+                fontWeight: 300,
+                fontSize: "clamp(19px, 2.5vw, 26px)",
+                lineHeight: 1.18,
+                textShadow: LP,
+              }}
+            >
               Creator Studio Membership
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
+            <p
+              className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
+              style={{ color: C.stone, fontWeight: 300 }}
+            >
               The calmer next step if you want guided help around the visuals and content.
             </p>
             <Link
               href="/private-shoot"
-              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
-              style={{ fontWeight: 500 }}
+              className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+              style={{ color: C.stone, fontWeight: 600 }}
             >
-              Book the Private Offer {"->"}
+              → Book the Private Offer
             </Link>
           </section>
         ) : null}
