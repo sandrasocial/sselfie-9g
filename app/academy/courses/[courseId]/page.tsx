@@ -1,10 +1,9 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { Cormorant_Garamond, Inter } from "next/font/google"
+import { formatDurationLabel, formatLessonDuration } from "@/app/academy/_lib/client-utils"
 
 import {
-  formatDurationLabel,
-  formatLessonDuration,
   getAccessibleCourseDetail,
   requireAcademyPageUser,
 } from "@/app/academy/_lib/course-library"

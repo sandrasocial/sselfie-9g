@@ -11,6 +11,8 @@ const DIRECT_ONE_TIME_ACADEMY_TYPES = [
   "selfie_guide",
   "selfie_guide_bundle",
   "brand_strategy_pack",
+  "starter_kit",
+  "masterclass",
 ] as const
 
 export type AcademyProductType = "course" | "pack" | "template" | "resource" | "bundle"
@@ -112,6 +114,7 @@ type FallbackMetadata = {
 
 const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
   selfie_guide_bundle: ["selfie_guide", "brand_strategy_pack"],
+  masterclass: ["branded_by_sselfie", "editing_masterclass"],
 }
 
 function priceFromCents(priceCents: number | null): number | null {
@@ -139,6 +142,32 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
   )
 
   const directProducts: AcademyProductRecord[] = [
+    {
+      id: "starter_kit",
+      slug: "starter-kit",
+      title: "Starter Kit",
+      type: "bundle",
+      membershipIncluded: false,
+      purchasable: true,
+      stripePriceId: process.env.STRIPE_PRICE_STARTER_KIT?.trim() || null,
+      active: true,
+      sortOrder: 65,
+      deliveryKind: "direct_private",
+      accessTarget: "starter-kit",
+    },
+    {
+      id: "masterclass",
+      slug: "masterclass",
+      title: "Selfie Masterclass",
+      type: "bundle",
+      membershipIncluded: false,
+      purchasable: true,
+      stripePriceId: process.env.STRIPE_PRICE_MASTERCLASS?.trim() || null,
+      active: true,
+      sortOrder: 66,
+      deliveryKind: "collection",
+      accessTarget: "masterclass",
+    },
     {
       id: "selfie_guide",
       slug: "selfie-guide",
@@ -243,9 +272,20 @@ function resolveAcademyProductAccessUrl(
 function resolveAcademyProductPurchaseUrl(
   product: Pick<AcademyCatalogProduct, "deliveryKind" | "accessTarget" | "id">
 ): string {
+  if (product.id === "starter_kit") {
+    return "/starter-kit"
+  }
+
+  if (product.id === "masterclass") {
+    return "/masterclass"
+  }
+
   if (product.deliveryKind === "direct_private") {
     if (product.accessTarget === "brand-strategy") {
       return "/brand-strategy"
+    }
+    if (product.accessTarget === "starter-kit") {
+      return "/starter-kit"
     }
     return "/selfie-guide"
   }

@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { getSupabaseEnvVars } from "@/lib/env"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
-export default function SetupPasswordPage() {
+function SetupPasswordContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -23,6 +25,7 @@ export default function SetupPasswordPage() {
   const [error, setError] = useState("")
   const [userEmail, setUserEmail] = useState("")
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const nextAfterSetup = sanitizeRedirect(searchParams.get("next"), "/studio")
 
   const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseEnvVars()
   const supabase =
@@ -84,10 +87,9 @@ export default function SetupPasswordPage() {
         throw updateError
       }
 
-      console.log("[v0] Password set successfully, redirecting to studio")
+      console.log("[v0] Password set successfully, redirecting to:", nextAfterSetup)
 
-      // Redirect to studio
-      router.push("/studio")
+      router.push(nextAfterSetup)
     } catch (err: any) {
       console.error("[v0] Error setting password:", err)
       setError(err.message || "Failed to set password. Please try again.")
@@ -181,13 +183,29 @@ export default function SetupPasswordPage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Setting Password...
                 </>
+              ) : nextAfterSetup === "/studio" ? (
+                "Continue to SSELFIE"
               ) : (
-                "Continue to SSelfie"
+                "Open Your Library"
               )}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function SetupPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-stone-50">
+          <Loader2 className="h-8 w-8 animate-spin text-stone-900" />
+        </div>
+      }
+    >
+      <SetupPasswordContent />
+    </Suspense>
   )
 }

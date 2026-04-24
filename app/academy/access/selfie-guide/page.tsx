@@ -23,7 +23,8 @@ export default async function AcademySelfieGuideAccessPage() {
   const entitlementState = await getAcademyEntitlementState(String(neonUser.id))
   const hasAccess =
     entitlementState.accessibleProductIds.includes("selfie_guide") ||
-    entitlementState.accessibleProductIds.includes("selfie_guide_bundle")
+    entitlementState.accessibleProductIds.includes("selfie_guide_bundle") ||
+    entitlementState.accessibleProductIds.includes("starter_kit")
 
   if (!hasAccess) {
     redirect("/selfie-guide")
