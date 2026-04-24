@@ -271,9 +271,31 @@ Target: €197/month minimum. Not €97. Not €27.
 ## Sandra's Preferences
 
 - **Voice:** Text a close friend. Warm, honest, short sentences. Contractions always.
-- **Design:** Scandinavian luxury. 5 colors only (#0a0a0a, #ffffff, #f5f5f5, #666666, #e5e5e5). Cormorant Garamond + Inter.
 - **Never say:** leverage, synergy, transform, game-changer, skyrocket, unlock your potential
 - **Images:** Always Sandra's own. Never stock photos. Ask Sandra for images.
 - **Approvals:** Sandra must approve ALL copy before sending. No autonomous sends.
 
 → Skills in Cowork: `sselfie-voice`, `scandinavian-design`, `instagram-strategy`, `tiktok-strategy`
+
+### Design System — SSELFIE Agents (updated 2026-04-24)
+*Full spec: `docs/brand/DESIGN_SYSTEM.md`. The canonical implementation is `components/sselfie/public-marketing.tsx`.*
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `ink` | `#0F0D0B` | Dark surfaces, body text on cream |
+| `cream` | `#EDE9E2` | Light surfaces, headings/text on dark |
+| `stone` | `#C4B5A0` | Secondary text on dark, accents |
+| `inkSoft` | `#1E1A15` | Cards on dark surfaces |
+| `creamWarm` | `#F4F0E6` | Cards on cream surfaces |
+
+**Fonts:** Cormorant Garamond (display, weight 300–700 only — weight 200 does NOT exist) + Inter (UI/body)
+
+**Rules that never bend:**
+- **Zero border-radius** — everywhere, always
+- **Letterpress text-shadow** on all headings (dark surface formula / cream surface formula — see DESIGN_SYSTEM.md)
+- **Paper texture** SVG overlay on every section (`<PaperTexture dark={bool} />`)
+- **Alternating dark/cream sections** — always start dark (hero), always end dark (footer)
+- **Sharp inset-shadow buttons** — no pill shapes, no gradient fills
+- **No glassmorphism** — no `backdrop-filter: blur()` on cards
+- **No gold accent** (`#c9a96e` is retired)
+- **No gradient text** (`background-clip: text` — absolute ban)
