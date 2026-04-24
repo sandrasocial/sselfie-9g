@@ -224,6 +224,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       (product) =>
         product.hasAccess &&
         product.deliveryKind !== "academy_course" &&
+        product.deliveryKind !== "collection" &&
         product.id !== "selfie_guide_bundle"
     )
     .map((product) => ({
