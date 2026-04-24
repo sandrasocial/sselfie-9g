@@ -514,9 +514,9 @@ const FAQS = {
     { question: "Will this work on my iPhone?",
       answer: "Yes. Every tutorial in the editing walkthrough uses a phone. No camera, no desktop software." },
     { question: "What apps do I need?",
-      answer: "Lightroom Mobile, Hypic, and CapCut — all free. The walkthrough shows you exactly how to use each one." },
+      answer: "Lightroom Mobile, Hypic, and CapCut. All free. The walkthrough shows you exactly how to use each one." },
     { question: "Is this just presets?",
-      answer: "No. The presets are included, but the main thing is the editing walkthrough — six video modules showing you exactly how I edit, step by step." },
+      answer: "No. The presets are included, but the main thing is the editing walkthrough. Six video modules showing you exactly how I edit, step by step." },
     { question: "What if I'm a complete beginner?",
       answer: "Good. There's also a posing cheat sheet, a Canva crash course for beginners, and caption prompts. You don't need to know anything going in." },
   ],
@@ -524,11 +524,11 @@ const FAQS = {
     { question: "Do I need the Starter Kit first?",
       answer: "No. The Starter Kit is about editing. The Masterclass is about building your brand and showing up consistently. Different things." },
     { question: "Is this a photography course?",
-      answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online — your brand, your pillars, your content system." },
+      answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online: your brand, your pillars, your content system." },
     { question: "How long does it take?",
-      answer: "Fourteen lessons. Most are under 10 minutes. You can go through it in a weekend or take one lesson a day — up to you." },
+      answer: "Fourteen lessons. Most are under 10 minutes. You can go through it in a weekend or take one lesson a day. Up to you." },
     { question: "How is this different from Studio?",
-      answer: "The Masterclass is the education — you do the work once and it's yours. Studio is the AI layer for when you want the tools to keep running it weekly." },
+      answer: "The Masterclass is the education. You do the work once and it's yours. Studio is the AI layer for when you want the tools to keep running it weekly." },
     { question: "What if I've never posted consistently?",
       answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
   ],
@@ -536,7 +536,7 @@ const FAQS = {
     { question: "Who is Studio for?",
       answer: "For people who already know the look and direction they want, and need speed, consistency, and memory built into the workflow." },
     { question: "What does Maya actually do?",
-      answer: "She generates brand photos, plans your feed, writes captions — and she remembers your style, so you're not starting from zero every time." },
+      answer: "She generates brand photos, plans your feed, writes captions. And she remembers your style, so you're not starting from zero every time." },
     { question: "Can I cancel?",
       answer: "Yes. Cancel any time from your account. No forms, no friction." },
   ],
@@ -559,7 +559,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         eyebrow="Personal branding by Sandra"
         title={<>Your iPhone is already in your hand.</>}
         body={
-          <p>The problem was never the camera. I teach women how to make income online — through personal branding, storytelling, and photos you already know how to take.</p>
+          <p>The problem was never the camera. I teach women how to make income online. Through personal branding, storytelling, and photos you already know how to take.</p>
         }
         primary={{ href: r("/selfie-guide"),  label: "Get the free guide" }}
         secondary={{ href: r("/starter-kit"), label: "See the Starter Kit" }}
@@ -605,7 +605,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="No edit" afterLabel="With preset" />
         </div>
         <div className="mt-8 mf">
-          <Btn href={r("/starter-kit")} surface="cream">Starter Kit presets — $37</Btn>
+          <Btn href={r("/starter-kit")} surface="cream">Starter Kit · $37</Btn>
         </div>
       </Section>
 
@@ -642,7 +642,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         body={
           <div className="space-y-4">
             <p>I was hiding behind my logo. Overthinking every caption. Posting less than I wanted to because nothing felt ready.</p>
-            <p>Once I figured out the brand — the positioning, the pillars, the photo that actually looks like me — showing up became easy. Not perfect. Easy.</p>
+            <p>Once I figured out the brand. The positioning, the pillars, the photo that actually looks like me. Showing up became easy. Not perfect. Easy.</p>
             <p>That&apos;s what I&apos;m here to teach you.</p>
           </div>
         }
@@ -674,10 +674,10 @@ export function StarterKitPageContent() {
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="Starter Kit — $37"
+        eyebrow="Starter Kit · $37"
         title={<>The editing walkthrough. The presets. Everything.</>}
         body={<p>Six video tutorials showing exactly how I edit. My full preset collection. The posing guide. Caption prompts. All in one kit, $37.</p>}
-        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit — $37" }}
+        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
       />
@@ -685,7 +685,7 @@ export function StarterKitPageContent() {
       {/* THE REAL ISSUE — cream */}
       <Section eyebrow="The real issue" title={<>You know how to take a photo. You just don&apos;t know how to finish it.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>The photo looks close. But something&apos;s off — the tone, the skin, the overall feel.</p>
+          <p>The photo looks close. But something&apos;s off. The tone, the skin, the overall feel.</p>
           <p>That&apos;s an editing problem. Not a camera problem. Not a face problem.</p>
           <p>This kit fixes that. Step by step, on your phone, using apps that are free.</p>
         </div>
@@ -696,7 +696,7 @@ export function StarterKitPageContent() {
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
             { num: "01", title: "Lightroom with presets",   body: "How to import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
-            { num: "02", title: "iPhone native editing",    body: "My exact formula — exposure, brilliance, highlights, shadows, vignette. Copy and paste to every photo in seconds." },
+            { num: "02", title: "iPhone native editing",    body: "My exact formula: exposure, brilliance, highlights, shadows, vignette. Copy and paste to every photo in seconds." },
             { num: "03", title: "Hypic for portraits",      body: "The app nobody's talking about. How I get that clean, glowing skin tone without looking over-edited." },
             { num: "04", title: "CapCut for video",         body: "My exact settings: contrast, sharpen, clarity, vignette. How I export at 4K every time." },
             { num: "05", title: "Save a custom preset",     body: "Build your own preset from a photo you love, so every future edit starts from the right place." },
@@ -741,7 +741,7 @@ export function StarterKitPageContent() {
       <Section eyebrow="Also included" title="The rest of the kit." dark={false}>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <FCard dark={false} title="Selfie Posing Cheat Sheet" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
-          <FCard dark={false} title="Branding Planner Template" body="Your brand colours, fonts, feed aesthetic, and visual direction — planned in one place." />
+          <FCard dark={false} title="Branding Planner Template" body="Your brand colours, fonts, feed aesthetic, and visual direction. Planned in one place." />
           <FCard dark={false} title="Storytelling Captions + Hooks" body="Caption formulas and scroll-stopping text overlays. My ChatGPT prompts for writing captions that actually connect." />
           <FCard dark={false} title="Canva Crash Course" body="Never opened Canva? This walks you through the basics so you can create content without getting stuck on the tools." />
         </div>
@@ -755,7 +755,7 @@ export function StarterKitPageContent() {
       {/* CTA — cream */}
       <CtaClose
         title="Everything you need to go from camera roll to content you're proud of."
-        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit — $37" }}
+        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
         dark={false}
       />
@@ -774,10 +774,10 @@ export function MasterclassPageContent() {
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="Masterclass — $147"
+        eyebrow="Masterclass · $147"
         title={<>Learn to build a personal brand that makes income.</>}
         body={<p>Fourteen lessons on brand, content, and showing up consistently. Starting with your phone. Ending with a system that actually holds.</p>}
-        primary={{ href: "/checkout/masterclass", label: "Enroll — $147" }}
+        primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
       />
@@ -787,7 +787,7 @@ export function MasterclassPageContent() {
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
           <p>But consistency isn&apos;t the problem. Clarity is.</p>
-          <p>When you know exactly who you are, what you stand for, and what you&apos;re building — showing up gets easier. This course gets you there.</p>
+          <p>When you know exactly who you are, what you stand for, and what you&apos;re building, showing up gets easier. This course gets you there.</p>
         </div>
       </Section>
 
@@ -851,7 +851,7 @@ export function MasterclassPageContent() {
       <Section eyebrow="Who this is for" title="You want to build something. You just haven't had a clear starting point." dark={false}>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            "You show up when inspiration strikes — and disappear for weeks when it doesn't. You need a system.",
+            "You show up when inspiration hits. And disappear for weeks when it doesn't. You need a system.",
             "You know what you want to build but every time you sit down to post, it feels like starting from zero.",
             "You want to be known for something specific. You just haven't figured out exactly what that is yet.",
           ].map((line) => (
@@ -880,7 +880,7 @@ export function MasterclassPageContent() {
       {/* CTA — dark */}
       <CtaClose
         title="Do this once. Then you'll know exactly what you're building."
-        primary={{ href: "/checkout/masterclass", label: "Enroll — $147" }}
+        primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/join/studio",          label: "See Studio" }}
         dark
       />
@@ -899,7 +899,7 @@ export function StudioPageContent() {
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="Studio — €97/mo"
+        eyebrow="Studio · €97/mo"
         title={<>An AI that already knows your brand. And gets smarter every week.</>}
         body={<p>Brand photos, Feed Planner, and Academy. For when you know what you want and need the speed.</p>}
         primary={{ href: "/checkout/membership", label: "Join Studio" }}
@@ -924,7 +924,7 @@ export function StudioPageContent() {
         body={
           <div className="space-y-4">
             <p>The education comes first. Then the speed.</p>
-            <p>Studio is for the person who already knows the look she&apos;s building — and wants the time back.</p>
+            <p>Studio is for the person who already knows the look she&apos;s building. She wants the time back.</p>
             <p>If you&apos;re still figuring out the brand, start with the Masterclass. Then come back here.</p>
           </div>
         }
@@ -942,7 +942,7 @@ export function StudioPageContent() {
       {/* CTA — dark */}
       <CtaClose
         title="When you want the advanced layer, this is it."
-        primary={{ href: "/checkout/membership", label: "Join Studio — €97/mo" }}
+        primary={{ href: "/checkout/membership", label: "Join Studio · €97/mo" }}
         secondary={{ href: "/starter-kit",       label: "Start smaller" }}
         dark
       />

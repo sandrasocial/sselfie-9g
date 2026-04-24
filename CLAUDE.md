@@ -272,6 +272,7 @@ Target: €197/month minimum. Not €97. Not €27.
 
 - **Voice:** Text a close friend. Warm, honest, short sentences. Contractions always.
 - **Never say:** leverage, synergy, transform, game-changer, skyrocket, unlock your potential
+- **Never write:** m-dashes (—) in any copy, button labels, or eyebrows. Use a period, a colon, or a middle dot `·` for price separators instead.
 - **Images:** Always Sandra's own. Never stock photos. Ask Sandra for images.
 - **Approvals:** Sandra must approve ALL copy before sending. No autonomous sends.
 

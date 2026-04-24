@@ -233,6 +233,15 @@ Fixed, `z-index: 50`, height `58px`.
 
 ---
 
+## Copy Rules
+
+- **No m-dashes (—).** Ever. In copy, button labels, or eyebrows.
+- Price separators in buttons/eyebrows use a middle dot: `·` (e.g. `"Starter Kit · $37"`)
+- Where a dash was breaking a sentence, use a period and start a new sentence instead.
+- Where a dash was introducing a list, use a colon.
+
+---
+
 ## What Is Retired / Never Use Again
 
 | Element | Reason |
