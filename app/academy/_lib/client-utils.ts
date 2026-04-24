@@ -3,8 +3,6 @@
  * No server-only imports — safe to use in "use client" components.
  */
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type LessonContent = {
   key_takeaways?: string[]
   action_step?: {
@@ -13,10 +11,13 @@ export type LessonContent = {
     bonus_vibe?: string
   }
   reflection_prompt?: string
-  profile_field?: string
-  profile_label?: string
-  profile_prompt?: string
-  resources?: Array<{ label: string; url: string }>
+  profile_field?: string | null
+  profile_question?: string | null
+  resources?: Array<{
+    title: string
+    type?: string
+    url: string
+  }>
 }
 
 export type CourseLesson = {
@@ -25,21 +26,24 @@ export type CourseLesson = {
   lesson_number: number
   title: string
   description: string | null
-  vimeo_id: string | null
+  lesson_type?: "video" | "interactive"
+  video_url: string | null
   duration_seconds: number | null
   content: LessonContent | null
+  resources?: unknown
   durationSeconds: number
   completed: boolean
   current: boolean
   startHere: boolean
 }
 
-// ─── Pure formatting helpers ──────────────────────────────────────────────────
-
 export function formatDurationLabel(totalSeconds: number): string {
   const totalMinutes = Math.max(0, Math.round(totalSeconds / 60))
-  if (totalMinutes < 60) return `${totalMinutes} min`
-  const hours   = Math.floor(totalMinutes / 60)
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min`
+  }
+
+  const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
   return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`
 }
@@ -51,6 +55,9 @@ export function formatLessonDuration(totalSeconds: number): string {
 }
 
 export function getLessonContent(content: unknown): LessonContent | null {
-  if (!content || typeof content !== "object") return null
+  if (!content || typeof content !== "object") {
+    return null
+  }
+
   return content as LessonContent
 }

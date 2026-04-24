@@ -1,3 +1,5 @@
+import "server-only"
+
 import { redirect } from "next/navigation"
 
 import { getAcademyEntitlementState, userHasAcademyProductAccess } from "@/lib/academy-entitlements"
@@ -9,23 +11,8 @@ import {
   type AcademyLesson,
 } from "@/lib/data/academy"
 import { getUserByAuthId } from "@/lib/user-mapping"
-
-export type LessonContent = {
-  key_takeaways?: string[]
-  action_step?: {
-    bare_minimum?: string
-    bold_move?: string
-    bonus_vibe?: string
-  }
-  reflection_prompt?: string
-  profile_field?: string | null
-  profile_question?: string | null
-  resources?: Array<{
-    title: string
-    type?: string
-    url: string
-  }>
-}
+import { getLessonContent, type CourseLesson } from "@/app/academy/_lib/client-utils"
+import type { AcademyResolvedCatalogEntry } from "@/lib/academy-entitlements"
 
 export type LibraryCourse = {
   id: number
@@ -41,14 +28,6 @@ export type LibraryCourse = {
   firstIncompleteLessonId: number | null
 }
 
-export type CourseLesson = AcademyLesson & {
-  durationSeconds: number
-  content: LessonContent | null
-  completed: boolean
-  current: boolean
-  startHere: boolean
-}
-
 export type CourseDetail = {
   id: number
   title: string
@@ -60,6 +39,55 @@ export type CourseDetail = {
   progressPercentage: number
   firstIncompleteLessonId: number | null
   lessons: CourseLesson[]
+}
+
+export type AcademyHomeLink = {
+  href: string
+  label: string
+}
+
+export type OwnedLibraryProduct = Pick<
+  AcademyResolvedCatalogEntry,
+  "id" | "name" | "tagline" | "description" | "accessUrl" | "purchaseUrl" | "type"
+> & {
+  eyebrow: string
+  actionLabel: string
+}
+
+export type AcademyHomeState = {
+  hasAccess: boolean
+  membershipActive: boolean
+  courses: LibraryCourse[]
+  ownedProducts: OwnedLibraryProduct[]
+  nextStep: {
+    eyebrow: string
+    title: string
+    description: string
+    href: string
+    ctaLabel: string
+  } | null
+  lockedProducts: Array<{
+    id: string
+    eyebrow: string
+    title: string
+    description: string
+    href: string
+    ctaLabel: string
+  }>
+  hero: {
+    eyebrow: string
+    title: string
+    description: string
+    primaryLink: AcademyHomeLink | null
+    secondaryLink: AcademyHomeLink | null
+  }
+  mayaCard: {
+    eyebrow: string
+    title: string
+    description: string
+    href: string
+    ctaLabel: string
+  } | null
 }
 
 export async function requireAcademyPageUser(redirectPath: string) {
@@ -84,14 +112,6 @@ export async function requireAcademyPageUser(redirectPath: string) {
       email: neonUser.email,
     },
   }
-}
-
-export function getLessonContent(content: unknown): LessonContent | null {
-  if (!content || typeof content !== "object") {
-    return null
-  }
-
-  return content as LessonContent
 }
 
 export function getTotalDurationSeconds(lessons: AcademyLesson[] | undefined): number {
@@ -153,6 +173,225 @@ export async function getAccessibleLibraryCourses(userId: string): Promise<{
   }
 }
 
+function getCourseHref(course: Pick<LibraryCourse, "id" | "firstIncompleteLessonId">): string {
+  return course.firstIncompleteLessonId
+    ? `/academy/courses/${course.id}/lessons/${course.firstIncompleteLessonId}`
+    : `/academy/courses/${course.id}`
+}
+
+function getOwnedProductEyebrow(productId: string): string {
+  switch (productId) {
+    case "starter_kit":
+      return "Starter Kit"
+    case "masterclass":
+      return "Masterclass"
+    case "selfie_guide":
+      return "Selfie Guide"
+    case "brand_strategy_pack":
+      return "Brand Strategy"
+    default:
+      return "Owned"
+  }
+}
+
+function getOwnedProductActionLabel(productId: string): string {
+  switch (productId) {
+    case "starter_kit":
+      return "Open Kit"
+    case "masterclass":
+      return "Open Library"
+    case "selfie_guide":
+      return "Open Guide"
+    case "brand_strategy_pack":
+      return "Open Strategy"
+    default:
+      return "Open"
+  }
+}
+
+export async function getAcademyHomeState(userId: string): Promise<AcademyHomeState> {
+  const [{ hasAccess: hasCourseAccess, courses }, entitlementState] = await Promise.all([
+    getAccessibleLibraryCourses(userId),
+    getAcademyEntitlementState(userId),
+  ])
+
+  const explicitIds = new Set(entitlementState.explicitProductIds)
+  const accessibleIds = new Set(entitlementState.accessibleProductIds)
+  const membershipActive = entitlementState.membershipActive
+
+  const ownedProducts = entitlementState.catalog
+    .filter(
+      (product) =>
+        product.hasAccess &&
+        product.deliveryKind !== "academy_course" &&
+        product.id !== "selfie_guide_bundle"
+    )
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      tagline: product.tagline,
+      description: product.description,
+      accessUrl: product.accessUrl,
+      purchaseUrl: product.purchaseUrl,
+      type: product.type,
+      eyebrow: getOwnedProductEyebrow(product.id),
+      actionLabel: getOwnedProductActionLabel(product.id),
+    }))
+
+  const hasStarterKit = accessibleIds.has("starter_kit")
+  const hasMasterclass =
+    explicitIds.has("masterclass") ||
+    accessibleIds.has("branded_by_sselfie") ||
+    accessibleIds.has("editing_masterclass")
+  const hasDirectGuide = accessibleIds.has("selfie_guide") || accessibleIds.has("selfie_guide_bundle")
+
+  const primaryCourse = courses.find((course) => course.started) || courses[0] || null
+  const primaryOwnedProduct = ownedProducts[0] || null
+  const hasAccess = hasCourseAccess || ownedProducts.length > 0
+
+  let heroDescription = "Everything you own lives here. Start where it feels easiest."
+  let primaryLink: AcademyHomeLink | null = null
+  let secondaryLink: AcademyHomeLink | null = null
+
+  if (primaryCourse) {
+    heroDescription = primaryCourse.started
+      ? "Pick up where you left off and keep moving through your content."
+      : "Start with your first lesson and build momentum one step at a time."
+    primaryLink = {
+      href: getCourseHref(primaryCourse),
+      label: primaryCourse.started ? "Continue Lesson" : "Start Your Course",
+    }
+  } else if (primaryOwnedProduct) {
+    heroDescription =
+      primaryOwnedProduct.id === "starter_kit"
+        ? "Your Starter Kit is ready. Start with the quick win and then move into the fuller method."
+        : "Your paid content is ready inside SSELFIE."
+    primaryLink = {
+      href: primaryOwnedProduct.accessUrl,
+      label: primaryOwnedProduct.actionLabel,
+    }
+  }
+
+  if (membershipActive) {
+    secondaryLink = {
+      href: "/studio?tab=maya",
+      label: "Open Maya",
+    }
+  }
+
+  let nextStep: AcademyHomeState["nextStep"] = null
+
+  if (membershipActive) {
+    nextStep = {
+      eyebrow: "Next Step",
+      title: "Work with Sandra",
+      description: "If you want hands-on support beyond the app, the private offer is the next move.",
+      href: "/work-with-me",
+      ctaLabel: "See 1:1",
+    }
+  } else if (hasMasterclass) {
+    nextStep = {
+      eyebrow: "Next Step",
+      title: "Activate Studio",
+      description:
+        "You have the method. Studio is the AI layer that helps you execute faster with Maya, Feed Planner, and image generation.",
+      href: "/join/studio",
+      ctaLabel: "Join Studio",
+    }
+  } else if (hasStarterKit) {
+    nextStep = {
+      eyebrow: "Next Step",
+      title: "Go deeper with the Masterclass",
+      description:
+        "Starter Kit gets you the first result. The Masterclass gives you the full system for light, pose, edit, post, and repeat.",
+      href: "/masterclass",
+      ctaLabel: "See Masterclass",
+    }
+  } else if (hasDirectGuide) {
+    nextStep = {
+      eyebrow: "Next Step",
+      title: "Turn this into a real result",
+      description:
+        "The Starter Kit is the fastest paid step after the guide: presets, quick-start, and a cleaner path into the full method.",
+      href: "/starter-kit",
+      ctaLabel: "See Starter Kit",
+    }
+  }
+
+  const lockedProducts: AcademyHomeState["lockedProducts"] = []
+
+  if (!hasStarterKit) {
+    lockedProducts.push({
+      id: "starter_kit",
+      eyebrow: "$37 one-time",
+      title: "Starter Kit",
+      description: "Presets, quick-start, and the first practical step after the guide.",
+      href: "/starter-kit",
+      ctaLabel: "See Starter Kit",
+    })
+  }
+
+  if (!hasMasterclass) {
+    lockedProducts.push({
+      id: "masterclass",
+      eyebrow: "$147 one-time",
+      title: "Selfie Masterclass",
+      description: "The complete method, already waiting inside Academy once you unlock it.",
+      href: "/masterclass",
+      ctaLabel: "See Masterclass",
+    })
+  }
+
+  if (!membershipActive) {
+    lockedProducts.push({
+      id: "studio",
+      eyebrow: "€97 / month",
+      title: "Studio",
+      description: "Maya, Feed Planner, and your AI execution layer when you're ready for the advanced step.",
+      href: "/join/studio",
+      ctaLabel: "Join Studio",
+    })
+  }
+
+  const mayaCard =
+    membershipActive || hasStarterKit || hasMasterclass || hasDirectGuide
+      ? membershipActive
+        ? {
+            eyebrow: "Maya",
+            title: "Your AI layer is live",
+            description:
+              "Maya already knows your brand context. Use her to create faster without starting from a blank page.",
+            href: "/studio?tab=maya",
+            ctaLabel: "Open Maya",
+          }
+        : {
+            eyebrow: "Maya",
+            title: "Maya lives inside Studio",
+            description:
+              "When you want AI help with image generation, planning, and execution, Studio is the next layer.",
+            href: "/join/studio",
+            ctaLabel: "See Studio",
+          }
+      : null
+
+  return {
+    hasAccess,
+    membershipActive,
+    courses,
+    ownedProducts,
+    nextStep,
+    lockedProducts: lockedProducts.slice(0, 2),
+    hero: {
+      eyebrow: "My Library",
+      title: "Your SSELFIE home.",
+      description: heroDescription,
+      primaryLink,
+      secondaryLink,
+    },
+    mayaCard,
+  }
+}
+
 export async function getAccessibleCourseDetail(
   userId: string,
   courseId: number
@@ -197,21 +436,4 @@ export async function getAccessibleCourseDetail(
     firstIncompleteLessonId,
     lessons,
   }
-}
-
-export function formatDurationLabel(totalSeconds: number): string {
-  const totalMinutes = Math.max(0, Math.round(totalSeconds / 60))
-  if (totalMinutes < 60) {
-    return `${totalMinutes} min`
-  }
-
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`
-}
-
-export function formatLessonDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${String(seconds).padStart(2, "0")}`
 }

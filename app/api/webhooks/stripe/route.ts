@@ -22,6 +22,8 @@ import {
 } from "@/lib/email/templates/selfie-guide-paid-delivery"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templates/brand-strategy-setup-notification"
+import { generateStarterKitDay0DeliveryEmail } from "@/lib/email/templates/starter-kit-day0-delivery"
+import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
@@ -187,7 +189,11 @@ async function upsertStarterKitSubscriber(email: string, name?: string | null) {
   return { subscriberId: inserted[0].id as number, accessToken }
 }
 
-async function generatePasswordSetupLinkForPurchase(userId: string | null | undefined, email: string) {
+async function generatePasswordSetupLinkForPurchase(
+  userId: string | null | undefined,
+  email: string,
+  nextAfterSetup = "/studio"
+) {
   if (!userId) {
     return undefined
   }
@@ -202,11 +208,12 @@ async function generatePasswordSetupLinkForPurchase(userId: string | null | unde
     }
 
     const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+    const redirectTarget = `${productionUrl}/auth/setup-password?next=${encodeURIComponent(nextAfterSetup)}`
     const supabaseAdmin = createAdminClient()
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
-      options: { redirectTo: `${productionUrl}/auth/setup-password` },
+      options: { redirectTo: redirectTarget },
     })
 
     if (resetError || !resetData?.properties?.action_link) {
@@ -220,7 +227,7 @@ async function generatePasswordSetupLinkForPurchase(userId: string | null | unde
       const token = url.searchParams.get("token")
       const type = url.searchParams.get("type") || "recovery"
       if (token) {
-        link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+        link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=${encodeURIComponent(`/auth/setup-password?next=${encodeURIComponent(nextAfterSetup)}`)}`
       }
     }
 
@@ -2519,52 +2526,30 @@ export async function POST(request: NextRequest) {
                   customerEmail!,
                   session.customer_details?.name
                 )
-                const accessUrl = `${productionUrl}/access/starter-kit/${subscriberRecord.accessToken}`
-                const guideUrl = `${productionUrl}/selfie-guide/access/${subscriberRecord.accessToken}`
-                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(userId, customerEmail!)
+                const fallbackAccessUrl = `${productionUrl}/access/starter-kit/${subscriberRecord.accessToken}`
+                const libraryAccessUrl = `${productionUrl}/academy/access/starter-kit`
+                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
+                  userId,
+                  customerEmail!,
+                  "/academy/access/starter-kit"
+                )
                 const firstName = getFirstNameForEmail({
                   fullName: session.customer_details?.name,
                   email: customerEmail!,
                 })
-
-                const emailHtml = `
-                  <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
-                    <p>Hi ${firstName},</p>
-                    <p>Your Starter Kit is ready.</p>
-                    <p>Start with the quick-start page, download your presets, and use the guide when you want the fuller method.</p>
-                    <p><a href="${accessUrl}" style="color: #1c1917;">Open your Starter Kit</a></p>
-                    <p><a href="${guideUrl}" style="color: #1c1917;">Open the Selfie Guide</a></p>
-                    ${
-                      presetPackUrl
-                        ? `<p><a href="${presetPackUrl}" style="color: #1c1917;">Download your presets</a></p>`
-                        : ""
-                    }
-                    ${
-                      passwordSetupLink
-                        ? `<p><a href="${passwordSetupLink}" style="color: #1c1917;">Set your password</a></p>`
-                        : ""
-                    }
-                    <p>Sandra</p>
-                  </div>
-                `
-                const emailText = [
-                  `Hi ${firstName},`,
-                  "",
-                  "Your Starter Kit is ready.",
-                  "Start with the quick-start page, download your presets, and use the guide when you want the fuller method.",
-                  `Open your Starter Kit: ${accessUrl}`,
-                  `Open the Selfie Guide: ${guideUrl}`,
-                  ...(presetPackUrl ? [`Download your presets: ${presetPackUrl}`] : []),
-                  ...(passwordSetupLink ? [`Set your password: ${passwordSetupLink}`] : []),
-                  "",
-                  "Sandra",
-                ].join("\n")
+                const email = generateStarterKitDay0DeliveryEmail({
+                  firstName,
+                  accessUrl: libraryAccessUrl,
+                  fallbackUrl: fallbackAccessUrl,
+                  passwordSetupUrl: passwordSetupLink,
+                  presetDownloadUrl: presetPackUrl,
+                })
 
                 const emailResult = await sendEmail({
                   to: customerEmail!,
-                  subject: "Your Starter Kit is ready",
-                  html: emailHtml,
-                  text: emailText,
+                  subject: email.subject,
+                  html: email.html,
+                  text: email.text,
                   emailType: "starter_kit_delivery",
                   tags: ["starter-kit", "delivery"],
                 })
@@ -2739,41 +2724,26 @@ export async function POST(request: NextRequest) {
               try {
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
                 const academyUrl = `${productionUrl}/academy`
-                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(userId, customerEmail!)
+                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
+                  userId,
+                  customerEmail!,
+                  "/academy"
+                )
                 const firstName = getFirstNameForEmail({
                   fullName: session.customer_details?.name,
                   email: customerEmail!,
                 })
-                const emailHtml = `
-                  <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
-                    <p>Hi ${firstName},</p>
-                    <p>Your Masterclass is unlocked.</p>
-                    <p>You can head into Academy for the next step, and your purchase is now linked to your account.</p>
-                    <p><a href="${academyUrl}" style="color: #1c1917;">Open Academy</a></p>
-                    ${
-                      passwordSetupLink
-                        ? `<p><a href="${passwordSetupLink}" style="color: #1c1917;">Set your password</a></p>`
-                        : ""
-                    }
-                    <p>Sandra</p>
-                  </div>
-                `
-                const emailText = [
-                  `Hi ${firstName},`,
-                  "",
-                  "Your Masterclass is unlocked.",
-                  "You can head into Academy for the next step, and your purchase is now linked to your account.",
-                  `Open Academy: ${academyUrl}`,
-                  ...(passwordSetupLink ? [`Set your password: ${passwordSetupLink}`] : []),
-                  "",
-                  "Sandra",
-                ].join("\n")
+                const email = generateMasterclassDay0DeliveryEmail({
+                  firstName,
+                  accessUrl: academyUrl,
+                  passwordSetupUrl: passwordSetupLink,
+                })
 
                 const emailResult = await sendEmail({
                   to: customerEmail!,
-                  subject: "Your Masterclass is unlocked",
-                  html: emailHtml,
-                  text: emailText,
+                  subject: email.subject,
+                  html: email.html,
+                  text: email.text,
                   emailType: "masterclass_delivery",
                   tags: ["masterclass", "delivery"],
                 })

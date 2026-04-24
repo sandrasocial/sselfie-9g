@@ -16,6 +16,14 @@ export function masterclassCheckoutUrl() {
   return `${SITE_URL}/checkout/masterclass`
 }
 
+export function academyLibraryUrl() {
+  return `${SITE_URL}/academy`
+}
+
+export function academyStarterKitUrl() {
+  return `${SITE_URL}/academy/access/starter-kit`
+}
+
 export function studioLandingUrl() {
   return `${SITE_URL}/join/studio`
 }
