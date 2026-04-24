@@ -7,11 +7,11 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import {
   formatLessonDuration,
   type CourseLesson,
-} from "@/app/academy/_lib/course-library"
+} from "@/app/academy/_lib/client-utils"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["200", "300"],
+  weight: ["300", "400"],
 })
 
 const inter = Inter({
@@ -325,7 +325,7 @@ export function LessonViewerClient({
           <div key={`${takeaway}-${index}`} className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
             <span
               className={`${cormorant.className} text-3xl text-[#c8c4bb]`}
-              style={{ fontWeight: 200, lineHeight: 1 }}
+              style={{ fontWeight: 300, lineHeight: 1 }}
             >
               {String(index + 1).padStart(2, "0")}
             </span>
@@ -563,7 +563,7 @@ export function LessonViewerClient({
               </p>
               <h1
                 className={`${cormorant.className} text-4xl uppercase md:text-6xl`}
-                style={{ fontWeight: 200, lineHeight: 0.95 }}
+                style={{ fontWeight: 300, lineHeight: 0.95 }}
               >
                 {lesson.title}
               </h1>

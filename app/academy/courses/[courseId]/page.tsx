@@ -11,7 +11,7 @@ import {
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["200", "300"],
+  weight: ["300", "400"],
 })
 
 const inter = Inter({
@@ -58,7 +58,7 @@ export default async function AcademyCoursePage({
 
         <h1
           className={`${cormorant.className} mt-6 text-5xl uppercase md:text-7xl`}
-          style={{ fontWeight: 200, lineHeight: 0.92 }}
+          style={{ fontWeight: 300, lineHeight: 0.92 }}
         >
           {course.title}
         </h1>
