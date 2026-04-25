@@ -130,7 +130,7 @@ export function BrandEngineBroadcastPanel() {
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="border border-stone-200 p-4">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">App signups</p>
+          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">Subscribers</p>
           <p className="text-lg text-stone-950 mt-1">{subscriberCountDisplay}</p>
         </div>
         <div className="border border-stone-200 p-4">
@@ -142,12 +142,6 @@ export function BrandEngineBroadcastPanel() {
         <div className="border border-stone-200 p-4">
           <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">Target Segment</p>
           <p className="text-sm text-stone-900 mt-1">{campaign?.target_segment || "all_subscribers"}</p>
-        </div>
-      </div>
-      <div className="mt-3 grid grid-cols-1 gap-3">
-        <div className="border border-stone-200 p-4">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">Resend Audience Contacts</p>
-          <p className="text-sm text-stone-900 mt-1">{subscriberCountDisplay}</p>
         </div>
       </div>
 
