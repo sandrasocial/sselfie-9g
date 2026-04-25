@@ -1,8 +1,11 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAcademyProducts } from "@/lib/academy-products"
+import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
 import PurchaseButton from "../products/[productId]/purchase-button"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
@@ -62,6 +65,18 @@ type SuccessPageProps = {
 
 const MEMBERSHIP_UPSELL_NAME = "Creator Studio membership"
 
+type AcademyUpsellTarget = (typeof ACADEMY_PRODUCTS)[keyof typeof ACADEMY_PRODUCTS]["upsellTo"]
+
+function getAcademyUpsellTarget(productId: string | undefined): AcademyUpsellTarget | null {
+  if (!productId) return null
+
+  const academyProduct = (ACADEMY_PRODUCTS as Record<string, { upsellTo?: AcademyUpsellTarget }>)[
+    productId
+  ]
+
+  return academyProduct?.upsellTo ?? null
+}
+
 export default async function AcademySuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams
   const productId = params.product
@@ -70,23 +85,41 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
-  const neonUser = authUser ? await getUserByAuthId(authUser.id) : null
+
+  const redirectPath = productId
+    ? `/academy/success?product=${encodeURIComponent(productId)}`
+    : "/academy/success"
+
+  if (!authUser) {
+    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+  }
+
+  const neonUser = await getUserByAuthId(authUser.id)
+  if (!neonUser) {
+    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+  }
+
   const firstName =
     (neonUser as { first_name?: string } | null)?.first_name ||
     neonUser?.display_name?.split(" ")[0] ||
     authUser?.user_metadata?.first_name ||
     null
 
-  const products = await getAcademyProducts()
+  const [products, entitlementState] = await Promise.all([
+    getAcademyProducts(),
+    getAcademyEntitlementState(String(neonUser.id)),
+  ])
   const product = productId ? products.find((candidate) => candidate.id === productId) : null
+  const productHasAccess = product ? entitlementState.accessibleProductIds.includes(product.id) : false
+  const upsellTarget = getAcademyUpsellTarget(product?.id)
 
   const upsell =
-    product?.upsellTo && product.upsellTo !== "membership"
-      ? products.find((candidate) => candidate.id === product.upsellTo) ?? null
+    productHasAccess && upsellTarget && upsellTarget !== "membership"
+      ? products.find((candidate) => candidate.id === upsellTarget) ?? null
       : null
 
-  const upsellName = product
-    ? product.upsellTo === "membership"
+  const upsellName = productHasAccess
+    ? upsellTarget === "membership"
       ? MEMBERSHIP_UPSELL_NAME
       : upsell?.name ?? null
     : null
@@ -118,11 +151,13 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
             className={`${inter.className} mt-6 text-[15px] leading-[1.78]`}
             style={{ color: C.stone, fontWeight: 300 }}
           >
-            {product.name} is unlocked in your library.
+            {productHasAccess
+              ? `${product.name} is unlocked in your library.`
+              : `We are finishing your ${product.name} unlock. If it does not appear in a moment, refresh your library.`}
           </p>
         ) : null}
 
-        {product && NEXT_STEP_BY_PRODUCT[product.id] ? (
+        {productHasAccess && product && NEXT_STEP_BY_PRODUCT[product.id] ? (
           <section
             className="mt-10 p-7"
             style={{ background: C.inkSoft, border: `1px solid ${C.div}` }}
@@ -213,7 +248,7 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               {upsell.tagline}
             </p>
             <div className="mt-6">
-              <PurchaseButton productId={upsell.id} price={upsell.price / 100} />
+              <PurchaseButton productId={upsell.id} price={upsell.price ?? 0} />
             </div>
           </section>
         ) : upsellName === MEMBERSHIP_UPSELL_NAME ? (
@@ -242,14 +277,14 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
               style={{ color: C.stone, fontWeight: 300 }}
             >
-              The calmer next step if you want guided help around the visuals and content.
+              Studio gives you Maya, Feed Planner, and the AI layer that helps you execute the work faster.
             </p>
             <Link
-              href="/private-shoot"
+              href="/join/studio"
               className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
               style={{ color: C.stone, fontWeight: 600 }}
             >
-              → Book the Private Offer
+              → Join Studio
             </Link>
           </section>
         ) : null}

@@ -31,8 +31,18 @@ describe("getAcademyProducts", () => {
     expect(neonFactoryMock).toHaveBeenCalledWith("postgres://unit-test", {
       disableWarningInBrowsers: true,
     })
-    expect(products).toHaveLength(9)
+    expect(products).toHaveLength(11)
     expect(products.find(p => p.id === "what_to_say")?.name).toBe("What To Say")
+    expect(products.find(p => p.id === "starter_kit")).toMatchObject({
+      deliveryKind: "direct_private",
+      accessUrl: "/academy/access/starter-kit",
+      purchaseUrl: "/starter-kit",
+    })
+    expect(products.find(p => p.id === "masterclass")).toMatchObject({
+      deliveryKind: "collection",
+      accessUrl: "/academy",
+      purchaseUrl: "/masterclass",
+    })
     expect(products.find(p => p.id === "selfie_guide")?.purchaseUrl).toBe("/selfie-guide")
     expect(products.every(p => p.active)).toBe(true)
   })

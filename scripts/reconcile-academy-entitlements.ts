@@ -53,7 +53,13 @@ async function runChecks(): Promise<CheckResult[]> {
        AND ue.product_id = s.product_type
        AND ue.status = 'active'
       WHERE s.status = 'active'
-        AND s.product_type IN ('selfie_guide', 'selfie_guide_bundle', 'brand_strategy_pack')
+        AND s.product_type IN (
+          'selfie_guide',
+          'selfie_guide_bundle',
+          'brand_strategy_pack',
+          'starter_kit',
+          'masterclass'
+        )
         AND ue.id IS NULL
       ORDER BY s.user_id ASC, s.product_type ASC
     `,

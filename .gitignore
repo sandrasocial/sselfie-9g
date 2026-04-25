@@ -33,6 +33,7 @@ next-env.d.ts
 
 # Local automation outputs
 /output/
+/graphify-out/
 
 # Local scratch
 /.tmp/

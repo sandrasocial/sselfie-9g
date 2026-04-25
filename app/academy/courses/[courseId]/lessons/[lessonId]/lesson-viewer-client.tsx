@@ -61,6 +61,11 @@ function parseVimeoId(url: string | null | undefined): string | null {
   return match ? match[1] : null
 }
 
+async function getApiErrorMessage(response: Response, fallback: string): Promise<string> {
+  const data = (await response.json().catch(() => null)) as { error?: string } | null
+  return data?.error || fallback
+}
+
 function TabChip({
   active,
   onClick,
@@ -127,7 +132,7 @@ export function LessonViewerClient({
 
     async function bootstrap() {
       try {
-        await Promise.all([
+        const [enrollResponse, progressResponse] = await Promise.all([
           fetch("/api/academy/enroll", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -139,6 +144,14 @@ export function LessonViewerClient({
             body: JSON.stringify({ lessonId: lesson.id, action: "start" }),
           }),
         ])
+
+        if (!enrollResponse.ok) {
+          throw new Error(await getApiErrorMessage(enrollResponse, "Failed to enroll in course"))
+        }
+
+        if (!progressResponse.ok) {
+          throw new Error(await getApiErrorMessage(progressResponse, "Failed to start lesson"))
+        }
 
         const notesResponse = await fetch(`/api/academy/lessons/${lesson.id}/notes`, {
           cache: "no-store",
@@ -235,7 +248,7 @@ export function LessonViewerClient({
 
     startTransition(async () => {
       try {
-        await fetch("/api/academy/progress", {
+        const response = await fetch("/api/academy/progress", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -243,6 +256,10 @@ export function LessonViewerClient({
             action: nextCompleted ? "complete" : "incomplete",
           }),
         })
+
+        if (!response.ok) {
+          throw new Error(await getApiErrorMessage(response, "Failed to update progress"))
+        }
       } catch (saveError) {
         setCurrentLessonCompleted(!nextCompleted)
         setLessonStates(current =>
