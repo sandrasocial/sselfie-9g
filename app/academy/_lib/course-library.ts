@@ -88,6 +88,14 @@ export type AcademyHomeState = {
     href: string
     ctaLabel: string
   } | null
+  implementationPath: Array<{
+    step: string
+    title: string
+    description: string
+    href: string
+    ctaLabel: string
+    status: "start" | "next" | "later"
+  }>
 }
 
 export async function requireAcademyPageUser(redirectPath: string) {
@@ -209,6 +217,44 @@ function getOwnedProductActionLabel(productId: string): string {
   }
 }
 
+export function getMasterclassImplementationPath({
+  hasBrandStrategyAccess,
+  primaryCourseHref,
+}: {
+  hasBrandStrategyAccess: boolean
+  primaryCourseHref: string
+}): AcademyHomeState["implementationPath"] {
+  return [
+    {
+      step: "01",
+      title: "Clarify your offer",
+      description:
+        "Start with Brand Strategy Pack so you know who you help, what you sell, and what your content needs to make clear.",
+      href: hasBrandStrategyAccess ? "/academy/access/brand-strategy" : "/brand-strategy",
+      ctaLabel: hasBrandStrategyAccess ? "Start Strategy" : "See Strategy",
+      status: "start",
+    },
+    {
+      step: "02",
+      title: "Move through the lessons",
+      description:
+        "Use the Masterclass for visibility, confidence, content structure, and the weekly rhythm that supports your offer.",
+      href: primaryCourseHref,
+      ctaLabel: "Open Lessons",
+      status: "next",
+    },
+    {
+      step: "03",
+      title: "Publish for 30 days",
+      description:
+        "Turn the work into action: posts, simple calls to action, follow-up conversations, and a rhythm you can measure.",
+      href: "/academy",
+      ctaLabel: "Use The Plan",
+      status: "later",
+    },
+  ]
+}
+
 export async function getAcademyHomeState(userId: string): Promise<AcademyHomeState> {
   const [{ hasAccess: hasCourseAccess, courses }, entitlementState] = await Promise.all([
     getAccessibleLibraryCourses(userId),
@@ -250,6 +296,13 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   const primaryCourse = courses.find((course) => course.started) || courses[0] || null
   const primaryOwnedProduct = ownedProducts[0] || null
   const hasAccess = hasCourseAccess || ownedProducts.length > 0
+  const primaryCourseHref = primaryCourse ? getCourseHref(primaryCourse) : "/academy"
+  const implementationPath = hasMasterclass
+    ? getMasterclassImplementationPath({
+        hasBrandStrategyAccess: accessibleIds.has("brand_strategy_pack"),
+        primaryCourseHref,
+      })
+    : []
 
   let heroDescription = "Everything you own lives here. Start where it feels easiest."
   let primaryLink: AcademyHomeLink | null = null
@@ -264,7 +317,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
         label: "Start Brand Strategy",
       }
       secondaryLink = {
-        href: getCourseHref(primaryCourse),
+        href: primaryCourseHref,
         label: primaryCourse.started ? "Continue Lesson" : "Open Lessons",
       }
     } else {
@@ -272,7 +325,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
         ? "Pick up where you left off and keep moving through your content."
         : "Start with your first lesson and build momentum one step at a time."
       primaryLink = {
-        href: getCourseHref(primaryCourse),
+        href: primaryCourseHref,
         label: primaryCourse.started ? "Continue Lesson" : "Start Your Course",
       }
     }
@@ -405,6 +458,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       secondaryLink,
     },
     mayaCard,
+    implementationPath,
   }
 }
 

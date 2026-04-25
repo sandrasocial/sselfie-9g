@@ -526,7 +526,7 @@ const FAQS = {
     { question: "Is this a photography course?",
       answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online: your brand, your pillars, your content system." },
     { question: "How long does it take?",
-      answer: "Fourteen lessons. Most are under 10 minutes. You can go through it in a weekend or take one lesson a day. Up to you." },
+      answer: "Start with Brand Strategy, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
     { question: "How is this different from Studio?",
       answer: "The Masterclass is the education. You do the work once and it's yours. Studio is the AI layer for when you want the tools to keep running it weekly." },
     { question: "What if I've never posted consistently?",
@@ -804,8 +804,8 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* LESSON LIST — cream */}
-      <Section eyebrow="All fourteen lessons" title="Here's exactly what's covered." dark={false}>
+      {/* IMPLEMENTATION MAP — cream */}
+      <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
             { num: "01", title: "Start Here: Brand Strategy Pack"     },

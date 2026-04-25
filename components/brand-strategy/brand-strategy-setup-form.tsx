@@ -14,6 +14,21 @@ const BRAND_VIBE_OPTIONS = [
   { value: "editorial", label: "Editorial & refined" },
 ]
 
+const STRATEGY_OUTCOMES = [
+  {
+    label: "Positioning",
+    body: "A clearer sentence for who you help, what you help with, and why your perspective matters.",
+  },
+  {
+    label: "Content Direction",
+    body: "Pillars and post ideas that connect your story to the offer you want people to understand.",
+  },
+  {
+    label: "Next Action",
+    body: "A simple first step you can use before moving into Masterclass lessons or Studio execution.",
+  },
+]
+
 interface Props {
   setupToken?: string | null
   email: string
@@ -87,12 +102,22 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
       <div className="setup-container">
         <div className="setup-intro">
           <p className="setup-eyebrow">STEP 1 OF 1</p>
-          <h1 className={`setup-title ${cormorant.className}`}>Tell Maya about your brand</h1>
+          <h1 className={`setup-title ${cormorant.className}`}>Start with your strategy</h1>
           <p className="setup-subtitle">
-            Four questions. Two minutes. Your strategy will be ready the moment you submit.
+            Before you move into lessons, captions, or selling, give Maya the basics. This turns the
+            Masterclass into a clearer implementation path instead of another set of notes.
           </p>
           {email && <p className="setup-email-note">Building strategy for: {email}</p>}
         </div>
+
+        <section className="outcome-grid" aria-label="What your Brand Strategy Pack creates">
+          {STRATEGY_OUTCOMES.map((item) => (
+            <article key={item.label} className="outcome-card">
+              <p className="outcome-label">{item.label}</p>
+              <p className="outcome-body">{item.body}</p>
+            </article>
+          ))}
+        </section>
 
         <form onSubmit={handleSubmit} className="setup-form">
           <div className="form-field">
@@ -195,6 +220,11 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
               This usually takes 30–60 seconds. Please don&apos;t close this tab.
             </p>
           )}
+
+          <p className="compliance-note">
+            Educational strategy only. This can help you clarify your offer, content, and next steps,
+            but it does not guarantee income or business results.
+          </p>
         </form>
       </div>
 
@@ -267,6 +297,30 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
           font-size: 12px;
           color: #6b6762;
           letter-spacing: 0.04em;
+        }
+        .outcome-grid {
+          display: grid;
+          gap: 12px;
+          margin: -22px 0 34px;
+        }
+        .outcome-card {
+          border: 1px solid rgba(195, 190, 182, 0.14);
+          background: rgba(175, 170, 162, 0.05);
+          padding: 18px 20px;
+        }
+        .outcome-label {
+          margin: 0 0 8px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          color: #c4b5a0;
+        }
+        .outcome-body {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.7;
+          color: rgba(240, 237, 232, 0.72);
         }
         .setup-form {
           display: flex;
@@ -356,6 +410,15 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
           font-size: 12px;
           color: #6b6762;
           text-align: center;
+          font-weight: 300;
+        }
+        .compliance-note {
+          margin: 0;
+          border-top: 1px solid rgba(195, 190, 182, 0.12);
+          padding-top: 18px;
+          font-size: 11px;
+          line-height: 1.7;
+          color: rgba(240, 237, 232, 0.45);
           font-weight: 300;
         }
         @media (max-width: 600px) {

@@ -230,6 +230,62 @@ export default async function AcademyPage() {
               </section>
             ) : null}
 
+            {/* ── Guided implementation path ── */}
+            {home.implementationPath.length > 0 ? (
+              <section>
+                <p
+                  className={`${inter.className} ${eyebrow}`}
+                  style={{ color: C.muted, fontWeight: 600 }}
+                >
+                  Recommended Path
+                </p>
+                <div className="mt-6 grid gap-4 lg:grid-cols-3">
+                  {home.implementationPath.map((step) => (
+                    <article
+                      key={step.step}
+                      className="p-7"
+                      style={{
+                        background: step.status === "start" ? C.inkSoft : "transparent",
+                        border: `1px solid ${step.status === "start" ? "rgba(237,233,226,0.22)" : C.div}`,
+                      }}
+                    >
+                      <p
+                        className={`${inter.className} ${eyebrow}`}
+                        style={{ color: C.muted, fontWeight: 600 }}
+                      >
+                        {step.step} · {step.status === "start" ? "Start Here" : step.status === "next" ? "Then" : "After"}
+                      </p>
+                      <h2
+                        className={`${cormorant.className} mt-5 uppercase`}
+                        style={{
+                          fontWeight: 300,
+                          fontSize: "clamp(19px, 2.5vw, 26px)",
+                          lineHeight: 1.18,
+                          textShadow: LP,
+                          color: C.cream,
+                        }}
+                      >
+                        {step.title}
+                      </h2>
+                      <p
+                        className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
+                        style={{ color: C.stone, fontWeight: 300 }}
+                      >
+                        {step.description}
+                      </p>
+                      <Link
+                        href={step.href}
+                        className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+                        style={{ color: C.cream, fontWeight: 600 }}
+                      >
+                        → {step.ctaLabel}
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {/* ── Courses ── */}
             {home.courses.length > 0 ? (
               <section>
