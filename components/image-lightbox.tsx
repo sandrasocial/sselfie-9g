@@ -55,7 +55,8 @@ export function ImageLightbox({ image, images, onClose, onFavorite, onDelete, is
   }
 
   const handleMakeVideo = () => {
-    const url = `/studio#maya/videos`
+    // TODO: preselect this source image in Videos once the tab accepts a sourceImage param.
+    const url = `/studio?sourceImage=${encodeURIComponent(currentImage.image_url)}#maya/videos`
     window.location.href = url
   }
 
@@ -99,13 +100,13 @@ export function ImageLightbox({ image, images, onClose, onFavorite, onDelete, is
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             onClick={handleAddToFeed}
-            className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition-colors"
+            className="rounded-none border border-white bg-white px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-black transition-colors hover:bg-white/90"
           >
             Add to Feed -&gt;
           </button>
           <button
             onClick={handleMakeVideo}
-            className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition-colors"
+            className="rounded-none border border-white bg-black px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-stone-900"
           >
             Make a Video -&gt;
           </button>

@@ -149,8 +149,11 @@ export default function ConceptCard({
   const hasMenuActions = isProMode || (isAdmin && !!selectedGuideId)
   const categoryLabelMap: Record<string, string> = {
     "Environmental Portrait": "Outdoor scene",
-    "Half Body Lifestyle": "Lifestyle portrait",
+    "Half Body Lifestyle": "Half body",
+    "Close Up": "Close-up",
     "Full Body": "Full body",
+    "Product Shot": "Product shot",
+    "Flat Lay": "Flat lay",
     Portrait: "Close-up portrait",
     Lifestyle: "Lifestyle scene",
     Casual: "Everyday style",
@@ -591,7 +594,7 @@ export default function ConceptCard({
                 predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
               }
               
-              await fetch('/api/maya/update-message', {
+              const saveResponse = await fetch('/api/maya/update-message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -601,6 +604,9 @@ export default function ConceptCard({
                   conceptCards: [updatedConcept],
                   }),
                 })
+              if (!saveResponse.ok) {
+                throw new Error(`JSONB save failed (${saveResponse.status})`)
+              }
               console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId })
             } catch (jsonbError: any) {
               console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
@@ -818,10 +824,10 @@ export default function ConceptCard({
                       id: conceptStableId,
                       generatedImageUrl: status.output,
                       generationId: generationId,
-                      predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
+                      predictionId: data.predictionId, // CRITICAL: Save predictionId so images can be found on refresh
                     }
                     
-                    await fetch('/api/maya/update-message', {
+                    const saveResponse = await fetch('/api/maya/update-message', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       credentials: 'include',
@@ -831,7 +837,10 @@ export default function ConceptCard({
                         conceptCards: [updatedConcept],
                       }),
                     })
-                    console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId })
+                    if (!saveResponse.ok) {
+                      throw new Error(`JSONB save failed (${saveResponse.status})`)
+                    }
+                    console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId: data.predictionId })
                   } catch (jsonbError: any) {
                     console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
                     // Don't fail - image still shows in UI

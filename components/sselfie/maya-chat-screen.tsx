@@ -222,7 +222,6 @@ export default function MayaChatScreen({
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
-  const [showCollapsedPrompts, setShowCollapsedPrompts] = useState(false)
   const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const [welcomeFlowDismissed, setWelcomeFlowDismissed] = useState(false)
@@ -426,11 +425,9 @@ export default function MayaChatScreen({
     loadGalleryImages,
   } = useMayaImages(proMode)
 
-  // UX-ACT-01 fix: only collapse prompts once user has generated at least one image.
-  // Previously: messages.length > 1 (blocked ALL new users from seeing quick-start prompts)
-  // Now: also requires libraryTotalImages > 0 so new users always see the escape hatch.
-  const shouldCollapseInputPrompts = messages.length > 1 && (libraryTotalImages ?? 0) > 0
-  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
+  // Keep quick prompts as a first-message helper only. Once the chat has momentum,
+  // hiding the row gives the composer more room on mobile.
+  const shouldShowInputPrompts = messages.length <= 1
 
   // Shared images between Photos and Videos tabs
   const {
@@ -4404,9 +4401,6 @@ export default function MayaChatScreen({
                 prompts={currentPrompts}
                 onSelect={(prompt) => {
                   handleSendMessage(prompt)
-                  if (shouldCollapseInputPrompts) {
-                    setShowCollapsedPrompts(false)
-                  }
                 }}
                 disabled={isTyping}
                 variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
@@ -4414,16 +4408,6 @@ export default function MayaChatScreen({
                 isEmpty={isEmpty}
                 uploadedImage={uploadedImage}
               />
-            ) : shouldCollapseInputPrompts ? (
-              <div className="mb-2 mt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowCollapsedPrompts(true)}
-                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(195,190,182,0.20)] rounded-md bg-[rgba(175,170,162,0.08)] hover:bg-[rgba(175,170,162,0.15)] text-[#8a8780]"
-                >
-                  Prompts
-                </button>
-              </div>
             ) : null}
 
             {/* Input Area - Unified for both Classic and Pro Mode */}

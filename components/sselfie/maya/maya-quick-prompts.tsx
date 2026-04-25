@@ -47,17 +47,20 @@ export default function MayaQuickPrompts({
     const chipClass =
       "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[color:var(--text-accent)] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] active:bg-[rgba(175,170,162,0.22)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(168,164,156,0.40)]"
     return (
-      <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
-        {prompts.map((item, index) => (
-          <button
-            key={`quick-chip-${index}`}
-            onClick={() => onSelect(item.prompt)}
-            disabled={disabled}
-            className={chipClass}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="relative w-full">
+        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
+          {prompts.map((item, index) => (
+            <button
+              key={`quick-chip-${index}`}
+              onClick={() => onSelect(item.prompt)}
+              disabled={disabled}
+              className={chipClass}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[rgba(23,20,18,0.95)] to-transparent" />
       </div>
     )
   }

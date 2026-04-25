@@ -214,9 +214,16 @@ export default function InstagramPhotoCard({
                 </div>
               ) : (
                 <div className="px-4 py-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(13,12,11,0.50)] backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-[#f0ede8] text-[11px] tracking-[0.28em] uppercase font-medium text-center">
-                    {animateOverlayStyle === "create" ? "Animate ->" : "Click to Create B-Roll"}
-                  </p>
+                  {animateOverlayStyle === "create" ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-white text-2xl leading-none">✦</span>
+                      <span className="text-white text-[11px] tracking-[0.22em] uppercase font-medium">Animate -&gt;</span>
+                    </div>
+                  ) : (
+                    <p className="text-[#f0ede8] text-[11px] tracking-[0.28em] uppercase font-medium text-center">
+                      Click to Create B-Roll
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -319,12 +326,12 @@ export default function InstagramPhotoCard({
                     <span>Creating Photoshoot</span>
                   </>
                 ) : (
-                  <span>{"Create Photoshoot"}</span>
+                  <span>Create Full Photoshoot -&gt;</span>
                 )}
               </button>
             )}
             {onCreatePhotoshoot && !isCreatingPhotoshoot && (
-              <p className="text-[11px] text-[#8a8780] text-center uppercase tracking-[0.14em]">6-9 matching photos, 3 min</p>
+              <p className="text-[11px] text-[#8a8780] text-center uppercase tracking-[0.14em]">6-9 matching photos, ~3 min</p>
             )}
             {onCreateProPhotoshoot && studioProMode && (
               <button
