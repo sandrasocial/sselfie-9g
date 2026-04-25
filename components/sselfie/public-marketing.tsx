@@ -823,7 +823,8 @@ export function MasterclassPageContent() {
             { num: "13", title: "Instagram Reels"                     },
             { num: "14", title: "Content Planning"                    },
             { num: "15", title: "Offer Map & What I Sell Script"      },
-            { num: "16", title: "30-Day Revenue Readiness Sprint"     },
+            { num: "16", title: "Content-To-Cash Conversation System" },
+            { num: "17", title: "30-Day Revenue Readiness Sprint"     },
           ].map((l) => (
             <div key={l.num} className="mf flex items-baseline gap-5 py-4"
               style={{ borderBottom: `1px solid ${C.divCream}` }}>

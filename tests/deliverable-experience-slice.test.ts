@@ -31,4 +31,16 @@ describe("deliverable experience slice", () => {
     expect(marketing).not.toContain("All fourteen lessons")
     expect(marketing).not.toContain("Fourteen lessons.")
   })
+
+  it("seeds compliant income-ready Masterclass implementation lessons", () => {
+    const migration = readFileSync("migrations/20260426_masterclass_income_ready_module.sql", "utf8")
+    const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
+
+    expect(migration).toContain("Offer Map & What I Sell Script")
+    expect(migration).toContain("Content-To-Cash Conversation System")
+    expect(migration).toContain("30-Day Revenue Readiness Sprint")
+    expect(migration).toContain("No sprint can guarantee income")
+    expect(migration).toContain("total_lessons = GREATEST")
+    expect(marketing).toContain("Content-To-Cash Conversation System")
+  })
 })
