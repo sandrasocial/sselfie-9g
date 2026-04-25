@@ -522,7 +522,7 @@ const FAQS = {
   ],
   masterclass: [
     { question: "Do I need the Starter Kit first?",
-      answer: "No. The Starter Kit is about editing. The Masterclass is about building your brand and showing up consistently. Different things." },
+      answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper and now includes Brand Strategy Pack so you build from a clearer offer." },
     { question: "Is this a photography course?",
       answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online: your brand, your pillars, your content system." },
     { question: "How long does it take?",
@@ -614,8 +614,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           {[
             { title: "Free Guide",       price: "Free",          body: "Light, angles, and what to do first. Start here.",                                       href: "/selfie-guide"  },
-            { title: "Starter Kit",      price: "$37",           body: "Presets, posing guide, editing walkthrough. One time.",                                   href: "/starter-kit"   },
-            { title: "Masterclass",      price: "$147",          body: "14 lessons on brand, content, and showing up. The course that makes everything click.",   href: "/masterclass"   },
+            { title: "Starter Kit",      price: "$37",           body: "Selfie Guide, presets, quick-start, and a 7-day content starter. One time.",             href: "/starter-kit"   },
+            { title: "Masterclass",      price: "$147",          body: "Brand Strategy Pack included, plus visibility, content, and offer implementation.",      href: "/masterclass"   },
             { title: "Studio",           price: "€97/mo",        body: "AI brand photos, Feed Planner, Academy. For when you know what you want and need speed.", href: "/join/studio"   },
             { title: "1:1 with Sandra",  price: "From $2,000",   body: "Two or three people at a time. Direct eyes on your whole brand.",                        href: "/work-with-me"  },
           ].map((p) => (
@@ -675,19 +675,19 @@ export function StarterKitPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Starter Kit · $37"
-        title={<>The editing walkthrough. The presets. Everything.</>}
-        body={<p>Six video tutorials showing exactly how I edit. My full preset collection. The posing guide. Caption prompts. All in one kit, $37.</p>}
+        title={<>Your first better selfie. Your first week of content.</>}
+        body={<p>The Selfie Guide, presets, quick-start, and a simple 7-day content starter so one photo becomes something you can actually post.</p>}
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
       />
 
       {/* THE REAL ISSUE — cream */}
-      <Section eyebrow="The real issue" title={<>You know how to take a photo. You just don&apos;t know how to finish it.</>} dark={false} narrow>
+      <Section eyebrow="The real issue" title={<>You do not need more files. You need one finished result.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>The photo looks close. But something&apos;s off. The tone, the skin, the overall feel.</p>
           <p>That&apos;s an editing problem. Not a camera problem. Not a face problem.</p>
-          <p>This kit fixes that. Step by step, on your phone, using apps that are free.</p>
+          <p>This kit fixes that, then gives you a tiny content rhythm so the photo does not just sit in your camera roll.</p>
         </div>
       </Section>
 
@@ -741,7 +741,7 @@ export function StarterKitPageContent() {
       <Section eyebrow="Also included" title="The rest of the kit." dark={false}>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <FCard dark={false} title="Selfie Posing Cheat Sheet" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
-          <FCard dark={false} title="Branding Planner Template" body="Your brand colours, fonts, feed aesthetic, and visual direction. Planned in one place." />
+          <FCard dark={false} title="7-Day Content Starter" body="A tiny posting rhythm for your first better photo: proof, story, teaching, behind-the-scenes, and invitation." />
           <FCard dark={false} title="Storytelling Captions + Hooks" body="Caption formulas and scroll-stopping text overlays. My ChatGPT prompts for writing captions that actually connect." />
           <FCard dark={false} title="Canva Crash Course" body="Never opened Canva? This walks you through the basics so you can create content without getting stuck on the tools." />
         </div>
@@ -754,7 +754,7 @@ export function StarterKitPageContent() {
 
       {/* CTA — cream */}
       <CtaClose
-        title="Everything you need to go from camera roll to content you're proud of."
+        title="Everything you need to turn one selfie into your first brand-ready week."
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
         dark={false}
@@ -775,31 +775,31 @@ export function MasterclassPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Masterclass · $147"
-        title={<>Learn to build a personal brand that makes income.</>}
-        body={<p>Fourteen lessons on brand, content, and showing up consistently. Starting with your phone. Ending with a system that actually holds.</p>}
+        title={<>Build income-ready visibility with a clearer offer.</>}
+        body={<p>Brand Strategy Pack included, then the full method for showing up, creating content, and building the assets you need to start selling online with more clarity.</p>}
         primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
       />
 
       {/* CLARITY — cream */}
-      <Section eyebrow="What's actually happening" title={<>It&apos;s not that you don&apos;t know what to post. It&apos;s that nobody knows who you are yet.</>} dark={false} narrow>
+      <Section eyebrow="What's actually happening" title={<>It&apos;s not that you need more motivation. You need positioning before content.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
           <p>But consistency isn&apos;t the problem. Clarity is.</p>
-          <p>When you know exactly who you are, what you stand for, and what you&apos;re building, showing up gets easier. This course gets you there.</p>
+          <p>That is why Masterclass now starts with your Brand Strategy Pack. Know what you sell, who it helps, and what you want to be known for before you build the content system.</p>
         </div>
       </Section>
 
       {/* MODULES — dark */}
-      <Section eyebrow="Inside the course" title="Five areas. Fourteen lessons. One clear direction." dark>
+      <Section eyebrow="Inside the course" title="Strategy first. Then content, confidence, and execution." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
-            { title: "Who You Are",         body: "Brand positioning, mission, and how to explain what you do in a sentence that actually resonates." },
+            { title: "Brand Strategy Pack", body: "Your positioning, audience, pillars, and next content ideas before the lessons begin." },
             { title: "How You Show Up",     body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait." },
             { title: "Your Visual Brand",   body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they even see your name." },
-            { title: "Your Content System", body: "Brand pillars, content planning, and how to batch content so you&apos;re never scrambling on a Sunday night." },
-            { title: "Growth & Reels",      body: "What makes reels perform, how to structure a hook, and what consistency actually looks like in a real week." },
+            { title: "Content-To-Cash",     body: "Weekly rhythm, calls to action, DM follow-up, and simple sales conversations without income guarantees." },
+            { title: "30-Day Sprint",       body: "A practical calendar and tracker so you can publish, invite, follow up, and measure conversations." },
           ].map((m) => <FCard key={m.title} title={m.title} body={m.body} dark />)}
         </div>
       </Section>
@@ -808,8 +808,8 @@ export function MasterclassPageContent() {
       <Section eyebrow="All fourteen lessons" title="Here's exactly what's covered." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
-            { num: "01", title: "Welcome & What This Changes"         },
-            { num: "02", title: "Introduction to Personal Branding"   },
+            { num: "01", title: "Start Here: Brand Strategy Pack"     },
+            { num: "02", title: "Welcome & What This Changes"         },
             { num: "03", title: "Starting to Show Up"                 },
             { num: "04", title: "Your Energy on Camera"               },
             { num: "05", title: "The Camera Hack"                     },
@@ -822,6 +822,8 @@ export function MasterclassPageContent() {
             { num: "12", title: "High Quality Selfies"                },
             { num: "13", title: "Instagram Reels"                     },
             { num: "14", title: "Content Planning"                    },
+            { num: "15", title: "Offer Map & What I Sell Script"      },
+            { num: "16", title: "30-Day Revenue Readiness Sprint"     },
           ].map((l) => (
             <div key={l.num} className="mf flex items-baseline gap-5 py-4"
               style={{ borderBottom: `1px solid ${C.divCream}` }}>
@@ -838,7 +840,7 @@ export function MasterclassPageContent() {
         body={
           <div className="space-y-4">
             <p>I figured it out over years. The positioning. The pillars. The content system that actually holds up when life gets messy.</p>
-            <p>This course is everything I wish someone had put in front of me in the first six months.</p>
+            <p>This course is everything I wish someone had put in front of me in the first six months, including the part where you stop hiding behind content and clarify what you actually sell.</p>
             <p>One time. Then it&apos;s yours.</p>
           </div>
         }
@@ -865,11 +867,14 @@ export function MasterclassPageContent() {
       {/* WHAT YOU LEAVE WITH — dark */}
       <Section eyebrow="After the course" title="What you'll have that you don't have now." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark title="Your brand positioning" body="One clear sentence that explains who you are and who you're for. No more trailing off when someone asks what you do." />
+          <FCard dark title="Your Brand Strategy Pack" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
           <FCard dark title="Your brand pillars"     body="The three topics you always come back to. Every content idea filters through these." />
-          <FCard dark title="Your content system"    body="How many times you post, in what format, on what days. Built around your actual life." />
-          <FCard dark title="A complete first week"  body="You won't finish this course with notes. You'll finish it with content already made." />
+          <FCard dark title="Your content-to-cash system" body="What you post, where it leads, and how to invite the right people into a simple conversation." />
+          <FCard dark title="A 30-day action plan"  body="You won't finish this course with notes. You'll finish it with posts, scripts, and a tracking rhythm." />
         </div>
+        <p className="mf mt-8 max-w-3xl" style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
+          This training is educational and implementation-focused. Results depend on your offer, audience, consistency, pricing, market demand, effort, and timing. SSELFIE does not guarantee income or specific business results.
+        </p>
       </Section>
 
       {/* FAQ — cream */}

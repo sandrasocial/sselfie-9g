@@ -25,7 +25,7 @@ export function generateStarterKitDay0DeliveryEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Starter Kit is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with the quick win. Open the kit inside SSELFIE. Download the presets. Use one photo that already feels close.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with one photo you can actually post. Open the kit inside SSELFIE, download the presets, then use the 7-day starter to turn that photo into content.</p>
     <div style="margin:28px 0 14px;">${primaryButton}</div>
     ${secondaryButton}
     ${
@@ -42,8 +42,8 @@ export function generateStarterKitDay0DeliveryEmail({
       eyebrow: "Starter Kit",
       title: "Your kit is ready.",
       subtitle: passwordSetupUrl
-        ? "Set your password once, then everything is waiting inside SSELFIE."
-        : "Presets, quick-start, and the guide support are waiting for you.",
+        ? "Set your password once, then your guide, presets, and 7-day content starter are waiting inside SSELFIE."
+        : "Guide access, presets, and your 7-day content starter are waiting for you.",
       bodyHtml,
       footerLead: "One photo. Good light. Keep it simple.",
       footerSignoff: "Sandra x",
@@ -52,6 +52,6 @@ export function generateStarterKitDay0DeliveryEmail({
       passwordSetupUrl ? `Set your password: ${passwordSetupUrl}\nOpen your kit: ${accessUrl}\n` : `Open your kit: ${accessUrl}\n`
     }${
       presetDownloadUrl ? `Download your presets: ${presetDownloadUrl}\n` : ""
-    }\nFallback access: ${resolvedFallbackUrl}\n\nSandra x`,
+    }\nStart with one photo you can post, then use it across a simple 7-day content starter.\n\nFallback access: ${resolvedFallbackUrl}\n\nSandra x`,
   }
 }

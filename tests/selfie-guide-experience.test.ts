@@ -39,4 +39,13 @@ describe("selfie guide experience parser", () => {
     const duplicates = [...counts.entries()].filter(([, count]) => count > 1)
     expect(duplicates).toEqual([])
   })
+
+  it("anchors the guide around a postable first-photo outcome", () => {
+    const content = readFileSync("content-templates/selfie-guide-content-v3.md", "utf8")
+
+    expect(content).toContain("one photo you would actually post")
+    expect(content).toContain("one simple caption idea")
+    expect(content).toContain("7-Day Challenge")
+    expect(content).toContain("Get the Starter Kit")
+  })
 })

@@ -21,7 +21,7 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
 
   const guidePanel = renderStonePanel(
     `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">Inside, I'll walk you through the exact selfie system I use when I want brand photos that feel polished, calm, and real.</p>
-     <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">No expensive setup. No fake confidence. Just your phone, the right light, and a simple structure you can repeat.</p>`,
+     <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">Your first win is simple: one photo you would actually post, one caption idea, and one tiny next step toward being more visible online.</p>`,
     "What You'll Open",
   )
 
@@ -47,7 +47,7 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's ready for you now. This is the framework I built when I needed better brand photos without making it a whole production.</p>
     ${guidePanel}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your Selfie Guide", accessUrl)}</div>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#a8a49c;">Start with the first part in the sidebar. Then take one new photo today while it's fresh.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#a8a49c;">Start with the first part in the sidebar. Then take one new photo today and write the simplest caption you can actually post.</p>
     ${presetPackBlock}
     ${passwordBlock}
     ${renderStonePanel(
@@ -74,7 +74,7 @@ It's ready for you now. This is the framework I built when I needed better brand
 
 Open your Selfie Guide: ${accessUrl}
 
-Start with the first part in the sidebar. Then take one new photo today while it's fresh.
+Start with the first part in the sidebar. Then take one new photo today and write the simplest caption you can actually post.
 
 ${
     presetPackUrl

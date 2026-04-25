@@ -6,17 +6,18 @@ import { describe, expect, it } from "vitest"
 const ROOT = process.cwd()
 
 describe("usd pricing copy", () => {
-  it("keeps active strategy upsells on dollar pricing", () => {
+  it("keeps active strategy upsells aligned to current offers", () => {
     const upsellContents = fs.readFileSync(
       path.join(ROOT, "components/strategy/brand-strategy-pack-upsell.tsx"),
       "utf8",
     )
     const strategyPageContents = fs.readFileSync(path.join(ROOT, "app/strategy/[token]/page.tsx"), "utf8")
 
-    expect(upsellContents).toContain("Join Studio — $97/month")
-    expect(upsellContents).not.toContain("€97/month")
-    expect(strategyPageContents).toContain("Join Studio — $97/month")
-    expect(strategyPageContents).not.toContain("€97/month")
+    expect(upsellContents).toContain("Get your Brand Strategy Pack instantly — $19")
+    expect(upsellContents).not.toContain("Join Studio — $97/month")
+    expect(strategyPageContents).toContain("Book the Private Offer")
+    expect(strategyPageContents).toContain("Try Feed Planner first")
+    expect(strategyPageContents).not.toContain("Join Studio — €97/month")
   })
 
   it("keeps nurture and freebie strategy membership copy on dollars", () => {

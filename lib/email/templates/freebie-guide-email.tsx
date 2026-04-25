@@ -132,7 +132,7 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
           <tr>
             <td style="padding: 0 30px 32px;">
               <p style="margin: 0; color: #78716c; font-size: 13px; font-weight: 300; line-height: 1.7;">
-                <em>P.S. Once you've worked through the guide, the next question is what to say around the photo — your message, your audience, your positioning. I built something for that: the <a href="https://sselfie.ai/checkout/brand-strategy-pack" style="color: #1c1917; text-decoration: underline;">Brand Strategy Pack</a>. $19. Takes 10 minutes. You get a full personal brand strategy document you keep forever.</em>
+                <em>P.S. Once you've worked through the guide, the next step is turning one good photo into a tiny content rhythm. The <a href="https://sselfie.ai/checkout/starter-kit" style="color: #1c1917; text-decoration: underline;">Starter Kit</a> gives you the presets, quick-start, and 7-day content starter for that.</em>
               </p>
             </td>
           </tr>
@@ -185,7 +185,7 @@ READ YOUR GUIDE: ${guideAccessLink}
 
 This link gives you lifetime access to your guide.
 
-P.S. Once you've worked through the guide, the next question is what to say around the photo — your message, your audience, your positioning. I built something for that: the Brand Strategy Pack. $19. Takes 10 minutes. You get a full personal brand strategy document you keep forever: https://sselfie.ai/checkout/brand-strategy-pack
+P.S. Once you've worked through the guide, the next step is turning one good photo into a tiny content rhythm. The Starter Kit gives you the presets, quick-start, and 7-day content starter for that: https://sselfie.ai/checkout/starter-kit
 
 Questions? Just reply to this email — I read every message.
 

@@ -78,6 +78,13 @@ async function resolveCheckoutFromCta(input: {
         timeout: NAV_TIMEOUT_MS,
       })
       await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
+    } else if (input.trigger.type === "goto") {
+      checkoutUrl = new URL(input.trigger.href, BASE_URL).toString()
+      await page.goto(checkoutUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: NAV_TIMEOUT_MS,
+      })
+      await page.waitForURL(/\/checkout(\?|$|\/failure)/, { timeout: NAV_TIMEOUT_MS })
     } else {
       const cta = page.getByRole("button", { name: input.trigger.name }).first()
       await cta.waitFor({ state: "visible", timeout: NAV_TIMEOUT_MS }).catch(() => null)
@@ -146,7 +153,10 @@ async function resolveCheckoutFromCta(input: {
       name: input.name,
       status: "fail",
       landingUrl,
-      checkoutUrl: input.trigger.type === "href" ? new URL(input.trigger.href, BASE_URL).toString() : landingUrl,
+      checkoutUrl:
+        input.trigger.type === "href" || input.trigger.type === "goto"
+          ? new URL(input.trigger.href, BASE_URL).toString()
+          : landingUrl,
       finalUrl: page.url(),
       detail: error instanceof Error ? error.message : "Unknown browser error",
     }

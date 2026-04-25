@@ -137,28 +137,34 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "starter_kit",
     name: "Selfie Starter Kit",
     displayName: "Selfie Starter Kit",
-    description: "The presets, quick-start, and guide Sandra uses to help you get a better photo faster.",
+    description:
+      "The guide, presets, quick-start, and 7-day content starter that help you turn one better selfie into your first brand-ready week.",
     priceInCents: 3700, // $37 one-time
     type: "starter_kit",
     tag: "bought_starter_kit",
     features: [
-      "Starter Kit access page",
+      "Selfie Guide access",
       "Preset download link",
       "Quick-start checklist for your next selfie",
-      "Guide link for the full selfie method",
+      "7-day content starter",
+      "What to post this week prompts",
     ],
   },
   {
     id: "masterclass",
     name: "Selfie Masterclass",
     displayName: "Selfie Masterclass",
-    description: "Sandra's full method for light, pose, edit, post, and repeat.",
+    description:
+      "Sandra's full method for visibility, offer clarity, content, and showing up with a system you can start selling from.",
     priceInCents: 14700, // $147 one-time
     type: "masterclass",
     tag: "bought_masterclass",
     features: [
+      "Brand Strategy Pack included",
       "Full method walkthrough",
       "Module-based training access",
+      "Income-ready visibility curriculum",
+      "30-day content and offer implementation assets",
       "Academy entitlement unlock",
       "Next-step support toward Studio or 1:1",
     ],
@@ -182,14 +188,15 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "selfie_guide",
     name: "Selfie Guide",
     displayName: "Selfie Guide",
-    description: "Turn one good selfie into your brand",
+    description: "Take one selfie you feel confident enough to post.",
     priceInCents: 1700, // $17 one-time
     type: "selfie_guide",
     tag: "bought_selfie_guide",
     features: [
-      "9 chapters of personal branding strategy",
+      "First-photo checklist",
       "Interactive checklists for every step",
       "7-Day Selfie Challenge",
+      "One caption/post prompt",
       "Meet Maya - your AI branding assistant",
       "Lightroom preset pack bonus",
     ],

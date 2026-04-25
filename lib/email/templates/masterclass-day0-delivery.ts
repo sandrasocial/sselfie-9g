@@ -11,34 +11,34 @@ export function generateMasterclassDay0DeliveryEmail({
 }) {
   const primaryButton = passwordSetupUrl
     ? renderStoneButton("Set Your Password", passwordSetupUrl)
-    : renderStoneButton("Open The Masterclass", accessUrl)
+    : renderStoneButton("Start With Brand Strategy", accessUrl)
   const secondaryButton = passwordSetupUrl
-    ? `<div style="margin:10px 0 0;">${renderStoneButton("Open The Masterclass", accessUrl, "outline")}</div>`
+    ? `<div style="margin:10px 0 0;">${renderStoneButton("Start With Brand Strategy", accessUrl, "outline")}</div>`
     : ""
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Masterclass access is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with module one. Do not try to do all of it at once.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Masterclass access is ready, and it includes your Brand Strategy Pack.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with your positioning first. Once you know what you sell, who it is for, and what you want to be known for, the lessons become much easier to use.</p>
     <div style="margin:28px 0 14px;">${primaryButton}</div>
     ${secondaryButton}
   `
   return {
-    subject: "it's all there",
+    subject: "start with your strategy",
     html: renderStoneShell({
       eyebrow: "Masterclass",
-      title: "Your Masterclass is ready.",
+      title: "Start with strategy.",
       subtitle: passwordSetupUrl
-        ? "Set your password once, then start with light and move through the rest in order."
-        : "Start with light. Then move through the rest in order.",
+        ? "Set your password once, then complete your Brand Strategy Pack before moving through the lessons."
+        : "Complete your Brand Strategy Pack first, then move through the lessons with a clearer offer.",
       bodyHtml,
-      footerLead: "One module at a time is enough.",
+      footerLead: "One clear offer first. Then one module at a time.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Masterclass is ready.\n\n${
+    text: `Hi ${firstName},\n\nYour Masterclass is ready, and it includes your Brand Strategy Pack.\n\nStart with your positioning first. Once you know what you sell, who it is for, and what you want to be known for, the lessons become much easier to use.\n\n${
       passwordSetupUrl
-        ? `Set your password: ${passwordSetupUrl}\nOpen the Masterclass: ${accessUrl}\n`
-        : `Open the Masterclass: ${accessUrl}\n`
+        ? `Set your password: ${passwordSetupUrl}\nStart with Brand Strategy: ${accessUrl}\n`
+        : `Start with Brand Strategy: ${accessUrl}\n`
     }\nSandra x`,
   }
 }

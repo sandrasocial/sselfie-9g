@@ -145,10 +145,17 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Offer",
-                  name: "Brand Strategy Pack",
-                  price: "19",
+                  name: "Starter Kit",
+                  price: "37",
                   priceCurrency: "USD",
-                  url: "https://sselfie.ai/brand-strategy",
+                  url: "https://sselfie.ai/starter-kit",
+                },
+                {
+                  "@type": "Offer",
+                  name: "Masterclass",
+                  price: "147",
+                  priceCurrency: "USD",
+                  url: "https://sselfie.ai/masterclass",
                 },
                 {
                   "@type": "Offer",
@@ -228,7 +235,7 @@ export default function RootLayout({
                   name: "How much does SSELFIE cost?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "SSELFIE offers three entry points: The Selfie Guide at $17 (one-time), the Brand Strategy Pack at $19 (one-time), and Studio membership at $97/month which includes 200 credits, unlimited brand photo generation, custom model training, feed planning, and caption writing.",
+                    text: "SSELFIE offers a simple path: start with the Selfie Guide, move into the Starter Kit for presets and a 7-day content starter, use the Masterclass with Brand Strategy Pack access for deeper visibility and offer clarity, then continue inside Studio membership for Maya, Feed Planner, brand photo generation, and caption writing.",
                   },
                 },
                 {

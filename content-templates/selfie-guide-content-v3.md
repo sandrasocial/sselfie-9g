@@ -21,6 +21,14 @@ No fluff. No fancy equipment. Just you, your iPhone, and a few simple tricks tha
 
 I'm Sandra. I've built a 180K+ following and a real, paying business starting with nothing but my phone and a window. If I can do it, so can you.
 
+### Your Result Today
+
+By the end of this guide, I do not want you to have "learned about selfies."
+
+I want you to have one photo you would actually post, one simple caption idea, and one tiny next step toward being more visible online.
+
+That is the win.
+
 Ready? Let's go.
 
 ---
@@ -242,6 +250,7 @@ For every selfie you take, you can create:
 - 1 Instagram post (the photo + a caption that tells a story)
 - 1 reel or TikTok (show the process, the before/after, or a tip)
 - 3 to 5 stories (behind the scenes, poll, question sticker, or repost)
+- 1 invitation (a small CTA that tells people what you are building, selling, or helping with)
 
 That is 5 to 7 pieces of content from one photo session. You do not need to spend hours in front of a camera. You need a system.
 
@@ -279,7 +288,7 @@ Take your best selfie from days 1 to 3. Open Lightroom Mobile. Apply the 5-step 
 Take a selfie while doing something you love. Cooking, reading, working, walking. No posing. Just take the photo while you're in the moment.
 
 **Day 6 - Caption Writing**
-Write 3 different captions for your day 5 photo. One short (under 10 words), one medium (2 to 3 sentences), and one long (a real story, 5 to 8 sentences). Notice which one feels most like you.
+Write 3 different captions for your day 5 photo. One short (under 10 words), one medium (2 to 3 sentences), and one long (a real story, 5 to 8 sentences). Add one tiny invitation at the end: "If you are building this too, send me a message."
 
 **Day 7 - Post It**
 Choose your best selfie from this week. Pick your favorite caption. Post it. Done.
@@ -377,10 +386,14 @@ You've just learned everything you need to take a great selfie. But a great self
 
 The women I know who are actually building audiences — they're not winging it. They've got a system. They know who they're talking to. They know what to say. They show up consistently because they're not spending hours staring at a blank caption box.
 
-**That's what the $19 Brand Strategy gives you.** Not just "what to post." But why people follow someone like you, who your actual audience is, and exactly how to turn one selfie into a week of content that sounds like you — not like you're trying too hard.
+If you want the next practical step, start with the Starter Kit. It gives you the guide, presets, and a simple 7-day content starter so your first better photo does not just sit in your camera roll.
+
+If you already know the photo part is easier now but the message still feels unclear, the Brand Strategy Pack is the clarity layer: who you help, what to say, and how to turn one selfie into content that sounds like you.
 
 Ready?
 
-[Get the $19 Brand Strategy](/checkout/brand-strategy-pack)
+[Get the Starter Kit](/checkout/starter-kit)
+
+[Get the Brand Strategy Pack](/checkout/brand-strategy-pack)
 
 [Join Studio Membership](/checkout/membership)

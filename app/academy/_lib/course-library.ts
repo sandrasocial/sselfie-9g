@@ -203,7 +203,7 @@ function getOwnedProductActionLabel(productId: string): string {
     case "selfie_guide":
       return "Open Guide"
     case "brand_strategy_pack":
-      return "Open Strategy"
+      return "Start Strategy"
     default:
       return "Open"
   }
@@ -242,6 +242,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   const hasStarterKit = accessibleIds.has("starter_kit")
   const hasMasterclass =
     explicitIds.has("masterclass") ||
+    accessibleIds.has("masterclass") ||
     accessibleIds.has("branded_by_sselfie") ||
     accessibleIds.has("editing_masterclass")
   const hasDirectGuide = accessibleIds.has("selfie_guide") || accessibleIds.has("selfie_guide_bundle")
@@ -255,12 +256,25 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   let secondaryLink: AcademyHomeLink | null = null
 
   if (primaryCourse) {
-    heroDescription = primaryCourse.started
-      ? "Pick up where you left off and keep moving through your content."
-      : "Start with your first lesson and build momentum one step at a time."
-    primaryLink = {
-      href: getCourseHref(primaryCourse),
-      label: primaryCourse.started ? "Continue Lesson" : "Start Your Course",
+    if (hasMasterclass && accessibleIds.has("brand_strategy_pack")) {
+      heroDescription =
+        "Your Masterclass includes the Brand Strategy Pack. Start with your positioning, then move into the lessons with a clearer offer."
+      primaryLink = {
+        href: "/academy/access/brand-strategy",
+        label: "Start Brand Strategy",
+      }
+      secondaryLink = {
+        href: getCourseHref(primaryCourse),
+        label: primaryCourse.started ? "Continue Lesson" : "Open Lessons",
+      }
+    } else {
+      heroDescription = primaryCourse.started
+        ? "Pick up where you left off and keep moving through your content."
+        : "Start with your first lesson and build momentum one step at a time."
+      primaryLink = {
+        href: getCourseHref(primaryCourse),
+        label: primaryCourse.started ? "Continue Lesson" : "Start Your Course",
+      }
     }
   } else if (primaryOwnedProduct) {
     heroDescription =
@@ -274,10 +288,11 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   }
 
   if (membershipActive) {
-    secondaryLink = {
-      href: "/studio?tab=maya",
-      label: "Open Maya",
-    }
+    secondaryLink =
+      secondaryLink || {
+        href: "/studio?tab=maya",
+        label: "Open Maya",
+      }
   }
 
   let nextStep: AcademyHomeState["nextStep"] = null

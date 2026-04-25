@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import type React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
@@ -30,6 +30,27 @@ describe("SelfieGuideExperience interactive features", () => {
     value: vi.fn(),
   })
 
+  beforeEach(() => {
+    const store = new Map<string, string>()
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => store.set(key, value),
+        removeItem: (key: string) => store.delete(key),
+        clear: () => store.clear(),
+      },
+    })
+    window.localStorage.setItem(
+      "sselfie-guide-progress",
+      JSON.stringify({
+        chapterIndex: 0,
+        challengeDays: [],
+        personalization: { phoneType: "iphone-15-16", postingFrequency: "sometimes" },
+      }),
+    )
+  })
+
   it("renders chapter navigation and supporting visuals for the active chapter", () => {
     const markdown = [
       "## PART 1: Your iPhone Camera Settings",
@@ -40,7 +61,7 @@ describe("SelfieGuideExperience interactive features", () => {
 
     render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /02 PART 2: Light Changes Everything/i }))
+    fireEvent.click(screen.getByRole("button", { name: "Mark complete →" }))
 
     expect(
       screen.getByRole("heading", { name: "PART 2: Light Changes Everything" })
@@ -74,11 +95,11 @@ describe("SelfieGuideExperience interactive features", () => {
     expect(screen.getByText("Window Light Selfie")).toBeInTheDocument()
     expect(screen.getByText("Post It")).toBeInTheDocument()
 
-    const dayOneCard = screen.getByRole("button", { name: "Mark Day 1 as complete" })
+    const dayOneCard = screen.getByRole("button", { name: "Mark Day 1 as done" })
     expect(dayOneCard).toHaveAttribute("aria-pressed", "false")
 
     fireEvent.click(dayOneCard)
-    expect(screen.getByRole("button", { name: "Mark Day 1 as incomplete" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Mark Day 1 as complete" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )

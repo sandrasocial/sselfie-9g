@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest"
 const ROOT = process.cwd()
 
 describe("selfie guide public landing", () => {
-  it("uses the approved paid landing component for /selfie-guide", () => {
+  it("uses the approved free landing component for /selfie-guide", () => {
     const route = fs.readFileSync(path.join(ROOT, "app/selfie-guide/page.tsx"), "utf8")
 
-    expect(route).toContain('import SelfieGuidePaidLanding from "@/components/selfie-guide/selfie-guide-paid-landing"')
-    expect(route).toContain("return <SelfieGuidePaidLanding")
+    expect(route).toContain('import SelfieGuideFree from "@/components/freebie/selfie-guide-free-landing"')
+    expect(route).toContain("return <SelfieGuideFree")
     expect(route).not.toContain("One Good Selfie. Your Entire Brand.")
   })
 
@@ -21,7 +21,7 @@ describe("selfie guide public landing", () => {
     const component = fs.readFileSync(componentPath, "utf8")
     expect(component).toContain("Selfies you feel good posting.")
     expect(component).toContain("This is the calmest place to start.")
-    expect(component).toContain("ONE-TIME · $17")
+    expect(component).toContain("ONE-TIME · €97")
     expect(component).toContain("GET INSTANT ACCESS")
     expect(component).toContain("THE SELFIE GUIDE")
   })

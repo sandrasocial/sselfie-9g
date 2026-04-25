@@ -3,7 +3,8 @@ import { MasterclassPageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
   title: "Masterclass | SSELFIE",
-  description: "The full selfie method for light, pose, edit, post, and repeat.",
+  description:
+    "Build income-ready visibility with Brand Strategy Pack access, content systems, and Sandra's full SSELFIE method.",
 }
 
 export default function MasterclassPage() {

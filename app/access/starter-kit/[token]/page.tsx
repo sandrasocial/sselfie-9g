@@ -168,20 +168,21 @@ export default async function StarterKitAccessPage({
         <p className="eyebrow">Starter Kit Access</p>
         <h1 className={cormorant.className}>WELCOME, {upperName(result.data.name)}</h1>
         <p className="intro">
-          Your Starter Kit is ready. Start with the quick win, download your presets, and use the
-          guide when you want the fuller method.
+          Your Starter Kit is ready. Start with one cleaner selfie, download your presets, and use
+          the 7-day starter to turn that photo into content.
         </p>
       </section>
 
       <section className="grid">
         <article className="card">
           <p className="card-label">Start Here</p>
-          <h2 className={cormorant.className}>Your first quick win</h2>
+          <h2 className={cormorant.className}>Your first photo to post</h2>
           <ol>
             <li>Open your camera and find a window with soft light.</li>
             <li>Take 10 photos instead of judging the first one.</li>
             <li>Choose one that already feels like you before you edit.</li>
             <li>Use one preset lightly. Stop before the photo stops feeling real.</li>
+            <li>Write one simple caption: “This is what I am building next.”</li>
           </ol>
         </article>
 
@@ -203,10 +204,10 @@ export default async function StarterKitAccessPage({
 
         <article className="card">
           <p className="card-label">Guide</p>
-          <h2 className={cormorant.className}>Go deeper when you are ready</h2>
+          <h2 className={cormorant.className}>Open the full guide</h2>
           <p>
             Your Starter Kit links straight into the Selfie Guide flow so you can move from the
-            quick-start into the full method without losing momentum.
+            quick-start into light, angles, confidence, and the 7-day posting challenge.
           </p>
           <Link href={guideAccessUrl} className="secondary-cta">
             Open the Selfie Guide

@@ -91,8 +91,8 @@ export default async function AcademyStarterKitAccessPage() {
           className="mt-6 max-w-2xl text-[15px] leading-[1.78]"
           style={{ color: C.stone, fontWeight: 300 }}
         >
-          Your Starter Kit lives inside SSELFIE now. Start with the quick win, download your
-          presets, and open the guide when you want the fuller method.
+          Your Starter Kit lives inside SSELFIE now. Start with one cleaner selfie, download your
+          presets, then turn it into your first week of content.
         </p>
       </section>
 
@@ -119,7 +119,7 @@ export default async function AcademyStarterKitAccessPage() {
                 textShadow: LP,
               }}
             >
-              Your first quick win
+              Your first photo to post
             </h2>
             <ol
               className="mt-5 space-y-4 text-[14px] leading-[1.72]"
@@ -128,7 +128,7 @@ export default async function AcademyStarterKitAccessPage() {
               <li>Find soft window light. Take 10 photos instead of judging the first one.</li>
               <li>Pick the image that already feels closest to you before you edit.</li>
               <li>Use one preset lightly. Stop before the photo stops feeling real.</li>
-              <li>Come back tomorrow and do it again with less overthinking.</li>
+              <li>Write one simple caption: “This is what I am building next.”</li>
             </ol>
           </article>
 
@@ -213,8 +213,8 @@ export default async function AcademyStarterKitAccessPage() {
               className="mt-4 text-[14px] leading-[1.72]"
               style={{ color: C.stone, fontWeight: 300 }}
             >
-              The Starter Kit includes the Selfie Guide. Use it when you want the longer framework,
-              not just the first result.
+              The Starter Kit includes the Selfie Guide. Use it when you want the fuller framework
+              for light, angles, confidence, and your 7-day posting challenge.
             </p>
             <Link
               href="/academy/access/selfie-guide"
@@ -247,18 +247,19 @@ export default async function AcademyStarterKitAccessPage() {
               textShadow: LP,
             }}
           >
-            Go deeper with the Masterclass
+            Build your first week of content
           </h2>
           <p
             className="mt-5 max-w-2xl text-[15px] leading-[1.78]"
             style={{ color: C.stone, fontWeight: 300 }}
           >
-            Starter Kit gives you the first cleaner result. The Masterclass gives you the full
-            system for light, pose, edit, post, and repeat.
+            Starter Kit gives you the first cleaner result. Before you buy anything else, use that
+            photo across a simple 7-day rhythm: one proof post, one story, one teaching post, one
+            behind-the-scenes moment, and one invitation.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/masterclass"
+              href="/academy/access/selfie-guide"
               className="inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
               style={{
                 background: C.cream,
@@ -268,10 +269,10 @@ export default async function AcademyStarterKitAccessPage() {
                   "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
               }}
             >
-              See Masterclass
+              Open Guide Challenge
             </Link>
             <Link
-              href="/academy"
+              href="/masterclass"
               className="inline-flex px-6 py-3 text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-80"
               style={{
                 color: C.cream,
@@ -279,7 +280,7 @@ export default async function AcademyStarterKitAccessPage() {
                 fontWeight: 600,
               }}
             >
-              Back to Library
+              See Masterclass
             </Link>
           </div>
         </div>

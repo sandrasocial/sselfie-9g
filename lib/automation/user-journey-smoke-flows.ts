@@ -1,22 +1,13 @@
-export type JourneySmokeFlow =
-  | {
-      name: string
-      landingPath: string
-      expectedTitle: RegExp
-      trigger: {
-        type: "href"
-        href: string
-      }
-    }
-  | {
-      name: string
-      landingPath: string
-      expectedTitle: RegExp
-      trigger: {
-        type: "button"
-        name: string
-      }
-    }
+export type JourneySmokeFlow = {
+  name: string
+  landingPath: string
+  expectedTitle: RegExp
+  trigger:
+    | { type: "href"; href: string }
+    | { type: "button"; name: string }
+    /** Land on `landingPath` for title checks, then open this path (server redirect → Stripe checkout). */
+    | { type: "goto"; href: string }
+}
 
 export const USER_JOURNEY_SMOKE_FLOWS: JourneySmokeFlow[] = [
   {
@@ -24,7 +15,7 @@ export const USER_JOURNEY_SMOKE_FLOWS: JourneySmokeFlow[] = [
     landingPath: "/selfie-guide",
     expectedTitle: /Selfie Guide/i,
     trigger: {
-      type: "href",
+      type: "goto",
       href: "/checkout/selfie-guide?plan=guide",
     },
   },
@@ -42,8 +33,8 @@ export const USER_JOURNEY_SMOKE_FLOWS: JourneySmokeFlow[] = [
     landingPath: "/checkout/membership",
     expectedTitle: /SSELFIE/i,
     trigger: {
-      type: "button",
-      name: "Continue to checkout",
+      type: "goto",
+      href: "/checkout/membership?interval=month",
     },
   },
 ]

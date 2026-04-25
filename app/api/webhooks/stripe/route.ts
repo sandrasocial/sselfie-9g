@@ -2721,13 +2721,24 @@ export async function POST(request: NextRequest) {
                 },
               })
 
+              await upsertPurchaseEntitlement({
+                userId: String(userId),
+                productId: "brand_strategy_pack",
+                sourceRef: `${paymentIdForStorage}:masterclass_bundle`,
+                metadata: {
+                  source: "stripe_webhook:masterclass_bundle",
+                  bundled_with: "masterclass",
+                  stripe_session_id: session.id,
+                },
+              })
+
               try {
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-                const academyUrl = `${productionUrl}/academy`
+                const brandStrategyAccessUrl = `${productionUrl}/academy/access/brand-strategy`
                 const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
                   userId,
                   customerEmail!,
-                  "/academy"
+                  "/academy/access/brand-strategy"
                 )
                 const firstName = getFirstNameForEmail({
                   fullName: session.customer_details?.name,
@@ -2735,7 +2746,7 @@ export async function POST(request: NextRequest) {
                 })
                 const email = generateMasterclassDay0DeliveryEmail({
                   firstName,
-                  accessUrl: academyUrl,
+                  accessUrl: brandStrategyAccessUrl,
                   passwordSetupUrl: passwordSetupLink,
                 })
 

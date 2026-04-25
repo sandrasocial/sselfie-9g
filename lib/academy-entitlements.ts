@@ -114,7 +114,7 @@ type FallbackMetadata = {
 
 const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
   selfie_guide_bundle: ["selfie_guide", "brand_strategy_pack"],
-  masterclass: ["branded_by_sselfie", "editing_masterclass"],
+  masterclass: ["brand_strategy_pack", "branded_by_sselfie", "editing_masterclass"],
 }
 
 function priceFromCents(priceCents: number | null): number | null {
