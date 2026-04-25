@@ -130,6 +130,32 @@ type SelfieGuideAnalyticsReport = {
   }>
 }
 
+type Funnel2026Snapshot = {
+  windowDays: number
+  periodStart: string
+  periodEnd: string
+  metrics: {
+    guideOptIns: number
+    guideAccessOpened: number
+    guideUpsellClicks: number
+    checkoutStarts: number
+    purchases: number
+    starterKitAccessOpened: number
+    brandStrategyAccessOpened: number
+    academyHomeOpened: number
+  }
+  rates: {
+    guideAccessFromOptInPct: number
+    upsellClickFromGuideAccessPct: number
+    purchaseFromCheckoutStartPct: number
+    academyReturnFromPurchasePct: number
+  }
+  offerPurchases: Array<{
+    product: string
+    purchases: number
+  }>
+}
+
 type RevenueEngineReport = {
   periodStart: string
   periodEnd: string
@@ -202,6 +228,7 @@ export default function AnalyticsPage() {
   const [deliveryLatest, setDeliveryLatest] = useState<CohortDeliveryReport | null>(null)
   const [activationKpi, setActivationKpi] = useState<ActivationKpiReport | null>(null)
   const [selfieGuideAnalytics, setSelfieGuideAnalytics] = useState<SelfieGuideAnalyticsReport | null>(null)
+  const [funnel2026, setFunnel2026] = useState<Funnel2026Snapshot | null>(null)
   const [revenueEngineReports, setRevenueEngineReports] = useState<StoredReportRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -213,6 +240,7 @@ export default function AnalyticsPage() {
     delivery: false,
     activationKpi: false,
     selfieGuide: false,
+    funnel2026: false,
     revenueEngine: false,
   })
   const [deliveryForm, setDeliveryForm] = useState({
@@ -229,7 +257,17 @@ export default function AnalyticsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes, selfieGuideRes, revenueEngineRes] = await Promise.all([
+        const [
+          funnelRes,
+          cohortsRes,
+          launchRes,
+          arpuRes,
+          deliveryRes,
+          activationKpiRes,
+          selfieGuideRes,
+          funnel2026Res,
+          revenueEngineRes,
+        ] = await Promise.all([
           fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
           fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
@@ -237,6 +275,7 @@ export default function AnalyticsPage() {
           fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
           fetch("/api/admin/analytics/activation-kpi-7d").then((r) => r.json()),
           fetch("/api/admin/analytics/selfie-guide").then((r) => r.json()),
+          fetch("/api/admin/analytics/funnel-2026").then((r) => r.json()),
           fetch("/api/admin/analytics/revenue-engine").then((r) => r.json()),
         ])
         if (cancelled) return
@@ -248,6 +287,7 @@ export default function AnalyticsPage() {
         setDeliveryLatest(deliveryRes?.latest || null)
         setActivationKpi(activationKpiRes?.report || null)
         setSelfieGuideAnalytics(selfieGuideRes?.totals ? selfieGuideRes : null)
+        setFunnel2026(funnel2026Res?.report || null)
         setRevenueEngineReports(Array.isArray(revenueEngineRes?.reports) ? revenueEngineRes.reports : [])
       } catch (e: any) {
         if (cancelled) return
@@ -417,6 +457,20 @@ export default function AnalyticsPage() {
     }
   }
 
+  const runFunnel2026Now = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, funnel2026: true }))
+      const res = await fetch("/api/admin/analytics/funnel-2026")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to refresh 2026 funnel snapshot")
+      setFunnel2026(data?.report || null)
+    } catch (e: any) {
+      setError(e?.message || "Failed to refresh 2026 funnel snapshot")
+    } finally {
+      setIsRunning((s) => ({ ...s, funnel2026: false }))
+    }
+  }
+
   const submitDeliveryLog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     try {
@@ -531,6 +585,13 @@ export default function AnalyticsPage() {
                   className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
                 >
                   {isRunning.selfieGuide ? "Refreshing Guide..." : "Refresh Selfie Guide Analytics"}
+                </button>
+                <button
+                  onClick={runFunnel2026Now}
+                  disabled={isRunning.funnel2026}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.funnel2026 ? "Refreshing 2026 Funnel..." : "Refresh 2026 Funnel"}
                 </button>
               </div>
             </div>
@@ -692,9 +753,82 @@ export default function AnalyticsPage() {
                 : "Refresh Selfie Guide analytics"
             }
           />
+          <AdminMetricCard
+            label="2026 Opt-ins"
+            value={funnel2026 ? String(funnel2026.metrics.guideOptIns) : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={funnel2026 ? `Access: ${funnel2026.rates.guideAccessFromOptInPct}%` : "Refresh 2026 funnel"}
+          />
+          <AdminMetricCard
+            label="2026 Upsell Clicks"
+            value={funnel2026 ? String(funnel2026.metrics.guideUpsellClicks) : "--"}
+            icon={<Mail className="w-5 h-5" />}
+            subtitle={funnel2026 ? `From access: ${funnel2026.rates.upsellClickFromGuideAccessPct}%` : "Refresh 2026 funnel"}
+          />
+          <AdminMetricCard
+            label="2026 Purchases"
+            value={funnel2026 ? String(funnel2026.metrics.purchases) : "--"}
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle={funnel2026 ? `Checkout conv: ${funnel2026.rates.purchaseFromCheckoutStartPct}%` : "Refresh 2026 funnel"}
+          />
+          <AdminMetricCard
+            label="Buyer Returns"
+            value={funnel2026 ? `${funnel2026.rates.academyReturnFromPurchasePct}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={funnel2026 ? `Academy opens: ${funnel2026.metrics.academyHomeOpened}` : "Refresh 2026 funnel"}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white border border-stone-200 p-6 rounded-none lg:col-span-2">
+            <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              2026 Funnel Snapshot
+            </h2>
+            {funnel2026 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Activation Path</p>
+                  {[
+                    ["Guide opt-ins", funnel2026.metrics.guideOptIns],
+                    ["Guide access opened", funnel2026.metrics.guideAccessOpened],
+                    ["Guide upsell clicks", funnel2026.metrics.guideUpsellClicks],
+                    ["Checkout starts", funnel2026.metrics.checkoutStarts],
+                    ["Purchases", funnel2026.metrics.purchases],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <span>{label}</span>
+                      <span className="font-mono text-[11px]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Access Opened</p>
+                  {[
+                    ["Starter Kit", funnel2026.metrics.starterKitAccessOpened],
+                    ["Brand Strategy", funnel2026.metrics.brandStrategyAccessOpened],
+                    ["Academy Home", funnel2026.metrics.academyHomeOpened],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <span>{label}</span>
+                      <span className="font-mono text-[11px]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-stone-500">Purchases By Offer</p>
+                  {funnel2026.offerPurchases.map((offer) => (
+                    <div key={offer.product} className="flex items-center justify-between border-b border-stone-100 pb-2 text-xs text-stone-700">
+                      <span>{offer.product.replace(/_/g, " ")}</span>
+                      <span className="font-mono text-[11px]">{offer.purchases}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-600">Refresh 2026 funnel to populate this section.</p>
+            )}
+          </div>
+
           <div className="bg-white border border-stone-200 p-6 rounded-none lg:col-span-2">
             <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               Revenue Engine

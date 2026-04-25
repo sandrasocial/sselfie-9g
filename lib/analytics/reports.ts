@@ -29,6 +29,37 @@ function asNumber(v: any) {
   return Number.isFinite(n) ? n : 0
 }
 
+function asPct(numerator: number, denominator: number) {
+  if (!denominator) return 0
+  return Number(((numerator / denominator) * 100).toFixed(1))
+}
+
+export type Funnel2026Snapshot = {
+  windowDays: number
+  periodStart: string
+  periodEnd: string
+  metrics: {
+    guideOptIns: number
+    guideAccessOpened: number
+    guideUpsellClicks: number
+    checkoutStarts: number
+    purchases: number
+    starterKitAccessOpened: number
+    brandStrategyAccessOpened: number
+    academyHomeOpened: number
+  }
+  rates: {
+    guideAccessFromOptInPct: number
+    upsellClickFromGuideAccessPct: number
+    purchaseFromCheckoutStartPct: number
+    academyReturnFromPurchasePct: number
+  }
+  offerPurchases: Array<{
+    product: "selfie_guide" | "starter_kit" | "brand_strategy_pack" | "masterclass"
+    purchases: number
+  }>
+}
+
 async function listAllStripeSubscriptions(params: Record<string, any>) {
   const stripe = getStripe()
   const all: any[] = []
@@ -166,6 +197,92 @@ export async function generateFunnelDailyReport(input?: {
       stripePaymentsSumCents: asBigInt(payments?.sum_cents).toString(),
       studioOpenedUsers: asInt(studioOpenedUsers?.count),
     },
+  }
+}
+
+export async function generateFunnel2026Snapshot(input?: {
+  windowDays?: number
+}): Promise<Funnel2026Snapshot> {
+  const windowDays = input?.windowDays ?? 30
+
+  await ensureAnalyticsSchema()
+  const sql = getDb()
+
+  const periodEnd = new Date()
+  const periodStart = new Date(periodEnd.getTime() - windowDays * 24 * 60 * 60 * 1000)
+
+  const rows = await sql`
+    SELECT
+      event_name,
+      COUNT(*)::int AS count
+    FROM analytics_events
+    WHERE created_at >= ${periodStart.toISOString()}
+      AND event_name = ANY(${[
+        "selfie_guide_opt_in_success",
+        "selfie_guide_access_resolved",
+        "selfie_guide_upsell_click",
+        "checkout_start",
+        "purchase",
+        "selfie_guide_checkout_success",
+        "starter_kit_checkout_success",
+        "brand_strategy_pack_checkout_success",
+        "masterclass_checkout_success",
+        "starter_kit_access_opened",
+        "brand_strategy_pack_access_opened",
+        "academy_home_opened",
+      ]})
+    GROUP BY event_name
+  `
+
+  const counts = new Map(rows.map((row: any) => [String(row.event_name), asInt(row.count)]))
+  const guideOptIns = counts.get("selfie_guide_opt_in_success") || 0
+  const guideAccessOpened = counts.get("selfie_guide_access_resolved") || 0
+  const guideUpsellClicks = counts.get("selfie_guide_upsell_click") || 0
+  const checkoutStarts = counts.get("checkout_start") || 0
+  const purchaseEvents = counts.get("purchase") || 0
+  const offerPurchases = [
+    {
+      product: "selfie_guide" as const,
+      purchases: counts.get("selfie_guide_checkout_success") || 0,
+    },
+    {
+      product: "starter_kit" as const,
+      purchases: counts.get("starter_kit_checkout_success") || 0,
+    },
+    {
+      product: "brand_strategy_pack" as const,
+      purchases: counts.get("brand_strategy_pack_checkout_success") || 0,
+    },
+    {
+      product: "masterclass" as const,
+      purchases: counts.get("masterclass_checkout_success") || 0,
+    },
+  ]
+  const productPurchaseEvents = offerPurchases.reduce((sum, item) => sum + item.purchases, 0)
+  const purchases = Math.max(purchaseEvents, productPurchaseEvents)
+  const academyHomeOpened = counts.get("academy_home_opened") || 0
+
+  return {
+    windowDays,
+    periodStart: periodStart.toISOString(),
+    periodEnd: periodEnd.toISOString(),
+    metrics: {
+      guideOptIns,
+      guideAccessOpened,
+      guideUpsellClicks,
+      checkoutStarts,
+      purchases,
+      starterKitAccessOpened: counts.get("starter_kit_access_opened") || 0,
+      brandStrategyAccessOpened: counts.get("brand_strategy_pack_access_opened") || 0,
+      academyHomeOpened,
+    },
+    rates: {
+      guideAccessFromOptInPct: asPct(guideAccessOpened, guideOptIns),
+      upsellClickFromGuideAccessPct: asPct(guideUpsellClicks, guideAccessOpened),
+      purchaseFromCheckoutStartPct: asPct(purchases, checkoutStarts),
+      academyReturnFromPurchasePct: asPct(academyHomeOpened, purchases),
+    },
+    offerPurchases,
   }
 }
 
