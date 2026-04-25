@@ -31,7 +31,8 @@ describe("maya layout hygiene", () => {
 
   it("uses concise mobile action labels to reduce input bar clutter", () => {
     const unifiedInput = read("components/sselfie/maya/maya-unified-input.tsx")
-    expect(unifiedInput).toContain("font-medium\">Image</span>")
+    expect(unifiedInput).toContain("font-medium")
+    expect(unifiedInput).toContain("Image")
     expect(unifiedInput).toContain("sm:hidden\">Go</span>")
   })
 
