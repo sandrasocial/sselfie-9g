@@ -12,6 +12,7 @@ export function AdminNav() {
     { label: 'DASHBOARD', href: '/admin' },
     { label: 'AGENTS', href: '/admin/agents' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
+    { label: 'CLEANUP', href: '/admin/funnel-cleanup' },
     { label: 'USERS', href: '/admin/credits' }
   ]
   
