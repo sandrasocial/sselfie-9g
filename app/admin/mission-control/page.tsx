@@ -257,11 +257,11 @@ export default function MissionControlPage() {
                             {issue.action_type === 'alex' && (
                               <Button
                                 size="sm"
-                                onClick={() => window.location.href = '/admin/agents'}
+                                onClick={() => window.location.href = '/admin/maya-studio'}
                                 variant="outline"
                                 className="w-full sm:w-auto text-xs min-h-[44px]"
                               >
-                                Ask Agent
+                                Open Maya
                               </Button>
                             )}
                             {issue.action_type === 'manual' && (

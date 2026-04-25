@@ -5,6 +5,14 @@
 
 import { sql } from "@/lib/db/client"
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "ssa@ssasocial.com")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
+
+export function isAdminEmail(email?: string | null): boolean {
+  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
+}
 
 /**
  * Check if Pro Photoshoot feature is enabled (admin-only)
@@ -60,7 +68,7 @@ export async function requireAdmin(): Promise<{ isAdmin: boolean; userId?: numbe
       SELECT role FROM users WHERE id = ${user.id} LIMIT 1
     `
 
-    if (!adminCheck[0] || adminCheck[0].role !== "admin") {
+    if (!isAdminEmail(user.email) && adminCheck[0]?.role !== "admin") {
       return { isAdmin: false, error: "Not an admin" }
     }
 

@@ -220,6 +220,17 @@ function formatEuroFromCents(cents: number) {
   return `€${(cents / 100).toFixed(0)}`
 }
 
+async function fetchAdminJson<T>(url: string, label: string, fallback: T): Promise<T> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`${label} returned HTTP ${response.status}`)
+    return (await response.json()) as T
+  } catch (error) {
+    console.error(`[AdminAnalytics] Failed to load ${label}:`, error)
+    return fallback
+  }
+}
+
 export default function AnalyticsPage() {
   const [funnelReports, setFunnelReports] = useState<StoredReportRow[]>([])
   const [cohortReports, setCohortReports] = useState<StoredReportRow[]>([])
@@ -268,15 +279,15 @@ export default function AnalyticsPage() {
           funnel2026Res,
           revenueEngineRes,
         ] = await Promise.all([
-          fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
-          fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
-          fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
-          fetch("/api/admin/analytics/arpu-churn-weekly").then((r) => r.json()),
-          fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
-          fetch("/api/admin/analytics/activation-kpi-7d").then((r) => r.json()),
-          fetch("/api/admin/analytics/selfie-guide").then((r) => r.json()),
-          fetch("/api/admin/analytics/funnel-2026").then((r) => r.json()),
-          fetch("/api/admin/analytics/revenue-engine").then((r) => r.json()),
+          fetchAdminJson("/api/admin/analytics/funnel-daily", "funnel daily", { reports: [] }),
+          fetchAdminJson("/api/admin/analytics/cohorts-weekly", "cohorts weekly", { reports: [] }),
+          fetchAdminJson("/api/admin/analytics/brand-engine-launch", "brand engine launch", { reports: [] }),
+          fetchAdminJson("/api/admin/analytics/arpu-churn-weekly", "ARPU churn weekly", { reports: [] }),
+          fetchAdminJson("/api/admin/analytics/cohort-delivery-load", "cohort delivery load", { latest: null }),
+          fetchAdminJson("/api/admin/analytics/activation-kpi-7d", "activation KPI", { report: null }),
+          fetchAdminJson("/api/admin/analytics/selfie-guide", "selfie guide", { totals: null }),
+          fetchAdminJson("/api/admin/analytics/funnel-2026", "2026 funnel", { report: null }),
+          fetchAdminJson("/api/admin/analytics/revenue-engine", "revenue engine", { reports: [] }),
         ])
         if (cancelled) return
 
@@ -1244,10 +1255,10 @@ export default function AnalyticsPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/admin/brand-engine-applications"
+              href="/admin/funnel-cleanup"
               className="px-6 py-3 bg-white text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-200 transition-colors rounded-none"
             >
-              Open Launch Queue
+              Open Cleanup Review
             </Link>
             {/* removed in CLEANUP-01: /admin/marketing */}
           </div>

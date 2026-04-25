@@ -10,9 +10,10 @@ export function AdminNav() {
   
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
-    { label: 'AGENTS', href: '/admin/agents' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
+    { label: 'ACADEMY', href: '/admin/academy' },
     { label: 'CLEANUP', href: '/admin/funnel-cleanup' },
+    { label: 'MAYA', href: '/admin/maya-studio' },
     { label: 'USERS', href: '/admin/credits' }
   ]
   

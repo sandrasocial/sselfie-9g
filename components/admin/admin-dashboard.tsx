@@ -257,14 +257,14 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/agents"
+              href="/admin/maya-studio"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                AI Agents
+                Maya Replicate
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Gumloop control center
+                Image generation studio
               </p>
             </Link>
           </div>
@@ -289,12 +289,9 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
                     Cron Status
                   </h3>
-                  <Link
-                    href="/admin/diagnostics/system"
-                    className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
-                  >
-                    View →
-                  </Link>
+                  <span className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    API Monitor
+                  </span>
                 </div>
                 {cronJobs.slice(0, 4).map((job) => (
                   <div key={job.jobName} className="flex items-center justify-between text-xs text-stone-600 mb-2">
@@ -312,12 +309,9 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
                     Admin Errors
                   </h3>
-                  <Link
-                    href="/admin/diagnostics/errors"
-                    className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
-                  >
-                    View →
-                  </Link>
+                  <span className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    API Monitor
+                  </span>
                 </div>
                 {adminErrors.slice(0, 4).map((error) => (
                   <div key={error.toolName} className="flex items-center justify-between text-xs text-stone-600 mb-2">
@@ -393,14 +387,14 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/agents"
+              href="/admin/academy"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Agents
+                Academy
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                AI control center
+                Courses + access
               </p>
             </Link>
             <Link
@@ -408,13 +402,49 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Maya Studio
+                Maya Replicate
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                AI image generation
+                Image generation
+              </p>
+            </Link>
+            <Link
+              href="/admin/funnel-cleanup"
+              className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
+            >
+              <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
+                Cleanup
+              </p>
+              <p className="text-[10px] sm:text-xs text-stone-400">
+                Route review
               </p>
             </Link>
             {/* removed in CLEANUP-01: /admin/feed-styles-v2 and /admin/project-tracker */}
+          </div>
+        </div>
+
+        <div className="border-t border-stone-200 pt-8 sm:pt-12 mt-8 sm:mt-12">
+          <h2 className="font-['Times_New_Roman'] text-lg sm:text-xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-4 sm:mb-6">
+            HIDDEN TOOLS
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[
+              { label: 'Feedback', href: '/admin/feedback', description: 'Customer replies' },
+              { label: 'Testimonials', href: '/admin/testimonials', description: 'Social proof' },
+              { label: 'Retention', href: '/admin/retention', description: 'Studio cohorts' },
+              { label: 'Login As User', href: '/admin/login-as-user', description: 'Debug only' },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="bg-white border border-stone-200 p-4 hover:border-stone-400 transition-all rounded-none"
+              >
+                <p className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
+                  {item.label}
+                </p>
+                <p className="text-[10px] text-stone-400">{item.description}</p>
+              </Link>
+            ))}
           </div>
         </div>
         
