@@ -20,6 +20,7 @@ import BeforeAfterSlider from "@/components/selfie-guide/before-after-slider"
 import ChallengeTracker from "@/components/selfie-guide/challenge-tracker"
 import MayaMoment from "@/components/selfie-guide/maya-moment"
 import OnboardingQuiz from "@/components/selfie-guide/onboarding-quiz"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -691,6 +692,19 @@ export default function SelfieGuideExperience({
     saveGuideProgress(nextChapterIndex, nextChallengeDays, personalization)
   }
 
+  function trackGuideUpsellClick(destination: string, product: string) {
+    trackAnalyticsEvent({
+      event: "selfie_guide_upsell_click",
+      properties: {
+        source: "selfie_guide_access",
+        destination,
+        product,
+        has_brand_strategy_access: hasBrandStrategyAccess,
+        brand_strategy_bump_selected: brandStrategyBumpSelected,
+      },
+    })
+  }
+
   useEffect(() => {
     const target = chapters[activeChapterIndex]
     if (!target) return
@@ -867,12 +881,28 @@ export default function SelfieGuideExperience({
       },
       hr: () => <hr className="prose-hr" />,
       a: ({ href, children }) => (
-        <a href={href || "#"} className="prose-link">
+        <a
+          href={href || "#"}
+          className="prose-link"
+          onClick={() => {
+            const destination = href || "#"
+            if (destination.startsWith("/checkout/")) {
+              trackGuideUpsellClick(
+                destination,
+                destination.includes("starter-kit")
+                  ? "starter_kit"
+                  : destination.includes("brand-strategy-pack")
+                    ? "brand_strategy_pack"
+                    : "checkout",
+              )
+            }
+          }}
+        >
           {children}
         </a>
       ),
     }),
-    [checkedChecklistItems, currentChapterComparable],
+    [checkedChecklistItems, currentChapterComparable, hasBrandStrategyAccess, brandStrategyBumpSelected],
   )
 
   // Don't render chapter content until hydrated (avoids SSR/localStorage mismatch)
@@ -1204,7 +1234,11 @@ export default function SelfieGuideExperience({
                       Open preset pack
                     </a>
                   ) : null}
-                  <Link href="/academy" className="sg-cta-primary">
+                  <Link
+                    href="/academy"
+                    className="sg-cta-primary"
+                    onClick={() => trackGuideUpsellClick("/academy", "academy")}
+                  >
                     Open Academy
                   </Link>
                 </div>
@@ -1230,7 +1264,16 @@ export default function SelfieGuideExperience({
                     </a>
                   ) : null}
                   {brandStrategySetupToken ? (
-                    <Link href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`} className="sg-cta-primary">
+                    <Link
+                      href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`}
+                      className="sg-cta-primary"
+                      onClick={() =>
+                        trackGuideUpsellClick(
+                          `/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`,
+                          "brand_strategy_pack",
+                        )
+                      }
+                    >
                       Build My Brand Strategy
                     </Link>
                   ) : brandStrategyBumpSelected ? (
@@ -1238,7 +1281,11 @@ export default function SelfieGuideExperience({
                       Preparing your Brand Strategy...
                     </button>
                   ) : (
-                    <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
+                    <Link
+                      href="/checkout/brand-strategy-pack"
+                      className="sg-cta-primary"
+                      onClick={() => trackGuideUpsellClick("/checkout/brand-strategy-pack", "brand_strategy_pack")}
+                    >
                       Checkout Brand Strategy Pack
                     </Link>
                   )}

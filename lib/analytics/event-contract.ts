@@ -11,6 +11,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "feed_planner_quick_start_viewed",
   "feed_planner_quick_start_clicked",
   "signup_to_first_gen",
+  "academy_home_opened",
   "academy_opens_from_maya",
   "first_generation_guided_start",
   "first_generation_guided_complete",
@@ -32,11 +33,20 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "brand_strategy_pack_upsell_view",
   "brand_strategy_pack_checkout_start",
   "brand_strategy_pack_checkout_success",
+  "brand_strategy_pack_access_opened",
   "brand_strategy_pack_studio_click",
   "one_time_session_studio_click",
+  "selfie_guide_opt_in_submit",
+  "selfie_guide_opt_in_success",
+  "selfie_guide_opt_in_failed",
   "selfie_guide_entry_click",
+  "selfie_guide_checkout_success",
   "selfie_guide_access_resolved",
   "selfie_guide_access_failed",
+  "selfie_guide_upsell_click",
+  "starter_kit_checkout_success",
+  "starter_kit_access_opened",
+  "masterclass_checkout_success",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

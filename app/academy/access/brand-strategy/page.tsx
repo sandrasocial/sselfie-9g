@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 
 import BrandStrategySetupForm from "@/components/brand-strategy/brand-strategy-setup-form"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -25,6 +26,16 @@ export default async function AcademyBrandStrategyAccessPage() {
   if (!entitlementState.accessibleProductIds.includes("brand_strategy_pack")) {
     redirect("/brand-strategy")
   }
+
+  await logAnalyticsEvent({
+    eventName: "brand_strategy_pack_access_opened",
+    userId: String(neonUser.id),
+    path: "/academy/access/brand-strategy",
+    properties: {
+      source: "academy_access_page",
+      bundled_with_masterclass: entitlementState.accessibleProductIds.includes("masterclass"),
+    },
+  })
 
   const existingStrategy = await sql`
     SELECT access_token

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { formatDurationLabel } from "@/app/academy/_lib/client-utils"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 import {
   getAcademyHomeState,
@@ -40,6 +41,18 @@ const ghostBtn =
 export default async function AcademyPage() {
   const { neonUser } = await requireAcademyPageUser("/academy")
   const home = await getAcademyHomeState(neonUser.id)
+
+  await logAnalyticsEvent({
+    eventName: "academy_home_opened",
+    userId: String(neonUser.id),
+    path: "/academy",
+    properties: {
+      source: "academy_home",
+      owned_product_count: home.ownedProducts.length,
+      course_count: home.courses.length,
+      has_access: home.hasAccess,
+    },
+  })
 
   return (
     <main

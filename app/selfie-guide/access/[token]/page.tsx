@@ -3,6 +3,7 @@ import path from "node:path"
 import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import SelfieGuideExperience from "@/components/freebie/selfie-guide-experience"
 
 const cormorant = Cormorant_Garamond({
@@ -224,6 +225,16 @@ export default async function SelfieGuideAccessPage({ params, searchParams }: Pa
   }
 
   const hasBrandStrategyAccess = await emailHasBrandStrategyAccess(result.data.email)
+
+  await logAnalyticsEvent({
+    eventName: "selfie_guide_access_resolved",
+    path: "/selfie-guide/access/[token]",
+    properties: {
+      source: "selfie_guide_access_page",
+      has_brand_strategy_access: hasBrandStrategyAccess,
+      access_type: "free_or_paid_link",
+    },
+  })
 
   return (
     <SelfieGuideExperience

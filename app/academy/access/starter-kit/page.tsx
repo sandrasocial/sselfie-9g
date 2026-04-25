@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { redirect } from "next/navigation"
 
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
@@ -48,6 +49,16 @@ export default async function AcademyStarterKitAccessPage() {
   if (!entitlementState.accessibleProductIds.includes("starter_kit")) {
     redirect("/starter-kit")
   }
+
+  await logAnalyticsEvent({
+    eventName: "starter_kit_access_opened",
+    userId: String(neonUser.id),
+    path: "/academy/access/starter-kit",
+    properties: {
+      source: "academy_access_page",
+      has_selfie_guide_access: entitlementState.accessibleProductIds.includes("selfie_guide"),
+    },
+  })
 
   const presetDownloadUrl =
     process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||

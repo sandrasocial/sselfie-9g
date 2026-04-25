@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useState } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500"] })
@@ -26,6 +27,12 @@ export default function SelfieGuideFree() {
     }
     setError(null)
     setLoading(true)
+    trackAnalyticsEvent({
+      event: "selfie_guide_opt_in_submit",
+      properties: {
+        source: "selfie_guide_free_landing",
+      },
+    })
     try {
       const res = await fetch("/api/freebie/subscribe", {
         method: "POST",
@@ -40,8 +47,22 @@ export default function SelfieGuideFree() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Something went wrong. Please try again.")
       }
+      trackAnalyticsEvent({
+        event: "selfie_guide_opt_in_success",
+        properties: {
+          source: "selfie_guide_free_landing",
+          access_token_created: Boolean(data.accessToken),
+        },
+      })
       router.push(`/selfie-guide/access/${data.accessToken}`)
     } catch (err: any) {
+      trackAnalyticsEvent({
+        event: "selfie_guide_opt_in_failed",
+        properties: {
+          source: "selfie_guide_free_landing",
+          reason: err.message || "unknown_error",
+        },
+      })
       setError(err.message || "Something went wrong. Please try again.")
       setLoading(false)
     }
