@@ -268,7 +268,10 @@ function resolveAcademyProductAccessUrl(
     return `/academy`
   }
 
-  return `/academy/products/${product.id}`
+  // academy_course products: the course lives in the library at /academy.
+  // Pointing to /academy/products/{id} would be a circular self-link because
+  // that IS this product's own page.
+  return `/academy`
 }
 
 function resolveAcademyProductPurchaseUrl(

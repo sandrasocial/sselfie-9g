@@ -76,6 +76,13 @@ export default async function AcademyProductPage({
     redirect(product.hasAccess ? product.accessUrl : product.purchaseUrl)
   }
 
+  // Academy course products: if the user has access, send them to the library
+  // where their courses live. The accessUrl for academy_course type points back
+  // to this same page — a circular link — so we redirect to /academy instead.
+  if (product.deliveryKind === "academy_course" && product.hasAccess) {
+    redirect("/academy")
+  }
+
   const includedItems = INCLUDED_BY_PRODUCT[product.id] ?? [
     product.description || "This Academy product is ready in your library.",
   ]
