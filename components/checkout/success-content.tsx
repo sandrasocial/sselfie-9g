@@ -48,6 +48,12 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Guide"
     case "selfie_guide_bundle":
       return "Selfie Guide + Brand Strategy Bundle"
+    case "starter_kit":
+      return "Selfie Starter Kit"
+    case "masterclass":
+      return "Selfie Masterclass"
+    case "paid_blueprint":
+      return "30-Day Visibility Reset"
     default:
       return "Purchase"
   }
@@ -62,6 +68,26 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       secondaryHref: "/private-shoot",
       secondaryLabel: "Private Offer",
       secondaryEventName: "brand_strategy_pack_studio_click",
+    }
+  }
+
+  if (productType === "starter_kit") {
+    return {
+      href: "/academy/access/starter-kit",
+      label: "Open your Starter Kit",
+      helper:
+        "Your Starter Kit is ready. Start with the quick win, then use the 7-day starter before moving into anything else.",
+    }
+  }
+
+  if (productType === "masterclass") {
+    return {
+      href: "/academy/access/brand-strategy",
+      label: "Start with Brand Strategy",
+      helper:
+        "Your Masterclass includes Brand Strategy Pack. Complete your positioning first, then move into the lessons with a clearer offer.",
+      secondaryHref: "/academy",
+      secondaryLabel: "Open Academy",
     }
   }
 
