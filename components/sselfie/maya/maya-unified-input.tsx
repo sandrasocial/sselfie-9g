@@ -355,7 +355,18 @@ export default function MayaUnifiedInput({
                 <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.14em] font-medium">Image</span>
+              <span className="relative text-[10px] uppercase tracking-[0.14em] font-medium">
+                Image
+                {proMode && (
+                  imageCount > 0 ? (
+                    <span className="absolute -right-4 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0d0c0b] px-1 text-[9px] leading-none text-[#f0ede8]">
+                      {imageCount}
+                    </span>
+                  ) : (
+                    <span className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-orange-500" />
+                  )
+                )}
+              </span>
             )}
           </button>
 

@@ -9,6 +9,7 @@ import ProPhotoshootPanel from "./pro-photoshoot-panel"
 import type { ConceptData } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
 import BuyCreditsModal from "./buy-credits-modal"
+import { MAYA_CLASSIC_GENERATION_CREDIT_COST, MAYA_PRO_GENERATION_CREDIT_COST } from "@/lib/maya/credit-costs"
 
 interface ConceptCardProps {
   concept: ConceptData & { id?: string; customSettings?: any }
@@ -92,6 +93,7 @@ export default function ConceptCard({
   const [photoshootId, setPhotoshootId] = useState<number | null>(null)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [requiresTraining, setRequiresTraining] = useState(false)
+  const [descExpanded, setDescExpanded] = useState(false)
   
   // Pro Photoshoot state
   const [isCreatingProPhotoshoot, setIsCreatingProPhotoshoot] = useState(false)
@@ -1877,7 +1879,18 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <p className="text-sm leading-relaxed text-[#f0ede8] font-serif font-light">
             {concept.title}
           </p>
-          <p className="text-xs leading-relaxed text-[#a8a49c] font-light line-clamp-2">{concept.description}</p>
+          <p className={`text-xs leading-relaxed text-[#a8a49c] font-light ${descExpanded ? "" : "line-clamp-3"}`}>
+            {concept.description}
+          </p>
+          {concept.description?.length > 150 && (
+            <button
+              type="button"
+              onClick={() => setDescExpanded((expanded) => !expanded)}
+              className="text-[11px] text-[#c8c4bb] underline underline-offset-2"
+            >
+              {descExpanded ? "See less" : "See more"}
+            </button>
+          )}
         </div>
 
         {error && (
@@ -1938,33 +1951,38 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             {/* Button Group: Generate and Save to Guide */}
             <div className="flex gap-2">
               {/* Enhanced Generate Button with Clear Status */}
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
-                className={`flex-1 py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
-                  isGenerating
-                    ? "bg-[rgba(175,170,162,0.30)] text-[#8a8780] cursor-wait"
-                    : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
-                    ? "bg-[rgba(175,170,162,0.15)] text-[#8a8780] cursor-not-allowed"
-                    : "bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
-                }`}
-              >
-                {isGenerating
-                  ? isProMode
-                    ? "Creating..."
-                    : "Creating your photo"
-                  : isProMode
-                  ? baseImages.length > 0
-                    ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
-                    : selectedImages.filter((img) => img !== null).length === 0
-                    ? "Add Images to Continue"
-                    : `Generate with Studio Pro • ${
-                        selectedImages.filter((img) => img !== null).length
-                      } Image${
-                        selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
-                      }`
-                  : "Create Photo"}
-              </button>
+              <div className="flex-1">
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
+                  className={`w-full py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
+                    isGenerating
+                      ? "bg-[rgba(175,170,162,0.30)] text-[#8a8780] cursor-wait"
+                      : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
+                      ? "bg-[rgba(175,170,162,0.15)] text-[#8a8780] cursor-not-allowed"
+                      : "bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
+                  }`}
+                >
+                  {isGenerating
+                    ? isProMode
+                      ? "Creating..."
+                      : "Creating your photo"
+                    : isProMode
+                    ? baseImages.length > 0
+                      ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
+                      : selectedImages.filter((img) => img !== null).length === 0
+                      ? "Add Images to Continue"
+                      : `Generate with Studio Pro • ${
+                          selectedImages.filter((img) => img !== null).length
+                        } Image${
+                          selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
+                        }`
+                    : "Create Photo"}
+                </button>
+                <p className="mt-1.5 text-center text-[10px] text-[#8a8780] font-light">
+                  Uses {isProMode ? MAYA_PRO_GENERATION_CREDIT_COST : MAYA_CLASSIC_GENERATION_CREDIT_COST} credits
+                </p>
+              </div>
 
               {/* Save to Guide button (admin only) */}
               {isAdmin && (
@@ -1987,10 +2005,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               <p className="text-[10px] text-[#8a8780] leading-relaxed font-light">
                 {isProMode
                   ? baseImages.length > 0
-                    ? "Professional quality • 5 credits per generation"
+                    ? `Professional quality • ${MAYA_PRO_GENERATION_CREDIT_COST} credits per generation`
                     : selectedImages.filter((img) => img !== null).length === 0
                     ? "Select at least one reference image from your gallery or upload new photos"
-                    : "Professional quality • 5 credits per generation"
+                    : `Professional quality • ${MAYA_PRO_GENERATION_CREDIT_COST} credits per generation`
                   : "AI-generated photos may vary in quality and accuracy"}
               </p>
             </div>

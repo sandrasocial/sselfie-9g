@@ -292,6 +292,10 @@ export default function MayaChatScreen({
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
+  const [showProTooltip, setShowProTooltip] = useState(() => {
+    if (typeof window === "undefined") return false
+    return !localStorage.getItem("sselfie_pro_tooltip_seen")
+  })
   const currentChatType = resolveMayaChatTypeForTab({
     activeTab: activeMayaTab,
     proMode,
@@ -3079,6 +3083,9 @@ export default function MayaChatScreen({
       // Switch mode first (this will be saved to localStorage by the hook)
       console.log("[v0] Setting mode to:", newMode ? "Pro" : "Classic")
       setProMode(newMode)
+      if (newMode && !localStorage.getItem("sselfie_pro_tooltip_seen")) {
+        setShowProTooltip(true)
+      }
       
       // Then reset chat state
       setChatId(data.chatId)
@@ -3105,6 +3112,11 @@ export default function MayaChatScreen({
         variant: "destructive",
       })
     }
+  }
+
+  const dismissProTooltip = () => {
+    localStorage.setItem("sselfie_pro_tooltip_seen", "true")
+    setShowProTooltip(false)
   }
 
   // Wrapper for handleSelectChat that adds component-specific logic
@@ -3724,8 +3736,6 @@ export default function MayaChatScreen({
   const showInputBarQuickPrompts =
     shouldShowInputPrompts && !(activeMayaTab === "photos" && showAnyEmptyState)
   const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
-  const linkedSelfieCount = imageLibrary?.selfies?.length ?? 0
-  const hasLinkedSelfies = linkedSelfieCount > 0
   const generatedPhotoCountInChat = useMemo(() => {
     return (messages || []).reduce((count: number, message: any) => {
       if (message?.role !== "assistant") return count
@@ -3906,6 +3916,30 @@ export default function MayaChatScreen({
           disableFeedTab={true}
         />
       </div>
+
+      {proMode && showProTooltip && (
+        <div
+          className="fixed left-0 right-0 z-[95] border-b border-[rgba(195,190,182,0.16)] bg-[rgba(245,245,245,0.96)] px-4 py-3 backdrop-blur-sm"
+          style={{
+            top: "calc(var(--studio-app-header-height, 72px) + var(--maya-header-height, 88px))",
+          }}
+        >
+          <div className="mx-auto flex max-w-5xl items-start justify-between gap-3">
+            <p className="text-sm font-light leading-snug text-[#333333]">
+              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots,
+              lifestyle content, and trying new looks.
+            </p>
+            <button
+              type="button"
+              onClick={dismissProTooltip}
+              className="shrink-0 text-lg leading-none text-[#777777]"
+              aria-label="Dismiss Pro Mode tip"
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
 
       {activeMayaTab === "photos" && (
         <div
@@ -4203,101 +4237,30 @@ export default function MayaChatScreen({
               </div>
             </div>
           )}
-          {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
+          {/* Empty State - Pro Features: reference upload, Classic: Welcome Screen */}
           {showProEmptyState && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
               <div
-                className="mx-auto w-full max-w-xl pt-4 pb-6 sm:pb-8"
+                className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 text-center"
                 style={{
                   paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
+                  minHeight: "calc(100vh - var(--maya-header-height, 88px) - var(--input-bar-height, 168px) - 140px)",
                 }}
               >
-                <div className="w-full space-y-10">
-                  <MayaWelcomePanel
-                    eyebrow="Maya"
-                    title={
-                      hasLinkedSelfies
-                        ? hasPhotoMomentum
-                          ? "Ready for your next photo"
-                          : "Your selfies are ready"
-                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
-                          ? "Ready to see what your brand looks like?"
-                          : "Let’s link your selfies first"
-                    }
-                    subtitle={
-                      hasLinkedSelfies
-                        ? hasPhotoMomentum
-                          ? "You already have momentum. Tell me what to create and I’ll build the next photo with your linked look."
-                          : "Perfect start. I can use your linked selfies right now for your first photo."
-                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
-                          ? "Drop in a selfie and I’ll create your first brand photo in 2 minutes. Or start now with the base model — no upload needed."
-                          : "Add 1-3 selfies once, and I’ll reuse them across new photos in this chat."
-                    }
-                    uploadHint={
-                      hasLinkedSelfies
-                        ? undefined
-                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
-                          ? undefined
-                          : "Tap Add Image in the input bar to link selfies."
-                    }
-                    previewImageUrls={uploadedImages.map((image) => image.url)}
-                    actions={[
-                      ...(hasLinkedSelfies
-                        ? [
-                            {
-                              label: hasPhotoMomentum ? "Use my selfies again" : "Create my first photo",
-                              onClick: () => handleSendMessage("Use my selfies and create a photo for my brand now"),
-                              variant: "primary" as const,
-                            },
-                            {
-                              label: "Use base model",
-                              onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
-                            },
-                            // [STABILIZATION] "Build my week plan" (content calendar) hidden — feature not stable
-                          ]
-                        : welcomeFirstGenerationState?.hasBonusCredits && welcomeFirstGenerationState?.hasNoImageSpend
-                          ? [
-                              {
-                                label: "Use base model now",
-                                onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
-                                variant: "primary" as const,
-                              },
-                              {
-                                label: "Add my selfies",
-                                onClick: () => handlePhaseTwoUploadZone("selfies"),
-                              },
-                              {
-                                label: "Train my model",
-                                onClick: () => setMayaTabAndHash("training"),
-                              },
-                            ]
-                          : [
-                              {
-                                label: "Add my selfies",
-                                onClick: () => handlePhaseTwoUploadZone("selfies"),
-                                variant: "primary" as const,
-                              },
-                              {
-                                label: "Use base model now",
-                                onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
-                              },
-                              {
-                                label: "Train my model",
-                                onClick: () => setMayaTabAndHash("training"),
-                              },
-                            ]),
-                    ]}
-                  />
-                  <MayaQuickPrompts
-                    prompts={currentPrompts}
-                    onSelect={handleSendMessage}
-                    disabled={isTyping || isGeneratingConcepts}
-                    variant="empty-state"
-                    studioProMode={proMode}
-                    isEmpty={isEmpty}
-                  />
+                <div className="flex h-12 w-12 items-center justify-center">
+                  <span className="h-7 w-7 border border-[#8a8780]" aria-hidden />
                 </div>
+                <p className="max-w-xs text-[16px] font-light leading-relaxed text-[#a8a49c]">
+                  Add your reference photos to get started
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowUploadFlow(true)}
+                  className="bg-[#c8c4bb] px-6 py-3 text-sm font-medium uppercase tracking-[0.16em] text-[#0d0c0b]"
+                >
+                  Add Photos
+                </button>
               </div>
             </div>
           )}
