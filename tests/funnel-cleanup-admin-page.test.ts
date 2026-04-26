@@ -17,6 +17,8 @@ describe("funnel cleanup admin page", () => {
     expect(page).toContain("non-destructive review list")
     expect(page).toContain("Before Action")
     expect(page).toContain("Last 30 Days")
+    expect(page).toContain("decisionLabel")
+    expect(page).toContain("candidate.decision")
     expect(page).not.toContain("redirect(")
   })
 })

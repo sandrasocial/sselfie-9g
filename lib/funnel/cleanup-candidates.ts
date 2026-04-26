@@ -1,6 +1,7 @@
 export type FunnelCleanupCandidate = {
   route: string
   status: "support" | "archive_candidate"
+  decision: "keep" | "hide" | "redirect" | "defer"
   reason: string
   likelyRedirect: string
   requiredBeforeAction: string[]
@@ -10,6 +11,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/checkout-upgrade",
     status: "archive_candidate",
+    decision: "redirect",
     reason: "Duplicate upgrade surface that already redirects to the private offer.",
     likelyRedirect: "/private-shoot",
     requiredBeforeAction: [
@@ -20,8 +22,9 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/prompt-guides",
     status: "archive_candidate",
+    decision: "redirect",
     reason: "Prompt education may be useful, but it is not part of the current Guide -> Starter Kit -> Strategy -> Studio path.",
-    likelyRedirect: "/studio",
+    likelyRedirect: "/why-studio",
     requiredBeforeAction: [
       "Check analytics traffic and backlinks.",
       "Confirm whether any prompt guides should become Studio/Maya education before hiding.",
@@ -30,6 +33,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/ai-tools-personal-branding",
     status: "archive_candidate",
+    decision: "redirect",
     reason: "SEO/tool page can distract from the simplified public funnel if it is not producing qualified traffic.",
     likelyRedirect: "/selfie-guide",
     requiredBeforeAction: [
@@ -40,6 +44,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/sselfie-vs-aragon",
     status: "archive_candidate",
+    decision: "redirect",
     reason: "Comparison page supports old AI-photo positioning more than the new implementation funnel.",
     likelyRedirect: "/why-studio",
     requiredBeforeAction: [
@@ -50,6 +55,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/paid-blueprint",
     status: "support",
+    decision: "defer",
     reason: "Blueprint still has fulfillment and checkout logic, but should be positioned after strategy rather than as a main public entry.",
     likelyRedirect: "/starter-kit",
     requiredBeforeAction: [
@@ -60,6 +66,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/blueprint",
     status: "support",
+    decision: "defer",
     reason: "Blueprint overlaps Starter Kit and Masterclass implementation unless its depth is clarified.",
     likelyRedirect: "/starter-kit",
     requiredBeforeAction: [
@@ -70,6 +77,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/ai-brand-photos",
     status: "support",
+    decision: "keep",
     reason: "AI photo acquisition can support Studio, but should not compete with Selfie Guide as the main first step.",
     likelyRedirect: "/selfie-guide",
     requiredBeforeAction: [
@@ -80,6 +88,7 @@ export const FUNNEL_CLEANUP_CANDIDATES: FunnelCleanupCandidate[] = [
   {
     route: "/why-studio",
     status: "support",
+    decision: "keep",
     reason: "Useful explanation page for Studio, but secondary to the simpler entry funnel.",
     likelyRedirect: "/join/studio",
     requiredBeforeAction: [

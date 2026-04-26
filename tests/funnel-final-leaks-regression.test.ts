@@ -81,7 +81,7 @@ describe("remaining funnel leak regression", () => {
     expect(oneTimeContents).not.toContain("/auth/sign-up?checkout=one_time")
 
     expect(failurePageContents).toContain("Try checkout again")
-    expect(failurePageContents).toContain("/checkout/membership")
+    expect(failurePageContents).toContain("/private-shoot")
   })
 
   it("keeps brand strategy attribution sources aligned to the actual path", () => {
@@ -92,6 +92,6 @@ describe("remaining funnel leak regression", () => {
     expect(checkoutContents).toContain('"strategy_result_upsell"')
     expect(checkoutContents).not.toContain('"freebie_upsell"')
 
-    expect(webhookContents).toContain("'selfie_guide_order_bump'")
+    expect(webhookContents).toContain("selfie_guide_order_bump")
   })
 })

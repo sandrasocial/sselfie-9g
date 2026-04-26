@@ -7,6 +7,13 @@ const statusLabel = {
   archive_candidate: "Archive Candidate",
 } as const
 
+const decisionLabel = {
+  keep: "Keep",
+  hide: "Hide",
+  redirect: "Redirect",
+  defer: "Defer",
+} as const
+
 export default async function FunnelCleanupPage() {
   const evidence = await getFunnelCleanupEvidence()
   const archiveCandidates = FUNNEL_CLEANUP_CANDIDATES.filter(
@@ -54,6 +61,11 @@ export default async function FunnelCleanupPage() {
                       className="border border-stone-200 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-stone-600"
                     >
                       {statusLabel[candidate.status]}
+                    </span>
+                    <span
+                      className="border border-stone-200 bg-stone-50 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-stone-700"
+                    >
+                      {decisionLabel[candidate.decision]}
                     </span>
                   </div>
                   <h2 className="font-['Times_New_Roman'] text-2xl font-extralight uppercase tracking-[0.16em] text-stone-950">
