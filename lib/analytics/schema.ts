@@ -33,6 +33,7 @@ export async function ensureAnalyticsSchema(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_created_at_idx ON analytics_events (created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_event_created_at_idx ON analytics_events (event_name, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_user_created_at_idx ON analytics_events (user_id, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS analytics_events_path_created_at_idx ON analytics_events (path, created_at DESC) WHERE path IS NOT NULL;`
 
   await sql`
     CREATE TABLE IF NOT EXISTS analytics_reports (

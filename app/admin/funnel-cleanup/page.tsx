@@ -9,8 +9,11 @@ const statusLabel = {
 
 const decisionLabel = {
   keep: "Keep",
+  support: "Support",
   hide: "Hide",
   redirect: "Redirect",
+  archive_later: "Archive Later",
+  delete_candidate: "Delete Candidate",
   defer: "Defer",
 } as const
 
@@ -53,7 +56,7 @@ export default async function FunnelCleanupPage() {
               key={candidate.route}
               className="border border-stone-200 bg-white p-6"
             >
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px]">
                 <div>
                   <div className="mb-3 flex flex-wrap items-center gap-3">
                     <span className="font-mono text-xs text-stone-500">{candidate.route}</span>
@@ -76,13 +79,13 @@ export default async function FunnelCleanupPage() {
 
                 <div className="border-t border-stone-100 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
                   <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-stone-500">
-                    Last 30 Days
+                    Last 90 Days
                   </p>
                   <dl className="space-y-3">
-                    <EvidenceRow label="Events" value={evidence[candidate.route]?.events30d ?? 0} />
+                    <EvidenceRow label="Events" value={evidence[candidate.route]?.events90d ?? 0} />
                     <EvidenceRow
                       label="Actors"
-                      value={evidence[candidate.route]?.uniqueActors30d ?? 0}
+                      value={evidence[candidate.route]?.uniqueActors90d ?? 0}
                     />
                     <div>
                       <dt className="text-[10px] uppercase tracking-[0.16em] text-stone-400">
@@ -92,6 +95,40 @@ export default async function FunnelCleanupPage() {
                         {evidence[candidate.route]?.latestSeenAt
                           ? new Date(evidence[candidate.route].latestSeenAt).toLocaleDateString()
                           : "None"}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div className="border-t border-stone-100 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-stone-500">
+                    Cleanup Score
+                  </p>
+                  <dl className="space-y-3">
+                    <EvidenceRow label="Score" value={evidence[candidate.route]?.cleanupScore ?? 0} />
+                    <EvidenceRow
+                      label="Revenue"
+                      value={evidence[candidate.route]?.revenue90dCents ?? 0}
+                      format="currency"
+                    />
+                    <EvidenceRow
+                      label="Checkouts"
+                      value={evidence[candidate.route]?.checkoutCompletions90d ?? 0}
+                    />
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.16em] text-stone-400">
+                        Label
+                      </dt>
+                      <dd className="mt-1 text-xs uppercase tracking-[0.12em] text-stone-700">
+                        {(evidence[candidate.route]?.scoreLabel || "review").replace(/_/g, " ")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.16em] text-stone-400">
+                        Signal
+                      </dt>
+                      <dd className="mt-1 text-xs leading-5 text-stone-600">
+                        {evidence[candidate.route]?.riskReason || "No evidence loaded"}
                       </dd>
                     </div>
                   </dl>
@@ -127,11 +164,13 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   )
 }
 
-function EvidenceRow({ label, value }: { label: string; value: number }) {
+function EvidenceRow({ label, value, format }: { label: string; value: number; format?: "currency" }) {
   return (
     <div>
       <dt className="text-[10px] uppercase tracking-[0.16em] text-stone-400">{label}</dt>
-      <dd className="mt-1 text-2xl font-light text-stone-950">{value}</dd>
+      <dd className="mt-1 text-2xl font-light text-stone-950">
+        {format === "currency" ? `€${Math.round(value / 100)}` : value}
+      </dd>
     </div>
   )
 }

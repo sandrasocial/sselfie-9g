@@ -29,7 +29,9 @@ describe("funnel cleanup candidates", () => {
         expect.objectContaining({
           route: "/paid-blueprint",
           status: "support",
-          decision: "defer",
+          decision: "support",
+          dependencyRisk: "high",
+          strategicFit: "support",
         }),
         expect.objectContaining({
           route: "/prompt-guides",
@@ -41,6 +43,8 @@ describe("funnel cleanup candidates", () => {
     )
     expect(FUNNEL_CLEANUP_CANDIDATES.every((candidate) => candidate.requiredBeforeAction.length > 0)).toBe(true)
     expect(FUNNEL_CLEANUP_CANDIDATES.every((candidate) => candidate.decision)).toBe(true)
+    expect(FUNNEL_CLEANUP_CANDIDATES.every((candidate) => candidate.dependencyRisk)).toBe(true)
+    expect(FUNNEL_CLEANUP_CANDIDATES.every((candidate) => candidate.strategicFit)).toBe(true)
   })
 
   it("only lists routes that currently exist", () => {
@@ -69,5 +73,20 @@ describe("funnel cleanup candidates", () => {
     expect(sitemap).not.toContain('"/sselfie-vs-aragon"')
     expect(sitemap).toContain('"/why-studio"')
     expect(sitemap).toContain('"/ai-brand-photos"')
+  })
+
+  it("keeps Blueprint classified as a high-risk support resource", () => {
+    expect(getFunnelCleanupCandidate("/blueprint")).toMatchObject({
+      decision: "support",
+      dependencyRisk: "high",
+      strategicFit: "support",
+      likelyRedirect: "/feed-planner",
+    })
+    expect(getFunnelCleanupCandidate("/paid-blueprint")).toMatchObject({
+      decision: "support",
+      dependencyRisk: "high",
+      strategicFit: "support",
+      likelyRedirect: "/feed-planner",
+    })
   })
 })
