@@ -235,6 +235,73 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── Marketing surface tokens ────────────────────────────── */
+  --ink:           #0F0D0B;   /* primary dark surface, body text on cream */
+  --ink-soft:      #1E1A15;   /* cards/panels on dark */
+  --cream:         #EDE9E2;   /* primary light surface, primary text on dark */
+  --cream-warm:    #F4F0E6;   /* cards/panels on cream */
+  --cream-deep:    #D9D3C8;   /* borders/dividers on cream */
+  --stone:         #C4B5A0;   /* secondary text on dark, accents */
+
+  /* ── Semantic text colors ─────────────────────────────────── */
+  --on-dark:        #EDE9E2;  /* heading text on dark */
+  --on-dark-sub:    #C4B5A0;  /* body text on dark */
+  --on-dark-muted:  #A89A8A;  /* eyebrow/labels on dark — AA legible on ink */
+  --on-cream:       #0F0D0B;  /* heading text on cream */
+  --on-cream-sub:   #3D3830;  /* body text on cream */
+  --on-cream-muted: #7A6F63;  /* eyebrow/labels on cream */
+
+  /* ── Dividers ─────────────────────────────────────────────── */
+  --div-dark:  rgba(237, 233, 226, 0.10);
+  --div-cream: rgba(15, 13, 11, 0.10);
+
+  /* ── Hero gradient overlay ────────────────────────────────── */
+  --hero-grad: linear-gradient(to bottom,
+    rgba(15, 13, 11, 0.22) 0%,
+    rgba(15, 13, 11, 0.04) 38%,
+    rgba(15, 13, 11, 0.88) 100%);
+
+  /* ── Letterpress text shadows ─────────────────────────────── */
+  --lp-dark:  0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5);
+  --lp-cream: 1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09);
+
+  /* ── Additional spacing ───────────────────────────────────── */
+  --space-5:  20px;
+  --space-7:  28px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-22: 88px;
+  --space-25: 100px;
+  --section-pad-y:        88px;
+  --section-pad-y-mobile: 68px;
+  --section-pad-x:        24px;
+
+  /* ── Button shadows ───────────────────────────────────────── */
+  --btn-shadow-dark:  inset 0 1px 0 rgba(255,255,255,0.22),
+                      inset 0 -2px 0 rgba(0,0,0,0.4),
+                      0 2px 8px rgba(0,0,0,0.5);
+  --btn-shadow-cream: inset 0 1px 0 rgba(255,255,255,0.12),
+                      inset 0 -2px 0 rgba(0,0,0,0.45),
+                      0 1px 5px rgba(0,0,0,0.25);
+
+  /* ── Ghost button borders ─────────────────────────────────── */
+  --ghost-border-dark:  rgba(237,233,226,0.22);
+  --ghost-border-cream: rgba(15,13,11,0.22);
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --motion-fade:          opacity 0.7s ease, transform 0.7s ease;
+  --motion-stagger-step:  0.05s;
+  --motion-quick:         0.2s ease;
+
+  /* ── Radii ────────────────────────────────────────────────── */
+  --radius-zero:   0;    /* default everywhere — sharp corners */
+  --radius-circle: 50%;  /* exception: circular UI controls only */
+
+  /* ── Nav ──────────────────────────────────────────────────── */
+  --nav-height: 58px;
+  --nav-bg:     rgba(15, 13, 11, 0.88);
+  --nav-blur:   blur(16px);
 }
 
 .stone-page {
@@ -1000,4 +1067,164 @@
   html {
     scroll-behavior: auto;
   }
+}
+
+/* ─── SSELFIE Design System — Semantic Classes ───────────────────────────────
+   Source of truth: colors_and_type.css (design system bundle, 2026-04-27)
+   These classes mirror the inline tokens in public-marketing.tsx so that
+   future components can consume the design system via class names + CSS vars.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Eyebrow ──────────────────────────────────────────────────────────────── */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  display: block;
+}
+.eyebrow.on-dark  { color: var(--on-dark-muted); }
+.eyebrow.on-cream { color: var(--on-cream-muted); }
+
+/* ── Display headings ─────────────────────────────────────────────────────── */
+.sa-h1 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(36px, 7vw, 70px);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+}
+.sa-h1.on-dark  { color: var(--on-dark);  text-shadow: var(--lp-dark);  }
+.sa-h1.on-cream { color: var(--on-cream); text-shadow: var(--lp-cream); }
+
+.sa-h2 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(28px, 4.5vw, 48px);
+  line-height: 1.07;
+  letter-spacing: -0.015em;
+}
+.sa-h2.on-dark  { color: var(--on-dark);  text-shadow: var(--lp-dark);  }
+.sa-h2.on-cream { color: var(--on-cream); text-shadow: var(--lp-cream); }
+
+.sa-h3 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(19px, 2.5vw, 26px);
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+.sa-h3.on-dark  { color: var(--on-dark);  text-shadow: var(--lp-dark);  }
+.sa-h3.on-cream { color: var(--on-cream); text-shadow: var(--lp-cream); }
+
+/* ── Body ─────────────────────────────────────────────────────────────────── */
+.sa-body {
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.78;
+}
+.sa-body.on-dark  { color: var(--on-dark-sub); }
+.sa-body.on-cream { color: var(--on-cream-sub); }
+.sa-body--lg { font-size: 16px; }
+
+/* ── Button label ─────────────────────────────────────────────────────────── */
+.button-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────────── */
+.surface-dark  { background: var(--ink);   color: var(--on-dark); }
+.surface-cream { background: var(--cream); color: var(--on-cream); }
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.card-dark {
+  background: var(--ink-soft);
+  border: 1px solid var(--div-dark);
+  padding: 28px;
+  border-radius: 0;
+}
+.card-cream {
+  background: var(--cream-warm);
+  border: 1px solid var(--div-cream);
+  padding: 28px;
+  border-radius: 0;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.sa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 32px;
+  min-height: 46px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--motion-quick), box-shadow var(--motion-quick), transform var(--motion-quick);
+}
+.sa-btn:hover { opacity: 0.92; transform: translateY(-2px); }
+.sa-btn:active { transform: translateY(0); }
+
+.sa-btn-solid-dark {
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: var(--btn-shadow-dark);
+}
+.sa-btn-solid-cream {
+  background: var(--ink);
+  color: var(--cream);
+  box-shadow: var(--btn-shadow-cream);
+}
+.sa-btn-ghost-dark {
+  background: transparent;
+  color: var(--on-dark-sub);
+  border-color: var(--ghost-border-dark);
+}
+.sa-btn-ghost-cream {
+  background: transparent;
+  color: var(--on-cream-sub);
+  border-color: var(--ghost-border-cream);
+}
+.sa-btn-solid-dark:hover,
+.sa-btn-solid-cream:hover {
+  box-shadow: var(--btn-shadow-dark), 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* ── Logo wordmark ────────────────────────────────────────────────────────── */
+.logo-wordmark {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 18px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--on-dark);
+}
+.logo-wordmark.lg { font-size: 19px; }
+
+/* ── Scroll-fade reveal ───────────────────────────────────────────────────── */
+.mf {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: var(--motion-fade);
+}
+.mf.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf { opacity: 1; transform: none; transition: none; }
 }
