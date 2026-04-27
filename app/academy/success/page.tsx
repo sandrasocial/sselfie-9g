@@ -63,7 +63,7 @@ type SuccessPageProps = {
   searchParams: Promise<{ product?: string }>
 }
 
-const MEMBERSHIP_UPSELL_NAME = "Creator Studio membership"
+const MEMBERSHIP_UPSELL_NAME = "Studio with Maya"
 
 type AcademyUpsellTarget = (typeof ACADEMY_PRODUCTS)[keyof typeof ACADEMY_PRODUCTS]["upsellTo"]
 
@@ -271,13 +271,13 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
                 textShadow: LP,
               }}
             >
-              Creator Studio Membership
+              Studio with Maya
             </h2>
             <p
               className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
               style={{ color: C.stone, fontWeight: 300 }}
             >
-              Studio gives you Maya, Feed Planner, and the AI layer that helps you execute the work faster.
+              Studio is the weekly execution layer. Maya helps you plan, create, caption, and show up every week.
             </p>
             <Link
               href="/join/studio"

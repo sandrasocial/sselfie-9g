@@ -38,6 +38,8 @@ function getProductLabel(productType: string | undefined) {
   switch (productType) {
     case "sselfie_studio_membership":
       return "Studio Membership"
+    case "sselfie_studio_membership_annual":
+      return "Studio Membership"
     case "one_time_session":
       return "Starter Photoshoot"
     case "credit_topup":
@@ -60,6 +62,17 @@ function getProductLabel(productType: string | undefined) {
 }
 
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
+  if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+    return {
+      href: "/studio?tab=maya&welcome=weekly-system",
+      label: "Plan your first week",
+      helper:
+        "Your Studio membership is active. Open Maya and start with your first weekly content plan.",
+      secondaryHref: "/academy",
+      secondaryLabel: "Open Academy",
+    }
+  }
+
   if (productType === "brand_strategy_pack") {
     return {
       href: resolvedReturnTo,
@@ -76,7 +89,7 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       href: "/academy/access/starter-kit",
       label: "Open your Starter Kit",
       helper:
-        "Your Starter Kit is ready. Start with the quick win, then use the 7-day starter before moving into anything else.",
+        "Your Starter Kit is ready. Start with the quick win, then use the 7-day starter to create your first brand-ready week.",
     }
   }
 
@@ -87,16 +100,16 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       helper:
         "Your Masterclass includes Brand Strategy Pack. Complete your positioning first, then move into the lessons with a clearer offer.",
       secondaryHref: "/academy",
-      secondaryLabel: "Open Academy",
+      secondaryLabel: "Open Masterclass Library",
     }
   }
 
   if (productType === "one_time_session") {
     return {
       href: "/private-shoot",
-      label: "Private Offer",
+      label: "Explore Private Support",
       helper:
-        "Your photoshoot is confirmed. If you want more guided support around the visuals and content, the private offer is the next step.",
+        "Your photoshoot is confirmed. If you want Sandra's eyes on the full picture, private support is the high-touch next step.",
       eventName: "one_time_session_studio_click",
     }
   }
@@ -435,8 +448,11 @@ export function SuccessContent({
 
     const productPrices: Record<string, number> = {
       sselfie_studio_membership: 97,
+      sselfie_studio_membership_annual: 970,
       selfie_guide: 17,
       selfie_guide_bundle: 27,
+      starter_kit: 37,
+      masterclass: 147,
       brand_strategy_pack: 19,
       paid_blueprint: 47,
       credit_topup: 25,

@@ -616,8 +616,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
             { title: "Free Guide",       price: "Free",          body: "Light, angles, and what to do first. Start here.",                                       href: "/selfie-guide"  },
             { title: "Starter Kit",      price: "$37",           body: "Selfie Guide, presets, quick-start, and a 7-day content starter. One time.",             href: "/starter-kit"   },
             { title: "Masterclass",      price: "$147",          body: "Brand Strategy Pack included, plus visibility, content, and offer implementation.",      href: "/masterclass"   },
-            { title: "Studio",           price: "€97/mo",        body: "AI brand photos, Feed Planner, Academy. For when you know what you want and need speed.", href: "/join/studio"   },
-            { title: "1:1 with Sandra",  price: "From $2,000",   body: "Two or three people at a time. Direct eyes on your whole brand.",                        href: "/work-with-me"  },
+            { title: "Studio",           price: "€97/mo",        body: "Maya helps you plan, create, caption, and show up every week.",                         href: "/join/studio"   },
+            { title: "1:1 with Sandra",  price: "Inquiry only",  body: "High-touch support when you want Sandra's eyes on the full picture.",                    href: "/work-with-me"  },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(true), minHeight: "200px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -776,7 +776,7 @@ export function MasterclassPageContent() {
       <Hero
         eyebrow="Masterclass · $147"
         title={<>Build income-ready visibility with a clearer offer.</>}
-        body={<p>Brand Strategy Pack included, then the full method for showing up, creating content, and building the assets you need to start selling online with more clarity.</p>}
+        body={<p>Brand Strategy Pack included, then Sandra&apos;s full SSELFIE method for showing up, creating content, and knowing what your weekly execution should actually support.</p>}
         primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
@@ -906,20 +906,20 @@ export function StudioPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Studio · €97/mo"
-        title={<>An AI that already knows your brand. And gets smarter every week.</>}
-        body={<p>Brand photos, Feed Planner, and Academy. For when you know what you want and need the speed.</p>}
-        primary={{ href: "/checkout/membership", label: "Join Studio" }}
+        title={<>Maya helps you show up every week.</>}
+        body={<p>Studio is the weekly execution layer for the SSELFIE method: photo ideas, captions, content plans, and next actions in one place.</p>}
+        primary={{ href: "/checkout/membership?interval=month&source=studio_page", label: "Join Studio" }}
         secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
         imageSrc={IMG.feed}
       />
 
       {/* INSIDE STUDIO — cream */}
-      <Section eyebrow="Inside Studio" title="Everything in one place." dark={false}>
+      <Section eyebrow="Inside Studio" title="Your weekly execution room." dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark={false} title="Maya" body="Your AI. She learns your face, your brand, your style. She remembers what you told her last week." />
-          <FCard dark={false} title="Image Generation" body="Brand photos without a photoshoot. You upload selfies. Maya creates the rest." />
-          <FCard dark={false} title="Feed Planner" body="Your next nine posts, planned and captioned. No more Sunday-night stress." />
-          <FCard dark={false} title="Academy" body="The full method and courses in the same place as your tools. No switching apps." />
+          <FCard dark={false} title="Weekly Plan" body="Maya helps you decide what to post this week and what to create first." />
+          <FCard dark={false} title="Photo Direction" body="Turn selfies, references, and brand context into postable photo ideas." />
+          <FCard dark={false} title="Captions" body="Get caption angles and soft calls to action that match the post." />
+          <FCard dark={false} title="Method Library" body="Keep the education close, but let Maya help you execute it weekly." />
         </div>
       </Section>
 
@@ -929,9 +929,9 @@ export function StudioPageContent() {
         title={<>Studio comes after the basics. Not before.</>}
         body={
           <div className="space-y-4">
-            <p>The education comes first. Then the speed.</p>
-            <p>Studio is for the person who already knows the look she&apos;s building. She wants the time back.</p>
-            <p>If you&apos;re still figuring out the brand, start with the Masterclass. Then come back here.</p>
+            <p>The education teaches the method. Studio helps you run it every week.</p>
+            <p>Studio is for the person who is tired of starting from zero every time she needs to post.</p>
+            <p>If you&apos;re still figuring out your positioning, start with the Masterclass. If you need weekly execution, join Studio.</p>
           </div>
         }
         imgSrc={IMG.dark}
@@ -947,8 +947,8 @@ export function StudioPageContent() {
 
       {/* CTA — dark */}
       <CtaClose
-        title="When you want the advanced layer, this is it."
-        primary={{ href: "/checkout/membership", label: "Join Studio · €97/mo" }}
+        title="When you want Maya to help you execute every week, this is it."
+        primary={{ href: "/checkout/membership?interval=month&source=studio_page_bottom", label: "Join Studio · €97/mo" }}
         secondary={{ href: "/starter-kit",       label: "Start smaller" }}
         dark
       />
@@ -969,7 +969,7 @@ export function WorkWithMePageContent() {
       <Hero
         eyebrow="1:1 with Sandra"
         title={<>Two or three people at a time. That&apos;s it.</>}
-        body={<p>If what&apos;s not working is bigger than one preset or one lesson, this is where we look at the full picture.</p>}
+        body={<p>If you want the SSELFIE method applied personally to your brand, offer, content, and visuals, this is the high-touch path.</p>}
         primary={{ href: "#inquiry",       label: "Send an inquiry" }}
         secondary={{ href: "/join/studio", label: "See Studio" }}
         imageSrc={IMG.founder}

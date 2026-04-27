@@ -90,7 +90,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "one_time_session",
     name: "Starter Photoshoot",
     displayName: "Starter Photoshoot",
-    description: "Professional brand photos in 2 hours. Test SSELFIE before committing.",
+    description: "A low-risk first creation offer when you want brand photos before joining the weekly Studio system.",
     priceInCents: 4900, // $49 one-time
     type: "one_time_session",
     credits: 50,
@@ -99,7 +99,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "sselfie_studio_membership",
     name: "Creator Studio",
     displayName: "Creator Studio",
-    description: "Your complete AI content team for less than one photoshoot.",
+    description: "Maya helps you plan, create, caption, and show up every week.",
     priceInCents: 9700, // €97/month
     type: "sselfie_studio_membership",
     credits: 200,
@@ -109,7 +109,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "sselfie_studio_membership_annual",
     name: "Creator Studio — Annual",
     displayName: "Creator Studio (Annual)",
-    description: "Your complete AI content team. Pay annually and save 2 months.",
+    description: "Maya helps you run the SSELFIE method every week. Pay annually and save 2 months.",
     priceInCents: 97000, // €970/year (~€80.83/month — save €194 vs monthly)
     type: "sselfie_studio_membership_annual",
     credits: 200,
@@ -155,7 +155,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "Selfie Masterclass",
     displayName: "Selfie Masterclass",
     description:
-      "Sandra's full method for visibility, offer clarity, content, and showing up with a system you can start selling from.",
+      "Sandra's full SSELFIE method for visibility, offer clarity, content, and showing up before Studio helps you execute it weekly.",
     priceInCents: 14700, // $147 one-time
     type: "masterclass",
     tag: "bought_masterclass",
@@ -166,7 +166,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
       "Income-ready visibility curriculum",
       "30-day content and offer implementation assets",
       "Academy entitlement unlock",
-      "Next-step support toward Studio or 1:1",
+      "Next step toward Studio weekly execution or private 1:1 support",
     ],
   },
   {
@@ -188,7 +188,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     id: "selfie_guide",
     name: "Selfie Guide",
     displayName: "Selfie Guide",
-    description: "Take one selfie you feel confident enough to post.",
+    description: "Take one selfie you feel confident enough to post and understand what to fix first.",
     priceInCents: 1700, // $17 one-time
     type: "selfie_guide",
     tag: "bought_selfie_guide",
@@ -197,7 +197,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
       "Interactive checklists for every step",
       "7-Day Selfie Challenge",
       "One caption/post prompt",
-      "Meet Maya - your AI branding assistant",
+      "Meet Maya - your weekly content stylist inside Studio",
       "Lightroom preset pack bonus",
     ],
   },

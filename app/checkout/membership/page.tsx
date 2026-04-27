@@ -83,7 +83,7 @@ export default async function MembershipCheckoutPage({
             letterSpacing: "-0.04em",
           }}
         >
-          Studio is now onboarding privately.
+          Choose your Studio path.
         </h1>
         <p
           style={{
@@ -94,12 +94,12 @@ export default async function MembershipCheckoutPage({
             color: "rgba(244,240,230,0.72)",
           }}
         >
-          The broad self-serve membership is not the main public path right now. New clients should
-          start with a smaller offer or inquire about the private guided version.
+          Studio is the weekly execution layer with Maya. Join monthly when you are ready for the
+          recurring system, or start smaller if you still need the method first.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>
           <Link
-            href="/private-shoot"
+            href="/checkout/membership?interval=month"
             style={{
               display: "inline-flex",
               padding: "16px 24px",
@@ -111,10 +111,10 @@ export default async function MembershipCheckoutPage({
               fontSize: 12,
             }}
           >
-            Private Brand Shoot
+            Join Studio Monthly
           </Link>
           <Link
-            href="/brand-strategy"
+            href="/masterclass"
             style={{
               display: "inline-flex",
               padding: "16px 24px",
@@ -126,7 +126,22 @@ export default async function MembershipCheckoutPage({
               fontSize: 12,
             }}
           >
-            Brand Strategy
+            Start With Masterclass
+          </Link>
+          <Link
+            href="/work-with-me"
+            style={{
+              display: "inline-flex",
+              padding: "16px 24px",
+              border: "1px solid rgba(244,240,230,0.2)",
+              color: "rgba(244,240,230,0.82)",
+              textDecoration: "none",
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+              fontSize: 12,
+            }}
+          >
+            Private Support
           </Link>
         </div>
       </div>

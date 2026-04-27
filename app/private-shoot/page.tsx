@@ -30,7 +30,7 @@ export default function PrivateShootPage() {
             color: "rgba(244,240,230,0.48)",
           }}
         >
-          Private Offer
+          Private / 1:1 Support
         </p>
         <h1
           style={{
@@ -43,7 +43,7 @@ export default function PrivateShootPage() {
             maxWidth: 860,
           }}
         >
-          Brand photos and content support, done with you.
+          The SSELFIE method, applied with you.
         </h1>
         <p
           style={{
@@ -54,9 +54,8 @@ export default function PrivateShootPage() {
             color: "rgba(244,240,230,0.72)",
           }}
         >
-          This is the calmer SSELFIE path. We use Maya behind the scenes, but the delivery stays
-          private, guided, and simple. No big platform to learn while you are already carrying too
-          much.
+          This is the high-touch SSELFIE path. We use the same method behind Studio and Maya, but
+          Sandra helps you apply it personally to your visuals, offer, and content direction.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 32 }}>
           <a
@@ -110,9 +109,9 @@ export default function PrivateShootPage() {
           {
             title: "What you get",
             lines: [
-              "A private brand image direction tailored to your business.",
-              "AI-supported brand photos created with Maya.",
-              "Content support around the visuals so they actually get used.",
+              "A private brand and content direction tailored to your business.",
+              "AI-supported visuals created with the SSELFIE method.",
+              "Guidance around the offer, captions, and next actions so the content gets used.",
             ],
           },
           {
@@ -120,7 +119,7 @@ export default function PrivateShootPage() {
             lines: [
               "Women who want the result, not another product to babysit.",
               "Founders low on energy but still needing to stay visible.",
-              "Clients who want guided support around visuals and messaging together.",
+              "Clients who want Sandra's eyes on visuals, messaging, and the path forward together.",
             ],
           },
           {
