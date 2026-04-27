@@ -12,6 +12,7 @@ export type MayaToolId =
   | "collect_offer_brief"
   | "structured_asset_blocked"
   | "maya_gap_offer"
+  | "week_plan"
 
 export type MayaToolConfirmationPolicy = "auto" | "confirm_before" | "confirm_with_preview"
 
@@ -140,6 +141,15 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     marker: "MAYA_GAP_OFFER",
     resultType: "tool-mayaGapOffer",
     description: "Offer Maya's calendar gap-filling flow when a content plan has open publishing days.",
+    confirmationPolicy: "auto",
+    estimatedCreditCost: 0,
+  },
+  week_plan: {
+    id: "week_plan",
+    label: "Week Plan",
+    marker: "WEEK_PLAN",
+    resultType: "tool-weekPlan",
+    description: "Surface the weekly content plan summary card with theme, photo directions, captions, and next action.",
     confirmationPolicy: "auto",
     estimatedCreditCost: 0,
   },

@@ -15,6 +15,7 @@ import MayaOfferBriefForm from "./maya-offer-brief-form"
 import type { MayaOfferBrief, MayaOfferBriefAssetType } from "@/lib/maya/offer-brief"
 import MayaGeneratedAssetCard from "./maya-generated-asset-card"
 import { MayaInlineAction, MayaInlineCard, MayaInlinePill } from "./maya-inline-card"
+import { MayaWeekPlanCard } from "./maya-week-plan-card"
 import {
   hasFeedStrategyArtifacts,
   stripFeedStrategyArtifacts,
@@ -126,6 +127,7 @@ const TOOL_RENDER_TYPES = new Set([
   "tool-createAssetPreview",
   "tool-structuredAssetBlocked",
   "tool-mayaGapOffer",
+  "tool-weekPlan",
   "tool-generateFeed",
   "tool-generateCaptions",
   "tool-generateStrategy",
@@ -1166,6 +1168,41 @@ function renderMayaGapOfferTool(part: any, partIndex: number, ctx: ToolCtx): Rea
   )
 }
 
+function renderWeekPlanTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
+  const output = part.output || {}
+  const themeId = typeof output.themeId === "string" ? output.themeId : "quiet_authority"
+  const photoDirection = typeof output.photoDirection === "string" ? output.photoDirection : ""
+  const captionAngles = Array.isArray(output.captionAngles) ? output.captionAngles : []
+  const nextAction = typeof output.nextAction === "string" ? output.nextAction : ""
+
+  if (!photoDirection && captionAngles.length === 0) return null
+
+  return (
+    <MayaWeekPlanCard
+      key={partIndex}
+      themeId={themeId}
+      photoDirection={photoDirection}
+      captionAngles={captionAngles}
+      nextAction={nextAction}
+      // Sprint 1: default full_plus_execution for Studio members; Sprint 2 wires proper tier
+      methodDepth="full_plus_execution"
+      onPhotoDirectionTap={(dir) =>
+        ctx.onToolPromptSelect?.(
+          `Use this photo direction for my weekly content: ${dir}`,
+        )
+      }
+      onCaptionTap={(angle) =>
+        ctx.onToolPromptSelect?.(
+          `Write a caption using this angle: ${angle}`,
+        )
+      }
+      onReplan={() =>
+        ctx.onToolPromptSelect?.("Let's plan my week differently — give me a new theme and direction.")
+      }
+    />
+  )
+}
+
 function renderStructuredAssetBlockedTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = part.output || {}
   const assetType = output.assetType || "calendar"
@@ -1568,6 +1605,7 @@ const TOOL_RENDERERS: Record<string, ToolRenderer> = {
   "tool-editAsset": renderEditAssetTool,
   "tool-createAssetPreview": renderCreateAssetPreviewTool,
   "tool-mayaGapOffer": renderMayaGapOfferTool,
+  "tool-weekPlan": renderWeekPlanTool,
   "tool-structuredAssetBlocked": renderStructuredAssetBlockedTool,
   "tool-generateFeed": renderGenerateFeedTool,
   "tool-generateCaptions": renderGenerateCaptionsTool,

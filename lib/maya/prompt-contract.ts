@@ -6,6 +6,29 @@ export interface MayaQuickPromptItem {
   prompt: string
 }
 
+const WEEKLY_CONTENT_PROMPTS: MayaQuickPromptItem[] = [
+  {
+    label: "Start my weekly ritual",
+    prompt: "Let's plan my week. Walk me through the SSELFIE weekly ritual — theme, photo direction, captions, and next action.",
+  },
+  {
+    label: "Plan my week",
+    prompt: "Plan my content for this week with photo ideas, captions, and the first post I should create.",
+  },
+  {
+    label: "3 photo ideas",
+    prompt: "Give me three photo ideas for this week's content and explain when I should use each one.",
+  },
+  {
+    label: "Write captions",
+    prompt: "Write captions for my next post and give me a soft call to action.",
+  },
+  {
+    label: "Show up today",
+    prompt: "Help me show up today without overthinking. Give me one simple post idea, photo direction, and caption.",
+  },
+]
+
 // Style mood chips — mode-specific so there's no cross-mode confusion
 const MODEL_STYLE_PROMPTS: MayaQuickPromptItem[] = [
   { label: "Dark & Moody", prompt: "Use my trained model and create a dark and moody photo for my brand" },
@@ -54,24 +77,20 @@ export function getMayaSurfaceQuickPrompts(input: {
     return []
   }
 
-  // Primary action prompts — each mode shows only what it can actually deliver.
-  // No cross-mode chips: if a user wants the other mode they use the MY MODEL ↔ SELFIE toggle.
-  const primaryPrompts: MayaQuickPromptItem[] = proMode
+  // Weekly content comes first; photo-generation mode details stay available as support.
+  const modeSupportPrompts: MayaQuickPromptItem[] = proMode
     ? [
-        { label: "New Photo", prompt: "Use my selfies and create a new photo for my brand" },
-        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
-        { label: "Upload & Create", prompt: "I want to upload photos and brand references for a new photo" },
+        { label: "Use my selfies", prompt: "Use my selfies and create a photo direction for this week's content" },
+        { label: "Upload references", prompt: "I want to upload photos and brand references for this week's content plan" },
       ]
     : hasTrainedModel
     ? [
-        { label: "New Photo", prompt: "Use my trained model and create a new photo for my brand" },
-        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
-        { label: "My Model", prompt: "Use my trained model and create a photo for my brand now" },
+        { label: "Use My Model", prompt: "Use my trained model for photo ideas in this week's content plan" },
+        { label: "Soft luxury", prompt: "Give me a soft luxury photo direction for this week's content" },
       ]
     : [
-        { label: "New Photo", prompt: "Create a new photo for my brand" },
-        { label: "Write a caption", prompt: "Help me write a caption for my next post" },
-        { label: "Train My Model", prompt: "I want to train my custom model" },
+        { label: "Photo ideas", prompt: "Give me photo ideas for this week's content" },
+        { label: "Train My Model", prompt: "I want to train my custom model when I'm ready" },
       ]
 
   const styleChips = proMode
@@ -80,7 +99,7 @@ export function getMayaSurfaceQuickPrompts(input: {
     ? MODEL_STYLE_PROMPTS
     : BASE_STYLE_PROMPTS
 
-  return dedupePrompts([...primaryPrompts, ...styleChips]).slice(0, 7)
+  return dedupePrompts([...WEEKLY_CONTENT_PROMPTS, ...modeSupportPrompts, ...styleChips]).slice(0, 7)
 }
 
 /**
@@ -90,14 +109,14 @@ export function getMayaSurfaceQuickPrompts(input: {
 export function getMayaInputPlaceholder(activeTab: MayaSurfaceTab): string {
   switch (activeTab) {
     case "photos":
-      return "What do you want to create?"
+      return "What's your theme this week?"
     case "videos":
       return "Pick a photo below to animate"
     case "training":
       return "Ask me anything about your model..."
     case "feed":
-      return "Tell me what you're working on..."
+      return "What do you want your content to sell or say?"
     default:
-      return "What do you want to create?"
+      return "What are you showing up for this week?"
   }
 }

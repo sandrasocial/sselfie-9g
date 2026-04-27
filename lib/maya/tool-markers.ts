@@ -42,6 +42,13 @@ export type MayaToolMarker =
       recoveryHint?: string
     }
   | { tool: "maya_gap_offer"; dayLabels: string[] }
+  | {
+      tool: "week_plan"
+      themeId: string
+      photoDirection: string
+      captionAngles: string[]
+      nextAction: string
+    }
 
 const SHOW_CAPABILITIES_REGEX = /\[SHOW_CAPABILITIES\]/gi
 const SHOW_STUDIO_HUB_REGEX = /\[SHOW_STUDIO_HUB\]/gi
@@ -57,6 +64,7 @@ const EDIT_ASSET_REGEX = /\[EDIT_ASSET(?:\s*:\s*([^\]]+))?\]/gi
 const CREATE_ASSET_REGEX = /\[CREATE_ASSET(?:\s*:\s*([^\]]+))?\]/gi
 const STRUCTURED_ASSET_BLOCKED_REGEX = /\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*([^\]]+))?\]/gi
 const MAYA_GAP_OFFER_REGEX = /\[MAYA_GAP_OFFER(?:\s*:\s*([^\]]+))?\]/gi
+const WEEK_PLAN_REGEX = /\[WEEK_PLAN(?:\s*:\s*([^\]]+))?\]/gi
 const VIDEO_CARD_REGEX = /\[VIDEO_CARD:[^\]]+\]/gi
 const SAVE_TARGET_IMAGE_ID_REGEX = /^(?:ai|gen)_\d+$/i
 const GENERATE_SOURCE_SET = new Set(["selfies", "custom_model", "base_model", "choose_source"])
@@ -314,6 +322,25 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   }
 
   MAYA_GAP_OFFER_REGEX.lastIndex = 0
+
+  let weekPlanMatch: RegExpExecArray | null = null
+  while ((weekPlanMatch = WEEK_PLAN_REGEX.exec(text)) !== null) {
+    const rawPayload = (weekPlanMatch[1] || "").trim()
+    const [rawThemeId = "", rawPhotoDir = "", rawCaption1 = "", rawCaption2 = "", rawNextAction = ""] =
+      rawPayload.split("|")
+    const captionAngles = [rawCaption1, rawCaption2]
+      .map((c) => decodeMarkerText(c.trim()))
+      .filter(Boolean)
+    markers.push({
+      tool: "week_plan",
+      themeId: rawThemeId.trim() || "quiet_authority",
+      photoDirection: decodeMarkerText(rawPhotoDir.trim()),
+      captionAngles,
+      nextAction: decodeMarkerText(rawNextAction.trim()),
+    })
+  }
+
+  WEEK_PLAN_REGEX.lastIndex = 0
   return markers
 }
 
@@ -334,6 +361,7 @@ export function stripMayaToolMarkers(text: string): string {
     .replace(CREATE_ASSET_REGEX, "")
     .replace(STRUCTURED_ASSET_BLOCKED_REGEX, "")
     .replace(MAYA_GAP_OFFER_REGEX, "")
+    .replace(WEEK_PLAN_REGEX, "")
     .replace(VIDEO_CARD_REGEX, "")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s{2,}/g, " ")

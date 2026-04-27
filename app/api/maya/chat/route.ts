@@ -62,6 +62,9 @@ import {
   resolveMayaTabHandoff,
   type MayaSurfaceTab,
 } from "@/lib/maya/tab-scope"
+import { getWeekPlanSystemAddendum } from "@/lib/maya/week-plan-prompt"
+import { resolveMethodDepth } from "@/lib/maya/method-depth"
+import { hasStudioMembership } from "@/lib/subscription"
 
 import { NextResponse } from "next/server"
 
@@ -116,6 +119,40 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing page drafts are retired right now while we rebuild this feature. ` +
           `I can still help you with photo ideas, concept cards, videos, and training guidance in Maya.`,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+function normalizeMayaStreamErrorMessage(error: unknown): string {
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "Failed to process chat request"
+
+  if (/gateway|openrouter|anthropic|model/i.test(rawMessage)) {
+    return "Maya's AI connection is temporarily unavailable. Please try again in a moment."
+  }
+
+  return rawMessage || "Maya could not reply right now. Please try again."
+}
+
+function createMayaChatErrorResponse(validUIMessages: UIMessage[], error: unknown) {
+  const errorMessage = normalizeMayaStreamErrorMessage(error)
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `maya-chat-error-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta: errorMessage,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -2409,6 +2446,15 @@ ${mayaSkillSelection.promptAddendum}
 
 You must apply this skill pack for prompt composition while preserving Maya's conversational voice.`
 
+    // Inject Sandra's method knowledge + weekly ritual guidance
+    // Sprint 1: membership check only; masterclass depth added in Sprint 2
+    const hasMembershipForMethod = await hasStudioMembership(dbUserId).catch(() => false)
+    const methodDepth = resolveMethodDepth({
+      hasMembership: hasMembershipForMethod,
+      hasMasterclass: false, // Sprint 2: add SQL check for masterclass purchase
+    })
+    systemPrompt += getWeekPlanSystemAddendum({ methodDepth })
+
     const routingChatType = useFeedPlannerContext ? "feed_planner" : chatType
     const mayaTask = resolveMayaChatTask({
       chatType: routingChatType,
@@ -2467,37 +2513,8 @@ You must apply this skill pack for prompt composition while preserving Maya's co
         // Fallback succeeded
       } else {
         // If streamText fails (e.g., provider outage), return a streaming error response
-        const errorMessage = streamError instanceof Error 
-          ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
-            ? "AI service temporarily unavailable. Please try again in a moment."
-            : streamError.message)
-          : "Failed to process chat request"
-        
-        console.error("[v0] ❌ Returning streaming error response:", errorMessage)
-        
-        // Return a streaming error response in the format expected by AI SDK
-        const encoder = new TextEncoder()
-        const errorStream = new ReadableStream({
-          start(controller) {
-            const errorData = {
-              type: "error",
-              error: {
-                message: errorMessage,
-              },
-            }
-            controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
-            controller.close()
-          },
-        })
-        
-        return new Response(errorStream, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-          },
-        })
+        console.error("[v0] ❌ Returning Maya chat stream error response:", streamError)
+        return createMayaChatErrorResponse(validUIMessages as UIMessage[], streamError)
       }
       
       // continue when fallback succeeds
@@ -2578,43 +2595,13 @@ You must apply this skill pack for prompt composition while preserving Maya's co
     }
 
     try {
-      return result.toUIMessageStreamResponse()
+      return result.toUIMessageStreamResponse({
+        onError: normalizeMayaStreamErrorMessage,
+      })
     } catch (streamResponseError) {
       // If converting to stream response fails (e.g., Gateway error during streaming)
       console.error("[v0] Error converting to stream response:", streamResponseError)
-      
-      const errorMessage = streamResponseError instanceof Error 
-        ? (streamResponseError.message.includes("Gateway") || streamResponseError.message.includes("gateway")
-          ? "AI service temporarily unavailable. Please try again in a moment."
-          : streamResponseError.message)
-        : "Failed to process chat request"
-      
-      // Return a streaming error response in the format expected by AI SDK
-      // The SDK expects Server-Sent Events (SSE) format with specific structure
-      const encoder = new TextEncoder()
-      const errorStream = new ReadableStream({
-        start(controller) {
-          // AI SDK expects error in this format: "0:{"type":"error","error":{"message":"..."}}"
-          const errorData = {
-            type: "error",
-            error: {
-              message: errorMessage,
-            },
-          }
-          // Format: "0:" prefix + JSON data + "\n\n"
-          controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
-          controller.close()
-        },
-      })
-      
-      return new Response(errorStream, {
-        status: 200, // Use 200 to avoid triggering HTTP error handlers
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        },
-      })
+      return createMayaChatErrorResponse(validUIMessages as UIMessage[], streamResponseError)
     }
   } catch (error) {
     // Log detailed error information
