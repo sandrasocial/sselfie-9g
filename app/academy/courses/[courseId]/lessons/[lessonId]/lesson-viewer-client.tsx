@@ -37,6 +37,17 @@ const C = {
 const LP =
   "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 
+const PAPER_INPUT_BORDER = "rgba(15,13,11,0.18)"
+const PAPER_INPUT_FOCUS = "rgba(15,13,11,0.42)"
+const paperInputStyle = {
+  background: C.cream,
+  border: `1px solid ${PAPER_INPUT_BORDER}`,
+  color: C.ink,
+  fontWeight: 400,
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -1px 0 rgba(0,0,0,0.08)",
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ActionLevel = "bare_minimum" | "bold_move" | "bonus_vibe"
 type MobileTab = "lesson" | "action" | "resources"
@@ -496,18 +507,13 @@ export function LessonViewerClient({
         onChange={(event) => setReflection(event.target.value)}
         onBlur={handleReflectionBlur}
         placeholder="Write your thoughts here..."
-        className={`${inter.className} min-h-36 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
-        style={{
-          background: "rgba(244,240,230,0.065)",
-          border: `1px solid ${C.divStrong}`,
-          color: C.cream,
-          fontWeight: 400,
-        }}
+        className={`${inter.className} academy-paper-input min-h-36 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none transition-colors`}
+        style={paperInputStyle}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = "rgba(244,240,230,0.42)"
+          e.currentTarget.style.borderColor = PAPER_INPUT_FOCUS
         }}
         onBlurCapture={(e) => {
-          e.currentTarget.style.borderColor = C.div
+          e.currentTarget.style.borderColor = PAPER_INPUT_BORDER
         }}
       />
 
@@ -537,12 +543,13 @@ export function LessonViewerClient({
               if (profileSaved) setProfileSaved(false)
             }}
             placeholder="Write your answer here..."
-            className={`${inter.className} min-h-28 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
-            style={{
-              background: "rgba(244,240,230,0.065)",
-              border: `1px solid ${C.divStrong}`,
-              color: C.cream,
-              fontWeight: 400,
+            className={`${inter.className} academy-paper-input min-h-28 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none transition-colors`}
+            style={paperInputStyle}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = PAPER_INPUT_FOCUS
+            }}
+            onBlurCapture={(e) => {
+              e.currentTarget.style.borderColor = PAPER_INPUT_BORDER
             }}
           />
           <button
@@ -856,6 +863,12 @@ export function LessonViewerClient({
           </p>
         ) : null}
       </div>
+      <style>{`
+        .academy-paper-input::placeholder {
+          color: rgba(15, 13, 11, 0.52);
+          opacity: 1;
+        }
+      `}</style>
     </main>
   )
 }

@@ -18,6 +18,9 @@ const C = {
   divStrong: "rgba(244,240,230,0.28)",
 }
 
+const PAPER_INPUT_BORDER = "rgba(15,13,11,0.18)"
+const PAPER_INPUT_FOCUS = "rgba(15,13,11,0.42)"
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ActionLevel = "bare_minimum" | "bold_move" | "bonus_vibe"
 
@@ -390,17 +393,32 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                 hasMessages ? "Follow up..." : `Ask Maya about "${lessonTitle}"...`
               }
               disabled={isStreaming}
-              className={`${inter.className} min-w-0 flex-1 bg-transparent py-2 text-[13px] outline-none placeholder:opacity-60 disabled:opacity-50`}
-              style={{ color: C.cream, fontWeight: 400 }}
+              className={`${inter.className} academy-paper-input min-w-0 flex-1 px-4 py-3 text-[13px] outline-none transition-colors disabled:opacity-50`}
+              style={{
+                background: C.cream,
+                border: `1px solid ${PAPER_INPUT_BORDER}`,
+                color: C.ink,
+                fontWeight: 400,
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -1px 0 rgba(0,0,0,0.08)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = PAPER_INPUT_FOCUS
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = PAPER_INPUT_BORDER
+              }}
             />
             <button
               type="submit"
               disabled={isStreaming || !input.trim()}
               className={`${inter.className} shrink-0 px-4 py-2 text-[10px] uppercase tracking-[0.22em] transition-opacity disabled:opacity-30`}
               style={{
-                background: "transparent",
-                color: C.cream,
-                border: `1px solid ${C.divStrong}`,
+                background: input.trim() ? C.cream : "transparent",
+                color: input.trim() ? C.ink : C.muted,
+                border: input.trim()
+                  ? "1px solid transparent"
+                  : `1px solid ${C.divStrong}`,
                 fontWeight: 600,
               }}
             >
@@ -415,6 +433,10 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
         @keyframes maya-blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
+        }
+        .academy-paper-input::placeholder {
+          color: rgba(15, 13, 11, 0.52);
+          opacity: 1;
         }
       `}</style>
     </div>

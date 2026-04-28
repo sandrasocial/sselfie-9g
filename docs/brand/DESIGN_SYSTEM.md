@@ -50,6 +50,8 @@ restraint, not white emptiness.
 
 **Dark readability rule:** Body copy, prompts, lesson text, form input text, and chat responses on dark surfaces use `onDarkSub`, never `stone` or `onDarkMuted`. `stone` and `onDarkMuted` are reserved for eyebrows, metadata, quiet labels, and decorative numerals. If a user needs to read it as instruction or content, it must be `#D8CFC0` or brighter.
 
+**Course writing surface rule:** When a learner is expected to type, use a cream paper field inside the dark course frame. Reflection boxes, Maya profile answers, and lesson chat composers use `creamWarm` with `ink` text and a subtle ink border. Do not use dark-on-dark fields for long-form learner input.
+
 ---
 
 ## Typography
