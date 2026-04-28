@@ -4296,6 +4296,7 @@ export default function MayaChatScreen({
                         : "Start with your week, your offer, or the post you’ve been avoiding. Maya will turn it into a simple content plan."
                     }
                     previewImageUrls={uploadedImages.map((image) => image.url)}
+                    onThemeChipClick={handleSendMessage}
                     actions={[
                       {
                         label: "Plan this week’s content",

@@ -1,12 +1,24 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import useSWR from "swr"
 import { MayaInlineAction, MayaInlineCard, MayaInlinePill } from "./maya-inline-card"
 
 interface MayaWelcomeAction {
   label: string
   onClick: () => void
   variant?: "primary" | "secondary"
+}
+
+interface WeekTheme {
+  id: string
+  label: string
+  description: string
+}
+
+interface WeekPlanResponse {
+  themes: WeekTheme[]
+  isoWeek: number
 }
 
 interface MayaWelcomePanelProps {
@@ -16,6 +28,8 @@ interface MayaWelcomePanelProps {
   uploadHint?: string
   actions: MayaWelcomeAction[]
   previewImageUrls?: string[]
+  /** Called when user taps a theme chip — sends the pre-built message */
+  onThemeChipClick?: (message: string) => void
 }
 
 const FALLBACK_PREVIEWS = [
@@ -23,6 +37,8 @@ const FALLBACK_PREVIEWS = [
   "/assets/brand-strategy/woman.png",
   "/assets/brand-strategy/pillar1.png",
 ]
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 function splitPrimaryAction(actions: MayaWelcomeAction[]) {
   const primaryIndex = actions.findIndex((a) => a.variant === "primary")
@@ -39,10 +55,18 @@ export default function MayaWelcomePanel({
   uploadHint,
   actions,
   previewImageUrls = [],
+  onThemeChipClick,
 }: MayaWelcomePanelProps) {
   const [moreOpen, setMoreOpen] = useState(false)
   const images = (previewImageUrls.length > 0 ? previewImageUrls : FALLBACK_PREVIEWS).slice(0, 3)
   const { primary, rest } = useMemo(() => splitPrimaryAction(actions), [actions])
+
+  const { data: weekPlanData } = useSWR<WeekPlanResponse>(
+    onThemeChipClick ? "/api/maya/week-plan" : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
+  )
+  const themes = weekPlanData?.themes ?? []
 
   return (
     <div className="w-full max-w-xl">
@@ -84,7 +108,7 @@ export default function MayaWelcomePanel({
       >
         <div className="space-y-6 border-t border-[rgba(195,190,182,0.12)] pt-6">
           <p className="text-sm leading-relaxed text-[color:var(--text-accent)]">
-            Type in the bar below. I reply here and show each photo when it&apos;s ready — no extra screens.
+            Start with the week ahead. I'll help you choose what to post, what photos to create, and what to say.
           </p>
 
           {uploadHint ? (
@@ -93,10 +117,35 @@ export default function MayaWelcomePanel({
             </p>
           ) : null}
 
+          {/* This week's themes — tapping one starts the weekly ritual */}
+          {themes.length > 0 && onThemeChipClick ? (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">
+                  This week's themes
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {themes.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() =>
+                      onThemeChipClick(`Let's plan my week around the ${theme.label} theme`)
+                    }
+                    className="rounded-full border border-[rgba(195,190,182,0.22)] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)] transition-colors hover:border-[rgba(195,190,182,0.45)] hover:text-[color:var(--color-porcelain)]"
+                  >
+                    {theme.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div>
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Preview</span>
-              <MayaInlinePill tone="muted">Sample look</MayaInlinePill>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Content mood</span>
+              <MayaInlinePill tone="muted">Photo direction</MayaInlinePill>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {images.map((imageUrl, index) => (

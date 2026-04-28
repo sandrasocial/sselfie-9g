@@ -2447,11 +2447,15 @@ ${mayaSkillSelection.promptAddendum}
 You must apply this skill pack for prompt composition while preserving Maya's conversational voice.`
 
     // Inject Sandra's method knowledge + weekly ritual guidance
-    // Sprint 1: membership check only; masterclass depth added in Sprint 2
-    const hasMembershipForMethod = await hasStudioMembership(dbUserId).catch(() => false)
+    const [hasMembershipForMethod, hasMasterclassPurchase] = await Promise.all([
+      hasStudioMembership(dbUserId).catch(() => false),
+      sql`SELECT 1 FROM payments WHERE user_id = ${dbUserId} AND product_type = 'masterclass' AND status = 'succeeded' LIMIT 1`
+        .then((rows: unknown[]) => rows.length > 0)
+        .catch(() => false),
+    ])
     const methodDepth = resolveMethodDepth({
       hasMembership: hasMembershipForMethod,
-      hasMasterclass: false, // Sprint 2: add SQL check for masterclass purchase
+      hasMasterclass: hasMasterclassPurchase,
     })
     systemPrompt += getWeekPlanSystemAddendum({ methodDepth })
 
