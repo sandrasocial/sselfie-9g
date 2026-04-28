@@ -19,23 +19,35 @@ Starter Kit is a direct private product, not an Academy course. It does not curr
 | Deliverable | Status | Notes |
 | --- | --- | --- |
 | Selfie Guide access | Connected | Buyer home links to `/academy/access/selfie-guide`. |
-| Preset download | Partially connected | Uses `STARTER_KIT_PRESET_DOWNLOAD_URL`, falling back to `SELFIE_GUIDE_PRESET_DOWNLOAD_URL`. No Starter Kit file was found in `public/`. |
+| Preset bundle | Included | The buyer home supports the preset bundle through `STARTER_KIT_PRESET_DOWNLOAD_URL`, falling back to `SELFIE_GUIDE_PRESET_DOWNLOAD_URL`. The bundle is treated as a hosted/download URL, not a local `public/` file. |
 | 7-day content starter | Connected in-app | Added as static in-app steps on the Starter Kit buyer home. No database tracking yet. |
 | Day 0 delivery email | Connected | `lib/email/templates/starter-kit-day0-delivery.ts`. |
 | Starter Kit nurture sequence | Connected | Day 0, 1, 3, 5, 7, 10, and 14 touches exist in `lib/email/starter-kit-email-sequence.ts`. |
+
+## Drive Deliverables Reviewed
+
+Sandra shared the Starter Kit deliverables folder on 2026-04-28. The Canva crash course is excluded because it does not belong to the SSELFIE brand/product promise.
+
+| Drive item | Product fit | Current handling |
+| --- | --- | --- |
+| `Posing Guide (1).pdf` | Starter Kit core deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-posing-guide.pdf`. |
+| `INSTAGRAM CAPTIONS & CONTENT IDEAS (2).pdf` | Starter Kit supporting deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-instagram-captions-content-ideas.pdf`. |
+| `Selfie to CEO Storytelling Captions .pdf` | Starter Kit supporting deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-selfie-to-ceo-storytelling-captions.pdf`. |
+| `Preset Collection/` | Starter Kit core deliverable | Already included through the preset bundle URL. |
+| `Custom Command Tutorial.MOV` | Possible bonus/tutorial | Not redesigned in this PDF pass. Needs separate product placement decision. |
+| `Canva Crash Course (1).pdf` | Excluded | Not included because it is not SSELFIE-brand aligned. |
 
 ## Missing Or Needs Sandra
 
 | Item | Needed From Sandra |
 | --- | --- |
-| Starter Kit preset file | Final download file or hosted URL for `STARTER_KIT_PRESET_DOWNLOAD_URL`. |
-| Printable Starter Kit PDF | Final PDF/workbook file if this should be downloadable. No PDF was found in `public/`. |
+| Downloadable PDF hosting | The branded PDFs exist locally under ignored `output/`; decide whether to upload to Drive/Vercel Blob or commit optimized versions under `public/academy/starter-kit/`. |
 | Exact 7-day starter copy | Current in-app version is a clean first draft. Sandra can replace with final prompts. |
-| Bonus templates | Confirm whether Canva templates, caption templates, or workbook pages belong in Starter Kit. |
+| Custom Command Tutorial placement | Confirm whether the MOV belongs on the Starter Kit buyer home as a bonus/tutorial. |
 
 ## Recommended Next Build Slice
 
-1. Add the final Starter Kit preset download URL or file.
-2. Add a printable PDF card once the file exists.
+1. Confirm production has `STARTER_KIT_PRESET_DOWNLOAD_URL` set to the existing preset bundle.
+2. Host the three branded Starter Kit PDFs and add download cards to `/academy/access/starter-kit`.
 3. Mirror the light Starter Kit design to `/access/starter-kit/[token]`.
 4. Add simple click analytics for preset download, guide open, and 7-day starter engagement.
