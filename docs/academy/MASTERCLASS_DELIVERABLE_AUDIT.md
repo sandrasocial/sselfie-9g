@@ -65,6 +65,53 @@ Still pending from Module One:
 
 Both pending files appeared in Drive inventory, but direct download returned a Google sign-in HTML response instead of a valid PDF during the first upload pass. They should be re-exported from Drive or downloaded through an authenticated/manual path before attaching.
 
+### Module Two
+
+These resources are now hosted in Vercel Blob with first-page thumbnail images and attached to `academy_lessons.content.resources`.
+
+| Lesson | Attached Resource | Status |
+| --- | --- | --- |
+| 6 - Personal Branding 101 | CEO Brand Blueprint | Attached |
+| 7 - Design Your Brand | Brand Glow Blueprint | Attached |
+| 8 - Design Your Instagram Feed | Your Bio & Feed Glow-Up Map | Attached |
+| 9 - Create Your Brand Pillars | CEO Brand Blueprint | Attached |
+| 10 - Start Showing Up | Confidence Posting Checklist | Attached |
+
+Still pending from Module Two:
+
+- `Brand Glow-Up Map™.pdf`
+- `Copy of Brand Glow-Up Map™.pdf`
+
+The canonical `Brand Glow-Up Map™.pdf` direct download returned Google sign-in HTML instead of a valid PDF. The `Copy of` version is treated as a duplicate until Sandra confirms otherwise.
+
+### Module Three
+
+These resources are now hosted in Vercel Blob with first-page thumbnail images and attached to `academy_lessons.content.resources`.
+
+| Lesson | Attached Resource | Status |
+| --- | --- | --- |
+| 11 - The Content System | CEO Content Confidence System | Attached |
+| 11 - The Content System | Selfie CEO System Cheat Sheet | Attached |
+| 13 - Instagram Reels | CEO Reels Launchpad | Attached |
+
+Module Three's duplicate `Confidence Posting Checklist™.pdf` was not attached because the Module Two version is already attached to lesson 10 and this Drive file also returned Google sign-in HTML instead of a valid PDF.
+
+### Bonus Library
+
+These bonus resources are now hosted in Vercel Blob with first-page thumbnail images and attached inside the course path until a dedicated Masterclass buyer home/bonus library is built.
+
+| Lesson | Attached Resource | Status |
+| --- | --- | --- |
+| 12 - High Quality Selfies | The Confidence Glow-Up Journal | Attached |
+| 14 - Content Planning | Selfie To CEO Instagram Planner | Attached |
+| 14 - Content Planning | Selfie To CEO Goal Setting - 30 Day Caption Pack | Attached |
+| 14 - Content Planning | The Visibility Checklist | Attached |
+| 14 - Content Planning | ChatGPT Prompts | Attached |
+
+Pending bonus material:
+
+- `Preset Collection/` is a folder of DNG presets and a preset guide. It belongs with the Editing Masterclass or bonus library, not as a single PDF card.
+
 ## Live Editing Masterclass Lessons
 
 All 6 editing lessons have Vimeo URLs. Lesson resources currently point mostly to the root Drive folder, not specific deliverables.
@@ -140,10 +187,10 @@ Preset Collection contains:
 
 ## Current Gaps
 
-1. **Branded by SSELFIE is only partially resourced inside lessons.**
-   - Module One now has five lesson-level PDF cards attached.
-   - Two Module One PDFs still need clean PDF downloads before upload.
-   - Module 2, Module 3, and bonus PDFs are still only inventoried from Drive.
+1. **Branded by SSELFIE is mostly resourced inside lessons.**
+   - Module One, Module Two, Module Three, and the main bonus PDFs now have lesson-level PDF cards attached.
+   - Two Module One PDFs, one Module Two PDF, and one duplicate Module Three PDF still need clean PDF downloads before upload.
+   - The nested preset folder still needs a separate pass.
 
 2. **Course metadata says 29 lessons, but only 14 Branded by SSELFIE lessons were found.**
    - This may be legacy metadata, a partially migrated course, or missing lessons. It should be corrected before launch.
@@ -156,9 +203,9 @@ Preset Collection contains:
 4. **Editing Masterclass resource links are too broad.**
    - Lessons link back to the root Drive folder instead of specific preset/checklist files.
 
-5. **Most resources are still in Drive, not Vercel Blob or app-owned URLs.**
-   - Module One's first five resources are now Blob-hosted with thumbnails.
-   - Remaining module and bonus resources should move to Blob for polished in-app downloads and tracking.
+5. **Nested resources are still in Drive, not Vercel Blob or app-owned URLs.**
+   - Main Module One, Module Two, Module Three, and bonus PDFs are now Blob-hosted with thumbnails.
+   - The preset folder still needs to be processed separately.
 
 6. **No transcript-backed Maya helper for Branded by SSELFIE yet.**
    - Starter Kit now has a transcript-backed Maya helper. Branded by SSELFIE currently has companion prompts and Maya profile sync, but not lesson transcript Q&A.
@@ -173,11 +220,10 @@ Preset Collection contains:
 
 ### Slice 2: Attach Resources
 
-1. Finish the two pending Module One PDFs once valid downloads are available.
-2. Upload canonical Module 2, Module 3, and bonus PDFs to Vercel Blob.
-3. Generate cover thumbnails from the first page of each PDF.
-4. Attach lesson-specific resource cards to `academy_lessons.content.resources`.
-5. Replace broad Editing Masterclass Drive links with specific preset/checklist links.
+1. Finish pending PDFs once valid downloads are available.
+2. Inventory and process the nested preset collection folder.
+3. Replace broad Editing Masterclass Drive links with specific preset/checklist links.
+4. Decide whether duplicate resources should stay attached in multiple lessons or move to a dedicated bonus library.
 
 ### Slice 3: Course UX
 
@@ -199,8 +245,8 @@ Preset Collection contains:
 
 The **videos and core lesson companion structure are mostly ready**.
 
-The **deliverables are partially launch-ready inside the app**. Module One's first five PDFs are now connected to Branded by SSELFIE lessons, but the remaining module resources and bonuses still need to be moved from Drive into Blob-backed in-app downloads.
+The **main deliverables are now mostly launch-ready inside the app**. Module One, Module Two, Module Three, and core bonus PDFs are connected to Branded by SSELFIE lessons with Blob-backed downloads and thumbnails. A few blocked Drive downloads and the nested preset folder still need follow-up.
 
 Best next implementation step:
 
-> Finish the remaining Module One PDFs, then move through Module 2, Module 3, and bonus resources before building the Masterclass buyer home around the two course paths and bonus library.
+> Finish the blocked PDFs and nested bonus folders, then build the Masterclass buyer home around the two course paths and bonus library.
