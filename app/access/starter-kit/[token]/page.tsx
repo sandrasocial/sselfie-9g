@@ -193,6 +193,13 @@ export default async function StarterKitAccessPage({
             The presets are here. Keep them simple. The goal is a photo that looks like you on a
             good day, not a different person.
           </p>
+          <div className="format-note">
+            <p className="format-label">Which files should I use?</p>
+            <p>
+              Editing on your phone? Use the DNG preset files. Editing in Lightroom on desktop?
+              Use the XMP preset files.
+            </p>
+          </div>
           {presetDownloadUrl ? (
             <a href={presetDownloadUrl} className="primary-cta">
               Download presets
@@ -317,6 +324,27 @@ export default async function StarterKitAccessPage({
         .note {
           margin-top: 18px;
           color: rgba(244, 240, 230, 0.58);
+        }
+
+        .format-note {
+          margin-top: 18px;
+          border: 1px solid rgba(244, 240, 230, 0.14);
+          padding: 16px;
+          background: rgba(244, 240, 230, 0.05);
+        }
+
+        .format-note p {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.7;
+        }
+
+        .format-label {
+          margin-bottom: 8px !important;
+          font-size: 10px !important;
+          letter-spacing: 0.26em;
+          text-transform: uppercase;
+          color: rgba(244, 240, 230, 0.58) !important;
         }
       `}</style>
     </main>

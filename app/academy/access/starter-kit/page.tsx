@@ -426,6 +426,24 @@ export default async function AcademyStarterKitAccessPage() {
               Keep the edit simple. The goal is a photo that looks like you on a good day, not a
               different person.
             </p>
+            <div
+              className="mt-5 space-y-2 p-4"
+              style={{ border: `1px solid ${C.div}`, background: C.cream }}
+            >
+              <p
+                className="text-[10px] uppercase tracking-[0.32em]"
+                style={{ color: C.muted, fontWeight: 600 }}
+              >
+                Which files should I use?
+              </p>
+              <p
+                className="text-[13px] leading-[1.68]"
+                style={{ color: C.onCreamSub, fontWeight: 400 }}
+              >
+                Editing on your phone? Use the DNG preset files. Editing in Lightroom on desktop?
+                Use the XMP preset files.
+              </p>
+            </div>
             {presetDownloadUrl ? (
               <a
                 href={presetDownloadUrl}

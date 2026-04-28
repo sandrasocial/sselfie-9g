@@ -43,12 +43,41 @@ The editing masterclass transcript is stored in `lib/academy/starter-kit-editing
 
 The Starter Kit buyer home loads the existing `editing_masterclass` Academy course videos from `academy_lessons` and shows them as an embedded lesson playlist. It also includes an "Ask Maya while you edit" panel that posts to `/api/academy/starter-kit/editing-masterclass-chat`. The route requires `starter_kit` access and answers from the transcript only, so the lesson support stays focused on Sandra's actual method.
 
+## Preset Format Guidance
+
+The Starter Kit access pages now tell users which preset format to use:
+
+- Phone / Lightroom Mobile: use DNG preset files.
+- Desktop Lightroom: use XMP preset files.
+
+XMP presets work well in Lightroom desktop, but DNG preset files are the smoother path for most mobile users because Lightroom Mobile can import a DNG photo and save its edit settings as a preset.
+
+## Future In-App Preset Tool
+
+An in-app photo editor that applies Sandra-style presets is technically possible, but it should be treated as a SSELFIE approximation of the Lightroom look, not a perfect Lightroom engine.
+
+Recommended build path:
+
+1. Parse the XMP preset values we can safely support, such as exposure, contrast, highlights, shadows, whites, blacks, temperature, tint, saturation, vibrance, sharpening, vignette, tone curve, and HSL where practical.
+2. Apply those values server-side with an image-processing library such as Sharp or a similar pipeline.
+3. Show before/after preview in the app.
+4. Let the user adjust preset strength before download.
+5. Keep Lightroom/DNG files available because some Lightroom settings may not translate perfectly.
+
+Blocked until Sandra provides or approves:
+
+- Final DNG preset files for Lightroom Mobile.
+- The exact XMP preset pack that should become the app's first in-app preset styles.
+- Before/after reference images for visual QA.
+
 ## Missing Or Needs Sandra
 
 | Item | Needed From Sandra |
 | --- | --- |
 | Exact 7-day starter copy | Current in-app version is a clean first draft. Sandra can replace with final prompts. |
 | Custom Command Tutorial placement | Confirm whether the MOV belongs on the Starter Kit buyer home as a bonus/tutorial. |
+| DNG preset files | Needed for smoother Lightroom Mobile import. XMP files are best for Lightroom desktop. |
+| In-app preset editor references | Need approved XMP presets and before/after references before building the app-side editor. |
 
 ## Recommended Next Build Slice
 
