@@ -69,11 +69,6 @@ import {
 import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
 import { shouldOpenStudioMemberOnboarding } from "@/lib/onboarding/studio-onboarding-routing"
 import MayaUpsellCard from "./maya/maya-upsell-card"
-import {
-  LESSON_HANDOFF_KEY,
-  buildLessonHandoffPrompt,
-  type LessonHandoffContext,
-} from "@/lib/maya/lesson-handoff"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
@@ -2471,35 +2466,6 @@ export default function MayaChatScreen({
       setUploadedImage(null)
     }
   }
-
-  // ─── Lesson → Maya handoff ────────────────────────────────────────────────
-  // When a user taps "Do this with Maya →" in the Academy lesson viewer, the
-  // lesson context is written to sessionStorage and they're navigated here.
-  // We read it once on mount and auto-send a crafted message so they land in
-  // an active conversation without re-explaining anything.
-  const lessonHandoffFiredRef = useRef(false)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (lessonHandoffFiredRef.current) return
-    const raw = sessionStorage.getItem(LESSON_HANDOFF_KEY)
-    if (!raw) return
-    sessionStorage.removeItem(LESSON_HANDOFF_KEY) // consume immediately — no double-fire
-    lessonHandoffFiredRef.current = true
-
-    let ctx: LessonHandoffContext
-    try {
-      ctx = JSON.parse(raw) as LessonHandoffContext
-    } catch {
-      return
-    }
-
-    const prompt = buildLessonHandoffPrompt(ctx)
-    // 600 ms settle: gives chat creation + stream setup time to be ready
-    const timer = setTimeout(() => {
-      void handleSendMessage(prompt)
-    }, 600)
-    return () => clearTimeout(timer)
-  }, []) // fire once on mount
 
   const setMayaTabAndHash = useCallback((tab: "photos" | "videos" | "training") => {
     setActiveMayaTab(tab)
