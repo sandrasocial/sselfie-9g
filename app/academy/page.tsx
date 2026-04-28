@@ -21,11 +21,14 @@ const inter = Inter({
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   ink: "#0F0D0B",
-  inkSoft: "#1E1A15",
-  cream: "#EDE9E2",
+  inkSoft: "#1B1713",
+  inkLift: "#241F19",
+  cream: "#F4F0E6",
   stone: "#C4B5A0",
-  muted: "#7A6F63",
-  div: "rgba(237,233,226,0.10)",
+  body: "#D8CFC0",
+  muted: "#A79B8B",
+  div: "rgba(244,240,230,0.16)",
+  divStrong: "rgba(244,240,230,0.28)",
 }
 
 const LP =
@@ -37,6 +40,17 @@ const solidBtn =
   "inline-flex items-center px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
 const ghostBtn =
   "inline-flex items-center px-6 py-3 text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-80"
+
+function getCourseProductLabel(productId: string): string {
+  switch (productId) {
+    case "branded_by_sselfie":
+      return "Masterclass course"
+    case "editing_masterclass":
+      return "Editing course"
+    default:
+      return "Course"
+  }
+}
 
 export default async function AcademyPage() {
   const { neonUser } = await requireAcademyPageUser("/academy")
@@ -86,7 +100,7 @@ export default async function AcademyPage() {
         </h1>
         <p
           className={`${inter.className} mt-6 max-w-2xl text-[15px] leading-[1.78]`}
-          style={{ color: C.stone, fontWeight: 300 }}
+          style={{ color: C.body, fontWeight: 400 }}
         >
           {home.hero.description}
         </p>
@@ -112,7 +126,7 @@ export default async function AcademyPage() {
                 className={`${inter.className} ${ghostBtn}`}
                 style={{
                   color: C.cream,
-                  border: "1px solid rgba(237,233,226,0.22)",
+                  border: `1px solid ${C.divStrong}`,
                 }}
               >
                 {home.hero.secondaryLink.label}
@@ -141,7 +155,7 @@ export default async function AcademyPage() {
             </p>
             <p
               className={`${inter.className} mt-5 max-w-xl text-[15px] leading-[1.78]`}
-              style={{ color: C.stone, fontWeight: 300 }}
+              style={{ color: C.body, fontWeight: 400 }}
             >
               Your SSELFIE content will appear here once you have access. Start
               with the guide, or step into the Starter Kit if you want the first
@@ -165,7 +179,7 @@ export default async function AcademyPage() {
                 className={`${inter.className} ${ghostBtn}`}
                 style={{
                   color: C.cream,
-                  border: "1px solid rgba(237,233,226,0.22)",
+                  border: `1px solid ${C.divStrong}`,
                 }}
               >
                 Free Guide
@@ -173,29 +187,182 @@ export default async function AcademyPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-14">
-            {/* ── Owned products ── */}
-            {home.ownedProducts.length > 0 ? (
-              <section>
+          <div className="space-y-16">
+            {/* ── Start here ── */}
+            <section
+              className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
+              aria-label="Start here"
+            >
+              <div
+                className="p-8 md:p-10"
+                style={{
+                  background: C.inkSoft,
+                  border: `1px solid ${C.divStrong}`,
+                }}
+              >
                 <p
                   className={`${inter.className} ${eyebrow}`}
                   style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  Your Content
+                  Start Here
                 </p>
+                <h2
+                  className={`${cormorant.className} mt-5 uppercase`}
+                  style={{
+                    fontWeight: 300,
+                    fontSize: "clamp(30px, 5vw, 54px)",
+                    lineHeight: 1.04,
+                    letterSpacing: "-0.015em",
+                    textShadow: LP,
+                    color: C.cream,
+                  }}
+                >
+                  One clear next step.
+                </h2>
+                <p
+                  className={`${inter.className} mt-5 max-w-2xl text-[15px] leading-[1.78]`}
+                  style={{ color: C.body, fontWeight: 400 }}
+                >
+                  Open the product you came for first. Then move into the lessons
+                  that support it.
+                </p>
+                {home.hero.primaryLink ? (
+                  <Link
+                    href={home.hero.primaryLink.href}
+                    className={`${inter.className} ${solidBtn} mt-8`}
+                    style={{
+                      background: C.cream,
+                      color: C.ink,
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -2px 0 rgba(0,0,0,0.14), 0 4px 18px rgba(0,0,0,0.32)",
+                    }}
+                  >
+                    {home.hero.primaryLink.label}
+                  </Link>
+                ) : null}
+              </div>
+
+              {home.nextStep ? (
+                <aside
+                  className="p-8"
+                  style={{
+                    background: C.inkLift,
+                    border: `1px solid ${C.div}`,
+                  }}
+                >
+                  <p
+                    className={`${inter.className} ${eyebrow}`}
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    {home.nextStep.eyebrow}
+                  </p>
+                  <h2
+                    className={`${cormorant.className} mt-5 uppercase`}
+                    style={{
+                      fontWeight: 300,
+                      fontSize: "clamp(22px, 3vw, 32px)",
+                      lineHeight: 1.12,
+                      textShadow: LP,
+                      color: C.cream,
+                    }}
+                  >
+                    {home.nextStep.title}
+                  </h2>
+                  <p
+                    className={`${inter.className} mt-4 text-[14px] leading-[1.78]`}
+                    style={{ color: C.body, fontWeight: 400 }}
+                  >
+                    {home.nextStep.description}
+                  </p>
+                  <Link
+                    href={home.nextStep.href}
+                    className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.cream, fontWeight: 600 }}
+                  >
+                    → {home.nextStep.ctaLabel}
+                  </Link>
+                </aside>
+              ) : home.mayaCard ? (
+                <aside
+                  className="p-8"
+                  style={{ border: `1px solid ${C.div}` }}
+                >
+                  <p
+                    className={`${inter.className} ${eyebrow}`}
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    {home.mayaCard.eyebrow}
+                  </p>
+                  <h2
+                    className={`${cormorant.className} mt-5 uppercase`}
+                    style={{
+                      fontWeight: 300,
+                      fontSize: "clamp(22px, 3vw, 32px)",
+                      lineHeight: 1.12,
+                      textShadow: LP,
+                      color: C.cream,
+                    }}
+                  >
+                    {home.mayaCard.title}
+                  </h2>
+                  <p
+                    className={`${inter.className} mt-4 text-[14px] leading-[1.78]`}
+                    style={{ color: C.body, fontWeight: 400 }}
+                  >
+                    {home.mayaCard.description}
+                  </p>
+                  <Link
+                    href={home.mayaCard.href}
+                    className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.cream, fontWeight: 600 }}
+                  >
+                    → {home.mayaCard.ctaLabel}
+                  </Link>
+                </aside>
+              ) : null}
+            </section>
+
+            {/* ── Products ── */}
+            {home.ownedProducts.length > 0 ? (
+              <section>
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p
+                      className={`${inter.className} ${eyebrow}`}
+                      style={{ color: C.muted, fontWeight: 600 }}
+                    >
+                      Your Products
+                    </p>
+                    <p
+                    className={`${inter.className} mt-3 max-w-2xl text-[14px] leading-[1.72]`}
+                    style={{ color: C.body, fontWeight: 400 }}
+                  >
+                      Start here for kits, guides, strategy packs, and downloads.
+                      Your course modules sit below.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   {home.ownedProducts.map((product) => (
                     <article
                       key={product.id}
                       className="p-7"
                       style={{
-                        background: C.inkSoft,
-                        border: `1px solid ${C.div}`,
+                        background: product.id === "starter_kit" ? C.cream : C.inkSoft,
+                        border: `1px solid ${product.id === "starter_kit" ? "rgba(15,13,11,0.14)" : C.divStrong}`,
+                        color: product.id === "starter_kit" ? C.ink : C.cream,
                       }}
                     >
                       <p
                         className={`${inter.className} ${eyebrow}`}
-                        style={{ color: C.muted, fontWeight: 600 }}
+                        style={{
+                          color:
+                            product.id === "starter_kit"
+                              ? "rgba(15,13,11,0.55)"
+                              : C.muted,
+                          fontWeight: 600,
+                        }}
                       >
                         {product.eyebrow}
                       </p>
@@ -203,24 +370,36 @@ export default async function AcademyPage() {
                         className={`${cormorant.className} mt-5 uppercase`}
                         style={{
                           fontWeight: 300,
-                          fontSize: "clamp(19px, 2.5vw, 26px)",
-                          lineHeight: 1.18,
-                          textShadow: LP,
-                          color: C.cream,
+                          fontSize: "clamp(22px, 3vw, 32px)",
+                          lineHeight: 1.12,
+                          textShadow:
+                            product.id === "starter_kit"
+                              ? "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
+                              : LP,
+                          color: product.id === "starter_kit" ? C.ink : C.cream,
                         }}
                       >
                         {product.name}
                       </h2>
                       <p
-                        className={`${inter.className} mt-3 text-[15px] leading-[1.78]`}
-                        style={{ color: C.stone, fontWeight: 300 }}
+                        className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
+                        style={{
+                          color:
+                            product.id === "starter_kit"
+                              ? "rgba(15,13,11,0.72)"
+                              : C.body,
+                          fontWeight: 400,
+                        }}
                       >
                         {product.tagline || product.description}
                       </p>
                       <Link
                         href={product.accessUrl}
                         className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
-                        style={{ color: C.cream, fontWeight: 600 }}
+                        style={{
+                          color: product.id === "starter_kit" ? C.ink : C.cream,
+                          fontWeight: 600,
+                        }}
                       >
                         → {product.actionLabel}
                       </Link>
@@ -237,7 +416,7 @@ export default async function AcademyPage() {
                   className={`${inter.className} ${eyebrow}`}
                   style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  Recommended Path
+                  Masterclass Path
                 </p>
                 <div className="mt-6 grid gap-4 lg:grid-cols-3">
                   {home.implementationPath.map((step) => (
@@ -246,7 +425,7 @@ export default async function AcademyPage() {
                       className="p-7"
                       style={{
                         background: step.status === "start" ? C.inkSoft : "transparent",
-                        border: `1px solid ${step.status === "start" ? "rgba(237,233,226,0.22)" : C.div}`,
+                        border: `1px solid ${step.status === "start" ? C.divStrong : C.div}`,
                       }}
                     >
                       <p
@@ -269,7 +448,7 @@ export default async function AcademyPage() {
                       </h2>
                       <p
                         className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
-                        style={{ color: C.stone, fontWeight: 300 }}
+                        style={{ color: C.body, fontWeight: 400 }}
                       >
                         {step.description}
                       </p>
@@ -293,7 +472,14 @@ export default async function AcademyPage() {
                   className={`${inter.className} ${eyebrow}`}
                   style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  Continue Your Courses
+                  Included Courses
+                </p>
+                <p
+                  className={`${inter.className} mt-3 max-w-2xl text-[14px] leading-[1.72]`}
+                  style={{ color: C.body, fontWeight: 400 }}
+                >
+                  These are the course modules included with your unlocked products.
+                  Masterclass includes Branded by SSELFIE and Editing Masterclass.
                 </p>
                 <ol
                   className="mt-6 space-y-0"
@@ -327,6 +513,12 @@ export default async function AcademyPage() {
                           </p>
 
                           <div className="space-y-3">
+                            <p
+                              className={`${inter.className} text-[10px] uppercase tracking-[0.35em]`}
+                              style={{ color: C.muted, fontWeight: 600 }}
+                            >
+                              {getCourseProductLabel(course.productId)}
+                            </p>
                             <Link
                               href={`/academy/courses/${course.id}`}
                               className="block"
@@ -341,7 +533,7 @@ export default async function AcademyPage() {
                             {course.description ? (
                               <p
                                 className={`${inter.className} max-w-2xl text-[15px] leading-[1.78]`}
-                                style={{ color: C.stone, fontWeight: 300 }}
+                                style={{ color: C.body, fontWeight: 400 }}
                               >
                                 {course.description}
                               </p>
@@ -362,7 +554,7 @@ export default async function AcademyPage() {
                                 <div
                                   className="h-[2px] w-full"
                                   style={{
-                                    background: "rgba(237,233,226,0.10)",
+                                    background: "rgba(244,240,230,0.12)",
                                   }}
                                 >
                                   <div
@@ -398,57 +590,9 @@ export default async function AcademyPage() {
               </section>
             ) : null}
 
-            {/* ── Next step + Maya ── */}
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-              {home.nextStep ? (
-                <section
-                  className="p-8 md:p-10"
-                  style={{
-                    background: C.inkSoft,
-                    border: `1px solid ${C.div}`,
-                  }}
-                >
-                  <p
-                    className={`${inter.className} ${eyebrow}`}
-                    style={{ color: C.muted, fontWeight: 600 }}
-                  >
-                    {home.nextStep.eyebrow}
-                  </p>
-                  <h2
-                    className={`${cormorant.className} mt-5 uppercase`}
-                    style={{
-                      fontWeight: 300,
-                      fontSize: "clamp(28px, 4.5vw, 48px)",
-                      lineHeight: 1.07,
-                      letterSpacing: "-0.015em",
-                      textShadow: LP,
-                      color: C.cream,
-                    }}
-                  >
-                    {home.nextStep.title}
-                  </h2>
-                  <p
-                    className={`${inter.className} mt-5 max-w-xl text-[15px] leading-[1.78]`}
-                    style={{ color: C.stone, fontWeight: 300 }}
-                  >
-                    {home.nextStep.description}
-                  </p>
-                  <Link
-                    href={home.nextStep.href}
-                    className={`${inter.className} ${solidBtn} mt-8`}
-                    style={{
-                      background: C.cream,
-                      color: C.ink,
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
-                    }}
-                  >
-                    {home.nextStep.ctaLabel}
-                  </Link>
-                </section>
-              ) : null}
-
-              {home.mayaCard ? (
+            {/* ── Maya ── */}
+            {home.nextStep && home.mayaCard ? (
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)]">
                 <section
                   className="p-8"
                   style={{
@@ -475,7 +619,7 @@ export default async function AcademyPage() {
                   </h2>
                   <p
                     className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
-                    style={{ color: C.stone, fontWeight: 300 }}
+                    style={{ color: C.body, fontWeight: 400 }}
                   >
                     {home.mayaCard.description}
                   </p>
@@ -487,8 +631,8 @@ export default async function AcademyPage() {
                     → {home.mayaCard.ctaLabel}
                   </Link>
                 </section>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             {/* ── Locked products (upsells) ── */}
             {home.lockedProducts.length > 0 ? (
@@ -528,7 +672,7 @@ export default async function AcademyPage() {
                       </h2>
                       <p
                         className={`${inter.className} mt-3 text-[15px] leading-[1.78]`}
-                        style={{ color: C.stone, fontWeight: 300 }}
+                        style={{ color: C.body, fontWeight: 400 }}
                       >
                         {product.description}
                       </p>
