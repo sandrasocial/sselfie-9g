@@ -36,6 +36,8 @@ interface LessonMayaChatProps {
   actionStep: Record<string, string>
   chosenActionLevel: ActionLevel | null
   reflectionPrompt?: string
+  lessonContext?: string
+  workbookFocus?: string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -46,7 +48,7 @@ const ACTION_LABELS: Record<ActionLevel, string> = {
 }
 
 function buildContextPrefix(props: LessonMayaChatProps): string {
-  const { lessonTitle, courseTitle, keyTakeaways, actionStep, chosenActionLevel } = props
+  const { lessonTitle, courseTitle, keyTakeaways, actionStep, chosenActionLevel, lessonContext, workbookFocus } = props
   const takeaways = keyTakeaways
     .slice(0, 3)
     .map((t) => `• ${t}`)
@@ -54,6 +56,8 @@ function buildContextPrefix(props: LessonMayaChatProps): string {
 
   const lines = [
     `[Lesson context: "${lessonTitle}" from ${courseTitle}.`,
+    lessonContext ? `Video focus: ${lessonContext}` : null,
+    workbookFocus ? `Workbook/download focus: ${workbookFocus}` : null,
     takeaways ? `Key takeaways:\n${takeaways}` : null,
     chosenActionLevel
       ? `Committed action (${ACTION_LABELS[chosenActionLevel]}): "${actionStep[chosenActionLevel] ?? ""}"`

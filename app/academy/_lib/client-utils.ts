@@ -11,6 +11,9 @@ export type LessonContent = {
     bonus_vibe?: string
   }
   reflection_prompt?: string
+  maya_context?: string | null
+  transcript_summary?: string | null
+  workbook_focus?: string | null
   profile_field?: string | null
   profile_question?: string | null
   resources?: Array<{

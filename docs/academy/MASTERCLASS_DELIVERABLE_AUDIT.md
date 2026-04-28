@@ -46,6 +46,45 @@ All 14 discovered lessons have Vimeo URLs, duration data, reflection prompts, ac
 
 ## Attached Branded by SSELFIE Resources
 
+## Transcript-Matched Lesson Companion Status
+
+The 14 live Branded by SSELFIE lessons now have transcript-matched companion content in `academy_lessons.content`:
+
+- `transcript_summary`
+- `maya_context`
+- `workbook_focus`
+- `key_takeaways`
+- `reflection_prompt`
+- `action_step`
+- `profile_field`
+- `profile_question`
+
+The lesson viewer now passes `maya_context` and `workbook_focus` into embedded lesson Maya chat, so Maya can answer from the specific video/workbook focus instead of only generic takeaways.
+
+| Live Lesson | Transcript / Lesson Source | Companion Status |
+| --- | --- | --- |
+| 1 - Start Here: Welcome to Branded By SSELFIE | Module One welcome: Your CEO Era Starts Now | Updated |
+| 2 - Building Unshakable Selfie Confidence | Module One Lesson 1 | Updated |
+| 3 - Start Showing Up | Module One confidence momentum / journal practice | Updated |
+| 4 - The Power Selfies Challenge | Module One Lesson 2 | Updated |
+| 5 - The Confidence Camera Hack | Module One Lesson 3 | Updated |
+| 6 - Brand Energy 101 | Module Two Lesson 1 | Updated |
+| 7 - Design Your Brand | Module Two Lesson 2 | Updated |
+| 8 - Glow Up Your Bio + First Impressions | Module Two Lesson 3 | Updated |
+| 9 - Creating Your Brand Pillars | Module Two Lesson 4 | Updated |
+| 10 - Post Before You Feel Ready | Module Three Lesson 1 | Updated from provided lesson text; no transcript body provided |
+| 11 - Confidence Posting Formula | Module Three Lesson 2 | Updated from provided lesson text; no transcript body provided |
+| 12 - The Selfie CEO Shooting System | Module Three Lesson 3 | Updated |
+| 13 - Real Reels Walkthrough | Module Three Lesson 4 | Updated |
+| 14 - CEO Content Planning | Module Three Lesson 6 | Updated |
+
+Transcript/course items not yet represented as separate live lesson rows:
+
+- Module Three Lesson 5: `Edit Like a CEO - COMING SOON`
+- Closing video: `Your Next Level CEO Journey`
+
+These should either be added as new Academy lessons or placed inside a future Masterclass buyer home/bonus section.
+
 ### Module One
 
 These resources are now hosted in Vercel Blob with first-page thumbnail images and attached to `academy_lessons.content.resources`.

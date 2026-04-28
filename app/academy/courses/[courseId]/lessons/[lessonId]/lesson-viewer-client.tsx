@@ -679,6 +679,8 @@ export function LessonViewerClient({
               actionStep={actionStep as Record<string, string>}
               chosenActionLevel={chosenActionLevel}
               reflectionPrompt={lessonContent.reflection_prompt ?? undefined}
+              lessonContext={lessonContent.maya_context ?? lessonContent.transcript_summary ?? undefined}
+              workbookFocus={lessonContent.workbook_focus ?? undefined}
             />
 
             {/* Lesson meta */}
@@ -807,6 +809,8 @@ export function LessonViewerClient({
                       actionStep={actionStep as Record<string, string>}
                       chosenActionLevel={chosenActionLevel}
                       reflectionPrompt={lessonContent.reflection_prompt ?? undefined}
+                      lessonContext={lessonContent.maya_context ?? lessonContent.transcript_summary ?? undefined}
+                      workbookFocus={lessonContent.workbook_focus ?? undefined}
                     />
                   </>
                 ) : null}
