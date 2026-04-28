@@ -41,14 +41,13 @@ Sandra shared the Starter Kit deliverables folder on 2026-04-28. The Canva crash
 
 The editing masterclass transcript is stored in `lib/academy/starter-kit-editing-masterclass.ts`.
 
-The Starter Kit buyer home includes an "Ask Maya while you edit" panel that posts to `/api/academy/starter-kit/editing-masterclass-chat`. The route requires `starter_kit` access and answers from the transcript only, so the lesson support stays focused on Sandra's actual method.
+The Starter Kit buyer home loads the existing `editing_masterclass` Academy course videos from `academy_lessons` and shows them as an embedded lesson playlist. It also includes an "Ask Maya while you edit" panel that posts to `/api/academy/starter-kit/editing-masterclass-chat`. The route requires `starter_kit` access and answers from the transcript only, so the lesson support stays focused on Sandra's actual method.
 
 ## Missing Or Needs Sandra
 
 | Item | Needed From Sandra |
 | --- | --- |
 | Exact 7-day starter copy | Current in-app version is a clean first draft. Sandra can replace with final prompts. |
-| Editing masterclass video URL | The transcript-backed Maya helper is connected. The actual video embed/download URL still needs to be added when ready. |
 | Custom Command Tutorial placement | Confirm whether the MOV belongs on the Starter Kit buyer home as a bonus/tutorial. |
 
 ## Recommended Next Build Slice

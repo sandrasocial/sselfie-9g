@@ -7,6 +7,8 @@ import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getStarterKitEditingMasterclassLessons } from "@/lib/academy/starter-kit-editing-masterclass"
+import { StarterKitEditingMasterclassVideos } from "@/components/academy/starter-kit-editing-masterclass-videos"
 import { StarterKitMayaLessonChat } from "@/components/academy/starter-kit-maya-lesson-chat"
 
 const cormorant = Cormorant_Garamond({
@@ -137,6 +139,8 @@ export default async function AcademyStarterKitAccessPage() {
       has_selfie_guide_access: entitlementState.accessibleProductIds.includes("selfie_guide"),
     },
   })
+
+  const editingMasterclassLessons = await getStarterKitEditingMasterclassLessons()
 
   const presetDownloadUrl =
     process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
@@ -387,6 +391,8 @@ export default async function AcademyStarterKitAccessPage() {
             ))}
           </div>
         </section>
+
+        <StarterKitEditingMasterclassVideos lessons={editingMasterclassLessons} />
 
         <StarterKitMayaLessonChat />
 

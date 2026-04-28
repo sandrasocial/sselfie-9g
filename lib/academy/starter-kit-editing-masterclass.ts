@@ -1,4 +1,55 @@
+import { sql } from "@/lib/db/client"
+
 export const STARTER_KIT_EDITING_MASTERCLASS_TITLE = "Editing Masterclass"
+
+export type StarterKitEditingMasterclassLesson = {
+  id: number
+  title: string
+  description: string | null
+  lessonNumber: number
+  videoUrl: string
+  durationMinutes: number | null
+}
+
+type EditingMasterclassLessonRow = {
+  id: number
+  title: string
+  description: string | null
+  lesson_number: number
+  video_url: string | null
+  duration_minutes: number | null
+}
+
+export async function getStarterKitEditingMasterclassLessons(): Promise<
+  StarterKitEditingMasterclassLesson[]
+> {
+  const rows = await sql<EditingMasterclassLessonRow[]>`
+    SELECT
+      l.id,
+      l.title,
+      l.description,
+      l.lesson_number,
+      l.video_url,
+      l.duration_minutes
+    FROM academy_lessons l
+    JOIN academy_courses c ON c.id = l.course_id
+    WHERE c.product_id = 'editing_masterclass'
+      AND l.lesson_type = 'video'
+      AND l.video_url IS NOT NULL
+      AND l.video_url <> ''
+      AND l.video_url <> 'PLACEHOLDER_VIDEO_URL'
+    ORDER BY l.lesson_number ASC, l.id ASC
+  `
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    title: row.title.trim(),
+    description: row.description,
+    lessonNumber: Number(row.lesson_number),
+    videoUrl: row.video_url || "",
+    durationMinutes: row.duration_minutes,
+  }))
+}
 
 export const STARTER_KIT_EDITING_MASTERCLASS_SUMMARY = [
   "Import the Selfie Luxury Preset Collection into Lightroom Mobile.",
