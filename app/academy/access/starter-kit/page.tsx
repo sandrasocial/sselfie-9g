@@ -42,6 +42,11 @@ const LP =
 const LP_CREAM =
   "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
 
+const STARTER_KIT_DNG_PRESET_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/starter-kit-dng-presets.zip"
+const STARTER_KIT_PRESET_GUIDE_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf"
+
 const sevenDayStarter = [
   {
     day: "01",
@@ -142,7 +147,7 @@ export default async function AcademyStarterKitAccessPage() {
 
   const editingMasterclassLessons = await getStarterKitEditingMasterclassLessons()
 
-  const presetDownloadUrl =
+  const desktopPresetDownloadUrl =
     process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
     process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL ||
     null
@@ -153,9 +158,9 @@ export default async function AcademyStarterKitAccessPage() {
       detail: "Connected inside SSELFIE.",
     },
     {
-      label: "Preset download",
-      status: Boolean(presetDownloadUrl),
-      detail: presetDownloadUrl ? "Download link is connected." : "Missing file or env download URL.",
+      label: "Mobile preset download",
+      status: true,
+      detail: "DNG preset ZIP is connected for Lightroom Mobile.",
     },
     {
       label: "7-day content starter",
@@ -444,12 +449,12 @@ export default async function AcademyStarterKitAccessPage() {
                 Use the XMP preset files.
               </p>
             </div>
-            {presetDownloadUrl ? (
+            <div className="mt-7 flex flex-wrap gap-3">
               <a
-                href={presetDownloadUrl}
+                href={STARTER_KIT_DNG_PRESET_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-7 inline-flex px-7 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+                className="inline-flex px-7 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
                 style={{
                   background: C.cream,
                   color: C.ink,
@@ -458,16 +463,37 @@ export default async function AcademyStarterKitAccessPage() {
                     "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
                 }}
               >
-                ↓ Download Presets
+                ↓ DNG Mobile Presets
               </a>
-            ) : (
-              <p
-                className="mt-7 text-[10px] uppercase tracking-[0.35em]"
-                style={{ color: C.muted, fontWeight: 600 }}
+              <a
+                href={STARTER_KIT_PRESET_GUIDE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex px-7 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+                style={{
+                  border: `1px solid ${C.divStrong}`,
+                  color: C.ink,
+                  fontWeight: 600,
+                }}
               >
-                Preset file will appear here when connected.
-              </p>
-            )}
+                Open Setup Guide
+              </a>
+              {desktopPresetDownloadUrl ? (
+                <a
+                  href={desktopPresetDownloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex px-7 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+                  style={{
+                    border: `1px solid ${C.divStrong}`,
+                    color: C.ink,
+                    fontWeight: 600,
+                  }}
+                >
+                  Desktop XMP Files
+                </a>
+              ) : null}
+            </div>
           </article>
 
           {/* Selfie guide */}

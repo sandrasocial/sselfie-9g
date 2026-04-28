@@ -19,7 +19,7 @@ Starter Kit is a direct private product, not an Academy course. It does not curr
 | Deliverable | Status | Notes |
 | --- | --- | --- |
 | Selfie Guide access | Connected | Buyer home links to `/academy/access/selfie-guide`. |
-| Preset bundle | Included | The buyer home supports the preset bundle through `STARTER_KIT_PRESET_DOWNLOAD_URL`, falling back to `SELFIE_GUIDE_PRESET_DOWNLOAD_URL`. The bundle is treated as a hosted/download URL, not a local `public/` file. |
+| Preset bundle | Included | DNG mobile presets are now hosted in Vercel Blob at `academy/starter-kit/presets/starter-kit-dng-presets.zip`. Existing `STARTER_KIT_PRESET_DOWNLOAD_URL` / `SELFIE_GUIDE_PRESET_DOWNLOAD_URL` is still used as an optional desktop XMP link. |
 | 7-day content starter | Connected in-app | Added as static in-app steps on the Starter Kit buyer home. No database tracking yet. |
 | Day 0 delivery email | Connected | `lib/email/templates/starter-kit-day0-delivery.ts`. |
 | Starter Kit nurture sequence | Connected | Day 0, 1, 3, 5, 7, 10, and 14 touches exist in `lib/email/starter-kit-email-sequence.ts`. |
@@ -52,6 +52,30 @@ The Starter Kit access pages now tell users which preset format to use:
 
 XMP presets work well in Lightroom desktop, but DNG preset files are the smoother path for most mobile users because Lightroom Mobile can import a DNG photo and save its edit settings as a preset.
 
+## Preset Collection Inventory
+
+Sandra shared the preset collection folder on 2026-04-28:
+
+- `https://drive.google.com/drive/folders/1AtPix_8QioYfH3xLvZRvsu_U7T73UOSL`
+
+Connected files:
+
+| Collection | Files | Blob handling |
+| --- | ---: | --- |
+| Scandinavian Light & Dreamy | 5 DNG files | Included in `starter-kit-dng-presets.zip` |
+| Nordic Deep Urban | 5 DNG files | Included in `starter-kit-dng-presets.zip` |
+| Scandinavian Dark & Moody | 5 DNG files | Included in `starter-kit-dng-presets.zip` |
+| `SSA Step by Step guide presets.pdf (1).pdf` | 1 PDF | Uploaded to `academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf` |
+
+Ignored files:
+
+- `.DS_Store`
+
+The authenticated Starter Kit buyer home and token fallback page now link directly to:
+
+- DNG mobile preset ZIP: `https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/starter-kit-dng-presets.zip`
+- Setup guide PDF: `https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf`
+
 ## Future In-App Preset Tool
 
 An in-app photo editor that applies Sandra-style presets is technically possible, but it should be treated as a SSELFIE approximation of the Lightroom look, not a perfect Lightroom engine.
@@ -66,7 +90,6 @@ Recommended build path:
 
 Blocked until Sandra provides or approves:
 
-- Final DNG preset files for Lightroom Mobile.
 - The exact XMP preset pack that should become the app's first in-app preset styles.
 - Before/after reference images for visual QA.
 
@@ -76,7 +99,7 @@ Blocked until Sandra provides or approves:
 | --- | --- |
 | Exact 7-day starter copy | Current in-app version is a clean first draft. Sandra can replace with final prompts. |
 | Custom Command Tutorial placement | Confirm whether the MOV belongs on the Starter Kit buyer home as a bonus/tutorial. |
-| DNG preset files | Needed for smoother Lightroom Mobile import. XMP files are best for Lightroom desktop. |
+| Desktop XMP preset files | Optional if Sandra wants desktop-specific preset downloads separate from the DNG mobile ZIP. |
 | In-app preset editor references | Need approved XMP presets and before/after references before building the app-side editor. |
 
 ## Recommended Next Build Slice

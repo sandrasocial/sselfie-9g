@@ -13,6 +13,11 @@ const inter = Inter({
   weight: ["300", "400", "500", "600"],
 })
 
+const STARTER_KIT_DNG_PRESET_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/starter-kit-dng-presets.zip"
+const STARTER_KIT_PRESET_GUIDE_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf"
+
 type StarterKitRecord = {
   name?: string | null
   email?: string | null
@@ -156,7 +161,7 @@ export default async function StarterKitAccessPage({
     )
   }
 
-  const presetDownloadUrl =
+  const desktopPresetDownloadUrl =
     process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
     process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL ||
     null
@@ -200,13 +205,19 @@ export default async function StarterKitAccessPage({
               Use the XMP preset files.
             </p>
           </div>
-          {presetDownloadUrl ? (
-            <a href={presetDownloadUrl} className="primary-cta">
-              Download presets
+          <div className="download-actions">
+            <a href={STARTER_KIT_DNG_PRESET_URL} className="primary-cta">
+              DNG mobile presets
             </a>
-          ) : (
-            <p className="note">Preset download will be added here as soon as the file is connected.</p>
-          )}
+            <a href={STARTER_KIT_PRESET_GUIDE_URL} className="secondary-cta">
+              Setup guide
+            </a>
+            {desktopPresetDownloadUrl ? (
+              <a href={desktopPresetDownloadUrl} className="secondary-cta">
+                Desktop XMP files
+              </a>
+            ) : null}
+          </div>
         </article>
 
         <article className="card">
@@ -324,6 +335,18 @@ export default async function StarterKitAccessPage({
         .note {
           margin-top: 18px;
           color: rgba(244, 240, 230, 0.58);
+        }
+
+        .download-actions {
+          margin-top: 18px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .download-actions .primary-cta,
+        .download-actions .secondary-cta {
+          margin-top: 0;
         }
 
         .format-note {
