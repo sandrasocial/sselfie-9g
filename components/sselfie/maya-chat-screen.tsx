@@ -69,6 +69,11 @@ import {
 import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
 import { shouldOpenStudioMemberOnboarding } from "@/lib/onboarding/studio-onboarding-routing"
 import MayaUpsellCard from "./maya/maya-upsell-card"
+import {
+  LESSON_HANDOFF_KEY,
+  buildLessonHandoffPrompt,
+  type LessonHandoffContext,
+} from "@/lib/maya/lesson-handoff"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
@@ -158,6 +163,9 @@ type PhaseTwoVideoImage = {
 }
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
+type PendingMayaChatMessage = {
+  parts: Array<{ type: "text"; text: string } | { type: "image"; image: string }>
+}
 
 export default function MayaChatScreen({ 
   onImageGenerated, 
@@ -383,6 +391,8 @@ export default function MayaChatScreen({
     sendMessage,
     status,
     setMessages,
+    chatError,
+    setChatError,
   } = useMayaChat({
     initialChatId,
     proMode,
@@ -394,6 +404,7 @@ export default function MayaChatScreen({
   })
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
+  const pendingMessageAfterChatCreateRef = useRef<PendingMayaChatMessage | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
   const [pendingCaptionTopic, setPendingCaptionTopic] = useState<string | null>(null)
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false)
@@ -2372,34 +2383,46 @@ export default function MayaChatScreen({
       setIsGeneratingSuggestions(false)
     }
   }
-  
 
-  const handleSendMessage = async (customPrompt?: string) => {
+  const sendMessageParts = useCallback(
+    (parts: PendingMayaChatMessage["parts"]) => {
+      sendMessage({
+        role: "user",
+        parts: parts as any,
+      })
+    },
+    [sendMessage],
+  )
+
+  useEffect(() => {
+    if (!chatId || !pendingMessageAfterChatCreateRef.current) return
+
+    const pendingMessage = pendingMessageAfterChatCreateRef.current
+    pendingMessageAfterChatCreateRef.current = null
+    sendMessageParts(pendingMessage.parts)
+  }, [chatId, sendMessageParts])
+
+  const handleSendMessage = async (customPrompt?: string, imageOverride?: string) => {
     const messageText = customPrompt || inputValue.trim()
-    if ((messageText || uploadedImage) && !isTyping) {
-      // Build message content - use array format if there's an image, otherwise use string
-      let messageContent: string | Array<{ type: string; text?: string; image?: string }>
+    const imageToSend = imageOverride || uploadedImage
 
-      if (uploadedImage) {
-        // Use array format with both text and image for AI SDK
-        const contentParts: Array<{ type: string; text?: string; image?: string }> = []
-        
-        if (messageText.trim()) {
-          contentParts.push({
-            type: "text",
-            text: messageText,
-          })
-        }
-        
-        contentParts.push({
-          type: "image",
-          image: uploadedImage,
+    if ((messageText || imageToSend) && !isTyping) {
+      setChatError(null)
+
+      const messageParts: PendingMayaChatMessage["parts"] = []
+      if (messageText.trim()) {
+        messageParts.push({
+          type: "text",
+          text: messageText,
         })
-        
-        messageContent = contentParts
-        console.log("[v0] ✅ Sending message with inspiration image:", uploadedImage.substring(0, 100) + "...")
-      } else {
-        messageContent = messageText
+      }
+
+      if (imageToSend) {
+        messageParts.push({
+          type: "image",
+          image: imageToSend,
+        })
+        console.log("[v0] ✅ Sending message with inspiration image:", imageToSend.substring(0, 100) + "...")
       }
 
       console.log("[v0] 📤 Sending message with settings:", {
@@ -2407,13 +2430,12 @@ export default function MayaChatScreen({
         promptAccuracy,
         aspectRatio,
         realismStrength, // Include realism strength in log
-        hasImage: !!uploadedImage,
+        hasImage: !!imageToSend,
       })
 
       isAtBottomRef.current = true
 
-      let currentChatId = chatId
-      if (!currentChatId) {
+      if (!chatId) {
         console.log("[v0] No chatId exists, creating new chat before sending message...")
         try {
           // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
@@ -2426,43 +2448,58 @@ export default function MayaChatScreen({
           if (response.ok) {
             const data = await response.json()
             if (data.chatId) {
-              currentChatId = data.chatId
+              pendingMessageAfterChatCreateRef.current = { parts: messageParts }
               setChatId(data.chatId)
               setChatTitle("New Chat")
+              setInputValue("")
+              setUploadedImage(null)
               console.log("[v0] Created new chat with ID:", data.chatId, "chatType:", chatType)
+              return
             }
           }
+          const errorText = await response.text().catch(() => "")
+          throw new Error(errorText || `Failed to create new chat (${response.status})`)
         } catch (error) {
           console.error("[v0] Error creating new chat:", error)
+          setChatError(error instanceof Error ? error.message : "Maya could not start a new chat. Please try again.")
+          return
         }
       }
 
-      // Send message using proper format - use 'parts' array for multimodal content
-      if (typeof messageContent === "string") {
-        sendMessage({
-          role: "user",
-          parts: [{ type: "text", text: messageContent }],
-          // experimental_providerMetadata removed - not supported in AI SDK
-        })
-      } else {
-        // Array format for messages with images - convert to parts format
-        sendMessage({
-          role: "user",
-          parts: messageContent.map((part) => {
-            if (part.type === "text") {
-              return { type: "text", text: part.text || "" }
-            } else if (part.type === "image") {
-              return { type: "image", image: part.image || "" }
-            }
-            return part
-          }) as any, // Type assertion for parts array
-          // experimental_providerMetadata removed - not supported in AI SDK
-        })
-      }
+      sendMessageParts(messageParts)
       setInputValue("")
       setUploadedImage(null)
     }
   }
+
+  // ─── Lesson → Maya handoff ────────────────────────────────────────────────
+  // When a user taps "Do this with Maya →" in the Academy lesson viewer, the
+  // lesson context is written to sessionStorage and they're navigated here.
+  // We read it once on mount and auto-send a crafted message so they land in
+  // an active conversation without re-explaining anything.
+  const lessonHandoffFiredRef = useRef(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (lessonHandoffFiredRef.current) return
+    const raw = sessionStorage.getItem(LESSON_HANDOFF_KEY)
+    if (!raw) return
+    sessionStorage.removeItem(LESSON_HANDOFF_KEY) // consume immediately — no double-fire
+    lessonHandoffFiredRef.current = true
+
+    let ctx: LessonHandoffContext
+    try {
+      ctx = JSON.parse(raw) as LessonHandoffContext
+    } catch {
+      return
+    }
+
+    const prompt = buildLessonHandoffPrompt(ctx)
+    // 600 ms settle: gives chat creation + stream setup time to be ready
+    const timer = setTimeout(() => {
+      void handleSendMessage(prompt)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, []) // fire once on mount
 
   const setMayaTabAndHash = useCallback((tab: "photos" | "videos" | "training") => {
     setActiveMayaTab(tab)
@@ -4216,14 +4253,14 @@ export default function MayaChatScreen({
                     setShowHistory(true)
                   }}
                   onGeneratePhoto={() => {
-                    handleSendMessage("I need photos for Monday's post")
+                    handleSendMessage("Plan my content for this week with photo ideas, captions, and the first post I should create.")
                   }}
                   onBrowseStyles={() => {
-                    handleSendMessage("Show me fresh style directions for my next post")
+                    handleSendMessage("Show me fresh photo directions for this week's content.")
                   }}
                   // [STABILIZATION] onCreateCalendar not passed — content calendar feature hidden
                   onUploadAssets={() => {
-                    handleSendMessage("I want to upload product photos and brand references")
+                    handleSendMessage("I want to upload brand references for this week's content plan.")
                   }}
                   onExploreMonthlyDrop={() => {
                     if (typeof window !== "undefined") {
@@ -4251,15 +4288,15 @@ export default function MayaChatScreen({
                 <div className="flex h-12 w-12 items-center justify-center">
                   <span className="h-7 w-7 border border-[#8a8780]" aria-hidden />
                 </div>
-                <p className="max-w-xs text-[16px] font-light leading-relaxed text-[#a8a49c]">
-                  Add your reference photos to get started
+                  <p className="max-w-xs text-[16px] font-light leading-relaxed text-[#a8a49c]">
+                  Add one selfie or reference photo so Maya can plan content that looks like you.
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowUploadFlow(true)}
                   className="bg-[#c8c4bb] px-6 py-3 text-sm font-medium uppercase tracking-[0.16em] text-[#0d0c0b]"
                 >
-                  Add Photos
+                  Add Reference Photos
                 </button>
               </div>
             </div>
@@ -4281,39 +4318,38 @@ export default function MayaChatScreen({
                     title={
                       hasTrainedModel
                         ? hasPhotoMomentum
-                          ? "My Model is ready"
-                          : "Let’s create your first My Model photo"
+                          ? "Let’s plan this week’s content"
+                          : "Your weekly content stylist is ready"
                         : hasPhotoMomentum
-                          ? "Ready for your next photo"
-                          : "Let’s make your first photo easy"
+                          ? "Let’s plan this week’s content"
+                          : "Let’s make showing up easier"
                     }
                     subtitle={
                       hasTrainedModel
-                        ? "Your trained model is ready in Photos. Ask for the scene and I’ll generate it here."
-                        : "Tell Maya what you need and I’ll draft it right here so you can keep going without leaving chat."
+                        ? "Tell Maya what you’re selling, launching, or showing this week. She’ll map the photo ideas, captions, and first next step."
+                        : "Start with your week, your offer, or the post you’ve been avoiding. Maya will turn it into a simple content plan."
                     }
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
                       {
-                        label: hasTrainedModel ? "Use my model now" : hasPhotoMomentum ? "Create next photo" : "Make my first photo",
+                        label: "Plan this week’s content",
                         onClick: () =>
                           handleSendMessage(
                             hasTrainedModel
-                              ? "Use my trained model and create a photo for my brand now"
-                              : "Create a photo for my brand now",
+                              ? "Plan my content for this week using my trained model for photo ideas. Include captions and tell me which post to create first."
+                              : "Plan my content for this week. Include photo ideas, captions, and tell me which post to create first.",
                           ),
                         variant: "primary",
                       },
                       {
-                        label: hasTrainedModel ? "Use my selfies" : "Use base model",
+                        label: hasTrainedModel ? "Create one photo idea" : "Start with photo ideas",
                         onClick: () =>
                           handleSendMessage(
                             hasTrainedModel
-                              ? "Use my selfies and create a photo for my brand now"
-                              : "Use the base model and create a photo for my brand now",
+                              ? "Give me one strong photo idea for this week's content using my trained model."
+                              : "Give me three photo ideas for this week's content.",
                           ),
                       },
-                      // [STABILIZATION] "Create this week’s plan" (content calendar) hidden — feature not stable
                     ]}
                   />
                   <MayaQuickPrompts
@@ -4358,6 +4394,15 @@ export default function MayaChatScreen({
             {/* [STABILIZATION] Calendar suggestion banner hidden — content calendar feature not stable */}
             {/* showCalendarSuggestion && (...) */}
 
+            {chatError && (
+              <div
+                role="alert"
+                className="mb-2 rounded-xl border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.12)] px-3 py-2 text-sm font-light leading-relaxed text-[#f0ede8]"
+              >
+                {chatError}
+              </div>
+            )}
+
             {/* Quick Actions */}
             {showInputBarQuickPrompts ? (
               <MayaQuickPrompts
@@ -4379,12 +4424,9 @@ export default function MayaChatScreen({
               onSend={(message, imageUrl) => {
                 // Handle message sending - match Pro Mode pattern
                 if (imageUrl) {
-                  // Set uploaded image state first, then send message
-                  setUploadedImage(imageUrl)
-                  // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
                   const messageToSend = message || ""
                   if (messageToSend || imageUrl) {
-                    handleSendMessage(messageToSend || undefined)
+                    handleSendMessage(messageToSend || undefined, imageUrl)
                   }
                 } else {
                   // Just send text message

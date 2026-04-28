@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { useEffect, useRef, useState, useTransition } from "react"
 
@@ -8,6 +9,11 @@ import {
   formatLessonDuration,
   type CourseLesson,
 } from "@/app/academy/_lib/client-utils"
+import {
+  LESSON_HANDOFF_KEY,
+  buildLessonHandoffPrompt,
+  type LessonHandoffContext,
+} from "@/lib/maya/lesson-handoff"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -110,6 +116,8 @@ export function LessonViewerClient({
   const keyTakeaways = lessonContent.key_takeaways || []
   const actionStep = lessonContent.action_step || {}
   const hasProfileField = Boolean(lessonContent.profile_field)
+
+  const router = useRouter()
 
   const [mobileTab, setMobileTab] = useState<MobileTab>("lesson")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -288,6 +296,28 @@ export function LessonViewerClient({
     })
   }
 
+  function handleDoWithMaya() {
+    if (!chosenActionLevel) return
+    const chosenAction =
+      actionStep[chosenActionLevel] ||
+      actionStep.bold_move ||
+      actionStep.bare_minimum ||
+      actionStep.bonus_vibe ||
+      ""
+    const ctx: LessonHandoffContext = {
+      lessonTitle: lesson.title,
+      moduleName: course.title,
+      courseId: course.id,
+      lessonId: lesson.id,
+      keyTakeaways: keyTakeaways as string[],
+      chosenAction,
+      chosenActionLevel,
+      reflectionPrompt: lessonContent.reflection_prompt ?? undefined,
+    }
+    sessionStorage.setItem(LESSON_HANDOFF_KEY, JSON.stringify(ctx))
+    router.push("/studio?tab=maya&source=lesson")
+  }
+
   const selectedActionText =
     actionStep[selectedActionTab] ||
     actionStep.bold_move ||
@@ -461,6 +491,23 @@ export function LessonViewerClient({
           >
             Saved
           </p>
+        ) : null}
+        {chosenActionLevel !== null ? (
+          <button
+            type="button"
+            onClick={handleDoWithMaya}
+            className={`${inter.className} mt-1 px-6 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
+            style={{
+              background: C.cream,
+              color: C.ink,
+              border: "1px solid transparent",
+              fontWeight: 600,
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+            }}
+          >
+            Do this with Maya →
+          </button>
         ) : null}
       </div>
     </section>
