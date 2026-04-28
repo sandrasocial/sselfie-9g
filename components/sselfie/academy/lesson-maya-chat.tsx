@@ -8,12 +8,14 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 // ─── Design tokens (mirror lesson-viewer-client) ──────────────────────────────
 const C = {
   ink: "#0F0D0B",
-  inkSoft: "#1E1A15",
-  cream: "#EDE9E2",
+  inkSoft: "#1B1713",
+  inkLift: "#241F19",
+  cream: "#F4F0E6",
   stone: "#C4B5A0",
-  muted: "#7A6F63",
-  div: "rgba(237,233,226,0.10)",
-  divStrong: "rgba(237,233,226,0.18)",
+  body: "#D8CFC0",
+  muted: "#A79B8B",
+  div: "rgba(244,240,230,0.16)",
+  divStrong: "rgba(244,240,230,0.28)",
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -247,7 +249,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
           />
           <span
             className="text-[10px] uppercase tracking-[0.4em]"
-            style={{ color: C.stone, fontWeight: 600 }}
+            style={{ color: C.body, fontWeight: 600 }}
           >
             Ask Maya
           </span>
@@ -280,7 +282,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                     <p
                       className={`${inter.className} max-w-[80%] rounded-sm px-4 py-3 text-[13px] leading-[1.65]`}
                       style={{
-                        background: "rgba(237,233,226,0.07)",
+                        background: "rgba(244,240,230,0.08)",
                         color: C.cream,
                         fontWeight: 300,
                         border: `1px solid ${C.div}`,
@@ -291,7 +293,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                   ) : (
                     <p
                       className={`${inter.className} text-[13px] leading-[1.75]`}
-                      style={{ color: C.stone, fontWeight: 300 }}
+                      style={{ color: C.body, fontWeight: 400 }}
                     >
                       {msg.content}
                     </p>
@@ -303,7 +305,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
               {streamingText && (
                 <p
                   className={`${inter.className} text-[13px] leading-[1.75]`}
-                  style={{ color: C.stone, fontWeight: 300 }}
+                  style={{ color: C.body, fontWeight: 400 }}
                 >
                   {streamingText}
                   <span
@@ -362,7 +364,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                           }
                         : {
                             background: "transparent",
-                            color: C.stone,
+                            color: C.body,
                             border: `1px solid ${C.divStrong}`,
                             fontWeight: 500,
                           }
@@ -388,8 +390,8 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                 hasMessages ? "Follow up..." : `Ask Maya about "${lessonTitle}"...`
               }
               disabled={isStreaming}
-              className={`${inter.className} min-w-0 flex-1 bg-transparent py-2 text-[13px] outline-none placeholder:opacity-40 disabled:opacity-50`}
-              style={{ color: C.cream, fontWeight: 300 }}
+              className={`${inter.className} min-w-0 flex-1 bg-transparent py-2 text-[13px] outline-none placeholder:opacity-60 disabled:opacity-50`}
+              style={{ color: C.cream, fontWeight: 400 }}
             />
             <button
               type="submit"

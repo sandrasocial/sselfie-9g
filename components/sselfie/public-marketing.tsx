@@ -24,24 +24,27 @@ const IMG = {
 const C = {
   // Core surfaces
   ink:          "#0F0D0B",
-  inkSoft:      "#1E1A15",
+  inkSoft:      "#1B1713",
+  inkLift:      "#241F19",
   cream:        "#EDE9E2",
   creamWarm:    "#F4F0E6",
   creamDeep:    "#D9D3C8",
   stone:        "#C4B5A0",
   // Text on dark
-  onDark:       "#EDE9E2",
-  onDarkSub:    "#C4B5A0",
-  onDarkMuted:  "#7A6F63",
+  onDark:       "#F4F0E6",
+  onDarkSub:    "#D8CFC0",
+  onDarkMuted:  "#A79B8B",
   // Text on cream
   onCream:      "#0F0D0B",
   onCreamSub:   "#3D3830",
   onCreamMuted: "#7A6F63",
   // Dividers
-  divDark:      "rgba(237,233,226,0.10)",
+  divDark:      "rgba(244,240,230,0.16)",
+  divDarkSoft:  "rgba(244,240,230,0.09)",
+  divDarkStrong:"rgba(244,240,230,0.26)",
   divCream:     "rgba(15,13,11,0.10)",
   // Hero overlay
-  heroGrad:     "linear-gradient(to bottom, rgba(15,13,11,0.22) 0%, rgba(15,13,11,0.04) 38%, rgba(15,13,11,0.88) 100%)",
+  heroGrad:     "linear-gradient(to bottom, rgba(15,13,11,0.34) 0%, rgba(15,13,11,0.10) 38%, rgba(15,13,11,0.90) 100%)",
 }
 
 const F = {
@@ -82,7 +85,7 @@ function ty(
     }
     case "body": return {
       fontFamily: F.sans, fontSize: "15px", lineHeight: 1.78,
-      fontWeight: 300, color: d ? C.onDarkSub : C.onCreamSub,
+      fontWeight: 400, color: d ? C.onDarkSub : C.onCreamSub,
     }
   }
 }
@@ -125,9 +128,12 @@ function PaperTexture({ dark }: { dark: boolean }) {
 // ─── Card helpers ─────────────────────────────────────────────────────────────
 function cardSx(dark: boolean, padded = true): React.CSSProperties {
   return {
-    background: dark ? C.inkSoft : C.creamWarm,
+    background: dark ? C.inkLift : C.creamWarm,
     border:     `1px solid ${dark ? C.divDark : C.divCream}`,
     padding:    padded ? "28px" : "16px",
+    boxShadow:  dark
+      ? "inset 0 1px 0 rgba(255,255,255,0.035)"
+      : "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 12px rgba(0,0,0,0.05)",
   }
 }
 
@@ -232,6 +238,23 @@ function Btn({
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 export function PublicPageShell({ children }: { children: ReactNode }) {
+  const [showIntro, setShowIntro] = useState(false)
+
+  useEffect(() => {
+    const introKey = "sselfie-public-intro-seen"
+    const shouldShowIntro =
+      typeof window !== "undefined" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      !window.sessionStorage.getItem(introKey)
+
+    if (shouldShowIntro) {
+      setShowIntro(true)
+      window.sessionStorage.setItem(introKey, "1")
+      const timer = window.setTimeout(() => setShowIntro(false), 3500)
+      return () => window.clearTimeout(timer)
+    }
+  }, [])
+
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
@@ -256,7 +279,74 @@ export function PublicPageShell({ children }: { children: ReactNode }) {
   return (
     <div style={{ minHeight: "100vh", background: C.ink, overflowX: "hidden", color: C.onDark, fontFamily: F.sans }}>
       <SvgPaperDefs />
+      {showIntro ? <IntroScreen /> : null}
       {children}
+    </div>
+  )
+}
+
+function IntroScreen() {
+  return (
+    <div
+      aria-hidden
+      className="fixed inset-0 z-[200] flex items-center justify-center"
+      style={{
+        background: C.ink,
+        animation: "sselfie-intro-exit 3.5s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+      }}
+    >
+      <PaperTexture dark />
+      <div
+        className="relative text-center"
+        style={{
+          zIndex: 2,
+          animation: "sselfie-intro-rise 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: F.serif,
+            fontSize: "clamp(28px, 6vw, 64px)",
+            fontWeight: 300,
+            letterSpacing: "0.36em",
+            color: C.onDark,
+            textShadow: LP.dark,
+            textTransform: "uppercase",
+          }}
+        >
+          SSELFIE
+        </p>
+        <div
+          className="mx-auto mt-4"
+          style={{
+            width: "min(220px, 54vw)",
+            height: 1,
+            background: "rgba(244,240,230,0.28)",
+          }}
+        />
+        <p
+          className="mt-4"
+          style={{
+            ...ty("eyebrow", true),
+            color: "rgba(244,240,230,0.58)",
+            letterSpacing: "0.42em",
+          }}
+        >
+          Studio
+        </p>
+      </div>
+      <style>{`
+        @keyframes sselfie-intro-rise {
+          0% { opacity: 0; transform: translateY(18px); filter: blur(12px); }
+          35% { opacity: 1; transform: translateY(0); filter: blur(0); }
+          74% { opacity: 1; transform: translateY(0); filter: blur(0); }
+          100% { opacity: 0; transform: translateY(-10px); filter: blur(8px); }
+        }
+        @keyframes sselfie-intro-exit {
+          0%, 78% { opacity: 1; pointer-events: auto; }
+          100% { opacity: 0; pointer-events: none; }
+        }
+      `}</style>
     </div>
   )
 }

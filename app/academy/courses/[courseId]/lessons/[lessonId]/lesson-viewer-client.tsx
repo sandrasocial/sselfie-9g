@@ -23,11 +23,15 @@ const inter = Inter({
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   ink: "#0F0D0B",
-  inkSoft: "#1E1A15",
-  cream: "#EDE9E2",
+  inkSoft: "#1B1713",
+  inkLift: "#241F19",
+  cream: "#F4F0E6",
   stone: "#C4B5A0",
-  muted: "#7A6F63",
-  div: "rgba(237,233,226,0.10)",
+  body: "#D8CFC0",
+  muted: "#A79B8B",
+  quiet: "#84786A",
+  div: "rgba(244,240,230,0.16)",
+  divStrong: "rgba(244,240,230,0.28)",
 }
 
 const LP =
@@ -86,9 +90,9 @@ function TabChip({
       style={{
         fontWeight: 600,
         border: active
-          ? `1px solid rgba(237,233,226,0.35)`
-          : `1px solid rgba(237,233,226,0.14)`,
-        background: active ? "rgba(237,233,226,0.07)" : "transparent",
+          ? `1px solid ${C.divStrong}`
+          : `1px solid ${C.div}`,
+        background: active ? "rgba(244,240,230,0.09)" : "transparent",
         color: active ? C.cream : C.muted,
       }}
     >
@@ -321,7 +325,7 @@ export function LessonViewerClient({
               href={`/academy/courses/${course.id}/lessons/${item.id}`}
               className="grid grid-cols-[16px_36px_minmax(0,1fr)_46px] items-center gap-3 px-3 py-2 transition-colors"
               style={{
-                background: item.current ? "rgba(237,233,226,0.06)" : "transparent",
+                background: item.current ? "rgba(244,240,230,0.08)" : "transparent",
               }}
             >
               <span
@@ -338,7 +342,7 @@ export function LessonViewerClient({
               </span>
               <span
                 className={`${inter.className} truncate text-[13px]`}
-                style={{ color: item.current ? C.cream : C.stone, fontWeight: 300 }}
+                style={{ color: item.current ? C.cream : C.body, fontWeight: 400 }}
               >
                 {item.title}
               </span>
@@ -354,7 +358,7 @@ export function LessonViewerClient({
       ) : (
         <p
           className={`${inter.className} mt-3 text-[13px]`}
-          style={{ color: C.muted, fontWeight: 300 }}
+          style={{ color: C.muted, fontWeight: 400 }}
         >
           {lessonStates.length} lessons
         </p>
@@ -385,7 +389,7 @@ export function LessonViewerClient({
             </span>
             <p
               className={`${inter.className} text-[13px] leading-[1.72]`}
-              style={{ color: C.stone, fontWeight: 300 }}
+              style={{ color: C.body, fontWeight: 400 }}
             >
               {takeaway}
             </p>
@@ -427,7 +431,7 @@ export function LessonViewerClient({
 
       <p
         className={`${inter.className} text-[14px] leading-[1.78]`}
-        style={{ color: C.stone, fontWeight: 300 }}
+        style={{ color: C.body, fontWeight: 400 }}
       >
         {selectedActionText}
       </p>
@@ -482,7 +486,7 @@ export function LessonViewerClient({
       {lessonContent.reflection_prompt ? (
         <p
           className={`${inter.className} text-[14px] leading-[1.78]`}
-          style={{ color: C.muted, fontWeight: 300 }}
+          style={{ color: C.body, fontWeight: 400 }}
         >
           {lessonContent.reflection_prompt}
         </p>
@@ -494,13 +498,13 @@ export function LessonViewerClient({
         placeholder="Write your thoughts here..."
         className={`${inter.className} min-h-36 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
         style={{
-          background: "rgba(237,233,226,0.04)",
-          border: `1px solid ${C.div}`,
+          background: "rgba(244,240,230,0.065)",
+          border: `1px solid ${C.divStrong}`,
           color: C.cream,
-          fontWeight: 300,
+          fontWeight: 400,
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = "rgba(237,233,226,0.28)"
+          e.currentTarget.style.borderColor = "rgba(244,240,230,0.42)"
         }}
         onBlurCapture={(e) => {
           e.currentTarget.style.borderColor = C.div
@@ -521,7 +525,7 @@ export function LessonViewerClient({
           {lessonContent.profile_question ? (
             <p
               className={`${inter.className} text-[14px] leading-[1.78]`}
-              style={{ color: C.muted, fontWeight: 300 }}
+              style={{ color: C.body, fontWeight: 400 }}
             >
               {lessonContent.profile_question}
             </p>
@@ -535,10 +539,10 @@ export function LessonViewerClient({
             placeholder="Write your answer here..."
             className={`${inter.className} min-h-28 w-full px-4 py-4 text-[14px] leading-[1.72] outline-none`}
             style={{
-              background: "rgba(237,233,226,0.04)",
-              border: `1px solid ${C.div}`,
+              background: "rgba(244,240,230,0.065)",
+              border: `1px solid ${C.divStrong}`,
               color: C.cream,
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           />
           <button
@@ -547,7 +551,7 @@ export function LessonViewerClient({
             disabled={isPending || !profileAnswer.trim()}
             className={`${inter.className} px-6 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-opacity disabled:opacity-40`}
             style={{
-              border: `1px solid rgba(237,233,226,0.22)`,
+              border: `1px solid ${C.divStrong}`,
               color: C.cream,
               fontWeight: 600,
               background: "transparent",
@@ -590,10 +594,10 @@ export function LessonViewerClient({
             className="flex items-center justify-between gap-4 px-4 py-4 transition-colors"
             style={{
               border: `1px solid ${C.div}`,
-              color: C.stone,
+              color: C.body,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(237,233,226,0.05)"
+              e.currentTarget.style.background = "rgba(244,240,230,0.08)"
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent"
@@ -601,7 +605,7 @@ export function LessonViewerClient({
           >
             <span
               className={`${inter.className} text-[14px] leading-[1.72]`}
-              style={{ color: C.stone, fontWeight: 300 }}
+              style={{ color: C.body, fontWeight: 400 }}
             >
               {resource.title}
             </span>
@@ -742,7 +746,7 @@ export function LessonViewerClient({
                     : {
                         background: "transparent",
                         color: C.cream,
-                        border: `1px solid rgba(237,233,226,0.22)`,
+                        border: `1px solid ${C.divStrong}`,
                         fontWeight: 600,
                       }
                 }
@@ -803,7 +807,7 @@ export function LessonViewerClient({
                   ? resourcesSection || (
                       <p
                         className={`${inter.className} text-[14px]`}
-                        style={{ color: C.muted, fontWeight: 300 }}
+                        style={{ color: C.body, fontWeight: 400 }}
                       >
                         Nothing to download for this lesson yet.
                       </p>
@@ -819,7 +823,7 @@ export function LessonViewerClient({
               className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto p-6"
               style={{
                 background: C.inkSoft,
-                border: `1px solid ${C.div}`,
+                border: `1px solid ${C.divStrong}`,
               }}
             >
               <div className="space-y-6">
