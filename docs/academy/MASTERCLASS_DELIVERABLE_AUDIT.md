@@ -20,7 +20,7 @@ The Academy currently has two relevant published video courses:
 
 | Course | Product ID | Lessons | Status | Notes |
 | --- | --- | ---: | --- | --- |
-| Branded by SSELFIE | `branded_by_sselfie` | 29 declared, 14 found | Published | Core personal brand course. Videos and lesson companion prompts are connected. Drive resources are not attached to lessons. |
+| Branded by SSELFIE | `branded_by_sselfie` | 29 declared, 14 found | Published | Core personal brand course. Videos and lesson companion prompts are connected. Module One has first PDF resources attached. |
 | SSELFIE EDITING MASTERCLASS | `editing_masterclass` | 6 found | Published | Editing/video workflow course. Now embedded in Starter Kit and available as part of Masterclass bundle. |
 
 ## Live Branded by SSELFIE Lessons
@@ -43,6 +43,27 @@ All 14 discovered lessons have Vimeo URLs, duration data, reflection prompts, ac
 | 12 | High Quality Selfies | Connected | No profile field |
 | 13 | Instagram Reels | Connected | No profile field |
 | 14 | Content Planning | Connected | `content_themes` |
+
+## Attached Branded by SSELFIE Resources
+
+### Module One
+
+These resources are now hosted in Vercel Blob with first-page thumbnail images and attached to `academy_lessons.content.resources`.
+
+| Lesson | Attached Resource | Status |
+| --- | --- | --- |
+| 1 - Start Here: Welcome to Branded By SSELFIE | Your CEO Era Starts Now Worksheet | Attached |
+| 3 - Start showing up | Confidence Activation Journal | Attached |
+| 3 - Start showing up | The Confidence Glow-Up Journal | Attached |
+| 4 - Your Energy on Camera | CEO Energy Affirmation Sheet | Attached |
+| 5 - The Camera Hack | The Confidence Camera Hack | Attached |
+
+Still pending from Module One:
+
+- `_Selfie to CEO FEAR TO POWER.pdf`
+- `AFFIRMATION GUIDE - "SHOW UP LIKE A CEO" (1).pdf`
+
+Both pending files appeared in Drive inventory, but direct download returned a Google sign-in HTML response instead of a valid PDF during the first upload pass. They should be re-exported from Drive or downloaded through an authenticated/manual path before attaching.
 
 ## Live Editing Masterclass Lessons
 
@@ -119,8 +140,10 @@ Preset Collection contains:
 
 ## Current Gaps
 
-1. **Branded by SSELFIE has no lesson-level PDF resources attached.**
-   - The course videos are connected, but `academy_lessons.resources` and `content.resources` are empty for all 14 Branded by SSELFIE lessons.
+1. **Branded by SSELFIE is only partially resourced inside lessons.**
+   - Module One now has five lesson-level PDF cards attached.
+   - Two Module One PDFs still need clean PDF downloads before upload.
+   - Module 2, Module 3, and bonus PDFs are still only inventoried from Drive.
 
 2. **Course metadata says 29 lessons, but only 14 Branded by SSELFIE lessons were found.**
    - This may be legacy metadata, a partially migrated course, or missing lessons. It should be corrected before launch.
@@ -133,8 +156,9 @@ Preset Collection contains:
 4. **Editing Masterclass resource links are too broad.**
    - Lessons link back to the root Drive folder instead of specific preset/checklist files.
 
-5. **Resources are in Drive, not Vercel Blob or app-owned URLs.**
-   - This works if Drive sharing is correct, but it is less polished and harder to track than Blob-hosted downloads with thumbnails.
+5. **Most resources are still in Drive, not Vercel Blob or app-owned URLs.**
+   - Module One's first five resources are now Blob-hosted with thumbnails.
+   - Remaining module and bonus resources should move to Blob for polished in-app downloads and tracking.
 
 6. **No transcript-backed Maya helper for Branded by SSELFIE yet.**
    - Starter Kit now has a transcript-backed Maya helper. Branded by SSELFIE currently has companion prompts and Maya profile sync, but not lesson transcript Q&A.
@@ -149,10 +173,11 @@ Preset Collection contains:
 
 ### Slice 2: Attach Resources
 
-1. Upload canonical PDFs to Vercel Blob.
-2. Generate cover thumbnails from the first page of each PDF.
-3. Attach lesson-specific resource cards to `academy_lessons.content.resources`.
-4. Replace broad Editing Masterclass Drive links with specific preset/checklist links.
+1. Finish the two pending Module One PDFs once valid downloads are available.
+2. Upload canonical Module 2, Module 3, and bonus PDFs to Vercel Blob.
+3. Generate cover thumbnails from the first page of each PDF.
+4. Attach lesson-specific resource cards to `academy_lessons.content.resources`.
+5. Replace broad Editing Masterclass Drive links with specific preset/checklist links.
 
 ### Slice 3: Course UX
 
@@ -174,8 +199,8 @@ Preset Collection contains:
 
 The **videos and core lesson companion structure are mostly ready**.
 
-The **deliverables are not launch-ready inside the app yet** because the PDFs and bonuses are still only in Drive and are not connected to the Branded by SSELFIE lessons.
+The **deliverables are partially launch-ready inside the app**. Module One's first five PDFs are now connected to Branded by SSELFIE lessons, but the remaining module resources and bonuses still need to be moved from Drive into Blob-backed in-app downloads.
 
 Best next implementation step:
 
-> Upload and attach the Module One PDFs first, then build the Masterclass buyer home around the two course paths and bonus library.
+> Finish the remaining Module One PDFs, then move through Module 2, Module 3, and bonus resources before building the Masterclass buyer home around the two course paths and bonus library.
