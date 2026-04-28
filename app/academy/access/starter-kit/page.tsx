@@ -7,6 +7,7 @@ import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { StarterKitMayaLessonChat } from "@/components/academy/starter-kit-maya-lesson-chat"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -386,6 +387,8 @@ export default async function AcademyStarterKitAccessPage() {
             ))}
           </div>
         </section>
+
+        <StarterKitMayaLessonChat />
 
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Preset download */}
