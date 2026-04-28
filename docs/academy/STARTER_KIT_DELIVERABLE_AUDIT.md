@@ -30,9 +30,9 @@ Sandra shared the Starter Kit deliverables folder on 2026-04-28. The Canva crash
 
 | Drive item | Product fit | Current handling |
 | --- | --- | --- |
-| `Posing Guide (1).pdf` | Starter Kit core deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-posing-guide.pdf`. |
-| `INSTAGRAM CAPTIONS & CONTENT IDEAS (2).pdf` | Starter Kit supporting deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-instagram-captions-content-ideas.pdf`. |
-| `Selfie to CEO Storytelling Captions .pdf` | Starter Kit supporting deliverable | Branded SSELFIE version generated locally at `output/pdf/starter-kit-branded/sselfie-selfie-to-ceo-storytelling-captions.pdf`. |
+| `Posing Guide (1).pdf` | Starter Kit core deliverable | Branded SSELFIE version uploaded to Vercel Blob at `academy/starter-kit/sselfie-posing-guide.pdf`. |
+| `INSTAGRAM CAPTIONS & CONTENT IDEAS (2).pdf` | Starter Kit supporting deliverable | Branded SSELFIE version uploaded to Vercel Blob at `academy/starter-kit/sselfie-instagram-captions-content-ideas.pdf`. |
+| `Selfie to CEO Storytelling Captions .pdf` | Starter Kit supporting deliverable | Branded SSELFIE version uploaded to Vercel Blob at `academy/starter-kit/sselfie-selfie-to-ceo-storytelling-captions.pdf`. |
 | `Preset Collection/` | Starter Kit core deliverable | Already included through the preset bundle URL. |
 | `Custom Command Tutorial.MOV` | Possible bonus/tutorial | Not redesigned in this PDF pass. Needs separate product placement decision. |
 | `Canva Crash Course (1).pdf` | Excluded | Not included because it is not SSELFIE-brand aligned. |
@@ -41,13 +41,12 @@ Sandra shared the Starter Kit deliverables folder on 2026-04-28. The Canva crash
 
 | Item | Needed From Sandra |
 | --- | --- |
-| Downloadable PDF hosting | The branded PDFs exist locally under ignored `output/`; decide whether to upload to Drive/Vercel Blob or commit optimized versions under `public/academy/starter-kit/`. |
 | Exact 7-day starter copy | Current in-app version is a clean first draft. Sandra can replace with final prompts. |
 | Custom Command Tutorial placement | Confirm whether the MOV belongs on the Starter Kit buyer home as a bonus/tutorial. |
 
 ## Recommended Next Build Slice
 
 1. Confirm production has `STARTER_KIT_PRESET_DOWNLOAD_URL` set to the existing preset bundle.
-2. Host the three branded Starter Kit PDFs and add download cards to `/academy/access/starter-kit`.
+2. Add the same PDF download library to `/access/starter-kit/[token]` if token buyers should use the non-Academy page.
 3. Mirror the light Starter Kit design to `/access/starter-kit/[token]`.
 4. Add simple click analytics for preset download, guide open, and 7-day starter engagement.

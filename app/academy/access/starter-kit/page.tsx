@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { redirect } from "next/navigation"
 
@@ -76,6 +77,36 @@ const sevenDayStarter = [
   },
 ]
 
+const starterKitPdfDownloads = [
+  {
+    label: "Posing Guide",
+    title: "Selfie Pose Cheat Sheet",
+    detail: "Open the pose guide when you need quick ideas for hands, angles, sitting, standing, and mirror photos.",
+    pages: "29 pages",
+    href: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-posing-guide.pdf",
+    thumbnail:
+      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/thumbnails/sselfie-posing-guide-cover.png",
+  },
+  {
+    label: "Caption Guide",
+    title: "Instagram Captions & Content Ideas",
+    detail: "Use these prompts when you know you should post, but you do not want to start from a blank page.",
+    pages: "26 pages",
+    href: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-instagram-captions-content-ideas.pdf",
+    thumbnail:
+      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/thumbnails/sselfie-instagram-captions-content-ideas-cover.png",
+  },
+  {
+    label: "Storytelling",
+    title: "Selfie Storytelling Captions",
+    detail: "Caption starters for connection posts, confidence posts, and personal-brand stories that still sound human.",
+    pages: "17 pages",
+    href: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-selfie-to-ceo-storytelling-captions.pdf",
+    thumbnail:
+      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/thumbnails/sselfie-selfie-to-ceo-storytelling-captions-cover.png",
+  },
+]
+
 export default async function AcademyStarterKitAccessPage() {
   const supabase = await createServerClient()
   const {
@@ -127,9 +158,9 @@ export default async function AcademyStarterKitAccessPage() {
       detail: "Available below as an in-app starter.",
     },
     {
-      label: "Printable PDF",
-      status: false,
-      detail: "Not found in the repo yet.",
+      label: "PDF downloads",
+      status: true,
+      detail: "Three Starter Kit PDFs are connected below.",
     },
   ]
   const displayName =
@@ -255,6 +286,107 @@ export default async function AcademyStarterKitAccessPage() {
           </aside>
         </div>
 
+        <section
+          id="starter-kit-pdfs"
+          className="p-8 md:p-10"
+          style={{ background: C.ink, border: `1px solid ${C.ink}` }}
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p
+                className="text-[10px] uppercase tracking-[0.5em]"
+                style={{ color: C.stone, fontWeight: 600 }}
+              >
+                PDF Library
+              </p>
+              <h2
+                className={`${cormorant.className} mt-5 uppercase`}
+                style={{
+                  color: C.creamWarm,
+                  fontWeight: 300,
+                  fontSize: "clamp(30px, 5vw, 54px)",
+                  lineHeight: 1.04,
+                  textShadow: LP,
+                }}
+              >
+                Download your guides
+              </h2>
+            </div>
+            <p
+              className="max-w-md text-[14px] leading-[1.72]"
+              style={{ color: "rgba(244,240,230,0.74)", fontWeight: 400 }}
+            >
+              Open each PDF in a new tab. The cover cards below are the actual front pages, so it
+              is easy to find the guide you need.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {starterKitPdfDownloads.map((download) => (
+              <a
+                key={download.href}
+                href={download.href}
+                target="_blank"
+                rel="noreferrer"
+                className="group block transition-opacity hover:opacity-95"
+                style={{
+                  background: C.cream,
+                  color: C.ink,
+                  border: "1px solid rgba(244,240,230,0.12)",
+                }}
+              >
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    aspectRatio: "4 / 5",
+                    background: C.creamWarm,
+                    borderBottom: `1px solid ${C.divStrong}`,
+                  }}
+                >
+                  <Image
+                    src={download.thumbnail}
+                    alt={`${download.title} cover`}
+                    fill
+                    sizes="(min-width: 1024px) 30vw, (min-width: 768px) 33vw, 100vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                  />
+                </div>
+                <div className="p-5">
+                  <p
+                    className="text-[9px] uppercase tracking-[0.36em]"
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    {download.label} / {download.pages}
+                  </p>
+                  <h3
+                    className={`${cormorant.className} mt-3 uppercase`}
+                    style={{
+                      fontWeight: 300,
+                      fontSize: "clamp(22px, 3vw, 31px)",
+                      lineHeight: 1.02,
+                      textShadow: LP_CREAM,
+                    }}
+                  >
+                    {download.title}
+                  </h3>
+                  <p
+                    className="mt-4 text-[13px] leading-[1.62]"
+                    style={{ color: C.onCreamSub, fontWeight: 400 }}
+                  >
+                    {download.detail}
+                  </p>
+                  <span
+                    className="mt-5 inline-flex text-[10px] uppercase tracking-[0.28em]"
+                    style={{ color: C.ink, fontWeight: 600 }}
+                  >
+                    Open PDF
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Preset download */}
           <article
@@ -357,7 +489,7 @@ export default async function AcademyStarterKitAccessPage() {
               className="text-[10px] uppercase tracking-[0.5em]"
               style={{ color: C.stone, fontWeight: 600 }}
             >
-              Printable PDF
+              PDF Library
             </p>
             <h2
               className={`${cormorant.className} mt-5 uppercase`}
@@ -369,15 +501,22 @@ export default async function AcademyStarterKitAccessPage() {
                 textShadow: LP,
               }}
             >
-              Not connected yet
+              Three guides connected
             </h2>
             <p
               className="mt-4 text-[14px] leading-[1.72]"
               style={{ color: "rgba(244,240,230,0.78)", fontWeight: 400 }}
             >
-              I could not find a Starter Kit PDF in the project. Add the final PDF file or a
-              download URL, and this card can become the printable workbook download.
+              Your posing guide, caption ideas, and storytelling captions are now ready to open
+              from the PDF library above.
             </p>
+            <a
+              href="#starter-kit-pdfs"
+              className="mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70"
+              style={{ color: C.creamWarm, fontWeight: 600 }}
+            >
+              View PDFs
+            </a>
           </article>
         </div>
 
