@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useMayaChat } from "@/components/sselfie/maya/hooks/use-maya-chat"
 
 const useChatCallIds = vi.hoisted(() => [] as string[])
+const transportConfigs = vi.hoisted(() => [] as any[])
 
 vi.mock("@ai-sdk/react", () => ({
   useChat: (config: { id?: string }) => {
@@ -20,7 +21,9 @@ vi.mock("@ai-sdk/react", () => ({
 
 vi.mock("ai", () => ({
   DefaultChatTransport: class MockDefaultChatTransport {
-    constructor(_config: unknown) {}
+    constructor(config: unknown) {
+      transportConfigs.push(config)
+    }
   },
 }))
 
@@ -51,6 +54,7 @@ describe("useMayaChat handleNewChat", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     useChatCallIds.length = 0
+    transportConfigs.length = 0
     Object.defineProperty(window, "localStorage", {
       value: {
         getItem: vi.fn(() => null),
@@ -186,6 +190,43 @@ describe("useMayaChat handleNewChat", () => {
 
     await waitFor(() => {
       expect(useChatCallIds.at(-1)).toBe("maya-chat-videos-new")
+    })
+  })
+
+  it("passes active chat metadata to the Maya chat transport body", async () => {
+    let hookValue: HookValue | null = null
+
+    render(
+      <HookHarness activeTab="photos" onReady={(value) => { hookValue = value }} />,
+    )
+
+    await waitFor(() => {
+      expect(hookValue).not.toBeNull()
+    })
+
+    expect(transportConfigs.at(-1)).toEqual(
+      expect.objectContaining({
+        api: "/api/maya/chat",
+        body: expect.objectContaining({
+          chatId: null,
+          chatType: "maya",
+        }),
+      }),
+    )
+
+    await act(async () => {
+      hookValue!.setChatId(789)
+    })
+
+    await waitFor(() => {
+      expect(transportConfigs.at(-1)).toEqual(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            chatId: 789,
+            chatType: "maya",
+          }),
+        }),
+      )
     })
   })
 })

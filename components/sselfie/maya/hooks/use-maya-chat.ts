@@ -50,6 +50,7 @@ export interface UseMayaChatReturn {
   chatTitle: string
   isLoadingChat: boolean
   hasUsedMayaBefore: boolean
+  chatError: string | null
 
   // Chat operations
   loadChat: (specificChatId?: number, explicitChatType?: string) => Promise<void>
@@ -61,6 +62,7 @@ export interface UseMayaChatReturn {
   setChatId: (id: number | null) => void
   setChatTitle: (title: string) => void
   setIsLoadingChat: (loading: boolean) => void
+  setChatError: (message: string | null) => void
 
   // Refs (exposed for component use)
   savedMessageIds: React.MutableRefObject<Set<string>>
@@ -89,6 +91,45 @@ function loadChatIdFromStorage(chatType: string): number | null {
     console.error("[useMayaChat] ❌ Error loading chatId from localStorage:", error)
     return null
   }
+}
+
+function normalizeChatErrorMessage(error: unknown): string {
+  let rawMessage = "Maya could not reply right now. Please try again."
+
+  if (error instanceof Error && error.message) {
+    rawMessage = error.message
+  } else if (typeof error === "string" && error) {
+    rawMessage = error
+  } else if (error && typeof error === "object") {
+    const err = error as any
+    if (err.message && typeof err.message === "string") {
+      rawMessage = err.message
+    } else if (err.error && typeof err.error === "string") {
+      rawMessage = err.error
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(rawMessage)
+    if (typeof parsed?.message === "string") rawMessage = parsed.message
+    else if (typeof parsed?.error === "string") rawMessage = parsed.error
+  } catch {
+    // Non-JSON error strings are expected from the AI SDK transport.
+  }
+
+  if (/insufficient credits/i.test(rawMessage)) {
+    return "You are out of credits. Add credits or upgrade to keep chatting with Maya."
+  }
+
+  if (/unauthorized|auth session|not authenticated/i.test(rawMessage)) {
+    return "Your session expired. Please sign in again, then send your message to Maya."
+  }
+
+  if (/AI service temporarily unavailable|gateway|openrouter|anthropic|model/i.test(rawMessage)) {
+    return "Maya's AI connection is temporarily unavailable. Please try again in a moment."
+  }
+
+  return rawMessage || "Maya could not reply right now. Please try again."
 }
 
 /**
@@ -137,6 +178,7 @@ export function useMayaChat({
   const [chatTitle, setChatTitle] = useState<string>("Chat with Maya")
   const [isLoadingChat, setIsLoadingChat] = useState(false)
   const [hasUsedMayaBefore, setHasUsedMayaBefore] = useState<boolean>(false)
+  const [chatError, setChatError] = useState<string | null>(null)
   const userId = typeof user?.id === "string" ? user.id : ""
   const userEmail = typeof user?.email === "string" ? user.email : ""
 
@@ -184,8 +226,13 @@ export function useMayaChat({
     return new DefaultChatTransport({
       api: "/api/maya/chat",
       headers,
+      body: {
+        chatId,
+        chatType: currentChatType,
+        ...(academyPurchaseProduct ? { product: academyPurchaseProduct, firstTimeProductUser } : {}),
+      },
     }) as any
-  }, [proMode, currentChatType, activeTab, academyPurchaseProduct, firstTimeProductUser])
+  }, [proMode, currentChatType, activeTab, academyPurchaseProduct, firstTimeProductUser, chatId])
 
   // Create a unique ID for the client chat session.
   // Each Maya tab needs its own live AI SDK session so messages do not bleed between
@@ -198,6 +245,7 @@ export function useMayaChat({
     id: chatSessionId, // Force reset when chatId or chatType changes
     transport: chatTransport,
     onFinish: ({ message, messages: currentMessages }) => {
+      setChatError(null)
       // CRITICAL FIX (Bug 1): Use currentMessages from SDK callback instead of closure variable
       // The SDK provides the up-to-date messages array, closure variable may be stale
       debugLog("[useMayaChat] AI SDK onFinish", {
@@ -220,21 +268,8 @@ export function useMayaChat({
     },
     onError: (error) => {
       // Simplified error handling - just extract message safely
-      let errorMessage = "An error occurred while chatting with Maya. Please try again."
-
-      // Minimal, safe error extraction
-      if (error instanceof Error && error.message) {
-        errorMessage = error.message
-      } else if (typeof error === "string" && error) {
-        errorMessage = error
-      } else if (error && typeof error === "object") {
-        const err = error as any
-        if (err.message && typeof err.message === "string") {
-          errorMessage = err.message
-        } else if (err.error && typeof err.error === "string") {
-          errorMessage = err.error
-        }
-      }
+      const errorMessage = normalizeChatErrorMessage(error)
+      setChatError(errorMessage)
 
       // Minimal logging - avoid complex serialization that causes issues
       try {
@@ -989,6 +1024,7 @@ export function useMayaChat({
     chatTitle,
     isLoadingChat,
     hasUsedMayaBefore,
+    chatError,
 
     // Chat operations
     loadChat,
@@ -1000,6 +1036,7 @@ export function useMayaChat({
     setChatId,
     setChatTitle,
     setIsLoadingChat,
+    setChatError,
 
     // Refs
     savedMessageIds,

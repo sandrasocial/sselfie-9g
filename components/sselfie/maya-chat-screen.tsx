@@ -2380,13 +2380,17 @@ export default function MayaChatScreen({
   }
 
   const sendMessageParts = useCallback(
-    (parts: PendingMayaChatMessage["parts"]) => {
-      sendMessage({
-        role: "user",
-        parts: parts as any,
-      })
+    async (parts: PendingMayaChatMessage["parts"]) => {
+      try {
+        await sendMessage({
+          parts: parts as any,
+        })
+      } catch (error) {
+        console.error("[v0] ❌ Maya chat send failed before stream started:", error)
+        setChatError(error instanceof Error ? error.message : "Maya could not send your message. Please try again.")
+      }
     },
-    [sendMessage],
+    [sendMessage, setChatError],
   )
 
   useEffect(() => {
@@ -2394,7 +2398,7 @@ export default function MayaChatScreen({
 
     const pendingMessage = pendingMessageAfterChatCreateRef.current
     pendingMessageAfterChatCreateRef.current = null
-    sendMessageParts(pendingMessage.parts)
+    void sendMessageParts(pendingMessage.parts)
   }, [chatId, sendMessageParts])
 
   const handleSendMessage = async (customPrompt?: string, imageOverride?: string) => {
@@ -2461,7 +2465,7 @@ export default function MayaChatScreen({
         }
       }
 
-      sendMessageParts(messageParts)
+      void sendMessageParts(messageParts)
       setInputValue("")
       setUploadedImage(null)
     }
