@@ -39,7 +39,7 @@ const SUITE_PRODUCTS = [
     label: "Message Clarity",
     title: "What to Say",
     description:
-      "The exact caption frameworks, voice prompts, and CTA structures that make your message land every time you post.",
+      "Know what to say so people understand why they should follow, trust, and buy from you.",
     included: [
       "30 caption frameworks for everyday posting",
       "Prompt structures to keep your voice consistent",
@@ -54,8 +54,7 @@ const SUITE_PRODUCTS = [
     step: "02",
     label: "Content Consistency",
     title: "Show Up",
-    description:
-      "A 30-day posting rhythm and weekly batching workflow so you stop winging it and start showing up with intention.",
+    description: "Know what to post this week without starting from zero every morning.",
     included: [
       "30-day posting rhythm mapped by content type",
       "Weekly batching workflow to reduce content stress",
@@ -70,8 +69,7 @@ const SUITE_PRODUCTS = [
     step: "03",
     label: "Monetization Path",
     title: "Get Paid",
-    description:
-      "A revenue path map, offer alignment guide, and 90-day execution cadence so attention actually converts.",
+    description: "Turn your visibility into a simple paid offer people can say yes to.",
     included: [
       "Revenue path map based on your current audience",
       "Offer and message alignment for higher intent",
@@ -149,8 +147,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            Fill in the workbooks. Maya turns your answers into your message, content plan, and
-            first sales path.
+            A simple visibility system for women who want to know what to say, what to post, and how
+            to turn attention into income.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             {suiteUnlocked ? (
@@ -227,8 +225,8 @@ export default async function VisibilitySuitePage() {
           className="mt-3 max-w-xl text-[14px] leading-[1.72]"
           style={{ color: C.onCreamSub, fontWeight: 400 }}
         >
-          Use the workbooks for the thinking. Use Maya inside each product to turn the answers into
-          action.
+          Start with your message. Build a rhythm you can keep. Turn it into a simple offer people
+          can say yes to.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">

@@ -87,6 +87,7 @@ ${answers.map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}
 
 Create a personalized Visibility To Paid Plan from this user's workbook answers.
 The plan must feel specific, practical, and current.
+It should turn static workbook answers into usable assets, not more reflection.
 
 User name: ${input.name || "Friend"}
 
@@ -122,6 +123,10 @@ Rules:
 - Keep it honest. No income guarantees.
 - Use the user's exact context when possible.
 - If one workbook is missing, infer carefully from what they did provide.
+- What To Say inputs should shape the positioning, audience, proof points, brand phrases, and content-to-offer bridge.
+- Show Up inputs should shape the weekly capacity, best formats, asset reuse, repurposing, weekly themes, and first five posts.
+- Get Paid inputs should shape the buyer urgency, willingness-to-pay signal, offer statement, delivery boundaries, first 10 buyer path, sales post, and DM scripts.
+- Treat pricing as practical guidance, not a promise. Suggest a simple starter path when the user seems early.
 - Make every section usable today.
 - Short sentences.
 - No corporate language.

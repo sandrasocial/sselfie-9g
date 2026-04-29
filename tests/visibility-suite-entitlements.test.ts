@@ -13,6 +13,10 @@ function exists(relativePath: string) {
   return fs.existsSync(path.join(ROOT, relativePath))
 }
 
+function countWorkbookFields(contents: string) {
+  return (contents.match(/<textarea|<input type="text"/g) || []).length
+}
+
 describe("visibility suite entitlements and routing", () => {
   it("PRODUCT_ACCESS_ALIASES maps visibility_suite to the three sub-products", () => {
     const contents = read("lib/academy-entitlements.ts")
@@ -100,6 +104,39 @@ describe("visibility suite entitlements and routing", () => {
     expect(client).toContain("gp_answers")
     expect(exists("migrations/20260429_visibility_suite_plans.sql")).toBe(true)
     expect(exists("lib/academy/visibility-plan.ts")).toBe(true)
+  })
+
+  it("implements the market fit workbook question updates", () => {
+    const whatToSay = read("public/academy/what_to_say/index.html")
+    const showUp = read("public/academy/show_up/index.html")
+    const getPaid = read("public/academy/get_paid/index.html")
+    const generator = read("components/academy/visibility-plan-generator.tsx")
+    const workbookRoute = read("app/api/academy/visibility-suite/workbook/route.ts")
+    const planRoute = read("app/api/academy/visibility-suite/plan/generate/route.ts")
+    const suitePage = read("app/academy/access/visibility-suite/page.tsx")
+
+    expect(whatToSay).toContain("Message Test")
+    expect(whatToSay).toContain("Proof — What Makes This Believable?")
+    expect(whatToSay).toContain("Content-To-Offer Bridge")
+    expect(showUp).toContain("How Many Posts Can You Realistically Create Each Week?")
+    expect(showUp).toContain("Which Formats Fit You Best Right Now?")
+    expect(showUp).toContain("What Content Assets Do You Already Have?")
+    expect(showUp).toContain("What Can You Repurpose This Week?")
+    expect(getPaid).toContain("Buyer Urgency")
+    expect(getPaid).toContain("Willingness To Pay")
+    expect(getPaid).toContain("Delivery Boundary")
+    expect(getPaid).toContain("First 10 Buyers")
+    expect(getPaid).toContain("What Part Of Selling Feels Hardest?")
+    expect(generator).toContain("Content-to-offer bridge")
+    expect(generator).toContain("Realistic weekly post capacity")
+    expect(generator).toContain("Who do you help?")
+    expect(generator).toContain("First 10 buyers")
+    expect(workbookRoute).toContain("first 10 buyer invite list")
+    expect(planRoute).toContain("Get Paid inputs should shape the buyer urgency")
+    expect(suitePage).toContain("turn attention into income")
+    expect(countWorkbookFields(whatToSay)).toBe(20)
+    expect(countWorkbookFields(showUp)).toBe(15)
+    expect(countWorkbookFields(getPaid)).toBe(31)
   })
 
   it("suite images exist in public folder", () => {

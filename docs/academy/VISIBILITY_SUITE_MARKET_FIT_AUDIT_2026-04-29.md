@@ -360,27 +360,27 @@ Upsell bridge:
 
 ### Phase 2 — Workbook cleanup
 
-- [ ] Update What To Say questions based on the audit table.
-- [ ] Update Show Up questions based on the audit table.
-- [ ] Update Get Paid questions based on the audit table.
-- [ ] Remove or soften duplicate reflection prompts.
-- [ ] Add missing market-fit questions where needed.
-- [ ] Keep all existing user answer storage keys stable unless a migration is intentionally added.
+- [x] Update What To Say questions based on the audit table.
+- [x] Update Show Up questions based on the audit table.
+- [x] Update Get Paid questions based on the audit table.
+- [x] Remove or soften duplicate reflection prompts.
+- [x] Add missing market-fit questions where needed.
+- [x] Keep all existing user answer storage keys stable unless a migration is intentionally added.
 
 ### Phase 3 — Maya output mapping
 
-- [ ] Map each workbook answer to the output it should generate.
-- [ ] What To Say should generate: positioning, audience, hooks, captions, brand words.
-- [ ] Show Up should generate: weekly rhythm, 7-day plan, content formats, Sunday ritual.
-- [ ] Get Paid should generate: offer statement, price guidance, sales post, DM script, first 10 invite list.
-- [ ] Bundle should generate: one full visibility-to-paid plan.
+- [x] Map each workbook answer to the output it should generate.
+- [x] What To Say should generate: positioning, audience, hooks, captions, brand words.
+- [x] Show Up should generate: weekly rhythm, 7-day plan, content formats, Sunday ritual.
+- [x] Get Paid should generate: offer statement, price guidance, sales post, DM script, first 10 invite list.
+- [x] Bundle should generate: one full visibility-to-paid plan.
 
 ### Phase 4 — Suite buyer home
 
-- [ ] Make the suite home explain the sequence clearly.
+- [x] Make the suite home explain the sequence clearly.
 - [ ] Add "start here" guidance based on owned products.
-- [ ] Make product cards show the outcome, not just product title.
-- [ ] Add one clear final action after all three products.
+- [x] Make product cards show the outcome, not just product title.
+- [x] Add one clear final action after all three products.
 
 ### Phase 5 — Pricing and upsell
 
@@ -423,11 +423,12 @@ Red flags:
 
 ## 10. Decision Log
 
-| Date       | Decision                                                                             | Owner       |
-| ---------- | ------------------------------------------------------------------------------------ | ----------- |
-| 2026-04-29 | Suite has market fit if positioned as visibility-to-paid, not workbook bundle.       | Codex audit |
-| 2026-04-29 | Get Paid should be treated as the highest-value product and primary upsell bridge.   | Codex audit |
-| 2026-04-29 | Next implementation should be question cleanup + Maya output mapping, not more PDFs. | Codex audit |
+| Date       | Decision                                                                             | Owner                |
+| ---------- | ------------------------------------------------------------------------------------ | -------------------- |
+| 2026-04-29 | Suite has market fit if positioned as visibility-to-paid, not workbook bundle.       | Codex audit          |
+| 2026-04-29 | Get Paid should be treated as the highest-value product and primary upsell bridge.   | Codex audit          |
+| 2026-04-29 | Next implementation should be question cleanup + Maya output mapping, not more PDFs. | Codex audit          |
+| 2026-04-29 | Implemented missing workbook prompts, Maya output mapping, and suite positioning.    | Codex implementation |
 
 ---
 
