@@ -6,6 +6,7 @@ import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import VisibilitySuiteMayaChat from "@/components/academy/visibility-suite-maya-chat"
+import { VisibilityPlanGenerator } from "@/components/academy/visibility-plan-generator"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -391,6 +392,8 @@ export default async function VisibilitySuitePage() {
             )
           })}
         </div>
+
+        {ownedCount > 0 ? <VisibilityPlanGenerator /> : null}
       </section>
 
       {/* ─── Maya ─────────────────────────────────────────────────────────── */}

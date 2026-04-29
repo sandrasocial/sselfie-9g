@@ -84,6 +84,24 @@ describe("visibility suite entitlements and routing", () => {
     }
   })
 
+  it("visibility plan generator route and page exist", () => {
+    const route = read("app/api/academy/visibility-suite/plan/generate/route.ts")
+    const page = read("app/academy/visibility-plan/[token]/page.tsx")
+    const client = read("components/academy/visibility-plan-generator.tsx")
+
+    expect(route).toContain("visibility_suite_plan_generated")
+    expect(route).toContain("visibility_suite_plans")
+    expect(route).toContain("parseVisibilityPlanJson")
+    expect(page).toContain("Visibility Plan")
+    expect(page).toContain("Apply For Private Sprint")
+    expect(client).toContain("Create My Visibility Plan")
+    expect(client).toContain("wts_answers")
+    expect(client).toContain("showup_answers")
+    expect(client).toContain("gp_answers")
+    expect(exists("migrations/20260429_visibility_suite_plans.sql")).toBe(true)
+    expect(exists("lib/academy/visibility-plan.ts")).toBe(true)
+  })
+
   it("suite images exist in public folder", () => {
     const images = ["hero.png", "what-to-say.png", "show-up.png", "get-paid.png", "sprint.png"]
     for (const img of images) {
