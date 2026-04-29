@@ -108,4 +108,12 @@ describe("visibility suite entitlements and routing", () => {
       expect(exists(`public/academy/visibility-suite/${img}`), `${img} missing`).toBe(true)
     }
   })
+
+  it("market fit audit plan is documented", () => {
+    const contents = read("docs/academy/VISIBILITY_SUITE_MARKET_FIT_AUDIT_2026-04-29.md")
+    expect(contents).toContain("Product Fit Verdict")
+    expect(contents).toContain("Question-Level Audit")
+    expect(contents).toContain("Pricing Hypotheses")
+    expect(contents).toContain("Next Recommended Implementation")
+  })
 })
