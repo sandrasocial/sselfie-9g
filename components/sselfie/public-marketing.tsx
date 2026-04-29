@@ -370,6 +370,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <nav className="hidden md:flex items-center gap-7">
         {[
+          { href: "/visibility-suite", label: "Visibility Suite" },
           { href: "/starter-kit",  label: "Starter Kit"  },
           { href: "/masterclass",  label: "Masterclass"  },
           { href: "/join/studio",  label: "Studio"       },
@@ -400,8 +401,9 @@ export function PublicFooter() {
         </p>
         <div className="flex flex-wrap gap-6">
           {[
-            "/selfie-guide:Free Guide", "/starter-kit:Starter Kit",
-            "/masterclass:Masterclass", "/join/studio:Studio", "/work-with-me:Work With Me",
+            "/selfie-guide:Free Guide", "/visibility-suite:Visibility Suite",
+            "/starter-kit:Starter Kit", "/masterclass:Masterclass",
+            "/join/studio:Studio", "/work-with-me:Work With Me",
           ].map((s) => {
             const [href, label] = s.split(":")
             return (
