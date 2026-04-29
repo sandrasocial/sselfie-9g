@@ -18,19 +18,18 @@ const inter = Inter({
 })
 
 const C = {
-  ink:        "#0F0D0B",
-  cream:      "#EDE9E2",
-  creamWarm:  "#F4F0E6",
-  stone:      "#C4B5A0",
-  onCream:    "#0F0D0B",
+  ink: "#0F0D0B",
+  cream: "#EDE9E2",
+  creamWarm: "#F4F0E6",
+  stone: "#C4B5A0",
+  onCream: "#0F0D0B",
   onCreamSub: "#3D3830",
-  muted:      "#7A6F63",
-  div:        "rgba(15,13,11,0.10)",
-  divStrong:  "rgba(15,13,11,0.18)",
+  muted: "#7A6F63",
+  div: "rgba(15,13,11,0.10)",
+  divStrong: "rgba(15,13,11,0.18)",
 }
 
-const LP_CREAM =
-  "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
+const LP_CREAM = "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
 
 const SUITE_PRODUCTS = [
   {
@@ -68,7 +67,7 @@ const SUITE_PRODUCTS = [
   {
     id: "get_paid",
     step: "03",
-    label: "Monetisation Path",
+    label: "Monetization Path",
     title: "Get Paid",
     description:
       "A revenue path map, offer alignment guide, and 90-day execution cadence so attention actually converts.",
@@ -91,8 +90,8 @@ export default async function VisibilitySuitePage() {
   const membershipActive = entitlementState.membershipActive
 
   const hasWhatToSay = membershipActive || accessibleIds.has("what_to_say")
-  const hasShowUp    = membershipActive || accessibleIds.has("show_up")
-  const hasGetPaid   = membershipActive || accessibleIds.has("get_paid")
+  const hasShowUp = membershipActive || accessibleIds.has("show_up")
+  const hasGetPaid = membershipActive || accessibleIds.has("get_paid")
 
   const ownedCount = [hasWhatToSay, hasShowUp, hasGetPaid].filter(Boolean).length
   const suiteUnlocked = ownedCount === 3
@@ -149,8 +148,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            Three workbooks. One clear path. From message clarity to a posting
-            rhythm to a monetisation system — built to work together.
+            Three workbooks. One clear path. From message clarity to a posting rhythm to a
+            monetization system — built to work together.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             {suiteUnlocked ? (
@@ -231,7 +230,7 @@ export default async function VisibilitySuitePage() {
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {SUITE_PRODUCTS.map((product) => {
+          {SUITE_PRODUCTS.map(product => {
             const unlocked = accessMap[product.id]
 
             return unlocked ? (
@@ -287,7 +286,7 @@ export default async function VisibilitySuitePage() {
                     {product.description}
                   </p>
                   <ul className="mt-5 space-y-2">
-                    {product.included.map((item) => (
+                    {product.included.map(item => (
                       <li
                         key={item}
                         className="flex gap-2 text-[12px] leading-[1.6]"
@@ -326,13 +325,8 @@ export default async function VisibilitySuitePage() {
                     sizes="(min-width: 1024px) 28vw, (min-width: 768px) 45vw, 100vw"
                     className="object-cover opacity-50 transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                   />
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: "rgba(15,13,11,0.45)" }}
-                  />
-                  <div
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
+                  <div className="absolute inset-0" style={{ background: "rgba(15,13,11,0.45)" }} />
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <p
                       className="text-[9px] uppercase tracking-[0.5em]"
                       style={{ color: "rgba(244,240,230,0.55)", fontWeight: 600 }}
@@ -435,8 +429,8 @@ export default async function VisibilitySuitePage() {
               className="text-[13px] leading-[1.7]"
               style={{ color: C.onCreamSub, fontWeight: 400 }}
             >
-              Unlock one workbook to open Maya. She will guide you through the
-              suite, review your answers, and build your weekly plan.
+              Unlock one workbook to open Maya. She will guide you through the suite, review your
+              answers, and build your weekly plan.
             </p>
             <Link
               href="/academy/products/what_to_say"
@@ -450,9 +444,7 @@ export default async function VisibilitySuitePage() {
       </section>
 
       {/* ─── Sprint upsell ────────────────────────────────────────────────── */}
-      <section
-        className="grid lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]"
-      >
+      <section className="grid lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]">
         <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 480 }}>
           <Image
             src="/academy/visibility-suite/sprint.png"
@@ -490,9 +482,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-md text-[15px] leading-[1.78]"
             style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
           >
-            You now have the message, the posting rhythm, and the offer
-            direction. If you want to turn this into your first £10K path,
-            apply for the 4-week private sprint.
+            You now have the message, the posting rhythm, and the offer direction. If you want to
+            turn this into your first 10K path, apply for the 4-week private sprint.
           </p>
           <Link
             href="/work-with-me"

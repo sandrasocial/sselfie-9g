@@ -43,7 +43,7 @@ describe("visibility suite entitlements and routing", () => {
     expect(contents).toContain("Where should I start?")
     expect(contents).toContain("Review my answers so far")
     expect(contents).toContain("Turn this into my weekly plan")
-    expect(contents).toContain("Help me work out my monetisation path")
+    expect(contents).toContain("Help me map my monetization path")
     expect(contents).toContain("What is my next move?")
   })
 
@@ -51,6 +51,14 @@ describe("visibility suite entitlements and routing", () => {
     const contents = read("app/academy/_lib/course-library.ts")
     expect(contents).toContain("/academy/access/visibility-suite")
     expect(contents).toContain("SUITE_PRODUCT_IDS")
+    expect(contents).toContain('product.deliveryKind !== "academy_course" ||')
+  })
+
+  it("Maya chat API checks server-side suite access", () => {
+    const contents = read("app/api/academy/visibility-suite/chat/route.ts")
+    expect(contents).toContain("getAcademyEntitlementState")
+    expect(contents).toContain("Visibility Suite access required")
+    expect(contents).toContain("entitlementState.membershipActive")
   })
 
   it("suite images exist in public folder", () => {

@@ -6,7 +6,7 @@ const QUICK_PROMPTS = [
   "Where should I start?",
   "Review my answers so far",
   "Turn this into my weekly plan",
-  "Help me work out my monetisation path",
+  "Help me map my monetization path",
   "What is my next move?",
 ]
 
@@ -16,12 +16,12 @@ type Message = {
 }
 
 const C = {
-  ink:       "#0F0D0B",
-  cream:     "#EDE9E2",
+  ink: "#0F0D0B",
+  cream: "#EDE9E2",
   creamWarm: "#F4F0E6",
-  stone:     "#C4B5A0",
-  muted:     "#7A6F63",
-  div:       "rgba(15,13,11,0.10)",
+  stone: "#C4B5A0",
+  muted: "#7A6F63",
+  div: "rgba(15,13,11,0.10)",
   divStrong: "rgba(15,13,11,0.18)",
 }
 
@@ -47,7 +47,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
     setError(null)
     setQuestion("")
     setIsSending(true)
-    setMessages((prev) => [...prev, { role: "user", text: cleanQuestion }])
+    setMessages(prev => [...prev, { role: "user", text: cleanQuestion }])
 
     try {
       const response = await fetch("/api/academy/visibility-suite/chat", {
@@ -61,10 +61,10 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
         throw new Error(data?.error || "Maya could not answer right now.")
       }
 
-      setMessages((prev) => [...prev, { role: "maya", text: data.answer }])
+      setMessages(prev => [...prev, { role: "maya", text: data.answer }])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
-      setMessages((prev) => prev.slice(0, -1))
+      setMessages(prev => prev.slice(0, -1))
     } finally {
       setIsSending(false)
     }
@@ -74,7 +74,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
     <div className="max-w-2xl space-y-6">
       {/* Quick prompts */}
       <div className="flex flex-wrap gap-2">
-        {QUICK_PROMPTS.map((prompt) => (
+        {QUICK_PROMPTS.map(prompt => (
           <button
             key={prompt}
             onClick={() => askMaya(prompt)}
@@ -123,19 +123,13 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
         ))}
 
         {isSending && (
-          <p
-            className="text-[12px]"
-            style={{ color: C.stone, fontWeight: 400 }}
-          >
+          <p className="text-[12px]" style={{ color: C.stone, fontWeight: 400 }}>
             Maya is thinking…
           </p>
         )}
 
         {error && (
-          <p
-            className="text-[12px]"
-            style={{ color: "#8B2525" }}
-          >
+          <p className="text-[12px]" style={{ color: "#8B2525" }}>
             {error}
           </p>
         )}
@@ -143,7 +137,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
 
       {/* Input */}
       <form
-        onSubmit={(e) => {
+        onSubmit={e => {
           e.preventDefault()
           askMaya(question)
         }}
@@ -153,7 +147,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
         <input
           type="text"
           value={question}
-          onChange={(e) => setQuestion(e.target.value)}
+          onChange={e => setQuestion(e.target.value)}
           placeholder="Ask Maya anything about the suite…"
           disabled={isSending}
           className="min-w-0 flex-1 bg-transparent px-5 py-4 text-[13px] outline-none placeholder:opacity-40 disabled:opacity-50"

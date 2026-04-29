@@ -169,7 +169,8 @@ export async function getAccessibleLibraryCourses(userId: string): Promise<{
         totalDurationSeconds,
         progressPercentage: Number(progressData?.enrollment?.progress_percentage || 0),
         completedLessons,
-        started: completedLessons > 0 || Number(progressData?.enrollment?.progress_percentage || 0) > 0,
+        started:
+          completedLessons > 0 || Number(progressData?.enrollment?.progress_percentage || 0) > 0,
         firstIncompleteLessonId,
       } satisfies LibraryCourse
     })
@@ -279,13 +280,14 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
 
   const ownedProducts = entitlementState.catalog
     .filter(
-      (product) =>
+      product =>
         product.hasAccess &&
-        product.deliveryKind !== "academy_course" &&
+        (product.deliveryKind !== "academy_course" ||
+          (SUITE_PRODUCT_IDS as readonly string[]).includes(product.id)) &&
         product.deliveryKind !== "collection" &&
         product.id !== "selfie_guide_bundle"
     )
-    .map((product) => ({
+    .map(product => ({
       id: product.id,
       name: product.name,
       tagline: product.tagline,
@@ -305,9 +307,10 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
     accessibleIds.has("masterclass") ||
     accessibleIds.has("branded_by_sselfie") ||
     accessibleIds.has("editing_masterclass")
-  const hasDirectGuide = accessibleIds.has("selfie_guide") || accessibleIds.has("selfie_guide_bundle")
+  const hasDirectGuide =
+    accessibleIds.has("selfie_guide") || accessibleIds.has("selfie_guide_bundle")
 
-  const primaryCourse = courses.find((course) => course.started) || courses[0] || null
+  const primaryCourse = courses.find(course => course.started) || courses[0] || null
   const primaryOwnedProduct = ownedProducts[0] || null
   const hasAccess = hasCourseAccess || ownedProducts.length > 0
   const primaryCourseHref = primaryCourse ? getCourseHref(primaryCourse) : "/academy"
@@ -355,11 +358,10 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   }
 
   if (membershipActive) {
-    secondaryLink =
-      secondaryLink || {
-        href: "/studio?tab=maya",
-        label: "Open Maya",
-      }
+    secondaryLink = secondaryLink || {
+      href: "/studio?tab=maya",
+      label: "Open Maya",
+    }
   }
 
   let nextStep: AcademyHomeState["nextStep"] = null
@@ -368,7 +370,8 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
     nextStep = {
       eyebrow: "Next Step",
       title: "Work with Sandra",
-      description: "If you want hands-on support beyond the app, the private offer is the next move.",
+      description:
+        "If you want hands-on support beyond the app, the private offer is the next move.",
       href: "/work-with-me",
       ctaLabel: "See 1:1",
     }
@@ -430,7 +433,8 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       id: "studio",
       eyebrow: "€97 / month",
       title: "Studio",
-      description: "Maya, Feed Planner, and your AI execution layer when you're ready for the advanced step.",
+      description:
+        "Maya, Feed Planner, and your AI execution layer when you're ready for the advanced step.",
       href: "/join/studio",
       ctaLabel: "Join Studio",
     })
@@ -497,7 +501,9 @@ export async function getAccessibleCourseDetail(
       .map((lessonProgress: { lesson_id: number }) => lessonProgress.lesson_id)
   )
   const firstIncompleteLessonId =
-    course.lessons?.find(lesson => !completedLessonIds.has(lesson.id))?.id || course.lessons?.[0]?.id || null
+    course.lessons?.find(lesson => !completedLessonIds.has(lesson.id))?.id ||
+    course.lessons?.[0]?.id ||
+    null
 
   const lessons = (course.lessons || []).map(lesson => ({
     ...lesson,
