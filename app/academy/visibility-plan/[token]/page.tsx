@@ -71,25 +71,6 @@ function List({ items, tone = "light" }: { items?: string[]; tone?: "light" | "d
   )
 }
 
-function AuditList({
-  title,
-  items,
-  fallback,
-}: {
-  title: string
-  items?: string[]
-  fallback: string
-}) {
-  return (
-    <div className="border border-[#0F0D0B]/12 p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
-        {title}
-      </p>
-      <List items={items?.length ? items : [fallback]} />
-    </div>
-  )
-}
-
 export default async function VisibilityPlanPage({ params }: PageProps) {
   const { token } = await params
   const row = await getPlan(token)
@@ -203,70 +184,6 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
             </div>
           </div>
         ) : null}
-      </section>
-
-      <section className="border-t border-[#0F0D0B]/10 px-6 py-14 md:px-16 md:py-20">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#7A6F63]">Audit</p>
-        <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <h2
-              className={`${cormorant.className} text-[clamp(34px,5vw,60px)] uppercase leading-none`}
-            >
-              What your answers mean.
-            </h2>
-            <p className="mt-5 text-sm leading-7 text-[#3D3830]">
-              {plan.audit?.verdict ||
-                "Your workbook answers are the raw material. This audit turns them into clearer decisions."}
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="border border-[#0F0D0B]/12 bg-[#EDE9E2] p-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
-                Readiness
-              </p>
-              <p className={`${cormorant.className} mt-4 text-4xl leading-none`}>
-                {plan.audit?.readinessScore || "Needs one clear next step"}
-              </p>
-            </div>
-            <div className="border border-[#0F0D0B]/12 bg-[#EDE9E2] p-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
-                Next Offer
-              </p>
-              <p className="mt-4 text-sm leading-7 text-[#3D3830]">
-                {plan.audit?.nextBestOffer ||
-                  "Start with one simple paid next step before building a bigger offer."}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <AuditList
-            title="Keep"
-            items={plan.audit?.keep}
-            fallback="Keep the answer that names a real buyer, real pain, or real result."
-          />
-          <AuditList
-            title="Simplify"
-            items={plan.audit?.remove}
-            fallback="Remove anything that sounds broad, vague, or like it could belong to anyone."
-          />
-          <AuditList
-            title="Missing"
-            items={plan.audit?.missing}
-            fallback="Add the buyer pain, the paid promise, and the next action."
-          />
-        </div>
-
-        <div className="mt-6 border border-[#0F0D0B]/12 bg-[#F4F0E6] p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
-            Pricing Signal
-          </p>
-          <p className="mt-4 text-sm leading-7 text-[#3D3830]">
-            {plan.audit?.pricingSignal ||
-              "Use a low-ticket product for the first yes, a bundle for the complete system, and high-touch support when the buyer needs implementation."}
-          </p>
-        </div>
       </section>
 
       <section className="border-t border-[#0F0D0B]/10 px-6 py-14 md:px-16 md:py-20">

@@ -88,13 +88,6 @@ ${answers.map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}
 Create a personalized Visibility To Paid Plan from this user's workbook answers.
 The plan must feel specific, practical, and current.
 
-Market context to use:
-- The user is likely overwhelmed by what to say, what to post, and how to turn visibility into money.
-- A workbook alone is not the outcome. The outcome is a clearer message, a simple posting system, and a paid next step.
-- Stronger creator products now connect content to owned offers, direct audience trust, coaching, digital products, and simple implementation support.
-- Price guidance should be honest and practical. No income guarantees. No pressure.
-- The suite should reduce confusion. If an answer is vague, identify the missing decision and give the next action.
-
 User name: ${input.name || "Friend"}
 
 Workbook answers:
@@ -103,15 +96,6 @@ ${grouped}
 Return ONLY valid JSON in this exact shape:
 {
   "cover": {"title":"Visibility To Paid Plan","subtitle":"...","createdFor":"..."},
-  "audit": {
-    "verdict":"...",
-    "readinessScore":"...",
-    "keep":["..."],
-    "remove":["..."],
-    "missing":["..."],
-    "pricingSignal":"...",
-    "nextBestOffer":"..."
-  },
   "message": {
     "positioning":"...",
     "audience":"...",
@@ -138,8 +122,6 @@ Rules:
 - Keep it honest. No income guarantees.
 - Use the user's exact context when possible.
 - If one workbook is missing, infer carefully from what they did provide.
-- Audit their answers like a kind strategist. Say what is clear, what is too vague, and what should be removed or simplified.
-- Treat pricing as a market-fit signal: low-ticket for first trust, bundle for complete system, high-touch sprint only when the buyer needs implementation help.
 - Make every section usable today.
 - Short sentences.
 - No corporate language.
