@@ -91,47 +91,47 @@ const FEATURED_PRODUCT_IDS = [
 
 const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: string }> = {
   masterclass: {
-    image: "/images/selfie-guide/window-editorial-portrait.jpg",
+    image: "/academy/sselfie-minimalism/academy-masterclass.jpg",
     label: "Product home",
     href: "/academy/access/masterclass",
   },
   starter_kit: {
-    image: "/images/selfie-guide/editing-before-after.png",
+    image: "/academy/sselfie-minimalism/academy-starter-kit.jpg",
     label: "Product home",
     href: "/academy/access/starter-kit",
   },
   selfie_guide_bundle: {
-    image: "/images/selfie-guide/golden-hour-guide-portrait.jpg",
+    image: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
     label: "Product home",
     href: "/academy/access/selfie-guide",
   },
   selfie_guide: {
-    image: "/images/selfie-guide/window-lighting-setup.png",
+    image: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
     label: "Product home",
     href: "/academy/access/selfie-guide",
   },
   brand_strategy_pack: {
-    image: "/assets/brand-strategy/hero.png",
+    image: "/academy/sselfie-minimalism/academy-brand-strategy.jpg",
     label: "Product home",
     href: "/academy/access/brand-strategy",
   },
   what_to_say: {
-    image: "/images/20-2847-29.jpeg",
+    image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
     href: "/academy/what_to_say",
   },
   show_up: {
-    image: "/images/img-4785.jpg",
+    image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
     href: "/academy/show_up",
   },
   get_paid: {
-    image: "/images/img-4801.jpg",
+    image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
     href: "/academy/get_paid",
   },
   ai_photo_prompts: {
-    image: "/images/luxury-portrait.png",
+    image: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
     label: "Prompt pack",
     href: "/academy/ai_photo_prompts",
   },
@@ -139,11 +139,11 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
 
 const COURSE_VISUALS: Record<string, { image: string; eyebrow: string }> = {
   branded_by_sselfie: {
-    image: "/images/selfie-guide/studio-black-portrait.png",
+    image: "/academy/sselfie-minimalism/academy-course.jpg",
     eyebrow: "Course",
   },
   editing_masterclass: {
-    image: "/images/selfie-guide/editing-before-after.png",
+    image: "/academy/sselfie-minimalism/academy-starter-kit.jpg",
     eyebrow: "Course",
   },
 }
@@ -155,7 +155,7 @@ const RESOURCE_HUB_CARDS = [
     description: "Workbooks, downloads, and bonus files from Branded by SSELFIE.",
     cta: "Open library",
     href: "/academy/access/masterclass#bonus-library",
-    image: "/images/selfie-guide/notebook-window-closeup.jpg",
+    image: "/academy/sselfie-minimalism/academy-bonus-library.jpg",
     visibleFor: ["masterclass", "branded_by_sselfie"],
   },
   {
@@ -164,7 +164,7 @@ const RESOURCE_HUB_CARDS = [
     description: "Presets, DNG files, PDFs, and the editing masterclass in one place.",
     cta: "Open downloads",
     href: "/academy/access/starter-kit",
-    image: "/images/selfie-guide/settings-original-page-1.png",
+    image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     visibleFor: ["starter_kit"],
   },
   {
@@ -173,7 +173,7 @@ const RESOURCE_HUB_CARDS = [
     description: "Your personal brand output and strategy assets.",
     cta: "Open strategy",
     href: "/academy/access/brand-strategy",
-    image: "/assets/brand-strategy/journals.png",
+    image: "/academy/sselfie-minimalism/academy-brand-strategy.jpg",
     visibleFor: ["brand_strategy_pack", "masterclass", "selfie_guide_bundle"],
   },
   {
@@ -182,7 +182,7 @@ const RESOURCE_HUB_CARDS = [
     description: "Canva and PDF assets for members.",
     cta: "Browse templates",
     view: "templates" as AcademyView,
-    image: "/images/885-brnmqkhxcplb1ff5xk1uywrrsonfvm.png",
+    image: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
     studioOnly: true,
   },
 ]
@@ -1156,7 +1156,10 @@ export default function AcademyScreen() {
                         className={`${academyHubCardClass} min-h-[260px]`}
                       >
                         <img
-                          src={visual?.image || "/images/selfie-guide/laptop-lifestyle.png"}
+                          src={
+                            visual?.image ||
+                            "/academy/sselfie-minimalism/academy-studio-resources.jpg"
+                          }
                           alt=""
                           className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                         />
@@ -1211,7 +1214,10 @@ export default function AcademyScreen() {
                       <button
                         key={course.id}
                         type="button"
-                        onClick={() => handleCourseClick(course.id)}
+                        onClick={() => {
+                          setSelectedView("courses")
+                          handleCourseClick(String(course.id))
+                        }}
                         className={`${academyHubCardClass} grid min-h-[230px] md:grid-cols-[0.9fr_1.1fr]`}
                       >
                         <div className="relative min-h-[180px] overflow-hidden">
