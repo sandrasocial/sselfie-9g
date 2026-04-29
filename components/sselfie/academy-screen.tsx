@@ -6,7 +6,6 @@ import type { AcademyView } from "./types"
 import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
-import ProductAccessCard from "./product-access-card"
 import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -77,6 +76,117 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
   },
 }
 
+const COURSE_PRODUCT_IDS = new Set(["branded_by_sselfie", "editing_masterclass"])
+const FEATURED_PRODUCT_IDS = [
+  "masterclass",
+  "starter_kit",
+  "selfie_guide_bundle",
+  "selfie_guide",
+  "brand_strategy_pack",
+  "what_to_say",
+  "show_up",
+  "get_paid",
+  "ai_photo_prompts",
+]
+
+const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: string }> = {
+  masterclass: {
+    image: "/images/selfie-guide/window-editorial-portrait.jpg",
+    label: "Full program",
+    href: "/academy/access/masterclass",
+  },
+  starter_kit: {
+    image: "/images/selfie-guide/editing-before-after.png",
+    label: "Starter Kit",
+    href: "/academy/access/starter-kit",
+  },
+  selfie_guide_bundle: {
+    image: "/images/selfie-guide/golden-hour-guide-portrait.jpg",
+    label: "Bundle",
+    href: "/academy/access/selfie-guide",
+  },
+  selfie_guide: {
+    image: "/images/selfie-guide/window-lighting-setup.png",
+    label: "Guide",
+    href: "/academy/access/selfie-guide",
+  },
+  brand_strategy_pack: {
+    image: "/assets/brand-strategy/hero.png",
+    label: "Strategy",
+    href: "/academy/access/brand-strategy",
+  },
+  what_to_say: {
+    image: "/images/20-2847-29.jpeg",
+    label: "Workbook",
+    href: "/academy/what_to_say",
+  },
+  show_up: {
+    image: "/images/img-4785.jpg",
+    label: "Workbook",
+    href: "/academy/show_up",
+  },
+  get_paid: {
+    image: "/images/img-4801.jpg",
+    label: "Workbook",
+    href: "/academy/get_paid",
+  },
+  ai_photo_prompts: {
+    image: "/images/luxury-portrait.png",
+    label: "Prompt pack",
+    href: "/academy/ai_photo_prompts",
+  },
+}
+
+const COURSE_VISUALS: Record<string, { image: string; eyebrow: string }> = {
+  branded_by_sselfie: {
+    image: "/images/selfie-guide/studio-black-portrait.png",
+    eyebrow: "Masterclass",
+  },
+  editing_masterclass: {
+    image: "/images/selfie-guide/editing-before-after.png",
+    eyebrow: "Video course",
+  },
+}
+
+const RESOURCE_HUB_CARDS = [
+  {
+    id: "masterclass-bonus-library",
+    title: "Masterclass bonus library",
+    description: "Workbooks, downloads, and bonus files from Branded by SSELFIE.",
+    cta: "Open library",
+    href: "/academy/access/masterclass#bonus-library",
+    image: "/images/selfie-guide/notebook-window-closeup.jpg",
+    visibleFor: ["masterclass", "branded_by_sselfie"],
+  },
+  {
+    id: "starter-kit-downloads",
+    title: "Starter Kit downloads",
+    description: "Presets, DNG files, PDFs, and the editing masterclass in one place.",
+    cta: "Open downloads",
+    href: "/academy/access/starter-kit",
+    image: "/images/selfie-guide/settings-original-page-1.png",
+    visibleFor: ["starter_kit"],
+  },
+  {
+    id: "brand-strategy",
+    title: "Brand Strategy Pack",
+    description: "Your personal brand output and strategy assets.",
+    cta: "Open strategy",
+    href: "/academy/access/brand-strategy",
+    image: "/assets/brand-strategy/journals.png",
+    visibleFor: ["brand_strategy_pack", "masterclass", "selfie_guide_bundle"],
+  },
+  {
+    id: "templates",
+    title: "Studio templates",
+    description: "Canva and PDF assets for members.",
+    cta: "Browse templates",
+    view: "templates" as AcademyView,
+    image: "/images/885-brnmqkhxcplb1ff5xk1uywrrsonfvm.png",
+    studioOnly: true,
+  },
+]
+
 function getProductAccessCopy(product: any) {
   const override = PRODUCT_ACCESS_COPY[product.id]
   if (override) {
@@ -104,51 +214,8 @@ const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
 
 const academyPromoCardClass = "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
 
-const academyStatCardClass = "stone-panel rounded-[18px] p-3 text-center sm:p-4"
-
-const academyCollectionCardClass =
-  "group relative min-h-[220px] overflow-hidden rounded-2xl border border-white/10 p-6 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20"
-
-const academyCollections: Array<{
-  view: Exclude<AcademyView, "overview">
-  title: string
-  description: string
-  cta: string
-  image: string
-}> = [
-  {
-    view: "courses",
-    title: "Courses",
-    description: "Step-by-step lessons to help you show up, sell, and stay consistent.",
-    cta: "Open courses",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png",
-  },
-  {
-    view: "templates",
-    title: "Templates",
-    description: "Ready-to-use Canva and PDF assets you can open and post fast.",
-    cta: "Browse templates",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-WK6zYM31cXxUOP8ZIy4vGzN60qYe75.png",
-  },
-  {
-    view: "monthly-drops",
-    title: "Monthly drops",
-    description: "Fresh files and prompts added each month for Studio members.",
-    cta: "See this month",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/885-BRNmqKHXcPLB1Ff5XK1UYWRrSOnfVm-iOOarwktPIBXUZk0hyYqzL3ycGL9Ab.png",
-  },
-  {
-    view: "flatlay-images",
-    title: "Flatlay library",
-    description: "Soft luxury flatlays for story slides, promos, and launch graphics.",
-    cta: "Open flatlays",
-    image:
-      "url('/flatlay-luxury-planning.jpg'), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg')",
-  },
-]
+const academyHubCardClass =
+  "group relative overflow-hidden border border-[#d5cdbf] bg-[#ede9e2] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_16px_44px_rgba(21,17,13,0.10)] transition duration-300 hover:-translate-y-0.5 hover:border-[#a89b86]"
 
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
@@ -229,8 +296,29 @@ export default function AcademyScreen() {
     (c: any) => c.progress_percentage > 0 && c.progress_percentage < 100
   )
 
-  const ownedForAccess = (myProductsData?.products ?? []).filter(
+  const ownedProducts = (myProductsData?.products ?? []).filter(
     (product: { hasAccess: boolean }) => product.hasAccess
+  )
+  const ownedProductIds = new Set(ownedProducts.map((product: { id: string }) => product.id))
+  const hasProductAccess = (productId: string) =>
+    hasStudioMembership || ownedProductIds.has(productId)
+  const ownedForAccess = ownedProducts
+    .filter((product: { id: string }) => !COURSE_PRODUCT_IDS.has(product.id))
+    .sort(
+      (a: { id: string }, b: { id: string }) =>
+        (FEATURED_PRODUCT_IDS.indexOf(a.id) === -1
+          ? FEATURED_PRODUCT_IDS.length
+          : FEATURED_PRODUCT_IDS.indexOf(a.id)) -
+        (FEATURED_PRODUCT_IDS.indexOf(b.id) === -1
+          ? FEATURED_PRODUCT_IDS.length
+          : FEATURED_PRODUCT_IDS.indexOf(b.id))
+    )
+  const resourceHubCards = RESOURCE_HUB_CARDS.filter(resource => {
+    if (resource.studioOnly) return hasStudioMembership
+    return resource.visibleFor?.some(productId => hasProductAccess(productId))
+  })
+  const canonicalCourses = allCourses.filter((course: any) =>
+    ["branded_by_sselfie", "editing_masterclass"].includes(course.product_id)
   )
   /** Products the user can still buy (not owned); from my-products API */
   const availableProducts = myProductsData?.availableProducts ?? []
@@ -987,106 +1075,230 @@ export default function AcademyScreen() {
         </>
       )}
 
-      {/* Add top padding to content to account for fixed header */}
       <div className="px-4 pt-16 sm:px-6">
-        <div className="stone-shell-panel overflow-hidden rounded-[32px]">
-          <div className="relative h-[40vh] w-full overflow-hidden sm:h-[45vh]">
-            <img
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
-              alt="Academy"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(240,237,232,0.08)_0%,rgba(44,36,28,0.28)_34%,rgba(17,14,12,0.62)_100%)]" />
-            <div className="absolute inset-y-0 left-[12%] hidden w-[34%] bg-[linear-gradient(90deg,transparent,rgba(240,237,232,0.20),transparent)] opacity-60 blur-3xl sm:block" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-              <div className="space-y-3">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-white/80">Maya Academy</p>
-                <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white/95">
-                  Your learning library
+        <div className="overflow-hidden border border-[#d6cfc3] bg-[#ede9e2] text-[#17130f] shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
+          <section className="grid min-h-[420px] lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="flex flex-col justify-between gap-10 p-6 sm:p-10 lg:p-12">
+              <div className="space-y-5">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[#837866]">
+                  Maya Academy
+                </p>
+                <h1 className="max-w-2xl font-serif text-5xl leading-[0.95] tracking-normal text-[#14110e] sm:text-7xl">
+                  Your course and resource hub.
                 </h1>
-                <p className="mx-auto max-w-xl text-sm text-white/88 sm:text-base">
-                  Everything you need to build your brand, in one calm place.
+                <p className="max-w-xl text-base leading-8 text-[#5f5649]">
+                  Start with the product you bought. Find every lesson, workbook, and bonus without
+                  digging through old pages.
                 </p>
               </div>
-            </div>
-          </div>
 
-          <div className="relative z-10 -mt-8 px-4 sm:px-6">
-            <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-              <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
-                  Plan
+              <div className="grid max-w-2xl grid-cols-3 border-y border-[#d5cdbf]">
+                <div className="border-r border-[#d5cdbf] py-5 pr-4">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">Plan</div>
+                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+                    {getFriendlyTierName(userTier)}
+                  </div>
                 </div>
-                <div className="font-serif text-base text-white sm:text-lg">
-                  {getFriendlyTierName(userTier)}
+                <div className="border-r border-[#d5cdbf] px-4 py-5">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">
+                    Completed
+                  </div>
+                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+                    {completedCoursesCount}/{totalEnrolledCourses}
+                  </div>
                 </div>
-              </div>
-              <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
-                  Completed
-                </div>
-                <div className="font-serif text-base text-white sm:text-lg">
-                  {completedCoursesCount}/{totalEnrolledCourses}
-                </div>
-              </div>
-              <div className={academyStatCardClass}>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">
-                  In progress
-                </div>
-                <div className="font-serif text-base text-white sm:text-lg">
-                  {inProgressCourses.length}
+                <div className="py-5 pl-4">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">
+                    In progress
+                  </div>
+                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+                    {inProgressCourses.length}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-8 space-y-6 px-4 pb-8 sm:px-6 sm:pb-10">
-            {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
+            <div className="relative min-h-[320px] overflow-hidden">
+              <img
+                src="/images/selfie-guide/notebook-window-closeup.jpg"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(237,233,226,0.86)_0%,rgba(237,233,226,0.26)_42%,rgba(15,13,11,0.34)_100%)] lg:bg-[linear-gradient(90deg,rgba(237,233,226,0.20)_0%,rgba(15,13,11,0.12)_42%,rgba(15,13,11,0.42)_100%)]" />
+            </div>
+          </section>
+
+          <div className="space-y-14 px-6 py-10 sm:px-10 lg:px-12">
             {ownedForAccess.length > 0 && (
-              <section className="pt-6 pb-3">
-                <h2
-                  className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
-                  style={{ letterSpacing: "0.2em" }}
-                >
-                  Your products
-                </h2>
-                <div
-                  className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    WebkitOverflowScrolling: "touch",
-                    scrollSnapType: "x proximity",
-                  }}
-                >
+              <section className="space-y-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">
+                      Start here
+                    </p>
+                    <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Your products</h2>
+                  </div>
+                  <p className="max-w-md text-sm leading-6 text-[#6d6254]">
+                    Product homes are separated from course lesson pages so the path stays clear.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {ownedForAccess.map((product: any) => {
                     const copy = getProductAccessCopy(product)
+                    const visual = PRODUCT_VISUALS[product.id]
+                    const href = visual?.href || product.accessUrl
                     return (
-                      <div key={product.id} className="scroll-snap-align-start flex-shrink-0">
-                        <ProductAccessCard
-                          productId={product.id}
-                          name={product.name}
-                          subText={copy.subText}
-                          ctaLabel={copy.ctaLabel}
-                          href={product.accessUrl}
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => href && router.push(href)}
+                        className={`${academyHubCardClass} min-h-[260px]`}
+                      >
+                        <img
+                          src={visual?.image || "/images/selfie-guide/laptop-lifestyle.png"}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                         />
-                      </div>
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.06)_0%,rgba(15,13,11,0.82)_100%)]" />
+                        <div className="relative flex min-h-[260px] flex-col justify-end p-6 text-white">
+                          <span className="mb-4 w-fit border border-white/25 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
+                            {visual?.label || "Product"}
+                          </span>
+                          <h3 className="font-serif text-3xl leading-tight text-white">
+                            {product.name}
+                          </h3>
+                          <p className="mt-2 max-w-sm text-sm leading-6 text-white/74">
+                            {copy.subText}
+                          </p>
+                          <span className="mt-5 text-[11px] uppercase tracking-[0.22em] text-white">
+                            {copy.ctaLabel} →
+                          </span>
+                        </div>
+                      </button>
                     )
                   })}
                 </div>
               </section>
             )}
 
-            {/* Get More — non-Studio users: mini-product grid */}
-            {showGetMore && (
-              <section className="pt-6 pb-3">
-                <h2
-                  className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
-                  style={{ letterSpacing: "0.2em" }}
+            <section className="space-y-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">Courses</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Video lessons</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedView("courses")}
+                  className="w-fit border border-[#17130f] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-[#17130f] transition hover:bg-[#17130f] hover:text-[#f4f0e6]"
                 >
-                  Add more to your library
-                </h2>
-                <div className="grid grid-cols-2 gap-4 max-w-[360px]">
+                  Open all courses →
+                </button>
+              </div>
+
+              {canonicalCourses.length === 0 ? (
+                <div className="border border-[#d5cdbf] p-8 text-sm leading-6 text-[#6d6254]">
+                  No video courses are active for this account yet.
+                </div>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {canonicalCourses.map((course: any) => {
+                    const visual =
+                      COURSE_VISUALS[course.product_id] || COURSE_VISUALS.branded_by_sselfie
+                    const enrolledCourse = myCourses.find((c: any) => c.id === course.id)
+                    return (
+                      <button
+                        key={course.id}
+                        type="button"
+                        onClick={() => handleCourseClick(course.id)}
+                        className={`${academyHubCardClass} grid min-h-[230px] md:grid-cols-[0.9fr_1.1fr]`}
+                      >
+                        <div className="relative min-h-[180px] overflow-hidden">
+                          <img
+                            src={visual.image}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                          />
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(15,13,11,0.18)_100%)]" />
+                        </div>
+                        <div className="flex flex-col justify-between p-6">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.24em] text-[#837866]">
+                              {visual.eyebrow}
+                            </p>
+                            <h3 className="mt-3 font-serif text-3xl leading-tight text-[#17130f]">
+                              {course.title}
+                            </h3>
+                            <p className="mt-3 text-sm leading-6 text-[#6d6254]">
+                              {course.description || "Step-by-step lessons with Sandra."}
+                            </p>
+                          </div>
+                          <div className="mt-6 flex items-center justify-between border-t border-[#d5cdbf] pt-4">
+                            <span className="text-xs text-[#837866]">
+                              {course.lesson_count || course.total_lessons || 0} lessons
+                              {enrolledCourse?.progress_percentage
+                                ? ` • ${enrolledCourse.progress_percentage}%`
+                                : ""}
+                            </span>
+                            <span className="text-[11px] uppercase tracking-[0.2em] text-[#17130f]">
+                              Open course →
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+
+            {resourceHubCards.length > 0 && (
+              <section className="space-y-5">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">
+                    Resources
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Downloads and bonuses</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {resourceHubCards.map(resource => (
+                    <button
+                      key={resource.id}
+                      type="button"
+                      onClick={() =>
+                        resource.view ? setSelectedView(resource.view) : router.push(resource.href)
+                      }
+                      className={`${academyHubCardClass} min-h-[240px]`}
+                    >
+                      <img
+                        src={resource.image}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.10)_0%,rgba(15,13,11,0.84)_100%)]" />
+                      <div className="relative flex min-h-[240px] flex-col justify-end p-5 text-white">
+                        <h3 className="font-serif text-2xl leading-tight">{resource.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-white/72">
+                          {resource.description}
+                        </p>
+                        <span className="mt-5 text-[10px] uppercase tracking-[0.22em] text-white">
+                          {resource.cta} →
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {showGetMore && (
+              <section className="space-y-5 border-t border-[#d5cdbf] pt-10">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">Add more</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Available products</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-4 max-w-[380px]">
                   {availableProducts.map(
                     (p: { id: string; name: string; price: number; purchaseUrl: string }) => (
                       <MiniProductCard
@@ -1101,70 +1313,6 @@ export default function AcademyScreen() {
                   )}
                 </div>
               </section>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {academyCollections.map(collection => (
-                <button
-                  key={collection.view}
-                  onClick={() => setSelectedView(collection.view)}
-                  className={academyCollectionCardClass}
-                  style={{
-                    backgroundImage:
-                      typeof collection.image === "string" && collection.image.startsWith("url(")
-                        ? `linear-gradient(180deg, rgba(13,12,11,0.26) 0%, rgba(13,12,11,0.82) 100%), ${collection.image}`
-                        : `linear-gradient(180deg, rgba(13,12,11,0.26) 0%, rgba(13,12,11,0.82) 100%), url('${collection.image}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  <div className="space-y-3">
-                    <h2 className="font-serif text-2xl tracking-wider text-white/95 sm:text-[30px]">
-                      {collection.title}
-                    </h2>
-                    <p className="max-w-sm text-sm leading-relaxed text-white/88">
-                      {collection.description}
-                    </p>
-                    <div className="pt-4 text-[11px] uppercase tracking-[0.16em] text-white/82">
-                      {collection.cta} →
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {(inProgressCourses[0] || allCourses[0]) && (
-              <div className="stone-panel-strong rounded-2xl p-8 text-white sm:p-10">
-                <div className="space-y-6">
-                  <div>
-                    <div className="stone-chip mb-4 inline-block rounded-full px-3 py-1 text-xs uppercase tracking-wider text-white/70">
-                      {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
-                    </div>
-                    <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
-                      {(inProgressCourses[0] || allCourses[0])?.title}
-                    </h2>
-                    <p className="text-white/50 text-sm leading-relaxed">
-                      {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons •{" "}
-                      {(() => {
-                        const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
-                        if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
-                          return "0m"
-                        }
-                        const hours = Math.floor(Number(duration) / 60)
-                        const mins = Number(duration) % 60
-                        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-                      })()}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
-                    className={`w-full ${academyPrimaryActionClass}`}
-                  >
-                    {inProgressCourses[0] ? "Continue" : "Start Learning"}
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>
