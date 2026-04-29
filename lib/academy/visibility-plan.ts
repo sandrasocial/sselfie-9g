@@ -12,6 +12,15 @@ export type VisibilityPlanJson = {
     subtitle?: string
     createdFor?: string
   }
+  audit?: {
+    verdict?: string
+    readinessScore?: string
+    keep?: string[]
+    remove?: string[]
+    missing?: string[]
+    pricingSignal?: string
+    nextBestOffer?: string
+  }
   message?: {
     positioning?: string
     audience?: string
@@ -83,6 +92,7 @@ export function normalizeVisibilityPlan(value: unknown): VisibilityPlanJson {
       : []
 
   const cover = asObject(source.cover)
+  const audit = asObject(source.audit)
   const message = asObject(source.message)
   const content = asObject(source.content)
   const sales = asObject(source.sales)
@@ -137,6 +147,15 @@ export function normalizeVisibilityPlan(value: unknown): VisibilityPlanJson {
       title: asText(cover.title, "Visibility To Paid Plan"),
       subtitle: asText(cover.subtitle),
       createdFor: asText(cover.createdFor),
+    },
+    audit: {
+      verdict: asText(audit.verdict),
+      readinessScore: asText(audit.readinessScore),
+      keep: asList(audit.keep, 6),
+      remove: asList(audit.remove, 6),
+      missing: asList(audit.missing, 6),
+      pricingSignal: asText(audit.pricingSignal),
+      nextBestOffer: asText(audit.nextBestOffer),
     },
     message: {
       positioning: asText(message.positioning),

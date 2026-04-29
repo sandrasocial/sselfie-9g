@@ -151,8 +151,28 @@ export function VisibilityPlanGenerator() {
       </h3>
       <p className="mt-4 max-w-2xl text-[14px] leading-[1.75] text-[#3D3830]">
         Maya will use the answers saved in your workbooks and turn them into one polished page:
-        message, content, sales path, and next 7 days.
+        audit, message, content, sales path, and next 7 days.
       </p>
+      <div className="mt-5 grid gap-3 text-[13px] leading-6 text-[#3D3830] md:grid-cols-3">
+        <div className="border border-[#0F0D0B]/12 p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#7A6F63]">
+            Market Fit
+          </p>
+          <p className="mt-2">What is clear, what is too broad, and what should change.</p>
+        </div>
+        <div className="border border-[#0F0D0B]/12 p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#7A6F63]">
+            Pricing
+          </p>
+          <p className="mt-2">A practical signal for low-ticket, bundle, or high-touch support.</p>
+        </div>
+        <div className="border border-[#0F0D0B]/12 p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#7A6F63]">
+            Next Step
+          </p>
+          <p className="mt-2">The exact posts, DM scripts, and actions to use this week.</p>
+        </div>
+      </div>
       <button
         type="button"
         onClick={generatePlan}
@@ -160,7 +180,7 @@ export function VisibilityPlanGenerator() {
         className="mt-7 inline-flex px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-90 disabled:opacity-45"
         style={{ background: "#0F0D0B", color: "#F4F0E6" }}
       >
-        {isGenerating ? "Creating Plan..." : "Create My Visibility Plan"}
+        {isGenerating ? "Creating Plan..." : "Audit My Answers"}
       </button>
       {status ? (
         <p className="mt-4 text-[13px] leading-6 text-[#7A6F63]">
