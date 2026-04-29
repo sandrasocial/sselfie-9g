@@ -126,7 +126,7 @@ export default async function VisibilitySuitePage() {
             className="text-[10px] uppercase tracking-[0.5em]"
             style={{ color: C.muted, fontWeight: 600 }}
           >
-            Your Paid Brand System
+            Visibility To Paid
           </p>
           <h1
             className={`${cormorant.className} mt-6 uppercase`}
@@ -148,8 +148,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            Three workbooks. One clear path. From message clarity to a posting rhythm to a
-            monetization system — built to work together.
+            Fill in the workbooks. Maya turns your answers into your message, content plan, and
+            first sales path.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             {suiteUnlocked ? (
@@ -170,7 +170,7 @@ export default async function VisibilitySuitePage() {
                     fontWeight: 600,
                   }}
                 >
-                  Open Maya
+                  Ask Maya
                 </a>
               </>
             ) : (
@@ -180,7 +180,7 @@ export default async function VisibilitySuitePage() {
                   className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em]"
                   style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
                 >
-                  Get the Suite
+                  Start With What To Say
                 </Link>
                 <Link
                   href="/selfie-guide"
@@ -220,13 +220,14 @@ export default async function VisibilitySuitePage() {
           className="text-[10px] uppercase tracking-[0.5em]"
           style={{ color: C.muted, fontWeight: 600 }}
         >
-          The Path
+          Your Workbooks
         </p>
         <p
           className="mt-3 max-w-xl text-[14px] leading-[1.72]"
           style={{ color: C.onCreamSub, fontWeight: 400 }}
         >
-          Work through each workbook in order. Each one builds on the last.
+          Use the workbooks for the thinking. Use Maya inside each product to turn the answers into
+          action.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -413,7 +414,7 @@ export default async function VisibilitySuitePage() {
             textShadow: LP_CREAM,
           }}
         >
-          Ask Maya anything.
+          Turn your answers into your next move.
         </h2>
 
         {ownedCount > 0 ? (
@@ -429,8 +430,8 @@ export default async function VisibilitySuitePage() {
               className="text-[13px] leading-[1.7]"
               style={{ color: C.onCreamSub, fontWeight: 400 }}
             >
-              Unlock one workbook to open Maya. She will guide you through the suite, review your
-              answers, and build your weekly plan.
+              Unlock one workbook to open Maya. She will review your answers and turn them into the
+              next draft, plan, or sales step.
             </p>
             <Link
               href="/academy/products/what_to_say"

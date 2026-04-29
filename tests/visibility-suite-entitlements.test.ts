@@ -61,6 +61,29 @@ describe("visibility suite entitlements and routing", () => {
     expect(contents).toContain("entitlementState.membershipActive")
   })
 
+  it("workbook Maya API exists and checks product access", () => {
+    const contents = read("app/api/academy/visibility-suite/workbook/route.ts")
+    expect(contents).toContain("visibility_suite_workbook_maya_used")
+    expect(contents).toContain("Workbook access required")
+    expect(contents).toContain("getAcademyEntitlementState")
+  })
+
+  it("each workbook includes a Maya output panel", () => {
+    const workbooks = [
+      ["public/academy/what_to_say/index.html", "Generate Message Kit"],
+      ["public/academy/show_up/index.html", "Generate Content Plan"],
+      ["public/academy/get_paid/index.html", "Generate Sales Path"],
+    ] as const
+
+    for (const [file, cta] of workbooks) {
+      const contents = read(file)
+      expect(contents).toContain("Maya Output")
+      expect(contents).toContain(cta)
+      expect(contents).toContain("/api/academy/visibility-suite/workbook")
+      expect(contents).toContain("collectMayaAnswers")
+    }
+  })
+
   it("suite images exist in public folder", () => {
     const images = ["hero.png", "what-to-say.png", "show-up.png", "get-paid.png", "sprint.png"]
     for (const img of images) {
