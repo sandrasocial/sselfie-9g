@@ -13,14 +13,13 @@ export const metadata: Metadata = {
       "Three workbooks. One visibility system. Message clarity, content consistency, and a monetization path — built for women who are already showing up.",
     url: "https://sselfie.ai/visibility-suite",
     type: "website",
-    images: [{ url: "https://sselfie.ai/academy/visibility-suite/hero.png", width: 1200, height: 800 }],
+    images: [{ url: "https://sselfie.ai/academy/visibility-suite/sandra-hero.png", width: 1200, height: 800 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Visibility Suite — Know what to say. Show up. Get paid.",
-    description:
-      "Three workbooks. One visibility system. EUR 17 · EUR 27 · EUR 47.",
-    images: ["https://sselfie.ai/academy/visibility-suite/hero.png"],
+    description: "Three workbooks. One visibility system. EUR 17 · EUR 27 · EUR 47.",
+    images: ["https://sselfie.ai/academy/visibility-suite/sandra-hero.png"],
   },
 }
 
@@ -170,13 +169,13 @@ export default function VisibilitySuiteLandingPage() {
           </div>
         </div>
 
-        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 480 }}>
+        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 520 }}>
           <Image
-            src="/academy/visibility-suite/hero.png"
-            alt="Woman working at iMac"
+            src="/academy/visibility-suite/sandra-hero.png"
+            alt="Sandra — founder of SSELFIE"
             fill
             sizes="(min-width: 1024px) 36vw, 0vw"
-            className="object-cover"
+            className="object-cover object-top"
             priority
           />
         </div>
@@ -290,6 +289,64 @@ export default function VisibilitySuiteLandingPage() {
         </div>
       </section>
 
+      {/* ─── From Sandra ────────────────────────────────────────────────────── */}
+      <section
+        className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.56fr)]"
+        style={{ borderBottom: `1px solid ${C.divStrong}` }}
+      >
+        <div className="px-6 py-14 md:px-20 md:py-20">
+          <p
+            className="text-[10px] uppercase tracking-[0.5em]"
+            style={{ color: C.muted, fontWeight: 600 }}
+          >
+            From Sandra
+          </p>
+          <h2
+            className={`${cormorant.className} mt-6 uppercase`}
+            style={{
+              fontWeight: 300,
+              fontSize: "clamp(28px, 5vw, 52px)",
+              lineHeight: 1.02,
+              textShadow: LP_CREAM,
+            }}
+          >
+            I built this because
+            <br />
+            I needed it first.
+          </h2>
+          <div
+            className="mt-6 space-y-4 max-w-lg text-[14px] leading-[1.78]"
+            style={{ color: C.onCreamSub, fontWeight: 400 }}
+          >
+            <p>
+              I spent years posting without a message, showing up without a system, and building
+              an audience I didn't know how to monetize. Not because I wasn't working hard —
+              because no one had given me the three things in the right order.
+            </p>
+            <p>
+              What to Say gets your message clear. Show Up gives you the rhythm. Get Paid turns
+              both into income. That's the whole path — and it starts at EUR 17.
+            </p>
+          </div>
+          <p
+            className={`${cormorant.className} mt-8`}
+            style={{ fontSize: 20, fontWeight: 300, color: C.stone, fontStyle: "italic" }}
+          >
+            — Sandra
+          </p>
+        </div>
+
+        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 500 }}>
+          <Image
+            src="/academy/visibility-suite/sandra-founder.webp"
+            alt="Sandra — SSELFIE founder"
+            fill
+            sizes="(min-width: 1024px) 28vw, 0vw"
+            className="object-cover object-center"
+          />
+        </div>
+      </section>
+
       {/* ─── How it works ───────────────────────────────────────────────────── */}
       <section
         className="px-6 py-12 md:px-20 md:py-16"
@@ -344,17 +401,14 @@ export default function VisibilitySuiteLandingPage() {
       </section>
 
       {/* ─── Sprint upsell ──────────────────────────────────────────────────── */}
-      <section
-        className="grid lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]"
-        style={{ borderTop: `1px solid ${C.divStrong}` }}
-      >
-        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 420 }}>
+      <section className="grid lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]">
+        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 480 }}>
           <Image
-            src="/academy/visibility-suite/sprint.png"
-            alt="Private sprint"
+            src="/academy/visibility-suite/sandra-sprint.png"
+            alt="Sandra — private sprint"
             fill
             sizes="(min-width: 1024px) 36vw, 0vw"
-            className="object-cover"
+            className="object-cover object-top"
           />
         </div>
         <div
@@ -400,7 +454,7 @@ export default function VisibilitySuiteLandingPage() {
       {/* ─── Footer strip ───────────────────────────────────────────────────── */}
       <div
         className="flex flex-col gap-2 px-6 py-8 md:flex-row md:items-center md:justify-between md:px-20"
-        style={{ borderTop: `1px solid ${C.div}` }}
+        style={{ borderTop: `1px solid ${C.div}`, background: C.creamWarm }}
       >
         <p className="text-[11px]" style={{ color: C.muted, fontWeight: 300 }}>
           © {new Date().getFullYear()} SSELFIE
