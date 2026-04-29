@@ -187,6 +187,8 @@ function getCourseHref(course: Pick<LibraryCourse, "id" | "firstIncompleteLesson
     : `/academy/courses/${course.id}`
 }
 
+const SUITE_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid"] as const
+
 function getOwnedProductEyebrow(productId: string): string {
   switch (productId) {
     case "starter_kit":
@@ -197,6 +199,12 @@ function getOwnedProductEyebrow(productId: string): string {
       return "Selfie Guide"
     case "brand_strategy_pack":
       return "Brand Strategy"
+    case "what_to_say":
+      return "Message Clarity"
+    case "show_up":
+      return "Content System"
+    case "get_paid":
+      return "Monetisation"
     default:
       return "Owned"
   }
@@ -212,6 +220,10 @@ function getOwnedProductActionLabel(productId: string): string {
       return "Open Guide"
     case "brand_strategy_pack":
       return "Start Strategy"
+    case "what_to_say":
+    case "show_up":
+    case "get_paid":
+      return "Open Suite"
     default:
       return "Open"
   }
@@ -278,7 +290,9 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       name: product.name,
       tagline: product.tagline,
       description: product.description,
-      accessUrl: product.accessUrl,
+      accessUrl: (SUITE_PRODUCT_IDS as readonly string[]).includes(product.id)
+        ? "/academy/access/visibility-suite"
+        : product.accessUrl,
       purchaseUrl: product.purchaseUrl,
       type: product.type,
       eyebrow: getOwnedProductEyebrow(product.id),
