@@ -311,14 +311,14 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   if (primaryCourse) {
     if (hasMasterclass && accessibleIds.has("brand_strategy_pack")) {
       heroDescription =
-        "Your Masterclass includes the Brand Strategy Pack. Start with your positioning, then move into the lessons with a clearer offer."
+        "Your Masterclass home now holds the course path, Brand Strategy Pack, bonuses, workbooks, and presets in one place."
       primaryLink = {
-        href: "/academy/access/brand-strategy",
-        label: "Start Brand Strategy",
+        href: "/academy/access/masterclass",
+        label: "Open Masterclass",
       }
       secondaryLink = {
-        href: primaryCourseHref,
-        label: primaryCourse.started ? "Continue Lesson" : "Open Lessons",
+        href: "/academy/access/brand-strategy",
+        label: "Brand Strategy",
       }
     } else {
       heroDescription = primaryCourse.started

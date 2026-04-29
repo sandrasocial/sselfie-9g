@@ -263,9 +263,7 @@ function resolveAcademyProductAccessUrl(
   }
 
   if (product.deliveryKind === "collection") {
-    // Collection products (e.g. masterclass) grant access to constituent courses —
-    // those courses are shown in the academy courses section, so link there.
-    return `/academy`
+    return `/academy/access/${product.accessTarget}`
   }
 
   // academy_course products: the course lives in the library at /academy.

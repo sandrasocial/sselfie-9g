@@ -10,6 +10,12 @@ Drive source folder:
 
 The commercial product is `masterclass`.
 
+The Masterclass buyer home now lives at:
+
+- `/academy/access/masterclass`
+
+This page gives buyers one clear starting point for the full product instead of requiring them to dig through individual lesson pages for PDFs, bonuses, and presets.
+
 In `lib/academy-entitlements.ts`, `masterclass` unlocks:
 
 - `brand_strategy_pack`
@@ -273,6 +279,22 @@ Preset Collection contains:
    - Bonus resource library
    - Maya companion prompts
 2. Keep the Academy course viewer as the lesson experience, but make the buyer home the clear product entry point.
+
+Status: first version implemented at `/academy/access/masterclass`.
+
+Included:
+
+- Brand Strategy Pack entry point
+- Branded by SSELFIE course card
+- Editing Masterclass course card
+- Bonus library with planner, caption pack, visibility checklist, ChatGPT prompts, DNG presets, and preset setup guide
+- Module workbook library for the main attached workbooks
+
+Still pending:
+
+- Dedicated Maya companion block for the buyer home
+- Final placement for any blocked Drive PDFs once valid downloads are available
+- Optional visual polish after Sandra reviews the first buyer-home layout
 
 ### Slice 4: Maya Companion
 
