@@ -92,27 +92,27 @@ const FEATURED_PRODUCT_IDS = [
 const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: string }> = {
   masterclass: {
     image: "/images/selfie-guide/window-editorial-portrait.jpg",
-    label: "Full program",
+    label: "Product home",
     href: "/academy/access/masterclass",
   },
   starter_kit: {
     image: "/images/selfie-guide/editing-before-after.png",
-    label: "Starter Kit",
+    label: "Product home",
     href: "/academy/access/starter-kit",
   },
   selfie_guide_bundle: {
     image: "/images/selfie-guide/golden-hour-guide-portrait.jpg",
-    label: "Bundle",
+    label: "Product home",
     href: "/academy/access/selfie-guide",
   },
   selfie_guide: {
     image: "/images/selfie-guide/window-lighting-setup.png",
-    label: "Guide",
+    label: "Product home",
     href: "/academy/access/selfie-guide",
   },
   brand_strategy_pack: {
     image: "/assets/brand-strategy/hero.png",
-    label: "Strategy",
+    label: "Product home",
     href: "/academy/access/brand-strategy",
   },
   what_to_say: {
@@ -140,11 +140,11 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
 const COURSE_VISUALS: Record<string, { image: string; eyebrow: string }> = {
   branded_by_sselfie: {
     image: "/images/selfie-guide/studio-black-portrait.png",
-    eyebrow: "Masterclass",
+    eyebrow: "Course",
   },
   editing_masterclass: {
     image: "/images/selfie-guide/editing-before-after.png",
-    eyebrow: "Video course",
+    eyebrow: "Course",
   },
 }
 
@@ -215,7 +215,7 @@ const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
 const academyPromoCardClass = "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
 
 const academyHubCardClass =
-  "group relative overflow-hidden border border-[#d5cdbf] bg-[#ede9e2] text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_16px_44px_rgba(21,17,13,0.10)] transition duration-300 hover:-translate-y-0.5 hover:border-[#a89b86]"
+  "stone-panel group relative overflow-hidden text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-[rgba(175,170,162,0.16)]"
 
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
@@ -1076,42 +1076,42 @@ export default function AcademyScreen() {
       )}
 
       <div className="px-4 pt-16 sm:px-6">
-        <div className="overflow-hidden border border-[#d6cfc3] bg-[#ede9e2] text-[#17130f] shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
-          <section className="grid min-h-[420px] lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="flex flex-col justify-between gap-10 p-6 sm:p-10 lg:p-12">
+        <div className="stone-shell-panel overflow-hidden rounded-[32px]">
+          <section className="grid min-h-[360px] lg:grid-cols-[1fr_0.78fr]">
+            <div className="flex flex-col justify-between gap-10 p-6 sm:p-8 lg:p-10">
               <div className="space-y-5">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#837866]">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-white/45">
                   Maya Academy
                 </p>
-                <h1 className="max-w-2xl font-serif text-5xl leading-[0.95] tracking-normal text-[#14110e] sm:text-7xl">
-                  Your course and resource hub.
+                <h1 className="max-w-2xl font-serif text-4xl leading-[0.98] tracking-wider text-white sm:text-6xl">
+                  Your Academy hub.
                 </h1>
-                <p className="max-w-xl text-base leading-8 text-[#5f5649]">
-                  Start with the product you bought. Find every lesson, workbook, and bonus without
-                  digging through old pages.
+                <p className="max-w-xl text-sm leading-7 text-white/68 sm:text-base">
+                  Product homes, video courses, and downloads are separated so you always know where
+                  you are.
                 </p>
               </div>
 
-              <div className="grid max-w-2xl grid-cols-3 border-y border-[#d5cdbf]">
-                <div className="border-r border-[#d5cdbf] py-5 pr-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">Plan</div>
-                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+              <div className="grid max-w-2xl grid-cols-3 border-y border-white/10">
+                <div className="border-r border-white/10 py-5 pr-4">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">Plan</div>
+                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
                     {getFriendlyTierName(userTier)}
                   </div>
                 </div>
-                <div className="border-r border-[#d5cdbf] px-4 py-5">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">
+                <div className="border-r border-white/10 px-4 py-5">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">
                     Completed
                   </div>
-                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
                     {completedCoursesCount}/{totalEnrolledCourses}
                   </div>
                 </div>
                 <div className="py-5 pl-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[#837866]">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">
                     In progress
                   </div>
-                  <div className="mt-2 font-serif text-xl text-[#17130f]">
+                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
                     {inProgressCourses.length}
                   </div>
                 </div>
@@ -1124,7 +1124,7 @@ export default function AcademyScreen() {
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(237,233,226,0.86)_0%,rgba(237,233,226,0.26)_42%,rgba(15,13,11,0.34)_100%)] lg:bg-[linear-gradient(90deg,rgba(237,233,226,0.20)_0%,rgba(15,13,11,0.12)_42%,rgba(15,13,11,0.42)_100%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(13,12,11,0.18)_0%,rgba(13,12,11,0.42)_100%)]" />
             </div>
           </section>
 
@@ -1133,13 +1133,13 @@ export default function AcademyScreen() {
               <section className="space-y-5">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">
                       Start here
                     </p>
-                    <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Your products</h2>
+                    <h2 className="mt-2 font-serif text-3xl text-white">Your products</h2>
                   </div>
-                  <p className="max-w-md text-sm leading-6 text-[#6d6254]">
-                    Product homes are separated from course lesson pages so the path stays clear.
+                  <p className="max-w-md text-sm leading-6 text-white/58">
+                    Product homes hold the downloads, bonuses, and next steps for what you bought.
                   </p>
                 </div>
 
@@ -1162,7 +1162,7 @@ export default function AcademyScreen() {
                         />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.06)_0%,rgba(15,13,11,0.82)_100%)]" />
                         <div className="relative flex min-h-[260px] flex-col justify-end p-6 text-white">
-                          <span className="mb-4 w-fit border border-white/25 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
+                          <span className="mb-4 w-fit rounded-full border border-white/18 bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
                             {visual?.label || "Product"}
                           </span>
                           <h3 className="font-serif text-3xl leading-tight text-white">
@@ -1185,20 +1185,20 @@ export default function AcademyScreen() {
             <section className="space-y-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">Courses</p>
-                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Video lessons</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Courses</p>
+                  <h2 className="mt-2 font-serif text-3xl text-white">Video lessons</h2>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedView("courses")}
-                  className="w-fit border border-[#17130f] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-[#17130f] transition hover:bg-[#17130f] hover:text-[#f4f0e6]"
+                  className="w-fit rounded-full border border-white/14 px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 hover:text-white"
                 >
                   Open all courses →
                 </button>
               </div>
 
               {canonicalCourses.length === 0 ? (
-                <div className="border border-[#d5cdbf] p-8 text-sm leading-6 text-[#6d6254]">
+                <div className="stone-panel rounded-2xl p-8 text-sm leading-6 text-white/58">
                   No video courses are active for this account yet.
                 </div>
               ) : (
@@ -1224,24 +1224,24 @@ export default function AcademyScreen() {
                         </div>
                         <div className="flex flex-col justify-between p-6">
                           <div>
-                            <p className="text-[10px] uppercase tracking-[0.24em] text-[#837866]">
+                            <p className="text-[10px] uppercase tracking-[0.24em] text-white/42">
                               {visual.eyebrow}
                             </p>
-                            <h3 className="mt-3 font-serif text-3xl leading-tight text-[#17130f]">
+                            <h3 className="mt-3 font-serif text-3xl leading-tight text-white">
                               {course.title}
                             </h3>
-                            <p className="mt-3 text-sm leading-6 text-[#6d6254]">
+                            <p className="mt-3 text-sm leading-6 text-white/58">
                               {course.description || "Step-by-step lessons with Sandra."}
                             </p>
                           </div>
-                          <div className="mt-6 flex items-center justify-between border-t border-[#d5cdbf] pt-4">
-                            <span className="text-xs text-[#837866]">
+                          <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
+                            <span className="text-xs text-white/45">
                               {course.lesson_count || course.total_lessons || 0} lessons
                               {enrolledCourse?.progress_percentage
                                 ? ` • ${enrolledCourse.progress_percentage}%`
                                 : ""}
                             </span>
-                            <span className="text-[11px] uppercase tracking-[0.2em] text-[#17130f]">
+                            <span className="text-[11px] uppercase tracking-[0.2em] text-white/78">
                               Open course →
                             </span>
                           </div>
@@ -1256,10 +1256,8 @@ export default function AcademyScreen() {
             {resourceHubCards.length > 0 && (
               <section className="space-y-5">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">
-                    Resources
-                  </p>
-                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Downloads and bonuses</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Resources</p>
+                  <h2 className="mt-2 font-serif text-3xl text-white">Downloads and bonuses</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {resourceHubCards.map(resource => (
@@ -1293,10 +1291,10 @@ export default function AcademyScreen() {
             )}
 
             {showGetMore && (
-              <section className="space-y-5 border-t border-[#d5cdbf] pt-10">
+              <section className="space-y-5 border-t border-white/10 pt-10">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#837866]">Add more</p>
-                  <h2 className="mt-2 font-serif text-3xl text-[#17130f]">Available products</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Add more</p>
+                  <h2 className="mt-2 font-serif text-3xl text-white">Available products</h2>
                 </div>
                 <div className="grid grid-cols-2 gap-4 max-w-[380px]">
                   {availableProducts.map(
