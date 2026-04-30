@@ -28,32 +28,33 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
 const C = {
   ink: "#0F0D0B",
-  cream: "#F5F5F5",
-  creamWarm: "#FFFFFF",
+  inkSoft: "#1B1713",
+  cream: "#EDE9E2",
+  creamWarm: "#F4F0E6",
   stone: "#C4B5A0",
   onCream: "#0F0D0B",
   onCreamSub: "#3D3830",
   muted: "#7A6F63",
+  onDark: "#F4F0E6",
+  onDarkSub: "#D8CFC0",
+  onDarkMuted: "#A79B8B",
   div: "rgba(15,13,11,0.10)",
   divStrong: "rgba(15,13,11,0.18)",
+  divDark: "rgba(244,240,230,0.16)",
 }
 
 const LP_CREAM = "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
+const LP_DARK = "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 
 const PRODUCTS = [
   {
     id: "what_to_say",
     step: "01",
     label: "Message Clarity",
-    title: "What to Say",
+    title: "What To Say",
     price: "EUR 17",
-    description:
-      "Find the words that make people understand who you are, what you help with, and why they should trust you.",
-    included: [
-      "30 caption frameworks for everyday posting",
-      "Prompt structures to keep your voice consistent",
-      "Hooks and simple CTAs so people know what to do next.",
-    ],
+    description: "Find the words people remember.",
+    included: ["one-line message", "Instagram bio", "hooks and CTAs"],
     image: "/academy/visibility-suite/what-to-say.png",
     href: "/academy/products/what_to_say",
   },
@@ -63,12 +64,8 @@ const PRODUCTS = [
     label: "Content Consistency",
     title: "Show Up",
     price: "EUR 27",
-    description: "Know what to post so your content builds trust, connection, and momentum.",
-    included: [
-      "30-day posting rhythm mapped by content type",
-      "Weekly batching workflow to reduce content stress",
-      "Visibility-first structure for stronger reach",
-    ],
+    description: "Turn your message into a rhythm you can keep.",
+    included: ["30-day content plan", "content goals", "soft and clear CTAs"],
     image: "/academy/visibility-suite/show-up.png",
     href: "/academy/products/show_up",
   },
@@ -78,12 +75,8 @@ const PRODUCTS = [
     label: "Monetization Path",
     title: "Get Paid",
     price: "EUR 47",
-    description: "Build one simple offer, one sales post, and one clear path to invite your first buyers.",
-    included: [
-      "Revenue path map based on your current audience",
-      "Make your offer easy to understand and easier to say out loud.",
-      "90-day execution cadence with launch checkpoints",
-    ],
+    description: "Give your visibility a next step.",
+    included: ["one simple offer", "sales post", "7-day sales path"],
     image: "/academy/visibility-suite/get-paid.png",
     href: "/academy/products/get_paid",
   },
@@ -93,24 +86,24 @@ export default function VisibilitySuiteLandingPage() {
   return (
     <main
       className={`${inter.className} min-h-screen`}
-      style={{ background: C.creamWarm, color: C.onCream }}
+      style={{ background: C.ink, color: C.onDark }}
     >
       {/* ─── Nav strip ──────────────────────────────────────────────────────── */}
       <div
         className="flex items-center justify-between px-6 py-4 md:px-20"
-        style={{ borderBottom: `1px solid ${C.div}` }}
+        style={{ borderBottom: `1px solid ${C.divDark}`, background: C.ink }}
       >
         <Link
           href="/"
           className="text-[11px] uppercase tracking-[0.4em]"
-          style={{ color: C.muted, fontWeight: 600 }}
+          style={{ color: C.onDarkMuted, fontWeight: 600 }}
         >
           SSELFIE
         </Link>
         <Link
           href="/auth/login"
           className="text-[11px] uppercase tracking-[0.3em] transition-opacity hover:opacity-70"
-          style={{ color: C.muted, fontWeight: 600 }}
+          style={{ color: C.onDarkMuted, fontWeight: 600 }}
         >
           Log In
         </Link>
@@ -119,12 +112,12 @@ export default function VisibilitySuiteLandingPage() {
       {/* ─── Hero ───────────────────────────────────────────────────────────── */}
       <section
         className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)]"
-        style={{ borderBottom: `1px solid ${C.divStrong}` }}
+        style={{ borderBottom: `1px solid ${C.divDark}`, background: C.ink }}
       >
         <div className="px-6 py-14 md:px-20 md:py-20">
           <p
             className="text-[10px] uppercase tracking-[0.5em]"
-            style={{ color: C.muted, fontWeight: 600 }}
+            style={{ color: C.onDarkMuted, fontWeight: 600 }}
           >
             Visibility To Paid
           </p>
@@ -135,7 +128,8 @@ export default function VisibilitySuiteLandingPage() {
               fontSize: "clamp(40px, 8vw, 82px)",
               lineHeight: 0.98,
               letterSpacing: "-0.02em",
-              textShadow: LP_CREAM,
+              color: C.onDark,
+              textShadow: LP_DARK,
             }}
           >
             Know what to say.
@@ -146,7 +140,7 @@ export default function VisibilitySuiteLandingPage() {
           </h1>
           <p
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
-            style={{ color: C.onCreamSub, fontWeight: 400 }}
+            style={{ color: C.onDarkSub, fontWeight: 400 }}
           >
             A simple visibility system for women who want to know what to say, what to post, and
             how to build their first clear path from content to income. Starting at EUR 17.
@@ -155,14 +149,14 @@ export default function VisibilitySuiteLandingPage() {
             <Link
               href="/academy/products/what_to_say"
               className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
-              style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
+              style={{ background: C.creamWarm, color: C.ink, fontWeight: 600 }}
             >
               Start With What To Say
             </Link>
             <Link
               href="/selfie-guide"
               className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
-              style={{ border: `1px solid ${C.divStrong}`, color: C.ink, fontWeight: 600 }}
+              style={{ border: `1px solid ${C.divDark}`, color: C.onDarkSub, fontWeight: 600 }}
             >
               Free Guide First
             </Link>
@@ -185,7 +179,7 @@ export default function VisibilitySuiteLandingPage() {
       <section
         id="products"
         className="px-6 py-12 md:px-20 md:py-16"
-        style={{ borderBottom: `1px solid ${C.div}` }}
+        style={{ borderBottom: `1px solid ${C.div}`, background: C.creamWarm, color: C.onCream }}
       >
         <p
           className="text-[10px] uppercase tracking-[0.5em]"
@@ -193,13 +187,22 @@ export default function VisibilitySuiteLandingPage() {
         >
           The System
         </p>
+        <h2
+          className={`${cormorant.className} mt-4 uppercase`}
+          style={{
+            fontWeight: 300,
+            fontSize: "clamp(30px, 5vw, 52px)",
+            lineHeight: 1.02,
+            textShadow: LP_CREAM,
+          }}
+        >
+          Three workbooks. One path.
+        </h2>
         <p
-          className="mt-3 max-w-xl text-[14px] leading-[1.72]"
+          className="mt-4 max-w-xl text-[14px] leading-[1.68]"
           style={{ color: C.onCreamSub, fontWeight: 400 }}
         >
-          Visibility To Paid is a simple 3-part system that helps you find your message, plan
-          content you can actually keep up with, and build one clear offer so your online presence
-          finally has a direction.
+          Find your message, plan content you can keep up with, and build one clear offer.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -254,6 +257,12 @@ export default function VisibilitySuiteLandingPage() {
                 >
                   {product.description}
                 </p>
+                <p
+                  className="mt-5 text-[10px] uppercase tracking-[0.3em]"
+                  style={{ color: C.muted, fontWeight: 600 }}
+                >
+                  You leave with:
+                </p>
                 <ul className="mt-5 space-y-2">
                   {product.included.map(item => (
                     <li
@@ -293,12 +302,12 @@ export default function VisibilitySuiteLandingPage() {
       {/* ─── From Sandra ────────────────────────────────────────────────────── */}
       <section
         className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.56fr)]"
-        style={{ borderBottom: `1px solid ${C.divStrong}` }}
+        style={{ borderBottom: `1px solid ${C.divDark}`, background: C.ink, color: C.onDark }}
       >
         <div className="px-6 py-14 md:px-20 md:py-20">
           <p
             className="text-[10px] uppercase tracking-[0.5em]"
-            style={{ color: C.muted, fontWeight: 600 }}
+            style={{ color: C.onDarkMuted, fontWeight: 600 }}
           >
             From Sandra
           </p>
@@ -308,27 +317,20 @@ export default function VisibilitySuiteLandingPage() {
               fontWeight: 300,
               fontSize: "clamp(28px, 5vw, 52px)",
               lineHeight: 1.02,
-              textShadow: LP_CREAM,
+              color: C.onDark,
+              textShadow: LP_DARK,
             }}
           >
-            I built this because
-            <br />
-            I needed it first.
+            “I built this because I needed the order myself.”
           </h2>
           <div
-            className="mt-6 space-y-4 max-w-lg text-[14px] leading-[1.78]"
-            style={{ color: C.onCreamSub, fontWeight: 400 }}
+            className="mt-6 space-y-3 max-w-lg text-[15px] leading-[1.72]"
+            style={{ color: C.onDarkSub, fontWeight: 400 }}
           >
-            <p>
-              I spent years posting without a message, showing up without a system, and building
-              an audience I didn't know how to monetize. Not because I wasn't working hard —
-              because no one had given me the three things in the right order.
-            </p>
-            <p>
-              What To Say gets your message clear. Show Up gives you a rhythm you can keep. Get
-              Paid gives that visibility a simple offer and buyer path. That's the whole system —
-              and it starts at EUR 17.
-            </p>
+            <p>Message first.</p>
+            <p>Content second.</p>
+            <p>Offer third.</p>
+            <p>That is the part I was missing when I was posting, building, and trying to figure it all out at once.</p>
           </div>
           <p
             className={`${cormorant.className} mt-8`}
@@ -352,7 +354,7 @@ export default function VisibilitySuiteLandingPage() {
       {/* ─── How it works ───────────────────────────────────────────────────── */}
       <section
         className="px-6 py-12 md:px-20 md:py-16"
-        style={{ borderBottom: `1px solid ${C.div}` }}
+        style={{ borderBottom: `1px solid ${C.div}`, background: C.creamWarm, color: C.onCream }}
       >
         <p
           className="text-[10px] uppercase tracking-[0.5em]"
@@ -365,22 +367,22 @@ export default function VisibilitySuiteLandingPage() {
             {
               num: "1",
               title: "Start with Step 01",
-              body: "Begin with What To Say. It is the foundation for the rest of the path.",
+              body: "Get your message clear first.",
             },
             {
               num: "2",
-              title: "Unlock the path when ready",
-              body: "Move into Show Up and Get Paid when you want the full message, content, and offer system.",
+              title: "Unlock the path",
+              body: "Move into content and offer when you are ready.",
             },
             {
               num: "3",
-              title: "Move through the path",
-              body: "Message clarity first. Then content consistency. Then monetization. Each step builds directly on the one before it.",
+              title: "Build in order",
+              body: "Message first. Content second. Offer third.",
             },
             {
               num: "4",
-              title: "Generate your Maya Visibility Plan",
-              body: "Maya reads your saved workbook answers and turns them into the next 7 days.",
+              title: "Generate your Maya Plan",
+              body: "Turn your answers into your next 7 days.",
             },
           ].map(step => (
             <div key={step.num}>
@@ -442,11 +444,10 @@ export default function VisibilitySuiteLandingPage() {
             a real business foundation?
           </h2>
           <p
-            className="mt-6 max-w-md text-[14px] leading-[1.78]"
+            className="mt-6 max-w-md text-[14px] leading-[1.68]"
             style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
           >
-            Apply for the 4-week private sprint, where we build your message, offer, content
-            direction, and first sales path together.
+            Apply for the 4-week private sprint and build the full path with Sandra.
           </p>
           <Link
             href="/work-with-me"
