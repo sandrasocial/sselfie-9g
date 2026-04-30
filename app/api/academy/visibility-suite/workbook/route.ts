@@ -33,21 +33,21 @@ const PRODUCT_CONTEXT: Record<
     outcome: "Message OS",
     generateLabel: "Message Kit",
     outputBrief:
-      "Create a message kit with: one-line positioning, Instagram bio, message test rewrite, proof points, content-to-offer bridge, 5 message pillars, 20 caption hooks, 10 brand phrases, content bucket ideas, and the clearest input for Show Up.",
+      "Create a fast-result Message Kit with: one-line message, 'I help' sentence, Instagram bio, 5 message pillars, 4 content buckets, 10 hooks in the user's voice, 3 ready-to-post captions, soft CTA, bridge to first offer, and the next move into Show Up.",
   },
   show_up: {
     title: "Show Up",
     outcome: "30-day content plan",
     generateLabel: "30-Day Content Plan",
     outputBrief:
-      "Create a content plan with: 4 weekly themes, realistic weekly posting capacity, best-fit formats, existing asset ideas, repurposing ideas, 30 post ideas, the first 5 captions, CTA suggestions, a Sunday batching checklist, and the clearest input for Get Paid.",
+      "Create a 30-day content plan with: 4 weekly themes, realistic weekly posting capacity, best-fit formats, existing asset ideas, repurposing ideas, and 30 post ideas. For each post include: post type (Story, Strategy, Social Proof, Show Up, or Sell), goal of the post (trust, connection, reach, conversation, proof, or next step), hook, caption starter, visual idea (selfie, carousel, Reel, Story, screenshot, or behind-the-scenes), and CTA (save, comment, reply, DM, click, buy, or apply). End with a Sunday batching plan the user can actually follow and the clearest content input for Get Paid.",
   },
   get_paid: {
     title: "Get Paid",
     outcome: "Offer and sales path",
     generateLabel: "First Sales Path",
     outputBrief:
-      "Create a sales path with: clean offer statement, buyer profile, buyer urgency, willingness-to-pay signal, first 500 plan, starter price guidance, delivery boundaries, first 10 buyer invite list, one sales post, 3 DM scripts, 3 follow-up messages, simple CTA, 7-day selling plan, and the clearest input for the Maya Visibility Plan.",
+      "Create a trust-protecting First Sales Path with: offer sentence, buyer sentence, €500 path, one sales post, 3 warm DM scripts, 3 follow-up scripts, 5 objection replies, first 10 buyer invite list prompts, 7-day selling plan, boundaries and non-guarantee statement, next best move, and the clearest input for the Maya Visibility Plan. Do not create guaranteed income claims. Do not invent testimonials, client results, follower counts, revenue, or proof.",
   },
 }
 

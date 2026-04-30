@@ -100,6 +100,29 @@
   }
   .sandra-note .label { margin-bottom: 20px; display: block; }
   .sandra-note blockquote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; font-weight: 300; line-height: 1.7; color: var(--obsidian); text-transform: none; letter-spacing: 0; }
+  .helper-box {
+    background: var(--pearl);
+    padding: 28px 32px;
+    border-top: 2px solid var(--obsidian);
+    margin: 32px 0;
+  }
+  .helper-box .label { display: block; margin-bottom: 14px; }
+  .helper-list {
+    display: grid;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding-left: 18px;
+  }
+  .helper-list li { color: var(--obsidian); font-size: 14px; line-height: 1.6; }
+  .cta-ladder {
+    display: grid;
+    gap: 1px;
+    background: var(--whisper);
+    margin: 32px 0;
+  }
+  .cta-column { background: var(--porcelain); padding: 28px 32px; }
+  .cta-column:nth-child(even) { background: var(--pearl); }
+  @media (min-width: 720px) { .cta-ladder { grid-template-columns: 1fr 1fr; } }
 
   /* EXERCISE */
   .exercise-header {
@@ -254,11 +277,11 @@
   <div class="cover">
     <span class="label">Step 02 of 04 — Show Up</span>
     <h1>Show<br>Up</h1>
-    <p class="tagline">30 Days of Content That Gets You Noticed</p>
+    <p class="tagline">Know what to post so people understand you, trust you, and remember you.</p>
     <div class="cover-meta">
       <div class="cover-meta-item"><span class="number">30</span><span class="desc">Days</span></div>
       <div class="cover-meta-item"><span class="number">4</span><span class="desc">Weeks</span></div>
-      <div class="cover-meta-item"><span class="number">120</span><span class="desc">Caption Ideas</span></div>
+      <div class="cover-meta-item"><span class="number">30</span><span class="desc">Caption Starters</span></div>
     </div>
   </div>
 
@@ -277,6 +300,34 @@
         Thirty days planned. One Sunday at a time.<br><br>
         — Sandra
       </blockquote>
+    </div>
+  </section>
+
+  <!-- CONTENT GOAL -->
+  <section>
+    <span class="label">Your Content Goal This Month</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <p>Before you plan your posts, choose what you want your content to help you do this month.</p>
+    <div class="helper-box">
+      <span class="label">Choose One Direction</span>
+      <ul class="helper-list">
+        <li>Build trust</li>
+        <li>Be more visible</li>
+        <li>Start conversations</li>
+        <li>Grow your audience</li>
+        <li>Get more saves</li>
+        <li>Get more DMs</li>
+        <li>Test an offer idea</li>
+        <li>Warm people up for something you may sell later</li>
+        <li>Sell something simple</li>
+        <li>Stay consistent</li>
+      </ul>
+    </div>
+    <p>Your content does not need to sell every day. But it should always have a direction.</p>
+    <div class="question-block">
+      <span class="question-label">What is your content goal this month?</span>
+      <p class="question-text">Pick the goal that fits your real life and business right now. You can change it next month.</p>
+      <textarea data-su-key="content_goal_this_month" placeholder="This month, I want my content to help me build trust and start more DM conversations before I invite people into my offer..."></textarea>
     </div>
   </section>
 
@@ -313,12 +364,16 @@
         <h2>Your Month<br>In 4 Themes</h2>
       </div>
     </div>
+    <p>Show Up helps you plan 30 days of content around your real life, your message, and your goals, so you always know what to post next.</p>
     <p>Each week has one theme. A theme is the one thing your audience needs to hear from you that week — the thread that ties all your content together. When you have a theme, everything you post feels intentional instead of random.</p>
     <p>You don't have to be wildly creative here. Think about what's real in your business right now. What's happening? What are you launching, thinking about, working through? Your life is the source material.</p>
 
     <div class="question-block">
       <span class="question-label">Question 01 — What Are The 4 Things You Talk About Most?</span>
       <p class="question-text">Don't overthink it. If someone asked your clients what you're known for, what would they say? List the topics, skills, or ideas that come up again and again in your work.</p>
+      <div class="helper-box" style="border-top:0;margin:16px 0;padding:18px 20px;">
+        <p style="font-size:13px;margin-bottom:8px;">Start with what is already real: questions people ask you, lessons you repeat, stories you keep telling, and problems you notice all the time.</p>
+      </div>
       <textarea placeholder="1. Getting consistent on Instagram&#10;2. Overcoming the fear of being visible&#10;3. Content planning without overwhelm&#10;4. Building a brand on a small budget..."></textarea>
     </div>
 
@@ -331,6 +386,9 @@
     <div class="question-block">
       <span class="question-label">Question 03 — What Do You Want People To DO After 30 Days?</span>
       <p class="question-text">Not just what you want them to feel — what's the action? Follow you? Book a call? Buy your offer? Sign up for something? Know the destination before you start.</p>
+      <div class="helper-box" style="border-top:0;margin:16px 0;padding:18px 20px;">
+        <p style="font-size:13px;margin-bottom:8px;">This can be soft: save a post, reply to a Story, DM you, download a guide, join a waitlist, or feel ready for the next step.</p>
+      </div>
       <textarea placeholder="I want them to book a discovery call, or buy my digital product, or sign up for my next workshop..."></textarea>
     </div>
 
@@ -366,7 +424,7 @@
         <h2>The Daily 5<br>Formula</h2>
       </div>
     </div>
-    <p>Here's the thing nobody tells you: you don't need 30 different ideas. You need 5 content types and a rotation. That's it. You run these 5 types on repeat and your feed stays varied, interesting, and purposeful — every single month.</p>
+    <p>The Daily 5 is not about selling every day. It is about giving your content five different jobs. When these five work together, your content stops feeling random.</p>
 
     <div class="formula-block">
       <span class="label">The 5 Content Types</span>
@@ -378,35 +436,35 @@
         <div class="type-abbr">S</div>
         <div class="type-body">
           <span class="type-name">Story — Personal</span>
-          <p class="type-desc">A real moment from your life or business. Vulnerable. Honest. The kind of post that makes someone think "that's exactly how I feel." This is where people fall in love with you.</p>
+          <p class="type-desc">Story helps people connect with you. A real moment from your life or business. Honest enough that someone thinks, "that's exactly how I feel."</p>
         </div>
       </div>
       <div class="content-type-row">
         <div class="type-abbr">Str</div>
         <div class="type-body">
           <span class="type-name">Strategy — Tip or Lesson</span>
-          <p class="type-desc">Something you know that helps your audience. A quick win they can use today. Not showing off — genuinely teaching. This is where they trust you.</p>
+          <p class="type-desc">Strategy helps people trust you. Something you know that helps your audience. A quick win they can use today.</p>
         </div>
       </div>
       <div class="content-type-row">
         <div class="type-abbr">SP</div>
         <div class="type-body">
-          <span class="type-name">Social Proof — Result or Testimonial</span>
-          <p class="type-desc">A win from a client or student. A result you've seen. What becomes possible when someone works with you or uses your method. This is where they believe you.</p>
+          <span class="type-name">Social Proof — Proof or Possibility</span>
+          <p class="type-desc">Social Proof helps people believe the result is possible. Use a real result, a message, a moment of progress, or proof from your own process.</p>
         </div>
       </div>
       <div class="content-type-row">
         <div class="type-abbr">SU</div>
         <div class="type-body">
           <span class="type-name">Show Up — Behind the Scenes</span>
-          <p class="type-desc">A peek into your real process. Your workspace, your Sunday planning session, your drafts, your morning. This builds intimacy. It makes you human and real.</p>
+          <p class="type-desc">Show Up helps people remember you. A peek into your real process, your workspace, your drafts, or your day.</p>
         </div>
       </div>
       <div class="content-type-row">
         <div class="type-abbr">Se</div>
         <div class="type-body">
-          <span class="type-name">Sell — Offer Mention</span>
-          <p class="type-desc">Your product, service, or offer. Clear, direct, no apology. People can't buy from you if they don't know what you sell. You're allowed to mention it.</p>
+          <span class="type-name">Sell — The Next Step</span>
+          <p class="type-desc">Sell does not mean pressure. It means making the next step clear. Sometimes that is a paid offer. Sometimes it is a free guide, waitlist, or "DM me and I'll send it."</p>
         </div>
       </div>
     </div>
@@ -420,6 +478,9 @@
     <div class="question-block">
       <span class="question-label">Which Content Type Do You Avoid — And Why?</span>
       <p class="question-text">Be honest. Sell? Strategy? Knowing where you avoid helps you plan ahead so you're not skipping it every week.</p>
+      <div class="helper-box" style="border-top:0;margin:16px 0;padding:18px 20px;">
+        <p style="font-size:13px;margin-bottom:8px;">If you avoid Sell, try calling it "the next step." People cannot take the next step if they do not know what it is.</p>
+      </div>
       <textarea style="min-height:80px;" placeholder="I avoid Sell. It feels pushy. I don't want people to think I'm just after their money..."></textarea>
     </div>
 
@@ -491,6 +552,37 @@
       <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:#6B6B6B;">Show Up</span>
       <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:var(--obsidian);font-style:italic;">Sell</span>
     </div>
+  </section>
+
+  <!-- CTA LADDER -->
+  <section>
+    <span class="label">The CTA Ladder</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <h2 style="margin-bottom:12px;">Match The Ask<br>To The Moment.</h2>
+    <p>Not every post needs to sell. Use the CTA that matches the moment.</p>
+    <div class="cta-ladder">
+      <div class="cta-column">
+        <span class="question-label">Soft CTAs</span>
+        <ul class="helper-list">
+          <li>Save this for later.</li>
+          <li>Reply if you feel this.</li>
+          <li>Comment "me" if this is you.</li>
+          <li>Tell me which part feels hardest.</li>
+          <li>DM me if you want the link.</li>
+        </ul>
+      </div>
+      <div class="cta-column">
+        <span class="question-label">Clear CTAs</span>
+        <ul class="helper-list">
+          <li>Download the guide.</li>
+          <li>Join the waitlist.</li>
+          <li>Get the workbook.</li>
+          <li>Book the call.</li>
+          <li>Apply here.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Your CTA is not always a sale. Sometimes it is just the next tiny step.</p>
   </section>
 </div>
 
@@ -642,7 +734,7 @@
     <div class="maya-output-panel" id="maya-panel">
       <span class="label">Maya Output</span>
       <h2>Build Your<br>30-Day Content Plan</h2>
-      <p>You mapped the themes and rhythm. Now let Maya turn your workbook into post ideas, captions, CTAs, a Sunday batching plan, and the content input for Get Paid.</p>
+      <p>You mapped your themes, rhythm, and real-life content assets. Now let Maya turn your answers into a 30-day content plan with post ideas, hooks, caption starters, visual ideas, soft CTAs, and a Sunday batching plan you can actually follow.</p>
       <div class="maya-actions">
         <button class="maya-action-btn" data-maya-action="review">Review My Answers</button>
         <button class="maya-action-btn primary" data-maya-action="generate">Generate Content Plan</button>
@@ -759,44 +851,44 @@ function loadMayaOutput() {
 
 const CAPTIONS = {
   story: [
-    "I posted three times in a row and then went completely quiet for three weeks. Not because I stopped caring. Because I had no plan — and when you have no plan, panic posts feel better than silence, until they don't.",
-    "Last Sunday I sat down to plan my content and stared at a blank page for 45 minutes. Then I made a coffee and started again. This time I had a system. It took 28 minutes. That's when everything changed.",
-    "Here's the truth about consistency that nobody talks about: it's not a personality trait. It's a system. The women who show up every week aren't more disciplined. They're more prepared.",
-    "I used to think some people were just naturally consistent and I wasn't one of them. Then I realised the consistent people weren't posting from inspiration. They were posting from a plan.",
-    "The month I finally stayed consistent wasn't the month I had more time. It was the month I stopped trying to be clever and just followed a formula. Simple works. I have the receipts.",
-    "I'm not going to pretend I have this perfectly figured out. But I will tell you that the moment I stopped winging it and started planning — even badly — everything started moving."
+    "I used to [old content habit] and then wonder why [result]. The problem was not that I did not care. The problem was that I had no rhythm.",
+    "Last [day/time], I sat down to plan [content/task] and noticed [honest moment]. This is what helped me move through it.",
+    "Here's the truth about consistency that nobody talks about: it is not a personality trait. It is a system you can make small enough to repeat.",
+    "I used to think [belief about consistency]. Then I realised [new belief]. That changed the way I show up.",
+    "The month I finally stayed consistent was not the month I had more time. It was the month I made the plan simpler.",
+    "I'm not going to pretend I have this perfectly figured out. But the moment I stopped winging it and started using [simple rhythm], everything felt lighter."
   ],
   strategy: [
-    "Here's the system that actually keeps me consistent without burning out: one theme per week, five content types in rotation, thirty minutes on Sunday. That's it. Not thirty posts a week. Five intentional ones.",
-    "One thing I changed that made content creation feel easier: I stopped starting from nothing. Now I start from a starter. A sentence that already points in the right direction. Then I just finish the thought.",
-    "If you're posting without a plan, here's the next step — not a big overhaul, just this: decide your theme for the week before Monday. One sentence. Everything else follows from there.",
-    "The reason most people run out of content ideas isn't a creativity problem. It's a structure problem. When you have five content types and one theme, you always have something to say.",
-    "Three things you can do in 30 minutes on Sunday: pick your week's theme, choose your five content types, and copy five caption starters into your drafts. Your whole week is ready. No stress on Monday.",
-    "This is what planning a month of content actually looks like — not a complicated spreadsheet, just four themes, a rotation, and thirty starters you can finish in your own words. Quick win every Sunday."
+    "Here's the system that helps me stay consistent without burning out: [simple rhythm]. That's it. Not more pressure. Just a repeatable plan.",
+    "One thing I changed that made content creation easier: I stopped starting from nothing. Now I start from [starter/theme/question] and finish the thought.",
+    "If you're posting without a plan, here's the next tiny step: choose one theme for the week. One sentence. Everything else gets easier from there.",
+    "The reason most people run out of content ideas is not a creativity problem. It is a structure problem.",
+    "Three things you can do in [time available]: pick your theme, choose your content type, and write the first sentence.",
+    "This is what planning content can look like: one theme, a small rotation, and starters you can finish in your own words."
   ],
   social: [
-    "She told me: 'I've never felt this prepared before. I used to dread Mondays. Now I actually look forward to posting.' That's the whole point of having a plan.",
-    "Before she worked through this, she hadn't posted in two weeks. By Sunday evening, she had her whole month mapped out. She texted me at 9:43pm just to say: 'I can actually do this.'",
-    "The DM I got last Monday made my whole week. She said: 'I've been consistent for six weeks in a row. I didn't think I had it in me.' She did. She just needed the system.",
-    "She went from 'I have nothing to say' to her whole month planned in one sitting. Not because she suddenly got more ideas. Because she finally had a structure to hang them on.",
-    "The question I get asked most: 'How do you stay consistent?' Here's the honest answer: I don't rely on motivation. I rely on a Sunday routine and five content types. Motivation runs out. Systems don't.",
-    "What happens when you stop improvising and start planning: you post more, you stress less, and the content actually reflects where your business is. Real talk from the women who've done this."
+    "A small sign this is working: [real message/comment/reply]. It reminded me that [lesson].",
+    "Before [shift], I was [before]. After [small change], I could [after]. That is the power of having a simple structure.",
+    "The message I keep hearing is: '[real audience words].' That tells me my people need more content about [topic].",
+    "I used to think I had nothing to say. Then I started tracking the questions people actually ask me. There was the content plan.",
+    "The question I get asked most is: '[question].' Here is the honest answer: [answer].",
+    "What happens when you stop improvising and start planning: [benefit one], [benefit two], and content that actually reflects where your business is."
   ],
   showup: [
-    "Here's what my Sunday content planning session actually looks like: coffee, 30 minutes, this exact method. I pick my theme, choose my five types, fill in five starters. Done before 9pm. The week feels easy after that.",
-    "I'm in a café right now batching my entire week's content. It took 25 minutes. Two cappuccinos. No panic, no second-guessing. This is what prepared feels like.",
-    "Behind the scenes of how I planned this month: four themes, one per week. All tied to what's actually happening in my business. No random posts. No 'what should I say today?' Just clarity.",
-    "This is what 30 days of content looks like before it hits your feed — a theme per week, five types in rotation, and starters ready to finish. It's not complicated. It's just planned.",
-    "Real talk: here's what I do on Sunday nights that saves my entire week. I don't write perfect captions. I write the first sentence and trust myself to finish it in the morning. That one habit changed everything.",
-    "I want to show you what 'planned content' actually looks like in practice. Not a colour-coded spreadsheet. Just a theme, a formula, and five sentences I can finish fast. That's the whole system."
+    "Here's what my content planning session actually looks like: [place], [time available], [simple steps]. Nothing fancy. Just enough to know what comes next.",
+    "I'm batching [number] posts right now. The goal is not perfect content. The goal is to make this week easier.",
+    "Behind the scenes of how I planned this month: [theme one], [theme two], [theme three], [theme four]. All tied to what is actually happening in my life and business.",
+    "This is what [time period] of content looks like before it hits your feed: [simple planning pieces]. It is not complicated. It is just planned.",
+    "Real talk: here's the small content habit that saves me every week: [habit]. It works because [reason].",
+    "I want to show you what planned content actually looks like in practice. Not a complicated spreadsheet. Just [simple rhythm] I can repeat."
   ],
   sell: [
-    "If you want your whole month planned by Sunday — themes, formula, caption starters, all of it — Show Up will do that for you. It's €27 and it takes one afternoon.",
-    "This is exactly what's inside Show Up: a 4-week theme planner, the Daily 5 Formula, 30 caption starters, and a Sunday ritual you'll actually use. Everything you need to be consistent, nothing you don't.",
-    "You don't have to start from scratch every week. Show Up gives you the system so Sunday becomes the easiest part of your week — not the part you've been dreading.",
-    "Show Up is for women who want to be consistent on Instagram but don't know where to start. Not for the women who already have it figured out. For the ones sitting in front of a blank page wondering why it's so hard.",
-    "For €27, you get 30 days of content planned, written, and ready before Monday. Not because you suddenly have more time — because you have a system that works on the time you already have.",
-    "The women who stay consistent on Instagram aren't working harder. They're working with a plan. Show Up is that plan. Simple, clear, done on a Sunday."
+    "If you want to stop starting from zero every week, this is the system I wish I had earlier.",
+    "You do not need more random ideas. You need a simple rhythm you can actually repeat.",
+    "If [problem] is what keeps stopping you, [offer/guide/workbook] will help you [clear next step].",
+    "This is for the person who wants [result] but keeps getting stuck at [specific block].",
+    "The next step is simple: [download/join/book/DM/apply]. I will send you [thing] so you can [result].",
+    "If you want help turning [problem] into [next step], send me [word/action] and I will point you to the right place."
   ]
 };
 
@@ -846,7 +938,10 @@ function trackProgress() {
 
 function saveAnswers() {
   const data = {};
-  document.querySelectorAll('textarea').forEach((el, i) => {
+  document.querySelectorAll('textarea[data-su-key]').forEach(el => {
+    data[el.dataset.suKey] = el.value;
+  });
+  document.querySelectorAll('textarea:not([data-su-key])').forEach((el, i) => {
     data['su_field_' + i] = el.value;
   });
   localStorage.setItem('showup_answers', JSON.stringify(data));
@@ -854,7 +949,10 @@ function saveAnswers() {
 
 function loadAnswers() {
   const data = JSON.parse(localStorage.getItem('showup_answers') || '{}');
-  document.querySelectorAll('textarea').forEach((el, i) => {
+  document.querySelectorAll('textarea[data-su-key]').forEach(el => {
+    if (data[el.dataset.suKey]) el.value = data[el.dataset.suKey];
+  });
+  document.querySelectorAll('textarea:not([data-su-key])').forEach((el, i) => {
     if (data['su_field_' + i]) el.value = data['su_field_' + i];
   });
   trackProgress();
