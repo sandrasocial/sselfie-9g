@@ -1,4 +1,5 @@
 import type Stripe from "stripe"
+import { VISIBILITY_TO_PAID_STRIPE_PRICE_IDS } from "@/lib/products"
 
 type SessionWithExpandedLineItems = Stripe.Checkout.Session & {
   line_items?: {
@@ -15,6 +16,8 @@ function buildPriceIdMap() {
     [process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID?.trim(), "paid_blueprint"],
     [process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID?.trim(), "one_time_session"],
     [process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID?.trim(), "sselfie_studio_membership"],
+    [VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch, "visibility_suite"],
+    [VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteStandard, "visibility_suite"],
   ] as const
 
   return new Map<string, string>(pairs.filter((pair): pair is [string, string] => Boolean(pair[0])))

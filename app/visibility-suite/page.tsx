@@ -6,7 +6,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 export const metadata: Metadata = {
   title: "Visibility Suite | SSELFIE",
   description:
-    "A simple visibility system for women who want to know what to say, what to post, and how to build their first clear path from content to income. EUR 17 · EUR 27 · EUR 47.",
+    "A simple visibility system for women who want to know what to say, what to post, and how to build their first clear path from content to income. Launch price €97.",
   openGraph: {
     title: "Visibility Suite — Know what to say. Show up. Get paid.",
     description:
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Visibility Suite — Know what to say. Show up. Get paid.",
-    description: "Three workbooks. One visibility system. EUR 17 · EUR 27 · EUR 47.",
+    description: "Three workbooks. One visibility system. Launch price €97.",
     images: ["https://sselfie.ai/academy/visibility-suite/sandra-hero.png"],
   },
 }
@@ -52,7 +52,7 @@ const PRODUCTS = [
     step: "01",
     label: "Message Clarity",
     title: "What To Say",
-    price: "EUR 17",
+    price: "€47",
     description: "Find the words people remember.",
     included: ["one-line message", "Instagram bio", "hooks and CTAs"],
     image: "/academy/visibility-suite/what-to-say.png",
@@ -63,7 +63,7 @@ const PRODUCTS = [
     step: "02",
     label: "Content Consistency",
     title: "Show Up",
-    price: "EUR 27",
+    price: "€67",
     description: "Turn your message into a rhythm you can keep.",
     included: ["30-day content plan", "content goals", "soft and clear CTAs"],
     image: "/academy/visibility-suite/show-up.png",
@@ -74,13 +74,19 @@ const PRODUCTS = [
     step: "03",
     label: "Monetization Path",
     title: "Get Paid",
-    price: "EUR 47",
+    price: "€97",
     description: "Give your visibility a next step.",
     included: ["one simple offer", "sales post", "7-day sales path"],
     image: "/academy/visibility-suite/get-paid.png",
     href: "/academy/products/get_paid",
   },
 ]
+
+const SUITE_OFFER = {
+  price: "€97",
+  standardPrice: "€147",
+  href: "/checkout/visibility-suite",
+}
 
 export default function VisibilitySuiteLandingPage() {
   return (
@@ -143,15 +149,16 @@ export default function VisibilitySuiteLandingPage() {
             style={{ color: C.onDarkSub, fontWeight: 400 }}
           >
             A simple visibility system for women who want to know what to say, what to post, and
-            how to build their first clear path from content to income. Starting at EUR 17.
+            how to build their first clear path from content to income. Get the full path for €97
+            during the launch window.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
-              href="/academy/products/what_to_say"
+              href={SUITE_OFFER.href}
               className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
               style={{ background: C.creamWarm, color: C.ink, fontWeight: 600 }}
             >
-              Start With What To Say
+              Get The Visibility To Paid Suite
             </Link>
             <Link
               href="/selfie-guide"
@@ -161,6 +168,12 @@ export default function VisibilitySuiteLandingPage() {
               Free Guide First
             </Link>
           </div>
+          <p
+            className="mt-5 text-[11px] uppercase tracking-[0.28em]"
+            style={{ color: C.onDarkMuted, fontWeight: 600 }}
+          >
+            Launch price {SUITE_OFFER.price} · regular {SUITE_OFFER.standardPrice}
+          </p>
         </div>
 
         <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 520 }}>
@@ -172,6 +185,56 @@ export default function VisibilitySuiteLandingPage() {
             className="object-cover object-top"
             priority
           />
+        </div>
+      </section>
+
+      {/* ─── Suite offer ───────────────────────────────────────────────────── */}
+      <section
+        className="px-6 py-10 md:px-20 md:py-14"
+        style={{ borderBottom: `1px solid ${C.div}`, background: C.creamWarm, color: C.onCream }}
+      >
+        <div
+          className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8"
+          style={{ background: C.cream, border: `1px solid ${C.divStrong}` }}
+        >
+          <div>
+            <p
+              className="text-[10px] uppercase tracking-[0.5em]"
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
+              Best Next Step
+            </p>
+            <h2
+              className={`${cormorant.className} mt-3 uppercase`}
+              style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 300, lineHeight: 1.04 }}
+            >
+              Get the full Visibility To Paid Suite.
+            </h2>
+            <p
+              className="mt-3 max-w-xl text-[14px] leading-[1.68]"
+              style={{ color: C.onCreamSub, fontWeight: 400 }}
+            >
+              What To Say, Show Up, Get Paid, and your Maya Visibility Plan in one guided path.
+            </p>
+          </div>
+          <div className="md:text-right">
+            <p className={`${cormorant.className}`} style={{ fontSize: 44, fontWeight: 300 }}>
+              {SUITE_OFFER.price}
+            </p>
+            <p
+              className="text-[10px] uppercase tracking-[0.3em]"
+              style={{ color: C.muted, fontWeight: 600 }}
+            >
+              Launch price · regular {SUITE_OFFER.standardPrice}
+            </p>
+            <Link
+              href={SUITE_OFFER.href}
+              className="mt-5 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
+              style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
+            >
+              Get The Visibility To Paid Suite
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -382,7 +445,7 @@ export default function VisibilitySuiteLandingPage() {
             {
               num: "4",
               title: "Generate your Maya Plan",
-              body: "Turn your answers into your next 7 days.",
+              body: "Generate your Maya Visibility Plan and turn your answers into your next 7 days.",
             },
           ].map(step => (
             <div key={step.num}>

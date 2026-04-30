@@ -30,6 +30,7 @@ export interface PricingProduct {
     | "selfie_guide"
     | "starter_kit"
     | "masterclass"
+    | "visibility_suite"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -38,23 +39,39 @@ export interface PricingProduct {
 }
 
 export interface AcademyProduct {
-  id: "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts" | "editing_masterclass" | "branded_by_sselfie"
+  id:
+    | "what_to_say"
+    | "show_up"
+    | "get_paid"
+    | "visibility_suite"
+    | "ai_photo_prompts"
+    | "editing_masterclass"
+    | "branded_by_sselfie"
   name: string
   tagline: string
   price: number
   currency: "usd" | "eur"
   stripePriceId: string
-  manychatKeyword: "SAY" | "CONTENT" | "PAID" | "PHOTOS" | "EDIT" | "BRAND"
+  manychatKeyword: "SAY" | "CONTENT" | "PAID" | "SUITE" | "PHOTOS" | "EDIT" | "BRAND"
   tag:
     | "bought_what_to_say"
     | "bought_show_up"
     | "bought_get_paid"
+    | "bought_visibility_suite"
     | "bought_ai_photo_prompts"
     | "bought_editing_masterclass"
     | "bought_branded_by_sselfie"
-  upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say"
+  upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say" | "visibility_suite"
   description: string
 }
+
+export const VISIBILITY_TO_PAID_STRIPE_PRICE_IDS = {
+  whatToSay: "price_1TRsh9EVJvME7vkw8csaOr3H",
+  showUp: "price_1TRshAEVJvME7vkwagNIvBiz",
+  getPaid: "price_1TRshBEVJvME7vkwsUhzqtBY",
+  suiteLaunch: "price_1TRshJEVJvME7vkwK55rwjA0",
+  suiteStandard: "price_1TRshKEVJvME7vkwdzk3B1mA",
+} as const
 
 // Credit top-up packages for existing members
 export const CREDIT_PACKAGES: CreditPackage[] = [
@@ -86,6 +103,23 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
 ]
 
 export const PRICING_PRODUCTS: PricingProduct[] = [
+  {
+    id: "visibility_suite",
+    name: "Visibility To Paid Suite",
+    displayName: "Visibility To Paid Suite",
+    description:
+      "The full guided path: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
+    priceInCents: 9700, // €97 launch price
+    type: "visibility_suite",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch,
+    tag: "bought_visibility_suite",
+    features: [
+      "What To Say workbook",
+      "Show Up workbook",
+      "Get Paid workbook",
+      "Maya Visibility Plan",
+    ],
+  },
   {
     id: "one_time_session",
     name: "Starter Photoshoot",
@@ -207,10 +241,10 @@ export const ACADEMY_PRODUCTS = {
   what_to_say: {
     id: "what_to_say",
     name: "What To Say",
-    tagline: "Find Your Message In One Hour",
-    price: 1700,
+    tagline: "Know what to say so people understand, trust, and buy from you.",
+    price: 4700,
     currency: "eur",
-    stripePriceId: process.env.STRIPE_PRICE_WHAT_TO_SAY?.trim() || "",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.whatToSay,
     manychatKeyword: "SAY",
     tag: "bought_what_to_say",
     upsellTo: "show_up",
@@ -219,10 +253,10 @@ export const ACADEMY_PRODUCTS = {
   show_up: {
     id: "show_up",
     name: "Show Up",
-    tagline: "30 Days of Content That Gets You Noticed",
-    price: 2700,
+    tagline: "Know what to post so people understand you, trust you, and remember you.",
+    price: 6700,
     currency: "eur",
-    stripePriceId: process.env.STRIPE_PRICE_SHOW_UP?.trim() || "",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.showUp,
     manychatKeyword: "CONTENT",
     tag: "bought_show_up",
     upsellTo: "get_paid",
@@ -231,14 +265,27 @@ export const ACADEMY_PRODUCTS = {
   get_paid: {
     id: "get_paid",
     name: "Get Paid",
-    tagline: "Turn Your Visibility Into Your First 500 EUR Online",
-    price: 4700,
+    tagline: "Build your first simple offer and €500 sales path.",
+    price: 9700,
     currency: "eur",
-    stripePriceId: process.env.STRIPE_PRICE_GET_PAID?.trim() || "",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.getPaid,
     manychatKeyword: "PAID",
     tag: "bought_get_paid",
     upsellTo: "membership",
     description: "You're showing up. Now let's make sure the right people notice - and pay you.",
+  },
+  visibility_suite: {
+    id: "visibility_suite",
+    name: "Visibility To Paid Suite",
+    tagline: "What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
+    price: 9700,
+    currency: "eur",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch,
+    manychatKeyword: "SUITE",
+    tag: "bought_visibility_suite",
+    upsellTo: "membership",
+    description:
+      "The full guided path to know what to say, what to post, what to sell, and what to do next.",
   },
   ai_photo_prompts: {
     id: "ai_photo_prompts",

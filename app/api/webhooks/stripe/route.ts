@@ -411,6 +411,8 @@ export async function POST(request: NextRequest) {
               productTag = "starter-kit"
             } else if (productType === "masterclass") {
               productTag = "masterclass"
+            } else if (productType === "visibility_suite") {
+              productTag = "visibility-suite"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -564,7 +566,8 @@ export async function POST(request: NextRequest) {
             source === "brand_strategy_paid" ||
             source === "strategy_result_upsell" ||
             source === "starter_kit_paid" ||
-            source === "masterclass_paid"
+            source === "masterclass_paid" ||
+            source === "visibility_suite_paid"
 
           console.log(`[v0] 💳 Payment mode detected`)
           console.log(
@@ -838,7 +841,8 @@ export async function POST(request: NextRequest) {
                 productType !== "selfie_guide" &&
                 productType !== "selfie_guide_bundle" &&
                 productType !== "starter_kit" &&
-                productType !== "masterclass"
+                productType !== "masterclass" &&
+                productType !== "visibility_suite"
               ) {
                 // ⚠️ Skip for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
                 console.log(
@@ -1013,7 +1017,8 @@ export async function POST(request: NextRequest) {
                     productType === "selfie_guide" ||
                     productType === "selfie_guide_bundle" ||
                     productType === "starter_kit" ||
-                    productType === "masterclass"
+                    productType === "masterclass" ||
+                    productType === "visibility_suite"
                   ) {
                     console.log(
                       `[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`
@@ -1124,9 +1129,9 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          if (productType === "academy_mini_product") {
-            const productId = session.metadata.product_id
-            let academyUserId = session.metadata.user_id as string | undefined
+          if (productType === "academy_mini_product" || productType === "visibility_suite") {
+            const productId = productType === "visibility_suite" ? "visibility_suite" : session.metadata.product_id
+            let academyUserId = (session.metadata.user_id as string | undefined) || userId
             const academyCustomerEmail = session.customer_details?.email || session.customer_email
             const academyProduct = ACADEMY_PRODUCTS[productId as keyof typeof ACADEMY_PRODUCTS]
 
@@ -1160,6 +1165,10 @@ export async function POST(request: NextRequest) {
               typeof session.currency === "string" && session.currency.length > 0
                 ? session.currency.toLowerCase()
                 : academyProduct.currency
+            const entitlementProductIds =
+              productId === "visibility_suite"
+                ? ["visibility_suite", "what_to_say", "show_up", "get_paid"]
+                : [productId]
 
             if (paymentIntentId) {
               await sql`
@@ -1228,21 +1237,27 @@ export async function POST(request: NextRequest) {
               )
             `
 
-            await upsertPurchaseEntitlement({
-              userId: academyUserId,
-              productId,
-              sourceRef: paymentIntentId || session.id,
-              metadata: {
-                source: "stripe_webhook:academy_mini_product",
-                stripe_session_id: session.id,
-              },
-            })
+            for (const entitlementProductId of entitlementProductIds) {
+              await upsertPurchaseEntitlement({
+                userId: academyUserId,
+                productId: entitlementProductId,
+                sourceRef: paymentIntentId || session.id,
+                metadata: {
+                  source:
+                    productId === "visibility_suite"
+                      ? "stripe_webhook:visibility_suite"
+                      : "stripe_webhook:academy_mini_product",
+                  stripe_session_id: session.id,
+                  purchased_product_id: productId,
+                },
+              })
+            }
 
             if (academyCustomerEmail) {
               const upsellMap: Record<string, { name: string; price: string; productId: string }> =
                 {
-                  what_to_say: { name: "Show Up", price: "EUR 27", productId: "show_up" },
-                  show_up: { name: "Get Paid", price: "EUR 47", productId: "get_paid" },
+                  what_to_say: { name: "Show Up", price: "€67", productId: "show_up" },
+                  show_up: { name: "Get Paid", price: "€97", productId: "get_paid" },
                   get_paid: {
                     name: "Creator Studio membership",
                     price: "$97/month",
@@ -1250,7 +1265,7 @@ export async function POST(request: NextRequest) {
                   },
                   ai_photo_prompts: {
                     name: "What To Say",
-                    price: "EUR 17",
+                    price: "€47",
                     productId: "what_to_say",
                   },
                 }
@@ -1258,6 +1273,7 @@ export async function POST(request: NextRequest) {
                 what_to_say: "What To Say",
                 show_up: "Show Up",
                 get_paid: "Get Paid",
+                visibility_suite: "Visibility To Paid Suite",
                 ai_photo_prompts: "AI Photo Prompt Pack",
               }
               const productName = productNames[productId] || productId
@@ -1268,16 +1284,28 @@ export async function POST(request: NextRequest) {
               })
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
+              const suiteAccessUrl = `${siteUrl}/academy/access/visibility-suite`
+              const academyAccessUrl = `${siteUrl}/academy`
+              const subject =
+                productId === "visibility_suite"
+                  ? "Your Visibility To Paid Suite is ready"
+                  : `You're in — here's your ${productName}`
               const upsellLine = upsell
-                ? `\n\nReady for the next step? ${upsell.name} (${upsell.price}) is waiting for you.`
+                ? `\n\nNext step when you're ready: ${upsell.name} (${upsell.price}).`
                 : ""
 
-              const emailText = `Hey ${firstName},\n\nYou just got "${productName}" — I'm so glad you did this for yourself.\n\nLog in to access it any time: ${siteUrl}/academy${upsellLine}\n\n— Sandra`
-              const emailHtml = `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong> — I'm so glad you did this for yourself.</p><p><a href="${siteUrl}/academy">Access it here</a></p>${upsell ? `<p>Ready for the next step? <strong>${upsell.name}</strong> (${upsell.price}) is waiting for you.</p>` : ""}<p>— Sandra</p>`
+              const emailText =
+                productId === "visibility_suite"
+                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Maya Visibility Plan\n\nOpen your Visibility To Paid Path:\n${suiteAccessUrl}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
+                  : `Hey ${firstName},\n\nYou just got ${productName}. I'm so glad you did this for yourself.\n\nStart here: ${academyAccessUrl}${upsellLine}\n\n— Sandra`
+              const emailHtml =
+                productId === "visibility_suite"
+                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Maya Visibility Plan</li></ul><p><a href="${suiteAccessUrl}">Open your Visibility To Paid Path</a></p><p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
+                  : `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong>. I'm so glad you did this for yourself.</p><p><a href="${academyAccessUrl}">Start here</a></p>${upsell ? `<p>Next step when you're ready: <strong>${upsell.name}</strong> (${upsell.price}).</p>` : ""}<p>— Sandra</p>`
 
               await sendEmail({
                 to: academyCustomerEmail,
-                subject: `You're in — here's your ${productName} 🎉`,
+                subject,
                 html: emailHtml,
                 text: emailText,
                 emailType: "academy_purchase_confirmation",

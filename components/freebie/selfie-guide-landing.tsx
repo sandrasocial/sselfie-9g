@@ -74,10 +74,10 @@ export default function SelfieGuideLanding() {
                     Full course access, the 7-day challenge, and the preset bonus.
                   </p>
                   <Link
-                    href="/checkout/selfie-guide?plan=guide"
+                    href="/selfie-guide"
                     className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full border border-[rgba(240,237,232,0.16)] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#f0ede8] transition hover:border-[rgba(240,237,232,0.42)] hover:bg-[rgba(240,237,232,0.06)]"
                   >
-                    Checkout the guide
+                    Get the free guide
                   </Link>
                 </div>
 

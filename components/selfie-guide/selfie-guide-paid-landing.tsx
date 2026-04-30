@@ -105,8 +105,8 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
 
             {checkoutFailed ? <p className="error-msg">Something went wrong with checkout. Please try again.</p> : null}
 
-            <a href="/checkout/selfie-guide?plan=guide" className="btn-primary">
-              GET INSTANT ACCESS — €97 →
+            <a href="/selfie-guide" className="btn-primary">
+              GET THE FREE GUIDE →
             </a>
 
             <ul className="trust-list">

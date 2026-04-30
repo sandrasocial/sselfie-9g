@@ -22,14 +22,13 @@ export default function CheckoutCancelPage() {
         </h1>
 
         <p className="text-lg text-stone-600 font-light leading-relaxed mb-12 max-w-xl mx-auto">
-          No worries. Your payment was not processed. You can return to the pricing page whenever you&apos;re ready to join
-          SSELFIE.
+          No worries. Your payment was not processed. You can come back to the Visibility To Paid path whenever you&apos;re ready.
         </p>
 
         {/* What You&apos;re Missing */}
         <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-12 text-left max-w-xl mx-auto">
           <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6 text-center">
-            WHAT YOU&apos;RE MISSING
+            WHEN YOU&apos;RE READY
           </h2>
           <div className="space-y-4">
             <div className="flex gap-3">
@@ -37,21 +36,21 @@ export default function CheckoutCancelPage() {
                 ✓
               </div>
               <p className="text-sm text-stone-700 font-light">
-                Professional AI photos generated from your selfies in minutes
+                What To Say helps you find the words people remember.
               </p>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
                 ✓
               </div>
-              <p className="text-sm text-stone-700 font-light">Maya, your personal AI brand strategist</p>
+              <p className="text-sm text-stone-700 font-light">Show Up turns your message into content you can keep up with.</p>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
                 ✓
               </div>
               <p className="text-sm text-stone-700 font-light">
-                Feed Designer to visualize your Instagram before posting
+                Get Paid gives your visibility one clear next step.
               </p>
             </div>
             <div className="flex gap-3">
@@ -59,14 +58,14 @@ export default function CheckoutCancelPage() {
                 ✓
               </div>
               <p className="text-sm text-stone-700 font-light">
-                Content Academy with proven personal branding strategies
+                Maya turns your answers into your next 7 days.
               </p>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
                 ✓
               </div>
-              <p className="text-sm text-stone-700 font-light">50% off for life as a beta member</p>
+              <p className="text-sm text-stone-700 font-light">No stress. You can start again when it feels right.</p>
             </div>
           </div>
         </div>
@@ -74,10 +73,10 @@ export default function CheckoutCancelPage() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/landing#pricing"
+            href="/visibility-suite"
             className="bg-stone-950 text-stone-50 px-8 py-4 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 inline-block"
           >
-            View Pricing Again
+            Back To Visibility Suite
           </Link>
           <button
             onClick={() => router.push("/")}

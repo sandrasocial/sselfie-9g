@@ -64,12 +64,17 @@ export async function POST(request: Request) {
 
     const derivedOrigin = new URL(request.url).origin
     const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || derivedOrigin).replace(/\/$/, "")
+    const successPath =
+      productId === "visibility_suite"
+        ? "/academy/success?product=visibility_suite"
+        : `/academy/success?product=${productId}`
+    const cancelPath = productId === "visibility_suite" ? "/visibility-suite" : "/academy"
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: product.stripePriceId, quantity: 1 }],
-      success_url: `${siteUrl}/academy/success?product=${productId}`,
-      cancel_url: `${siteUrl}/academy`,
+      success_url: `${siteUrl}${successPath}`,
+      cancel_url: `${siteUrl}${cancelPath}`,
       metadata: {
         product_id: productId,
         user_id: String(neonUser.id),

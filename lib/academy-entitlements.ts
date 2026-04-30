@@ -131,14 +131,14 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       id: product.id,
       slug: product.id.replace(/_/g, "-"),
       title: product.name,
-      type: product.id === "ai_photo_prompts" ? "pack" : "course",
+      type: product.id === "visibility_suite" ? "bundle" : product.id === "ai_photo_prompts" ? "pack" : "course",
       membershipIncluded: true,
       purchasable: true,
       stripePriceId: product.stripePriceId || null,
       active: true,
       sortOrder: (idx + 1) * 10,
-      deliveryKind: "academy_course",
-      accessTarget: product.id,
+      deliveryKind: product.id === "visibility_suite" ? "collection" : "academy_course",
+      accessTarget: product.id === "visibility_suite" ? "visibility-suite" : product.id,
     })
   )
 
@@ -284,6 +284,10 @@ function resolveAcademyProductPurchaseUrl(
     return "/masterclass"
   }
 
+  if (product.id === "visibility_suite") {
+    return "/checkout/visibility-suite"
+  }
+
   if (product.deliveryKind === "direct_private") {
     if (product.accessTarget === "brand-strategy") {
       return "/brand-strategy"
@@ -373,7 +377,7 @@ export async function getAcademyProductRegistry(): Promise<AcademyProductRecord[
         type: row.type as AcademyProductType,
         membershipIncluded: row.membership_included === true,
         purchasable: row.purchasable === true || fallback?.purchasable === true,
-        stripePriceId: row.stripe_price_id ?? fallback?.stripePriceId ?? null,
+        stripePriceId: fallback?.stripePriceId ?? row.stripe_price_id ?? null,
         active: row.active === true,
         sortOrder: Number(row.sort_order) || fallback?.sortOrder || 0,
         deliveryKind: row.delivery_kind ?? fallback?.deliveryKind ?? "academy_course",

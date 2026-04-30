@@ -62,24 +62,19 @@ export async function createLandingCheckoutSession(
   // Determine which Stripe Price ID to use based on product type
   // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
-  const envVarName =
-    product.type === "one_time_session"
-      ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-      : product.type === "paid_blueprint"
-        ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
-        : product.type === "brand_strategy_pack"
-          ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
-          : product.type === "selfie_guide_bundle"
-            ? "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE"
-            : product.type === "selfie_guide"
-              ? "STRIPE_PRICE_SELFIE_GUIDE"
-              : product.type === "starter_kit"
-                ? "STRIPE_PRICE_STARTER_KIT"
-                : product.type === "masterclass"
-                  ? "STRIPE_PRICE_MASTERCLASS"
-              : product.type === "sselfie_studio_membership_annual"
-                ? "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID"
-                : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+  const envVarByProductType: Record<string, string> = {
+    one_time_session: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
+    paid_blueprint: "STRIPE_PAID_BLUEPRINT_PRICE_ID",
+    brand_strategy_pack: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+    selfie_guide_bundle: "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
+    selfie_guide: "STRIPE_PRICE_SELFIE_GUIDE",
+    starter_kit: "STRIPE_PRICE_STARTER_KIT",
+    masterclass: "STRIPE_PRICE_MASTERCLASS",
+    visibility_suite: "STRIPE_PRICE_VISIBILITY_SUITE_LAUNCH",
+    sselfie_studio_membership_annual: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
+    sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+  }
+  const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
@@ -100,6 +95,8 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_STARTER_KIT
   } else if (product.type === "masterclass") {
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
+  } else if (product.type === "visibility_suite") {
+    stripePriceId = product.stripePriceId
   }
   stripePriceId = stripePriceId?.trim()
 

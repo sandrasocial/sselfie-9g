@@ -54,6 +54,13 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying the Selfie Masterclass with encrypted Stripe checkout.",
     footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
   },
+  visibility_suite: {
+    heroTitle: "Complete your Visibility To Paid Suite order",
+    heroBody: "Get What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
+    heading: "Secure checkout",
+    blurb: "You are buying the Visibility To Paid Suite launch offer with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your Suite access is delivered right after payment.",
+  },
 }
 
 function CheckoutContent() {

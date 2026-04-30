@@ -23,6 +23,26 @@ describe("visibility suite entitlements and routing", () => {
     expect(contents).toContain('visibility_suite: ["what_to_say", "show_up", "get_paid"]')
   })
 
+  it("uses the approved Visibility To Paid live Stripe prices", () => {
+    const products = read("lib/products.ts")
+    const checkoutRoute = read("app/checkout/visibility-suite/page.tsx")
+    const webhook = read("app/api/webhooks/stripe/route.ts")
+
+    expect(products).toContain('whatToSay: "price_1TRsh9EVJvME7vkw8csaOr3H"')
+    expect(products).toContain('showUp: "price_1TRshAEVJvME7vkwagNIvBiz"')
+    expect(products).toContain('getPaid: "price_1TRshBEVJvME7vkwsUhzqtBY"')
+    expect(products).toContain('suiteLaunch: "price_1TRshJEVJvME7vkwK55rwjA0"')
+    expect(products).toContain('suiteStandard: "price_1TRshKEVJvME7vkwdzk3B1mA"')
+    expect(products).toContain('id: "visibility_suite"')
+    expect(products).toContain("price: 4700")
+    expect(products).toContain("price: 6700")
+    expect(products).toContain("price: 9700")
+    expect(checkoutRoute).toContain('"visibility_suite"')
+    expect(checkoutRoute).toContain("/academy/access/visibility-suite")
+    expect(webhook).toContain('["visibility_suite", "what_to_say", "show_up", "get_paid"]')
+    expect(webhook).toContain("Your Visibility To Paid Suite is ready")
+  })
+
   it("suite buyer home page exists at the expected route", () => {
     expect(exists("app/academy/access/visibility-suite/page.tsx")).toBe(true)
   })
@@ -215,6 +235,11 @@ describe("visibility suite entitlements and routing", () => {
     const generator = read("components/academy/visibility-plan-generator.tsx")
 
     expect(publicPage).toContain("Generate your Maya Visibility Plan")
+    expect(publicPage).toContain("Get The Visibility To Paid Suite")
+    expect(publicPage).toContain("Launch price")
+    expect(publicPage).toContain("€47")
+    expect(publicPage).toContain("€67")
+    expect(publicPage).toContain("€97")
     expect(suitePage).toContain("Maya Visibility Plan")
     expect(suitePage).toContain("Start Step 01")
     expect(suitePage).toContain("Continue To Step")

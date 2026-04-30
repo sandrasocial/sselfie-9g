@@ -45,6 +45,12 @@ const NEXT_STEP_BY_PRODUCT: Record<
     cta: "Open Profile",
     studioTab: "account",
   },
+  visibility_suite: {
+    headline: "Your Visibility To Paid Path is ready",
+    subText: "Start with What To Say, then move through Show Up, Get Paid, and your Maya Visibility Plan.",
+    cta: "Open Suite",
+    studioTab: "academy",
+  },
   ai_photo_prompts: {
     headline: "Inspiration unlocked",
     subText: "Use Maya prompts to generate your next branded image set fast.",
@@ -186,11 +192,15 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               {NEXT_STEP_BY_PRODUCT[product.id].subText}
             </p>
             <Link
-              href={`/studio?tab=${encodeURIComponent(
-                NEXT_STEP_BY_PRODUCT[product.id].studioTab,
-              )}&source=academy_purchase&product=${encodeURIComponent(
-                product.id,
-              )}&first_time_product_user=true`}
+              href={
+                product.id === "visibility_suite"
+                  ? "/academy/access/visibility-suite"
+                  : `/studio?tab=${encodeURIComponent(
+                      NEXT_STEP_BY_PRODUCT[product.id].studioTab,
+                    )}&source=academy_purchase&product=${encodeURIComponent(
+                      product.id,
+                    )}&first_time_product_user=true`
+              }
               className={`${inter.className} mt-7 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
               style={{
                 background: C.cream,

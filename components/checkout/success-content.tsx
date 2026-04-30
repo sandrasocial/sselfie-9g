@@ -54,6 +54,8 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Starter Kit"
     case "masterclass":
       return "Selfie Masterclass"
+    case "visibility_suite":
+      return "Visibility To Paid Suite"
     case "paid_blueprint":
       return "30-Day Visibility Reset"
     default:
@@ -101,6 +103,15 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
         "Your Masterclass includes Brand Strategy Pack. Complete your positioning first, then move into the lessons with a clearer offer.",
       secondaryHref: "/academy",
       secondaryLabel: "Open Masterclass Library",
+    }
+  }
+
+  if (productType === "visibility_suite") {
+    return {
+      href: "/academy/access/visibility-suite",
+      label: "Open your Visibility To Paid Path",
+      helper:
+        "Your Suite is ready. Start with What To Say, then move through Show Up, Get Paid, and your Maya Visibility Plan.",
     }
   }
 
@@ -453,6 +464,7 @@ export function SuccessContent({
       selfie_guide_bundle: 27,
       starter_kit: 37,
       masterclass: 147,
+      visibility_suite: 97,
       brand_strategy_pack: 19,
       paid_blueprint: 47,
       credit_topup: 25,
@@ -465,7 +477,7 @@ export function SuccessContent({
     ;(window as any).gtag("event", "purchase", {
       transaction_id: sessionId,
       value,
-      currency: "USD",
+      currency: resolvedType === "visibility_suite" ? "EUR" : "USD",
       items: [
         {
           item_id: resolvedType,

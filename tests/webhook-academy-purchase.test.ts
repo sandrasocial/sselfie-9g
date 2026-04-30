@@ -17,6 +17,7 @@ vi.mock("@/lib/db/client", () => ({
 }))
 
 vi.mock("@/lib/stripe", () => ({
+  getStripeWebhookSecret: vi.fn(() => "whsec_test"),
   stripe: {
     webhooks: {
       constructEvent: constructEventMock,
@@ -177,5 +178,62 @@ describe("stripe webhook academy purchase branch", () => {
           query.includes("INSERT INTO user_tags (user_id, tag)") && !query.includes("created_at")
       )
     ).toBe(true)
+  })
+
+  it("grants the suite and all three workbook entitlements for visibility_suite purchases", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_visibility_suite_1",
+      type: "checkout.session.completed",
+      livemode: true,
+      data: {
+        object: {
+          id: "cs_suite_1",
+          object: "checkout.session",
+          mode: "payment",
+          payment_status: "paid",
+          amount_total: 9700,
+          currency: "eur",
+          payment_intent: "pi_suite_123",
+          customer_details: {
+            email: "suite-test@example.com",
+            name: "Suite Test",
+          },
+          customer_email: "suite-test@example.com",
+          metadata: {
+            product_type: "visibility_suite",
+            product_id: "visibility_suite",
+            user_id: "user_456",
+            source: "visibility_suite_paid",
+          },
+        },
+      },
+    })
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route")
+    const response = await POST(
+      new Request("http://localhost/api/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test" },
+        body: "{}",
+      }) as any
+    )
+
+    expect(response.status).toBe(200)
+
+    const serializedCalls = sqlMock.mock.calls.map(call =>
+      JSON.stringify({ query: Array.isArray(call[0]) ? call[0].join(" ") : String(call[0]), values: call.slice(1) })
+    )
+
+    for (const productId of ["visibility_suite", "what_to_say", "show_up", "get_paid"]) {
+      expect(serializedCalls.some(call => call.includes(productId))).toBe(true)
+    }
+
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: "Your Visibility To Paid Suite is ready",
+        text: expect.stringContaining("Open your Visibility To Paid Path"),
+        tags: ["academy", "visibility_suite"],
+      })
+    )
   })
 })
