@@ -20,8 +20,8 @@ const inter = Inter({
 
 const C = {
   ink: "#0F0D0B",
-  cream: "#EDE9E2",
-  creamWarm: "#F4F0E6",
+  cream: "#F5F5F5",
+  creamWarm: "#FFFFFF",
   stone: "#C4B5A0",
   onCream: "#0F0D0B",
   onCreamSub: "#3D3830",
@@ -38,12 +38,13 @@ const SUITE_PRODUCTS = [
     step: "01",
     label: "Message Clarity",
     title: "What to Say",
-    description: "Clarify the message people should remember.",
+    description:
+      "Find the words that make people understand who you are, what you help with, and why they should trust you.",
     pathQuestion: "What do I say?",
     included: [
       "30 caption frameworks for everyday posting",
       "Prompt structures to keep your voice consistent",
-      "Quick hooks and closing CTAs for conversion",
+      "Hooks and simple CTAs so people know what to do next.",
     ],
     image: "/academy/visibility-suite/what-to-say.png",
     workbookUrl: "/academy/what_to_say/",
@@ -54,7 +55,7 @@ const SUITE_PRODUCTS = [
     step: "02",
     label: "Content Consistency",
     title: "Show Up",
-    description: "Turn that message into posts you can actually publish.",
+    description: "Know what to post so your content builds trust, connection, and momentum.",
     pathQuestion: "What do I post?",
     included: [
       "30-day posting rhythm mapped by content type",
@@ -70,11 +71,11 @@ const SUITE_PRODUCTS = [
     step: "03",
     label: "Monetization Path",
     title: "Get Paid",
-    description: "Give your visibility somewhere to go: a simple offer and buyer path.",
+    description: "Build one simple offer, one sales post, and one clear path to invite your first buyers.",
     pathQuestion: "What do I sell?",
     included: [
       "Revenue path map based on your current audience",
-      "Offer and message alignment for higher intent",
+      "Make your offer easy to understand and easier to say out loud.",
       "90-day execution cadence with launch checkpoints",
     ],
     image: "/academy/visibility-suite/get-paid.png",
@@ -149,8 +150,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            A guided path for women who want to know what to say, what to post, what to sell, and
-            what to do next.
+            A simple visibility system for women who want to know what to say, what to post, and
+            how to build their first clear path from content to income.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             {suiteUnlocked ? (
@@ -227,8 +228,9 @@ export default async function VisibilitySuitePage() {
           className="mt-3 max-w-xl text-[14px] leading-[1.72]"
           style={{ color: C.onCreamSub, fontWeight: 400 }}
         >
-          Move through the path in order: clarify your message, turn it into posts, give those posts
-          a paid destination, then let Maya turn the work into your next 7 days.
+          Visibility To Paid is a simple 3-part system that helps you find your message, plan
+          content you can actually keep up with, and build one clear offer so your online presence
+          finally has a direction.
         </p>
 
         <div className="mt-6 grid gap-2 md:grid-cols-4" aria-label="Visibility To Paid path">
@@ -510,16 +512,16 @@ export default async function VisibilitySuitePage() {
               letterSpacing: "-0.015em",
             }}
           >
-            The 4-Week
+            Want help turning this into
             <br />
-            Private Sprint.
+            a real business foundation?
           </h2>
           <p
             className="mt-6 max-w-md text-[15px] leading-[1.78]"
             style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
           >
-            After your Maya Visibility Plan, this is the optional hands-on layer. If you want Sandra
-            beside you while you turn the plan into momentum, apply for the 4-week private sprint.
+            Apply for the 4-week private sprint, where we build your message, offer, content
+            direction, and first sales path together.
           </p>
           <Link
             href="/work-with-me"

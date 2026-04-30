@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react"
 
 const QUICK_PROMPTS = [
-  "Where am I in the path?",
-  "What should I finish first?",
-  "Review my workbook answers",
-  "What is my next paid move?",
-  "Help me create my Visibility Plan",
+  "Tell Me Where To Start",
+  "Review My Answers",
+  "Create My Next 7 Days",
+  "What Is My Next Paid Move?",
 ]
 
 type Message = {

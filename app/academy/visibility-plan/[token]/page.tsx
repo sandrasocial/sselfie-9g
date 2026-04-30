@@ -109,8 +109,8 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
       ]
 
   return (
-    <main className={`visibility-plan min-h-screen bg-[#F4F0E6] text-[#0F0D0B] ${inter.className}`}>
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#0F0D0B]/10 bg-[#F4F0E6]/90 px-6 py-5 backdrop-blur md:px-12 print:static">
+    <main className={`visibility-plan min-h-screen bg-white text-[#0F0D0B] ${inter.className}`}>
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#0F0D0B]/10 bg-white/90 px-6 py-5 backdrop-blur md:px-12 print:static">
         <a
           href="/academy/access/visibility-suite"
           className={`${cormorant.className} text-sm uppercase tracking-[0.32em] text-[#0F0D0B] no-underline`}
@@ -378,7 +378,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
       <style>{`
         @media print {
           .visibility-plan {
-            background: #F4F0E6 !important;
+            background: #FFFFFF !important;
             color: #0F0D0B !important;
           }
           section {

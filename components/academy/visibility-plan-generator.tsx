@@ -130,7 +130,7 @@ export function VisibilityPlanGenerator() {
     }
 
     setIsGenerating(true)
-    setStatus("Maya is creating your Visibility Plan...")
+    setStatus("Maya is creating your Maya Visibility Plan...")
 
     try {
       const response = await fetch("/api/academy/visibility-suite/plan/generate", {
@@ -166,9 +166,22 @@ export function VisibilityPlanGenerator() {
         Create your Maya Visibility Plan.
       </h3>
       <p className="mt-4 max-w-2xl text-[14px] leading-[1.75] text-[#3D3830]">
-        Maya will use the answers saved from What To Say, Show Up, and Get Paid, then turn them
-        into one polished page: message, content, sales path, and your next 7 days.
+        After you complete the workbooks, Maya will turn your answers into one clean plan: your
+        message, content rhythm, first offer, sales post, and next 7 days.
       </p>
+      <div className="mt-5 flex max-w-2xl flex-wrap gap-2">
+        {["Message", "Content rhythm", "Offer path", "Sales post", "DM scripts", "Next 7 days"].map(
+          item => (
+            <span
+              key={item}
+              className="border px-3 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-[#3D3830]"
+              style={{ borderColor: "rgba(15,13,11,0.14)", background: "#FFFFFF" }}
+            >
+              {item}
+            </span>
+          )
+        )}
+      </div>
       <button
         type="button"
         onClick={generatePlan}

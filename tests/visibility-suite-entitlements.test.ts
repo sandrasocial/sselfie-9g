@@ -39,16 +39,15 @@ describe("visibility suite entitlements and routing", () => {
   it("suite page includes sprint upsell linking to /work-with-me", () => {
     const contents = read("app/academy/access/visibility-suite/page.tsx")
     expect(contents).toContain("/work-with-me")
-    expect(contents).toContain("4-Week")
+    expect(contents).toContain("Want help turning this into")
   })
 
-  it("Maya component contains all five quick prompts", () => {
+  it("Maya component contains simplified journey quick prompts", () => {
     const contents = read("components/academy/visibility-suite-maya-chat.tsx")
-    expect(contents).toContain("Where am I in the path?")
-    expect(contents).toContain("What should I finish first?")
-    expect(contents).toContain("Review my workbook answers")
-    expect(contents).toContain("What is my next paid move?")
-    expect(contents).toContain("Help me create my Visibility Plan")
+    expect(contents).toContain("Tell Me Where To Start")
+    expect(contents).toContain("Review My Answers")
+    expect(contents).toContain("Create My Next 7 Days")
+    expect(contents).toContain("What Is My Next Paid Move?")
   })
 
   it("suite Maya chat sends saved workbook answers and renders markdown", () => {
@@ -141,6 +140,12 @@ describe("visibility suite entitlements and routing", () => {
     expect(page).toContain("Maya Visibility Plan")
     expect(page).toContain("Apply For Private Sprint")
     expect(client).toContain("Create My Maya Visibility Plan")
+    expect(client).toContain("Message")
+    expect(client).toContain("Content rhythm")
+    expect(client).toContain("Offer path")
+    expect(client).toContain("Sales post")
+    expect(client).toContain("DM scripts")
+    expect(client).toContain("Next 7 days")
     expect(client).toContain("wts_answers")
     expect(client).toContain("showup_answers")
     expect(client).toContain("gp_answers")
@@ -200,6 +205,8 @@ describe("visibility suite entitlements and routing", () => {
     expect(getPaid).toContain("Step 03 of 04 — Get Paid")
     expect(getPaid).toContain("Next: Maya Visibility Plan")
     expect(generator).toContain("Step 04 — Maya Visibility Plan")
+    expect(publicPage).toContain("A simple visibility system for women")
+    expect(suitePage).toContain("Visibility To Paid is a simple 3-part system")
   })
 
   it("suite images exist in public folder", () => {
