@@ -722,11 +722,11 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgSrc={IMG.homeSelfie}
         imgFirst
         dark
-        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Explore the Starter Kit</Btn>}
+        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Want the photo basics first? Explore the Starter Kit</Btn>}
       />
 
       {/* OFFER LADDER — cream */}
-      <Section eyebrow="Start here" title={<>Choose the layer that matches where you are.</>} dark={false}>
+      <Section eyebrow="Start here" title={<>Choose your next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             { title: "Free Selfie Guide", price: "Free", body: "Start with your phone and face.", href: "/selfie-guide" },
