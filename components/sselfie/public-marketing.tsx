@@ -8,6 +8,10 @@ import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/rou
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
 const IMG = {
   hero:        `${BLOB}/sandra-portrait-after.jpg`,
+  homeHero:    "/academy/visibility-suite/sandra-hero.png",
+  homeFounder: "/academy/visibility-suite/sandra-founder.webp",
+  homeStudio:  "/academy/visibility-suite/hero.png",
+  homeSelfie:  "/images/selfie-guide/img-editorial-dark.png",
   before:      `${BLOB}/sandra-portrait-before.jpg`,
   after:       `${BLOB}/sandra-portrait-after.jpg`,
   founder:     `${BLOB}/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png`,
@@ -370,9 +374,8 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <nav className="hidden md:flex items-center gap-7">
         {[
+          { href: "/selfie-guide", label: "Free Guide" },
           { href: "/visibility-suite", label: "Visibility Suite" },
-          { href: "/starter-kit",  label: "Starter Kit"  },
-          { href: "/masterclass",  label: "Masterclass"  },
           { href: "/join/studio",  label: "Studio"       },
           { href: "/work-with-me", label: "Work With Me" },
         ].map((l) => (
@@ -651,104 +654,139 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         eyebrow="Personal branding by Sandra"
         title={<>Your iPhone is already in your hand.</>}
         body={
-          <p>The problem was never the camera. I teach women how to make income online. Through personal branding, storytelling, and photos you already know how to take.</p>
+          <p>You already have the phone. You already have the story. SSELFIE helps you turn both into a personal brand people understand, trust, and can buy from.</p>
         }
-        primary={{ href: r("/selfie-guide"),  label: "Get the free guide" }}
-        secondary={{ href: r("/starter-kit"), label: "See the Starter Kit" }}
-        imageSrc={IMG.hero}
+        primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
+        secondary={{ href: r("/selfie-guide"),   label: "Get the Free Selfie Guide" }}
+        imageSrc={IMG.homeHero}
       />
 
       {/* RECOGNITION — cream */}
       <Section
         eyebrow="Sound familiar?"
-        title={<>You&apos;re good at what you do. Nobody knows it yet.</>}
+        title={<>You are not invisible because you are not good enough.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>You post something you&apos;re genuinely proud of. A handful of likes. Most of them from people who already know you. And you start wondering if any of this is worth it.</p>
-          <p>It&apos;s not a content problem. It&apos;s a visibility problem. And visibility is a skill.</p>
-          <p>One that&apos;s learnable. Starting with the phone you already have.</p>
+          <p>You are stuck because your message, content, visuals, and offer are not connected yet.</p>
+          <p>You might have the phone. You might have the story. You might even have something to sell.</p>
+          <p>But if people do not understand what you do, what to remember you for, or what step to take next, your content will keep feeling random.</p>
         </div>
       </Section>
 
       {/* WHAT THIS ACTUALLY IS — dark */}
       <Split
         eyebrow="What this actually is"
-        title={<>Personal branding that makes you money.</>}
+        title={<>A visibility-to-paid system for women starting online.</>}
         body={
           <div className="space-y-4">
-            <p>Not just a course on taking better selfies. A system for turning your expertise, your story, and your phone into a brand people find, follow, and buy from.</p>
-            <p>The photo is the cover. The brand is what sells.</p>
-            <p>That&apos;s what I teach.</p>
+            <p>SSELFIE is not just about better selfies.</p>
+            <p>It is a visibility-to-paid system for women who want to use their phone, story, content, and first offer to start building a personal brand online.</p>
+            <p>The photo helps people recognize you. The message helps people understand you. The content helps people trust you. The offer gives people a next step.</p>
           </div>
         }
-        imgSrc={IMG.whoItsFor}
+        imgSrc={IMG.homeStudio}
         dark
       />
 
-      {/* BEFORE / AFTER — cream */}
-      <Section
-        eyebrow="The edit"
-        title={<>Same phone. Different system.</>}
-        dark={false}
-      >
-        <div className="max-w-sm mx-auto">
-          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="No edit" afterLabel="With preset" />
-        </div>
-        <div className="mt-8 mf">
-          <Btn href={r("/starter-kit")} surface="cream">Starter Kit · $37</Btn>
+      {/* THE PATH — cream */}
+      <Section eyebrow="The SSELFIE Path" title={<>Know what to say, post, show, sell, and do next.</>} dark={false}>
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            { step: "01", title: "What To Say", body: "Find the words." },
+            { step: "02", title: "Show Up", body: "Plan the content." },
+            { step: "03", title: "Get Paid", body: "Build the offer path." },
+            { step: "04", title: "Studio", body: "Create and execute." },
+          ].map((item) => (
+            <article key={item.step} className="mf" style={{ ...cardSx(false), minHeight: "170px" }}>
+              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>{item.step}</span>
+              <h3 style={{ ...ty("h3", false), marginBottom: "10px" }}>{item.title}</h3>
+              <p style={{ ...ty("body", false), fontSize: "14px" }}>{item.body}</p>
+            </article>
+          ))}
         </div>
       </Section>
 
-      {/* PRODUCT LADDER — dark */}
-      <Section eyebrow="How it works" title={<>Start here. Add layers when you&apos;re ready.</>} dark>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {/* WHY SELFIES STILL MATTER — dark */}
+      <Split
+        eyebrow="Why selfies still matter"
+        title={<>Your photos are not the whole business.</>}
+        body={
+          <div className="space-y-4">
+            <p>They are the cover, the trust signal, and the visual identity that help people recognize you.</p>
+            <p>SSELFIE starts with your phone, but it does not stop at the photo.</p>
+            <p>Once people recognize you, they still need to understand what you say, what you offer, and what step to take next.</p>
+          </div>
+        }
+        imgSrc={IMG.homeSelfie}
+        imgFirst
+        dark
+        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Explore the Starter Kit</Btn>}
+      />
+
+      {/* OFFER LADDER — cream */}
+      <Section eyebrow="Start here" title={<>Choose the layer that matches where you are.</>} dark={false}>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Free Guide",       price: "Free",          body: "Light, angles, and what to do first. Start here.",                                       href: "/selfie-guide"  },
-            { title: "Starter Kit",      price: "$37",           body: "Selfie Guide, presets, quick-start, and a 7-day content starter. One time.",             href: "/starter-kit"   },
-            { title: "Masterclass",      price: "$147",          body: "Brand Strategy Pack included, plus visibility, content, and offer implementation.",      href: "/masterclass"   },
-            { title: "Studio",           price: "€97/mo",        body: "Maya helps you plan, create, caption, and show up every week.",                         href: "/join/studio"   },
-            { title: "1:1 with Sandra",  price: "Inquiry only",  body: "High-touch support when you want Sandra's eyes on the full picture.",                    href: "/work-with-me"  },
+            { title: "Free Selfie Guide", price: "Free", body: "Start with your phone and face.", href: "/selfie-guide" },
+            { title: "Visibility To Paid Suite", price: "Front door", body: "Know what to say, what to post, what to sell, and what to do next.", href: "/visibility-suite" },
+            { title: "SSELFIE Studio", price: "Execution", body: "Use Maya, visuals, and planning tools to create and execute every week.", href: "/join/studio" },
+            { title: "Work With Me", price: "Private Sprint", body: "High-touch support when you want Sandra's eyes on your full message, offer, content, and sales path.", href: "/work-with-me" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
-              style={{ ...cardSx(true), minHeight: "200px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(237,233,226,0.25)" }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.divDark }}
+              style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(15,13,11,0.24)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.divCream }}
             >
               <div>
-                <span style={{ ...ty("eyebrow", true), marginBottom: "8px" }}>{p.price}</span>
-                <h3 style={{ ...ty("h3", true), fontSize: "clamp(16px, 2vw, 20px)", marginBottom: "8px" }}>{p.title}</h3>
-                <p style={{ ...ty("body", true), fontSize: "13px" }}>{p.body}</p>
+                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{p.price}</span>
+                <h3 style={{ ...ty("h3", false), fontSize: "clamp(16px, 2vw, 20px)", marginBottom: "8px" }}>{p.title}</h3>
+                <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.body}</p>
               </div>
-              <span style={{ ...ty("eyebrow", true), marginTop: "18px" }}>See page →</span>
+              <span style={{ ...ty("eyebrow", false), marginTop: "18px" }}>See page →</span>
             </Link>
           ))}
+        </div>
+        <div className="mf mt-10 pt-8" style={{ borderTop: `1px solid ${C.divCream}` }}>
+          <span style={{ ...ty("eyebrow", false), marginBottom: "16px" }}>Secondary learning resources</span>
+          <div className="grid gap-3 md:grid-cols-2">
+            {[
+              { title: "Starter Kit", price: "$37", body: "Selfie Guide, presets, quick-start, and a 7-day content starter. One time.", href: "/starter-kit" },
+              { title: "Masterclass", price: "$147", body: "Brand Strategy Pack included, plus visibility, content, and offer implementation.", href: "/masterclass" },
+            ].map((p) => (
+              <Link key={p.title} href={r(p.href)} className="block"
+                style={{ ...cardSx(false), minHeight: "160px", textDecoration: "none" }}>
+                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{p.price}</span>
+                <h3 style={{ ...ty("h3", false), fontSize: "20px", marginBottom: "8px" }}>{p.title}</h3>
+                <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.body}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </Section>
 
       {/* FROM SANDRA — cream */}
       <Split
         eyebrow="From Sandra"
-        title={<>I built 180K followers without a team. Just a system.</>}
+        title={<>I built my visibility with my phone, my story, and a lot of figuring it out as I went.</>}
         body={
           <div className="space-y-4">
-            <p>I was hiding behind my logo. Overthinking every caption. Posting less than I wanted to because nothing felt ready.</p>
-            <p>Once I figured out the brand. The positioning, the pillars, the photo that actually looks like me. Showing up became easy. Not perfect. Easy.</p>
-            <p>That&apos;s what I&apos;m here to teach you.</p>
+            <p>Not because everything was perfect. Because I needed a way back to myself, my voice, and my own income.</p>
+            <p>Now SSELFIE is the system I wish I had when I was starting from scratch: what to say, what to post, what to show, what to sell, and what to do next.</p>
           </div>
         }
-        imgSrc={IMG.founder}
+        imgSrc={IMG.homeFounder}
         imgFirst
         dark={false}
-        cta={<Btn href={r("/selfie-guide")} surface="cream">Start with the free guide</Btn>}
+        cta={<Btn href={r("/visibility-suite")} surface="cream">Start with Visibility To Paid</Btn>}
       />
 
       {/* CTA CLOSE — dark */}
       <CtaClose
-        title={<>Your phone is enough. Your story is enough.</>}
-        primary={{ href: r("/selfie-guide"),  label: "Get the free guide" }}
-        secondary={{ href: r("/starter-kit"), label: "See the Starter Kit" }}
+        title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
+        primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
+        secondary={{ href: r("/selfie-guide"),   label: "Get the Free Guide" }}
         dark
       />
 

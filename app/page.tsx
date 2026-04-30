@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
@@ -7,6 +8,12 @@ import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "SSELFIE | Personal Branding, Content & Visibility To Paid",
+  description:
+    "SSELFIE helps women turn their phone, story, content, and first offer into a personal brand people understand, trust, and can buy from.",
+}
 
 export default async function Home({
   searchParams,
