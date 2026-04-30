@@ -1091,26 +1091,92 @@ export function StudioPageContent() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function WorkWithMePageContent() {
+  const buildItems = [
+    "Your clear message",
+    "Your first simple offer",
+    "Your homepage or landing page direction",
+    "Your content direction",
+    "Your first sales post",
+    "Warm DM scripts",
+    "Your 30-day visibility plan",
+    "Your next best move",
+  ]
+  const fitItems = [
+    "You are tired of posting without a clear direction",
+    "You have ideas, but no clear offer",
+    "You know you need to show up, but you do not know what to say",
+    "You want to start selling, but it feels awkward or unclear",
+    "You need someone to look at the full picture",
+    "You want clear, direct, personal guidance instead of another course",
+  ]
+  const processSteps = [
+    "Apply",
+    "Sandra reviews your application",
+    "If it is a fit, you receive a payment link",
+    "We work together for 4 weeks",
+    "You leave with your message, offer, content direction, sales path, and next steps",
+  ]
+
   return (
     <PublicPageShell>
       <PublicNav />
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="1:1 with Sandra"
-        title={<>Two or three people at a time. That&apos;s it.</>}
-        body={<p>If you want the SSELFIE method applied personally to your brand, offer, content, and visuals, this is the high-touch path.</p>}
-        primary={{ href: "#inquiry",       label: "Send an inquiry" }}
-        secondary={{ href: "/join/studio", label: "See Studio" }}
+        eyebrow="Visibility To Paid Private Sprint"
+        title={<>Four weeks to build your message, offer, content direction, and first sales path with me.</>}
+        body={<p>For women who do not want another course, but want Sandra&apos;s eyes on the full picture: what to say, what to post, what to sell, and what to do next.</p>}
+        primary={{ href: "#inquiry",       label: "Apply for the Private Sprint" }}
+        secondary={{ href: "/visibility-suite", label: "Start with the Visibility To Paid Suite" }}
         imageSrc={IMG.founder}
       />
 
-      {/* WHAT IT IS — cream */}
-      <Section eyebrow="What it is" title="Direct eyes on the full picture." dark={false} narrow>
-        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Maybe the issue is the photos.</p>
-          <p>Maybe it&apos;s the offer. Or the posting. Or the way none of it feels like you yet.</p>
-          <p>That&apos;s what this is for.</p>
+      {/* WHAT WE BUILD — cream */}
+      <Section eyebrow="Private Sprint" title="What we build together" dark={false}>
+        <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>This is not another content course. This is where we look at the full picture and build the pieces you need to move from visible to paid.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {buildItems.map((item) => (
+            <FCard key={item} dark={false} title={item} body="" />
+          ))}
+        </div>
+      </Section>
+
+      {/* WHO IT IS FOR — dark */}
+      <Section eyebrow="Who it is for" title="This is for you if" dark>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {fitItems.map((item) => (
+            <FCard key={item} dark title={item} body="" />
+          ))}
+        </div>
+        <div className="mt-10">
+          <Btn href="#inquiry" surface="dark">Apply for the Private Sprint</Btn>
+        </div>
+      </Section>
+
+      {/* HOW IT WORKS — cream */}
+      <Section eyebrow="How it works" title="A private application first. Then the sprint." dark={false}>
+        <div className="grid gap-4 md:grid-cols-5">
+          {processSteps.map((step, index) => (
+            <FCard key={step} dark={false} title={`${index + 1}. ${step}`} body="" />
+          ))}
+        </div>
+        <div className="mf max-w-3xl mt-10" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>Applications are reviewed personally. This is not an instant checkout because Sandra only takes a small number of private clients at a time.</p>
+        </div>
+      </Section>
+
+      {/* INVESTMENT — dark */}
+      <Section eyebrow="Investment" title="Founding private sprint: €2,000" dark narrow>
+        <div className="mf space-y-5" style={{ ...ty("body", true), fontSize: "16px" }}>
+          <p><span style={{ color: C.onDarkSub }}>Payment plan:</span> 2 x €1,100</p>
+          <p>Payment is not taken when you apply. If your application is accepted, Sandra will send you a private payment link.</p>
+          <p style={{ color: C.onDarkMuted }}>This is not a promise of instant income. It is a focused 4-week sprint to build the foundation: message, offer, content direction, and first sales path.</p>
+          <div className="flex flex-wrap gap-3 pt-3">
+            <Btn href="#inquiry" surface="dark">Apply for the Private Sprint</Btn>
+            <Btn href="/visibility-suite" surface="dark" ghost>Start with the Suite</Btn>
+          </div>
         </div>
       </Section>
 
@@ -1119,12 +1185,12 @@ export function WorkWithMePageContent() {
         <PaperTexture dark />
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
           <div className="mf">
-            <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Inquiry</span>
-            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Tell me what&apos;s not working right now.</h2>
-            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I just need enough to know whether this is the right fit.</p>
+            <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply for the Private Sprint</h2>
+            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand where you are, what you are trying to build, and whether this is the right fit.</p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
-                <span style={{ color: C.onDarkSub }}>Limited spots.</span> Sandra reads every inquiry herself and replies within 48 hours.
+                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application is accepted, Sandra will reply with the next step and a private payment link.
               </p>
             </div>
           </div>
@@ -1146,6 +1212,9 @@ function InquiryForm() {
   const [instagram,    setInstagram]    = useState("")
   const [currentBlock, setCurrentBlock] = useState("")
   const [goal,         setGoal]         = useState("")
+  const [currentOffer, setCurrentOffer] = useState("")
+  const [helpFocus,    setHelpFocus]    = useState("")
+  const [investmentReadiness, setInvestmentReadiness] = useState("")
   const [error,        setError]        = useState("")
   const [success,      setSuccess]      = useState(false)
   const [pending,      startTransition] = useTransition()
@@ -1162,10 +1231,10 @@ function InquiryForm() {
     transition: "border-color 0.2s",
     // Zero border-radius — SSELFIE Agents system
   }
-  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = "rgba(237,233,226,0.28)"
   }
-  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = C.divDark
   }
 
@@ -1178,12 +1247,21 @@ function InquiryForm() {
         const res     = await fetch("/api/inquiry/submit", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, instagramHandle: instagram, currentChallenge: currentBlock, desiredOutcome: goal }),
+          body: JSON.stringify({
+            name,
+            email,
+            instagramHandle: instagram,
+            currentChallenge: currentBlock,
+            desiredOutcome: goal,
+            currentOffer,
+            helpFocus,
+            investmentReadiness,
+          }),
         })
         const payload = (await res.json().catch(() => null)) as { error?: string } | null
         if (!res.ok) { setError(payload?.error ?? "Something went wrong. Please try again."); return }
         setSuccess(true)
-        setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal("")
+        setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal(""); setCurrentOffer(""); setHelpFocus(""); setInvestmentReadiness("")
       } catch {
         setError("Something went wrong. Please try again.")
       }
@@ -1193,8 +1271,9 @@ function InquiryForm() {
   if (success) {
     return (
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
-        <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Got it.</p>
-        <p style={ty("body", true)}>Sandra reads every inquiry herself and will reply within 48 hours.</p>
+        <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
+        <p style={ty("body", true)}>Sandra reads every application herself. If it looks like the right fit, you&apos;ll hear back with the next step and a private payment link.</p>
+        <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>No payment has been taken.</p>
       </div>
     )
   }
@@ -1223,6 +1302,32 @@ function InquiryForm() {
         <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={4} required
           style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
+      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
+        <span>What are you currently selling, if anything?</span>
+        <textarea value={currentOffer} onChange={(e) => setCurrentOffer(e.target.value)} rows={3}
+          style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
+      </label>
+      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
+        <span>What do you want help with most?</span>
+        <select value={helpFocus} onChange={(e) => setHelpFocus(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
+          <option value="">Choose one</option>
+          <option value="Message">Message</option>
+          <option value="Content">Content</option>
+          <option value="Offer">Offer</option>
+          <option value="Homepage / landing page direction">Homepage / landing page direction</option>
+          <option value="Sales path">Sales path</option>
+          <option value="All of it">All of it</option>
+        </select>
+      </label>
+      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
+        <span>Are you ready to invest €2,000 if it is the right fit?</span>
+        <select value={investmentReadiness} onChange={(e) => setInvestmentReadiness(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
+          <option value="">Choose one</option>
+          <option value="Yes">Yes</option>
+          <option value="Maybe, I have questions">Maybe, I have questions</option>
+          <option value="Not right now">Not right now</option>
+        </select>
+      </label>
       <button
         type="submit" disabled={pending}
         style={{
@@ -1239,7 +1344,7 @@ function InquiryForm() {
           // Zero border-radius — SSELFIE Agents system
         }}
       >
-        {pending ? "Sending…" : "Send inquiry"}
+        {pending ? "Sending…" : "Apply for the Private Sprint"}
       </button>
       {error && <p style={{ fontSize: "13px", color: "#f87171", fontFamily: F.sans }}>{error}</p>}
     </form>
