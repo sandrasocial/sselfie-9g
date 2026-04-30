@@ -51,6 +51,24 @@ describe("visibility suite entitlements and routing", () => {
     expect(contents).toContain("What is my next move?")
   })
 
+  it("suite Maya chat sends saved workbook answers and renders markdown", () => {
+    const client = read("components/academy/visibility-suite-maya-chat.tsx")
+    const route = read("app/api/academy/visibility-suite/chat/route.ts")
+
+    expect(client).toContain("collectWorkbookAnswers")
+    expect(client).toContain("wts_answers")
+    expect(client).toContain("showup_answers")
+    expect(client).toContain("gp_answers")
+    expect(client).toContain(
+      "body: JSON.stringify({ question: cleanQuestion, ownedProducts, answers })"
+    )
+    expect(client).toContain("dangerouslySetInnerHTML={renderMarkdown(msg.text)}")
+    expect(client).toContain("visibility_suite_maya_thread")
+    expect(route).toContain("normalizeWorkbookAnswers")
+    expect(route).toContain("Workbook answers saved in this browser")
+    expect(route).toContain("answer_count: entitledAnswers.length")
+  })
+
   it("course library routes suite product owners to the suite home", () => {
     const contents = read("app/academy/_lib/course-library.ts")
     expect(contents).toContain("/academy/access/visibility-suite")
@@ -85,6 +103,25 @@ describe("visibility suite entitlements and routing", () => {
       expect(contents).toContain(cta)
       expect(contents).toContain("/api/academy/visibility-suite/workbook")
       expect(contents).toContain("collectMayaAnswers")
+    }
+  })
+
+  it("workbook Maya output renders markdown and persists locally", () => {
+    const workbooks = [
+      ["public/academy/what_to_say/index.html", "what_to_say"],
+      ["public/academy/show_up/index.html", "show_up"],
+      ["public/academy/get_paid/index.html", "get_paid"],
+    ] as const
+
+    for (const [file, productId] of workbooks) {
+      const contents = read(file)
+      expect(contents).toContain(`const MAYA_PRODUCT_ID = '${productId}'`)
+      expect(contents).toContain("function renderMayaMarkdown")
+      expect(contents).toContain("body.innerHTML = renderMayaMarkdown")
+      expect(contents).toContain("saveMayaOutput(action")
+      expect(contents).toContain("loadMayaOutput();")
+      expect(contents).toContain("visibility_suite_workbook_output_")
+      expect(contents).not.toContain("body.textContent = data.answer")
     }
   })
 
