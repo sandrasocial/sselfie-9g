@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
+import { PublicNav, PublicFooter } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
   title: "Visibility Suite | SSELFIE",
@@ -53,6 +54,7 @@ const PRODUCTS = [
     label: "Message Clarity",
     title: "What To Say",
     price: "€47",
+    cta: "Start Step 01",
     description: "Find the words people remember.",
     included: ["one-line message", "Instagram bio", "hooks and CTAs"],
     image: "/academy/visibility-suite/what-to-say.png",
@@ -64,6 +66,7 @@ const PRODUCTS = [
     label: "Content Consistency",
     title: "Show Up",
     price: "€67",
+    cta: "Unlock Step 02",
     description: "Turn your message into a rhythm you can keep.",
     included: ["30-day content plan", "content goals", "soft and clear CTAs"],
     image: "/academy/visibility-suite/show-up.png",
@@ -75,6 +78,7 @@ const PRODUCTS = [
     label: "Monetization Path",
     title: "Get Paid",
     price: "€97",
+    cta: "Unlock Step 03",
     description: "Give your visibility a next step.",
     included: ["one simple offer", "sales post", "7-day sales path"],
     image: "/academy/visibility-suite/get-paid.png",
@@ -90,31 +94,12 @@ const SUITE_OFFER = {
 
 export default function VisibilitySuiteLandingPage() {
   return (
-    <main
-      className={`${inter.className} min-h-screen`}
-      style={{ background: C.ink, color: C.onDark }}
-    >
-      {/* ─── Nav strip ──────────────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-6 py-4 md:px-20"
-        style={{ borderBottom: `1px solid ${C.divDark}`, background: C.ink }}
+    <>
+      <PublicNav loginHref="/auth/login" />
+      <main
+        className={`${inter.className} min-h-screen pt-[58px]`}
+        style={{ background: C.ink, color: C.onDark }}
       >
-        <Link
-          href="/"
-          className="text-[11px] uppercase tracking-[0.4em]"
-          style={{ color: C.onDarkMuted, fontWeight: 600 }}
-        >
-          SSELFIE
-        </Link>
-        <Link
-          href="/auth/login"
-          className="text-[11px] uppercase tracking-[0.3em] transition-opacity hover:opacity-70"
-          style={{ color: C.onDarkMuted, fontWeight: 600 }}
-        >
-          Log In
-        </Link>
-      </div>
-
       {/* ─── Hero ───────────────────────────────────────────────────────────── */}
       <section
         className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)]"
@@ -353,7 +338,7 @@ export default function VisibilitySuiteLandingPage() {
                     className="px-6 py-[11px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
                     style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
                   >
-                    Start Step {product.step}
+                    {product.cta}
                   </Link>
                 </div>
               </div>
@@ -522,38 +507,8 @@ export default function VisibilitySuiteLandingPage() {
         </div>
       </section>
 
-      {/* ─── Footer strip ───────────────────────────────────────────────────── */}
-      <div
-        className="flex flex-col gap-2 px-6 py-8 md:flex-row md:items-center md:justify-between md:px-20"
-        style={{ borderTop: `1px solid ${C.div}`, background: C.creamWarm }}
-      >
-        <p className="text-[11px]" style={{ color: C.muted, fontWeight: 300 }}>
-          © {new Date().getFullYear()} SSELFIE
-        </p>
-        <div className="flex gap-6">
-          <Link
-            href="/privacy"
-            className="text-[11px] transition-opacity hover:opacity-70"
-            style={{ color: C.muted, fontWeight: 300 }}
-          >
-            Privacy
-          </Link>
-          <Link
-            href="/terms"
-            className="text-[11px] transition-opacity hover:opacity-70"
-            style={{ color: C.muted, fontWeight: 300 }}
-          >
-            Terms
-          </Link>
-          <Link
-            href="/academy"
-            className="text-[11px] transition-opacity hover:opacity-70"
-            style={{ color: C.muted, fontWeight: 300 }}
-          >
-            My Academy
-          </Link>
-        </div>
-      </div>
-    </main>
+      </main>
+      <PublicFooter />
+    </>
   )
 }
