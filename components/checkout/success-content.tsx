@@ -1232,7 +1232,7 @@ export function SuccessContent({
                 <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
                   <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Product</span>
                   <span className="text-sm sm:text-base text-[#f0ede8] font-light">
-                    {getProductLabel(userInfo.productType || purchaseType)}
+                    {getProductLabel(resolvedProductType)}
                   </span>
                 </div>
                 {resolvedProductType === "visibility_suite" && (

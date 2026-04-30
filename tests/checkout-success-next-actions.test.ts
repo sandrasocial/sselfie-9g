@@ -33,6 +33,7 @@ describe("checkout success next actions", () => {
     const purchaseTypeIdx = resolvedLine!.indexOf("purchaseType")
     const userInfoIdx = resolvedLine!.indexOf("userInfo")
     expect(purchaseTypeIdx).toBeLessThan(userInfoIdx)
+    expect(successContent).toContain("{getProductLabel(resolvedProductType)}")
   })
 
   it("does not show credits row for visibility_suite even when user has existing credits", () => {
