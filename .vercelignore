@@ -1,0 +1,5 @@
+docs/_archive
+output
+playwright-report
+test-results
+tmp
