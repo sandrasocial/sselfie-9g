@@ -63,6 +63,15 @@ function getProductLabel(productType: string | undefined) {
   }
 }
 
+const CREDIT_GRANTING_TYPES = new Set([
+  "sselfie_studio_membership",
+  "sselfie_studio_membership_annual",
+  "one_time_session",
+  "paid_blueprint",
+])
+
+const VISIBILITY_SUITE_INCLUDES = ["What To Say", "Show Up", "Get Paid", "Maya Visibility Plan"]
+
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
     return {
@@ -226,7 +235,10 @@ export function SuccessContent({
   const [showBrandStrategyTimeout, setShowBrandStrategyTimeout] = useState(false)
   const selfieGuideResolutionTrackedRef = useRef(false)
   const selfieGuideFailureTrackedRef = useRef(false)
-  const resolvedProductType = (userInfo?.productType || purchaseType || "") as string
+  // purchaseType (from URL ?type=) is the authoritative source — it reflects what was just
+  // purchased. userInfo.productType comes from the subscriptions table (last subscription on
+  // the account) and can be a different product entirely for returning users.
+  const resolvedProductType = (purchaseType || userInfo?.productType || "") as string
   const successAction = getSuccessActionConfig(resolvedProductType, resolvedReturnTo)
 
   useEffect(() => {
@@ -1223,10 +1235,20 @@ export function SuccessContent({
                     {getProductLabel(userInfo.productType || purchaseType)}
                   </span>
                 </div>
-                {userInfo.credits && Number(userInfo.credits) > 0 && (
+                {resolvedProductType === "visibility_suite" && (
+                  <div className="flex justify-between items-start pb-4 border-b border-[rgba(195,190,182,0.20)]">
+                    <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Included</span>
+                    <div className="text-right space-y-1">
+                      {VISIBILITY_SUITE_INCLUDES.map(item => (
+                        <p key={item} className="text-sm sm:text-base text-[#f0ede8] font-light">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {userInfo.credits && Number(userInfo.credits) > 0 && CREDIT_GRANTING_TYPES.has(resolvedProductType) && (
                   <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
                     <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">
-                      {userInfo.productType === "sselfie_studio_membership" ? "Monthly Credits" : "Credits Included"}
+                      {resolvedProductType === "sselfie_studio_membership" ? "Monthly Credits" : "Credits Included"}
                     </span>
                     <span className="text-sm sm:text-base text-[#f0ede8] font-light">{userInfo.credits} credits</span>
                   </div>
