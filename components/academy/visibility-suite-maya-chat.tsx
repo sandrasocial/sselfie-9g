@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react"
 
 const QUICK_PROMPTS = [
-  "Where should I start?",
-  "Review my answers so far",
-  "Turn this into my weekly plan",
-  "Help me map my monetization path",
-  "What is my next move?",
+  "Where am I in the path?",
+  "What should I finish first?",
+  "Review my workbook answers",
+  "What is my next paid move?",
+  "Help me create my Visibility Plan",
 ]
 
 type Message = {
@@ -122,7 +122,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "maya",
-      text: "I know your suite. Ask me where to start, what to focus on, or how to turn this into a plan you'll actually use.",
+      text: "I know your Visibility To Paid path. Ask me where you are, what to finish first, or how to turn your workbook answers into your Maya Visibility Plan.",
     },
   ])
   const [question, setQuestion] = useState("")
@@ -311,7 +311,7 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
           type="text"
           value={question}
           onChange={e => setQuestion(e.target.value)}
-          placeholder="Ask Maya anything about the suite…"
+          placeholder="Ask Maya about your next step..."
           disabled={isSending}
           className="min-w-0 flex-1 bg-transparent px-5 py-4 text-[13px] outline-none placeholder:opacity-40 disabled:opacity-50"
           style={{ color: C.ink }}

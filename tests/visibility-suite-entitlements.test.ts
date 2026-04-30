@@ -44,11 +44,11 @@ describe("visibility suite entitlements and routing", () => {
 
   it("Maya component contains all five quick prompts", () => {
     const contents = read("components/academy/visibility-suite-maya-chat.tsx")
-    expect(contents).toContain("Where should I start?")
-    expect(contents).toContain("Review my answers so far")
-    expect(contents).toContain("Turn this into my weekly plan")
-    expect(contents).toContain("Help me map my monetization path")
-    expect(contents).toContain("What is my next move?")
+    expect(contents).toContain("Where am I in the path?")
+    expect(contents).toContain("What should I finish first?")
+    expect(contents).toContain("Review my workbook answers")
+    expect(contents).toContain("What is my next paid move?")
+    expect(contents).toContain("Help me create my Visibility Plan")
   })
 
   it("suite Maya chat sends saved workbook answers and renders markdown", () => {
@@ -138,9 +138,9 @@ describe("visibility suite entitlements and routing", () => {
     expect(route).toContain("await sql`")
     expect(route).not.toContain("db.query")
     expect(route).not.toContain("QueryableSql")
-    expect(page).toContain("Visibility Plan")
+    expect(page).toContain("Maya Visibility Plan")
     expect(page).toContain("Apply For Private Sprint")
-    expect(client).toContain("Create My Visibility Plan")
+    expect(client).toContain("Create My Maya Visibility Plan")
     expect(client).toContain("wts_answers")
     expect(client).toContain("showup_answers")
     expect(client).toContain("gp_answers")
@@ -175,10 +175,31 @@ describe("visibility suite entitlements and routing", () => {
     expect(generator).toContain("First 10 buyers")
     expect(workbookRoute).toContain("first 10 buyer invite list")
     expect(planRoute).toContain("Get Paid inputs should shape the buyer urgency")
-    expect(suitePage).toContain("turn attention into income")
+    expect(suitePage).toContain("Your Visibility To Paid Path")
     expect(countWorkbookFields(whatToSay)).toBe(20)
     expect(countWorkbookFields(showUp)).toBe(15)
     expect(countWorkbookFields(getPaid)).toBe(31)
+  })
+
+  it("shows the guided four-step suite path across the buyer experience", () => {
+    const publicPage = read("app/visibility-suite/page.tsx")
+    const suitePage = read("app/academy/access/visibility-suite/page.tsx")
+    const whatToSay = read("public/academy/what_to_say/index.html")
+    const showUp = read("public/academy/show_up/index.html")
+    const getPaid = read("public/academy/get_paid/index.html")
+    const generator = read("components/academy/visibility-plan-generator.tsx")
+
+    expect(publicPage).toContain("Generate your Maya Visibility Plan")
+    expect(suitePage).toContain("Maya Visibility Plan")
+    expect(suitePage).toContain("Start Step 01")
+    expect(suitePage).toContain("Continue To Step")
+    expect(whatToSay).toContain("Step 01 of 04 — What To Say")
+    expect(whatToSay).toContain("Next: Show Up")
+    expect(showUp).toContain("Step 02 of 04 — Show Up")
+    expect(showUp).toContain("Next: Get Paid")
+    expect(getPaid).toContain("Step 03 of 04 — Get Paid")
+    expect(getPaid).toContain("Next: Maya Visibility Plan")
+    expect(generator).toContain("Step 04 — Maya Visibility Plan")
   })
 
   it("suite images exist in public folder", () => {

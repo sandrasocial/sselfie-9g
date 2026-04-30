@@ -148,8 +148,8 @@ export default function VisibilitySuiteLandingPage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            A simple visibility system for women who want to know what to say, what to post, and how
-            to turn attention into income. Three workbooks. One path. Starting at EUR 17.
+            A simple guided path for women who want to know what to say, what to post, what to sell,
+            and what to do next. Three workbooks, then your Maya Visibility Plan. Starting at EUR 17.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
@@ -280,7 +280,7 @@ export default function VisibilitySuiteLandingPage() {
                     className="px-6 py-[11px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
                     style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
                   >
-                    Get It
+                    Start Step {product.step}
                   </Link>
                 </div>
               </div>
@@ -358,22 +358,27 @@ export default function VisibilitySuiteLandingPage() {
         >
           How It Works
         </p>
-        <div className="mt-8 grid gap-8 md:grid-cols-3">
+        <div className="mt-8 grid gap-8 md:grid-cols-4">
           {[
             {
               num: "1",
-              title: "Buy one or all three",
-              body: "Each product unlocks its own workbook inside your SSELFIE account. Start with What to Say if you're not sure — it's the foundation.",
+              title: "Start with Step 01",
+              body: "Begin with What To Say. It is the foundation for the rest of the path.",
             },
             {
               num: "2",
-              title: "Work through the workbook",
-              body: "Answer the questions at your own pace. Maya reads your answers and turns them into a plan you can use this week.",
+              title: "Unlock the path when ready",
+              body: "Move into Show Up and Get Paid when you want the full message, content, and offer system.",
             },
             {
               num: "3",
               title: "Move through the path",
               body: "Message clarity first. Then content consistency. Then monetization. Each step builds directly on the one before it.",
+            },
+            {
+              num: "4",
+              title: "Generate your Maya Visibility Plan",
+              body: "Maya reads your saved workbook answers and turns them into the next 7 days.",
             },
           ].map(step => (
             <div key={step.num}>
@@ -438,8 +443,8 @@ export default function VisibilitySuiteLandingPage() {
             className="mt-6 max-w-md text-[14px] leading-[1.78]"
             style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
           >
-            You have the message, the posting rhythm, and the offer direction. If you want to turn
-            this into your first £10K path, apply for the 4-week private sprint with Sandra.
+            After your Maya Visibility Plan, this is the optional hands-on layer. If you want Sandra
+            beside you while you turn the plan into momentum, apply for the 4-week private sprint.
           </p>
           <Link
             href="/work-with-me"

@@ -130,7 +130,7 @@ export function VisibilityPlanGenerator() {
     }
 
     setIsGenerating(true)
-    setStatus("Maya is creating your styled plan...")
+    setStatus("Maya is creating your Visibility Plan...")
 
     try {
       const response = await fetch("/api/academy/visibility-suite/plan/generate", {
@@ -160,14 +160,14 @@ export function VisibilityPlanGenerator() {
       style={{ borderColor: "rgba(15,13,11,0.18)", background: "#EDE9E2" }}
     >
       <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#7A6F63]">
-        Maya Deliverable
+        Step 04 — Maya Visibility Plan
       </p>
       <h3 className="mt-4 font-serif text-[clamp(28px,5vw,48px)] uppercase leading-none text-[#0F0D0B]">
-        Create your styled Visibility Plan.
+        Create your Maya Visibility Plan.
       </h3>
       <p className="mt-4 max-w-2xl text-[14px] leading-[1.75] text-[#3D3830]">
-        Maya will use the answers saved in your workbooks and turn them into one polished page:
-        message, content, sales path, and next 7 days.
+        Maya will use the answers saved from What To Say, Show Up, and Get Paid, then turn them
+        into one polished page: message, content, sales path, and your next 7 days.
       </p>
       <button
         type="button"
@@ -176,7 +176,7 @@ export function VisibilityPlanGenerator() {
         className="mt-7 inline-flex px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-90 disabled:opacity-45"
         style={{ background: "#0F0D0B", color: "#F4F0E6" }}
       >
-        {isGenerating ? "Creating Plan..." : "Create My Visibility Plan"}
+        {isGenerating ? "Creating Plan..." : "Create My Maya Visibility Plan"}
       </button>
       {status ? (
         <p className="mt-4 text-[13px] leading-6 text-[#7A6F63]">

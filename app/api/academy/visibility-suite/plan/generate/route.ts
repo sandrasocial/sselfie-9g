@@ -260,7 +260,7 @@ ${answers.map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}
 
   return `You are Maya, the SSELFIE strategy partner.
 
-Create a personalized Visibility To Paid Plan from this user's workbook answers.
+Create a personalized Maya Visibility Plan from this user's workbook answers.
 The plan must feel specific, practical, and current.
 It should turn static workbook answers into usable assets, not more reflection.
 
@@ -271,7 +271,7 @@ ${grouped}
 
 Return ONLY valid JSON in this exact shape:
 {
-  "cover": {"title":"Visibility To Paid Plan","subtitle":"...","createdFor":"..."},
+  "cover": {"title":"Maya Visibility Plan","subtitle":"...","createdFor":"..."},
   "message": {
     "positioning":"...",
     "audience":"...",

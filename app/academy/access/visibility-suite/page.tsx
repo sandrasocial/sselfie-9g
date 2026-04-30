@@ -38,8 +38,8 @@ const SUITE_PRODUCTS = [
     step: "01",
     label: "Message Clarity",
     title: "What to Say",
-    description:
-      "Know what to say so people understand why they should follow, trust, and buy from you.",
+    description: "Clarify the message people should remember.",
+    pathQuestion: "What do I say?",
     included: [
       "30 caption frameworks for everyday posting",
       "Prompt structures to keep your voice consistent",
@@ -54,7 +54,8 @@ const SUITE_PRODUCTS = [
     step: "02",
     label: "Content Consistency",
     title: "Show Up",
-    description: "Know what to post this week without starting from zero every morning.",
+    description: "Turn that message into posts you can actually publish.",
+    pathQuestion: "What do I post?",
     included: [
       "30-day posting rhythm mapped by content type",
       "Weekly batching workflow to reduce content stress",
@@ -69,7 +70,8 @@ const SUITE_PRODUCTS = [
     step: "03",
     label: "Monetization Path",
     title: "Get Paid",
-    description: "Turn your visibility into a simple paid offer people can say yes to.",
+    description: "Give your visibility somewhere to go: a simple offer and buyer path.",
+    pathQuestion: "What do I sell?",
     included: [
       "Revenue path map based on your current audience",
       "Offer and message alignment for higher intent",
@@ -147,8 +149,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-lg text-[15px] leading-[1.78]"
             style={{ color: C.onCreamSub, fontWeight: 400 }}
           >
-            A simple visibility system for women who want to know what to say, what to post, and how
-            to turn attention into income.
+            A guided path for women who want to know what to say, what to post, what to sell, and
+            what to do next.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             {suiteUnlocked ? (
@@ -219,15 +221,37 @@ export default async function VisibilitySuitePage() {
           className="text-[10px] uppercase tracking-[0.5em]"
           style={{ color: C.muted, fontWeight: 600 }}
         >
-          Your Workbooks
+          Your Visibility To Paid Path
         </p>
         <p
           className="mt-3 max-w-xl text-[14px] leading-[1.72]"
           style={{ color: C.onCreamSub, fontWeight: 400 }}
         >
-          Start with your message. Build a rhythm you can keep. Turn it into a simple offer people
-          can say yes to.
+          Move through the path in order: clarify your message, turn it into posts, give those posts
+          a paid destination, then let Maya turn the work into your next 7 days.
         </p>
+
+        <div className="mt-6 grid gap-2 md:grid-cols-4" aria-label="Visibility To Paid path">
+          {[
+            { step: "01", title: "What To Say" },
+            { step: "02", title: "Show Up" },
+            { step: "03", title: "Get Paid" },
+            { step: "04", title: "Maya Visibility Plan" },
+          ].map(item => (
+            <div
+              key={item.step}
+              className="px-4 py-3"
+              style={{ border: `1px solid ${C.divStrong}`, background: C.cream }}
+            >
+              <p className="text-[9px] uppercase tracking-[0.32em]" style={{ color: C.muted, fontWeight: 600 }}>
+                {item.step}
+              </p>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.18em]" style={{ color: C.ink, fontWeight: 600 }}>
+                {item.title}
+              </p>
+            </div>
+          ))}
+        </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {SUITE_PRODUCTS.map(product => {
@@ -285,6 +309,12 @@ export default async function VisibilitySuitePage() {
                   >
                     {product.description}
                   </p>
+                  <p
+                    className="mt-3 text-[10px] uppercase tracking-[0.24em]"
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    Answers: {product.pathQuestion}
+                  </p>
                   <ul className="mt-5 space-y-2">
                     {product.included.map(item => (
                       <li
@@ -302,7 +332,7 @@ export default async function VisibilitySuitePage() {
                     className="mt-7 inline-flex text-[10px] uppercase tracking-[0.28em] transition-opacity hover:opacity-70"
                     style={{ color: C.ink, fontWeight: 600 }}
                   >
-                    Open workbook
+                    {product.id === "what_to_say" ? "Start Step 01" : `Continue To Step ${product.step}`}
                   </a>
                 </div>
               </article>
@@ -383,7 +413,7 @@ export default async function VisibilitySuitePage() {
                     className="mt-7 inline-flex text-[10px] uppercase tracking-[0.28em] transition-opacity hover:opacity-70"
                     style={{ color: C.stone, fontWeight: 600 }}
                   >
-                    Unlock
+                    Unlock Step {product.step}
                   </Link>
                 </div>
               </article>
@@ -391,7 +421,11 @@ export default async function VisibilitySuitePage() {
           })}
         </div>
 
-        {ownedCount > 0 ? <VisibilityPlanGenerator /> : null}
+        {ownedCount > 0 ? (
+          <div id="step-04">
+            <VisibilityPlanGenerator />
+          </div>
+        ) : null}
       </section>
 
       {/* ─── Maya ─────────────────────────────────────────────────────────── */}
@@ -415,7 +449,7 @@ export default async function VisibilitySuitePage() {
             textShadow: LP_CREAM,
           }}
         >
-          Turn your answers into your next move.
+          Turn your path into your next move.
         </h2>
 
         {ownedCount > 0 ? (
@@ -431,8 +465,8 @@ export default async function VisibilitySuitePage() {
               className="text-[13px] leading-[1.7]"
               style={{ color: C.onCreamSub, fontWeight: 400 }}
             >
-              Unlock one workbook to open Maya. She will review your answers and turn them into the
-              next draft, plan, or sales step.
+              Unlock one workbook to open Maya. She will help you stay in order and turn your
+              answers into the next draft, plan, or sales step.
             </p>
             <Link
               href="/academy/products/what_to_say"
@@ -484,8 +518,8 @@ export default async function VisibilitySuitePage() {
             className="mt-6 max-w-md text-[15px] leading-[1.78]"
             style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
           >
-            You now have the message, the posting rhythm, and the offer direction. If you want to
-            turn this into your first 10K path, apply for the 4-week private sprint.
+            After your Maya Visibility Plan, this is the optional hands-on layer. If you want Sandra
+            beside you while you turn the plan into momentum, apply for the 4-week private sprint.
           </p>
           <Link
             href="/work-with-me"

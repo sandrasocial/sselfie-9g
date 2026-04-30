@@ -33,21 +33,21 @@ const PRODUCT_CONTEXT: Record<
     outcome: "Message OS",
     generateLabel: "Message Kit",
     outputBrief:
-      "Create a message kit with: one-line positioning, Instagram bio, message test rewrite, proof points, content-to-offer bridge, 5 message pillars, 20 caption hooks, 10 brand phrases, content bucket ideas, and one next step.",
+      "Create a message kit with: one-line positioning, Instagram bio, message test rewrite, proof points, content-to-offer bridge, 5 message pillars, 20 caption hooks, 10 brand phrases, content bucket ideas, and the clearest input for Show Up.",
   },
   show_up: {
     title: "Show Up",
     outcome: "30-day content plan",
     generateLabel: "30-Day Content Plan",
     outputBrief:
-      "Create a content plan with: 4 weekly themes, realistic weekly posting capacity, best-fit formats, existing asset ideas, repurposing ideas, 30 post ideas, the first 5 captions, CTA suggestions, a Sunday batching checklist, and one next step.",
+      "Create a content plan with: 4 weekly themes, realistic weekly posting capacity, best-fit formats, existing asset ideas, repurposing ideas, 30 post ideas, the first 5 captions, CTA suggestions, a Sunday batching checklist, and the clearest input for Get Paid.",
   },
   get_paid: {
     title: "Get Paid",
     outcome: "Offer and sales path",
     generateLabel: "First Sales Path",
     outputBrief:
-      "Create a sales path with: clean offer statement, buyer profile, buyer urgency, willingness-to-pay signal, first 500 plan, starter price guidance, delivery boundaries, first 10 buyer invite list, one sales post, 3 DM scripts, 3 follow-up messages, simple CTA, 7-day selling plan, and one next step.",
+      "Create a sales path with: clean offer statement, buyer profile, buyer urgency, willingness-to-pay signal, first 500 plan, starter price guidance, delivery boundaries, first 10 buyer invite list, one sales post, 3 DM scripts, 3 follow-up messages, simple CTA, 7-day selling plan, and the clearest input for the Maya Visibility Plan.",
   },
 }
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 You are helping with the existing ${product.title} workbook.
 Do not invent a new product.
 Do not tell the user to redo the workbook.
-Turn their answers into useful next-step outputs.
+Turn their answers into useful next-step outputs for the Visibility To Paid path.
 
 Voice:
 - Warm, real, clear, encouraging, actionable.

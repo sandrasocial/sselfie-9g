@@ -79,7 +79,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
     return (
       <StatusPage
         title="Plan Not Found"
-        body="This Visibility Plan link does not exist or could not be loaded."
+        body="This Maya Visibility Plan link does not exist or could not be loaded."
       />
     )
   }
@@ -119,7 +119,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         </a>
         <PrintPlanButton />
         <span className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#7A6F63]">
-          Visibility Plan
+          Maya Visibility Plan
         </span>
       </header>
 
@@ -135,7 +135,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
           </h1>
           <p className="mt-7 max-w-xl text-[16px] leading-[1.8] text-[#3D3830]">
             {plan.cover?.subtitle ||
-              "Your message, content rhythm, sales path, and next 7 days in one place."}
+              "Your message, content rhythm, sales path, and next 7 days in one Maya Visibility Plan."}
           </p>
           <div className="mt-10 grid max-w-xl gap-4 sm:grid-cols-3">
             <div className="border border-[#0F0D0B]/12 p-4">
