@@ -124,6 +124,30 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
     }
   }
 
+  if (productType === "what_to_say") {
+    return {
+      href: "/academy/access/visibility-suite",
+      label: "Start What To Say",
+      helper: "Your workbook is ready. Open your Visibility To Paid Path and start Step 01.",
+    }
+  }
+
+  if (productType === "show_up") {
+    return {
+      href: "/academy/access/visibility-suite",
+      label: "Open Show Up",
+      helper: "Your workbook is ready. Open your Visibility To Paid Path and continue with Step 02.",
+    }
+  }
+
+  if (productType === "get_paid") {
+    return {
+      href: "/academy/access/visibility-suite",
+      label: "Open Get Paid",
+      helper: "Your workbook is ready. Open your Visibility To Paid Path and start Step 03.",
+    }
+  }
+
   if (productType === "one_time_session") {
     return {
       href: "/private-shoot",

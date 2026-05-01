@@ -58,7 +58,7 @@ const PRODUCTS = [
     description: "Find the words people remember.",
     included: ["one-line message", "Instagram bio", "hooks and CTAs"],
     image: "/academy/visibility-suite/what-to-say.png",
-    href: "/academy/products/what_to_say",
+    href: "/checkout/academy-product/what_to_say",
   },
   {
     id: "show_up",
@@ -70,7 +70,7 @@ const PRODUCTS = [
     description: "Turn your message into a rhythm you can keep.",
     included: ["30-day content plan", "content goals", "soft and clear CTAs"],
     image: "/academy/visibility-suite/show-up.png",
-    href: "/academy/products/show_up",
+    href: "/checkout/academy-product/show_up",
   },
   {
     id: "get_paid",
@@ -82,7 +82,7 @@ const PRODUCTS = [
     description: "Give your visibility a next step.",
     included: ["one simple offer", "sales post", "7-day sales path"],
     image: "/academy/visibility-suite/get-paid.png",
-    href: "/academy/products/get_paid",
+    href: "/checkout/academy-product/get_paid",
   },
 ]
 
