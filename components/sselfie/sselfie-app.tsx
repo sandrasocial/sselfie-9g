@@ -10,7 +10,7 @@ import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import StudioHubScreen from "./studio-hub-screen"
-import { StudioAppTopBar } from "./studio-app-top-bar"
+import { StudioAppTopBar, type StudioAppMayaSubTabItem } from "./studio-app-top-bar"
 import { FeedPlannerClient } from "../feed-planner" // Use FeedPlannerClient to include wizard logic
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
@@ -89,6 +89,36 @@ const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy"
   ai_photo_prompts: "maya",
   editing_masterclass: "academy",
   branded_by_sselfie: "academy",
+}
+
+type MayaSubTab = StudioAppMayaSubTabItem["id"]
+
+const MAYA_SUB_TABS: StudioAppMayaSubTabItem[] = [
+  { id: "photos", label: "Photos" },
+  { id: "plan", label: "Plan" },
+  { id: "videos", label: "Videos" },
+  { id: "training", label: "Train Model" },
+]
+
+function resolveMayaSubTabFromHash(hash: string | null | undefined): MayaSubTab | null {
+  if (!hash) return null
+  if (hash.includes("/plan")) return "plan"
+  if (hash.includes("/videos")) return "videos"
+  if (hash.includes("/training") || hash.includes("/setup")) return "training"
+  if (hash.includes("/photos") || hash === "#maya") return "photos"
+  return null
+}
+
+function readInitialMayaSubTab(): MayaSubTab {
+  if (typeof window === "undefined") return "photos"
+
+  const fromHash = resolveMayaSubTabFromHash(window.location.hash)
+  if (fromHash) return fromHash
+
+  const savedTab = window.localStorage.getItem("mayaActiveTab")
+  return savedTab === "photos" || savedTab === "plan" || savedTab === "videos" || savedTab === "training"
+    ? savedTab
+    : "photos"
 }
 
 export default function SselfieApp({
@@ -209,6 +239,7 @@ export default function SselfieApp({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   /** Maya ≡ slide menu — control lives in StudioAppTopBar while on Maya tab */
   const [mayaNavMenuOpen, setMayaNavMenuOpen] = useState(false)
+  const [activeMayaSubTab, setActiveMayaSubTab] = useState<MayaSubTab>(readInitialMayaSubTab)
   const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
   const initialCreditBalanceRef = useRef<number | null>(null)
   const firstPhotoToastShownRef = useRef(false)
@@ -269,6 +300,31 @@ export default function SselfieApp({
   useEffect(() => {
     if (activeTab !== "maya") setMayaNavMenuOpen(false)
   }, [activeTab])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const syncFromLocation = () => {
+      const fromHash = resolveMayaSubTabFromHash(window.location.hash)
+      if (fromHash) setActiveMayaSubTab(fromHash)
+    }
+
+    const syncFromMaya = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: MayaSubTab }>).detail?.tab
+      if (tab === "photos" || tab === "plan" || tab === "videos" || tab === "training") {
+        setActiveMayaSubTab(tab)
+      }
+    }
+
+    window.addEventListener("popstate", syncFromLocation)
+    window.addEventListener("hashchange", syncFromLocation)
+    window.addEventListener("sselfie:maya-subtab-changed", syncFromMaya)
+    return () => {
+      window.removeEventListener("popstate", syncFromLocation)
+      window.removeEventListener("hashchange", syncFromLocation)
+      window.removeEventListener("sselfie:maya-subtab-changed", syncFromMaya)
+    }
+  }, [])
 
   useEffect(() => {
     if (typeof document === "undefined") return
@@ -488,8 +544,30 @@ export default function SselfieApp({
     // Keep query tab + hash aligned for deep-linking and back/forward consistency.
     const nextUrl = new URL(window.location.href)
     nextUrl.searchParams.set("tab", tabId)
-    nextUrl.hash = tabId
+    nextUrl.hash =
+      tabId === "maya"
+        ? `maya/${activeMayaSubTab}`
+        : tabId
     window.history.pushState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+  }
+
+  const handleMayaSubTabChange = (tabId: MayaSubTab) => {
+    setActiveMayaSubTab(tabId)
+    setActiveTab("maya")
+
+    const hashMap: Record<MayaSubTab, string> = {
+      photos: "#maya/photos",
+      plan: "#maya/plan",
+      videos: "#maya/videos",
+      training: "#maya/training",
+    }
+
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.set("tab", "maya")
+    nextUrl.hash = hashMap[tabId]
+    window.history.pushState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+    window.localStorage.setItem("mayaActiveTab", tabId)
+    window.dispatchEvent(new CustomEvent("sselfie:maya-subtab-change", { detail: { tab: tabId } }))
   }
 
   const refreshCredits = useCallback(async () => {
@@ -982,6 +1060,9 @@ export default function SselfieApp({
         activeTab={activeTab}
         onTabChange={(id) => handleTabChange(id as StudioTab)}
         isNewUser={isNewUser}
+        mayaSubTabs={MAYA_SUB_TABS}
+        activeMayaSubTab={activeMayaSubTab}
+        onMayaSubTabChange={handleMayaSubTabChange}
         trailing={
           <>
             {activeTab === "feed-planner" && (

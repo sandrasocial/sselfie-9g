@@ -8,6 +8,11 @@ export interface StudioAppTabItem {
   label: string
 }
 
+export interface StudioAppMayaSubTabItem {
+  id: "photos" | "plan" | "videos" | "training"
+  label: string
+}
+
 interface StudioAppTopBarProps {
   tabs: StudioAppTabItem[]
   activeTab: string
@@ -15,6 +20,9 @@ interface StudioAppTopBarProps {
   isNewUser: boolean
   /** Maya: ≡ menu. Other tabs: Feeds + account menu, etc. */
   trailing?: ReactNode
+  mayaSubTabs?: StudioAppMayaSubTabItem[]
+  activeMayaSubTab?: StudioAppMayaSubTabItem["id"]
+  onMayaSubTabChange?: (id: StudioAppMayaSubTabItem["id"]) => void
 }
 
 /**
@@ -22,7 +30,18 @@ interface StudioAppTopBarProps {
  * Replaces the legacy bottom nav; height is observed into `--studio-app-header-height`.
  */
 export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
-  function StudioAppTopBar({ tabs, activeTab, onTabChange, isNewUser, trailing }, ref) {
+  function StudioAppTopBar({
+    tabs,
+    activeTab,
+    onTabChange,
+    isNewUser,
+    trailing,
+    mayaSubTabs = [],
+    activeMayaSubTab,
+    onMayaSubTabChange,
+  }, ref) {
+    const showMayaSubTabs = activeTab === "maya" && mayaSubTabs.length > 0 && activeMayaSubTab && onMayaSubTabChange
+
     return (
       <header
         ref={ref}
@@ -99,6 +118,55 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
           >
             Create with Maya to unlock Gallery, Feed &amp; Academy
           </p>
+        ) : null}
+        {showMayaSubTabs ? (
+          <div
+            className="border-t px-3 pb-2 sm:px-4 md:px-6"
+            style={{ borderColor: "var(--app-glass-border)" }}
+          >
+            <div
+              className="flex gap-1 overflow-x-auto pt-2"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              aria-label="Maya sections"
+            >
+              {mayaSubTabs.map((tab) => {
+                const isActive = activeMayaSubTab === tab.id
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => onMayaSubTabChange(tab.id)}
+                    className={`relative touch-manipulation rounded-md px-3 py-2 min-h-[40px] transition-all duration-200 ${
+                      isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
+                    }`}
+                    aria-label={`${tab.label} Maya tab`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {isActive ? (
+                      <span
+                        className="absolute inset-0 rounded-md pointer-events-none"
+                        style={{
+                          background: "var(--app-btn-primary-bg)",
+                          border: "1px solid var(--app-btn-primary-bg)",
+                        }}
+                        aria-hidden
+                      />
+                    ) : null}
+                    <span
+                      className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                        isActive
+                          ? "text-[color:var(--app-btn-primary-text)]"
+                          : "text-[color:var(--app-text-secondary)]"
+                      }`}
+                    >
+                      {tab.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         ) : null}
       </header>
     )

@@ -15,6 +15,19 @@ const getSafeDescription = (desc: string | null | undefined): string => {
   return isStrategyDocument(desc) ? "" : desc
 }
 
+const getExistingStrategyImageUrl = (post: any): string | null => {
+  const imageUrl = typeof post?.image_url === "string"
+    ? post.image_url.trim()
+    : typeof post?.imageUrl === "string"
+      ? post.imageUrl.trim()
+      : ""
+  if (!imageUrl) return null
+
+  const source = String(post?.source || post?.assetSource || "").toLowerCase()
+  const postType = String(post?.postType || post?.type || "").toLowerCase()
+  return source === "existing_gallery_image" || postType === "existing" ? imageUrl : null
+}
+
 interface UseFeedPollingParams {
   feedIdProp?: number
   feedTitle?: string
@@ -138,17 +151,21 @@ export function useFeedPolling({
     const useStrategyPosts = strategy?.posts && (!feedId || postsData.length === 0 || preserveStrategyPostsRef.current)
     if (!useStrategyPosts || !strategy?.posts?.length) return postsData
 
-    return strategy.posts.map((p: any, index: number) => ({
-      id: index + 1,
-      position: p.position || index + 1,
-      image_url: null,
-      generation_status: "pending",
-      prompt: p.prompt || p.imagePrompt || p.visualDirection || "",
-      caption: p.caption || "",
-      post_type: p.postType || p.type || "user",
-      content_pillar: p.purpose || "",
-      prediction_id: undefined,
-    })) as FeedPost[]
+    return strategy.posts.map((p: any, index: number) => {
+      const existingImageUrl = getExistingStrategyImageUrl(p)
+
+      return {
+        id: index + 1,
+        position: p.position || index + 1,
+        image_url: existingImageUrl,
+        generation_status: existingImageUrl ? "completed" : "pending",
+        prompt: p.prompt || p.imagePrompt || p.visualDirection || "",
+        caption: p.caption || "",
+        post_type: existingImageUrl ? "existing" : p.postType || p.type || "user",
+        content_pillar: p.purpose || "",
+        prediction_id: undefined,
+      }
+    }) as FeedPost[]
   }, [feedId, postsData, strategy])
 
   const sortedPosts = useMemo(() => [...effectivePosts].sort((a, b) => a.position - b.position), [effectivePosts])

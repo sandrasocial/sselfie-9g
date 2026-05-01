@@ -80,6 +80,23 @@ function getLayoutType(gridPattern: string | undefined, posts: any[]): string {
   return "Mixed Layout"
 }
 
+function getExistingGalleryImageUrl(post: any): string | null {
+  const imageUrl = typeof post?.image_url === "string"
+    ? post.image_url.trim()
+    : typeof post?.imageUrl === "string"
+      ? post.imageUrl.trim()
+      : ""
+  if (!imageUrl) return null
+
+  const source = String(post?.source || post?.assetSource || "").toLowerCase()
+  const postType = String(post?.postType || post?.type || "").toLowerCase()
+  if (source === "existing_gallery_image" || postType === "existing") {
+    return imageUrl
+  }
+
+  return null
+}
+
 /**
  * Create feed from Maya's pre-generated strategy
  * This endpoint accepts a complete strategy from the conversational flow
@@ -257,6 +274,10 @@ export async function POST(request: NextRequest) {
     const proPosts: typeof strategy.posts = []
     
     for (const post of strategy.posts) {
+      if (getExistingGalleryImageUrl(post)) {
+        continue
+      }
+
       // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
       // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
       let generationMode: 'classic' | 'pro' = 'pro'
@@ -266,19 +287,20 @@ export async function POST(request: NextRequest) {
     }
     
     // CRITICAL: Feed Planner ALWAYS uses Pro Mode - all posts are Pro Mode
-    console.log(`[FEED-FROM-STRATEGY] Mode distribution: 0 Classic, ${proPosts.length} Pro (all Feed Planner posts use Pro Mode)`)
+    const existingGalleryPostsCount = strategy.posts.length - proPosts.length - classicPosts.length
+    console.log(`[FEED-FROM-STRATEGY] Mode distribution: 0 Classic, ${proPosts.length} Pro, ${existingGalleryPostsCount} existing gallery image(s)`)
     
     // Calculate total credits needed (strategy + images)
     // Strategy credits: 1 credit (fixed)
     const strategyCredits = 1
     
-    // Image credits: All posts are Pro Mode × 2 credits each
+    // Image credits: only posts that still need new images are Pro Mode × 2 credits each
     const totalImageCredits = proPosts.length * getStudioProCreditCost('2K')
     
     // Total credits needed
     const totalCredits = strategyCredits + totalImageCredits
     
-    console.log(`[FEED-FROM-STRATEGY] Credit calculation: ${strategyCredits} (strategy) + ${totalImageCredits} (images: ${proPosts.length} Pro Mode posts × ${getStudioProCreditCost('2K')} credits each) = ${totalCredits} total credits`)
+    console.log(`[FEED-FROM-STRATEGY] Credit calculation: ${strategyCredits} (strategy) + ${totalImageCredits} (new images: ${proPosts.length} Pro Mode posts × ${getStudioProCreditCost('2K')} credits each) = ${totalCredits} total credits`)
     
     // CRITICAL: Feed Planner ALWAYS uses Pro Mode - no Classic Mode posts, so no trained model check needed
     // Removed Classic Mode trained model check since all Feed Planner posts use Pro Mode
@@ -564,6 +586,7 @@ export async function POST(request: NextRequest) {
     
     for (const post of strategy.posts) {
       try {
+        const existingGalleryImageUrl = getExistingGalleryImageUrl(post)
         // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
         // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
         let generationMode: 'classic' | 'pro' = 'pro'
@@ -588,12 +611,16 @@ export async function POST(request: NextRequest) {
         // Use prompt from strategy JSON if available (Maya generates it), otherwise use placeholder
         const postPrompt = post.prompt && post.prompt.trim() && post.prompt !== 'Generating prompt...'
           ? post.prompt.trim()
+          : existingGalleryImageUrl
+            ? post.visualDirection || post.description || `Existing gallery image: ${existingGalleryImageUrl}`
           : 'Generating prompt...'
         
         // CRITICAL FIX: Use caption from strategy JSON if available (Maya generates it), otherwise use placeholder
         const postCaption = post.caption && post.caption.trim() && post.caption !== 'Generating caption...'
           ? post.caption.trim()
           : 'Generating caption...'
+        const postType = existingGalleryImageUrl ? 'existing' : truncate(post.type || post.postType, 50, 'portrait')
+        const generationStatus = existingGalleryImageUrl ? 'completed' : 'pending'
         
         try {
           // Try with all columns first (including seed_variation for photoshoot consistency)
@@ -603,6 +630,7 @@ export async function POST(request: NextRequest) {
               user_id,
               position,
               post_type,
+              image_url,
               content_pillar,
               caption,
               prompt,
@@ -617,12 +645,13 @@ export async function POST(request: NextRequest) {
               ${feedLayout.id},
               ${neonUser.id},
               ${post.position},
-              ${truncate(post.type || post.postType, 50, 'portrait')},
+              ${postType},
+              ${existingGalleryImageUrl},
               ${truncate(post.purpose, 255, 'general')},
               ${truncate(postCaption, 5000)},
               ${postPrompt},
               'draft',
-              'pending',
+              ${generationStatus},
               ${generationMode},
               ${proModeType ? truncate(proModeType, 50) : null},
               ${seedVariation},
@@ -646,6 +675,7 @@ export async function POST(request: NextRequest) {
                 user_id,
                 position,
                 post_type,
+                image_url,
                 content_pillar,
                 caption,
                 prompt,
@@ -658,12 +688,13 @@ export async function POST(request: NextRequest) {
                 ${feedLayout.id},
                 ${neonUser.id},
                 ${post.position},
-                ${truncate(post.type || post.postType, 50, 'portrait')},
+                ${postType},
+                ${existingGalleryImageUrl},
                 ${truncate(post.purpose, 255, 'general')},
                 ${truncate(postCaption, 5000)},
                 ${postPrompt},
                 'draft',
-                'pending',
+                ${generationStatus},
                 ${seedVariation},
                 NOW(),
                 NOW()
@@ -687,12 +718,15 @@ export async function POST(request: NextRequest) {
 
     // Check how many posts were actually created
     const createdPosts = await sql`
-      SELECT COUNT(*) as count
+      SELECT
+        COUNT(*) as count,
+        COUNT(CASE WHEN image_url IS NULL THEN 1 END) as generated_count
       FROM feed_posts
       WHERE feed_layout_id = ${feedLayout.id}
       AND user_id = ${neonUser.id}
     `
-    const actualPostCount = createdPosts[0]?.count || 0
+    const actualPostCount = Number(createdPosts[0]?.count || 0)
+    const actualGeneratedPostCount = Number(createdPosts[0]?.generated_count || 0)
     console.log(`[FEED-FROM-STRATEGY] Posts in database: ${actualPostCount} out of ${strategy.posts.length} expected`)
     
     if (actualPostCount === 0) {
@@ -715,8 +749,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Charge only for persisted rows (strategy + created posts).
-    const creditsToCharge = strategyCredits + (actualPostCount * getStudioProCreditCost('2K'))
+    // Charge only for posts that still need generated images. Existing gallery images are already completed assets.
+    const creditsToCharge = strategyCredits + (actualGeneratedPostCount * getStudioProCreditCost('2K'))
     const deductionReferenceId = idempotencyKey
       ? `${buildFeedCreateIdempotencyPrefix(neonUser.id, idempotencyKey)}:feed:${feedLayout.id}`
       : undefined
@@ -724,7 +758,7 @@ export async function POST(request: NextRequest) {
       neonUser.id.toString(),
       creditsToCharge,
       "image",
-      `Feed Planner - Strategy + ${actualPostCount} post(s)`,
+      `Feed Planner - Strategy + ${actualGeneratedPostCount} generated post(s)`,
       deductionReferenceId
     )
 

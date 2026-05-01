@@ -824,8 +824,23 @@ function renderShowGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Reac
     const label = image.title || image.description || image.category || "this gallery image"
     const prompt =
       mode === "feed"
-        ? `Use this selected gallery image in my feed plan where it fits best: ${imageUrl}. Treat it as an existing image, not something to regenerate. Then build the remaining posts around it and only suggest new images where needed.`
+        ? `Create a 9-post mixed-source feed plan using this selected image URL: ${imageUrl}.
+
+Important:
+- Do not request, display, or choose more images. You already have the selected image URL.
+- Place this image in the best feed slot as an existing asset with "source": "existing_gallery_image" and "image_url": "${imageUrl}".
+- Treat that selected image as completed and do not regenerate it.
+- Build the remaining slots around it and mark only missing visuals with "source": "generate_new".
+- Create the inline feed preview now by outputting the full [CREATE_FEED_STRATEGY] strategy JSON after your short explanation.`
         : `Use this selected gallery image as my visual reference: ${imageUrl}. Recreate the same style, mood, lighting, and composition for a new Maya photo concept. Do not copy it exactly; make a fresh version that feels like ${label}.`
+
+    if (mode === "feed") {
+      ctx.onSwitchTab?.("plan")
+      setTimeout(() => {
+        ctx.onToolPromptSelect?.(`${prompt}\n\n[Selected Feed Image: ${imageUrl}]`)
+      }, 0)
+      return
+    }
 
     ctx.onToolPromptSelect?.(`${prompt}\n\n[Inspiration Image: ${imageUrl}]`)
   }
@@ -897,7 +912,7 @@ function renderShowGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Reac
                   onClick={() => selectGalleryImage(image, "feed")}
                   className="px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                 >
-                  Use In Feed
+                  Plan With This
                 </button>
               </div>
             </div>

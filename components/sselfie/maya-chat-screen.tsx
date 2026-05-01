@@ -44,8 +44,6 @@ import {
   encodeMayaVideoCardMarker,
   stripMayaVideoCardMarkers,
 } from "@/lib/maya/video-card-marker"
-// Pro Mode Components
-import MayaHeader from "./maya/maya-header"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
 import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
@@ -201,7 +199,6 @@ export default function MayaChatScreen({
   // savedMessageIds is now provided by useMayaChat hook
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const isAtBottomRef = useRef(true)
   const inputBarRef = useRef<HTMLDivElement>(null)
@@ -290,10 +287,6 @@ export default function MayaChatScreen({
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
-  const [showProTooltip, setShowProTooltip] = useState(() => {
-    if (typeof window === "undefined") return false
-    return !localStorage.getItem("sselfie_pro_tooltip_seen")
-  })
   const currentChatType = resolveMayaChatTypeForTab({
     activeTab: activeMayaTab,
     proMode,
@@ -327,23 +320,7 @@ export default function MayaChatScreen({
   }, [])
 
   useEffect(() => {
-    const node = headerRef.current
-    if (!node || typeof ResizeObserver === "undefined") return
-
-    const updateHeaderHeight = () => {
-      const height = Math.ceil(node.getBoundingClientRect().height)
-      if (height > 0) {
-        document.documentElement.style.setProperty("--maya-header-height", `${height}px`)
-      }
-    }
-
-    updateHeaderHeight()
-    const observer = new ResizeObserver(updateHeaderHeight)
-    observer.observe(node)
-
-    return () => {
-      observer.disconnect()
-    }
+    document.documentElement.style.setProperty("--maya-header-height", "0px")
   }, [])
   // Settings managed by useMayaSettings hook
   const {
@@ -2479,8 +2456,25 @@ export default function MayaChatScreen({
               ? "#maya/plan"
               : "#maya/photos"
       window.history.replaceState(null, "", nextHash)
+      window.dispatchEvent(new CustomEvent("sselfie:maya-subtab-changed", { detail: { tab } }))
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleExternalMayaSubTabChange = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: "photos" | "plan" | "videos" | "training" }>).detail?.tab
+      if (tab === "photos" || tab === "plan" || tab === "videos" || tab === "training") {
+        setMayaTabAndHash(tab)
+      }
+    }
+
+    window.addEventListener("sselfie:maya-subtab-change", handleExternalMayaSubTabChange)
+    return () => {
+      window.removeEventListener("sselfie:maya-subtab-change", handleExternalMayaSubTabChange)
+    }
+  }, [setMayaTabAndHash])
 
   const handleSwitchScopedTab = useCallback(
     (tab: "photos" | "plan" | "videos" | "training") => {
@@ -3091,9 +3085,6 @@ export default function MayaChatScreen({
       // Switch mode first (this will be saved to localStorage by the hook)
       console.log("[v0] Setting mode to:", newMode ? "Pro" : "Classic")
       setProMode(newMode)
-      if (newMode && !localStorage.getItem("sselfie_pro_tooltip_seen")) {
-        setShowProTooltip(true)
-      }
       
       // Then reset chat state
       setChatId(data.chatId)
@@ -3120,11 +3111,6 @@ export default function MayaChatScreen({
         variant: "destructive",
       })
     }
-  }
-
-  const dismissProTooltip = () => {
-    localStorage.setItem("sselfie_pro_tooltip_seen", "true")
-    setShowProTooltip(false)
   }
 
   // Wrapper for handleSelectChat that adds component-specific logic
@@ -3876,95 +3862,6 @@ export default function MayaChatScreen({
               Drop Image Here
             </h3>
             <p className="text-sm text-[color:var(--app-text-secondary)] tracking-wide">Upload a reference image for Maya to work with</p>
-          </div>
-        </div>
-      )}
-
-      {/* Fixed Header with Integrated Tabs - Always visible */}
-      {/* Mobile optimized: safe area insets, responsive padding */}
-      {/* Use a real Tailwind arbitrary z-index so the fixed header stays above cards and drawers. */}
-      <div
-        ref={headerRef}
-        className="fixed left-0 right-0 z-[100] border-b border-[color:var(--app-glass-border)] bg-[rgba(237,233,226,0.88)] backdrop-blur-[16px]"
-        style={{
-          top: "var(--studio-app-header-height, 72px)",
-        }}
-      >
-        <MayaHeader
-          proMode={proMode}
-          chatTitle={chatTitle}
-          showNavMenu={showNavMenu}
-          onToggleNavMenu={toggleNavMenu}
-          hideMenuButton={shellControlsMayaNav}
-          libraryCount={libraryTotalImages}
-          credits={creditBalance}
-          onManageLibrary={undefined}
-          onAddImages={undefined}
-          isAdmin={isAdmin}
-          selectedGuideId={selectedGuideId}
-          selectedGuideCategory={selectedGuideCategory}
-          onGuideChange={onGuideChange}
-          userId={userId}
-          showModeToggle={activeMayaTab === "photos"}
-          onEditIntent={undefined}
-          onNavigation={handleNavigation}
-          onNewProject={handleNewChat}
-          onHistory={() => {
-            if (hasProFeatures) {
-              setShowProModeHistory(true)
-              return
-            }
-            setShowHistory(true)
-          }}
-          onLogout={handleLogout}
-          isLoggingOut={isLoggingOut}
-          onOpenCredits={() => setShowBuyCreditsModal(true)}
-          onSwitchToClassic={() => handleModeSwitch(false)}
-          onSettings={() => setShowSettings(true)}
-          activeTab={activeMayaTab}
-          onTabChange={(tab) => {
-            setActiveMayaTab(tab)
-            // Persist to localStorage
-            if (typeof window !== "undefined") {
-              localStorage.setItem("mayaActiveTab", tab)
-              // Update URL hash
-              const hashMap: Record<string, string> = {
-                photos: "#maya/photos",
-                plan: "#maya/plan",
-                videos: "#maya/videos",
-                prompts: "#maya/plan",
-                training: "#maya/training",
-                feed: "#maya/feed",
-              }
-              window.history.replaceState(null, "", hashMap[tab] || "#maya")
-            }
-          }}
-          photosCount={undefined} // Can be added later if needed
-          videosCount={undefined} // Can be added later if needed
-          disableFeedTab={true}
-        />
-      </div>
-
-      {proMode && showProTooltip && (
-        <div
-          className="fixed left-0 right-0 z-[95] border-b border-[rgba(195,190,182,0.16)] bg-[rgba(245,245,245,0.96)] px-4 py-3 backdrop-blur-sm"
-          style={{
-            top: "calc(var(--studio-app-header-height, 72px) + var(--maya-header-height, 88px))",
-          }}
-        >
-          <div className="mx-auto flex max-w-5xl items-start justify-between gap-3">
-            <p className="text-sm font-light leading-snug text-[#333333]">
-              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots,
-              lifestyle content, and trying new looks.
-            </p>
-            <button
-              type="button"
-              onClick={dismissProTooltip}
-              className="shrink-0 text-lg leading-none text-[#777777]"
-              aria-label="Dismiss Pro Mode tip"
-            >
-              x
-            </button>
           </div>
         </div>
       )}
