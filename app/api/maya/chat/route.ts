@@ -164,7 +164,7 @@ function createMayaChatErrorResponse(validUIMessages: UIMessage[], error: unknow
 function createTabHandoffResponse(
   validUIMessages: UIMessage[],
   input: {
-    targetTab: "photos" | "videos" | "training"
+    targetTab: "photos" | "plan" | "videos" | "training"
     title: string
     subtitle: string
     ctaLabel: string
@@ -371,6 +371,7 @@ export async function POST(req: Request) {
     const tabScopedChatEnabled = isMayaTabScopedChatEnabled(process.env.FEATURE_MAYA_TAB_SCOPED_CHAT)
     const activeMayaTab =
       activeTabHeader === "photos" ||
+      activeTabHeader === "plan" ||
       activeTabHeader === "videos" ||
       activeTabHeader === "training" ||
       activeTabHeader === "feed" ||

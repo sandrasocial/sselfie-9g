@@ -34,7 +34,7 @@ function HookHarness({
   activeTab,
 }: {
   onReady: (value: HookValue) => void
-  activeTab?: "photos" | "videos" | "training" | "prompts" | "feed"
+  activeTab?: "photos" | "plan" | "videos" | "training" | "prompts" | "feed"
 }) {
   const value = useMayaChat({
     proMode: false,

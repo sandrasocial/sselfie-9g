@@ -32,8 +32,10 @@ export async function GET() {
       originalImageCount = originalImages.length
     }
 
+    const hasCompletedModel = latestModel?.training_status === "completed"
+
     return NextResponse.json({
-      hasTrainedModel: !!latestModel,
+      hasTrainedModel: hasCompletedModel,
       model: latestModel,
       trainingImages: trainingImages,
       imageCount: trainingImages.length,

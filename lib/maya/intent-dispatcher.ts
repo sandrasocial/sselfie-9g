@@ -75,7 +75,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "save_to_gallery",
       imageId,
-      responseText: `Done. I saved it to your gallery.\n${formatMayaToolMarker("save_to_gallery", markerPayload)}`,
+      responseText: `Saved. This one is officially in your gallery now ✨\n${formatMayaToolMarker("save_to_gallery", markerPayload)}`,
     }
   }
 
@@ -85,7 +85,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       tool: "show_upload_zone",
       category,
       responseText:
-        `Perfect. I’m opening your ${category} upload area so we can build this with your own assets.\n` +
+        `Perfect. Let’s use your own ${category} so this feels more like you.\n` +
         `${formatMayaToolMarker("show_upload_zone", category)}`,
     }
   }
@@ -97,7 +97,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "generate_video",
       responseText:
-        `Perfect. I’ll pull your recent images and start an inline video workflow right here.\n` +
+        `Yes. Let’s turn one of your strongest photos into motion.\n` +
         `${formatMayaToolMarker("generate_video")}`,
     }
   }
@@ -105,7 +105,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
   if (SHOW_GALLERY_INTENT_REGEX.test(userText) || /\bmy gallery\b/i.test(userText)) {
     return {
       tool: "show_gallery",
-      responseText: `Of course. Here are your latest gallery images.\n${formatMayaToolMarker("show_gallery")}`,
+      responseText: `Of course. Let’s reuse something beautiful before we spend credits on a new image.\n${formatMayaToolMarker("show_gallery")}`,
     }
   }
 
@@ -113,7 +113,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "show_studio_hub",
       responseText:
-        `Absolutely. I’m pulling your Studio Hub so you can open pages, feeds, photos, and videos from here.\n` +
+        `Absolutely. I’m pulling your Studio Hub so you can see what we’ve already made and choose the next move.\n` +
         `${formatMayaToolMarker("show_studio_hub")}`,
     }
   }
@@ -122,7 +122,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "show_capabilities",
       responseText:
-        `Here’s what I can run for you right now.\n` +
+        `You’ve got options here. I’ll keep it simple and show you what I can run right now.\n` +
         `${formatMayaToolMarker("show_capabilities")}`,
     }
   }
@@ -138,8 +138,8 @@ export function hydrateMayaToolDispatchIntent(
 
   if (intent.tool === "show_capabilities") {
     const statusLine = snapshot.offerBrief.hasCoreFields
-      ? "I already have your core brand context, so we can move straight into execution."
-      : "I can pull what I already know from your profile, then ask only what’s missing."
+      ? "I already have your core brand context, so we can move straight into making something useful."
+      : "I can start with what I know, then ask only for what’s missing. No overwhelm."
 
     return {
       ...intent,
@@ -152,8 +152,8 @@ export function hydrateMayaToolDispatchIntent(
   if (intent.tool === "show_studio_hub") {
     const statusLine =
       snapshot.uploads.total > 0
-        ? "Your workspace is active, so I’ll load your latest assets and drafts now."
-        : "I’ll open your Studio Hub now. Once you create assets, they’ll appear here automatically."
+        ? "Your workspace is active. I’ll load your latest assets and drafts so we can keep building."
+        : "I’ll open your Studio Hub now. Once we create assets, they’ll live here automatically."
 
     return {
       ...intent,
@@ -195,7 +195,7 @@ export function hydrateMayaToolDispatchIntent(
           ...intent,
           source: "selfies",
           responseText:
-            `Your trained model isn't ready yet, so I'm using your selfies for this one so we keep moving.\n` +
+            `Your trained model isn’t ready yet, so we’ll use Selfie mode and keep your momentum going.\n` +
             `${formatMayaToolMarker("generate_image", "selfies")}`,
         }
       }
@@ -204,7 +204,7 @@ export function hydrateMayaToolDispatchIntent(
         ...intent,
         source: "choose_source",
         responseText:
-          `Your trained model isn't ready yet. Add selfies to use Selfie mode, or train your model to use My Model.\n` +
+          `Your trained model isn’t ready yet. You can upload selfies now, or train My Model when you want that consistent look.\n` +
           `${formatMayaToolMarker("show_upload_zone", "selfies")}\n` +
           `${formatMayaToolMarker("generate_image", "choose_source")}`,
       }
@@ -214,7 +214,7 @@ export function hydrateMayaToolDispatchIntent(
       return {
         ...intent,
         responseText:
-          `I don't see selfies uploaded yet. Drop 6-12 selfies and I’ll run this right after.\n` +
+          `I don’t see selfies uploaded yet. Drop 6-12 good ones and I’ll help you create from there.\n` +
           `${formatMayaToolMarker("show_upload_zone", "selfies")}`,
       }
     }
@@ -224,7 +224,7 @@ export function hydrateMayaToolDispatchIntent(
         ...intent,
         source: "choose_source",
         responseText:
-          `Choose the source you want me to use first, then confirm and I’ll generate from there.\n` +
+          `Choose the source you want me to use first, then confirm. We’ll keep the credit spend intentional.\n` +
           `${formatMayaToolMarker("generate_image", "choose_source")}`,
       }
     }
@@ -241,7 +241,7 @@ export function hydrateMayaToolDispatchIntent(
   if (intent.tool === "generate_video") {
     const readinessLine = snapshot.uploads.hasAny
       ? "I’ll use your existing visuals and move straight into animation."
-      : "I’ll check your latest gallery first and then animate from there."
+      : "I’ll check your latest gallery first, then we’ll make the motion feel intentional."
 
     return {
       ...intent,

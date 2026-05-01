@@ -246,7 +246,7 @@ export default function FeedPreviewCard({
 
         {isSaved && feedId && (feedStatus === "saved" || feedStatus === "completed") && (
           <button onClick={handleViewFullFeed} className="w-full py-3 bg-[rgba(175,170,162,0.12)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] text-xs uppercase">
-            View Feed
+            Open Feed Planner
           </button>
         )}
 
@@ -262,6 +262,16 @@ export default function FeedPreviewCard({
             )}
           </button>
         )}
+
+        {feedId ? (
+          <p className="text-center text-[10px] uppercase tracking-[0.16em] text-[#8a8780]">
+            Reopen this from Feed Planner when you are ready to post.
+          </p>
+        ) : strategy ? (
+          <p className="text-center text-[10px] uppercase tracking-[0.16em] text-[#8a8780]">
+            Save it to keep the plan and grid outside this chat.
+          </p>
+        ) : null}
 
         {postsData.length > 0 && (
           <button onClick={() => setShowPromptModal(true)} className="w-full py-2 bg-[rgba(175,170,162,0.12)] hover:bg-[rgba(175,170,162,0.20)] text-[#a8a49c] text-xs uppercase border border-[rgba(195,190,182,0.20)] flex items-center justify-center gap-1.5">

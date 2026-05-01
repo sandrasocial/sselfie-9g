@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react"
 
 const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string }> = {
+  visibility_suite: {
+    heading: "Your Visibility To Paid path is ready.",
+    body: "Start with the suite, then let Maya turn your message, content rhythm, first offer, and next 7 days into one clear plan.",
+    cta: "Open my suite",
+  },
   sselfie_studio_membership: {
     heading: "Welcome to The Studio.",
     body: "Your 200 credits are ready. Tell Maya what to create — she already knows your brand.",
@@ -38,6 +43,7 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
 // Maps product type to the in-app tab the CTA should navigate to.
 // selfie_guide and brand_strategy_pack open external URLs via window.location.
 const PRODUCT_TAB_DESTINATION: Record<string, string | null> = {
+  visibility_suite: null, // navigates to the suite access hub
   sselfie_studio_membership: "maya",
   one_time_session: "maya",
   paid_blueprint: "feed-planner",
@@ -84,6 +90,8 @@ export function PostPurchaseWelcomeModal({ productType, onDismiss, onNavigate }:
     } else if (productType === "selfie_guide" || productType === "selfie_guide_bundle") {
       // Guide lives on a separate page — navigate there
       window.location.href = "/selfie-guide"
+    } else if (productType === "visibility_suite") {
+      window.location.href = "/academy/access/visibility-suite"
     } else if (productType === "brand_strategy_pack") {
       window.location.href = "/studio?tab=maya"
     }

@@ -367,11 +367,17 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/42">
           SSELFIE Studio
         </p>
+        <h2 className={`${cormorant.className} mx-auto mt-5 max-w-2xl text-4xl uppercase leading-none`}>
+          Now let Maya help you make the first post.
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-white/62">
+          Your plan is the strategy. Studio Maya turns it into the caption, photo direction, and next 7 days.
+        </p>
         <a
-          href="/work-with-me"
-          className="mt-6 inline-flex bg-[#F4F0E6] px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0F0D0B] no-underline"
+          href={`/studio?tab=maya&maya_plan=${token}#maya`}
+          className="mt-7 inline-flex bg-[#F4F0E6] px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0F0D0B] no-underline"
         >
-          Apply For Private Sprint
+          Open In Studio Maya
         </a>
       </footer>
 

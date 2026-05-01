@@ -14,7 +14,7 @@ export type MayaToolMarker =
   | { tool: "show_upload_zone"; category: "selfies" | "products" | "people" | "vibes" }
   | {
       tool: "switch_maya_tab"
-      targetTab: "photos" | "videos" | "training"
+      targetTab: "photos" | "plan" | "videos" | "training"
       title?: string
       subtitle?: string
       ctaLabel?: string
@@ -172,7 +172,7 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
 
     markers.push({
       tool: "switch_maya_tab",
-      targetTab: targetTab as "photos" | "videos" | "training",
+      targetTab: targetTab as "photos" | "plan" | "videos" | "training",
       title: decodeMarkerText(rawTitle.trim()) || undefined,
       subtitle: decodeMarkerText(rawSubtitle.trim()) || undefined,
       ctaLabel: decodeMarkerText(rawCta.trim()) || undefined,

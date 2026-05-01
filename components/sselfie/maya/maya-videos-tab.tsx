@@ -503,7 +503,7 @@ export default function MayaVideosTab({
         {/* Info Section */}
         <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
           <p className="text-xs sm:text-sm font-light text-stone-600 text-center">
-            Tap the Animate button on any photo below and I&apos;ll turn it into a reel.
+            Tap Make Video on any photo below and I&apos;ll turn it into a reel.
           </p>
         </div>
 
@@ -592,7 +592,7 @@ export default function MayaVideosTab({
                 No Photos Yet
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6">
-                Create a photo in the Photos tab first, then come back here and tap Animate to turn it into motion.
+                Create a photo in Photos first, then come back here and tap Make Video to turn it into motion.
               </p>
             </div>
           </div>

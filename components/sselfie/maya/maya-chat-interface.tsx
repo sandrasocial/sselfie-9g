@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import type { UIMessage } from "@ai-sdk/react"
+import ReactMarkdown from "react-markdown"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "../prompt-suggestion-card"
@@ -99,7 +100,7 @@ interface MayaChatInterfaceProps {
     category?: string
   }) => void
   activeTab?: MayaSurfaceTab
-  onSwitchTab?: (tab: "photos" | "videos" | "training") => void
+  onSwitchTab?: (tab: "photos" | "plan" | "videos" | "training") => void
 }
 
 // ── Module-level constants ────────────────────────────────────────────────────
@@ -176,7 +177,7 @@ interface ToolCtx {
     category?: string
   }) => void
   activeTab: MayaSurfaceTab // NOSONAR
-  onSwitchTab?: (tab: "photos" | "videos" | "training") => void // NOSONAR
+  onSwitchTab?: (tab: "photos" | "plan" | "videos" | "training") => void // NOSONAR
   onFeedSaved?: (messageId: string, feedId: number) => void // NOSONAR
   isLandingPagesUiEnabled: boolean // NOSONAR
 }
@@ -293,71 +294,60 @@ function removeEmojis(text: string): string {
 }
 
 function renderMarkdownText(text: string): React.ReactNode {
-  let cleanedText = text
-  cleanedText = cleanedText.replaceAll("**", "")
-  const lines = cleanedText.split("\n")
-  const elements: React.ReactNode[] = []
-  let currentList: Array<{ itemKey: string; nodes: React.ReactNode[] }> = []
+  if (!text.trim()) return null
 
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim()
-
-    if (/^[-*]\s+/.exec(trimmedLine)) {
-      const listItem = trimmedLine.replace(/^[-*]\s+/, "")
-      const cleanedListItem = listItem.replaceAll("**", "")
-      const processedItem: React.ReactNode[] = []
-      processedItem.push(<span key="text-0">{cleanedListItem}</span>)
-      if (processedItem.length === 0) {
-        processedItem.push(<span key="text-0">{listItem}</span>)
-      }
-      currentList.push({ itemKey: `li-${cleanedListItem.slice(0, 20)}`, nodes: processedItem })
-    } else {
-      if (currentList.length > 0) {
-        elements.push(
-          <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-2 my-3 ml-6">
-            {currentList.map(({ itemKey, nodes }) => (
-              <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
-                {nodes}
-              </li>
-            ))}
+  return (
+    <ReactMarkdown
+      components={{
+        h1: ({ children }) => (
+          <h3 className="mb-3 mt-5 font-serif text-2xl font-light leading-tight text-[color:var(--app-text-primary)] first:mt-0">
+            {children}
+          </h3>
+        ),
+        h2: ({ children }) => (
+          <h3 className="mb-3 mt-5 font-serif text-xl font-light leading-tight text-[color:var(--app-text-primary)] first:mt-0">
+            {children}
+          </h3>
+        ),
+        h3: ({ children }) => (
+          <h4 className="mb-2 mt-4 text-[12px] font-medium uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)] first:mt-0">
+            {children}
+          </h4>
+        ),
+        p: ({ children }) => (
+          <p className="mb-4 text-[16px] font-light leading-[1.8] text-[color:var(--app-text-primary)] last:mb-0">
+            {children}
+          </p>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-medium text-[color:var(--app-text-primary)]">{children}</strong>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-4 ml-5 list-disc space-y-2 text-[16px] font-light leading-[1.8] text-[color:var(--app-text-primary)] last:mb-0">
+            {children}
           </ul>
-        )
-        currentList = []
-      }
-
-      if (trimmedLine) {
-        const cleanedLine = trimmedLine.replaceAll("**", "")
-        const processedLine: React.ReactNode[] = []
-        processedLine.push(<span key="text-0">{cleanedLine}</span>)
-        if (processedLine.length === 0) {
-          processedLine.push(<span key="text-0">{trimmedLine}</span>)
-        }
-        if (trimmedLine.length > 0) {
-          elements.push(
-            <p key={`para-${elements.length}`} className="text-[16px] leading-[1.8] font-light text-(--text-primary) mb-4 last:mb-0">
-              {processedLine}
-            </p>
-          )
-        }
-      } else if (index < lines.length - 1) {
-        elements.push(<div key={`spacer-${elements.length}`} className="h-2" />)
-      }
-    }
-  })
-
-  if (currentList.length > 0) {
-    elements.push(
-      <ul key="list-final" className="list-disc list-inside space-y-2 my-3 ml-6">
-        {currentList.map(({ itemKey, nodes }) => (
-          <li key={itemKey} className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
-            {nodes}
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
-  return elements.length > 0 ? <div className="space-y-1">{elements}</div> : null
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-4 ml-5 list-decimal space-y-2 text-[16px] font-light leading-[1.8] text-[color:var(--app-text-primary)] last:mb-0">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        a: ({ children, href }) => (
+          <a
+            href={href}
+            className="text-[color:var(--app-text-primary)] underline underline-offset-4"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  )
 }
 
 function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
@@ -664,8 +654,8 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
       description: "Draft post, reel, and carousel concepts right here in the chat.",
     },
     {
-      title: "Animate to Video",
-      prompt: "Animate my latest image into a short reel",
+      title: "Make a Video",
+      prompt: "Turn my latest image into a short reel",
       description: "Pick an image and I'll create a video from it right here.",
     },
     {
@@ -818,6 +808,28 @@ function renderShowGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Reac
   const state = output.state || "ready"
   const images = Array.isArray(output.images) ? output.images : []
 
+  type GalleryToolImage = {
+    id?: string | number
+    imageUrl?: string
+    image_url?: string
+    title?: string
+    description?: string
+    category?: string
+  }
+
+  const selectGalleryImage = (image: GalleryToolImage, mode: "style" | "feed") => {
+    const imageUrl = image.imageUrl || image.image_url
+    if (!imageUrl) return
+
+    const label = image.title || image.description || image.category || "this gallery image"
+    const prompt =
+      mode === "feed"
+        ? `Use this selected gallery image in my feed plan where it fits best: ${imageUrl}. Treat it as an existing image, not something to regenerate. Then build the remaining posts around it and only suggest new images where needed.`
+        : `Use this selected gallery image as my visual reference: ${imageUrl}. Recreate the same style, mood, lighting, and composition for a new Maya photo concept. Do not copy it exactly; make a fresh version that feels like ${label}.`
+
+    ctx.onToolPromptSelect?.(`${prompt}\n\n[Inspiration Image: ${imageUrl}]`)
+  }
+
   if (state === "loading") {
     return (
       <MayaInlineCard
@@ -845,20 +857,48 @@ function renderShowGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Reac
       key={partIndex}
       eyebrow="Gallery"
       title="Recent Photos"
-      subtitle="Your latest photos stay here so I can use them in new drafts."
+      subtitle="Tap a photo to use its style, or add it into a mixed-source feed plan."
       aside={<MayaInlinePill>{Number(output.total || images.length)} images</MayaInlinePill>}
       actions={<MayaInlineAction href="/studio?tab=gallery#gallery">Open Gallery</MayaInlineAction>}
     >
       {images.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2.5">
-          {images.slice(0, 6).map((image: any, index: number) => (
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {images.slice(0, 6).map((image: GalleryToolImage, index: number) => (
             <div key={image.id || index} className="stone-inset-panel overflow-hidden rounded-[20px]">
-              <div className="aspect-square overflow-hidden">
+              <button
+                type="button"
+                onClick={() => selectGalleryImage(image, "style")}
+                className="group block w-full text-left"
+                aria-label="Use this gallery image as style reference"
+              >
+                <div className="relative aspect-square overflow-hidden">
                 <img
                   src={image.imageUrl || image.image_url}
                   alt="Gallery"
                   className="h-full w-full object-cover"
                 />
+                  <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.34)] opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="rounded-full bg-[rgba(244,240,230,0.92)] px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#0d0c0b]">
+                      Use Style
+                    </span>
+                  </div>
+                </div>
+              </button>
+              <div className="grid grid-cols-2 border-t border-[rgba(195,190,182,0.12)]">
+                <button
+                  type="button"
+                  onClick={() => selectGalleryImage(image, "style")}
+                  className="border-r border-[rgba(195,190,182,0.12)] px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+                >
+                  Recreate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectGalleryImage(image, "feed")}
+                  className="px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+                >
+                  Use In Feed
+                </button>
               </div>
             </div>
           ))}
@@ -1028,11 +1068,12 @@ function renderShowUploadZoneTool(part: any, partIndex: number, ctx: ToolCtx): R
 function renderSwitchMayaTabTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = part.output || {}
   const targetTab =
-    output.targetTab === "videos" || output.targetTab === "training"
+    output.targetTab === "plan" || output.targetTab === "videos" || output.targetTab === "training"
       ? output.targetTab
       : "photos"
   let ctaLabelFallback = "Go to Photos"
-  if (targetTab === "videos") ctaLabelFallback = "Go to Videos"
+  if (targetTab === "plan") ctaLabelFallback = "Go to Plan"
+  else if (targetTab === "videos") ctaLabelFallback = "Go to Videos"
   else if (targetTab === "training") ctaLabelFallback = "Go to Train"
   const ctaLabel =
     typeof output.ctaLabel === "string" && output.ctaLabel.trim().length > 0
@@ -1435,7 +1476,7 @@ function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): R
         loading="lazy"
         decoding="async"
       />
-      <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary)">Animate</div>
+      <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary)">Make Video</div>
       <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-(--text-accent)">{sourceLabel}</div>
     </button>
   )

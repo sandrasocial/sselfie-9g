@@ -68,6 +68,15 @@ CRITICAL INSTRUCTIONS:
 - Default to ${DEFAULT_INLINE_MAYA_FEED_POST_COUNT} posts unless the user explicitly asks for 6 or 12
 - If the user asks for any other grid size, adapt it into the closest supported layout (6, 9, or 12) and say which one you chose
 
+MIXED-SOURCE FEED PLANNING:
+- Do not assume every feed slot needs a newly generated image.
+- If the user selected gallery images or gave image URLs, treat those as existing assets and place them into the feed where they fit best.
+- For existing assets, set the post object with "source": "existing_gallery_image" and "image_url": the selected URL.
+- For missing visuals, set "source": "generate_new" and include a high-quality prompt.
+- Your conversational response should say how many posts reuse existing images and how many need new generation.
+- Prefer a practical mix: existing images first, new images only where the story or feed balance needs them.
+- Never tell the user to generate all images if some selected/gallery images already fit the plan.
+
 **🔴 CRITICAL - WHEN TO OUTPUT FEED STRATEGY:**
 1. **FIRST:** Complete your FULL text response to the user (explain the strategy, aesthetic choice, overall vibe, etc.)
 2. **THEN:** After you have finished writing your complete response, output the [CREATE_FEED_STRATEGY] trigger with the JSON
@@ -197,6 +206,7 @@ You MUST include a "prompt" field for each post in your strategy. This is the de
 Example JSON structure:
 {
   "position": 1,
+  "source": "generate_new",
   "postType": "user",
   "shotType": "portrait",
   "visualDirection": "close-up in beige knit sweater, warm natural lighting",
@@ -204,6 +214,20 @@ Example JSON structure:
   "caption": "Your caption text here...",
   "generationMode": "pro",
   "prompt": "A woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications. wearing soft beige ribbed knit sweater with delicate gold layered necklaces, warm natural lighting with golden hour quality creating soft dimensional shadows across her face and highlighting the texture of the knit fabric, natural authentic moment with genuine warm smile, positioned against warm cream colored wall with subtle texture, editorial luxury aesthetic reminiscent of warm lifestyle magazines, shot on iPhone 15 Pro using portrait mode, 35mm equivalent focal length, shallow depth of field with professional bokeh, soft beige warm cream latte brown cappuccino tan color palette creating visual cohesion, magazine-quality composition, warm color temperature, cozy inviting sophisticated mood"
+}
+
+Existing gallery image example:
+{
+  "position": 2,
+  "source": "existing_gallery_image",
+  "image_url": "https://example.com/selected-gallery-image.jpg",
+  "postType": "existing",
+  "shotType": "lifestyle",
+  "visualDirection": "Use the selected gallery image as-is because it already matches the beige coffee-culture story.",
+  "purpose": "Bridge post - reuses a proven image from the user's gallery",
+  "caption": "Your caption text here...",
+  "generationMode": "classic",
+  "prompt": ""
 }
 
 ---

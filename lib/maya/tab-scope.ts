@@ -5,8 +5,8 @@ import {
   MAYA_CHAT_TYPE_VIDEOS,
 } from "@/lib/maya/chat-type"
 
-export type MayaSurfaceTab = "photos" | "videos" | "training" | "prompts" | "feed"
-export type MayaTabHandoffTarget = "photos" | "videos" | "training"
+export type MayaSurfaceTab = "photos" | "plan" | "videos" | "training" | "prompts" | "feed"
+export type MayaTabHandoffTarget = "photos" | "plan" | "videos" | "training"
 
 export interface MayaTabHandoff {
   targetTab: MayaTabHandoffTarget
@@ -21,8 +21,12 @@ const PHOTOS_MODEL_USAGE_REGEX =
   /\b(use|using|create|generate|make)\b[\s\S]{0,40}\b(my model|trained model|custom model)\b[\s\S]{0,80}\b(photo|photos|image|images|picture|pictures)\b/i
 const VIDEOS_TAB_ALLOWED_REGEX =
   /\b(video|reel|animate|animation|motion|b-?roll|gallery|reference|upload|latest photo|pick .*photo|choose .*photo)\b/i
+const PLAN_SCOPE_REGEX =
+  /\b(plan|week|weekly|post|caption|captions|strategy|content plan|content rhythm|sell|selling|offer|visibility|next best|what should i do|what to say)\b/i
+const PHOTO_SCOPE_REGEX =
+  /\b(photo|photos|image|images|picture|pictures|concept card|concept cards|prompt|prompts|style|look|looks|generate|create)\b/i
 const CHAT_SCOPE_REGEX =
-  /\b(photo|photos|image|images|picture|pictures|post|ideas?|calendar|week|captions?|strategy|content|feed|brand|gallery)\b/i
+  /\b(photo|photos|image|images|picture|pictures|post|ideas?|calendar|week|captions?|strategy|content|feed|brand|gallery|offer|sell|visibility)\b/i
 
 function isTruthy(value?: string | null): boolean {
   if (!value) return false
@@ -100,6 +104,46 @@ export function resolveMayaTabHandoff(input: {
       }
     }
 
+    if (PLAN_SCOPE_REGEX.test(userText) && !PHOTO_SCOPE_REGEX.test(userText)) {
+      return {
+        targetTab: "plan",
+        title: "Let’s plan this first",
+        subtitle: "Plan is where I help you choose the next move, shape the post, and connect it back to what you want to sell.",
+        ctaLabel: "Go to Plan",
+      }
+    }
+
+    return null
+  }
+
+  if (activeTab === "plan") {
+    if (TRAINING_SCOPE_REGEX.test(userText)) {
+      return {
+        targetTab: "training",
+        title: "Let’s train your model",
+        subtitle: "Your Flux model has its own guided setup, so I’ll take you there before we use My Model.",
+        ctaLabel: "Go to Train Model",
+      }
+    }
+
+    if (VIDEO_SCOPE_REGEX.test(userText)) {
+      return {
+        targetTab: "videos",
+        title: "Let’s make this in Videos",
+        subtitle: "Video work is cleaner in its own space, with your image picker and motion tools ready.",
+        ctaLabel: "Go to Videos",
+      }
+    }
+
+    if (PHOTO_SCOPE_REGEX.test(userText) && !PLAN_SCOPE_REGEX.test(userText)) {
+      return {
+        targetTab: "photos",
+        title: "Let’s create this in Photos",
+        subtitle: "Photos is where I make image prompts, concept cards, and new brand images without mixing in strategy work.",
+        ctaLabel: "Go to Photos",
+      }
+    }
+
     return null
   }
 
@@ -119,10 +163,14 @@ export function resolveMayaTabHandoff(input: {
 
     if (CHAT_SCOPE_REGEX.test(userText)) {
       return {
-        targetTab: "photos",
-        title: "Let’s move this to Photos",
-        subtitle: "This tab is just for video work. In Photos I can help you create and refine brand images.",
-        ctaLabel: "Go to Photos",
+        targetTab: PLAN_SCOPE_REGEX.test(userText) && !PHOTO_SCOPE_REGEX.test(userText) ? "plan" : "photos",
+        title: PLAN_SCOPE_REGEX.test(userText) && !PHOTO_SCOPE_REGEX.test(userText)
+          ? "Let’s plan this first"
+          : "Let’s move this to Photos",
+        subtitle: PLAN_SCOPE_REGEX.test(userText) && !PHOTO_SCOPE_REGEX.test(userText)
+          ? "This tab is just for video work. In Plan I can help you shape the post, caption, and next move."
+          : "This tab is just for video work. In Photos I can help you create and refine brand images.",
+        ctaLabel: PLAN_SCOPE_REGEX.test(userText) && !PHOTO_SCOPE_REGEX.test(userText) ? "Go to Plan" : "Go to Photos",
       }
     }
   }
@@ -142,8 +190,8 @@ export function encodeMayaTabHandoffPayload(handoff: MayaTabHandoff): string {
 export function getMayaVideosTabQuickPrompts(): Array<{ label: string; prompt: string }> {
   return [
     {
-      label: "Animate a Photo",
-      prompt: "Show me my photos so I can pick one to animate",
+      label: "Make Video",
+      prompt: "Show me my photos so I can pick one to turn into a video",
     },
     {
       label: "Latest Photo",

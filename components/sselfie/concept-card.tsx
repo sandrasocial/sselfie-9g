@@ -602,12 +602,15 @@ export default function ConceptCard({
                 credentials: 'include',
                 body: JSON.stringify({
                   messageId: messageId,
+                  chatId: chatId,
                   content: '', // Preserve existing content
                   conceptCards: [updatedConcept],
                   }),
                 })
               if (!saveResponse.ok) {
-                throw new Error(`JSONB save failed (${saveResponse.status})`)
+                const errorData = await saveResponse.json().catch(() => ({}))
+                const errorDetail = errorData?.details || errorData?.error || "Unknown API error"
+                throw new Error(`JSONB save failed (${saveResponse.status}): ${errorDetail}`)
               }
               console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId })
             } catch (jsonbError: any) {

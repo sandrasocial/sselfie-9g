@@ -422,7 +422,7 @@ export default function MayaUnifiedInput({
                   fontWeight: 500,
                   textTransform: "uppercase",
                   letterSpacing: "0.14em",
-                  color: "#f0ede8",
+                  color: "var(--app-text-primary)",
                 }}
                 aria-label="Start a new chat"
               >

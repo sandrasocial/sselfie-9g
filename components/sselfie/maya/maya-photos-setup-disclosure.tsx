@@ -15,7 +15,7 @@ export interface MayaPhotosSetupDisclosureProps {
 }
 
 /**
- * Collapses credits, upgrade, and training nudges into one calm "Setup" surface.
+ * Collapses credits, upgrade, and training nudges into one calm support surface.
  * Starts collapsed; user expands to see details.
  */
 export default function MayaPhotosSetupDisclosure({
@@ -55,7 +55,7 @@ export default function MayaPhotosSetupDisclosure({
       <details className="group border border-[rgba(195,190,182,0.18)] bg-[rgba(14,12,10,0.45)] rounded-lg overflow-hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none [&::-webkit-details-marker]:hidden">
           <div className="min-w-0 flex-1 text-left">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Setup</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Train My Model</span>
             <p className="mt-0.5 text-sm font-light leading-snug text-[#f0ede8]">{digest}</p>
           </div>
           <span

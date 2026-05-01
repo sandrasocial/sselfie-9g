@@ -19,12 +19,11 @@ import { useMayaSharedImages } from "./maya/hooks/use-maya-shared-images"
 import MayaUnifiedInput from "./maya/maya-unified-input"
 import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import MayaVideosTab from "./maya/maya-videos-tab"
-import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
 import { MayaInlineAction, MayaInlineCard } from "./maya/maya-inline-card"
 import StudioMemberOnboarding from "./maya/studio-member-onboarding"
-import MembershipHomeCard from "./maya/membership-home-card"
-import MayaWelcomePanel from "./maya/maya-welcome-panel"
+import MayaPhotosHome from "./maya/maya-photos-home"
+import MayaStudioCopilotHome from "./maya/maya-studio-copilot-home"
 import MayaPhotosSetupDisclosure from "./maya/maya-photos-setup-disclosure"
 import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import { useRouter } from "next/navigation"
@@ -74,6 +73,7 @@ const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompt
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
 type MayaDismissibleUpsellId = MiniProductId | "zero_credits"
 const MAYA_DISMISSED_UPSELLS_STORAGE_KEY = "sselfie.maya.dismissedUpsells"
+const MAYA_VISIBILITY_PLAN_HANDOFF_STORAGE_KEY = "sselfie.maya.visibilityPlanHandoff"
 
 const ACADEMY_PRODUCT_ID_ALIASES: Record<string, MiniProductId> = {
   what_to_say: "what_to_say",
@@ -94,14 +94,6 @@ function normalizeMiniProductId(value?: string | null): MiniProductId | null {
 
 type MyProductsResponse = {
   purchases?: Array<{ id?: string | null }>
-}
-
-type MonthlyDropRow = {
-  title?: string | null
-}
-
-type MonthlyDropsResponse = {
-  monthlyDrops?: MonthlyDropRow[]
 }
 
 type WelcomeFirstGenerationState = {
@@ -218,6 +210,7 @@ export default function MayaChatScreen({
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const retryQueue = useRef<Array<{ messageId: string; payload: any }>>([])
+  const visibilityPlanHandoffConsumedRef = useRef(false)
   const [isDragging, setIsDragging] = useState(false)
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
@@ -234,10 +227,6 @@ export default function MayaChatScreen({
 
   const { data: myProductsData } = useSWR<MyProductsResponse>(
     user ? "/api/academy/my-products" : null,
-    simpleFetcher,
-  )
-  const { data: monthlyDropsData } = useSWR<MonthlyDropsResponse>(
-    user && myProductsData?.hasStudioMembership ? "/api/academy/monthly-drops" : null,
     simpleFetcher,
   )
   const ownedMiniProductIds = useMemo<Set<MiniProductId>>(() => {
@@ -262,24 +251,30 @@ export default function MayaChatScreen({
     return owned
   }, [academyPurchaseProduct, isMembership, myProductsData?.purchases])
   
-  // Tab state for Photos/Videos/Prompts/Training/Feed tabs
-  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training" | "feed">(() => {
-    // Check URL hash for tab selection (e.g., #maya/videos, #maya/prompts, #maya/training, #maya/feed)
+  // Tab state for Photos/Plan/Videos/Training/Feed tabs
+  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "plan" | "videos" | "prompts" | "training" | "feed">(() => {
+    // Check URL hash for tab selection (e.g., #maya/plan, #maya/videos, #maya/training, #maya/feed)
     if (typeof window !== "undefined") {
       const hash = window.location.hash
+      if (hash === "#maya/photos" || hash === "#photos") {
+        return "photos"
+      }
+      if (hash === "#maya/plan" || hash === "#plan" || hash === "#maya/prompts" || hash === "#prompts") {
+        return "plan"
+      }
       if (hash === "#maya/videos" || hash === "#videos") {
         return "videos"
-      }
-      if (hash === "#maya/prompts" || hash === "#prompts") {
-        return "prompts"
       }
       if (hash === "#maya/training" || hash === "#training") {
         return "training"
       }
       // Check localStorage for persisted tab selection
       const savedTab = localStorage.getItem("mayaActiveTab")
-      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training") {
-        return savedTab as "photos" | "videos" | "prompts" | "training"
+      if (savedTab === "photos" || savedTab === "plan" || savedTab === "videos" || savedTab === "training") {
+        return savedTab as "photos" | "plan" | "videos" | "training"
+      }
+      if (savedTab === "prompts") {
+        return "plan"
       }
     }
     return "photos" // Default to Photos tab
@@ -2471,18 +2466,24 @@ export default function MayaChatScreen({
     }
   }
 
-  const setMayaTabAndHash = useCallback((tab: "photos" | "videos" | "training") => {
+  const setMayaTabAndHash = useCallback((tab: "photos" | "plan" | "videos" | "training") => {
     setActiveMayaTab(tab)
     if (typeof window !== "undefined") {
       localStorage.setItem("mayaActiveTab", tab)
       const nextHash =
-        tab === "training" ? "#maya/training" : tab === "videos" ? "#maya/videos" : "#maya"
+        tab === "training"
+          ? "#maya/training"
+          : tab === "videos"
+            ? "#maya/videos"
+            : tab === "plan"
+              ? "#maya/plan"
+              : "#maya/photos"
       window.history.replaceState(null, "", nextHash)
     }
   }, [])
 
   const handleSwitchScopedTab = useCallback(
-    (tab: "photos" | "videos" | "training") => {
+    (tab: "photos" | "plan" | "videos" | "training") => {
       setMayaTabAndHash(tab)
       trackAnalyticsEvent({
         event: "maya_tab_handoff_opened",
@@ -3716,6 +3717,47 @@ export default function MayaChatScreen({
     })
   }, [messages, getMessageText, isLandingPagesUiEnabled])
 
+  useEffect(() => {
+    if (visibilityPlanHandoffConsumedRef.current) return
+    if (typeof window === "undefined") return
+    if (isLoadingChat || isTyping || !hasLoadedChatRef.current || hasVisibleMessages) return
+
+    const url = new URL(window.location.href)
+    const planToken = url.searchParams.get("maya_plan")
+    const shouldOpen = planToken || url.searchParams.get("maya_handoff") === "visibility_suite"
+    const stored = window.sessionStorage.getItem(MAYA_VISIBILITY_PLAN_HANDOFF_STORAGE_KEY)
+    if (!shouldOpen && !stored) return
+
+    let answerCount: number | null = null
+    let planUrl: string | null = planToken ? `/academy/visibility-plan/${planToken}` : null
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (typeof parsed?.answerCount === "number") answerCount = parsed.answerCount
+        if (typeof parsed?.url === "string") planUrl = parsed.url
+      } catch {
+        // The handoff is optional; ignore malformed old session data.
+      }
+      window.sessionStorage.removeItem(MAYA_VISIBILITY_PLAN_HANDOFF_STORAGE_KEY)
+    }
+
+    visibilityPlanHandoffConsumedRef.current = true
+    setMayaTabAndHash("plan")
+
+    url.searchParams.delete("maya_plan")
+    url.searchParams.delete("maya_handoff")
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash || "#maya"}`)
+
+    const prompt =
+      "I just created my Maya Visibility Plan. Use it as the strategy and help me execute the first 7 days inside Studio Maya. " +
+      "Start with the single best post to make today, then give me the caption, photo direction, and next step." +
+      (answerCount ? ` The plan was based on ${answerCount} saved workbook answers.` : "") +
+      (planUrl ? ` Plan link: ${planUrl}` : "")
+
+    void handleSendMessage(prompt)
+  }, [hasVisibleMessages, isLoadingChat, isTyping, setMayaTabAndHash, handleSendMessage])
+
   const isEmpty = 
     !isLoadingChat && // Don't show welcome screen while loading
     !hasVisibleMessages && // No visible messages = new/empty chat
@@ -3741,7 +3783,7 @@ export default function MayaChatScreen({
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
   /** Welcome / home surfaces already include starters — hide duplicate chip row above input */
   const showInputBarQuickPrompts =
-    shouldShowInputPrompts && !(activeMayaTab === "photos" && showAnyEmptyState)
+    shouldShowInputPrompts && !((activeMayaTab === "photos" || activeMayaTab === "plan") && showAnyEmptyState)
   const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
   const generatedPhotoCountInChat = useMemo(() => {
     return (messages || []).reduce((count: number, message: any) => {
@@ -3756,30 +3798,8 @@ export default function MayaChatScreen({
   const hasGeneratedPhotoInChat = generatedPhotoCountInChat > 0
   const showCalendarSuggestion =
     generatedPhotoCountInChat >= 2 && !calendarSuggestionDismissed && activeMayaTab === "photos"
-  const hasPhotoMomentum =
-    hasGeneratedPhotoInChat || (libraryTotalImages ?? 0) > 0 || (sharedImages?.length ?? 0) > 0
-
-  const returningMemberLastSessionTitle =
-    typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
-      ? chatTitle
-      : null
-  const latestMonthlyDropName = useMemo(() => {
-    const drops = monthlyDropsData?.monthlyDrops
-    if (!Array.isArray(drops)) return null
-
-    for (const drop of drops) {
-      const title = typeof drop?.title === "string" ? drop.title.trim() : ""
-      if (title.length > 0) {
-        return title
-      }
-    }
-
-    return null
-  }, [monthlyDropsData?.monthlyDrops])
-
   const hasWhatToSayAccess = ownedMiniProductIds.has("what_to_say")
   const hasShowUpAccess = ownedMiniProductIds.has("show_up")
-  const hasAiPhotoPromptsAccess = ownedMiniProductIds.has("ai_photo_prompts")
 
   const assistantTextCorpus = useMemo(() => {
     return (messages || [])
@@ -3909,9 +3929,10 @@ export default function MayaChatScreen({
               localStorage.setItem("mayaActiveTab", tab)
               // Update URL hash
               const hashMap: Record<string, string> = {
-                photos: "#maya",
+                photos: "#maya/photos",
+                plan: "#maya/plan",
                 videos: "#maya/videos",
-                prompts: "#maya/prompts",
+                prompts: "#maya/plan",
                 training: "#maya/training",
                 feed: "#maya/feed",
               }
@@ -4081,9 +4102,9 @@ export default function MayaChatScreen({
         studioProMode={proMode}
       />
 
-      {/* Tab Content - Photos Tab */}
+      {/* Tab Content - Photos and Plan Tabs */}
       {/* Add padding-top to account for fixed header + tabs, padding-bottom for fixed input */}
-      {activeMayaTab === "photos" && (
+      {(activeMayaTab === "photos" || activeMayaTab === "plan") && (
         <>
           {/* CRITICAL FIX: Show loading indicator during chat load, but don't block UI */}
           {isLoadingChat && messages.length === 0 && (
@@ -4211,36 +4232,25 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-                <MembershipHomeCard
-                  creditsReady={creditBalance}
-                  lastSessionTitle={returningMemberLastSessionTitle}
-                  monthlyDropName={latestMonthlyDropName}
-                  onContinue={() => {
-                    if (hasProFeatures) {
-                      setShowProModeHistory(true)
-                      return
-                    }
-                    setShowHistory(true)
-                  }}
-                  onGeneratePhoto={() => {
-                    handleSendMessage("Plan my content for this week with photo ideas, captions, and the first post I should create.")
-                  }}
-                  onBrowseStyles={() => {
-                    handleSendMessage("Show me fresh photo directions for this week's content.")
-                  }}
-                  // [STABILIZATION] onCreateCalendar not passed — content calendar feature hidden
-                  onUploadAssets={() => {
-                    handleSendMessage("I want to upload brand references for this week's content plan.")
-                  }}
-                  onExploreMonthlyDrop={() => {
-                    if (typeof window !== "undefined") {
-                      const nextUrl = new URL(window.location.href)
-                      nextUrl.searchParams.set("academy_view", "monthly-drops")
-                      window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
-                    }
-                    setActiveTab?.("academy")
-                  }}
-                />
+                {activeMayaTab === "plan" ? (
+                  <MayaStudioCopilotHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    onSendPrompt={handleSendMessage}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onMakeVideo={() => setMayaTabAndHash("videos")}
+                  />
+                ) : (
+                  <MayaPhotosHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    proMode={proMode}
+                    onSendPrompt={handleSendMessage}
+                    onOpenUpload={() => handlePhaseTwoUploadZone("selfies")}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onOpenPlan={() => setMayaTabAndHash("plan")}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -4248,26 +4258,32 @@ export default function MayaChatScreen({
           {showProEmptyState && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
               <div
-                className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 text-center"
+                className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-4 text-center"
                 style={{
                   paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
                   minHeight: "calc(100vh - var(--maya-header-height, 88px) - var(--input-bar-height, 168px) - 140px)",
                 }}
               >
-                <div className="flex h-12 w-12 items-center justify-center">
-                  <span className="h-7 w-7 border border-[color:var(--app-text-secondary)]" aria-hidden />
-                </div>
-                  <p className="max-w-xs text-[16px] font-light leading-relaxed text-[color:var(--app-text-secondary)]">
-                  Add one selfie or reference photo so Maya can plan content that looks like you.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowUploadFlow(true)}
-                  className="rounded-[6px] bg-[color:var(--app-btn-primary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.16em] text-[color:var(--app-btn-primary-text)]"
-                >
-                  Add Reference Photos
-                </button>
+                {activeMayaTab === "plan" ? (
+                  <MayaStudioCopilotHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    onSendPrompt={handleSendMessage}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onMakeVideo={() => setMayaTabAndHash("videos")}
+                  />
+                ) : (
+                  <MayaPhotosHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    proMode={proMode}
+                    onSendPrompt={handleSendMessage}
+                    onOpenUpload={() => handlePhaseTwoUploadZone("selfies")}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onOpenPlan={() => setMayaTabAndHash("plan")}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -4282,55 +4298,25 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-                <div className="w-full max-w-xl space-y-10">
-                  <MayaWelcomePanel
-                    eyebrow="Maya"
-                    title={
-                      hasTrainedModel
-                        ? hasPhotoMomentum
-                          ? "Let’s plan this week’s content"
-                          : "Your weekly content stylist is ready"
-                        : hasPhotoMomentum
-                          ? "Let’s plan this week’s content"
-                          : "Let’s make showing up easier"
-                    }
-                    subtitle={
-                      hasTrainedModel
-                        ? "Tell Maya what you’re selling, launching, or showing this week. She’ll map the photo ideas, captions, and first next step."
-                        : "Start with your week, your offer, or the post you’ve been avoiding. Maya will turn it into a simple content plan."
-                    }
-                    previewImageUrls={uploadedImages.map((image) => image.url)}
-                    onThemeChipClick={handleSendMessage}
-                    actions={[
-                      {
-                        label: "Plan this week’s content",
-                        onClick: () =>
-                          handleSendMessage(
-                            hasTrainedModel
-                              ? "Plan my content for this week using my trained model for photo ideas. Include captions and tell me which post to create first."
-                              : "Plan my content for this week. Include photo ideas, captions, and tell me which post to create first.",
-                          ),
-                        variant: "primary",
-                      },
-                      {
-                        label: hasTrainedModel ? "Create one photo idea" : "Start with photo ideas",
-                        onClick: () =>
-                          handleSendMessage(
-                            hasTrainedModel
-                              ? "Give me one strong photo idea for this week's content using my trained model."
-                              : "Give me three photo ideas for this week's content.",
-                          ),
-                      },
-                    ]}
+                {activeMayaTab === "plan" ? (
+                  <MayaStudioCopilotHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    onSendPrompt={handleSendMessage}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onMakeVideo={() => setMayaTabAndHash("videos")}
                   />
-                  <MayaQuickPrompts
-                    prompts={currentPrompts}
-                    onSelect={handleSendMessage}
-                    disabled={isTyping}
-                    variant="empty-state"
-                    studioProMode={proMode}
+                ) : (
+                  <MayaPhotosHome
+                    creditsReady={creditBalance}
+                    hasTrainedModel={hasTrainedModel}
+                    proMode={proMode}
+                    onSendPrompt={handleSendMessage}
+                    onOpenUpload={() => handlePhaseTwoUploadZone("selfies")}
+                    onTrainModel={() => setMayaTabAndHash("training")}
+                    onOpenPlan={() => setMayaTabAndHash("plan")}
                   />
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -4351,7 +4337,7 @@ export default function MayaChatScreen({
 
       {/* Fixed Bottom Input Area - Show in tab-scoped Maya chats */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
-      {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
+      {(activeMayaTab === "photos" || activeMayaTab === "plan" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
           className="fixed left-0 right-0 z-[90] flex flex-col border-t border-[color:var(--app-glass-border)] bg-[rgba(237,233,226,0.86)] px-3 py-2 backdrop-blur-[18px] sm:px-4 sm:py-2.5"
@@ -4382,7 +4368,7 @@ export default function MayaChatScreen({
                   handleSendMessage(prompt)
                 }}
                 disabled={isTyping}
-                variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
+                variant={activeMayaTab === "photos" || activeMayaTab === "plan" ? "quick-chips" : "input-area"}
                 studioProMode={proMode}
                 isEmpty={isEmpty}
                 uploadedImage={uploadedImage}
@@ -4459,54 +4445,6 @@ export default function MayaChatScreen({
           </div>
         </div>
       )}
-
-      {/* Tab Content - Prompts Tab */}
-      {activeMayaTab === "prompts" && (
-        <div
-          style={{
-            paddingTop: MAYA_SURFACE_TOP_OFFSET,
-            paddingBottom: '20px', // Space for content
-          }}
-        >
-          {/* CRITICAL FIX: Show loading indicator during chat load */}
-          {isLoadingChat && messages.length === 0 && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <UnifiedLoading message="Loading prompts..." variant="section" />
-            </div>
-          )}
-          <MayaPromptsTab
-            onSelectPrompt={(prompt, title) => {
-              // Switch to Photos tab and send the prompt
-              setActiveMayaTab("photos")
-              // Persist to localStorage and URL
-              if (typeof window !== "undefined") {
-                localStorage.setItem("mayaActiveTab", "photos")
-                window.history.replaceState(null, "", "#maya")
-              }
-              // Send the prompt message
-              handleSendMessage(prompt)
-            }}
-            sharedImages={getSharedImages().map(img => ({
-              url: img.url,
-              id: img.id,
-              prompt: img.prompt,
-              description: img.description,
-              category: img.category,
-            }))}
-            userId={userId}
-            creditBalance={creditBalance}
-            onCreditsUpdate={setCreditBalance}
-            proMode={proMode}
-            imageLibrary={imageLibrary}
-            onOpenUploadFlow={() => handlePhaseTwoUploadZone("selfies")}
-            onOpenTrainingFlow={() => handlePhaseTwoGenerationSource("custom_model")}
-            onOpenCreditsModal={() => setShowBuyCreditsModal(true)}
-            aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
-            onUpgradeToStudio={() => void handleOpenStudioCheckout("maya_prompts_lock")}
-          />
-        </div>
-      )}
-
 
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (

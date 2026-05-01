@@ -6,18 +6,18 @@ export interface MayaQuickPromptItem {
   prompt: string
 }
 
-const WEEKLY_CONTENT_PROMPTS: MayaQuickPromptItem[] = [
+const PLAN_PROMPTS: MayaQuickPromptItem[] = [
   {
-    label: "Start my weekly ritual",
-    prompt: "Let's plan my week. Walk me through the SSELFIE weekly ritual — theme, photo direction, captions, and next action.",
+    label: "Best next move",
+    prompt: "Look at what you know about me and tell me the single best move to make today. Then help me make it.",
   },
   {
     label: "Plan my week",
-    prompt: "Plan my content for this week with photo ideas, captions, and the first post I should create.",
+    prompt: "Plan my content for this week with the post order, captions, photo direction, and first action.",
   },
   {
-    label: "3 photo ideas",
-    prompt: "Give me three photo ideas for this week's content and explain when I should use each one.",
+    label: "What should I sell?",
+    prompt: "Help me decide what to sell this week and turn it into one simple offer and one sales post.",
   },
   {
     label: "Write captions",
@@ -73,23 +73,30 @@ export function getMayaSurfaceQuickPrompts(input: {
     return getMayaVideosTabQuickPrompts()
   }
 
+  if (activeTab === "plan") {
+    return PLAN_PROMPTS
+  }
+
   if (activeTab !== "photos") {
     return []
   }
 
-  // Weekly content comes first; photo-generation mode details stay available as support.
+  // Photos is creation-first: image prompts, concept cards, styles, and source choice.
   const modeSupportPrompts: MayaQuickPromptItem[] = proMode
     ? [
-        { label: "Use my selfies", prompt: "Use my selfies and create a photo direction for this week's content" },
-        { label: "Upload references", prompt: "I want to upload photos and brand references for this week's content plan" },
+        { label: "Use my selfies", prompt: "Use my selfies and create three photo concepts for my brand" },
+        { label: "Upload references", prompt: "I want to upload photos and brand references before creating images" },
+        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : hasTrainedModel
     ? [
-        { label: "Use My Model", prompt: "Use my trained model for photo ideas in this week's content plan" },
-        { label: "Soft luxury", prompt: "Give me a soft luxury photo direction for this week's content" },
+        { label: "Use My Model", prompt: "Use my trained model and create three photo concepts for my brand" },
+        { label: "Concept cards", prompt: "Create concept cards for a personal brand photoshoot" },
+        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : [
-        { label: "Photo ideas", prompt: "Give me photo ideas for this week's content" },
+        { label: "Concept cards", prompt: "Create concept cards for a personal brand photoshoot" },
+        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
         { label: "Train My Model", prompt: "I want to train my custom model when I'm ready" },
       ]
 
@@ -99,7 +106,7 @@ export function getMayaSurfaceQuickPrompts(input: {
     ? MODEL_STYLE_PROMPTS
     : BASE_STYLE_PROMPTS
 
-  return dedupePrompts([...WEEKLY_CONTENT_PROMPTS, ...modeSupportPrompts, ...styleChips]).slice(0, 7)
+  return dedupePrompts([...modeSupportPrompts, ...styleChips]).slice(0, 7)
 }
 
 /**
@@ -109,9 +116,11 @@ export function getMayaSurfaceQuickPrompts(input: {
 export function getMayaInputPlaceholder(activeTab: MayaSurfaceTab): string {
   switch (activeTab) {
     case "photos":
-      return "What's your theme this week?"
+      return "What photo should we create?"
+    case "plan":
+      return "What are you selling, sharing, or planning?"
     case "videos":
-      return "Pick a photo below to animate"
+      return "Pick a photo below to make a video"
     case "training":
       return "Ask me anything about your model..."
     case "feed":

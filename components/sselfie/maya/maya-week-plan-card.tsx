@@ -37,7 +37,7 @@ export function MayaWeekPlanCard({
 
   return (
     <MayaInlineCard
-      eyebrow="Weekly Plan"
+      eyebrow="This Week"
       title={themeLabel}
       subtitle={theme?.description}
     >

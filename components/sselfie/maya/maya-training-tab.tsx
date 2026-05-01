@@ -142,10 +142,10 @@ export default function MayaTrainingTab({
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-3">
-            AI Model Training
+            Train My Model
           </h2>
           <p className="text-sm sm:text-base text-white/65 max-w-2xl">
-            Train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
+            This trains your own Flux model so Maya can create images that keep your likeness consistent. It costs 20 credits and is only needed if you want to use My Model.
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function MayaTrainingTab({
                 Training in Progress
               </h3>
               <p className="text-sm text-white/65 mb-6">
-                Your AI model is being trained. This usually takes about 5 minutes.
+                Maya is training your own Flux model. This usually takes about 5 minutes.
               </p>
               
               {/* Progress Bar */}
@@ -217,7 +217,7 @@ export default function MayaTrainingTab({
                 Training Complete
               </h3>
               <p className="text-sm text-white/65 mb-6">
-                Your AI model is ready to use! You can now generate personalized images.
+                Your model is ready. You can now use My Model for consistent personalized images.
               </p>
               {model?.created_at && (
                 <p className="text-xs text-white/55 mb-6">
@@ -237,7 +237,7 @@ export default function MayaTrainingTab({
                   }}
                   className="px-6 py-3 bg-white/12 text-white rounded-lg hover:bg-white/18 transition-colors text-sm font-medium tracking-wide uppercase border border-white/15"
                 >
-                  Retrain Model
+                  Retrain My Model
                 </button>
                 <button
                   onClick={handleManageTraining}

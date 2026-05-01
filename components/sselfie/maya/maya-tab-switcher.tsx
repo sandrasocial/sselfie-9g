@@ -4,8 +4,8 @@ import type React from "react"
 import { useEffect, useRef } from "react"
 
 interface MayaTabSwitcherProps {
-  activeTab: "photos" | "videos" | "prompts" | "training" | "feed"
-  onTabChange: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
+  activeTab: "photos" | "plan" | "videos" | "prompts" | "training" | "feed"
+  onTabChange: (tab: "photos" | "plan" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number // Optional: show count of generated photos
   videosCount?: number // Optional: show count of generated videos
   disableFeedTab?: boolean
@@ -15,7 +15,7 @@ interface MayaTabSwitcherProps {
 /**
  * Maya Tab Switcher Component
  * 
- * Horizontal tab navigation for switching between Photos, Videos, and Training tabs.
+ * Horizontal tab navigation for switching between creation, planning, video, and model training.
  * 
  * **Design Principles:**
  * - Text-based labels (following design system)
@@ -39,9 +39,10 @@ export default function MayaTabSwitcher({
   className = "",
 }: MayaTabSwitcherProps) {
   const tabs = [
-    { id: "photos" as const, label: "Weekly Plan" },
-    { id: "videos" as const, label: "Animate" },
-    { id: "training" as const, label: "Setup" },
+    { id: "photos" as const, label: "Photos" },
+    { id: "plan" as const, label: "Plan" },
+    { id: "videos" as const, label: "Videos" },
+    { id: "training" as const, label: "Train Model" },
   ]
 
   const containerRef = useRef<HTMLDivElement>(null)

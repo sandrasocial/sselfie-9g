@@ -144,6 +144,20 @@ export function VisibilityPlanGenerator() {
         throw new Error(data.error || "Maya could not create your plan right now.")
       }
       if (data.url) {
+        try {
+          window.sessionStorage.setItem(
+            "sselfie.maya.visibilityPlanHandoff",
+            JSON.stringify({
+              source: "visibility_suite",
+              token: typeof data.token === "string" ? data.token : null,
+              url: data.url,
+              answerCount: answers.length,
+              createdAt: new Date().toISOString(),
+            })
+          )
+        } catch {
+          // The Studio handoff is helpful but not required to view the plan.
+        }
         window.location.href = data.url
         return
       }
