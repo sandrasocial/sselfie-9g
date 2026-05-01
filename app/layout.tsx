@@ -10,7 +10,7 @@ import "./globals.css"
 export const metadata: Metadata = {
   metadataBase: new URL("https://sselfie.ai"),
   title: {
-    default: "SSELFIE - AI Photography for Personal Brands | Professional Photos Without a Photographer",
+    default: "Visibility To Paid Suite | SSELFIE",
     template: "%s | SSELFIE",
   },
   description:

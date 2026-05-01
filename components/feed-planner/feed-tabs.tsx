@@ -32,14 +32,14 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
   }, [isFreeUser, activeTab, onTabChange])
 
   const tabClass = (tab: FeedTab) =>
-    `flex min-h-[34px] shrink-0 items-center justify-center rounded-lg px-3 py-1.5 transition-colors sm:min-h-[36px] ${
+    `flex min-h-[34px] shrink-0 items-center justify-center rounded-[6px] px-3 py-1.5 transition-colors sm:min-h-[36px] ${
       activeTab === tab
-        ? "bg-[rgba(175,170,162,0.22)] text-[#f0ede8] shadow-[inset_0_0_0_1px_rgba(195,190,182,0.16)]"
-        : "text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] hover:text-[#a8a49c]"
+        ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] shadow-[0_8px_18px_rgba(61,56,48,0.12)]"
+        : "text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
     }`
 
   return (
-    <div className="stone-panel mx-3 mb-3 flex items-center gap-1 overflow-x-auto rounded-xl p-1.5">
+    <div className="mx-3 mb-3 flex items-center gap-1 overflow-x-auto rounded-[12px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-1.5 shadow-[0_12px_32px_rgba(61,56,48,0.06)] backdrop-blur-[18px]">
       <button
         onClick={() => onTabChange("grid")}
         className={tabClass("grid")}

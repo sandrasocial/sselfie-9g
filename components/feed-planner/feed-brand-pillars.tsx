@@ -169,32 +169,32 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
   if (!personalBrandData) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-white/60">Loading brand pillars...</div>
+        <div className="text-sm text-[color:var(--app-text-secondary)]">Loading brand pillars...</div>
       </div>
     )
   }
 
   if (contentPillars.length === 0) {
     return (
-      <div className="px-4 py-8 md:px-8">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-white/[0.04] p-8 text-center backdrop-blur-2xl">
+      <div className="app-light-panel-text px-4 py-8 md:px-8">
+        <div className="mx-auto max-w-4xl rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-8 text-center shadow-[0_18px_50px_rgba(61,56,48,0.08)] backdrop-blur-[18px]">
           <h2
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            className="mb-4 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
+            className="mb-4 text-2xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-3xl md:text-4xl"
           >
             Your Content Pillars
           </h2>
-          <p className="mx-auto mb-8 max-w-2xl text-sm font-light leading-relaxed text-white/65">
+          <p className="mx-auto mb-8 max-w-2xl text-sm font-light leading-relaxed text-[color:var(--app-text-secondary)]">
             Content pillars are the main themes you&apos;ll create content around. They keep your feed organized and make it easy to come up with post ideas.
           </p>
           <Button
             onClick={generateNewPillars}
             disabled={isGenerating}
-            className="rounded-full border border-white/25 bg-white/10 text-white hover:bg-white/15"
+            className="rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] hover:opacity-90"
           >
             {isGenerating ? (
               <>
-                <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                <span className="mr-2 h-4 w-4 rounded-full border border-[rgba(237,233,226,0.42)] border-t-[color:var(--app-btn-primary-text)] animate-spin" />
                 Maya is thinking...
               </>
             ) : (
@@ -207,17 +207,17 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
   }
 
   return (
-    <div className="px-4 py-8 md:px-8">
+    <div className="app-light-panel-text px-4 py-8 md:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h2
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              className="mb-2 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
+              className="mb-2 text-2xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-3xl md:text-4xl"
             >
               Your Content Pillars
             </h2>
-            <p className="text-xs font-light leading-relaxed text-white/65 sm:text-sm">
+            <p className="text-xs font-light leading-relaxed text-[color:var(--app-text-secondary)] sm:text-sm">
               These are the main themes you&apos;ll create content around. Use them to plan your posts and keep your feed organized.
             </p>
           </div>
@@ -225,11 +225,11 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
             onClick={generateNewPillars}
             disabled={isGenerating}
             variant="outline"
-            className="rounded-full border-white/25 bg-white/[0.04] text-white/80 hover:bg-white/10 hover:text-white"
+            className="rounded-[6px] border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
           >
             {isGenerating ? (
               <>
-                <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                <span className="mr-2 h-4 w-4 rounded-full border border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)] animate-spin" />
                 Regenerating...
               </>
             ) : (
@@ -240,13 +240,13 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
 
         {/* Maya's Explanation */}
         {pillarExplanation && (
-          <div className="mb-8 flex items-start gap-4 rounded-2xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-2xl">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-white/85">Maya</span>
+          <div className="mb-8 flex items-start gap-4 rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-4 shadow-[0_12px_32px_rgba(61,56,48,0.06)] backdrop-blur-[18px]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Maya</span>
             </div>
             <div className="flex-1">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Maya</p>
-              <p className="text-sm leading-relaxed text-white/70">{pillarExplanation}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--app-text-primary)]">Maya</p>
+              <p className="text-sm leading-relaxed text-[color:var(--app-text-secondary)]">{pillarExplanation}</p>
             </div>
           </div>
         )}
@@ -254,29 +254,29 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
         {/* Content Pillars Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {contentPillars.map((pillar, index) => (
-            <div key={index} className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 backdrop-blur-2xl">
+            <div key={index} className="rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-6 shadow-[0_12px_32px_rgba(61,56,48,0.06)] backdrop-blur-[18px]">
               <div className="mb-4 space-y-2">
-                <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/50">{`0${index + 1}`.slice(-2)}</div>
+                <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-muted)]">{`0${index + 1}`.slice(-2)}</div>
                 <h3
                   style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                  className="text-xl font-light uppercase tracking-[0.12em] text-white"
+                  className="text-xl font-light uppercase tracking-[0.12em] text-[color:var(--app-text-primary)]"
                 >
                   {pillar.name}
                 </h3>
-                <p className="text-sm leading-relaxed text-white/68">{pillar.description}</p>
+                <p className="text-sm leading-relaxed text-[color:var(--app-text-secondary)]">{pillar.description}</p>
               </div>
 
               {/* Content Ideas */}
               {pillar.contentIdeas && pillar.contentIdeas.length > 0 && (
-                <div className="mt-4 border-t border-white/12 pt-4">
-                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/55">Post Ideas</p>
+                <div className="mt-4 border-t border-[color:var(--app-glass-border)] pt-4">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Post Ideas</p>
                   <div className="space-y-2">
                     {pillar.contentIdeas.map((idea, i) => (
                       <div key={i} className="flex items-start justify-between gap-2">
-                        <p className="flex-1 text-xs leading-relaxed text-white/68">{idea}</p>
+                        <p className="flex-1 text-xs leading-relaxed text-[color:var(--app-text-secondary)]">{idea}</p>
                         <button
                           onClick={() => copyToClipboard(idea, `${pillar.name}-${i}`)}
-                          className="shrink-0 rounded border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70 transition-colors hover:bg-white/10"
+                          className="shrink-0 rounded-[4px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
                           title="Copy idea"
                         >
                           {copiedPillar === `${pillar.name}-${i}` ? "Done" : "Copy"}

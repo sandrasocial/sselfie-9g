@@ -112,23 +112,26 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen w-full items-center justify-center p-6 bg-[#0d0c0b]"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,164,156,0.08) 0%, #0d0c0b 70%)" }}
+      className="flex min-h-screen w-full items-center justify-center bg-[#EDE9E2] p-6"
+      style={{
+        background:
+          "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.62) 0%, rgba(237,233,226,0.94) 54%, #D9D3C8 100%)",
+      }}
     >
-      <div className="w-full max-w-5xl grid gap-6 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] items-stretch">
-        <Card className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl">
+      <div className="w-full max-w-md">
+        <Card className="rounded-[20px] border border-[rgba(15,13,11,0.10)] bg-white/75 shadow-[0_24px_70px_rgba(61,56,48,0.12)] backdrop-blur-[24px]">
           <CardHeader className="pb-6">
             <div className="mb-2">
-              <span className="font-['Cormorant_Garamond'] text-3xl text-[#f0ede8] tracking-[0.3em] uppercase font-light">SSELFIE</span>
+              <span className="font-['Cormorant_Garamond'] text-3xl text-[#0F0D0B] tracking-[0.3em] uppercase font-light">SSELFIE</span>
             </div>
-            <CardTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8] tracking-wide">Welcome back</CardTitle>
-            <CardDescription className="font-['Inter'] text-[#8a8780] text-sm">Sign in to access your AI photography studio</CardDescription>
+            <CardTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#0F0D0B] tracking-wide">Welcome back</CardTitle>
+            <CardDescription className="font-['Inter'] text-[#7A6F63] text-sm">Sign in to access your studio workspace</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin}>
               <div className="flex flex-col gap-5">
                 <div className="grid gap-2">
-                  <Label htmlFor="email" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
+                  <Label htmlFor="email" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#7A6F63]">
                     Email
                   </Label>
                   <Input
@@ -138,18 +141,18 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
+                    className="border-[rgba(15,13,11,0.18)] bg-[rgba(15,13,11,0.04)] text-[#0F0D0B] placeholder:text-[#A89A8A] focus:border-[rgba(15,13,11,0.32)]"
                     disabled={isLoading}
                   />
                 </div>
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
+                    <Label htmlFor="password" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#7A6F63]">
                       Password
                     </Label>
                     <Link
                       href="/auth/forgot-password"
-                      className="text-xs text-[#a8a49c] hover:text-[#c8c4bb] transition-colors"
+                      className="text-xs text-[#7A6F63] transition-colors hover:text-[#0F0D0B]"
                     >
                       Forgot password?
                     </Link>
@@ -160,7 +163,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
+                    className="border-[rgba(15,13,11,0.18)] bg-[rgba(15,13,11,0.04)] text-[#0F0D0B] placeholder:text-[#A89A8A] focus:border-[rgba(15,13,11,0.32)]"
                     disabled={isLoading}
                   />
                 </div>
@@ -169,46 +172,19 @@ export default function LoginPage() {
                     <p className="text-sm text-red-300">{error}</p>
                   </div>
                 )}
-                <Button type="submit" className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors" disabled={isLoading}>
+                <Button type="submit" className="w-full rounded-[6px] bg-[#0F0D0B] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#EDE9E2] transition-opacity hover:opacity-90" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </div>
-              <div className="mt-5 text-center text-sm text-[#8a8780]">
+              <div className="mt-5 text-center text-sm text-[#7A6F63]">
                 Don&apos;t have an account?{" "}
-                <Link href={signUpHref} className="text-[#a8a49c] hover:text-[#c8c4bb] transition-colors">
+                <Link href={signUpHref} className="text-[#0F0D0B] transition-colors hover:opacity-70">
                   Sign up
                 </Link>
               </div>
             </form>
           </CardContent>
         </Card>
-
-        <aside className="hidden lg:flex flex-col justify-between rounded-2xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.06)] p-8">
-          <div>
-            <p className="font-['Inter'] text-[10px] uppercase tracking-[0.35em] text-[#8a8780] mb-4">Trusted by creators</p>
-            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8] leading-tight mb-6">
-              180K+ creators follow Sandra&apos;s methods.
-            </h2>
-            <p className="font-['Inter'] text-sm text-[#8a8780] leading-relaxed">
-              Built on grit and consistency, not big budgets. The same playbook now powers your studio.
-            </p>
-          </div>
-
-          <div className="space-y-4 mt-8">
-            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
-              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
-                &ldquo;I got my first on-brand photos in one evening. It finally feels like me.&rdquo;
-              </p>
-              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Studio Member</p>
-            </blockquote>
-            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
-              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
-                &ldquo;No stock-photo energy. My content now actually looks like my brand.&rdquo;
-              </p>
-              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Selfie Guide Buyer</p>
-            </blockquote>
-          </div>
-        </aside>
       </div>
     </div>
   )

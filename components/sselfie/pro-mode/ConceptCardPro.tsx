@@ -55,13 +55,13 @@ interface ConceptCardProProps {
   chatId?: string | number // Chat ID fallback when messageId is a temp client-side ID
 }
 
-const PRO_CARD_BG = "rgba(255,255,255,0.04)"
-const PRO_CARD_BORDER = "rgba(255,255,255,0.08)"
-const PRO_INPUT_BG = "rgba(255,255,255,0.06)"
-const PRO_INPUT_BORDER = "rgba(255,255,255,0.12)"
-const PRO_TEXT_PRIMARY = "#f0ede8"
-const PRO_TEXT_SECONDARY = "rgba(245,245,245,0.74)"
-const PRO_TEXT_MUTED = "rgba(245,245,245,0.58)"
+const PRO_CARD_BG = "rgba(255,255,255,0.72)"
+const PRO_CARD_BORDER = "rgba(15,13,11,0.10)"
+const PRO_INPUT_BG = "rgba(15,13,11,0.04)"
+const PRO_INPUT_BORDER = "rgba(15,13,11,0.18)"
+const PRO_TEXT_PRIMARY = "#0F0D0B"
+const PRO_TEXT_SECONDARY = "#7A6F63"
+const PRO_TEXT_MUTED = "#A89A8A"
 
 export default function ConceptCardPro({
   concept,
@@ -1313,7 +1313,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <button
             type="button"
             onClick={handleViewPrompt}
-            className="touch-manipulation active:scale-95 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
+            className="touch-manipulation active:scale-95 flex-1 min-w-[140px] py-3.5 rounded-[6px] text-xs font-medium tracking-[0.2em] uppercase transition-all duration-300 bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-primary)] border border-[color:var(--app-glass-border)]"
           >
             {ButtonLabels.viewPrompt}
           </button>
@@ -1323,7 +1323,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             onClick={handleGenerate}
             disabled={isGenerating || isGeneratingState}
             title={`Uses ${PRO_MODE_GENERATION_CREDITS} credits per image`}
-            className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 border border-[rgba(195,190,182,0.25)] disabled:cursor-not-allowed disabled:opacity-70 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] disabled:bg-[rgba(175,170,162,0.15)] disabled:text-[#8a8780]"
+            className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-[6px] text-xs font-medium tracking-[0.2em] uppercase transition-all duration-300 border border-[color:var(--app-btn-primary-bg)] disabled:cursor-not-allowed disabled:opacity-70 bg-[color:var(--app-btn-primary-bg)] hover:opacity-90 text-[color:var(--app-btn-primary-text)] disabled:bg-[color:var(--app-btn-secondary-bg)] disabled:text-[color:var(--app-text-secondary)]"
           >
             {(isGenerating || isGeneratingState) ? "Generating..." : ButtonLabels.generate}
           </button>
@@ -1333,7 +1333,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               type="button"
               onClick={handleSaveToGuide}
               disabled={!selectedGuideId || isSavingToGuide}
-              className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 border border-[rgba(195,190,182,0.25)] disabled:cursor-not-allowed disabled:opacity-70 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] disabled:bg-[rgba(175,170,162,0.15)]"
+              className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1 min-w-[140px] py-3.5 rounded-[6px] text-xs font-medium tracking-[0.2em] uppercase transition-all duration-300 border border-[color:var(--app-glass-border)] disabled:cursor-not-allowed disabled:opacity-70 bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-primary)] disabled:bg-[color:var(--app-btn-secondary-bg)]"
               title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
             >
               {isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with image" : "Save prompt"}
@@ -1376,13 +1376,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {(isGenerating || isGeneratingState) && !isGenerated && !error && (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-white/90 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-[color:var(--app-text-primary)] animate-pulse"></div>
               <div
-                className="w-2 h-2 rounded-full bg-white/70 animate-pulse"
+                className="w-2 h-2 rounded-full bg-[color:var(--app-text-secondary)] animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-2 h-2 rounded-full bg-white/45 animate-pulse"
+                className="w-2 h-2 rounded-full bg-[color:var(--app-text-muted)] animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>

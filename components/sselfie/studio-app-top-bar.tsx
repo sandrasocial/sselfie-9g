@@ -26,8 +26,13 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
     return (
       <header
         ref={ref}
-        className={`fixed top-0 left-0 right-0 z-[95] border-b ${DesignClasses.border.stone} pt-safe`}
-        style={{ background: "rgba(175,170,162,0.08)", backdropFilter: "blur(50px)" }}
+        className="fixed top-0 left-0 right-0 z-[95] border-b pt-safe"
+        style={{
+          background: "rgba(237,233,226,0.88)",
+          borderColor: "var(--app-glass-border)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+        }}
         aria-label="Studio sections"
       >
         <div className={`${DesignClasses.spacing.paddingX.sm} py-2 sm:py-2.5`}>
@@ -47,8 +52,8 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                       key={tab.id}
                       type="button"
                       onClick={() => onTabChange(tab.id)}
-                      className={`relative touch-manipulation rounded-xl px-2.5 sm:px-3 py-2 min-h-[40px] transition-all duration-200 ${
-                        isActive ? "scale-[1.02]" : "hover:opacity-90 active:scale-[0.98]"
+                      className={`relative touch-manipulation rounded-md px-2.5 sm:px-3 py-2 min-h-[44px] transition-all duration-200 ${
+                        isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
                       } ${isGated ? "opacity-50" : ""}`}
                       aria-label={
                         isGated ? `${tab.label} — unlocks as you create with Maya` : `Open ${tab.label}`
@@ -57,17 +62,17 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                     >
                       {isActive && (
                         <span
-                          className="absolute inset-0 rounded-xl pointer-events-none"
+                          className="absolute inset-0 rounded-md pointer-events-none"
                           style={{
-                            background: "rgba(175,170,162,0.18)",
-                            border: "1px solid rgba(195,190,182,0.25)",
+                            background: "var(--app-btn-primary-bg)",
+                            border: "1px solid var(--app-btn-primary-bg)",
                           }}
                           aria-hidden
                         />
                       )}
                       <span
                         className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                          isActive ? "text-[#f0ede8]" : "text-[#8a8780]"
+                          isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-secondary)]"
                         }`}
                       >
                         {tab.label}
@@ -90,7 +95,7 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
         {isNewUser ? (
           <p
             className="text-[10px] sm:text-xs text-center px-3 pb-2 leading-snug"
-            style={{ color: "#8a8780" }}
+            style={{ color: "var(--app-text-secondary)" }}
           >
             Create with Maya to unlock Gallery, Feed &amp; Academy
           </p>

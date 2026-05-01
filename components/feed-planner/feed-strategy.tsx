@@ -138,30 +138,30 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
   const displayStrategy = generatedStrategy || strategyFromDb || (hasFullStrategy ? feedDescription : null)
 
   return (
-    <div className="p-3 md:p-6">
+    <div className="app-light-panel-text p-3 md:p-6">
       {/* Create Strategy Button - Show if no full strategy exists */}
       {!displayStrategy && !hasFullStrategy && !isLoadingStrategy && (
         <div className="flex flex-col items-center justify-center space-y-6 py-12">
           {isGenerating ? (
             <div className="flex flex-col items-center space-y-4 max-w-md text-center">
-              <div className="w-8 h-8 border-2 border-white/25 border-t-white/90 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)] rounded-full animate-spin" />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-white">I&apos;m crafting your comprehensive strategy...</p>
-                <p className="text-xs text-white/55">This includes posting schedules, reel ideas, hashtags, and growth tactics.</p>
+                <p className="text-sm font-medium text-[color:var(--app-text-primary)]">I&apos;m crafting your comprehensive strategy...</p>
+                <p className="text-xs text-[color:var(--app-text-secondary)]">This includes posting schedules, reel ideas, hashtags, and growth tactics.</p>
               </div>
             </div>
           ) : (
             <>
               <div className="max-w-md space-y-2 text-center">
-                <h3 className="text-lg font-light uppercase tracking-[0.15em] text-white" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Create Your Instagram Strategy</h3>
-                <p className="text-sm text-white/65">
+                <h3 className="text-lg font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Create Your Instagram Strategy</h3>
+                <p className="text-sm text-[color:var(--app-text-secondary)]">
                   Get a comprehensive strategy including posting schedules, reel ideas, hashtag strategy, growth tactics, and more.
                 </p>
               </div>
               <button
                 onClick={handleCreateStrategy}
                 disabled={isGenerating}
-                className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span>Create Strategy</span>
               </button>
@@ -171,40 +171,40 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
       )}
       {/* Full Strategy Document */}
       {displayStrategy && (
-      <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 shadow-xl backdrop-blur-3xl sm:rounded-3xl sm:p-8">
+      <div className="rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.78)] p-6 shadow-[0_18px_50px_rgba(61,56,48,0.08)] backdrop-blur-[18px] sm:p-8">
         {displayStrategy ? (
-          <div className="prose prose-sm max-w-none prose-headings:font-serif prose-headings:font-light prose-headings:text-white prose-headings:tracking-wide prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:text-white/80 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-white prose-strong:font-medium prose-ul:text-white/80 prose-ol:text-white/80 prose-li:text-white/80 prose-li:leading-relaxed prose-li:mb-2 prose-code:text-white/80 prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:border-l-4 prose-blockquote:border-white/30 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-white/70">
+          <div className="prose prose-sm max-w-none prose-headings:font-serif prose-headings:font-light prose-headings:text-[color:var(--app-text-primary)] prose-headings:tracking-wide prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:text-[color:var(--app-text-secondary)] prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-[color:var(--app-text-primary)] prose-strong:font-medium prose-ul:text-[color:var(--app-text-secondary)] prose-ol:text-[color:var(--app-text-secondary)] prose-li:text-[color:var(--app-text-secondary)] prose-li:leading-relaxed prose-li:mb-2 prose-code:text-[color:var(--app-text-primary)] prose-code:bg-[color:var(--app-btn-secondary-bg)] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:border-l-4 prose-blockquote:border-[color:var(--app-glass-border)] prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-[color:var(--app-text-secondary)]">
             <ReactMarkdown
               components={{
                 h1: ({ node, ...props }) => (
-                  <h1 className="text-2xl font-serif font-light text-white mb-4 mt-8 first:mt-0 tracking-wide" {...props} />
+                  <h1 className="text-2xl font-serif font-light text-[color:var(--app-text-primary)] mb-4 mt-8 first:mt-0 tracking-wide" {...props} />
                 ),
                 h2: ({ node, ...props }) => (
-                  <h2 className="text-xl font-serif font-light text-white mb-4 mt-8 tracking-wide" {...props} />
+                  <h2 className="text-xl font-serif font-light text-[color:var(--app-text-primary)] mb-4 mt-8 tracking-wide" {...props} />
                 ),
                 h3: ({ node, ...props }) => (
-                  <h3 className="text-lg font-serif font-light text-white mb-3 mt-6 tracking-wide" {...props} />
+                  <h3 className="text-lg font-serif font-light text-[color:var(--app-text-primary)] mb-3 mt-6 tracking-wide" {...props} />
                 ),
                 p: ({ node, ...props }) => (
-                  <p className="text-sm font-light text-white/80 leading-relaxed mb-4" {...props} />
+                  <p className="text-sm font-light text-[color:var(--app-text-secondary)] leading-relaxed mb-4" {...props} />
                 ),
                 strong: ({ node, ...props }) => (
-                  <strong className="font-medium text-white" {...props} />
+                  <strong className="font-medium text-[color:var(--app-text-primary)]" {...props} />
                 ),
                 ul: ({ node, ...props }) => (
-                  <ul className="list-disc list-inside space-y-2 ml-4 mb-4 text-white/80" {...props} />
+                  <ul className="list-disc list-inside space-y-2 ml-4 mb-4 text-[color:var(--app-text-secondary)]" {...props} />
                 ),
                 ol: ({ node, ...props }) => (
-                  <ol className="list-decimal list-inside space-y-2 ml-4 mb-4 text-white/80" {...props} />
+                  <ol className="list-decimal list-inside space-y-2 ml-4 mb-4 text-[color:var(--app-text-secondary)]" {...props} />
                 ),
                 li: ({ node, ...props }) => (
-                  <li className="text-sm font-light text-white/80 leading-relaxed" {...props} />
+                  <li className="text-sm font-light text-[color:var(--app-text-secondary)] leading-relaxed" {...props} />
                 ),
                 code: ({ node, ...props }) => (
-                  <code className="rounded bg-white/10 px-1 py-0.5 text-xs text-white/80" {...props} />
+                  <code className="rounded bg-[color:var(--app-btn-secondary-bg)] px-1 py-0.5 text-xs text-[color:var(--app-text-primary)]" {...props} />
                 ),
                 blockquote: ({ node, ...props }) => (
-                  <blockquote className="my-4 border-l-4 border-white/30 pl-4 italic text-white/70" {...props} />
+                  <blockquote className="my-4 border-l-4 border-[color:var(--app-glass-border)] pl-4 italic text-[color:var(--app-text-secondary)]" {...props} />
                 ),
               }}
             >

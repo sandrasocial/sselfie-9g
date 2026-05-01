@@ -31,24 +31,24 @@ export function GallerySelectionBar({
 
   return (
     <div className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4">
-      <div className="max-w-screen-xl mx-auto bg-[rgba(175,170,162,0.18)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl px-4 py-3">
+      <div className="max-w-screen-xl mx-auto rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.82)] px-4 py-3 shadow-[0_18px_50px_rgba(61,56,48,0.12)] backdrop-blur-[20px]">
         <div className="flex flex-col items-stretch justify-between gap-3">
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={onCancel}
               disabled={isProcessing}
-              className="min-h-[40px] px-2 text-xs font-light tracking-[0.16em] uppercase text-[#a8a49c] transition-colors hover:text-[#f0ede8] disabled:opacity-50"
+              className="min-h-[40px] px-2 text-xs font-medium tracking-[0.16em] uppercase text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
             >
               Cancel
             </button>
-            <span className="text-xs font-light tracking-[0.16em] uppercase text-[#f0ede8]">{selectedCount} selected</span>
+            <span className="text-xs font-medium tracking-[0.16em] uppercase text-[color:var(--app-text-primary)]">{selectedCount} selected</span>
           </div>
           <div className="grid grid-cols-3 items-center gap-2">
             {selectedCount < totalCount && (
               <button
                 onClick={onSelectAll}
                 disabled={isProcessing}
-                className="min-h-[40px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[11px] font-light uppercase tracking-[0.16em] text-[#a8a49c] transition-all hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:opacity-50"
+                className="min-h-[40px] rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-all hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
               >
                 Select All
               </button>
@@ -57,7 +57,7 @@ export function GallerySelectionBar({
               <button
                 onClick={onDeselectAll}
                 disabled={isProcessing}
-                className="min-h-[40px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[11px] font-light uppercase tracking-[0.16em] text-[#a8a49c] transition-all hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:opacity-50"
+                className="min-h-[40px] rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-all hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
               >
                 Deselect
               </button>
@@ -66,7 +66,7 @@ export function GallerySelectionBar({
               <button
                 onClick={onSave}
                 disabled={isProcessing}
-                className="min-h-[40px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[#c8c4bb] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#0d0c0b] transition-all hover:bg-[#f0ede8] disabled:opacity-50"
+                className="min-h-[40px] rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 Save
               </button>
@@ -74,32 +74,32 @@ export function GallerySelectionBar({
             <button
               onClick={() => setShowMoreActions((state) => !state)}
               disabled={isProcessing || selectedCount === 0}
-              className="min-h-[40px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[11px] font-light uppercase tracking-[0.16em] text-[#a8a49c] transition-all hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:opacity-50"
+              className="min-h-[40px] rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-all hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
             >
               More
             </button>
           </div>
 
           {showMoreActions && selectedCount > 0 && (
-            <div className="grid grid-cols-3 gap-2 border-t border-[rgba(195,190,182,0.15)] pt-2">
+            <div className="grid grid-cols-3 gap-2 border-t border-[color:var(--app-glass-border)] pt-2">
               <button
                 onClick={onDownload}
                 disabled={isProcessing}
-                className="min-h-[38px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[10px] font-light uppercase tracking-[0.16em] text-[#a8a49c] transition-all hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:opacity-50"
+                className="min-h-[38px] rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-all hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
               >
                 Download
               </button>
               <button
                 onClick={onFavorite}
                 disabled={isProcessing}
-                className="min-h-[38px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[10px] font-light uppercase tracking-[0.16em] text-[#a8a49c] transition-all hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:opacity-50"
+                className="min-h-[38px] rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-all hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
               >
                 Save to fav
               </button>
               <button
                 onClick={onDelete}
                 disabled={isProcessing}
-                className="min-h-[38px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 text-[10px] font-light uppercase tracking-[0.16em] text-[#f0ede8] transition-all hover:bg-[rgba(175,170,162,0.18)] disabled:opacity-50"
+                className="min-h-[38px] rounded-[6px] border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-red-700 transition-all hover:bg-red-500/15 disabled:opacity-50"
               >
                 Delete
               </button>

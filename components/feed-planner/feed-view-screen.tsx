@@ -353,7 +353,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // But don't block if we're creating a free example (that has its own loading state)
   if (isLoading && !isCreatingFreeExample) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <UnifiedLoading variant="screen" message="Loading Feed Planner" />
       </div>
     )
@@ -362,10 +362,10 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // Error state (actual errors, not "no feed exists")
   if (feedError || (feedData?.error && feedData.exists !== false)) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <div className="flex min-h-[400px] items-center justify-center p-4">
           <div className="text-center space-y-4">
-            <p className="text-sm text-white/70">Failed to load feed. Please try again.</p>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">Failed to load feed. Please try again.</p>
           </div>
         </div>
       </div>
@@ -379,31 +379,31 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     // Free users: Show loading while auto-creating feed
     if (access?.isFree && isCreatingFreeExample) {
       return (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
           <UnifiedLoading variant="screen" message="Setting up your feed" />
         </div>
       )
     }
 
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         {/* Placeholder State — paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-12">
-          <div className="w-full max-w-md space-y-6 rounded-[20px] border border-white/15 bg-white/[0.04] p-6 text-center backdrop-blur-2xl">
+          <div className="w-full max-w-md space-y-6 rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-6 text-center shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px]">
             {/* Icon */}
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 sm:h-20 sm:w-20">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-white/60">Feed</span>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] sm:h-20 sm:w-20">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Feed</span>
             </div>
 
             {/* Heading — paid blueprint: "Set up in 30 seconds" per §1.4 */}
             <div className="space-y-2">
               <h2 
-                className="text-xl font-light uppercase tracking-[0.15em] text-white sm:text-2xl"
+                className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-2xl"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 {access?.isPaidBlueprint ? "Set up in 30 seconds" : "Create Your First Feed"}
               </h2>
-              <p className="text-sm font-light text-white/65 sm:text-base">
+              <p className="text-sm font-light text-[color:var(--app-text-secondary)] sm:text-base">
                 {access?.isPaidBlueprint
                   ? "Your 60 credits are ready. Create your first 9-post feed and we'll match your style."
                   : "Create a feed manually or generate one with Maya's AI assistance."}
@@ -415,7 +415,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               <button
                 onClick={handleCreateManualFeedClick}
                 disabled={isCreatingManual}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-4 text-sm font-medium uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-4 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 {isCreatingManual ? "Creating..." : "NEW FEED ->"}
@@ -423,7 +423,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               {!access?.isPaidBlueprint && (
                 <button
                   onClick={handleCreateFeed}
-                  className="min-h-[44px] w-full rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-light uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-white/10 sm:w-auto"
+                  className="min-h-[44px] w-full rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-primary)] transition-colors duration-200 hover:bg-[color:var(--app-btn-secondary-hover)] sm:w-auto"
                 >
                   Create with Maya
                 </button>
@@ -431,17 +431,17 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             </div>
 
             {/* Placeholder Grid Preview (Visual Guide) */}
-            <div className="border-t border-white/10 pt-8">
-              <p className="mb-4 text-xs uppercase tracking-[0.2em] text-white/55">
+            <div className="border-t border-[color:var(--app-glass-border)] pt-8">
+              <p className="mb-4 text-xs uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
                 Your Feed Preview
               </p>
-              <div className="mx-auto grid max-w-[300px] grid-cols-3 gap-0 border border-white/15">
+              <div className="mx-auto grid max-w-[300px] grid-cols-3 gap-0 border border-[color:var(--app-glass-border)]">
                 {Array.from({ length: 9 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex aspect-square items-center justify-center border border-white/10 bg-white/[0.03]"
+                    className="flex aspect-square items-center justify-center border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)]"
                   >
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/35">Slot</span>
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--app-text-muted)]">Slot</span>
                   </div>
                 ))}
               </div>
@@ -456,13 +456,13 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   if (!effectiveFeedId) {
     // Fallback (shouldn't happen, but TypeScript safety)
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <div className="flex min-h-[400px] items-center justify-center p-4">
           <div className="text-center space-y-4">
-            <p className="text-sm text-white/70">Unable to determine feed ID.</p>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">Unable to determine feed ID.</p>
             <button
               onClick={handleBackToMaya}
-              className="mx-auto flex items-center gap-2 text-sm text-white/65 underline hover:text-white"
+              className="mx-auto flex items-center gap-2 text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"
             >
               <span className="text-[10px] uppercase tracking-[0.2em]">Back</span>
               Back to Maya Chat
@@ -480,7 +480,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const currentFeedTitle = feedData?.feed?.brand_name || `Feed ${effectiveFeedId}`
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--color-obsidian)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
       {/* Feed View - FeedHeader component inside InstagramFeedView handles header with feed selector */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <InstagramFeedView

@@ -86,12 +86,12 @@ export default function MayaTabSwitcher({
                 onTabChange(tab.id)
               }
             }}
-            className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg transition-all touch-manipulation active:scale-95 min-h-[34px] sm:min-h-[36px] flex items-center gap-1 sm:gap-1.5 whitespace-nowrap scroll-snap-align-start ${
+            className={`relative px-3 sm:px-3.5 py-1.5 rounded-[6px] transition-all touch-manipulation active:scale-95 min-h-[34px] sm:min-h-[36px] flex items-center gap-1 sm:gap-1.5 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "bg-[rgba(175,170,162,0.18)] text-[#f0ede8] cursor-default"
+                ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] cursor-default"
                 : isDisabled
-                  ? "text-[rgba(255,255,255,0.3)] opacity-60 cursor-not-allowed"
-                  : "text-[rgba(255,255,255,0.52)] hover:text-[rgba(255,255,255,0.78)] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer"
+                  ? "text-[color:var(--app-text-muted)] opacity-60 cursor-not-allowed"
+                  : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-bg)] cursor-pointer"
             }`}
             aria-label={`${tab.label} tab`}
             title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
@@ -108,14 +108,14 @@ export default function MayaTabSwitcher({
             {tab.label}
             {tab.id === "photos" && photosCount !== undefined && photosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-white" : "text-[rgba(255,255,255,0.5)]"
+                isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-muted)]"
               }`}>
                 ({photosCount})
               </span>
             )}
             {tab.id === "videos" && videosCount !== undefined && videosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-white" : "text-[rgba(255,255,255,0.5)]"
+                isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-muted)]"
               }`}>
                 ({videosCount})
               </span>

@@ -182,9 +182,9 @@ function renderContent({
 
   if (isGenerating) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
-        <span className="mb-2 h-5 w-5 animate-spin rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb]" />
-        <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(255,255,255,0.78)] backdrop-blur-sm">
+        <span className="mb-2 h-5 w-5 animate-spin rounded-full border border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
+        <div className="text-center text-[10px] font-['Inter'] font-medium text-[color:var(--app-text-secondary)]">
           Creating...
         </div>
         <button
@@ -192,7 +192,7 @@ function renderContent({
           onClick={onStopGeneration}
           disabled={!canStop || isStopping}
           className={`mt-2 text-[10px] font-light ${
-            !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
+            !canStop || isStopping ? "text-[color:var(--app-text-muted)] opacity-40" : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
           }`}
         >
           {isStopping ? "Stopping..." : "Stop generation"}
@@ -205,13 +205,13 @@ function renderContent({
     return (
       <button
         type="button"
-        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[color:var(--app-btn-secondary-bg)] p-3 transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
         onClick={onGenerateClick}
       >
-        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
+        <div className="stone-chip mb-2 rounded-[4px] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
           Add
         </div>
-        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
           Generate image
         </div>
       </button>
@@ -221,16 +221,16 @@ function renderContent({
   return (
     <button
       type="button"
-      className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+      className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[color:var(--app-btn-secondary-bg)] p-3 transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
       onClick={(event) => {
         event.stopPropagation()
         onAddImage?.(post.id)
       }}
     >
-      <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+      <div className="stone-chip mb-2 rounded-[4px] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
         Add
       </div>
-      <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+      <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
         Click to add image
       </div>
     </button>
@@ -320,7 +320,7 @@ export default function FeedGridItem({
     onStopGeneration: handleStopGeneration,
   })
 
-  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
+  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-none border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] backdrop-blur-[20px] transition-all duration-200 ${
     isDragging ? "scale-95 opacity-50" : ""
   }`
 

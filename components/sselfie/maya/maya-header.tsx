@@ -249,7 +249,7 @@ export default function MayaHeaderUnified({
 
   // Single chrome row: Photos/Videos/Train (scroll) + quick menus (credits / mode / new chat live under the composer)
   const barClassName =
-    "flex w-full items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
+    "flex w-full items-center gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-[rgba(237,233,226,0.88)] backdrop-blur-[16px] border-b border-[color:var(--app-glass-border)] relative z-[100]"
   const actionsClusterClass =
     activeTab && onTabChange
       ? "flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-2 relative"

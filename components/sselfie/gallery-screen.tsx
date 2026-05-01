@@ -152,7 +152,7 @@ function renderGalleryLoadingState() {
   return (
     <div className="space-y-4 pb-24 pt-3 sm:space-y-6 sm:pt-4">
       <div className="mb-4 flex items-center justify-between px-4 sm:mb-6">
-        <h1 className="text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8] sm:text-2xl md:text-3xl">
+        <h1 className="text-xl font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)] sm:text-2xl md:text-3xl">
           Gallery
         </h1>
       </div>
@@ -164,12 +164,12 @@ function renderGalleryLoadingState() {
 function GalleryErrorState({ onRetry }: Readonly<{ onRetry: () => void }>) {
   return (
     <div className="flex min-h-[400px] items-center justify-center px-4">
-      <div className="stone-panel space-y-4 rounded-[24px] p-8 text-center">
+      <div className="stone-panel space-y-4 rounded-[16px] p-8 text-center">
         <p className="text-sm font-light text-red-400">Failed to load images</p>
         <button
           type="button"
           onClick={onRetry}
-          className="stone-chip rounded-lg px-4 py-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.3em] text-[#a8a49c] transition-all duration-200 hover:bg-[rgba(175,170,162,0.18)]"
+          className="stone-chip rounded-[6px] px-4 py-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.3em] text-[color:var(--app-text-secondary)] transition-all duration-200 hover:bg-[color:var(--app-btn-secondary-hover)]"
         >
           Retry
         </button>
@@ -196,16 +196,16 @@ function GalleryContentEmptyState({
   hasPaidAccess: boolean
 }>) {
   const baseButtonClass =
-    "rounded-full bg-[#c8c4bb] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-colors hover:bg-[#f0ede8]"
+    "rounded-[6px] bg-[color:var(--app-btn-primary-bg)] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90"
 
   if (contentFilter === "videos") {
     return (
-      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
-        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Reels</div>
-        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+      <div className="stone-panel mx-4 rounded-[16px] p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[color:var(--app-text-secondary)]">Reels</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">
           No reels yet
         </h3>
-        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[color:var(--app-text-secondary)]">
           Pick a photo and ask Maya to turn it into a reel.
         </p>
         <button type="button" onClick={onGoToMaya} className={baseButtonClass}>
@@ -217,12 +217,12 @@ function GalleryContentEmptyState({
 
   if (contentFilter === "feed") {
     return (
-      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
-        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Feed</div>
-        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+      <div className="stone-panel mx-4 rounded-[16px] p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[color:var(--app-text-secondary)]">Feed</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">
           No feed picks yet
         </h3>
-        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[color:var(--app-text-secondary)]">
           Build your first feed plan and your picks will show here.
         </p>
         <button type="button" onClick={onGoToFeedPlanner} className={baseButtonClass}>
@@ -234,12 +234,12 @@ function GalleryContentEmptyState({
 
   if (searchQuery) {
     return (
-      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
-        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Search</div>
-        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+      <div className="stone-panel mx-4 rounded-[16px] p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[color:var(--app-text-secondary)]">Search</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">
           No matches yet
         </h3>
-        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[color:var(--app-text-secondary)]">
           I couldn&apos;t find anything for &quot;{searchQuery}&quot;. Try another word.
         </p>
         <button type="button" onClick={onClearSearch} className={baseButtonClass}>
@@ -251,10 +251,10 @@ function GalleryContentEmptyState({
 
   if (contentFilter === "favorited") {
     return (
-      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
-        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Saved</div>
-        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No saved photos yet</h3>
-        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+      <div className="stone-panel mx-4 rounded-[16px] p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[color:var(--app-text-secondary)]">Saved</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">No saved photos yet</h3>
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[color:var(--app-text-secondary)]">
           Save the looks you love and they&apos;ll stay here.
         </p>
       </div>
@@ -670,7 +670,7 @@ export default function GalleryScreen({
           className="fixed top-0 left-0 right-0 flex items-center justify-center z-50 transition-all"
           style={{ transform: `translateY(${Math.min(pullDistance - 40, 60)}px)` }}
         >
-          <div className="stone-chip px-4 py-2 rounded-full text-xs font-['Inter'] text-[#f0ede8]">
+          <div className="stone-chip px-4 py-2 rounded-[6px] text-xs font-['Inter'] text-[color:var(--app-text-primary)]">
             {pullDistance > 80 ? "Release to refresh" : "Pull to refresh"}
           </div>
         </div>

@@ -31,15 +31,15 @@ export default function MiniProductCard({
     <Link
       href={href}
       data-product-id={productId}
-      className="stone-panel flex h-[200px] w-full max-w-[160px] flex-col overflow-hidden rounded-xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
+      className="stone-panel flex h-[200px] w-full max-w-[160px] flex-col overflow-hidden rounded-[12px] transition-all hover:bg-[color:var(--app-glass-bg)] active:scale-[0.98]"
     >
       {/* Image */}
-      <div className="relative h-[88px] w-full shrink-0 overflow-hidden bg-[rgba(175,170,162,0.10)]">
+      <div className="relative h-[88px] w-full shrink-0 overflow-hidden bg-[color:var(--app-btn-secondary-bg)]">
         {imageUrl ? (
           <img src={imageUrl} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(240,237,232,0.14),rgba(175,170,162,0.06))]">
-            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/35">
+          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(15,13,11,0.04))]">
+            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-[color:var(--app-text-muted)]">
               {name.charAt(0)}
             </span>
           </div>
@@ -49,16 +49,16 @@ export default function MiniProductCard({
       {/* Content */}
       <div className="flex-1 flex flex-col p-2 min-h-0">
         <h3
-          className="font-serif text-[14px] font-extralight tracking-[0.02em] uppercase text-white leading-tight line-clamp-2"
+          className="font-serif text-[14px] font-extralight tracking-[0.02em] uppercase text-[color:var(--app-text-primary)] leading-tight line-clamp-2"
           style={{ letterSpacing: "0.02em" }}
         >
           {name}
         </h3>
-        <p className="mt-1 text-[12px] font-light text-[color:var(--color-smoke)]">
+        <p className="mt-1 text-[12px] font-light text-[color:var(--app-text-secondary)]">
           {currency}
           {price}
         </p>
-        <span className="mt-auto inline-flex self-start pt-2 text-[12px] font-light text-[color:var(--color-porcelain)] transition-colors">
+        <span className="mt-auto inline-flex self-start pt-2 text-[12px] font-light text-[color:var(--app-text-primary)] transition-colors">
           Get it →
         </span>
       </div>

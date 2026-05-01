@@ -200,22 +200,22 @@ function getProductAccessCopy(product: any) {
 }
 
 const academyPrimaryActionClass =
-  "rounded-full bg-[color:var(--color-porcelain)] px-8 py-4 text-sm tracking-[0.18em] uppercase text-[#0d0c0b] transition-colors hover:bg-[#f0ede8] disabled:opacity-50"
+  "rounded-[6px] bg-[color:var(--app-btn-primary-bg)] px-8 py-4 text-sm tracking-[0.18em] uppercase text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
 
 const academyCompactActionClass =
-  "rounded-full bg-[color:var(--color-porcelain)] px-6 py-3 text-sm tracking-[0.18em] uppercase text-[#0d0c0b] transition-colors hover:bg-[#f0ede8]"
+  "rounded-[6px] bg-[color:var(--app-btn-primary-bg)] px-6 py-3 text-sm tracking-[0.18em] uppercase text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90"
 
 const academyBackLinkClass =
-  "text-sm tracking-wider uppercase text-[color:var(--color-smoke)] transition-colors hover:text-[color:var(--color-porcelain)]"
+  "text-sm tracking-wider uppercase text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]"
 
-const academySearchShellClass = "stone-chip rounded-xl p-4"
+const academySearchShellClass = "stone-chip rounded-[8px] p-4"
 
-const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
+const academyEmptyStateClass = "stone-panel rounded-[16px] p-16 text-center"
 
-const academyPromoCardClass = "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
+const academyPromoCardClass = "stone-panel rounded-[16px] p-8 text-center space-y-6 sm:p-10"
 
 const academyHubCardClass =
-  "stone-panel group relative overflow-hidden text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-[rgba(175,170,162,0.16)]"
+  "stone-panel group relative overflow-hidden text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-[color:var(--app-glass-bg)]"
 
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
@@ -550,8 +550,8 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Studio access only</h3>
+              <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed">
                 This library is part of Studio. Upgrade to unlock templates, drops, and flatlays.
               </p>
             </div>
@@ -569,7 +569,7 @@ export default function AcademyScreen() {
 
     if (showCategoryGrid && selectedTemplateCategory === "all") {
       return (
-        <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
+        <div className="space-y-10 pb-32 px-4 sm:px-6 text-[color:var(--app-text-primary)]">
           <div className="pt-8">
             <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
               ← Back
@@ -577,10 +577,10 @@ export default function AcademyScreen() {
           </div>
 
           <div className="space-y-3">
-            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-[color:var(--app-text-primary)]">
               Template library
             </h1>
-            <p className="text-white/70 text-base font-light leading-relaxed">
+            <p className="text-[color:var(--app-text-secondary)] text-base font-light leading-relaxed">
               Pick a category and grab what you need for your next post.
             </p>
           </div>
@@ -616,7 +616,7 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-[color:var(--app-text-primary)]">
         <div className="pt-8">
           <button
             onClick={() => {
@@ -630,11 +630,11 @@ export default function AcademyScreen() {
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-[color:var(--app-text-primary)]">
             {templateCategories.find(cat => cat.value === selectedTemplateCategory)?.label ||
               "Templates"}
           </h1>
-          <p className="text-white/70 text-base font-light leading-relaxed">
+          <p className="text-[color:var(--app-text-secondary)] text-base font-light leading-relaxed">
             Find a template and make it yours.
           </p>
         </div>
@@ -645,13 +645,13 @@ export default function AcademyScreen() {
             placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+            className="w-full bg-transparent text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none"
           />
         </div>
 
         {filteredTemplates.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">
+            <p className="text-[color:var(--app-text-secondary)] text-sm">
               No templates match that yet. Try another keyword.
             </p>
           </div>
@@ -683,8 +683,8 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Studio access only</h3>
+              <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed">
                 Monthly drops are part of Studio membership.
               </p>
             </div>
@@ -701,7 +701,7 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-[color:var(--app-text-primary)]">
         <div className="pt-8">
           <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
@@ -709,10 +709,10 @@ export default function AcademyScreen() {
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-[color:var(--app-text-primary)]">
             Monthly drops
           </h1>
-          <p className="text-white/70 text-base font-light leading-relaxed">
+          <p className="text-[color:var(--app-text-secondary)] text-base font-light leading-relaxed">
             Fresh resources curated for your current season.
           </p>
         </div>
@@ -723,13 +723,13 @@ export default function AcademyScreen() {
             placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+            className="w-full bg-transparent text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none"
           />
         </div>
 
         {filteredMonthlyDrops.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">
+            <p className="text-[color:var(--app-text-secondary)] text-sm">
               No drops found for that search. Try another phrase.
             </p>
           </div>
@@ -761,8 +761,8 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-white">Studio access only</h3>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Studio access only</h3>
+              <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed">
                 Flatlay packs are included with Studio membership.
               </p>
             </div>
@@ -779,7 +779,7 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-[color:var(--app-text-primary)]">
         <div className="pt-8">
           <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
@@ -787,10 +787,10 @@ export default function AcademyScreen() {
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-[color:var(--app-text-primary)]">
             Flatlay images
           </h1>
-          <p className="text-white/70 text-base font-light leading-relaxed">
+          <p className="text-[color:var(--app-text-secondary)] text-base font-light leading-relaxed">
             Ready-to-use flatlays for stories, posts, and promos.
           </p>
         </div>
@@ -801,13 +801,13 @@ export default function AcademyScreen() {
             placeholder="Search your library..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+            className="w-full bg-transparent text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none"
           />
         </div>
 
         {filteredFlatlayImages.length === 0 ? (
           <div className={academyEmptyStateClass}>
-            <p className="text-white/70 text-sm">
+            <p className="text-[color:var(--app-text-secondary)] text-sm">
               No flatlays match that yet. Try another keyword.
             </p>
           </div>
@@ -842,7 +842,7 @@ export default function AcademyScreen() {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={academyPromoCardClass}>
-            <p className="text-sm text-white/70">We couldn&apos;t load the courses right now</p>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">We couldn&apos;t load the courses right now</p>
             <button onClick={() => window.location.reload()} className={academyCompactActionClass}>
               Try Again
             </button>
@@ -852,7 +852,7 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-[color:var(--app-text-primary)]">
         <div className="pt-8">
           <button onClick={() => setSelectedView("overview")} className={academyBackLinkClass}>
             ← Back
@@ -860,8 +860,8 @@ export default function AcademyScreen() {
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Courses</h1>
-          <p className="text-white/70 text-base font-light leading-relaxed">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-[color:var(--app-text-primary)]">Courses</h1>
+          <p className="text-[color:var(--app-text-secondary)] text-base font-light leading-relaxed">
             Learn at your own pace with our curated collection
           </p>
         </div>
@@ -872,13 +872,13 @@ export default function AcademyScreen() {
             placeholder="Search courses..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+            className="w-full bg-transparent text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none"
           />
         </div>
 
         {inProgressCourses.length > 0 && (
           <div className="space-y-6">
-            <h2 className="font-serif text-2xl tracking-wider text-white">Continue Learning</h2>
+            <h2 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Continue Learning</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {inProgressCourses.map((course: any) => (
                 <CourseCard
@@ -898,10 +898,10 @@ export default function AcademyScreen() {
         )}
 
         <div className="space-y-6">
-          <h2 className="font-serif text-2xl tracking-wider text-white">All Courses</h2>
+          <h2 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">All Courses</h2>
           {filteredCourses.length === 0 ? (
             <div className={academyEmptyStateClass}>
-              <p className="text-white/70 text-sm">No courses found. Try adjusting your search.</p>
+              <p className="text-[color:var(--app-text-secondary)] text-sm">No courses found. Try adjusting your search.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -962,33 +962,33 @@ export default function AcademyScreen() {
   const totalEnrolledCourses = myCourses.length
 
   return (
-    <div className="pb-32 text-white">
+    <div className="pb-32 text-[color:var(--app-text-primary)]">
       {showNavMenu && (
         <>
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-[rgba(15,13,11,0.28)] backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--glass-border)] shadow-2xl shadow-black/30 duration-300">
-            <div className="flex-shrink-0 flex items-center justify-between border-b border-[color:var(--glass-divider)] px-6 py-4">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">
+          <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--app-glass-border)] shadow-[0_30px_90px_rgba(61,56,48,0.18)] duration-300">
+            <div className="flex-shrink-0 flex items-center justify-between border-b border-[color:var(--app-glass-border)] px-6 py-4">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-[color:var(--app-text-primary)]">
                 Menu
               </h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="stone-chip inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] tracking-[0.12em] uppercase text-white/70 transition-colors hover:bg-[rgba(175,170,162,0.16)]"
+                className="stone-chip inline-flex h-8 items-center justify-center rounded-[6px] px-3 text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
                 aria-label="Close menu"
               >
                 Close
               </button>
             </div>
 
-            <div className="flex-shrink-0 border-b border-[color:var(--glass-divider)] px-6 py-6">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/50 mb-2">
+            <div className="flex-shrink-0 border-b border-[color:var(--app-glass-border)] px-6 py-6">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-[color:var(--app-text-muted)] mb-2">
                 Your Credits
               </div>
-              <div className="text-3xl font-serif font-extralight text-white tabular-nums">
+              <div className="text-3xl font-serif font-extralight text-[color:var(--app-text-primary)] tabular-nums">
                 {creditBalance.toFixed(1)}
               </div>
             </div>
@@ -996,33 +996,33 @@ export default function AcademyScreen() {
             <div className="flex-1 overflow-y-auto min-h-0 py-2">
               <button
                 onClick={() => handleNavigation("studio")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">
                   Studio
                 </span>
-                <span className="text-sm font-medium text-white/70">Studio</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Studio</span>
               </button>
               <button
                 onClick={() => handleNavigation("training")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Train</span>
-                <span className="text-sm font-medium text-white/70">Training</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">Train</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Training</span>
               </button>
               <button
                 onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Chat</span>
-                <span className="text-sm font-medium text-white/70">Maya</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">Chat</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Maya</span>
               </button>
               <button
                 onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Media</span>
-                <span className="text-sm font-medium text-white/70">Gallery</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">Media</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Gallery</span>
               </button>
               {/* B-Roll moved to Maya Videos tab */}
               <button
@@ -1032,41 +1032,41 @@ export default function AcademyScreen() {
                     window.location.hash = "#maya/videos"
                   }, 100)
                 }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Video</span>
-                <span className="text-sm font-medium text-white/70">Videos</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">Video</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Videos</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-[rgba(175,170,162,0.14)] border-l-2 border-[color:var(--glass-border)]"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-[color:var(--app-btn-secondary-bg)] border-l-2 border-[color:var(--app-text-primary)]"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white">Learn</span>
-                <span className="text-sm font-medium text-white">Academy</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-primary)]">Learn</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-primary)]">Academy</span>
               </button>
               <button
                 onClick={() => handleNavigation("profile")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">
                   Profile
                 </span>
-                <span className="text-sm font-medium text-white/70">Profile</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Profile</span>
               </button>
               <button
                 onClick={() => handleNavigation("settings")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors touch-manipulation"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Prefs</span>
-                <span className="text-sm font-medium text-white/70">Settings</span>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-[color:var(--app-text-muted)]">Prefs</span>
+                <span className="text-sm font-medium text-[color:var(--app-text-secondary)]">Settings</span>
               </button>
             </div>
 
-            <div className="flex-shrink-0 border-t border-[color:var(--glass-divider)] px-6 py-4">
+            <div className="flex-shrink-0 border-t border-[color:var(--app-glass-border)] px-6 py-4">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-[6px] text-sm font-medium text-red-700 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
               </button>
@@ -1076,42 +1076,42 @@ export default function AcademyScreen() {
       )}
 
       <div className="px-4 pt-16 sm:px-6">
-        <div className="stone-shell-panel overflow-hidden rounded-[32px]">
+        <div className="stone-shell-panel overflow-hidden rounded-[20px]">
           <section className="grid min-h-[360px] lg:grid-cols-[1fr_0.78fr]">
             <div className="flex flex-col justify-between gap-10 p-6 sm:p-8 lg:p-10">
               <div className="space-y-5">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-white/45">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[color:var(--app-text-muted)]">
                   Maya Academy
                 </p>
-                <h1 className="max-w-2xl font-serif text-4xl leading-[0.98] tracking-wider text-white sm:text-6xl">
+                <h1 className="max-w-2xl font-serif text-4xl leading-[0.98] tracking-wider text-[color:var(--app-text-primary)] sm:text-6xl">
                   Your Academy hub.
                 </h1>
-                <p className="max-w-xl text-sm leading-7 text-white/68 sm:text-base">
+                <p className="max-w-xl text-sm leading-7 text-[color:var(--app-text-secondary)] sm:text-base">
                   Product homes, video courses, and downloads are separated so you always know where
                   you are.
                 </p>
               </div>
 
-              <div className="grid max-w-2xl grid-cols-3 border-y border-white/10">
-                <div className="border-r border-white/10 py-5 pr-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">Plan</div>
-                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
+              <div className="grid max-w-2xl grid-cols-3 border-y border-[color:var(--app-glass-border)]">
+                <div className="border-r border-[color:var(--app-glass-border)] py-5 pr-4">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">Plan</div>
+                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
                     {getFriendlyTierName(userTier)}
                   </div>
                 </div>
-                <div className="border-r border-white/10 px-4 py-5">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">
+                <div className="border-r border-[color:var(--app-glass-border)] px-4 py-5">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
                     Completed
                   </div>
-                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
+                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
                     {completedCoursesCount}/{totalEnrolledCourses}
                   </div>
                 </div>
                 <div className="py-5 pl-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-white/42">
+                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
                     In progress
                   </div>
-                  <div className="mt-2 font-serif text-lg text-white sm:text-xl">
+                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
                     {inProgressCourses.length}
                   </div>
                 </div>
@@ -1133,12 +1133,12 @@ export default function AcademyScreen() {
               <section className="space-y-5">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--app-text-muted)]">
                       Start here
                     </p>
-                    <h2 className="mt-2 font-serif text-3xl text-white">Your products</h2>
+                    <h2 className="mt-2 font-serif text-3xl text-[color:var(--app-text-primary)]">Your products</h2>
                   </div>
-                  <p className="max-w-md text-sm leading-6 text-white/58">
+                  <p className="max-w-md text-sm leading-6 text-[color:var(--app-text-secondary)]">
                     Product homes hold the downloads, bonuses, and next steps for what you bought.
                   </p>
                 </div>
@@ -1165,7 +1165,7 @@ export default function AcademyScreen() {
                         />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.06)_0%,rgba(15,13,11,0.82)_100%)]" />
                         <div className="relative flex min-h-[260px] flex-col justify-end p-6 text-white">
-                          <span className="mb-4 w-fit rounded-full border border-white/18 bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
+                          <span className="mb-4 w-fit rounded-[4px] border border-white/18 bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
                             {visual?.label || "Product"}
                           </span>
                           <h3 className="font-serif text-3xl leading-tight text-white">
@@ -1188,20 +1188,20 @@ export default function AcademyScreen() {
             <section className="space-y-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Courses</p>
-                  <h2 className="mt-2 font-serif text-3xl text-white">Video lessons</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--app-text-muted)]">Courses</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[color:var(--app-text-primary)]">Video lessons</h2>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedView("courses")}
-                  className="w-fit rounded-full border border-white/14 px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 hover:text-white"
+                  className="w-fit rounded-[6px] border border-[color:var(--app-glass-border)] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] transition hover:bg-[color:var(--app-btn-secondary-bg)] hover:text-[color:var(--app-text-primary)]"
                 >
                   Open all courses →
                 </button>
               </div>
 
               {canonicalCourses.length === 0 ? (
-                <div className="stone-panel rounded-2xl p-8 text-sm leading-6 text-white/58">
+                <div className="stone-panel rounded-[16px] p-8 text-sm leading-6 text-[color:var(--app-text-secondary)]">
                   No video courses are active for this account yet.
                 </div>
               ) : (
@@ -1230,24 +1230,24 @@ export default function AcademyScreen() {
                         </div>
                         <div className="flex flex-col justify-between p-6">
                           <div>
-                            <p className="text-[10px] uppercase tracking-[0.24em] text-white/42">
+                            <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--app-text-muted)]">
                               {visual.eyebrow}
                             </p>
-                            <h3 className="mt-3 font-serif text-3xl leading-tight text-white">
+                            <h3 className="mt-3 font-serif text-3xl leading-tight text-[color:var(--app-text-primary)]">
                               {course.title}
                             </h3>
-                            <p className="mt-3 text-sm leading-6 text-white/58">
+                            <p className="mt-3 text-sm leading-6 text-[color:var(--app-text-secondary)]">
                               {course.description || "Step-by-step lessons with Sandra."}
                             </p>
                           </div>
-                          <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-                            <span className="text-xs text-white/45">
+                          <div className="mt-6 flex items-center justify-between border-t border-[color:var(--app-glass-border)] pt-4">
+                            <span className="text-xs text-[color:var(--app-text-muted)]">
                               {course.lesson_count || course.total_lessons || 0} lessons
                               {enrolledCourse?.progress_percentage
                                 ? ` • ${enrolledCourse.progress_percentage}%`
                                 : ""}
                             </span>
-                            <span className="text-[11px] uppercase tracking-[0.2em] text-white/78">
+                            <span className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--app-text-primary)]">
                               Open course →
                             </span>
                           </div>
@@ -1262,8 +1262,8 @@ export default function AcademyScreen() {
             {resourceHubCards.length > 0 && (
               <section className="space-y-5">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Resources</p>
-                  <h2 className="mt-2 font-serif text-3xl text-white">Downloads and bonuses</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--app-text-muted)]">Resources</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[color:var(--app-text-primary)]">Downloads and bonuses</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {resourceHubCards.map(resource => (
@@ -1297,10 +1297,10 @@ export default function AcademyScreen() {
             )}
 
             {showGetMore && (
-              <section className="space-y-5 border-t border-white/10 pt-10">
+              <section className="space-y-5 border-t border-[color:var(--app-glass-border)] pt-10">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">Add more</p>
-                  <h2 className="mt-2 font-serif text-3xl text-white">Available products</h2>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--app-text-muted)]">Add more</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[color:var(--app-text-primary)]">Available products</h2>
                 </div>
                 <div className="grid grid-cols-2 gap-4 max-w-[380px]">
                   {availableProducts.map(

@@ -688,7 +688,7 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
   return (
     <div
       key={partIndex}
-      className="mt-3 rounded-xl border border-(--glass-input-border) bg-[var(--glass-bg)] p-4"
+      className="mt-3 rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] p-4 shadow-[0_18px_50px_rgba(61,56,48,0.08)]"
     >
       <div className="text-xs uppercase tracking-[0.2em] text-(--text-secondary)">Maya capabilities</div>
       <p className="mt-2 text-sm text-(--color-whisper)">
@@ -700,7 +700,7 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
             key={item.title}
             type="button"
             onClick={() => ctx.onToolPromptSelect?.(item.prompt)}
-            className="rounded-lg border border-(--glass-input-border) bg-[rgba(175,170,162,0.06)] px-3 py-3 text-left transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.15)]"
+            className="rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-3 text-left transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[color:var(--app-btn-secondary-hover)]"
           >
             <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">{item.title}</div>
             <div className="mt-1 text-xs text-(--text-accent)">{item.description}</div>
@@ -753,7 +753,7 @@ function renderShowStudioHubTool(part: any, partIndex: number, ctx: ToolCtx): Re
         </MayaInlineAction>
       }
     >
-      <div className="grid gap-px overflow-hidden rounded-[22px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.10)] sm:grid-cols-3">
+      <div className="grid gap-px overflow-hidden rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-border)] sm:grid-cols-3">
         {[
           { label: "Feeds", value: Number(stats.feedCount || 0) },
           { label: "Photos", value: Number(stats.photoCount || 0) },
@@ -1633,8 +1633,8 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
       <div
         className={`rounded-xl transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
           msg.role === "user"
-            ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-(--glass-border) rounded-2xl rounded-tr-sm text-(--text-primary) px-4 py-3"
-            : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-(--glass-border-subtle) rounded-2xl rounded-tl-sm text-(--text-primary) px-4 py-3"
+            ? "bg-[rgba(15,13,11,0.08)] backdrop-blur-sm border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.08)]"
+            : "bg-[rgba(255,255,255,0.72)] backdrop-blur-sm border border-[color:var(--app-glass-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.06)]"
         }`}
         role={msg.role === "assistant" ? "article" : undefined}
       >
@@ -1656,8 +1656,8 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
         <div
           className={`transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
             msg.role === "user"
-              ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-(--glass-border) rounded-2xl rounded-tr-sm text-(--text-primary) px-4 py-3"
-              : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-(--glass-border-subtle) rounded-2xl rounded-tl-sm text-(--text-primary) px-4 py-3"
+              ? "bg-[rgba(15,13,11,0.08)] backdrop-blur-sm border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.08)]"
+              : "bg-[rgba(255,255,255,0.72)] backdrop-blur-sm border border-[color:var(--app-glass-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.06)]"
           }`}
           role={msg.role === "assistant" ? "article" : undefined}
         >
@@ -1997,7 +1997,7 @@ export default function MayaChatInterface({
 
         {isTyping && !isCreatingFeed && (
           <div className="flex justify-start">
-            <div className="bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] p-3 rounded-2xl rounded-tl-sm max-w-[85%]">
+            <div className="rounded-[16px] rounded-tl-[4px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-3 text-[color:var(--app-text-primary)] backdrop-blur-sm max-w-[85%] shadow-[0_12px_30px_rgba(61,56,48,0.06)]">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1">
                   <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"></div>

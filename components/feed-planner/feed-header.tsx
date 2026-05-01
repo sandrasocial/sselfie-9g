@@ -25,12 +25,12 @@ interface FeedHeaderProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedHeaderCompactChipClass =
-  "stone-chip rounded-full px-2.5 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] sm:px-3 min-h-[34px] sm:min-h-[36px]"
+  "rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-2.5 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] sm:px-3 min-h-[34px] sm:min-h-[36px]"
 
 const feedHeaderChipClass =
-  "stone-chip rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] sm:px-4 sm:text-[11px] min-h-[34px] sm:min-h-[36px]"
+  "rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] sm:px-4 sm:text-[11px] min-h-[34px] sm:min-h-[36px]"
 
-const feedHeaderStatClass = "stone-panel rounded-lg px-2 py-1.5 text-center"
+const feedHeaderStatClass = "rounded-[8px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.62)] px-2 py-1.5 text-center"
 
 export default function FeedHeader({
   feedData,
@@ -491,7 +491,7 @@ export default function FeedHeader({
   const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
-    <div className="stone-shell-panel overflow-hidden rounded-[28px]">
+    <div className="overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] shadow-[0_18px_50px_rgba(61,56,48,0.08)] backdrop-blur-[18px]">
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
@@ -513,7 +513,7 @@ export default function FeedHeader({
                 title={`Feed color: ${feedData.feed.display_color}`}
               />
             )}
-            <span className="truncate text-sm sm:text-base font-['Cormorant_Garamond'] font-light text-[#f0ede8]">{feedName}</span>
+            <span className="truncate text-sm sm:text-base font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">{feedName}</span>
             <span className="shrink-0 text-[9px] uppercase tracking-[0.16em]" style={{ color: feedColor }}>
               Live
             </span>
@@ -560,7 +560,7 @@ export default function FeedHeader({
         <div className="flex flex-col md:flex-row md:items-start md:gap-8 mb-3">
           <button
             onClick={onProfileImageClick}
-            className="stone-chip relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full p-[2px] transition-opacity hover:opacity-90 sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
+            className="relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full border border-[color:var(--app-glass-border)] bg-white p-[2px] shadow-[0_12px_32px_rgba(61,56,48,0.10)] transition-opacity hover:opacity-90 sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
           >
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-[color:var(--glass-border-subtle)] bg-[rgba(15,13,11,0.88)]">
               {hasProfileImage ? (
@@ -573,16 +573,16 @@ export default function FeedHeader({
                   style={{ borderRadius: '50%' }}
                 />
               ) : (
-                <span className="relative z-10 text-2xl font-bold text-white md:text-4xl">S</span>
+                <span className="relative z-10 text-2xl font-bold md:text-4xl" style={{ color: "#F4F0E6" }}>S</span>
               )}
             </div>
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-[rgba(15,13,11,0)] transition-all group-hover:bg-[rgba(15,13,11,0.42)]">
-              <span className="text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium text-center px-2">
+              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium text-center px-2" style={{ color: "#F4F0E6" }}>
                 {hasProfileImage ? "Change" : "Add photo"}
               </span>
             </div>
             {!hasProfileImage && (
-              <div className="stone-chip pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[4px] border border-[color:var(--app-glass-border)] bg-white px-2 py-0.5 text-[10px] text-[color:var(--app-text-primary)] opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
                 Click to add profile picture
               </div>
             )}
@@ -591,24 +591,24 @@ export default function FeedHeader({
           <div className="flex-1 space-y-3">
             <div className="grid grid-cols-3 gap-2 max-w-sm">
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#f0ede8]">9</div>
-                <div className="text-[11px] text-[#8a8780]">posts</div>
+                <div className="text-sm font-semibold text-[color:var(--app-text-primary)]">9</div>
+                <div className="text-[11px] text-[color:var(--app-text-secondary)]">posts</div>
               </div>
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#f0ede8]">1.2K</div>
-                <div className="text-[11px] text-[#8a8780]">followers</div>
+                <div className="text-sm font-semibold text-[color:var(--app-text-primary)]">1.2K</div>
+                <div className="text-[11px] text-[color:var(--app-text-secondary)]">followers</div>
               </div>
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#f0ede8]">342</div>
-                <div className="text-[11px] text-[#8a8780]">following</div>
+                <div className="text-sm font-semibold text-[color:var(--app-text-primary)]">342</div>
+                <div className="text-[11px] text-[color:var(--app-text-secondary)]">following</div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-sm font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+              <div className="text-sm font-['Cormorant_Garamond'] font-light text-[color:var(--app-text-primary)]">
                 {feedData?.userDisplayName || feedData?.feed?.brand_name || "User"}
               </div>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-[#8a8780]">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
                 {hasBio ? feedData.bio.bio_text : "Your Instagram feed strategy created by Maya"}
               </div>
             </div>
@@ -703,7 +703,7 @@ export default function FeedHeader({
                                 className="w-full h-full rounded-full flex items-center justify-center"
                                 style={{ backgroundColor: highlightColor }}
                               >
-                                <span className="text-base md:text-lg font-bold text-white drop-shadow-lg">
+                                <span className="text-base md:text-lg font-bold drop-shadow-lg" style={{ color: "#F4F0E6" }}>
                                   {highlight.title ? highlight.title.charAt(0).toUpperCase() : "H"}
                                 </span>
                               </div>
@@ -720,7 +720,7 @@ export default function FeedHeader({
                             )}
                           </div>
                         </div>
-                        <span className="max-w-[64px] truncate text-center text-xs leading-tight text-white/80 md:max-w-[70px]">
+                        <span className="max-w-[64px] truncate text-center text-xs leading-tight text-[color:var(--app-text-secondary)] md:max-w-[70px]">
                           {highlight.title}
                         </span>
                       </div>

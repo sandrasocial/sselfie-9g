@@ -45,7 +45,7 @@ export default function MayaQuickPrompts({
   // **NEW: Quick Chips variant** — rendered above input in Chat Focus mode
   if (variant === "quick-chips") {
     const chipClass =
-      "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[color:var(--text-accent)] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] active:bg-[rgba(175,170,162,0.22)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(168,164,156,0.40)]"
+      "shrink-0 rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] active:bg-[color:var(--app-btn-secondary-hover)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
     return (
       <div className="relative w-full">
         <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
@@ -60,17 +60,17 @@ export default function MayaQuickPrompts({
             </button>
           ))}
         </div>
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[rgba(23,20,18,0.95)] to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[rgba(237,233,226,0.95)] to-transparent" />
       </div>
     )
   }
 
   // Existing variants unchanged...
   const wrapperClass =
-    "stone-panel rounded-[24px] p-3"
+    "stone-panel rounded-[16px] p-3"
   const railClass = "flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
   const pillClass =
-    "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-accent)] transition-colors min-h-[40px] hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
+    "shrink-0 rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)] transition-colors min-h-[40px] hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
 
   if (variant === "empty-state") {
     const INITIAL = 4
@@ -80,17 +80,17 @@ export default function MayaQuickPrompts({
 
     return (
       <div className="relative w-full max-w-xl -mx-1">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)] mb-3 px-1">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] mb-3 px-1">
           Or tap a starter
         </p>
-        <div className="border-t border-[rgba(195,190,182,0.14)]">
+        <div className="border-t border-[color:var(--app-glass-border)]">
           {visible.map((item, index) => (
             <button
               key={`${item.label}-${index}`}
               type="button"
               onClick={() => onSelect(item.prompt)}
               disabled={disabled}
-              className="flex w-full text-left border-b border-[rgba(195,190,182,0.1)] px-1 py-3.5 text-sm font-light leading-snug text-[color:var(--color-porcelain)] hover:bg-[rgba(175,170,162,0.06)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              className="flex w-full text-left border-b border-[color:var(--app-glass-border)] px-1 py-3.5 text-sm font-light leading-snug text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-bg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               {item.label}
             </button>
@@ -100,7 +100,7 @@ export default function MayaQuickPrompts({
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
-            className="mt-3 w-full py-2 text-center text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] transition-colors"
+            className="mt-3 w-full py-2 text-center text-[11px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-colors"
           >
             {expanded ? "Show fewer" : `Show ${prompts.length - INITIAL} more`}
           </button>
@@ -112,7 +112,7 @@ export default function MayaQuickPrompts({
   if (variant === "pro-mode-empty" && studioProMode) {
     return (
       <div className="pt-6 space-y-5">
-        <p className="text-[10px] text-[#8a8780] font-medium uppercase tracking-[0.5em] text-center font-['Inter']">
+        <p className="text-[10px] text-[color:var(--app-text-secondary)] font-medium uppercase tracking-[0.5em] text-center font-['Inter']">
           {isEmpty ? "Start With Selfie Mode Prompts" : "More Selfie Mode Prompts"}
         </p>
         <div className={`${wrapperClass} max-w-2xl mx-auto`}>
@@ -131,7 +131,7 @@ export default function MayaQuickPrompts({
             </div>
           ) : (
             <div className="text-center py-3">
-              <p className="text-[11px] text-[#8a8780] uppercase tracking-[0.3em]">Loading prompts</p>
+              <p className="text-[11px] text-[color:var(--app-text-secondary)] uppercase tracking-[0.3em]">Loading prompts</p>
             </div>
           )}
         </div>

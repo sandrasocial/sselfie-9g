@@ -72,7 +72,7 @@ function GalleryImageCardComponent({
       onMouseDown={handleMouseDown}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
-      className={`relative aspect-square overflow-hidden bg-[rgba(175,170,162,0.08)] border border-[rgba(195,190,182,0.15)] rounded-xl ${className}`}
+      className={`relative aspect-square overflow-hidden bg-[color:var(--app-btn-secondary-bg)] border border-[color:var(--app-glass-border)] rounded-[4px] ${className}`}
     >
       <ProgressiveImage
         src={image.image_url || "/placeholder.svg"}
@@ -83,14 +83,14 @@ function GalleryImageCardComponent({
       {selectionMode && (
         <>
           {!isSelected && <div className="absolute inset-0 bg-[rgba(13,12,11,0.5)]" />}
-          <div className="absolute right-2 top-2 z-10 rounded-full border border-[rgba(195,190,182,0.35)] bg-[rgba(175,170,162,0.15)] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#f0ede8] backdrop-blur-sm">
+          <div className="absolute right-2 top-2 z-10 rounded-[4px] border border-white/30 bg-black/25 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur-sm">
             {isSelected ? "CHECKED" : "SELECT"}
           </div>
         </>
       )}
       {!selectionMode && (
         <div className="absolute inset-0 flex items-end bg-[rgba(13,12,11,0)] opacity-0 transition-all duration-300 hover:bg-[rgba(13,12,11,0.45)] hover:backdrop-blur-sm hover:opacity-100">
-          <div className="m-2 rounded-full border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.15)] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#f0ede8] backdrop-blur-sm">
+          <div className="m-2 rounded-[4px] border border-white/30 bg-black/25 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur-sm">
             Open
           </div>
         </div>

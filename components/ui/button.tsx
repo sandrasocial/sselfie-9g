@@ -5,26 +5,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive font-['Inter'] tracking-wide uppercase text-xs transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] text-sm font-medium disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-[color:var(--app-focus-ring)] focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive font-['Inter'] tracking-wide uppercase text-xs transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          'bg-[color:var(--color-whisper)] border border-[color:var(--glass-border)] text-[color:var(--color-obsidian)] hover:bg-[color:var(--color-porcelain)] shadow-[0_12px_32px_rgba(0,0,0,0.18)]',
+          'bg-[color:var(--app-btn-primary-bg)] border border-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] hover:opacity-90 shadow-[0_12px_32px_rgba(61,56,48,0.14)]',
         destructive:
           'bg-[rgba(164,59,46,0.16)] border border-[rgba(164,59,46,0.35)] text-[color:var(--color-porcelain)] hover:bg-[rgba(164,59,46,0.24)]',
         outline:
-          'border border-[color:var(--glass-border)] bg-transparent text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-input-bg)] backdrop-blur-sm',
+          'border border-[color:var(--app-border)] bg-transparent text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-bg)] backdrop-blur-sm',
         secondary:
-          'bg-[color:var(--glass-bg)] border border-[color:var(--glass-border)] text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-bg-mid)] backdrop-blur-sm',
+          'bg-[color:var(--app-btn-secondary-bg)] border border-[color:var(--app-glass-border)] text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)] backdrop-blur-sm',
         ghost:
-          'text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-input-bg)]',
-        link: 'text-[color:var(--text-accent)] underline-offset-4 hover:underline hover:text-[color:var(--color-whisper)]',
+          'text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-bg)]',
+        link: 'text-[color:var(--app-text-primary)] underline-offset-4 hover:underline hover:text-[color:var(--app-text-secondary)]',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
-        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
+        sm: 'h-8 rounded-[6px] gap-1.5 px-3 has-[>svg]:px-2.5',
+        lg: 'h-10 rounded-[6px] px-6 has-[>svg]:px-4',
         icon: 'size-9',
         'icon-sm': 'size-8',
         'icon-lg': 'size-10',

@@ -166,14 +166,14 @@ export default function MayaUnifiedInput({
   }
 
   const inputContainerClass =
-    "w-full overflow-hidden rounded-2xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] p-2.5 sm:p-4"
+    "w-full overflow-hidden rounded-[12px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] backdrop-blur-[20px] shadow-[var(--app-shadow-soft)] p-2.5 sm:p-4"
   const inputContainerStyle = {
-    borderTop: "1px solid rgba(195,190,182,0.20)",
+    borderTop: "1px solid var(--app-glass-border)",
   }
   const inputWrapperClass = "w-full"
 
   const textareaClass =
-    "w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-transparent border border-transparent rounded-lg text-[#f0ede8] placeholder:text-[#8a8780] focus:outline-none focus:ring-1 focus:ring-[rgba(195,190,182,0.25)] focus:border-[rgba(195,190,182,0.25)] focus:bg-[rgba(175,170,162,0.06)] font-light text-[15px] sm:text-[16px] min-h-[44px] sm:min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    "w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-transparent border border-transparent rounded-[8px] text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)] focus:border-[color:var(--app-focus-ring)] focus:bg-[color:var(--app-input-bg)] font-light text-[15px] sm:text-[16px] min-h-[44px] sm:min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = {
     fontFamily: Typography.body.fontFamily,
@@ -184,25 +184,25 @@ export default function MayaUnifiedInput({
   }
 
   const secondaryToolbarButtonClass =
-    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.06)] hover:bg-[rgba(175,170,162,0.12)] text-[#8a8780] hover:text-[#c8c4bb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
   }
 
   const sendButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[96px] h-10 sm:h-11 rounded-xl border border-[rgba(195,190,182,0.25)] bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-4"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[96px] h-10 sm:h-11 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] hover:opacity-90 text-[color:var(--app-btn-primary-text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-4"
 
   const sendButtonStyle = {
     borderRadius: BorderRadius.button,
     backgroundColor:
       (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-        ? "rgba(175,170,162,0.12)"
-        : "#c8c4bb",
+        ? "var(--app-btn-secondary-bg)"
+        : "var(--app-btn-primary-bg)",
     color:
       (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-        ? "#8a8780"
-        : "#0d0c0b",
+        ? "var(--app-text-secondary)"
+        : "var(--app-btn-primary-text)",
   }
 
   return (

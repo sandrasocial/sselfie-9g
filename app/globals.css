@@ -183,6 +183,23 @@
   --app-bg-glow-2: rgba(26, 24, 21, 0.5);
   --app-bg-glass: rgba(175, 170, 162, 0.10);
   --app-bg-glass-strong: rgba(175, 170, 162, 0.18);
+  --app-bg: #0d0c0b;
+  --app-surface: #1c1b19;
+  --app-elevated: #2e2c29;
+  --app-border: rgba(195, 190, 182, 0.25);
+  --app-text-primary: #f0ede8;
+  --app-text-secondary: #8a8780;
+  --app-text-muted: #a8a49c;
+  --app-btn-primary-bg: #c8c4bb;
+  --app-btn-primary-text: #0d0c0b;
+  --app-btn-secondary-bg: rgba(175, 170, 162, 0.10);
+  --app-btn-secondary-hover: rgba(175, 170, 162, 0.18);
+  --app-input-bg: rgba(175, 170, 162, 0.08);
+  --app-input-border: rgba(195, 190, 182, 0.20);
+  --app-glass-bg: rgba(175, 170, 162, 0.10);
+  --app-glass-border: rgba(195, 190, 182, 0.25);
+  --app-focus-ring: rgba(195, 190, 182, 0.50);
+  --app-shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.28);
 
   /* Fonts */
   --font-display: 'Cormorant Garamond', serif;
@@ -504,6 +521,278 @@
 
 /* Add safe area inset utilities for mobile notch/home indicator support */
 @layer utilities {
+  .sselfie-app-shell,
+  .sselfie-app-portal-theme {
+    --app-bg: #EDE9E2;
+    --app-surface: #F4F0E6;
+    --app-elevated: #FFFFFF;
+    --app-border: rgba(15, 13, 11, 0.12);
+    --app-text-primary: #0F0D0B;
+    --app-text-secondary: #7A6F63;
+    --app-text-muted: #A89A8A;
+    --app-btn-primary-bg: #0F0D0B;
+    --app-btn-primary-text: #EDE9E2;
+    --app-btn-secondary-bg: rgba(15, 13, 11, 0.06);
+    --app-btn-secondary-hover: rgba(15, 13, 11, 0.09);
+    --app-input-bg: rgba(15, 13, 11, 0.04);
+    --app-input-border: rgba(15, 13, 11, 0.18);
+    --app-glass-bg: rgba(255, 255, 255, 0.72);
+    --app-glass-border: rgba(15, 13, 11, 0.10);
+    --app-focus-ring: rgba(15, 13, 11, 0.28);
+    --app-shadow-soft: 0 24px 70px rgba(61, 56, 48, 0.12);
+    color: var(--app-text-primary);
+  }
+
+  .sselfie-app-shell.stone-stage {
+    background-color: var(--app-bg);
+    background-image:
+      radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.62) 0%, transparent 28%),
+      radial-gradient(circle at 86% 0%, rgba(196, 181, 160, 0.28) 0%, transparent 30%),
+      linear-gradient(180deg, #F4F0E6 0%, #EDE9E2 46%, #D9D3C8 100%);
+  }
+
+  .sselfie-app-shell .app-shell-backdrop {
+    background-image:
+      radial-gradient(circle at 22% 8%, rgba(255, 255, 255, 0.66) 0%, transparent 34%),
+      radial-gradient(circle at 82% 16%, rgba(196, 181, 160, 0.28) 0%, transparent 30%);
+    filter: blur(42px) saturate(0.82);
+    opacity: 0.72;
+  }
+
+  .sselfie-app-shell .stone-shell-panel,
+  .sselfie-app-shell .stone-panel {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(244, 240, 230, 0.72) 100%),
+      var(--app-glass-bg);
+    border-color: var(--app-glass-border);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .sselfie-app-shell .stone-panel-strong {
+    background: var(--app-elevated);
+    border-color: var(--app-glass-border);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .sselfie-app-shell .stone-inset-panel,
+  .sselfie-app-shell .stone-chip {
+    background: var(--app-btn-secondary-bg);
+    border-color: var(--app-glass-border);
+    box-shadow: none;
+  }
+
+  .sselfie-app-shell .stone-shell-panel::before,
+  .sselfie-app-shell .stone-panel::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.42) 42%, transparent 100%);
+    opacity: 0.72;
+  }
+
+  .sselfie-app-shell .glass-card {
+    background: var(--app-glass-bg);
+    border-color: var(--app-glass-border);
+    border-radius: 16px;
+  }
+
+  .sselfie-app-shell .glass-input {
+    background: var(--app-input-bg);
+    border-color: var(--app-input-border);
+    border-radius: 8px;
+  }
+
+  .sselfie-app-shell .account-light,
+  .sselfie-app-shell .app-light-legacy-text,
+  .sselfie-app-shell .maya-light-surface,
+  .sselfie-app-shell .app-light-panel-text {
+    --color-porcelain: var(--app-text-primary);
+    --color-whisper: var(--app-text-secondary);
+    --color-smoke: var(--app-text-muted);
+    --text-primary: var(--app-text-primary);
+    --text-secondary: var(--app-text-secondary);
+    --text-accent: var(--app-text-muted);
+    --text-cta: var(--app-text-primary);
+    --glass-bg: var(--app-glass-bg);
+    --glass-bg-mid: var(--app-btn-secondary-bg);
+    --glass-bg-heavy: var(--app-btn-secondary-hover);
+    --glass-border: var(--app-glass-border);
+    --glass-border-subtle: var(--app-glass-border);
+    --glass-divider: var(--app-glass-border);
+    --glass-input-bg: var(--app-input-bg);
+    --glass-input-border: var(--app-input-border);
+  }
+
+  .sselfie-app-shell .maya-light-surface [class*="text-[#f0ede8]"],
+  .sselfie-app-shell .maya-light-surface [class*="text-[#c8c4bb]"] {
+    color: var(--app-text-primary);
+  }
+
+  .sselfie-app-shell .maya-light-surface [class*="text-[#a8a49c]"],
+  .sselfie-app-shell .maya-light-surface [class*="text-[#8a8780]"] {
+    color: var(--app-text-secondary);
+  }
+
+  .sselfie-app-shell .maya-light-surface [class*="bg-[rgba(175,170,162"] {
+    background-color: var(--app-btn-secondary-bg);
+  }
+
+  .sselfie-app-shell .maya-light-surface [class*="border-[rgba(195,190,182"] {
+    border-color: var(--app-glass-border);
+  }
+
+  .sselfie-app-shell .maya-light-surface [style*="color: #f0ede8"],
+  .sselfie-app-shell .maya-light-surface [style*="color:#f0ede8"] {
+    color: var(--app-text-primary) !important;
+  }
+
+  .sselfie-app-shell .app-light-panel-text [class*="text-white"] {
+    color: var(--app-text-primary);
+  }
+
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/80"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/75"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/70"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/65"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/55"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/45"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/35"],
+  .sselfie-app-shell .app-light-panel-text [class*="text-white/25"] {
+    color: var(--app-text-secondary);
+  }
+
+  .sselfie-app-shell .app-light-panel-text [class*="border-white/"] {
+    border-color: var(--app-glass-border);
+  }
+
+  .sselfie-app-shell .app-light-panel-text [class*="bg-white/"],
+  .sselfie-app-shell .app-light-panel-text [class*="bg-white["] {
+    background-color: var(--app-btn-secondary-bg);
+  }
+
+  .sselfie-app-shell .app-backdrop,
+  .sselfie-app-portal-theme .app-backdrop {
+    background: rgba(15, 13, 11, 0.28);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .sselfie-app-shell .app-modal-panel,
+  .sselfie-app-portal-theme .app-modal-panel {
+    background: var(--app-elevated);
+    color: var(--app-text-primary);
+    border-color: var(--app-glass-border);
+    box-shadow: 0 30px 120px rgba(61, 56, 48, 0.18);
+  }
+
+  .sselfie-app-shell [class~="text-[#f0ede8]"],
+  .sselfie-app-portal-theme [class~="text-[#f0ede8]"] {
+    color: var(--app-text-primary);
+  }
+
+  .sselfie-app-shell [class~="text-[#c8c4bb]"],
+  .sselfie-app-shell [class~="text-[#a8a49c]"],
+  .sselfie-app-portal-theme [class~="text-[#c8c4bb]"],
+  .sselfie-app-portal-theme [class~="text-[#a8a49c]"] {
+    color: var(--app-text-muted);
+  }
+
+  .sselfie-app-shell [class~="text-[#8a8780]"],
+  .sselfie-app-portal-theme [class~="text-[#8a8780]"] {
+    color: var(--app-text-secondary);
+  }
+
+  .sselfie-app-shell [class~="bg-[#c8c4bb]"],
+  .sselfie-app-shell [class~="bg-[#f0ede8]"],
+  .sselfie-app-portal-theme [class~="bg-[#c8c4bb]"],
+  .sselfie-app-portal-theme [class~="bg-[#f0ede8]"] {
+    background-color: var(--app-btn-primary-bg);
+  }
+
+  .sselfie-app-shell [class~="text-[#0d0c0b]"],
+  .sselfie-app-portal-theme [class~="text-[#0d0c0b]"] {
+    color: var(--app-btn-primary-text);
+  }
+
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.05)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.06)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.08)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.10)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.12)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.14)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.16)]"],
+  .sselfie-app-shell [class~="bg-[rgba(175,170,162,0.18)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.05)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.06)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.08)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.10)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.12)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.14)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.16)]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(175,170,162,0.18)]"] {
+    background-color: var(--app-btn-secondary-bg);
+  }
+
+  .sselfie-app-shell [class~="bg-[rgba(28,27,25,0.96)]"],
+  .sselfie-app-shell [class~="bg-[#1c1b19]"],
+  .sselfie-app-portal-theme [class~="bg-[rgba(28,27,25,0.96)]"],
+  .sselfie-app-portal-theme [class~="bg-[#1c1b19]"] {
+    background-color: var(--app-elevated);
+  }
+
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.10)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.15)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.16)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.20)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.22)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.25)]"],
+  .sselfie-app-shell [class~="border-[rgba(195,190,182,0.30)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.10)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.15)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.16)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.20)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.22)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.25)]"],
+  .sselfie-app-portal-theme [class~="border-[rgba(195,190,182,0.30)]"] {
+    border-color: var(--app-glass-border);
+  }
+
+  .sselfie-app-shell .account-light [class*="text-white"] {
+    color: var(--app-text-primary);
+  }
+
+  .sselfie-app-shell .account-light .account-hero [class*="text-white"] {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .sselfie-app-shell .account-light .account-hero [class*="text-white/90"],
+  .sselfie-app-shell .account-light .account-hero [class*="text-white/75"],
+  .sselfie-app-shell .account-light .account-hero [class*="text-white/65"],
+  .sselfie-app-shell .account-light .account-hero [class*="text-white/50"] {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .sselfie-app-shell .account-light [class*="text-white/90"],
+  .sselfie-app-shell .account-light [class*="text-white/75"],
+  .sselfie-app-shell .account-light [class*="text-white/65"],
+  .sselfie-app-shell .account-light [class*="text-white/50"] {
+    color: var(--app-text-secondary);
+  }
+
+  .sselfie-app-shell .account-light [class*="bg-white/"],
+  .sselfie-app-shell .account-light [class*="bg-white["] {
+    background-color: var(--app-btn-secondary-bg);
+  }
+
+  .sselfie-app-shell .account-light [class*="border-white/"] {
+    border-color: var(--app-glass-border);
+  }
+
+  .sselfie-app-shell .account-light input,
+  .sselfie-app-shell .account-light textarea,
+  .sselfie-app-shell .account-light select {
+    background-color: var(--app-input-bg);
+    border-color: var(--app-input-border);
+    color: var(--app-text-primary);
+  }
+
   .stone-stage {
     background-color: var(--app-bg-primary);
     background-image:

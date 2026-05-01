@@ -51,22 +51,18 @@ export default function UnifiedLoading({
         {/* Logo with spinning circle */}
         <div className={`relative ${config.spinner} mx-auto`}>
           {/* Spinning circle */}
-          <div className="absolute inset-0 border-2 border-[rgba(168,164,156,0.24)] rounded-full"></div>
-          <div className="absolute inset-0 border-2 border-[#a8a49c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 rounded-full border-2 border-[color:var(--app-glass-border)]"></div>
+          <div className="absolute inset-0 rounded-full border-2 border-[color:var(--app-text-primary)] border-t-transparent animate-spin"></div>
 
           {/* Logo in center */}
           <div className={`absolute inset-0 flex items-center justify-center ${config.logo}`}>
-            <img 
-              src="/brand/sselfie-logo-white-transparent.png" 
-              alt="SSELFIE" 
-              className="w-full h-full object-contain" 
-            />
+            <span className="font-serif text-xl font-light text-[color:var(--app-text-primary)] sm:text-2xl">S</span>
           </div>
         </div>
 
         {/* Loading text - only show for screen and section variants, or if custom message provided for inline */}
         {showMessage && (
-          <p className={`${config.message} tracking-[0.15em] uppercase font-light text-[#f0ede8]`}>
+          <p className={`${config.message} tracking-[0.15em] uppercase font-light text-[color:var(--app-text-secondary)]`}>
             {message}
           </p>
         )}

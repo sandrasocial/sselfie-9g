@@ -51,14 +51,14 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
     <button
       onClick={() => !isLocked && onCourseClick(course.id)}
       disabled={isLocked}
-      className={`group relative stone-panel rounded-2xl overflow-hidden text-left transition-all duration-300 shadow-[0_20px_60px_rgba(0,0,0,0.18)] ${
+      className={`group relative stone-panel rounded-[16px] overflow-hidden text-left transition-all duration-300 shadow-[var(--app-shadow-soft)] ${
         isLocked
           ? "opacity-60 cursor-not-allowed"
-          : "hover:bg-[rgba(175,170,162,0.18)] hover:border-[rgba(195,190,182,0.40)] hover:shadow-[0_28px_80px_rgba(0,0,0,0.22)] hover:scale-[1.02]"
+          : "hover:bg-[color:var(--app-glass-bg)] hover:border-[color:var(--app-border)] hover:shadow-[0_28px_80px_rgba(61,56,48,0.16)] hover:scale-[1.01]"
       }`}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-[rgba(28,27,25,0.68)]">
+      <div className="relative aspect-video overflow-hidden rounded-[4px] bg-[color:var(--app-btn-secondary-bg)]">
         {course.thumbnail_url ? (
           <img
             src={course.thumbnail_url || "/placeholder.svg"}
@@ -66,8 +66,8 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[rgba(28,27,25,0.68)]">
-            <span className="text-4xl font-['Cormorant_Garamond'] font-light tracking-[0.2em] uppercase text-[#8a8780]">
+          <div className="flex h-full w-full items-center justify-center bg-[color:var(--app-btn-secondary-bg)]">
+            <span className="text-4xl font-['Cormorant_Garamond'] font-light tracking-[0.2em] uppercase text-[color:var(--app-text-muted)]">
               {course.title.charAt(0)}
             </span>
           </div>
@@ -75,20 +75,20 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Lock overlay for higher-tier courses */}
         {isLocked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(23,20,17,0.72)] backdrop-blur-md">
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(15,13,11,0.58)] backdrop-blur-md">
             <div className="text-center space-y-2">
-              <div className="stone-chip mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-                <span className="text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">Locked</span>
+              <div className="stone-chip mx-auto flex h-12 w-12 items-center justify-center rounded-[6px]">
+                <span className="text-[10px] tracking-[0.5em] uppercase text-[color:var(--app-btn-primary-text)]">Locked</span>
               </div>
-              <p className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[#a8a49c]">{course.tier} tier required</p>
+              <p className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[color:var(--app-btn-primary-text)]">{course.tier} tier required</p>
             </div>
           </div>
         )}
 
         {/* Completion badge */}
         {isCompleted && !isLocked && (
-          <div className="stone-chip absolute right-3 top-3 rounded-full px-3 py-1.5">
-            <span className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[#a8a49c]">Completed</span>
+          <div className="stone-chip absolute right-3 top-3 rounded-[4px] px-3 py-1.5">
+            <span className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[color:var(--app-text-secondary)]">Completed</span>
           </div>
         )}
       </div>
@@ -96,15 +96,15 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
       {/* Content */}
       <div className="p-6 space-y-4">
         {/* Title */}
-        <h3 className="font-['Cormorant_Garamond'] font-light text-xl text-[#f0ede8] leading-tight">
+        <h3 className="font-['Cormorant_Garamond'] font-light text-xl text-[color:var(--app-text-primary)] leading-tight">
           {course.title}
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-[#8a8780] leading-relaxed line-clamp-2">{course.description}</p>
+        <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed line-clamp-2">{course.description}</p>
 
         {/* Meta info */}
-        <div className="flex items-center gap-6 text-xs tracking-[0.4em] uppercase font-['Inter'] font-medium text-[#8a8780]">
+        <div className="flex items-center gap-6 text-xs tracking-[0.4em] uppercase font-['Inter'] font-medium text-[color:var(--app-text-secondary)]">
           <span>{formatDuration(totalDuration)}</span>
           <span>{lessonCount} Lessons</span>
         </div>
@@ -113,12 +113,12 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
         {progress && !isLocked && (
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="tracking-[0.4em] uppercase font-['Inter'] font-medium text-[#8a8780]">Progress</span>
-              <span className="font-['Inter'] text-[#a8a49c]">{Math.round(progressPercentage)}%</span>
+              <span className="tracking-[0.4em] uppercase font-['Inter'] font-medium text-[color:var(--app-text-secondary)]">Progress</span>
+              <span className="font-['Inter'] text-[color:var(--app-text-muted)]">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full h-1.5 bg-[rgba(175,170,162,0.12)] rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-[color:var(--app-btn-secondary-bg)] rounded-[4px] overflow-hidden">
               <div
-                className="h-full bg-[#a8a49c] rounded-full transition-all duration-500"
+                className="h-full bg-[color:var(--app-text-primary)] rounded-[4px] transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -128,7 +128,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
         {/* Action button */}
         {!isLocked && (
           <div className="pt-2">
-            <div className="flex min-h-[48px] w-full items-center justify-center rounded-full bg-[color:var(--color-porcelain)] py-3 text-center font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-all duration-200 group-hover:bg-[#f0ede8]">
+            <div className="flex min-h-[48px] w-full items-center justify-center rounded-[6px] bg-[color:var(--app-btn-primary-bg)] py-3 text-center font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] text-[color:var(--app-btn-primary-text)] transition-all duration-200 group-hover:opacity-90">
               {isCompleted ? "Review" : hasStarted ? "Continue" : "Start"}
             </div>
           </div>

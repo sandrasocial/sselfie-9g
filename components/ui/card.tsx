@@ -7,7 +7,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="card"
       className={cn(
-        'bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--glass-border)] text-[color:var(--color-porcelain)] flex flex-col gap-6 rounded-2xl py-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]',
+        'bg-[color:var(--app-glass-bg)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] text-[color:var(--app-text-primary)] flex flex-col gap-6 rounded-[16px] py-6 shadow-[var(--app-shadow-soft)]',
         className,
       )}
       {...props}
@@ -32,7 +32,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-title"
-      className={cn("text-[color:var(--color-porcelain)] font-['Cormorant_Garamond'] font-light text-xl tracking-wide", className)}
+      className={cn("text-[color:var(--app-text-primary)] font-['Cormorant_Garamond'] font-light text-xl tracking-wide", className)}
       {...props}
     />
   )
@@ -42,7 +42,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-[color:var(--color-smoke)] text-sm font-['Inter']", className)}
+      className={cn("text-[color:var(--app-text-secondary)] text-sm font-['Inter']", className)}
       {...props}
     />
   )

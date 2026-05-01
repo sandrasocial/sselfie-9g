@@ -870,7 +870,7 @@ export default function SselfieApp({
 
   return (
     <div
-        className="stone-stage h-screen relative overflow-x-hidden"
+        className="sselfie-app-shell stone-stage h-screen relative overflow-x-hidden"
         style={{
           fontFamily: "var(--font-body)",
           paddingTop: "env(safe-area-inset-top)",
@@ -880,9 +880,9 @@ export default function SselfieApp({
 
       <div className="pointer-events-none absolute inset-0">
         <div className="app-shell-backdrop absolute inset-[-8%]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(30,26,22,0.18)_0%,rgba(13,12,11,0.4)_52%,rgba(13,12,11,0.68)_100%)]" />
-        <div className="absolute top-[-10%] left-[12%] h-[24rem] w-[24rem] rounded-full bg-[rgba(200,196,187,0.14)] blur-[120px]" />
-        <div className="absolute bottom-[-14%] right-[10%] h-[22rem] w-[22rem] rounded-full bg-[rgba(84,69,53,0.34)] blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(237,233,226,0.20)_52%,rgba(217,211,200,0.34)_100%)]" />
+        <div className="absolute top-[-10%] left-[12%] h-[24rem] w-[24rem] rounded-full bg-[rgba(255,255,255,0.48)] blur-[120px]" />
+        <div className="absolute bottom-[-14%] right-[10%] h-[22rem] w-[22rem] rounded-full bg-[rgba(196,181,160,0.30)] blur-[120px]" />
       </div>
 
       {isWelcome && creditBalance === 0 && (
@@ -983,162 +983,166 @@ export default function SselfieApp({
         onTabChange={(id) => handleTabChange(id as StudioTab)}
         isNewUser={isNewUser}
         trailing={
-          activeTab === "maya" ? (
-            <button
-              type="button"
-              onClick={() => setMayaNavMenuOpen((o) => !o)}
-              className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation active:scale-95`}
-              style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
-              aria-label="Menu"
-              aria-expanded={mayaNavMenuOpen}
-            >
-              <span className="text-base leading-none text-[#f0ede8]">≡</span>
-            </button>
-          ) : (
-            <>
-              {activeTab === "feed-planner" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors text-xs font-medium text-[#f0ede8] min-h-[36px]`}
-                      aria-label="My Feed"
-                      style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
-                    >
-                      <span>Feeds</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
-                    <div className="px-3 py-2">
-                      <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-2`}>Feed History</div>
-                      <div className="max-h-64 overflow-y-auto">
-                        {isLoadingFeeds ? (
-                          <div className="px-2 py-4 text-center text-xs text-[#8a8780]">Loading feeds...</div>
-                        ) : feedListError ? (
-                          <div className="px-2 py-4 text-center text-xs text-red-500">Failed to load feeds</div>
-                        ) : feeds.length === 0 ? (
-                          <div className="px-2 py-4 text-center text-xs text-[#8a8780]">No feeds yet</div>
-                        ) : (
-                          feeds.map((feed: any) => (
-                            <div key={feed.id} className="group relative">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  const currentPath = window.location.pathname
-                                  router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
-                                }}
-                                className={`cursor-pointer ${currentFeedId === feed.id ? "bg-[rgba(175,170,162,0.14)]" : ""}`}
-                              >
-                                <div className="flex items-center gap-2.5 w-full">
-                                  <div
-                                    className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
-                                    style={{
-                                      backgroundColor: feed.display_color || "#2e2c29",
-                                      borderColor: feed.display_color || "#3a3630",
-                                      borderStyle: feed.display_color ? "solid" : "dashed",
-                                    }}
-                                    title={feed.display_color ? `Color: ${feed.display_color}` : "No color set"}
-                                  >
-                                    {!feed.display_color && (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#8a8780]"></div>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                    <span className="text-sm font-medium text-[#f0ede8] truncate">{feed.title || `Feed ${feed.id}`}</span>
-                                    {feed.layout_type === "preview" ? (
-                                      <span className="text-xs text-[#8a8780]">Preview Feed</span>
-                                    ) : feed.image_count !== undefined ? (
-                                      <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === "grid_3x4" ? "12" : "9"} images</span>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </DropdownMenuItem>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleEditFeed(feed)
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded"
-                                aria-label="Edit feed"
-                              >
-                                <span className="text-[9px] tracking-[0.2em] uppercase text-[#8a8780]">Edit</span>
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <>
+            {activeTab === "feed-planner" && (
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
-                    aria-label="Menu"
-                    style={{ background: "rgba(175,170,162,0.10)", border: "1px solid rgba(195,190,182,0.20)" }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(15,13,11,0.08)] transition-colors text-xs font-medium text-[color:var(--app-text-primary)] min-h-[36px]`}
+                    aria-label="My Feed"
+                    style={{ background: "var(--app-btn-secondary-bg)", border: "1px solid var(--app-glass-border)" }}
                   >
-                    <span className="text-base leading-none text-[#f0ede8]">≡</span>
+                    <span>Feeds</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
+                <DropdownMenuContent
+                  align="end"
+                  className="sselfie-app-portal-theme z-[240] w-56 rounded-[16px] border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.94)] text-[color:var(--app-text-primary)] shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px]"
+                >
                   <div className="px-3 py-2">
-                    <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary}`}>
-                      Your Credits
-                    </div>
-                    <div className={`text-2xl font-serif font-extralight ${DesignClasses.text.primary} tabular-nums mt-1`}>
-                      {creditBalance.toFixed(1)}
+                    <div className={`${DesignClasses.typography.label.uppercase} mb-2 text-[color:var(--app-text-secondary)]`}>Feed History</div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {isLoadingFeeds ? (
+                        <div className="px-2 py-4 text-center text-xs text-[color:var(--app-text-secondary)]">Loading feeds...</div>
+                      ) : feedListError ? (
+                        <div className="px-2 py-4 text-center text-xs text-red-600">Failed to load feeds</div>
+                      ) : feeds.length === 0 ? (
+                        <div className="px-2 py-4 text-center text-xs text-[color:var(--app-text-secondary)]">No feeds yet</div>
+                      ) : (
+                        feeds.map((feed: any) => (
+                          <div key={feed.id} className="group relative">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const currentPath = window.location.pathname
+                                router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
+                              }}
+                              className={`cursor-pointer rounded-[8px] text-[color:var(--app-text-primary)] focus:bg-[color:var(--app-btn-secondary-hover)] ${
+                                currentFeedId === feed.id ? "bg-[color:var(--app-btn-secondary-bg)]" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 w-full">
+                                <div
+                                  className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
+                                  style={{
+                                    backgroundColor: feed.display_color || "#D9D3C8",
+                                    borderColor: feed.display_color || "rgba(15,13,11,0.18)",
+                                    borderStyle: feed.display_color ? "solid" : "dashed",
+                                  }}
+                                  title={feed.display_color ? `Color: ${feed.display_color}` : "No color set"}
+                                >
+                                  {!feed.display_color && (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-[color:var(--app-text-muted)]"></div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col flex-1 min-w-0">
+                                  <span className="text-sm font-medium text-[color:var(--app-text-primary)] truncate">{feed.title || `Feed ${feed.id}`}</span>
+                                  {feed.layout_type === "preview" ? (
+                                    <span className="text-xs text-[color:var(--app-text-secondary)]">Preview Feed</span>
+                                  ) : feed.image_count !== undefined ? (
+                                    <span className="text-xs text-[color:var(--app-text-secondary)]">{feed.image_count}/{feed.layout_type === "grid_3x4" ? "12" : "9"} images</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </DropdownMenuItem>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditFeed(feed)
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 opacity-0 transition-opacity hover:bg-[color:var(--app-btn-secondary-hover)] group-hover:opacity-100"
+                              aria-label="Edit feed"
+                            >
+                              <span className="text-[9px] tracking-[0.2em] uppercase text-[color:var(--app-text-secondary)]">Edit</span>
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
-                  <DropdownMenuSeparator />
-                  <div className="px-3 py-2">
-                    <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {tabs.map((tab) => {
-                        return (
-                          <button
-                            key={`menu-${tab.id}`}
-                            onClick={() => {
-                              handleTabChange(tab.id)
-                              setIsMenuOpen(false)
-                            }}
-                            className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
-                          >
-                            <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setShowBuyCreditsModal(true)
-                      setIsMenuOpen(false)
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <span className="text-sm">Buy More Credits</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div className="cursor-pointer">
-                      <InstallButton variant="menu" />
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                  >
-                    <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )
+            )}
+
+            <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(15,13,11,0.08)] transition-colors`}
+                  aria-label="Menu"
+                  style={{ background: "var(--app-btn-secondary-bg)", border: "1px solid var(--app-glass-border)" }}
+                >
+                  <span className="text-base leading-none text-[color:var(--app-text-primary)]">≡</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="sselfie-app-portal-theme z-[240] w-64 rounded-[16px] border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.94)] text-[color:var(--app-text-primary)] shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px]"
+              >
+                <div className="px-3 py-2">
+                  <div className={`${DesignClasses.typography.label.uppercase} text-[color:var(--app-text-secondary)]`}>
+                    Your Credits
+                  </div>
+                  <div className="mt-1 font-serif text-2xl font-extralight tabular-nums text-[color:var(--app-text-primary)]">
+                    {creditBalance.toFixed(1)}
+                  </div>
+                </div>
+                <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                <div className="px-3 py-2">
+                  <div className={`${DesignClasses.typography.label.uppercase} mb-1 text-[color:var(--app-text-secondary)]`}>Navigate</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {tabs.map((tab) => {
+                      const isMenuTabActive = activeTab === tab.id
+
+                      return (
+                        <button
+                          key={`menu-${tab.id}`}
+                          onClick={() => {
+                            handleTabChange(tab.id)
+                            setIsMenuOpen(false)
+                          }}
+                          className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} text-left transition-colors ${
+                            isMenuTabActive
+                              ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                              : "text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                          }`}
+                        >
+                          <span className="text-xs font-medium">{tab.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowBuyCreditsModal(true)
+                    setIsMenuOpen(false)
+                  }}
+                  className="cursor-pointer rounded-[8px] text-[color:var(--app-text-primary)] focus:bg-[color:var(--app-btn-secondary-hover)] focus:text-[color:var(--app-text-primary)]"
+                >
+                  <span className="text-sm">Buy More Credits</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer rounded-[8px] text-[color:var(--app-text-primary)] focus:bg-[color:var(--app-btn-secondary-hover)] focus:text-[color:var(--app-text-primary)]"
+                >
+                  <div>
+                    <InstallButton variant="menu" />
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="cursor-pointer rounded-[8px] text-red-700 focus:bg-red-500/10 focus:text-red-700"
+                >
+                  <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         }
       />
 

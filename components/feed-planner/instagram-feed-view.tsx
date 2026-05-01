@@ -33,8 +33,8 @@ import {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
-const feedPlannerCanvasClass = `${feedPlannerShellClass} stone-shell-panel overflow-hidden rounded-[32px]`
-const feedPlannerStateClass = `${feedPlannerShellClass} stone-shell-panel flex min-h-[60vh] items-center justify-center rounded-[32px] p-4`
+const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[20px]`
+const feedPlannerStateClass = `${feedPlannerShellClass} app-light-panel-text flex min-h-[60vh] items-center justify-center rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[20px]`
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -327,12 +327,12 @@ export default function InstagramFeedView({
     return (
       <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
-          <p className="text-sm text-white/65">{feedData.error}</p>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
+          <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData.error}</p>
           {onBack && (
             <button
               onClick={onBack}
-              className="text-sm text-white/65 underline hover:text-white"
+              className="text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"
             >
               Go back
             </button>
@@ -349,12 +349,12 @@ export default function InstagramFeedView({
     return (
       <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4 max-w-md">
-          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
-          <p className="text-sm text-white/65">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
+          <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
           {onBack && (
             <button
               onClick={onBack}
-              className="mt-4 text-sm text-white/65 underline hover:text-white"
+              className="mt-4 text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"
             >
               Go back and create a new feed
             </button>
@@ -384,12 +384,12 @@ export default function InstagramFeedView({
       return (
         <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
-            <p className="text-sm text-white/65">{feedData.error}</p>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData.error}</p>
             {onBack && (
               <button
                 onClick={onBack}
-                className="mt-4 text-sm text-white/65 underline hover:text-white"
+                className="mt-4 text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"
               >
                 Go back
               </button>
@@ -417,12 +417,12 @@ export default function InstagramFeedView({
       return (
         <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Invalid Feed Data</h2>
-            <p className="text-sm text-white/65">The feed data structure is invalid. Please try creating a new feed.</p>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Invalid Feed Data</h2>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">The feed data structure is invalid. Please try creating a new feed.</p>
             {onBack && (
               <button
                 onClick={onBack}
-                className="mt-4 text-sm text-white/65 underline hover:text-white"
+                className="mt-4 text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"
               >
                 Go back
               </button>
@@ -598,8 +598,8 @@ export default function InstagramFeedView({
                 />
                 {/* Helpful hint for empty posts */}
                 {displayPosts.some((p: any) => !p.image_url) && (
-                  <div className="mt-6 px-4 text-center">
-                    <p className="text-xs font-light text-[color:var(--color-smoke)]">
+        <div className="mt-6 px-4 text-center">
+                    <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
                       Click any empty post to upload an image or select from your gallery
                     </p>
                   </div>
@@ -707,17 +707,17 @@ export default function InstagramFeedView({
           <dialog
             open
             aria-label="Edit bio"
-            className="stone-shell-panel relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border-0 p-6 text-white shadow-none"
+            className="relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border border-[color:var(--app-glass-border)] bg-white p-6 text-[color:var(--app-text-primary)] shadow-[0_24px_70px_rgba(61,56,48,0.16)]"
           >
             <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
             </h2>
             {isSavingBio && !bioText ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white/90" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-white">I&apos;m crafting your perfect bio...</p>
-                  <p className="text-xs text-white/55">This will just take a moment.</p>
+                  <p className="text-sm font-medium text-[color:var(--app-text-primary)]">I&apos;m crafting your perfect bio...</p>
+                  <p className="text-xs text-[color:var(--app-text-secondary)]">This will just take a moment.</p>
                 </div>
               </div>
             ) : (
@@ -726,11 +726,11 @@ export default function InstagramFeedView({
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
                   placeholder="Your AI-generated bio will appear here..."
-                  className="stone-chip h-32 w-full resize-none rounded-xl p-3 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-1 focus:ring-white/40"
+                  className="h-32 w-full resize-none rounded-[8px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-3 text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)]"
                   maxLength={150}
                   disabled={isSavingBio}
                 />
-                <div className="text-right text-xs text-white/55">
+                <div className="text-right text-xs text-[color:var(--app-text-secondary)]">
                   {bioText.length}/150 characters
                 </div>
               </>
@@ -739,7 +739,7 @@ export default function InstagramFeedView({
               <button
                 onClick={() => setShowBioModal(false)}
                 disabled={isSavingBio}
-                className="px-4 py-2 text-sm text-white/65 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="px-4 py-2 text-sm text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -747,7 +747,7 @@ export default function InstagramFeedView({
                 <button
                   onClick={handleSaveBio}
                   disabled={!bioText.trim()}
-                  className="stone-chip rounded-full px-4 py-2 text-sm uppercase tracking-[0.2em] text-white transition-colors hover:bg-[rgba(175,170,162,0.16)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-sm uppercase tracking-[0.2em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Save
                 </button>

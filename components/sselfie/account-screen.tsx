@@ -456,20 +456,20 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const isPastDue = subscriptionInfo?.status === "past_due"
   const sectionWrap = "px-4 sm:px-6 md:px-8"
   const glassCard =
-    "rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] backdrop-blur-[20px]"
+    "rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] backdrop-blur-[20px]"
   const glassRow =
-    "rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-white/20"
-  const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.5em] text-[color:var(--color-whisper)]"
+    "rounded-[12px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-3 transition-colors hover:border-[color:var(--app-border)]"
+  const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.5em] text-[color:var(--app-text-secondary)]"
   const actionButton =
-    "w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+    "w-full rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
   const accountHeroBackground =
     "url('/flatlay-luxury-planning.jpg'), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg')"
 
   return (
-    <div className="space-y-6 pb-28">
+    <div className="account-light space-y-6 pb-28">
       <div className={`${sectionWrap} pt-4 space-y-4`}>
         <div
-          className={`${glassCard} relative overflow-hidden p-6 sm:p-8`}
+          className={`${glassCard} account-hero relative overflow-hidden p-6 sm:p-8`}
           style={{
             backgroundImage: `linear-gradient(180deg, rgba(13,12,11,0.24) 0%, rgba(13,12,11,0.82) 100%), ${accountHeroBackground}`,
             backgroundSize: "cover",
@@ -504,23 +504,23 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 sm:w-fit">
+        <div className="flex items-center gap-2 rounded-[12px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] p-1.5 sm:w-fit">
           <button
             onClick={() => setActiveSection("profile")}
-            className={`rounded-xl px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
+            className={`rounded-[6px] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
               activeSection === "profile"
-                ? "bg-white/16 text-[color:var(--color-porcelain)]"
-                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)] hover:bg-white/10"
+                ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
             }`}
           >
             Profile
           </button>
           <button
             onClick={() => setActiveSection("settings")}
-            className={`rounded-xl px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
+            className={`rounded-[6px] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.32em] transition-colors ${
               activeSection === "settings"
-                ? "bg-white/16 text-[color:var(--color-porcelain)]"
-                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)] hover:bg-white/10"
+                ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
             }`}
           >
             Settings
@@ -557,7 +557,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                 {profileInfo?.bio && (
                   <p className="mx-auto max-w-xl text-sm leading-relaxed text-[color:var(--color-whisper)]">{profileInfo.bio}</p>
                 )}
-                <p className="inline-flex rounded-full border border-white/20 bg-white/6 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.4em] text-[color:var(--color-whisper)]">
+                <p className="inline-flex rounded-[4px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.4em] text-[color:var(--app-text-secondary)]">
                   {displayPlan} Member
                 </p>
               </div>
@@ -580,7 +580,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
           <button
             onClick={() => setEditDialogOpen(true)}
-            className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/15"
+            className="w-full rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-5 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90"
           >
             Edit Profile
           </button>
@@ -609,7 +609,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
               <h3 className="display-header text-xl font-light text-[color:var(--color-porcelain)]">Best Work</h3>
               <button
                 onClick={() => setShowBestWorkSelector(true)}
-                className="rounded-full border border-white/15 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-whisper)] transition-colors hover:bg-white/10"
+                className="rounded-[6px] border border-[color:var(--app-glass-border)] px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-bg)]"
                 disabled={isSavingBestWork}
               >
                 Select
@@ -632,7 +632,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`group relative aspect-square cursor-move overflow-hidden rounded-xl border border-white/10 transition-all duration-200 hover:border-white/30 ${
+                      className={`group relative aspect-square cursor-move overflow-hidden rounded-[4px] border border-[color:var(--app-glass-border)] transition-all duration-200 hover:border-[color:var(--app-border)] ${
                         draggedIndex === index ? "scale-95 opacity-60" : ""
                       }`}
                     >
@@ -654,7 +654,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                     <button
                       key={`empty-${i}`}
                       onClick={() => setShowBestWorkSelector(true)}
-                      className="group flex aspect-square items-center justify-center rounded-xl border border-white/10 bg-white/4 transition-colors hover:bg-white/10"
+                      className="group flex aspect-square items-center justify-center rounded-[4px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
                     >
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]">

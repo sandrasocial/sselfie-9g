@@ -655,20 +655,20 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     <>
       {shouldShowActivationChecklist && (
         <div className="mx-auto w-full max-w-6xl px-4 pt-6">
-          <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-5 backdrop-blur-2xl">
+          <div className="rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] px-5 py-5 backdrop-blur-2xl">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="font-['Cormorant_Garamond'] text-xl font-light tracking-[0.14em] uppercase text-white">
+                <h3 className="font-['Cormorant_Garamond'] text-xl font-light tracking-[0.14em] uppercase text-[color:var(--app-text-primary)]">
                   {activationCardCopy.title}
                 </h3>
-                <p className="mt-2 text-sm text-white/65">
+                <p className="mt-2 text-sm text-[color:var(--app-text-secondary)]">
                   {activationCardCopy.subtitle}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleActivationContinue}
-                className="h-11 min-w-[160px] rounded-full border border-white/25 bg-white/10 px-6 text-xs font-medium tracking-[0.22em] uppercase text-white transition-colors hover:bg-white/15"
+                className="h-11 min-w-[160px] rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 text-xs font-medium tracking-[0.22em] uppercase text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90"
               >
                 {activationCardCopy.cta}
               </button>
