@@ -809,7 +809,8 @@ export function SuccessContent({
         return
       }
 
-      window.location.reload()
+      // Redirect directly to the product — session is now active in cookies
+      router.push(successAction.href)
     } catch {
       setError("Something went wrong. Please try again.")
       setIsSubmitting(false)
@@ -967,7 +968,9 @@ export function SuccessContent({
               LET&apos;S GET YOU STARTED
             </h1>
             <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
-              Add your password so you can open everything inside SSELFIE. This takes less than a minute.
+              {resolvedProductType === "visibility_suite"
+                ? "Your purchase is ready. Create your password so you can access your Visibility To Paid Suite anytime."
+                : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
             </p>
           </div>
 
@@ -1056,7 +1059,11 @@ export function SuccessContent({
                 disabled={isSubmitting}
                 className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {isSubmitting ? "SETTING UP..." : "LET'S GO"}
+                {isSubmitting
+                  ? "SETTING UP..."
+                  : resolvedProductType === "visibility_suite"
+                    ? "CREATE PASSWORD AND OPEN MY SUITE"
+                    : "LET'S GO"}
               </button>
 
               <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light text-center leading-relaxed">
@@ -1274,11 +1281,16 @@ export function SuccessContent({
                       source_product: resolvedProductType,
                     })
                   }
-                  router.push(successAction.href)
+                  if (!isAuthenticated && userInfo?.hasAccount) {
+                    // Account exists but not logged in in this browser — send to login with returnTo
+                    router.push(`/auth/login?redirect=${encodeURIComponent(successAction.href)}`)
+                  } else {
+                    router.push(successAction.href)
+                  }
                 }}
                 className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
               >
-                {successAction.label}
+                {!isAuthenticated && userInfo?.hasAccount ? "Log in to open your products" : successAction.label}
               </button>
               {successAction.secondaryHref && successAction.secondaryLabel ? (
                 <div className="mt-4">

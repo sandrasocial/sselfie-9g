@@ -558,6 +558,9 @@ export async function POST(request: NextRequest) {
           let referralPurchaseUserId = userId || null
           const credits = Number.parseInt(session.metadata.credits || "0")
           const productType = session.metadata.product_type
+          // Tracked outside user-creation block so delivery email can include setup link for new users
+          let isNewUserForEmail = false
+          let purchasePasswordSetupLink = ""
           const customerEmail = session.customer_details?.email || session.customer_email
           const source = session.metadata.source
           const isPublicPaidCheckoutSource =
@@ -963,12 +966,19 @@ export async function POST(request: NextRequest) {
                   )
 
                   console.log(`[v0] Step 4: Generating password reset link...`)
+                  // Include product-specific returnTo so user lands on their purchased product after setup
+                  const productSetupNext =
+                    productType === "visibility_suite" ? "/academy/access/visibility-suite" :
+                    productType === "starter_kit" ? "/academy/access/starter-kit" :
+                    productType === "masterclass" ? "/academy/access/brand-strategy" :
+                    productType === "selfie_guide" || productType === "selfie_guide_bundle" ? "/selfie-guide" :
+                    "/studio"
                   const { data: resetData, error: resetError } =
                     await supabaseAdmin.auth.admin.generateLink({
                       type: "recovery",
                       email: customerEmail,
                       options: {
-                        redirectTo: `${productionUrl}/auth/setup-password`,
+                        redirectTo: `${productionUrl}/auth/setup-password?next=${encodeURIComponent(productSetupNext)}`,
                       },
                     })
 
@@ -988,7 +998,7 @@ export async function POST(request: NextRequest) {
                   console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
 
                   await sql`
-                    UPDATE users 
+                    UPDATE users
                     SET password_setup_complete = FALSE
                     WHERE id = ${userId}
                   `
@@ -1005,9 +1015,13 @@ export async function POST(request: NextRequest) {
                     const type = url.searchParams.get("type") || "recovery"
 
                     if (token) {
-                      passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                      passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=${encodeURIComponent(`/auth/setup-password?next=${encodeURIComponent(productSetupNext)}`)}`
                     }
                   }
+
+                  // Expose to outer scope so delivery email can include the setup link for new users
+                  isNewUserForEmail = true
+                  purchasePasswordSetupLink = passwordSetupLink
 
                   console.log(`[v0] Step 7: Generated password setup link`)
 
@@ -1294,13 +1308,22 @@ export async function POST(request: NextRequest) {
                 ? `\n\nNext step when you're ready: ${upsell.name} (${upsell.price}).`
                 : ""
 
+              // For new users: include a password setup CTA so they can access their product
+              // For returning users: link directly to the product (they're already set up)
+              const suiteAccessCtaText = isNewUserForEmail && purchasePasswordSetupLink
+                ? `Create your password and open your Suite:\n${purchasePasswordSetupLink}\n\nAlready have a password? Log in here:\n${suiteAccessUrl}`
+                : `Open your Visibility To Paid Path:\n${suiteAccessUrl}`
+              const suiteAccessCtaHtml = isNewUserForEmail && purchasePasswordSetupLink
+                ? `<p><a href="${purchasePasswordSetupLink}"><strong>Create password and open your Suite</strong></a></p><p>If you already have a password, <a href="${suiteAccessUrl}">log in here</a>.</p>`
+                : `<p><a href="${suiteAccessUrl}">Open your Visibility To Paid Path</a></p>`
+
               const emailText =
                 productId === "visibility_suite"
-                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Maya Visibility Plan\n\nOpen your Visibility To Paid Path:\n${suiteAccessUrl}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
+                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Maya Visibility Plan\n\n${suiteAccessCtaText}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
                   : `Hey ${firstName},\n\nYou just got ${productName}. I'm so glad you did this for yourself.\n\nStart here: ${academyAccessUrl}${upsellLine}\n\n— Sandra`
               const emailHtml =
                 productId === "visibility_suite"
-                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Maya Visibility Plan</li></ul><p><a href="${suiteAccessUrl}">Open your Visibility To Paid Path</a></p><p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
+                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Maya Visibility Plan</li></ul>${suiteAccessCtaHtml}<p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
                   : `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong>. I'm so glad you did this for yourself.</p><p><a href="${academyAccessUrl}">Start here</a></p>${upsell ? `<p>Next step when you're ready: <strong>${upsell.name}</strong> (${upsell.price}).</p>` : ""}<p>— Sandra</p>`
 
               await sendEmail({
