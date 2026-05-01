@@ -1307,7 +1307,7 @@ export function SuccessContent({
                   }
                   if (!isAuthenticated && userInfo?.hasAccount) {
                     // Account exists but not logged in in this browser — send to login with returnTo
-                    router.push(`/auth/login?redirect=${encodeURIComponent(successAction.href)}`)
+                    router.push(`/auth/login?returnTo=${encodeURIComponent(successAction.href)}`)
                   } else {
                     router.push(successAction.href)
                   }

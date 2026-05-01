@@ -15,7 +15,7 @@ describe("post-purchase account setup flow", () => {
 
     // When hasAccount=true but !isAuthenticated, CTA must route to login with redirect param
     expect(successContent).toContain("!isAuthenticated && userInfo?.hasAccount")
-    expect(successContent).toContain("/auth/login?redirect=")
+    expect(successContent).toContain("/auth/login?returnTo=")
     expect(successContent).toContain("encodeURIComponent(successAction.href)")
     expect(successContent).toContain("Log in to open your products")
   })
