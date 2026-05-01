@@ -32,7 +32,9 @@ export async function GET(request: Request) {
 
       if (isPasswordRecovery) {
         console.log("[v0] 🔐 Password recovery detected, redirecting to setup-password")
-        return NextResponse.redirect(`${origin}/auth/setup-password`)
+        const nextParam = requestUrl.searchParams.get("next") ?? ""
+        const nextSuffix = nextParam ? `?next=${encodeURIComponent(nextParam)}` : ""
+        return NextResponse.redirect(`${origin}/auth/setup-password${nextSuffix}`)
       }
 
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
