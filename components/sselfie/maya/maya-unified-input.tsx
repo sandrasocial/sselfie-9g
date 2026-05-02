@@ -165,15 +165,17 @@ export default function MayaUnifiedInput({
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
   }
 
+  const canSend = Boolean(inputValue.trim() || uploadedImage) && !isLoading && !isUploadingImage && !disabled
+
   const inputContainerClass =
-    "w-full overflow-hidden rounded-[12px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] backdrop-blur-[20px] shadow-[var(--app-shadow-soft)] p-2.5 sm:p-4"
+    "w-full overflow-hidden rounded-[16px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] shadow-[var(--app-shadow-soft)] p-2.5 sm:p-4"
   const inputContainerStyle = {
-    borderTop: "1px solid var(--app-glass-border)",
+    borderTop: "1px solid var(--app-border)",
   }
   const inputWrapperClass = "w-full"
 
   const textareaClass =
-    "w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-transparent border border-transparent rounded-[8px] text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)] focus:border-[color:var(--app-focus-ring)] focus:bg-[color:var(--app-input-bg)] font-light text-[15px] sm:text-[16px] min-h-[44px] sm:min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    "w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-transparent border border-transparent rounded-[12px] text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)] focus:border-[color:var(--app-focus-ring)] focus:bg-[color:var(--app-input-bg)] font-light text-[15px] sm:text-[16px] min-h-[44px] sm:min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = {
     fontFamily: Typography.body.fontFamily,
@@ -184,25 +186,21 @@ export default function MayaUnifiedInput({
   }
 
   const secondaryToolbarButtonClass =
-    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
   }
 
   const sendButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[96px] h-10 sm:h-11 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] hover:opacity-90 text-[color:var(--app-btn-primary-text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-4"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[96px] h-10 sm:h-11 rounded-full border text-[10px] font-medium uppercase tracking-[0.18em] transition-[background-color,border-color,color,opacity,transform] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] disabled:cursor-not-allowed px-2.5 sm:px-4"
 
   const sendButtonStyle = {
     borderRadius: BorderRadius.button,
-    backgroundColor:
-      (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-        ? "var(--app-btn-secondary-bg)"
-        : "var(--app-btn-primary-bg)",
-    color:
-      (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-        ? "var(--app-text-secondary)"
-        : "var(--app-btn-primary-text)",
+    backgroundColor: canSend ? "var(--app-btn-primary-bg)" : "var(--app-surface)",
+    borderColor: canSend ? "var(--app-btn-primary-bg)" : "var(--app-border)",
+    color: canSend ? "var(--app-btn-primary-text)" : "var(--app-text-muted)",
+    opacity: canSend ? 1 : 0.82,
   }
 
   return (
@@ -218,7 +216,7 @@ export default function MayaUnifiedInput({
               <img
                 src={uploadedImage}
                 alt="Uploaded"
-                className={`${proMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-[rgba(195,190,182,0.25)] shadow-lg`}
+                className={`${proMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-[color:var(--app-border)] shadow-lg`}
                 style={proMode ? {
                   borderRadius: BorderRadius.image,
                   border: `1px solid ${Colors.border}`,
@@ -228,7 +226,7 @@ export default function MayaUnifiedInput({
                 <button
                   type="button"
                   onClick={onRemoveImage}
-                  className={`absolute -top-1 -right-1 w-6 h-6 bg-[#0d0c0b] text-[#f0ede8] rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
+                  className={`absolute -top-1 -right-1 w-6 h-6 bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
                     proMode ? '' : 'text-xs'
                   }`}
                   style={proMode ? {
@@ -250,7 +248,7 @@ export default function MayaUnifiedInput({
                 Image attached
               </span>
             ) : (
-              <p className="text-xs text-[#8a8780] mt-1 tracking-wide">Inspiration Image</p>
+              <p className="text-xs text-[color:var(--app-text-muted)] mt-1 tracking-wide">Inspiration Image</p>
             )}
           </div>
         )}
@@ -293,12 +291,13 @@ export default function MayaUnifiedInput({
             <button
               onClick={handleSubmit}
               className={sendButtonClass}
+              style={sendButtonStyle}
               disabled={isLoading || (!inputValue.trim() && !uploadedImage) || isUploadingImage || disabled}
               aria-label="Send message"
               type="button"
             >
               <span className="sm:hidden">Go</span>
-              <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+              <span className="hidden sm:inline">Send</span>
             </button>
           )}
 
@@ -316,7 +315,7 @@ export default function MayaUnifiedInput({
               ) : (
                 <>
                   <span className="sm:hidden">Go</span>
-                  <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+                  <span className="hidden sm:inline">Send</span>
                 </>
               )}
             </button>
@@ -325,7 +324,7 @@ export default function MayaUnifiedInput({
 
         {/* Image, Adjust, mode toggle, New chat — single toolbar row under the composer */}
         <div
-          className="mt-2 flex w-full min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide border-t border-[rgba(195,190,182,0.12)] pt-2"
+          className="mt-2 flex w-full min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide border-t border-[color:var(--app-border)] pt-2"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -352,14 +351,14 @@ export default function MayaUnifiedInput({
               proMode ? (
                 <LoadingSpinner size="sm" />
               ) : (
-                <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[color:var(--app-text-muted)] border-t-transparent rounded-full animate-spin" />
               )
             ) : (
               <span className="relative text-[10px] uppercase tracking-[0.14em] font-medium">
                 Image
                 {proMode && (
                   imageCount > 0 ? (
-                    <span className="absolute -right-4 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0d0c0b] px-1 text-[9px] leading-none text-[#f0ede8]">
+                    <span className="absolute -right-4 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--app-btn-primary-bg)] px-1 text-[9px] leading-none text-[color:var(--app-btn-primary-text)]">
                       {imageCount}
                     </span>
                   ) : (
@@ -415,7 +414,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onNewProject}
-                className="touch-manipulation active:scale-95 shrink-0 rounded-md border border-[rgba(195,190,182,0.28)] bg-[rgba(175,170,162,0.14)] px-2 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-2.5 hover:bg-[rgba(175,170,162,0.22)] transition-colors"
+                className="touch-manipulation active:scale-95 shrink-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] px-2.5 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-3 hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors"
                 style={{
                   fontFamily: "var(--font-body, Inter)",
                   fontSize: "9px",

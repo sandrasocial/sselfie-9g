@@ -604,7 +604,7 @@ export default function AcademyScreen() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   <div className="absolute inset-0 flex items-end p-4">
-                    <h3 className="text-left text-sm sm:text-base font-semibold uppercase tracking-wider text-white">
+                    <h3 className="text-left text-sm sm:text-base font-semibold uppercase tracking-wider text-[color:var(--color-porcelain)]">
                       {category.label}
                     </h3>
                   </div>
@@ -966,11 +966,11 @@ export default function AcademyScreen() {
       {showNavMenu && (
         <>
           <div
-            className="fixed inset-0 bg-[rgba(15,13,11,0.28)] backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--app-glass-border)] shadow-[0_30px_90px_rgba(61,56,48,0.18)] duration-300">
+          <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--app-glass-border)] shadow-[var(--app-shadow-soft)] duration-300">
             <div className="flex-shrink-0 flex items-center justify-between border-b border-[color:var(--app-glass-border)] px-6 py-4">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-[color:var(--app-text-primary)]">
                 Menu
@@ -1124,7 +1124,7 @@ export default function AcademyScreen() {
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(13,12,11,0.18)_0%,rgba(13,12,11,0.42)_100%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-obsidian)_18%,transparent)_0%,color-mix(in_srgb,var(--color-obsidian)_42%,transparent)_100%)]" />
             </div>
           </section>
 
@@ -1163,18 +1163,18 @@ export default function AcademyScreen() {
                           alt=""
                           className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                         />
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.06)_0%,rgba(15,13,11,0.82)_100%)]" />
-                        <div className="relative flex min-h-[260px] flex-col justify-end p-6 text-white">
-                          <span className="mb-4 w-fit rounded-[4px] border border-white/18 bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/78">
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-obsidian)_6%,transparent)_0%,color-mix(in_srgb,var(--color-obsidian)_82%,transparent)_100%)]" />
+                        <div className="relative flex min-h-[260px] flex-col justify-end p-6 text-[color:var(--color-porcelain)]">
+                          <span className="mb-4 w-fit rounded-[4px] border border-[color:var(--glass-border)] bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-[color:var(--color-whisper)]">
                             {visual?.label || "Product"}
                           </span>
-                          <h3 className="font-serif text-3xl leading-tight text-white">
+                          <h3 className="font-serif text-3xl leading-tight text-[color:var(--color-porcelain)]">
                             {product.name}
                           </h3>
-                          <p className="mt-2 max-w-sm text-sm leading-6 text-white/74">
+                          <p className="mt-2 max-w-sm text-sm leading-6 text-[color:var(--color-whisper)]">
                             {copy.subText}
                           </p>
-                          <span className="mt-5 text-[11px] uppercase tracking-[0.22em] text-white">
+                          <span className="mt-5 text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-porcelain)]">
                             {copy.ctaLabel} →
                           </span>
                         </div>
@@ -1226,7 +1226,7 @@ export default function AcademyScreen() {
                             alt=""
                             className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                           />
-                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(15,13,11,0.18)_100%)]" />
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-obsidian)_18%,transparent)_100%)]" />
                         </div>
                         <div className="flex flex-col justify-between p-6">
                           <div>
@@ -1280,13 +1280,13 @@ export default function AcademyScreen() {
                         alt=""
                         className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                       />
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,13,11,0.10)_0%,rgba(15,13,11,0.84)_100%)]" />
-                      <div className="relative flex min-h-[240px] flex-col justify-end p-5 text-white">
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-obsidian)_10%,transparent)_0%,color-mix(in_srgb,var(--color-obsidian)_84%,transparent)_100%)]" />
+                      <div className="relative flex min-h-[240px] flex-col justify-end p-5 text-[color:var(--color-porcelain)]">
                         <h3 className="font-serif text-2xl leading-tight">{resource.title}</h3>
-                        <p className="mt-2 text-sm leading-6 text-white/72">
+                        <p className="mt-2 text-sm leading-6 text-[color:var(--color-whisper)]">
                           {resource.description}
                         </p>
-                        <span className="mt-5 text-[10px] uppercase tracking-[0.22em] text-white">
+                        <span className="mt-5 text-[10px] uppercase tracking-[0.22em] text-[color:var(--color-porcelain)]">
                           {resource.cta} →
                         </span>
                       </div>

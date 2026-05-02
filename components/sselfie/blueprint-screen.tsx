@@ -366,7 +366,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
               setIsLoading(true)
               mutateBlueprint()
             }}
-            className="px-4 py-2 bg-stone-950 text-white text-xs uppercase tracking-wider hover:bg-stone-800 transition-colors"
+            className="px-4 py-2 bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] text-xs uppercase tracking-wider hover:bg-stone-800 transition-colors"
           >
             Retry
           </button>
@@ -614,7 +614,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
               variant="outline"
               size="sm"
               onClick={() => setShowEditWizard(true)}
-              className="bg-white border border-stone-300 hover:bg-stone-50 text-stone-950 text-xs uppercase tracking-wider gap-2"
+              className="bg-[color:var(--app-elevated)] border border-[color:var(--app-input-border)] hover:bg-[color:var(--app-surface)] text-[color:var(--app-text-primary)] text-xs uppercase tracking-wider gap-2"
             >
               <Edit size={14} />
               Edit Answers
@@ -817,7 +817,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {getContentCalendar()[`week${selectedCalendarWeek}` as keyof ReturnType<typeof getContentCalendar>].map(
                           (post) => (
-                            <div key={post.day} className="bg-white border border-stone-200 p-4 sm:p-6 rounded-lg">
+                            <div key={post.day} className="bg-[color:var(--app-elevated)] border border-[color:var(--app-glass-border)] p-4 sm:p-6 rounded-lg">
                               <div className="flex items-center justify-between mb-2 sm:mb-3">
                                 <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-500">
                                   Day {post.day}
@@ -872,7 +872,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               {templates.map((template) => (
-                                <div key={template.id} className="bg-white border border-stone-200 p-4 rounded-lg">
+                                <div key={template.id} className="bg-[color:var(--app-elevated)] border border-[color:var(--app-glass-border)] p-4 rounded-lg">
                                   <div className="flex items-center justify-between mb-3">
                                     <h5 className="text-xs font-medium tracking-wide text-stone-950">
                                       {template.title}

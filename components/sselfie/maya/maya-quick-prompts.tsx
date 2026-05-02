@@ -38,6 +38,8 @@ export default function MayaQuickPrompts({
   isEmpty = false,
   uploadedImage = null,
 }: MayaQuickPromptsProps) {
+  const [expanded, setExpanded] = useState(false)
+
   if (!prompts || prompts.length === 0) {
     return null
   }
@@ -60,7 +62,7 @@ export default function MayaQuickPrompts({
             </button>
           ))}
         </div>
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[rgba(237,233,226,0.95)] to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[color-mix(in_srgb,var(--color-porcelain)_95%,transparent)] to-transparent" />
       </div>
     )
   }
@@ -74,7 +76,6 @@ export default function MayaQuickPrompts({
 
   if (variant === "empty-state") {
     const INITIAL = 4
-    const [expanded, setExpanded] = useState(false)
     const visible = expanded ? prompts : prompts.slice(0, INITIAL)
     const hasMore = prompts.length > INITIAL
 

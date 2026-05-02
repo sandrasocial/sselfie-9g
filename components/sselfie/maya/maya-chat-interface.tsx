@@ -678,10 +678,10 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
   return (
     <div
       key={partIndex}
-      className="mt-3 rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] p-4 shadow-[0_18px_50px_rgba(61,56,48,0.08)]"
+      className="mt-3 rounded-[16px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] p-4 shadow-[0_12px_36px_rgba(10,10,10,0.06)]"
     >
       <div className="text-xs uppercase tracking-[0.2em] text-(--text-secondary)">Maya capabilities</div>
-      <p className="mt-2 text-sm text-(--color-whisper)">
+      <p className="mt-2 text-sm text-[color:var(--app-text-secondary)]">
         Pick a workflow and I&apos;ll run it here in chat.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -690,7 +690,7 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
             key={item.title}
             type="button"
             onClick={() => ctx.onToolPromptSelect?.(item.prompt)}
-            className="rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-3 text-left transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+            className="rounded-[12px] border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-3 text-left transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[color:var(--app-btn-secondary-hover)]"
           >
             <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">{item.title}</div>
             <div className="mt-1 text-xs text-(--text-accent)">{item.description}</div>
@@ -892,25 +892,25 @@ Important:
                   alt="Gallery"
                   className="h-full w-full object-cover"
                 />
-                  <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.34)] opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="rounded-full bg-[rgba(244,240,230,0.92)] px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#0d0c0b]">
+                  <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--color-obsidian)_34%,transparent)] opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="rounded-full bg-[color:var(--app-elevated)] px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[color:var(--app-text-primary)]">
                       Use Style
                     </span>
                   </div>
                 </div>
               </button>
-              <div className="grid grid-cols-2 border-t border-[rgba(195,190,182,0.12)]">
+              <div className="grid grid-cols-2 border-t border-[color:var(--app-border)]">
                 <button
                   type="button"
                   onClick={() => selectGalleryImage(image, "style")}
-                  className="border-r border-[rgba(195,190,182,0.12)] px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+                  className="border-r border-[color:var(--app-border)] px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
                 >
                   Recreate
                 </button>
                 <button
                   type="button"
                   onClick={() => selectGalleryImage(image, "feed")}
-                  className="px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+                  className="px-2 py-2 text-[9px] font-medium uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
                 >
                   Plan With This
                 </button>
@@ -1004,7 +1004,7 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
       subtitle={sourceSubtitle}
     >
       {selectedSource !== "choose_source" && selectedOption ? (
-        <div className="stone-inset-panel rounded-[20px] border border-[rgba(240,237,232,0.16)] bg-[rgba(240,237,232,0.12)] px-4 py-3">
+        <div className="stone-inset-panel rounded-[20px] border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-bg-mid)] px-4 py-3">
           <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">
             {selectedOption.label} selected
           </div>
@@ -1021,8 +1021,8 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
                 onClick={() => ctx.onToolSelectGenerationSource?.(messageId, option.id)}
                 className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                   isSelected
-                    ? "border-[rgba(240,237,232,0.18)] bg-[rgba(240,237,232,0.14)]"
-                    : "stone-inset-panel hover:bg-[rgba(175,170,162,0.16)]"
+                    ? "border-[color:var(--app-text-primary)] bg-[color:var(--app-surface)]"
+                    : "stone-inset-panel hover:bg-[color:var(--app-btn-secondary-hover)]"
                 }`}
               >
                 <div className="text-[11px] uppercase tracking-[0.16em] text-(--text-primary)">{option.label}</div>
@@ -1482,7 +1482,7 @@ function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): R
           category: image.category || "",
         })
       }
-      className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] hover:border-[rgba(195,190,182,0.40)]"
+      className="overflow-hidden rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] hover:border-[color:var(--app-text-muted)]"
     >
       <img
         src={imageUrl}
@@ -1499,8 +1499,8 @@ function renderVideoImageButton(image: any, imageIndex: number, ctx: ToolCtx): R
 
 function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
   return (
-    <div className="mt-3 rounded-lg border border-(--glass-input-border) bg-[rgba(28,27,25,0.30)] p-3">
-      <p className="text-xs text-(--color-whisper)">
+    <div className="mt-3 rounded-[16px] border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
+      <p className="text-xs text-[color:var(--app-text-secondary)]">
         You don&apos;t have a photo here yet. Make one first, then I can animate it.
       </p>
       <button
@@ -1512,14 +1512,14 @@ function renderVideoNoImages(ctx: ToolCtx): React.ReactNode {
           }
           ctx.onToolPromptSelect?.("Create a photo for my brand")
         }}
-        className="mt-2 rounded-lg border border-(--glass-border) bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary) transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.22)]"
+        className="mt-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[color:var(--app-btn-secondary-hover)]"
       >
         {ctx.activeTab === "videos" ? "Go to Photos" : "Create Photo First"}
       </button>
       <button
         type="button"
         onClick={() => ctx.onToolOpenUploadZone?.("selfies")}
-        className="mt-2 ml-2 rounded-lg border border-(--glass-border) bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-(--text-primary) transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[rgba(175,170,162,0.22)]"
+        className="mt-2 ml-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] transition-[background-color,border-color] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] hover:bg-[color:var(--app-btn-secondary-hover)]"
       >
         Upload Reference
       </button>
@@ -1689,8 +1689,8 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
       <div
         className={`rounded-xl transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
           msg.role === "user"
-            ? "bg-[rgba(15,13,11,0.08)] backdrop-blur-sm border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.08)]"
-            : "bg-[rgba(255,255,255,0.72)] backdrop-blur-sm border border-[color:var(--app-glass-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.06)]"
+            ? "bg-[color:var(--app-surface)] border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_36px_rgba(10,10,10,0.06)]"
+            : "bg-[color:var(--app-elevated)] border border-[color:var(--app-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_36px_rgba(10,10,10,0.06)]"
         }`}
         role={msg.role === "assistant" ? "article" : undefined}
       >
@@ -1712,8 +1712,8 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
         <div
           className={`transition-[background-color,border-color,box-shadow] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] ${
             msg.role === "user"
-              ? "bg-[rgba(15,13,11,0.08)] backdrop-blur-sm border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.08)]"
-              : "bg-[rgba(255,255,255,0.72)] backdrop-blur-sm border border-[color:var(--app-glass-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_30px_rgba(61,56,48,0.06)]"
+              ? "bg-[color:var(--app-surface)] border border-[color:var(--app-border)] rounded-[16px] rounded-tr-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_36px_rgba(10,10,10,0.06)]"
+              : "bg-[color:var(--app-elevated)] border border-[color:var(--app-border)] rounded-[16px] rounded-tl-[4px] text-[color:var(--app-text-primary)] px-4 py-3 shadow-[0_12px_36px_rgba(10,10,10,0.06)]"
           }`}
           role={msg.role === "assistant" ? "article" : undefined}
         >
@@ -2053,16 +2053,16 @@ export default function MayaChatInterface({
 
         {isTyping && !isCreatingFeed && (
           <div className="flex justify-start">
-            <div className="rounded-[16px] rounded-tl-[4px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-3 text-[color:var(--app-text-primary)] backdrop-blur-sm max-w-[85%] shadow-[0_12px_30px_rgba(61,56,48,0.06)]">
+            <div className="rounded-[16px] rounded-tl-[4px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] p-3 text-[color:var(--app-text-primary)] max-w-[85%] shadow-[0_12px_36px_rgba(10,10,10,0.06)]">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"></div>
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[color:var(--app-text-muted)]"></div>
                   <div
-                    className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"
+                    className="w-1.5 h-1.5 rounded-full animate-bounce bg-[color:var(--app-text-muted)]"
                     style={{ animationDelay: "0.2s" }}
                   ></div>
                   <div
-                    className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"
+                    className="w-1.5 h-1.5 rounded-full animate-bounce bg-[color:var(--app-text-muted)]"
                     style={{ animationDelay: "0.4s" }}
                   ></div>
                 </div>
@@ -2107,7 +2107,7 @@ export default function MayaChatInterface({
             isAtBottomRef.current = true
             scrollToBottom("smooth")
           }}
-          className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-(--glass-border) bg-[rgba(175,170,162,0.18)] backdrop-blur-[var(--blur-light)] text-(--text-primary) hover:bg-[rgba(175,170,162,0.28)] transition-[background-color,border-color,transform,opacity] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] flex items-center justify-center touch-manipulation active:scale-95"
+          className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-surface)] transition-[background-color,border-color,transform,opacity] duration-[var(--duration-ui)] ease-[var(--ease-out-ui)] flex items-center justify-center touch-manipulation active:scale-95 shadow-[0_12px_36px_rgba(10,10,10,0.08)]"
           aria-label="Scroll to bottom"
         >
           <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Latest</span>

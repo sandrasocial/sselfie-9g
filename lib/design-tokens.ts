@@ -1,10 +1,11 @@
 /**
  * SSELFIE Design Tokens
  *
- * Dark glass design primitives aligned to the current app chrome.
+ * Workbook-first design primitives aligned to docs/brand/DESIGN_SYSTEM.md.
  *
- * On near-black surfaces (#0a0a0a–#0d0c0b), prefer white / porcelain for body copy — avoid mid-gray text
- * (e.g. #666, #8a8780) which fails contrast.
+ * Product UI stays rounded and cool-toned: white, pearl, obsidian, smoke,
+ * whisper, and stone gray. Legacy glass names remain for compatibility, but
+ * should resolve to subtle material surfaces instead of legacy beige styling.
  */
 
 const cardClass = [
@@ -13,16 +14,16 @@ const cardClass = [
   "sm:rounded-3xl",
   "p-4",
   "sm:p-6",
-  "text-[color:var(--color-porcelain)]",
+  "text-[color:var(--app-text-primary)]",
 ].join(" ")
 
 const buttonPrimaryClass = [
-  "bg-[color:var(--color-whisper)]",
-  "text-[color:var(--color-obsidian)]",
+  "bg-[color:var(--app-btn-primary-bg)]",
+  "text-[color:var(--app-btn-primary-text)]",
   "rounded-full",
   "border",
-  "border-[color:var(--glass-border)]",
-  "shadow-[0_12px_32px_rgba(0,0,0,0.18)]",
+  "border-[color:var(--app-btn-primary-bg)]",
+  "shadow-[0_10px_28px_rgba(10,10,10,0.14)]",
   "px-6",
   "sm:px-8",
   "py-3",
@@ -30,12 +31,11 @@ const buttonPrimaryClass = [
   "text-xs",
   "font-medium",
   "uppercase",
-  "tracking-[0.15em]",
-  "transition-all",
+  "tracking-[0.12em]",
+  "transition-colors",
   "duration-200",
-  "hover:bg-[color:var(--color-porcelain)]",
-  "hover:scale-[1.02]",
-  "active:scale-[0.98]",
+  "hover:bg-[color:var(--stone-dark)]",
+  "active:bg-[color:var(--color-obsidian)]",
 ].join(" ")
 
 const containerClass = [
@@ -45,26 +45,29 @@ const containerClass = [
 ].join(" ")
 
 export const COLORS = {
-  obsidian: "#0d0c0b",
-  surface: "#1c1b19",
-  elevated: "#2e2c29",
-  porcelain: "#f0ede8",
-  whisper: "#c8c4bb",
-  accent: "#a8a49c",
-  smoke: "#8a8780",
+  obsidian: "#0a0a0a",
+  surface: "#f5f5f5",
+  elevated: "#ffffff",
+  porcelain: "#ffffff",
+  pearl: "#f5f5f5",
+  whisper: "#e5e5e5",
+  accent: "#8a8780",
+  smoke: "#666666",
+  stoneDark: "#2c2b29",
+  stoneSoft: "#d4d1cc",
 } as const
 
 export const GLASS = {
-  cardBg: "rgba(175,170,162,0.10)",
-  cardBgStrong: "rgba(175,170,162,0.18)",
-  cardBgSoft: "rgba(175,170,162,0.08)",
-  overlayBg: "rgba(28,27,25,0.96)",
-  cardBorder: "rgba(195,190,182,0.25)",
-  cardBorderSubtle: "rgba(195,190,182,0.15)",
-  cardBorderStrong: "rgba(195,190,182,0.40)",
-  blur: "50px",
-  blurHeavy: "70px",
-  radius: "20px",
+  cardBg: "rgba(255,255,255,0.76)",
+  cardBgStrong: "rgba(245,245,245,0.92)",
+  cardBgSoft: "rgba(10,10,10,0.035)",
+  overlayBg: "rgba(10,10,10,0.96)",
+  cardBorder: "#e5e5e5",
+  cardBorderSubtle: "rgba(10,10,10,0.10)",
+  cardBorderStrong: "rgba(10,10,10,0.18)",
+  blur: "28px",
+  blurHeavy: "42px",
+  radius: "16px",
 } as const
 
 export const TYPOGRAPHY = {
@@ -99,17 +102,17 @@ export const DesignTokens = {
     sm: "0.5rem",
     md: "0.75rem",
     lg: "1rem",
-    xl: "1.5rem",
-    "2xl": "2rem",
+    xl: "1.25rem",
+    "2xl": "1.5rem",
     full: "9999px",
   },
   shadows: {
     sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-    md: "0 4px 6px -1px rgb(0 0 0 / 0.12)",
-    lg: "0 10px 20px -6px rgb(0 0 0 / 0.18)",
-    xl: "0 24px 80px rgb(0 0 0 / 0.28)",
-    "2xl": "0 36px 120px rgb(0 0 0 / 0.32)",
-    inner: "inset 0 1px 0 rgb(255 255 255 / 0.04)",
+    md: "0 8px 24px -12px rgb(10 10 10 / 0.16)",
+    lg: "0 18px 48px -24px rgb(10 10 10 / 0.18)",
+    xl: "0 24px 70px rgb(10 10 10 / 0.10)",
+    "2xl": "0 36px 96px rgb(10 10 10 / 0.12)",
+    inner: "inset 0 1px 0 rgb(255 255 255 / 0.72)",
   },
 } as const
 
@@ -154,34 +157,34 @@ export const DesignClasses = {
   },
 
   shadows: {
-    card: "shadow-[0_24px_80px_rgba(0,0,0,0.28)]",
-    cardHover: "hover:shadow-[0_28px_96px_rgba(0,0,0,0.34)]",
-    button: "shadow-[0_12px_32px_rgba(0,0,0,0.18)]",
-    buttonHover: "hover:shadow-[0_16px_40px_rgba(0,0,0,0.24)]",
-    inner: "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
-    container: "shadow-[0_30px_120px_rgba(0,0,0,0.32)]",
+    card: "shadow-[0_24px_70px_rgba(10,10,10,0.10)]",
+    cardHover: "hover:shadow-[0_28px_84px_rgba(10,10,10,0.14)]",
+    button: "shadow-[0_10px_28px_rgba(10,10,10,0.14)]",
+    buttonHover: "hover:shadow-[0_14px_34px_rgba(10,10,10,0.18)]",
+    inner: "shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
+    container: "shadow-[0_30px_90px_rgba(10,10,10,0.12)]",
   },
 
   background: {
-    primary: "bg-[color:var(--glass-bg)]",
-    secondary: "bg-[color:var(--glass-bg-mid)]",
-    tertiary: "bg-[color:var(--glass-input-bg)]",
-    overlay: "bg-[rgba(28,27,25,0.96)]",
+    primary: "bg-[color:var(--app-bg)]",
+    secondary: "bg-[color:var(--app-surface)]",
+    tertiary: "bg-[color:var(--app-input-bg)]",
+    overlay: "bg-[rgba(10,10,10,0.96)]",
     glass: "bg-[color:var(--app-bg-glass)]",
   },
 
   border: {
-    light: "border-[color:var(--glass-border-subtle)]",
-    medium: "border-[color:var(--glass-border)]",
-    strong: "border-[rgba(195,190,182,0.40)]",
-    stone: "border-[color:var(--glass-divider)]",
+    light: "border-[color:var(--app-glass-border)]",
+    medium: "border-[color:var(--app-border)]",
+    strong: "border-[rgba(10,10,10,0.18)]",
+    stone: "border-[color:var(--color-whisper)]",
   },
 
   text: {
-    primary: "text-[color:var(--color-porcelain)]",
-    secondary: "text-[color:var(--color-whisper)]",
-    tertiary: "text-[color:var(--color-smoke)]",
-    muted: "text-[color:var(--text-accent)]",
+    primary: "text-[color:var(--app-text-primary)]",
+    secondary: "text-[color:var(--app-text-secondary)]",
+    tertiary: "text-[color:var(--app-text-muted)]",
+    muted: "text-[color:var(--app-text-muted)]",
   },
 
   typography: {

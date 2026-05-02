@@ -188,12 +188,12 @@ export default function FeedPublishingHub({
   const postedCount = Object.values(postedStatus).filter(Boolean).length
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[color:var(--app-bg)]">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-10">
+      <div className="bg-[color:var(--app-elevated)] border-b border-[color:var(--app-glass-border)] sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-stone-950">Your Feed Preview</h1>
+            <h1 className="text-xl font-semibold text-[color:var(--app-text-primary)]">Your Feed Preview</h1>
             <Button variant="ghost" size="sm" className="gap-2">
               <Share2 size={16} />
               Share
@@ -209,9 +209,9 @@ export default function FeedPublishingHub({
             {/* Profile Picture with Instagram gradient ring */}
             <div className="relative">
               <div className="w-[150px] h-[150px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[3px]">
-                <div className="w-full h-full rounded-full bg-white p-[3px]">
-                  <div className="w-full h-full rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-                    <User size={48} className="text-stone-600" />
+                <div className="w-full h-full rounded-full bg-[color:var(--color-porcelain)] p-[3px]">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-[color:var(--color-whisper)] to-[color:var(--stone-200)] flex items-center justify-center">
+                    <User size={48} className="text-[color:var(--app-text-secondary)]" />
                   </div>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function FeedPublishingHub({
             {/* Stats and Actions */}
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-xl text-stone-950">@{username}</h2>
+                <h2 className="text-xl text-[color:var(--app-text-primary)]">@{username}</h2>
                 <Button variant="outline" size="sm" className="rounded-lg px-6 font-semibold bg-transparent">
                   Edit profile
                 </Button>
@@ -232,15 +232,15 @@ export default function FeedPublishingHub({
               {/* Stats */}
               <div className="flex gap-10 mb-6">
                 <button className="hover:opacity-70 transition-opacity">
-                  <span className="font-semibold text-stone-950">9</span> <span className="text-stone-950">posts</span>
+                  <span className="font-semibold text-[color:var(--app-text-primary)]">9</span> <span className="text-[color:var(--app-text-primary)]">posts</span>
                 </button>
                 <button className="hover:opacity-70 transition-opacity">
-                  <span className="font-semibold text-stone-950">-</span>{" "}
-                  <span className="text-stone-950">followers</span>
+                  <span className="font-semibold text-[color:var(--app-text-primary)]">-</span>{" "}
+                  <span className="text-[color:var(--app-text-primary)]">followers</span>
                 </button>
                 <button className="hover:opacity-70 transition-opacity">
-                  <span className="font-semibold text-stone-950">-</span>{" "}
-                  <span className="text-stone-950">following</span>
+                  <span className="font-semibold text-[color:var(--app-text-primary)]">-</span>{" "}
+                  <span className="text-[color:var(--app-text-primary)]">following</span>
                 </button>
               </div>
             </div>
@@ -250,11 +250,11 @@ export default function FeedPublishingHub({
           {bio && (
             <div className="mb-6 max-w-[600px]">
               <div className="mb-2">
-                <p className="text-sm font-semibold text-stone-950">{brandName}</p>
+                <p className="text-sm font-semibold text-[color:var(--app-text-primary)]">{brandName}</p>
               </div>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <p className="text-sm text-stone-950 whitespace-pre-wrap leading-relaxed">{bio.bio_text}</p>
+                  <p className="text-sm text-[color:var(--app-text-primary)] whitespace-pre-wrap leading-relaxed">{bio.bio_text}</p>
                 </div>
                 <Button
                   size="sm"
@@ -275,13 +275,13 @@ export default function FeedPublishingHub({
                 {highlights.map((highlight) => (
                   <button key={highlight.id} className="flex flex-col items-center gap-2 min-w-[80px] group">
                     <div className="w-[77px] h-[77px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                      <div className="w-full h-full rounded-full bg-white p-[3px]">
-                        <div className="w-full h-full rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center group-hover:opacity-80 transition-opacity">
-                          <ImageIcon size={24} className="text-stone-600" />
+                      <div className="w-full h-full rounded-full bg-[color:var(--color-porcelain)] p-[3px]">
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-[color:var(--color-whisper)] to-[color:var(--stone-200)] flex items-center justify-center group-hover:opacity-80 transition-opacity">
+                          <ImageIcon size={24} className="text-[color:var(--app-text-secondary)]" />
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs text-stone-950 text-center leading-tight max-w-[80px] truncate">
+                    <span className="text-xs text-[color:var(--app-text-primary)] text-center leading-tight max-w-[80px] truncate">
                       {highlight.title}
                     </span>
                   </button>
@@ -292,11 +292,11 @@ export default function FeedPublishingHub({
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-t border-stone-200">
+        <div className="border-t border-[color:var(--app-glass-border)]">
           <div className="flex justify-center">
             <button className="flex items-center justify-center gap-2 px-4 py-3 border-t border-stone-950 -mt-[1px]">
-              <Grid3x3 size={12} className="text-stone-950" />
-              <span className="text-xs font-semibold text-stone-950 uppercase tracking-widest">Posts</span>
+              <Grid3x3 size={12} className="text-[color:var(--app-text-primary)]" />
+              <span className="text-xs font-semibold text-[color:var(--app-text-primary)] uppercase tracking-widest">Posts</span>
             </button>
           </div>
         </div>
@@ -306,7 +306,7 @@ export default function FeedPublishingHub({
             <button
               key={post.id}
               onClick={() => setSelectedPost(post)}
-              className="aspect-square relative group overflow-hidden bg-stone-100"
+              className="aspect-square relative group overflow-hidden bg-[color:var(--app-surface)]"
             >
               {post.image_url ? (
                 <>
@@ -317,25 +317,25 @@ export default function FeedPublishingHub({
                   />
                   {/* Instagram hover overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-6">
-                    <div className="flex items-center gap-2 text-white font-semibold">
+                    <div className="flex items-center gap-2 text-[color:var(--color-porcelain)] font-semibold">
                       <Heart size={20} fill="white" />
                       <span>-</span>
                     </div>
-                    <div className="flex items-center gap-2 text-white font-semibold">
+                    <div className="flex items-center gap-2 text-[color:var(--color-porcelain)] font-semibold">
                       <MessageCircle size={20} fill="white" />
                       <span>-</span>
                     </div>
                   </div>
                   {postedStatus[post.id] && (
                     <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                      <Check size={14} className="text-white" strokeWidth={3} />
+                      <Check size={14} className="text-[color:var(--color-porcelain)]" strokeWidth={3} />
                     </div>
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-stone-50">
-                  <ImageIcon size={24} className="text-stone-400 mb-2" />
-                  <span className="text-xs text-stone-500 text-center">{post.title}</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[color:var(--app-surface)]">
+                  <ImageIcon size={24} className="text-[color:var(--app-text-muted)] mb-2" />
+                  <span className="text-xs text-[color:var(--app-text-muted)] text-center">{post.title}</span>
                 </div>
               )}
             </button>
@@ -344,20 +344,20 @@ export default function FeedPublishingHub({
 
         {/* Progress Tracker */}
         <div className="px-4 py-8">
-          <div className="bg-gradient-to-br from-stone-50 to-white rounded-xl p-6 border border-stone-200">
+          <div className="bg-gradient-to-br from-[color:var(--app-surface)] to-[color:var(--color-porcelain)] rounded-xl p-6 border border-[color:var(--app-glass-border)]">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-stone-950">Publishing Progress</h3>
-              <span className="text-2xl font-semibold text-stone-950">
+              <h3 className="text-lg font-medium text-[color:var(--app-text-primary)]">Publishing Progress</h3>
+              <span className="text-2xl font-semibold text-[color:var(--app-text-primary)]">
                 {postedCount}/{posts.length}
               </span>
             </div>
-            <div className="w-full bg-stone-200 rounded-full h-3">
+            <div className="w-full bg-[color:var(--color-whisper)] rounded-full h-3">
               <div
                 className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${(postedCount / posts.length) * 100}%` }}
               />
             </div>
-            <p className="text-sm text-stone-600 mt-3">
+            <p className="text-sm text-[color:var(--app-text-secondary)] mt-3">
               {postedCount === posts.length
                 ? "All posts published! Your feed is complete."
                 : `${posts.length - postedCount} posts remaining to publish`}
@@ -369,27 +369,27 @@ export default function FeedPublishingHub({
       {/* Post Detail Modal */}
       {selectedPost && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[color:var(--app-elevated)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-stone-200 p-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-[color:var(--app-elevated)] border-b border-[color:var(--app-glass-border)] p-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                  <div className="w-full h-full rounded-full bg-white p-[2px]">
+                  <div className="w-full h-full rounded-full bg-[color:var(--color-porcelain)] p-[2px]">
                     <div className="w-full h-full rounded-full bg-stone-950 flex items-center justify-center">
-                      <User size={16} className="text-white" />
+                      <User size={16} className="text-[color:var(--color-porcelain)]" />
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-stone-950 text-sm">@{username}</h3>
-                  <p className="text-xs text-stone-600">{selectedPost.post_type}</p>
+                  <h3 className="font-semibold text-[color:var(--app-text-primary)] text-sm">@{username}</h3>
+                  <p className="text-xs text-[color:var(--app-text-secondary)]">{selectedPost.post_type}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedPost(null)}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                className="p-2 hover:bg-[color:var(--app-surface)] rounded-full transition-colors"
               >
-                <X size={20} className="text-stone-950" />
+                <X size={20} className="text-[color:var(--app-text-primary)]" />
               </button>
             </div>
 
@@ -397,22 +397,22 @@ export default function FeedPublishingHub({
             {selectedPost.position > 1 && (
               <button
                 onClick={handlePrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-[color:var(--app-glass-bg)] hover:bg-[color:var(--color-porcelain)] rounded-full shadow-lg transition-colors"
               >
-                <ChevronLeft size={24} className="text-stone-950" />
+                <ChevronLeft size={24} className="text-[color:var(--app-text-primary)]" />
               </button>
             )}
             {selectedPost.position < posts.length && (
               <button
                 onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-[color:var(--app-glass-bg)] hover:bg-[color:var(--color-porcelain)] rounded-full shadow-lg transition-colors"
               >
-                <ChevronRight size={24} className="text-stone-950" />
+                <ChevronRight size={24} className="text-[color:var(--app-text-primary)]" />
               </button>
             )}
 
             {/* Image */}
-            <div className="relative aspect-square bg-stone-100">
+            <div className="relative aspect-square bg-[color:var(--app-surface)]">
               {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
               {(() => {
                 const imageUrl = selectedPost.image_url || (selectedPost as any).preview_image_url
@@ -424,33 +424,33 @@ export default function FeedPublishingHub({
                   />
                 ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                  <ImageIcon size={48} className="text-stone-400 mb-4" />
-                  <h3 className="text-xl font-medium text-stone-950 mb-2">{selectedPost.title}</h3>
-                  <p className="text-sm text-stone-600 text-center">{selectedPost.description}</p>
+                  <ImageIcon size={48} className="text-[color:var(--app-text-muted)] mb-4" />
+                  <h3 className="text-xl font-medium text-[color:var(--app-text-primary)] mb-2">{selectedPost.title}</h3>
+                  <p className="text-sm text-[color:var(--app-text-secondary)] text-center">{selectedPost.description}</p>
                 </div>
               )
               })()}
             </div>
 
             {/* Instagram-style action bar */}
-            <div className="border-b border-stone-200 p-3">
+            <div className="border-b border-[color:var(--app-glass-border)] p-3">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-4">
                   <button className="hover:opacity-60 transition-opacity">
-                    <Heart size={24} className="text-stone-950" />
+                    <Heart size={24} className="text-[color:var(--app-text-primary)]" />
                   </button>
                   <button className="hover:opacity-60 transition-opacity">
-                    <MessageCircle size={24} className="text-stone-950" />
+                    <MessageCircle size={24} className="text-[color:var(--app-text-primary)]" />
                   </button>
                   <button className="hover:opacity-60 transition-opacity">
-                    <Send size={24} className="text-stone-950" />
+                    <Send size={24} className="text-[color:var(--app-text-primary)]" />
                   </button>
                 </div>
                 <button className="hover:opacity-60 transition-opacity">
-                  <Bookmark size={24} className="text-stone-950" />
+                  <Bookmark size={24} className="text-[color:var(--app-text-primary)]" />
                 </button>
               </div>
-              <p className="text-sm text-stone-950">
+              <p className="text-sm text-[color:var(--app-text-primary)]">
                 <span className="font-semibold">Post {selectedPost.position} of 9</span>
               </p>
             </div>
@@ -460,7 +460,7 @@ export default function FeedPublishingHub({
               {/* Caption */}
               <div>
                 <div className="flex items-start justify-between gap-3 mb-2">
-                  <p className="text-sm text-stone-950 leading-relaxed flex-1 whitespace-pre-wrap">
+                  <p className="text-sm text-[color:var(--app-text-primary)] leading-relaxed flex-1 whitespace-pre-wrap">
                     <span className="font-semibold mr-2">@{username}</span>
                     {selectedPost.caption?.replace(/\\n/g, '\n')}
                   </p>
@@ -494,12 +494,12 @@ export default function FeedPublishingHub({
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Lightbulb size={16} className="text-white" />
+                    <Lightbulb size={16} className="text-[color:var(--color-porcelain)]" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-stone-950 mb-1">Maya&apos;s Instagram Tips</h4>
+                    <h4 className="text-sm font-semibold text-[color:var(--app-text-primary)] mb-1">Maya&apos;s Instagram Tips</h4>
                     {loadingTips && !dynamicTips[selectedPost.id] ? (
-                      <div className="flex items-center gap-2 text-sm text-stone-600">
+                      <div className="flex items-center gap-2 text-sm text-[color:var(--app-text-secondary)]">
                         <div className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
                         <span>Researching current trends...</span>
                       </div>
@@ -515,7 +515,7 @@ export default function FeedPublishingHub({
                 {selectedPost.image_url && (
                   <Button
                     onClick={() => downloadImage(selectedPost.image_url!, selectedPost.position)}
-                    className="flex-1 gap-2 bg-stone-950 hover:bg-stone-800"
+                    className="flex-1 gap-2 bg-[color:var(--app-btn-primary-bg)] hover:bg-[color:var(--stone-dark)]"
                   >
                     <Download size={16} />
                     Save to Device
@@ -535,7 +535,7 @@ export default function FeedPublishingHub({
               {/* Add to Calendar Button */}
               <Button
                 onClick={() => handleAddToCalendar(selectedPost)}
-                className="w-full gap-2 bg-stone-950 hover:bg-stone-800 text-white"
+                className="w-full gap-2 bg-[color:var(--app-btn-primary-bg)] hover:bg-[color:var(--stone-dark)] text-[color:var(--app-btn-primary-text)]"
               >
                 Add to Calendar
               </Button>

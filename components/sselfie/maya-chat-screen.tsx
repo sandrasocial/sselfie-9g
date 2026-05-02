@@ -3846,7 +3846,7 @@ export default function MayaChatScreen({
       className="maya-light-surface flex flex-col h-full relative overflow-x-hidden"
       style={{
         background:
-          "radial-gradient(80% 55% at 20% 0%, rgba(255,255,255,0.54) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, rgba(196,181,160,0.24) 0%, transparent 72%), linear-gradient(180deg, var(--app-surface) 0%, var(--app-bg) 58%, var(--cream-deep) 100%)",
+          "radial-gradient(80% 55% at 20% 0%, color-mix(in srgb, var(--color-porcelain) 54%, transparent) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, color-mix(in srgb, var(--color-whisper) 56%, transparent) 0%, transparent 72%), linear-gradient(180deg, var(--app-surface) 0%, var(--app-bg) 58%, var(--color-whisper) 100%)",
         // No paddingBottom here — the messages container handles its own input-bar
         // clearance. Adding it here was creating a stacked empty gap on mobile.
       }}
@@ -3856,8 +3856,8 @@ export default function MayaChatScreen({
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="fixed inset-0 z-50 bg-[rgba(15,13,11,0.28)] backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] p-12 text-center max-w-md mx-4 shadow-[0_30px_100px_rgba(61,56,48,0.18)]">
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] p-12 text-center max-w-md mx-4 shadow-[var(--app-shadow-soft)]">
             <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-[color:var(--app-text-primary)] mb-2">
               Drop Image Here
             </h3>
@@ -3891,8 +3891,8 @@ export default function MayaChatScreen({
 
       {/* Gallery Selector Modal */}
       {showGallerySelector && (
-        <div className="fixed inset-0 z-50 bg-[rgba(15,13,11,0.28)] backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-[0_30px_100px_rgba(61,56,48,0.18)]">
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-[var(--app-shadow-soft)]">
             <div className="p-4 border-b border-[color:var(--app-glass-border)] flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-medium text-[color:var(--app-text-primary)]">Select Base Images from Gallery</h3>
@@ -3952,7 +3952,7 @@ export default function MayaChatScreen({
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-2">
-                      <span className="text-[#f0ede8] text-xs font-medium">Select</span>
+                      <span className="text-[color:var(--color-porcelain)] text-xs font-medium">Select</span>
                     </div>
                   </button>
                 ))}
@@ -4237,7 +4237,7 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "plan" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 z-[90] flex flex-col border-t border-[color:var(--app-glass-border)] bg-[rgba(237,233,226,0.86)] px-3 py-2 backdrop-blur-[18px] sm:px-4 sm:py-2.5"
+          className="fixed left-0 right-0 z-[90] flex flex-col border-t border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] px-3 py-2 backdrop-blur-[18px] sm:px-4 sm:py-2.5"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
             bottom: "calc(var(--sselfie-bottom-nav-height, 12px) + 4px)",
@@ -4404,12 +4404,12 @@ export default function MayaChatScreen({
         {/* Pro Mode Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 bg-[rgba(15,13,11,0.28)] flex items-start sm:items-center justify-center p-4 overflow-y-auto backdrop-blur-sm"
+            className="fixed inset-0 bg-black/30 flex items-start sm:items-center justify-center p-4 overflow-y-auto backdrop-blur-sm"
             onClick={() => setShowStudioProOnboarding(false)}
             style={{ zIndex: 9999 }}
           >
             <div
-              className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-[0_30px_100px_rgba(61,56,48,0.18)] relative flex flex-col max-h-[calc(100vh-2rem)] text-[color:var(--app-text-primary)]"
+              className="bg-[color:var(--app-elevated)] backdrop-blur-[24px] border border-[color:var(--app-glass-border)] rounded-[20px] p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-[var(--app-shadow-soft)] relative flex flex-col max-h-[calc(100vh-2rem)] text-[color:var(--app-text-primary)]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
@@ -4603,15 +4603,15 @@ export default function MayaChatScreen({
       {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
       {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
-        <div className="fixed inset-0 z-[150] bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-[rgba(195,190,182,0.15)] flex items-center justify-between">
-              <h3 className="text-lg font-medium text-[#f0ede8]">Add Images to Library</h3>
+        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="bg-[color:var(--app-overlay)] backdrop-blur-[42px] border border-[color:var(--glass-border)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-[color:var(--glass-border-subtle)] flex items-center justify-between">
+              <h3 className="text-lg font-medium text-[color:var(--color-porcelain)]">Add Images to Library</h3>
               <button
                 onClick={() => setShowUploadFlow(false)}
-                className="px-2 py-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded-lg transition-colors"
+                className="px-2 py-1.5 hover:bg-[color:var(--glass-bg-mid)] rounded-lg transition-colors"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Close</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Close</span>
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">

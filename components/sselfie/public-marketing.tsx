@@ -24,31 +24,31 @@ const IMG = {
   presetDark:  `${BLOB}/darkandmoody.png`,
 }
 
-// ─── Design tokens — SSELFIE Agents system ───────────────────────────────────
+// ─── Design tokens — SSELFIE workbook system ─────────────────────────────────
 const C = {
   // Core surfaces
-  ink:          "#0F0D0B",
-  inkSoft:      "#1B1713",
-  inkLift:      "#241F19",
-  cream:        "#EDE9E2",
-  creamWarm:    "#F4F0E6",
-  creamDeep:    "#D9D3C8",
-  stone:        "#C4B5A0",
+  ink:          "var(--color-obsidian)",
+  inkSoft:      "var(--stone-dark)",
+  inkLift:      "var(--stone-dark)",
+  cream:        "var(--color-porcelain)",
+  creamWarm:    "var(--color-pearl)",
+  creamDeep:    "var(--color-whisper)",
+  stone:        "var(--stone)",
   // Text on dark
-  onDark:       "#F4F0E6",
-  onDarkSub:    "#D8CFC0",
-  onDarkMuted:  "#A79B8B",
+  onDark:       "var(--color-porcelain)",
+  onDarkSub:    "var(--color-whisper)",
+  onDarkMuted:  "var(--stone)",
   // Text on cream
-  onCream:      "#0F0D0B",
-  onCreamSub:   "#3D3830",
-  onCreamMuted: "#7A6F63",
+  onCream:      "var(--color-obsidian)",
+  onCreamSub:   "var(--color-smoke)",
+  onCreamMuted: "var(--stone)",
   // Dividers
-  divDark:      "rgba(244,240,230,0.16)",
-  divDarkSoft:  "rgba(244,240,230,0.09)",
-  divDarkStrong:"rgba(244,240,230,0.26)",
-  divCream:     "rgba(15,13,11,0.10)",
+  divDark:      "color-mix(in srgb, var(--color-whisper) 16%, transparent)",
+  divDarkSoft:  "color-mix(in srgb, var(--color-whisper) 9%, transparent)",
+  divDarkStrong:"color-mix(in srgb, var(--color-whisper) 26%, transparent)",
+  divCream:     "color-mix(in srgb, var(--color-obsidian) 10%, transparent)",
   // Hero overlay
-  heroGrad:     "linear-gradient(to bottom, rgba(15,13,11,0.34) 0%, rgba(15,13,11,0.10) 38%, rgba(15,13,11,0.90) 100%)",
+  heroGrad:     "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 10%, transparent) 38%, color-mix(in srgb, var(--color-obsidian) 90%, transparent) 100%)",
 }
 
 const F = {
@@ -59,7 +59,7 @@ const F = {
 // ─── Letterpress text shadows ─────────────────────────────────────────────────
 const LP = {
   dark:  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)",
-  cream: "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)",
+  cream: "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)",
 }
 
 // ─── Typography ───────────────────────────────────────────────────────────────
@@ -161,11 +161,11 @@ function BeforeAfterSlider({
       {/* Divider line + handle */}
       <div className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
         style={{ left: `${pos}%`, transform: "translateX(-50%)", zIndex: 10 }}>
-        <div className="w-px h-full" style={{ background: "rgba(255,255,255,0.65)" }} />
+        <div className="w-px h-full" style={{ background: "color-mix(in srgb, var(--color-porcelain) 65%, transparent)" }} />
         <div className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
           style={{
             width: "34px", height: "34px", borderRadius: "50%",
-            background: "rgba(237,233,226,0.95)",
+            background: "color-mix(in srgb, var(--color-porcelain) 95%, transparent)",
             boxShadow: "0 2px 10px rgba(0,0,0,0.45)",
           }}>
           <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
@@ -175,11 +175,11 @@ function BeforeAfterSlider({
       </div>
       {/* Labels */}
       <span className="absolute top-4 left-4 pointer-events-none"
-        style={{ ...ty("eyebrow", true), color: "rgba(237,233,226,0.85)", background: "rgba(15,13,11,0.5)", padding: "4px 10px" }}>
+        style={{ ...ty("eyebrow", true), color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)", background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)", padding: "4px 10px" }}>
         {beforeLabel}
       </span>
       <span className="absolute top-4 right-4 pointer-events-none"
-        style={{ ...ty("eyebrow", true), color: "rgba(237,233,226,0.85)", background: "rgba(15,13,11,0.5)", padding: "4px 10px" }}>
+        style={{ ...ty("eyebrow", true), color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)", background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)", padding: "4px 10px" }}>
         {afterLabel}
       </span>
       <input type="range" min={2} max={98} value={pos}
@@ -209,7 +209,9 @@ function Btn({
   const solidShadow = dark
     ? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)"
     : "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.45), 0 1px 5px rgba(0,0,0,0.25)"
-  const ghostBorder = dark ? "rgba(237,233,226,0.22)" : "rgba(15,13,11,0.22)"
+  const ghostBorder = dark
+    ? "color-mix(in srgb, var(--color-whisper) 22%, transparent)"
+    : "color-mix(in srgb, var(--color-obsidian) 22%, transparent)"
   const ghostText   = dark ? C.onDarkSub : C.onCreamSub
 
   const base: React.CSSProperties = {
@@ -362,7 +364,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-8"
       style={{
         height:     "58px",
-        background: "rgba(15,13,11,0.88)",
+        background: "color-mix(in srgb, var(--color-obsidian) 88%, transparent)",
         backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${C.divDark}`,
       }}
@@ -510,8 +512,8 @@ function Split({
       <img src={imgSrc} alt={imgAlt} className="w-full h-full object-cover" />
       <div className="absolute inset-0"
         style={{ background: dark
-          ? "linear-gradient(to bottom, rgba(15,13,11,0.04) 0%, rgba(15,13,11,0.3) 100%)"
-          : "linear-gradient(to bottom, rgba(237,233,226,0.04) 0%, rgba(237,233,226,0.2) 100%)" }} />
+          ? "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 30%, transparent) 100%)"
+          : "linear-gradient(to bottom, color-mix(in srgb, var(--color-porcelain) 4%, transparent) 0%, color-mix(in srgb, var(--color-whisper) 20%, transparent) 100%)" }} />
     </div>
   )
   const txt = (
@@ -736,7 +738,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(15,13,11,0.24)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "color-mix(in srgb, var(--color-obsidian) 24%, transparent)" }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.divCream }}
             >
               <div>
@@ -1229,10 +1231,10 @@ function InquiryForm() {
     fontFamily: F.sans,
     outline:    "none",
     transition: "border-color 0.2s",
-    // Zero border-radius — SSELFIE Agents system
+    // Keep this form flat for its editorial section while product UI stays rounded elsewhere.
   }
   const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = "rgba(237,233,226,0.28)"
+    e.target.style.borderColor = "color-mix(in srgb, var(--color-whisper) 28%, transparent)"
   }
   const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = C.divDark
@@ -1333,7 +1335,7 @@ function InquiryForm() {
         style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           padding: "13px 32px", minHeight: "46px",
-          background: pending ? "rgba(237,233,226,0.35)" : C.cream,
+          background: pending ? "color-mix(in srgb, var(--color-whisper) 35%, transparent)" : C.cream,
           color: C.ink,
           fontSize: "10px", fontFamily: F.sans, fontWeight: 600, letterSpacing: "0.22em",
           textTransform: "uppercase",

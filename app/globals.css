@@ -119,12 +119,12 @@
 
 /* Removed @theme inline block and moved font definitions to :root for Tailwind v4 compatibility */
 :root {
-  --stone-50: #f6f5f3;
-  --stone-100: #eceae7;
-  --stone-200: #d4d1cc;
-  --stone-400: #8a8784;
+  --stone-50: #ffffff;
+  --stone-100: #f5f5f5;
+  --stone-200: #e5e5e5;
+  --stone-400: #8a8780;
   --stone-800: #2c2b29;
-  --stone-950: #1a1918;
+  --stone-950: #0a0a0a;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -138,37 +138,37 @@
   --space-32: 128px;
 
   /* Earth Stone Palette */
-  --stone-deepest: #0d0c0b;
-  --stone-dark: #1c1b19;
-  --stone-mid: #2e2c29;
-  --stone-raw: #2a2720;
-  --stone-granite: #1a1815;
-  --stone-quarry: #3a3630;
-  --stone-accent: #a8a49c;
-  --stone-pale: #c8c4bb;
-  --color-obsidian: #0d0c0b;
-  --color-porcelain: #f0ede8;
-  --color-pearl: #2e2c29;
-  --color-smoke: #8a8780;
-  --color-whisper: #c8c4bb;
+  --stone-deepest: #0a0a0a;
+  --stone-dark: #2c2b29;
+  --stone-mid: #666666;
+  --stone-raw: #2c2b29;
+  --stone-granite: #0a0a0a;
+  --stone-quarry: #666666;
+  --stone-accent: #8a8780;
+  --stone-pale: #e5e5e5;
+  --color-obsidian: #0a0a0a;
+  --color-porcelain: #ffffff;
+  --color-pearl: #f5f5f5;
+  --color-smoke: #666666;
+  --color-whisper: #e5e5e5;
 
   /* Text */
-  --text-primary: #f0ede8;
-  --text-secondary: #8a8780;
-  --text-accent: #a8a49c;
-  --text-cta: #c8c4bb;
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-accent: #8a8780;
+  --text-cta: #ffffff;
 
   /* Glass */
-  --glass-bg: rgba(175, 170, 162, 0.10);
-  --glass-bg-mid: rgba(175, 170, 162, 0.18);
-  --glass-bg-heavy: rgba(175, 170, 162, 0.25);
-  --glass-border: rgba(195, 190, 182, 0.25);
-  --glass-border-subtle: rgba(195, 190, 182, 0.15);
-  --glass-divider: rgba(175, 170, 162, 0.12);
-  --glass-input-bg: rgba(175, 170, 162, 0.08);
-  --glass-input-border: rgba(195, 190, 182, 0.20);
-  --app-overlay: rgba(28, 27, 25, 0.96);
-  --app-overlay-soft: rgba(13, 12, 11, 0.92);
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-mid: rgba(255, 255, 255, 0.10);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(229, 229, 229, 0.22);
+  --glass-border-subtle: rgba(229, 229, 229, 0.14);
+  --glass-divider: rgba(229, 229, 229, 0.12);
+  --glass-input-bg: rgba(255, 255, 255, 0.08);
+  --glass-input-border: rgba(229, 229, 229, 0.20);
+  --app-overlay: rgba(10, 10, 10, 0.96);
+  --app-overlay-soft: rgba(10, 10, 10, 0.92);
 
   /* Blur */
   --blur-light: 20px;
@@ -176,29 +176,29 @@
   --blur-heavy: 70px;
 
   /* App backgrounds */
-  --app-bg-primary: #0d0c0b;
-  --app-bg-surface: #1c1b19;
-  --app-bg-elevated: #2e2c29;
-  --app-bg-glow-1: rgba(42, 39, 32, 0.7);
-  --app-bg-glow-2: rgba(26, 24, 21, 0.5);
-  --app-bg-glass: rgba(175, 170, 162, 0.10);
-  --app-bg-glass-strong: rgba(175, 170, 162, 0.18);
-  --app-bg: #0d0c0b;
-  --app-surface: #1c1b19;
-  --app-elevated: #2e2c29;
-  --app-border: rgba(195, 190, 182, 0.25);
-  --app-text-primary: #f0ede8;
-  --app-text-secondary: #8a8780;
-  --app-text-muted: #a8a49c;
-  --app-btn-primary-bg: #c8c4bb;
-  --app-btn-primary-text: #0d0c0b;
-  --app-btn-secondary-bg: rgba(175, 170, 162, 0.10);
-  --app-btn-secondary-hover: rgba(175, 170, 162, 0.18);
-  --app-input-bg: rgba(175, 170, 162, 0.08);
-  --app-input-border: rgba(195, 190, 182, 0.20);
-  --app-glass-bg: rgba(175, 170, 162, 0.10);
-  --app-glass-border: rgba(195, 190, 182, 0.25);
-  --app-focus-ring: rgba(195, 190, 182, 0.50);
+  --app-bg-primary: #0a0a0a;
+  --app-bg-surface: #2c2b29;
+  --app-bg-elevated: #f5f5f5;
+  --app-bg-glow-1: rgba(255, 255, 255, 0.24);
+  --app-bg-glow-2: rgba(229, 229, 229, 0.34);
+  --app-bg-glass: rgba(255, 255, 255, 0.72);
+  --app-bg-glass-strong: rgba(245, 245, 245, 0.92);
+  --app-bg: #ffffff;
+  --app-surface: #f5f5f5;
+  --app-elevated: #ffffff;
+  --app-border: #e5e5e5;
+  --app-text-primary: #0a0a0a;
+  --app-text-secondary: #666666;
+  --app-text-muted: #8a8780;
+  --app-btn-primary-bg: #0a0a0a;
+  --app-btn-primary-text: #ffffff;
+  --app-btn-secondary-bg: rgba(10, 10, 10, 0.05);
+  --app-btn-secondary-hover: rgba(10, 10, 10, 0.08);
+  --app-input-bg: rgba(10, 10, 10, 0.035);
+  --app-input-border: rgba(10, 10, 10, 0.16);
+  --app-glass-bg: rgba(255, 255, 255, 0.76);
+  --app-glass-border: #e5e5e5;
+  --app-focus-ring: rgba(10, 10, 10, 0.28);
   --app-shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.28);
 
   /* Fonts */
@@ -253,35 +253,35 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* ── Marketing surface tokens ────────────────────────────── */
-  --ink:           #0F0D0B;   /* primary dark surface, body text on cream */
-  --ink-soft:      #1E1A15;   /* cards/panels on dark */
-  --cream:         #EDE9E2;   /* primary light surface, primary text on dark */
-  --cream-warm:    #F4F0E6;   /* cards/panels on cream */
-  --cream-deep:    #D9D3C8;   /* borders/dividers on cream */
-  --stone:         #C4B5A0;   /* secondary text on dark, accents */
+  /* ── Legacy marketing aliases mapped to the workbook palette ───────── */
+  --ink:           #0A0A0A;   /* primary dark surface, body text on light */
+  --ink-soft:      #2C2B29;   /* dark gray panels */
+  --cream:         #FFFFFF;   /* legacy alias: now white */
+  --cream-warm:    #F5F5F5;   /* legacy alias: now pearl */
+  --cream-deep:    #E5E5E5;   /* legacy alias: now whisper */
+  --stone:         #8A8780;   /* muted stone gray */
 
   /* ── Semantic text colors ─────────────────────────────────── */
-  --on-dark:        #EDE9E2;  /* heading text on dark */
-  --on-dark-sub:    #C4B5A0;  /* body text on dark */
-  --on-dark-muted:  #A89A8A;  /* eyebrow/labels on dark — AA legible on ink */
-  --on-cream:       #0F0D0B;  /* heading text on cream */
-  --on-cream-sub:   #3D3830;  /* body text on cream */
-  --on-cream-muted: #7A6F63;  /* eyebrow/labels on cream */
+  --on-dark:        #FFFFFF;  /* heading text on dark */
+  --on-dark-sub:    #E5E5E5;  /* body text on dark */
+  --on-dark-muted:  #8A8780;  /* eyebrow/labels on dark */
+  --on-cream:       #0A0A0A;  /* legacy alias: heading text on light */
+  --on-cream-sub:   #666666;  /* legacy alias: body text on light */
+  --on-cream-muted: #8A8780;  /* legacy alias: labels on light */
 
   /* ── Dividers ─────────────────────────────────────────────── */
-  --div-dark:  rgba(237, 233, 226, 0.10);
-  --div-cream: rgba(15, 13, 11, 0.10);
+  --div-dark:  rgba(229, 229, 229, 0.14);
+  --div-cream: rgba(10, 10, 10, 0.10);
 
   /* ── Hero gradient overlay ────────────────────────────────── */
   --hero-grad: linear-gradient(to bottom,
-    rgba(15, 13, 11, 0.22) 0%,
-    rgba(15, 13, 11, 0.04) 38%,
-    rgba(15, 13, 11, 0.88) 100%);
+    rgba(10, 10, 10, 0.22) 0%,
+    rgba(10, 10, 10, 0.04) 38%,
+    rgba(10, 10, 10, 0.88) 100%);
 
   /* ── Letterpress text shadows ─────────────────────────────── */
   --lp-dark:  0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5);
-  --lp-cream: 1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09);
+  --lp-cream: 1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08);
 
   /* ── Additional spacing ───────────────────────────────────── */
   --space-5:  20px;
@@ -505,7 +505,7 @@
   body {
     background-color: var(--app-bg-primary);
     background-image:
-      linear-gradient(180deg, rgba(34, 28, 22, 0.35) 0%, rgba(13, 12, 11, 0.92) 100%),
+      linear-gradient(180deg, rgba(44, 43, 41, 0.22) 0%, rgba(10, 10, 10, 0.92) 100%),
       radial-gradient(ellipse at 20% 20%, var(--app-bg-glow-1) 0%, transparent 60%),
       radial-gradient(ellipse at 80% 80%, var(--app-bg-glow-2) 0%, transparent 60%);
     color: var(--color-porcelain);
@@ -523,38 +523,38 @@
 @layer utilities {
   .sselfie-app-shell,
   .sselfie-app-portal-theme {
-    --app-bg: #EDE9E2;
-    --app-surface: #F4F0E6;
+    --app-bg: #FFFFFF;
+    --app-surface: #F5F5F5;
     --app-elevated: #FFFFFF;
-    --app-border: rgba(15, 13, 11, 0.12);
-    --app-text-primary: #0F0D0B;
-    --app-text-secondary: #7A6F63;
-    --app-text-muted: #A89A8A;
-    --app-btn-primary-bg: #0F0D0B;
-    --app-btn-primary-text: #EDE9E2;
-    --app-btn-secondary-bg: rgba(15, 13, 11, 0.06);
-    --app-btn-secondary-hover: rgba(15, 13, 11, 0.09);
-    --app-input-bg: rgba(15, 13, 11, 0.04);
-    --app-input-border: rgba(15, 13, 11, 0.18);
-    --app-glass-bg: rgba(255, 255, 255, 0.72);
-    --app-glass-border: rgba(15, 13, 11, 0.10);
-    --app-focus-ring: rgba(15, 13, 11, 0.28);
-    --app-shadow-soft: 0 24px 70px rgba(61, 56, 48, 0.12);
+    --app-border: #E5E5E5;
+    --app-text-primary: #0A0A0A;
+    --app-text-secondary: #666666;
+    --app-text-muted: #8A8780;
+    --app-btn-primary-bg: #0A0A0A;
+    --app-btn-primary-text: #FFFFFF;
+    --app-btn-secondary-bg: rgba(10, 10, 10, 0.05);
+    --app-btn-secondary-hover: rgba(10, 10, 10, 0.08);
+    --app-input-bg: rgba(10, 10, 10, 0.035);
+    --app-input-border: rgba(10, 10, 10, 0.16);
+    --app-glass-bg: rgba(255, 255, 255, 0.76);
+    --app-glass-border: #E5E5E5;
+    --app-focus-ring: rgba(10, 10, 10, 0.28);
+    --app-shadow-soft: 0 24px 70px rgba(10, 10, 10, 0.10);
     color: var(--app-text-primary);
   }
 
   .sselfie-app-shell.stone-stage {
     background-color: var(--app-bg);
     background-image:
-      radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.62) 0%, transparent 28%),
-      radial-gradient(circle at 86% 0%, rgba(196, 181, 160, 0.28) 0%, transparent 30%),
-      linear-gradient(180deg, #F4F0E6 0%, #EDE9E2 46%, #D9D3C8 100%);
+      radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.74) 0%, transparent 28%),
+      radial-gradient(circle at 86% 0%, rgba(229, 229, 229, 0.62) 0%, transparent 30%),
+      linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 52%, #E5E5E5 100%);
   }
 
   .sselfie-app-shell .app-shell-backdrop {
     background-image:
       radial-gradient(circle at 22% 8%, rgba(255, 255, 255, 0.66) 0%, transparent 34%),
-      radial-gradient(circle at 82% 16%, rgba(196, 181, 160, 0.28) 0%, transparent 30%);
+      radial-gradient(circle at 82% 16%, rgba(229, 229, 229, 0.58) 0%, transparent 30%);
     filter: blur(42px) saturate(0.82);
     opacity: 0.72;
   }
@@ -562,7 +562,7 @@
   .sselfie-app-shell .stone-shell-panel,
   .sselfie-app-shell .stone-panel {
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(244, 240, 230, 0.72) 100%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(245, 245, 245, 0.76) 100%),
       var(--app-glass-bg);
     border-color: var(--app-glass-border);
     box-shadow: var(--app-shadow-soft);

@@ -36,13 +36,13 @@ export function MayaInlineCard({
       className={cn(
         "relative mt-3 overflow-hidden",
         isPlain
-          ? "rounded-[16px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-5 shadow-[0_18px_50px_rgba(61,56,48,0.08)] sm:p-8"
+          ? "rounded-[16px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] p-5 shadow-[var(--app-shadow-soft)] sm:p-8"
           : "stone-panel rounded-[16px] p-4 sm:p-5",
         className,
       )}
     >
       {!isPlain ? (
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(118deg,rgba(255,255,255,0.52)_0%,rgba(244,240,230,0.24)_48%,rgba(196,181,160,0.16)_100%)] opacity-75" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(118deg,color-mix(in_srgb,var(--color-porcelain)_52%,transparent)_0%,color-mix(in_srgb,var(--color-pearl)_24%,transparent)_48%,color-mix(in_srgb,var(--color-whisper)_22%,transparent)_100%)] opacity-75" />
       ) : null}
       <div className="relative z-[1]">
         <div className="flex items-start justify-between gap-4">

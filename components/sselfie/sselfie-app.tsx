@@ -958,9 +958,9 @@ export default function SselfieApp({
 
       <div className="pointer-events-none absolute inset-0">
         <div className="app-shell-backdrop absolute inset-[-8%]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(237,233,226,0.20)_52%,rgba(217,211,200,0.34)_100%)]" />
-        <div className="absolute top-[-10%] left-[12%] h-[24rem] w-[24rem] rounded-full bg-[rgba(255,255,255,0.48)] blur-[120px]" />
-        <div className="absolute bottom-[-14%] right-[10%] h-[22rem] w-[22rem] rounded-full bg-[rgba(196,181,160,0.30)] blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-porcelain)_28%,transparent)_0%,color-mix(in_srgb,var(--color-pearl)_22%,transparent)_52%,color-mix(in_srgb,var(--color-whisper)_34%,transparent)_100%)]" />
+        <div className="absolute top-[-10%] left-[12%] h-[24rem] w-[24rem] rounded-full bg-[color-mix(in_srgb,var(--color-porcelain)_48%,transparent)] blur-[120px]" />
+        <div className="absolute bottom-[-14%] right-[10%] h-[22rem] w-[22rem] rounded-full bg-[color-mix(in_srgb,var(--color-whisper)_40%,transparent)] blur-[120px]" />
       </div>
 
       {isWelcome && creditBalance === 0 && (
@@ -974,13 +974,13 @@ export default function SselfieApp({
       {/* Past-due billing banner — shown to users whose payment failed */}
       {subscriptionStatus === "past_due" && (
         <div className="relative z-50 flex items-center justify-between gap-3 bg-[rgba(180,80,60,0.18)] border-b border-[rgba(220,100,80,0.35)] px-4 py-2.5">
-          <p className="text-xs text-[#f0ede8] leading-snug">
+          <p className="text-xs text-[color:var(--color-porcelain)] leading-snug">
             <span className="font-medium">Your last payment didn&apos;t go through.</span>{" "}
             Update your card to keep your photos and credits.
           </p>
           <a
             href="/studio?tab=settings"
-            className="shrink-0 rounded-sm bg-[rgba(240,237,232,0.12)] hover:bg-[rgba(240,237,232,0.2)] border border-[rgba(240,237,232,0.2)] px-3 py-1 text-xs font-medium text-[#f0ede8] transition-colors whitespace-nowrap"
+            className="shrink-0 rounded-sm bg-[color-mix(in_srgb,var(--color-porcelain)_12%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-porcelain)_20%,transparent)] border border-[color-mix(in_srgb,var(--color-porcelain)_20%,transparent)] px-3 py-1 text-xs font-medium text-[color:var(--color-porcelain)] transition-colors whitespace-nowrap"
           >
             Update card →
           </a>
@@ -989,14 +989,14 @@ export default function SselfieApp({
 
       {/* Zero-credit upgrade banner — shown to non-members who've run out of credits */}
       {creditBalance === 0 && subscriptionStatus !== "active" && subscriptionStatus !== "trialing" && subscriptionStatus !== "past_due" && (
-        <div className="relative z-50 flex items-center justify-between gap-3 bg-[rgba(240,237,232,0.06)] border-b border-[rgba(240,237,232,0.12)] px-4 py-2.5">
-          <p className="text-xs text-[#c8c4bb] leading-snug">
-            <span className="font-medium text-[#f0ede8]">You&apos;re out of credits.</span>{" "}
+        <div className="relative z-50 flex items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--color-porcelain)_6%,transparent)] border-b border-[color-mix(in_srgb,var(--color-porcelain)_12%,transparent)] px-4 py-2.5">
+          <p className="text-xs text-[color:var(--color-whisper)] leading-snug">
+            <span className="font-medium text-[color:var(--color-porcelain)]">You&apos;re out of credits.</span>{" "}
             Get Studio to keep generating — 200 credits every month.
           </p>
           <a
             href="/checkout/membership"
-            className="shrink-0 rounded-sm bg-[#f0ede8] hover:opacity-90 px-3 py-1 text-xs font-medium text-[#0d0c0b] transition-opacity whitespace-nowrap"
+            className="shrink-0 rounded-sm bg-[color:var(--color-porcelain)] hover:opacity-90 px-3 py-1 text-xs font-medium text-[color:var(--color-obsidian)] transition-opacity whitespace-nowrap"
           >
             Get Studio →
           </a>
@@ -1005,12 +1005,12 @@ export default function SselfieApp({
 
       {/* First-photo celebration toast — fires once when the first credit is spent */}
       {showFirstPhotoToast && (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-[color:var(--app-overlay)] backdrop-blur-[42px] border-b border-[color:var(--glass-border-subtle)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
           <div>
-            <p className="text-sm font-medium text-[#f0ede8]">Your first brand photo is done.</p>
-            <p className="text-xs text-[#8a8780] mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
+            <p className="text-sm font-medium text-[color:var(--color-porcelain)]">Your first brand photo is done.</p>
+            <p className="text-xs text-[color:var(--color-smoke)] mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
           </div>
-          <button onClick={() => setShowFirstPhotoToast(false)} className="text-[#8a8780] hover:text-[#f0ede8] ml-4 shrink-0" aria-label="Dismiss">
+          <button onClick={() => setShowFirstPhotoToast(false)} className="text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] ml-4 shrink-0" aria-label="Dismiss">
             <span className="text-[10px] tracking-[0.2em] uppercase">Close</span>
           </button>
         </div>
@@ -1025,7 +1025,7 @@ export default function SselfieApp({
         academyPurchaseProduct &&
         ACADEMY_PRODUCT_TO_TAB[academyPurchaseProduct] && (
           <div className="sticky top-0 z-20 mx-1 sm:mx-2 md:mx-3 mt-2 sm:mt-3 md:mt-4">
-            <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[30px] text-[#f0ede8] rounded-xl border border-[rgba(195,190,182,0.20)] shadow-lg overflow-hidden">
+            <div className="bg-[color:var(--glass-bg)] backdrop-blur-[30px] text-[color:var(--color-porcelain)] rounded-xl border border-[color:var(--glass-input-border)] shadow-lg overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 py-3">
                 <button
                   type="button"
@@ -1036,18 +1036,18 @@ export default function SselfieApp({
                   }}
                   className="flex-1 flex items-center justify-between gap-2 text-left group"
                 >
-                  <span className="text-sm font-medium text-[#f0ede8]">Welcome! Let&apos;s get started</span>
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-[#8a8780] shrink-0 group-hover:text-[#f0ede8] transition-colors" aria-hidden>
+                  <span className="text-sm font-medium text-[color:var(--color-porcelain)]">Welcome! Let&apos;s get started</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-[color:var(--color-smoke)] shrink-0 group-hover:text-[color:var(--color-porcelain)] transition-colors" aria-hidden>
                     Open
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAcademyWelcomeBanner(false)}
-                  className="shrink-0 p-1.5 rounded-lg hover:bg-[rgba(175,170,162,0.12)] transition-colors"
+                  className="shrink-0 p-1.5 rounded-lg hover:bg-[color:var(--glass-bg-mid)] transition-colors"
                   aria-label="Dismiss welcome banner"
                 >
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-[#8a8780]">Close</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-[color:var(--color-smoke)]">Close</span>
                 </button>
               </div>
             </div>
@@ -1069,7 +1069,7 @@ export default function SselfieApp({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(15,13,11,0.08)] transition-colors text-xs font-medium text-[color:var(--app-text-primary)] min-h-[36px]`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors text-xs font-medium text-[color:var(--app-text-primary)] min-h-[36px]`}
                     aria-label="My Feed"
                     style={{ background: "var(--app-btn-secondary-bg)", border: "1px solid var(--app-glass-border)" }}
                   >
@@ -1078,7 +1078,7 @@ export default function SselfieApp({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="sselfie-app-portal-theme z-[240] w-56 rounded-[16px] border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.94)] text-[color:var(--app-text-primary)] shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px]"
+                  className="sselfie-app-portal-theme z-[240] w-56 rounded-[16px] border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] text-[color:var(--app-text-primary)] shadow-[var(--app-shadow-soft)] backdrop-blur-[20px]"
                 >
                   <div className="px-3 py-2">
                     <div className={`${DesignClasses.typography.label.uppercase} mb-2 text-[color:var(--app-text-secondary)]`}>Feed History</div>
@@ -1106,8 +1106,8 @@ export default function SselfieApp({
                                 <div
                                   className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
                                   style={{
-                                    backgroundColor: feed.display_color || "#D9D3C8",
-                                    borderColor: feed.display_color || "rgba(15,13,11,0.18)",
+                                    backgroundColor: feed.display_color || "var(--stone-200)",
+                                    borderColor: feed.display_color || "var(--app-input-border)",
                                     borderStyle: feed.display_color ? "solid" : "dashed",
                                   }}
                                   title={feed.display_color ? `Color: ${feed.display_color}` : "No color set"}
@@ -1150,7 +1150,7 @@ export default function SselfieApp({
             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
-                  className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(15,13,11,0.08)] transition-colors`}
+                  className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors`}
                   aria-label="Menu"
                   style={{ background: "var(--app-btn-secondary-bg)", border: "1px solid var(--app-glass-border)" }}
                 >
@@ -1159,7 +1159,7 @@ export default function SselfieApp({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="sselfie-app-portal-theme z-[240] w-64 rounded-[16px] border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.94)] text-[color:var(--app-text-primary)] shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px]"
+                className="sselfie-app-portal-theme z-[240] w-64 rounded-[16px] border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-bg)] text-[color:var(--app-text-primary)] shadow-[var(--app-shadow-soft)] backdrop-blur-[20px]"
               >
                 <div className="px-3 py-2">
                   <div className={`${DesignClasses.typography.label.uppercase} text-[color:var(--app-text-secondary)]`}>
@@ -1234,7 +1234,7 @@ export default function SselfieApp({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
+              <label className="text-sm font-medium text-[color:var(--app-text-muted)] mb-1.5 block">
                 Feed Name
               </label>
               <Input
@@ -1246,7 +1246,7 @@ export default function SselfieApp({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
+              <label className="text-sm font-medium text-[color:var(--app-text-muted)] mb-2 block">
                 Color
               </label>
               <div className="grid grid-cols-6 gap-2">
@@ -1256,8 +1256,8 @@ export default function SselfieApp({
                     onClick={() => setEditColor(color.value)}
                     className={`w-10 h-10 rounded-full border-2 transition-all ${
                       editColor === color.value
-                        ? "border-[#f0ede8] scale-110"
-                        : "border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]"
+                        ? "border-[color:var(--color-porcelain)] scale-110"
+                        : "border-[color:var(--app-glass-border)] hover:border-[color:var(--app-input-border)]"
                     }`}
                     style={{
                       backgroundColor: color.value || "transparent",
@@ -1273,7 +1273,7 @@ export default function SselfieApp({
           <DialogFooter>
             <button
               onClick={() => setEditingFeed(null)}
-              className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
+              className="px-4 py-2 text-sm text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
             >
               Cancel
             </button>
@@ -1282,8 +1282,8 @@ export default function SselfieApp({
               disabled={isSaving}
               className={`px-4 py-2 text-sm font-medium rounded-md ${
                 isSaving
-                  ? "bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed"
-                  : "bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]"
+                  ? "bg-[color:var(--app-btn-secondary-bg)] text-[color:var(--app-text-secondary)] cursor-not-allowed"
+                  : "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] hover:bg-[color:var(--stone-dark)]"
               }`}
             >
               {isSaving ? "Saving..." : "Save"}

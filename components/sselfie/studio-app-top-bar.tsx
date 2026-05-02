@@ -103,7 +103,7 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
         ref={setHeaderRef}
         className="fixed top-0 left-0 right-0 z-[95] border-b pt-safe"
         style={{
-          background: "rgba(237,233,226,0.88)",
+          background: "color-mix(in srgb, var(--color-porcelain) 88%, transparent)",
           borderColor: "var(--app-glass-border)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -177,7 +177,7 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
         </div>
         {showMayaSubTabs && isMayaSubnavOpen ? (
           <div
-            className="absolute left-3 top-[calc(100%+8px)] z-[130] w-[min(88vw,360px)] rounded-[18px] border bg-[rgba(255,255,255,0.94)] p-2 shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px] sm:left-4 md:left-6"
+            className="absolute left-3 top-[calc(100%+8px)] z-[130] w-[min(88vw,360px)] rounded-[18px] border bg-[color:var(--app-glass-bg)] p-2 shadow-[var(--app-shadow-soft)] backdrop-blur-[20px] sm:left-4 md:left-6"
             style={{ borderColor: "var(--app-glass-border)" }}
             role="menu"
             aria-label="Maya sections"
