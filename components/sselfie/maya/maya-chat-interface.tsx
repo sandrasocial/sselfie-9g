@@ -101,6 +101,7 @@ interface MayaChatInterfaceProps {
   }) => void
   activeTab?: MayaSurfaceTab
   onSwitchTab?: (tab: "photos" | "plan" | "videos" | "training") => void
+  onSwitchTabWithPrompt?: (tab: "photos" | "plan" | "videos" | "training", prompt: string) => void
 }
 
 // ── Module-level constants ────────────────────────────────────────────────────
@@ -178,6 +179,7 @@ interface ToolCtx {
   }) => void
   activeTab: MayaSurfaceTab // NOSONAR
   onSwitchTab?: (tab: "photos" | "plan" | "videos" | "training") => void // NOSONAR
+  onSwitchTabWithPrompt?: (tab: "photos" | "plan" | "videos" | "training", prompt: string) => void // NOSONAR
   onFeedSaved?: (messageId: string, feedId: number) => void // NOSONAR
   isLandingPagesUiEnabled: boolean // NOSONAR
 }
@@ -835,10 +837,12 @@ Important:
         : `Use this selected gallery image as my visual reference: ${imageUrl}. Recreate the same style, mood, lighting, and composition for a new Maya photo concept. Do not copy it exactly; make a fresh version that feels like ${label}.`
 
     if (mode === "feed") {
-      ctx.onSwitchTab?.("plan")
-      setTimeout(() => {
-        ctx.onToolPromptSelect?.(`${prompt}\n\n[Selected Feed Image: ${imageUrl}]`)
-      }, 0)
+      const planPrompt = `${prompt}\n\n[Selected Feed Image: ${imageUrl}]`
+      if (ctx.onSwitchTabWithPrompt) {
+        ctx.onSwitchTabWithPrompt("plan", planPrompt)
+      } else {
+        ctx.onSwitchTab?.("plan")
+      }
       return
     }
 

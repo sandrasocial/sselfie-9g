@@ -2,6 +2,7 @@ export const MAYA_CHAT_TYPE_DEFAULT = "maya"
 export const MAYA_CHAT_TYPE_PRO = "pro"
 export const MAYA_CHAT_TYPE_VIDEOS = "videos"
 export const MAYA_CHAT_TYPE_FEED_PLANNER = "feed_planner"
+export const MAYA_CHAT_TYPE_PLAN = "maya_plan"
 export const MAYA_CHAT_TYPE_PROMPT_BUILDER = "prompt_builder"
 export const MAYA_CHAT_TYPE_PRO_PHOTOSHOOT = "pro-photoshoot"
 
@@ -18,6 +19,13 @@ const FEED_PLANNER_CHAT_TYPE_ALIASES = [
   "feed-designer",
 ] as const
 
+const PLAN_CHAT_TYPE_ALIASES = [
+  MAYA_CHAT_TYPE_PLAN,
+  "maya-plan",
+  "plan",
+  "maya_planning",
+] as const
+
 function sanitizeChatType(value?: string | null): string {
   return typeof value === "string" ? value.trim().toLowerCase() : ""
 }
@@ -31,6 +39,9 @@ export function normalizeMayaChatType(
   if (!sanitized) return fallback
   if (FEED_PLANNER_CHAT_TYPE_ALIASES.includes(sanitized as (typeof FEED_PLANNER_CHAT_TYPE_ALIASES)[number])) {
     return MAYA_CHAT_TYPE_FEED_PLANNER
+  }
+  if (PLAN_CHAT_TYPE_ALIASES.includes(sanitized as (typeof PLAN_CHAT_TYPE_ALIASES)[number])) {
+    return MAYA_CHAT_TYPE_PLAN
   }
   if (VIDEOS_CHAT_TYPE_ALIASES.includes(sanitized as (typeof VIDEOS_CHAT_TYPE_ALIASES)[number])) {
     return MAYA_CHAT_TYPE_VIDEOS
@@ -48,6 +59,10 @@ export function getMayaChatTypeAliases(value?: string | null): string[] {
     return [...FEED_PLANNER_CHAT_TYPE_ALIASES]
   }
 
+  if (normalized === MAYA_CHAT_TYPE_PLAN) {
+    return [...PLAN_CHAT_TYPE_ALIASES]
+  }
+
   if (normalized === MAYA_CHAT_TYPE_VIDEOS) {
     return [...VIDEOS_CHAT_TYPE_ALIASES]
   }
@@ -57,6 +72,10 @@ export function getMayaChatTypeAliases(value?: string | null): string[] {
 
 export function isFeedPlannerChatType(value?: string | null): boolean {
   return normalizeMayaChatType(value, "") === MAYA_CHAT_TYPE_FEED_PLANNER
+}
+
+export function isPlanChatType(value?: string | null): boolean {
+  return normalizeMayaChatType(value, "") === MAYA_CHAT_TYPE_PLAN
 }
 
 export function isPhotosChatType(value?: string | null): boolean {
@@ -69,5 +88,5 @@ export function isVideosChatType(value?: string | null): boolean {
 }
 
 export function supportsFeedCardsInChat(value?: string | null): boolean {
-  return isPhotosChatType(value) || isFeedPlannerChatType(value)
+  return isPhotosChatType(value) || isFeedPlannerChatType(value) || isPlanChatType(value)
 }

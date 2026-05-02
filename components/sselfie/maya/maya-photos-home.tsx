@@ -91,11 +91,7 @@ export default function MayaPhotosHome({
               <MayaInlineAction
                 variant="secondary"
                 className="w-full justify-start text-left"
-                onClick={() =>
-                  onSendPrompt(
-                    "Show my gallery and help me build a mixed-source feed plan using existing images where they fit, then new Maya photos only where needed.",
-                  )
-                }
+                onClick={onOpenPlan}
               >
                 Mixed Feed Plan
               </MayaInlineAction>

@@ -25,7 +25,7 @@ import { extractLatestUserText, hydrateMayaToolDispatchIntent } from "@/lib/maya
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
-import { isFeedPlannerChatType, normalizeMayaChatType } from "@/lib/maya/chat-type"
+import { isFeedPlannerChatType, isPlanChatType, normalizeMayaChatType } from "@/lib/maya/chat-type"
 import {
   persistMayaRememberedPreference,
   getMayaActiveAssetContext,
@@ -447,7 +447,11 @@ export async function POST(req: Request) {
       })
       const normalizedAutoMode = normalizeMayaChatType(autoMode)
 
-      if (tabScopedChatEnabled && activeMayaTab === "videos") {
+      if (tabScopedChatEnabled && activeMayaTab === "plan") {
+        chatType = requestedChatType
+        isFeedTab = false
+        useFeedPlannerContext = isFeedPlannerChatType(normalizedAutoMode)
+      } else if (tabScopedChatEnabled && activeMayaTab === "videos") {
         chatType = requestedChatType
         isFeedTab = false
         useFeedPlannerContext = false
@@ -2132,6 +2136,29 @@ The user is in **My Model mode** — photos are generated using their trained cu
       }
     }
 
+    if (!isPromptBuilder && activeMayaTab) {
+      if (activeMayaTab === "photos") {
+        systemPrompt += `\n\n## CURRENT MAYA SURFACE: PHOTOS
+The user is inside the Photos tab.
+- Your job here is image creation: photo concepts, visual direction, prompts, source choice, gallery reuse, and saving generated images.
+- Do not build feed strategies, weekly plans, offer plans, or caption strategy inside Photos.
+- If the user asks for planning, captions, offers, weekly content, or feed strategy, keep the reply short and use the tab handoff to Plan instead of answering the strategy here.
+- Never tell the user to go to Photos while they are already in Photos.`
+      } else if (activeMayaTab === "plan" || isPlanChatType(chatType)) {
+        systemPrompt += `\n\n## CURRENT MAYA SURFACE: PLAN
+The user is inside the Plan tab.
+- Your job here is planning: next best move, weekly content, captions, offers, post order, photo direction, and what to do next.
+- You may give photo directions, but do not generate new images or concept cards in Plan.
+- If the user asks to actually create/generate/make a photo or concept cards, use the tab handoff to Photos.
+- Never tell the user to go to Plan while they are already in Plan.`
+      } else if (activeMayaTab === "videos") {
+        systemPrompt += `\n\n## CURRENT MAYA SURFACE: VIDEOS
+The user is inside the Videos tab.
+- Keep the conversation focused on choosing an existing photo and turning it into motion.
+- If the request is not video work, use the correct tab handoff instead of answering across surfaces.`
+      }
+    }
+
     if (productGenerationPrompt) {
       systemPrompt += `\n\n## Product Delivery Mode\n${productGenerationPrompt}`
       console.log("[Maya Chat] Activated first-time academy product generation prompt", {
@@ -2458,7 +2485,13 @@ You must apply this skill pack for prompt composition while preserving Maya's co
       hasMembership: hasMembershipForMethod,
       hasMasterclass: hasMasterclassPurchase,
     })
-    systemPrompt += getWeekPlanSystemAddendum({ methodDepth })
+    const shouldLoadWeekPlanGuidance =
+      activeMayaTab === "plan" ||
+      isPlanChatType(chatType) ||
+      isContentPlanningIntent(latestUserTextForSkills)
+    if (shouldLoadWeekPlanGuidance) {
+      systemPrompt += getWeekPlanSystemAddendum({ methodDepth })
+    }
 
     const routingChatType = useFeedPlannerContext ? "feed_planner" : chatType
     const mayaTask = resolveMayaChatTask({

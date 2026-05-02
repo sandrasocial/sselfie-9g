@@ -186,6 +186,12 @@ describe("useMayaChat handleNewChat", () => {
 
     expect(useChatCallIds.at(-1)).toBe("maya-chat-maya-new")
 
+    rerender(<HookHarness activeTab="plan" onReady={(value) => { hookValue = value }} />)
+
+    await waitFor(() => {
+      expect(useChatCallIds.at(-1)).toBe("maya-chat-maya_plan-new")
+    })
+
     rerender(<HookHarness activeTab="videos" onReady={(value) => { hookValue = value }} />)
 
     await waitFor(() => {

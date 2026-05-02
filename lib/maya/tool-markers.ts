@@ -70,7 +70,7 @@ const SAVE_TARGET_IMAGE_ID_REGEX = /^(?:ai|gen)_\d+$/i
 const GENERATE_SOURCE_SET = new Set(["selfies", "custom_model", "base_model", "choose_source"])
 const UPLOAD_CATEGORY_SET = new Set(["selfies", "products", "people", "vibes"])
 const EDIT_ASSET_SET = new Set(["page", "calendar", "pdf"])
-const TAB_HANDOFF_SET = new Set(["photos", "videos", "training"])
+const TAB_HANDOFF_SET = new Set(["photos", "plan", "videos", "training"])
 
 function decodeMarkerText(value: string): string {
   if (!value) return ""

@@ -380,6 +380,10 @@ export default function MayaChatScreen({
     strategyJson: string
     messageId: string
   } | null>(null)
+  const [pendingScopedPrompt, setPendingScopedPrompt] = useState<{
+    tab: "photos" | "plan" | "videos" | "training"
+    prompt: string
+  } | null>(null)
   
   // Track messages that should show image upload module
   const [messagesWithUploadModule, setMessagesWithUploadModule] = useState<Set<string>>(new Set())
@@ -2490,6 +2494,31 @@ export default function MayaChatScreen({
     [activeMayaTab, setMayaTabAndHash],
   )
 
+  const handleSwitchScopedTabWithPrompt = useCallback(
+    (tab: "photos" | "plan" | "videos" | "training", prompt: string) => {
+      setPendingScopedPrompt({ tab, prompt })
+      setMayaTabAndHash(tab)
+      trackAnalyticsEvent({
+        event: "maya_tab_handoff_opened",
+        properties: {
+          fromTab: activeMayaTab,
+          toTab: tab,
+          queuedPrompt: true,
+        },
+      }).catch(() => {})
+    },
+    [activeMayaTab, setMayaTabAndHash],
+  )
+
+  useEffect(() => {
+    if (!pendingScopedPrompt) return
+    if (activeMayaTab !== pendingScopedPrompt.tab) return
+
+    const queuedPrompt = pendingScopedPrompt.prompt
+    setPendingScopedPrompt(null)
+    void handleSendMessage(queuedPrompt)
+  }, [activeMayaTab, handleSendMessage, pendingScopedPrompt])
+
   const handlePhaseTwoUploadZone = useCallback(
     (category: PhaseTwoUploadCategory = "selfies") => {
       setMayaTabAndHash("photos")
@@ -4118,6 +4147,7 @@ export default function MayaChatScreen({
           onToolStartVideoGeneration={handleToolStartVideoGeneration}
           activeTab={activeMayaTab}
           onSwitchTab={handleSwitchScopedTab}
+          onSwitchTabWithPrompt={handleSwitchScopedTabWithPrompt}
         />
       )}
           {showReturningMemberHome && (

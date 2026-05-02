@@ -7,6 +7,7 @@ import {
   resolveMayaChatTypeForTab,
   resolveMayaTabHandoff,
 } from "@/lib/maya/tab-scope"
+import { parseMayaToolMarkers } from "@/lib/maya/tool-markers"
 
 describe("maya tab scope", () => {
   it("routes videos tab to an isolated videos chat type when tab-scoped chat is enabled", () => {
@@ -17,6 +18,11 @@ describe("maya tab scope", () => {
   it("keeps photos tab on the existing photo chat types", () => {
     expect(resolveMayaChatTypeForTab({ activeTab: "photos", proMode: false, enabled: true })).toBe("maya")
     expect(resolveMayaChatTypeForTab({ activeTab: "photos", proMode: true, enabled: true })).toBe("pro")
+  })
+
+  it("routes plan tab to an isolated planning chat type when tab-scoped chat is enabled", () => {
+    expect(resolveMayaChatTypeForTab({ activeTab: "plan", proMode: false, enabled: true })).toBe("maya_plan")
+    expect(resolveMayaChatTypeForTab({ activeTab: "plan", proMode: true, enabled: true })).toBe("maya_plan")
   })
 
   it("defaults the tab-scoped feature flag to enabled unless explicitly disabled", () => {
@@ -34,6 +40,18 @@ describe("maya tab scope", () => {
     expect(handoff).toMatchObject({
       targetTab: "videos",
       ctaLabel: "Go to Videos",
+    })
+  })
+
+  it("hands off planning asks from Photos to Plan", () => {
+    const handoff = resolveMayaTabHandoff({
+      activeTab: "photos",
+      userText: "Create a content strategy for my next offer",
+    })
+
+    expect(handoff).toMatchObject({
+      targetTab: "plan",
+      ctaLabel: "Go to Plan",
     })
   })
 
@@ -77,10 +95,20 @@ describe("maya tab scope", () => {
     expect(encodeMayaTabHandoffPayload(handoff!)).toContain("videos|")
   })
 
+  it("parses Plan switch markers without falling back to Photos", () => {
+    const [marker] = parseMayaToolMarkers("[SWITCH_MAYA_TAB:plan|Plan%20this|Work%20here|Go%20to%20Plan]")
+
+    expect(marker).toMatchObject({
+      tool: "switch_maya_tab",
+      targetTab: "plan",
+      ctaLabel: "Go to Plan",
+    })
+  })
+
   it("returns video prompts that keep Maya in the video workflow", () => {
     const prompts = getMayaVideosTabQuickPrompts()
     expect(prompts.map((item) => item.label)).toEqual([
-      "Animate a Photo",
+      "Make Video",
       "Latest Photo",
       "Create a Reel",
     ])

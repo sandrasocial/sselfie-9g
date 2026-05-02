@@ -1,6 +1,7 @@
 import {
   MAYA_CHAT_TYPE_DEFAULT,
   MAYA_CHAT_TYPE_FEED_PLANNER,
+  MAYA_CHAT_TYPE_PLAN,
   MAYA_CHAT_TYPE_PRO,
   MAYA_CHAT_TYPE_VIDEOS,
 } from "@/lib/maya/chat-type"
@@ -24,7 +25,7 @@ const VIDEOS_TAB_ALLOWED_REGEX =
 const PLAN_SCOPE_REGEX =
   /\b(plan|week|weekly|post|caption|captions|strategy|content plan|content rhythm|sell|selling|offer|visibility|next best|what should i do|what to say)\b/i
 const PHOTO_SCOPE_REGEX =
-  /\b(photo|photos|image|images|picture|pictures|concept card|concept cards|prompt|prompts|style|look|looks|generate|create)\b/i
+  /\b(photo|photos|image|images|picture|pictures|visual|visuals|concept card|concept cards|prompt|prompts|style|look|looks)\b/i
 const CHAT_SCOPE_REGEX =
   /\b(photo|photos|image|images|picture|pictures|post|ideas?|calendar|week|captions?|strategy|content|feed|brand|gallery|offer|sell|visibility)\b/i
 
@@ -61,6 +62,10 @@ export function resolveMayaChatTypeForTab(input: {
 
   if (activeTab === "feed") {
     return MAYA_CHAT_TYPE_FEED_PLANNER
+  }
+
+  if (input.enabled && activeTab === "plan") {
+    return MAYA_CHAT_TYPE_PLAN
   }
 
   if (input.enabled && activeTab === "videos") {
