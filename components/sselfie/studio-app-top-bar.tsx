@@ -1,6 +1,6 @@
 "use client"
 
-import { forwardRef, type ReactNode } from "react"
+import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react"
 import { DesignClasses } from "@/lib/design-tokens"
 
 export interface StudioAppTabItem {
@@ -41,10 +41,66 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
     onMayaSubTabChange,
   }, ref) {
     const showMayaSubTabs = activeTab === "maya" && mayaSubTabs.length > 0 && activeMayaSubTab && onMayaSubTabChange
+    const [isMayaSubnavOpen, setIsMayaSubnavOpen] = useState(false)
+    const headerRef = useRef<HTMLElement | null>(null)
+
+    const setHeaderRef = (node: HTMLElement | null) => {
+      headerRef.current = node
+
+      if (typeof ref === "function") {
+        ref(node)
+      } else if (ref) {
+        ref.current = node
+      }
+    }
+
+    useEffect(() => {
+      if (!isMayaSubnavOpen) return
+
+      const handlePointerDown = (event: PointerEvent) => {
+        const target = event.target
+        if (target instanceof Node && headerRef.current?.contains(target)) return
+        setIsMayaSubnavOpen(false)
+      }
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setIsMayaSubnavOpen(false)
+        }
+      }
+
+      document.addEventListener("pointerdown", handlePointerDown)
+      document.addEventListener("keydown", handleKeyDown)
+
+      return () => {
+        document.removeEventListener("pointerdown", handlePointerDown)
+        document.removeEventListener("keydown", handleKeyDown)
+      }
+    }, [isMayaSubnavOpen])
+
+    const handlePrimaryTabClick = (tab: StudioAppTabItem) => {
+      if (tab.id === "maya" && showMayaSubTabs) {
+        if (activeTab !== "maya") {
+          onTabChange(tab.id)
+          setIsMayaSubnavOpen(true)
+          return
+        }
+        setIsMayaSubnavOpen((open) => !open)
+        return
+      }
+
+      setIsMayaSubnavOpen(false)
+      onTabChange(tab.id)
+    }
+
+    const handleMayaSubTabClick = (id: StudioAppMayaSubTabItem["id"]) => {
+      onMayaSubTabChange?.(id)
+      setIsMayaSubnavOpen(false)
+    }
 
     return (
       <header
-        ref={ref}
+        ref={setHeaderRef}
         className="fixed top-0 left-0 right-0 z-[95] border-b pt-safe"
         style={{
           background: "rgba(237,233,226,0.88)",
@@ -65,43 +121,51 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                   const isActive = activeTab === tab.id
                   const isGated =
                     isNewUser && ["studio", "gallery", "feed-planner", "academy"].includes(tab.id)
+                  const isMaya = tab.id === "maya"
 
                   return (
-                    <button
+                    <div
                       key={tab.id}
-                      type="button"
-                      onClick={() => onTabChange(tab.id)}
-                      className={`relative touch-manipulation rounded-md px-2.5 sm:px-3 py-2 min-h-[44px] transition-all duration-200 ${
-                        isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
-                      } ${isGated ? "opacity-50" : ""}`}
-                      aria-label={
-                        isGated ? `${tab.label} — unlocks as you create with Maya` : `Open ${tab.label}`
-                      }
-                      aria-current={isActive ? "page" : undefined}
+                      className="relative"
                     >
-                      {isActive && (
-                        <span
-                          className="absolute inset-0 rounded-md pointer-events-none"
-                          style={{
-                            background: "var(--app-btn-primary-bg)",
-                            border: "1px solid var(--app-btn-primary-bg)",
-                          }}
-                          aria-hidden
-                        />
-                      )}
-                      <span
-                        className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                          isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-secondary)]"
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => handlePrimaryTabClick(tab)}
+                        className={`relative touch-manipulation rounded-md px-2.5 sm:px-3 py-2 min-h-[44px] transition-all duration-200 ${
+                          isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
+                        } ${isGated ? "opacity-50" : ""}`}
+                        aria-label={
+                          isGated ? `${tab.label} — unlocks as you create with Maya` : `Open ${tab.label}`
+                        }
+                        aria-current={isActive ? "page" : undefined}
+                        aria-expanded={isMaya && showMayaSubTabs ? isMayaSubnavOpen : undefined}
+                        aria-haspopup={isMaya && showMayaSubTabs ? "menu" : undefined}
                       >
-                        {tab.label}
-                        {isGated ? (
-                          <span className="ml-1 text-[8px] font-normal uppercase tracking-normal opacity-60">
-                            soon
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
+                        {isActive && (
+                          <span
+                            className="absolute inset-0 rounded-md pointer-events-none"
+                            style={{
+                              background: "var(--app-btn-primary-bg)",
+                              border: "1px solid var(--app-btn-primary-bg)",
+                            }}
+                            aria-hidden
+                          />
+                        )}
+                        <span
+                          className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                            isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-secondary)]"
+                          }`}
+                        >
+                          {tab.label}
+                          {isGated ? (
+                            <span className="ml-1 text-[8px] font-normal uppercase tracking-normal opacity-60">
+                              soon
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+
+                    </div>
                   )
                 })}
               </div>
@@ -111,41 +175,32 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
             ) : null}
           </div>
         </div>
-        {isNewUser ? (
-          <p
-            className="text-[10px] sm:text-xs text-center px-3 pb-2 leading-snug"
-            style={{ color: "var(--app-text-secondary)" }}
-          >
-            Create with Maya to unlock Gallery, Feed &amp; Academy
-          </p>
-        ) : null}
-        {showMayaSubTabs ? (
+        {showMayaSubTabs && isMayaSubnavOpen ? (
           <div
-            className="border-t px-3 pb-2 sm:px-4 md:px-6"
+            className="absolute left-3 top-[calc(100%+8px)] z-[130] w-[min(88vw,360px)] rounded-[18px] border bg-[rgba(255,255,255,0.94)] p-2 shadow-[0_18px_50px_rgba(61,56,48,0.14)] backdrop-blur-[20px] sm:left-4 md:left-6"
             style={{ borderColor: "var(--app-glass-border)" }}
+            role="menu"
+            aria-label="Maya sections"
+            onMouseEnter={() => setIsMayaSubnavOpen(true)}
           >
-            <div
-              className="flex gap-1 overflow-x-auto pt-2"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              aria-label="Maya sections"
-            >
-              {mayaSubTabs.map((tab) => {
-                const isActive = activeMayaSubTab === tab.id
+            <div className="grid gap-1">
+              {mayaSubTabs.map((subTab) => {
+                const isSubActive = activeMayaSubTab === subTab.id
 
                 return (
                   <button
-                    key={tab.id}
+                    key={subTab.id}
                     type="button"
-                    onClick={() => onMayaSubTabChange(tab.id)}
-                    className={`relative touch-manipulation rounded-md px-3 py-2 min-h-[40px] transition-all duration-200 ${
-                      isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
+                    onClick={() => handleMayaSubTabClick(subTab.id)}
+                    className={`relative touch-manipulation rounded-[12px] px-4 py-3 text-left transition-all duration-200 ${
+                      isSubActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
                     }`}
-                    aria-label={`${tab.label} Maya tab`}
-                    aria-current={isActive ? "page" : undefined}
+                    role="menuitem"
+                    aria-current={isSubActive ? "page" : undefined}
                   >
-                    {isActive ? (
+                    {isSubActive ? (
                       <span
-                        className="absolute inset-0 rounded-md pointer-events-none"
+                        className="absolute inset-0 rounded-[12px] pointer-events-none"
                         style={{
                           background: "var(--app-btn-primary-bg)",
                           border: "1px solid var(--app-btn-primary-bg)",
@@ -154,19 +209,27 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                       />
                     ) : null}
                     <span
-                      className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                        isActive
+                      className={`relative z-10 block whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                        isSubActive
                           ? "text-[color:var(--app-btn-primary-text)]"
                           : "text-[color:var(--app-text-secondary)]"
                       }`}
                     >
-                      {tab.label}
+                      {subTab.label}
                     </span>
                   </button>
                 )
               })}
             </div>
           </div>
+        ) : null}
+        {isNewUser ? (
+          <p
+            className="text-[10px] sm:text-xs text-center px-3 pb-2 leading-snug"
+            style={{ color: "var(--app-text-secondary)" }}
+          >
+            Create with Maya to unlock Gallery, Feed &amp; Academy
+          </p>
         ) : null}
       </header>
     )
