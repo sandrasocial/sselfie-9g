@@ -53,8 +53,11 @@ export async function updateSession(request: NextRequest) {
     } = result
 
     if (error) {
-      if (error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used") {
-        console.log("[v0] [Middleware] Refresh token error - clearing cookies")
+      if (
+        error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used" ||
+        error.code === "refresh_token_not_found" || error.message?.includes("Refresh Token Not Found")
+      ) {
+        console.log("[v0] [Middleware] Stale/used refresh token - clearing cookies")
         supabaseResponse.cookies.delete("sb-access-token")
         supabaseResponse.cookies.delete("sb-refresh-token")
       } else {
