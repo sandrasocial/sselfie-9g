@@ -616,7 +616,7 @@ const FAQS = {
     { question: "Is this just presets?",
       answer: "No. The presets are included, but the main thing is the editing walkthrough. Six video modules showing you exactly how I edit, step by step." },
     { question: "What if I'm a complete beginner?",
-      answer: "Good. There's also a posing cheat sheet, a Canva crash course for beginners, and caption prompts. You don't need to know anything going in." },
+      answer: "Good. There's also a posing cheat sheet, a camera settings guide, and 30 caption formulas ready to copy. You don't need to know anything going in." },
   ],
   masterclass: [
     { question: "Do I need the Starter Kit first?",
@@ -874,9 +874,9 @@ export function StarterKitPageContent() {
       <Section eyebrow="Also included" title="The rest of the kit." dark={false}>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <FCard dark={false} title="Selfie Posing Cheat Sheet" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
-          <FCard dark={false} title="7-Day Content Starter" body="A tiny posting rhythm for your first better photo: proof, story, teaching, behind-the-scenes, and invitation." />
-          <FCard dark={false} title="Storytelling Captions + Hooks" body="Caption formulas and scroll-stopping text overlays. My ChatGPT prompts for writing captions that actually connect." />
-          <FCard dark={false} title="Canva Crash Course" body="Never opened Canva? This walks you through the basics so you can create content without getting stuck on the tools." />
+          <FCard dark={false} title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
+          <FCard dark={false} title="7 Posts From One Session" body="Turn a single photo session into a week of content. Proof, story, teaching, behind-the-scenes, and invitation." />
+          <FCard dark={false} title="30 Caption Formulas" body="Ready-to-edit captions written in my voice. Hooks, stories, CTAs. Copy, adjust your detail, post." />
         </div>
       </Section>
 

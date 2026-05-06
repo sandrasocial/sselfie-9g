@@ -41,7 +41,8 @@ describe("modular mini-products", () => {
     expect(success).toContain('href: "/academy/access/feed-reset"')
     expect(success).toContain('href: "/academy/access/ai-photo-refresh"')
     expect(accessPage).toContain("MiniProductWorkspace")
-    expect(workspace).toContain("focused product workspace")
+    expect(workspace).toContain("focused mini-product workspace")
+    expect(workspace).toContain("/api/academy/mini-product/generate")
     expect(workspace).not.toContain("router.push(\"/studio")
   })
 
@@ -50,11 +51,21 @@ describe("modular mini-products", () => {
 
     expect(workspace).toContain("Progress")
     expect(workspace).toContain("Next upgrade preview")
-    expect(workspace).toContain("Generate focused output")
-    expect(workspace).toContain("concept-cards")
-    expect(workspace).toContain("captions")
-    expect(workspace).toContain("9-grid reset")
-    expect(workspace).toContain("5 photo prompts")
+    expect(workspace).toContain("Generate with Maya")
+    expect(workspace).toContain("Main topic or offer")
+    expect(workspace).toContain("Context Maya should use")
+    expect(workspace).toContain("Copy all")
+    expect(workspace).toContain("Complete")
+  })
+
+  it("keeps mini-product generation behind access and shared Maya model routing", () => {
+    const route = readFileSync("app/api/academy/mini-product/generate/route.ts", "utf8")
+
+    expect(route).toContain("requireAcademyProductAccess(productId)")
+    expect(route).toContain("VISIBILITY_MINI_PRODUCT_IDS")
+    expect(route).toContain('createMayaOpenRouterModel("chat_pro")')
+    expect(route).toContain("VISIBILITY_MINI_PRODUCT_BY_ID")
+    expect(route).not.toContain('model: "anthropic/claude-sonnet-4-6"')
   })
 
   it("configures visibility lifecycle sequences without sending live emails", () => {

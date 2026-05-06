@@ -379,6 +379,12 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         >
           Open In Studio Maya
         </a>
+        <a
+          href="/work-with-me"
+          className="ml-0 mt-3 inline-flex border border-white/18 px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-[#F4F0E6] no-underline sm:ml-3"
+        >
+          Apply For Private Sprint
+        </a>
       </footer>
 
       <style>{`

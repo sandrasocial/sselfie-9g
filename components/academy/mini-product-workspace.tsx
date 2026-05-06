@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Check, Copy, Lock, Sparkles } from "lucide-react"
+import { useRef, useState } from "react"
+import { Check, Copy, Loader2, Lock, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,153 +12,81 @@ type MiniProductWorkspaceProps = {
   product: VisibilityMiniProductConfig
 }
 
-type OutputBlock = {
-  title: string
-  items: string[]
-}
-
-function splitInput(value: string) {
-  return value
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function buildOutput(product: VisibilityMiniProductConfig, input: string, detail: string): OutputBlock[] {
-  const topic = input.trim() || "your current offer"
-  const context = detail.trim() || "your next post"
-  const fragments = splitInput(`${input},${detail}`)
-  const anchor = fragments[0] || topic
-
-  switch (product.workspaceKind) {
-    case "message":
-      return [
-        {
-          title: "Clear offer line",
-          items: [`I help ${topic} get ${context} without making visibility feel bigger than life.`],
-        },
-        {
-          title: "Hooks to test",
-          items: [
-            `If ${anchor} feels hard to explain, start here.`,
-            `The reason your content is not selling may be simpler than you think.`,
-            `Before you post more, make this one sentence clearer.`,
-          ],
-        },
-        {
-          title: "Next action",
-          items: ["Use the clearest hook today, then link it to one CTA keyword."],
-        },
-      ]
-    case "weekly-plan":
-      return [
-        {
-          title: "7-day rhythm",
-          items: [
-            `Day 1: name the problem around ${topic}.`,
-            "Day 2: show one behind-the-scenes reason it matters.",
-            "Day 3: teach one simple shift.",
-            "Day 4: share proof, process, or a personal example.",
-            "Day 5: make the offer clear.",
-            "Day 6: answer one objection.",
-            "Day 7: repeat the next step with a softer CTA.",
-          ],
-        },
-      ]
-    case "sales-path":
-      return [
-        {
-          title: "Buyer path",
-          items: [
-            `Post topic: ${topic}.`,
-            `CTA keyword: ${product.ctaKeyword}.`,
-            `Landing page: /${product.slug}.`,
-            "Checkout: one product, one promise, one next step.",
-          ],
-        },
-        {
-          title: "Sales post starter",
-          items: [`If ${context} is the thing you keep avoiding, this is the simple path I would start with.`],
-        },
-      ]
-    case "concept-cards":
-      return [
-        {
-          title: "10 concept cards",
-          items: Array.from({ length: 10 }, (_, index) => {
-            const angles = ["problem", "belief", "mistake", "proof", "story", "how-to", "objection", "behind the scenes", "quick win", "offer"]
-            return `${index + 1}. ${angles[index]} angle for ${topic}`
-          }),
-        },
-      ]
-    case "captions":
-      return [
-        {
-          title: "Caption bank",
-          items: Array.from({ length: 5 }, (_, index) => {
-            const starts = [
-              "I used to make this harder than it needed to be:",
-              "If you are trying to be visible but nothing feels clear, start here:",
-              "The post is not the whole job. The next step matters too:",
-              "A simple reminder if you are building this in real life:",
-              "Here is the cleaner way to talk about it:",
-            ]
-            return `${starts[index]} ${topic}. End with ${product.ctaKeyword}.`
-          }),
-        },
-      ]
-    case "feed-reset":
-      return [
-        {
-          title: "9-grid reset",
-          items: [
-            `1. Problem post: ${topic}`,
-            "2. Your point of view",
-            "3. Personal proof or story",
-            "4. Simple teaching post",
-            "5. Behind the scenes",
-            "6. Objection answer",
-            "7. Offer clarity post",
-            "8. Client/process proof",
-            `9. CTA post: comment ${product.ctaKeyword}`,
-          ],
-        },
-      ]
-    case "photo-refresh":
-      return [
-        {
-          title: "5 photo prompts",
-          items: Array.from({ length: 5 }, (_, index) => {
-            const scenes = ["window portrait", "desk setup", "phone-in-hand story", "editorial close-up", "working moment"]
-            return `${index + 1}. ${scenes[index]} for ${topic}, with ${context}, natural light, calm editorial composition.`
-          }),
-        },
-        {
-          title: "Create first",
-          items: ["Start with the prompt that matches your next caption. The image should support the message, not replace it."],
-        },
-      ]
-  }
-}
+type Phase = "idle" | "loading" | "streaming" | "done"
 
 export function MiniProductWorkspace({ product }: MiniProductWorkspaceProps) {
-  const [input, setInput] = useState("")
-  const [detail, setDetail] = useState("")
-  const [selected, setSelected] = useState<string | null>(null)
+  const [topic, setTopic] = useState("")
+  const [context, setContext] = useState("")
+  const [output, setOutput] = useState("")
+  const [phase, setPhase] = useState<Phase>("idle")
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  const output = useMemo(() => buildOutput(product, input, detail), [detail, input, product])
-  const progress = selected ? 100 : input.trim() && detail.trim() ? 66 : input.trim() || detail.trim() ? 33 : 0
-  const outputText = output.map((block) => `${block.title}\n${block.items.join("\n")}`).join("\n\n")
+  const progress =
+    phase === "done" ? 100 :
+    phase === "streaming" ? 66 :
+    phase === "loading" ? 33 :
+    topic.trim() && context.trim() ? 20 :
+    topic.trim() ? 10 : 0
+
+  async function generate() {
+    if (!topic.trim()) return
+    if (abortRef.current) abortRef.current.abort()
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    setPhase("loading")
+    setOutput("")
+    setError(null)
+
+    try {
+      const response = await fetch("/api/academy/mini-product/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, topic: topic.trim(), context: context.trim() }),
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error((data as { error?: string }).error ?? "Generation failed")
+      }
+
+      if (!response.body) throw new Error("No response body")
+
+      setPhase("streaming")
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setOutput((prev) => prev + decoder.decode(value, { stream: true }))
+      }
+
+      setPhase("done")
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+      setPhase("idle")
+    }
+  }
 
   async function copyOutput() {
-    await navigator.clipboard.writeText(outputText)
+    if (!output) return
+    await navigator.clipboard.writeText(output)
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
   }
 
+  const isRunning = phase === "loading" || phase === "streaming"
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(320px,0.42fr)]">
+      {/* INPUT PANEL */}
       <section className="border bg-background p-6 md:p-8">
         <div className="flex items-start justify-between gap-6">
           <div>
@@ -167,7 +95,7 @@ export function MiniProductWorkspace({ product }: MiniProductWorkspaceProps) {
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-normal md:text-4xl">{product.firstAction}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              This is your focused product workspace. Maya is narrowed to this one job so you do not have to sort through the full Studio.
+              This focused mini-product workspace narrows Maya to one job. Give her your topic and any context, and she will generate your full deliverable.
             </p>
           </div>
           <div className="hidden rounded-md border px-3 py-2 text-xs font-medium text-muted-foreground md:block">
@@ -183,34 +111,48 @@ export function MiniProductWorkspace({ product }: MiniProductWorkspaceProps) {
           <label className="grid gap-2">
             <span className="text-sm font-medium">Main topic or offer</span>
             <Input
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
               placeholder="Example: my brand strategy offer"
+              disabled={isRunning}
             />
           </label>
           <label className="grid gap-2">
             <span className="text-sm font-medium">Context Maya should use</span>
             <Textarea
-              value={detail}
-              onChange={(event) => setDetail(event.target.value)}
-              placeholder="Add the audience, tone, CTA, current feed problem, or visual direction."
-              rows={5}
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Add your audience, tone, CTA, current feed problem, or visual direction."
+              rows={4}
+              disabled={isRunning}
             />
           </label>
         </div>
 
+        {error && (
+          <p className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button type="button" onClick={() => setSelected(output[0]?.items[0] || "done")}>
-            <Sparkles data-icon="inline-start" />
-            Generate focused output
+          <Button type="button" onClick={generate} disabled={isRunning || !topic.trim()}>
+            {isRunning ? (
+              <><Loader2 data-icon="inline-start" className="animate-spin" />Generating…</>
+            ) : (
+              <><Sparkles data-icon="inline-start" />Generate with Maya</>
+            )}
           </Button>
-          <Button type="button" variant="outline" onClick={copyOutput}>
-            <Copy data-icon="inline-start" />
-            {copied ? "Copied" : "Copy"}
-          </Button>
+          {output && (
+            <Button type="button" variant="outline" onClick={copyOutput} disabled={isRunning}>
+              <Copy data-icon="inline-start" />
+              {copied ? "Copied" : "Copy all"}
+            </Button>
+          )}
         </div>
       </section>
 
+      {/* NEXT STEP SIDEBAR */}
       <aside className="border bg-muted/25 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
           Next upgrade preview
@@ -218,46 +160,70 @@ export function MiniProductWorkspace({ product }: MiniProductWorkspaceProps) {
         <h2 className="mt-3 text-xl font-semibold">{product.nextStep.title}</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{product.nextStep.body}</p>
         <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-          <Lock />
+          <Lock className="h-4 w-4" />
           Preview only until you choose the next product.
         </div>
       </aside>
 
+      {/* OUTPUT PANEL */}
       <section className="border bg-background p-6 md:p-8 lg:col-span-2">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
               Maya output
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">Your first win</h2>
+            <h2 className="mt-2 text-2xl font-semibold">
+              {phase === "idle" && "Your deliverable appears here"}
+              {phase === "loading" && "Maya is thinking…"}
+              {phase === "streaming" && "Generating…"}
+              {phase === "done" && "Done. Copy and use it."}
+            </h2>
           </div>
-          {selected ? (
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Check />
-              First action complete
+          {phase === "done" && (
+            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+              <Check className="h-4 w-4" />
+              Complete
             </div>
-          ) : null}
+          )}
         </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-          {output.map((block) => (
-            <article key={block.title} className="rounded-md border p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em]">{block.title}</h3>
-              <div className="mt-4 grid gap-3">
-                {block.items.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setSelected(item)}
-                    className="rounded-md border bg-background p-3 text-left text-sm leading-6 transition-colors hover:bg-muted"
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+        {phase === "idle" && !output && (
+          <div className="mt-6 rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
+            Fill in your topic above and click Generate with Maya.
+          </div>
+        )}
+
+        {(phase === "streaming" || phase === "done" || (phase === "idle" && output)) && (
+          <div className="mt-6">
+            <div className="relative">
+              <pre className="min-h-[300px] max-h-[680px] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/20 p-5 text-sm leading-7 font-sans">
+                {output}
+                {phase === "streaming" && (
+                  <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-foreground align-middle" />
+                )}
+              </pre>
+              {phase === "done" && output && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={copyOutput}
+                  className="absolute right-3 top-3"
+                >
+                  <Copy className="mr-1.5 h-3 w-3" />
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {phase === "loading" && (
+          <div className="mt-6 flex min-h-[200px] items-center justify-center gap-3 rounded-md border border-dashed text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Maya is reading your brand profile and preparing the output…
+          </div>
+        )}
       </section>
     </div>
   )
