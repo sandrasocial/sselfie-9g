@@ -350,6 +350,7 @@ export default function MayaChatScreen({
     hasUsedMayaBefore,
     loadChat,
     handleNewChat: baseHandleNewChat,
+    handleNewChatForType: baseHandleNewChatForType,
     handleSelectChat: baseHandleSelectChat,
     handleDeleteChat: baseHandleDeleteChat,
     setChatId,
@@ -3095,31 +3096,18 @@ export default function MayaChatScreen({
     })
 
     try {
-      // 🔴 FIX: Create new chat with correct chatType based on mode
+      // Create the target-mode chat through useMayaChat so its race guard and
+      // chat-type-specific storage stay in sync with the mode switch.
       const chatType = newMode ? 'pro' : 'maya'
-      console.log("[v0] Creating new chat with type:", chatType)
-      
-      const response = await fetch("/api/maya/new-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatType }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("[v0] ❌ Failed to create new chat:", response.status, errorText)
-        throw new Error(`Failed to create new chat: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("[v0] ✅ New chat created:", data.chatId)
-      
-      // Switch mode first (this will be saved to localStorage by the hook)
       console.log("[v0] Setting mode to:", newMode ? "Pro" : "Classic")
       setProMode(newMode)
+
+      const newChatId = await baseHandleNewChatForType(chatType)
+      if (!newChatId) {
+        throw new Error("Failed to create a fresh Maya chat for this mode")
+      }
+      console.log("[v0] ✅ New chat created:", newChatId)
       
-      // Then reset chat state
-      setChatId(data.chatId)
       setChatTitle("New Chat")
       setMessages([])
       savedMessageIds.current.clear()
@@ -3129,11 +3117,9 @@ export default function MayaChatScreen({
       setPendingConceptRequest(null) // 🔴 CRITICAL: Clear any pending concept requests to prevent using old mode
       setIsGeneratingConcepts(false) // Also clear generation state
 
-      localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
-
       console.log("[v0] ✅ Mode switched successfully:", {
         mode: newMode ? "Pro" : "Classic",
-        chatId: data.chatId
+        chatId: newChatId
       })
     } catch (error) {
       console.error("[v0] ❌ Error switching mode:", error)

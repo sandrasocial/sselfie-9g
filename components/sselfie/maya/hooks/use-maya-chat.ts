@@ -55,6 +55,7 @@ export interface UseMayaChatReturn {
   // Chat operations
   loadChat: (specificChatId?: number, explicitChatType?: string) => Promise<void>
   handleNewChat: () => Promise<void>
+  handleNewChatForType: (chatType: string) => Promise<number | null>
   handleSelectChat: (selectedChatId: number, selectedChatTitle?: string) => Promise<void>
   handleDeleteChat: (deletedChatId: number) => void
 
@@ -762,6 +763,13 @@ export function useMayaChat({
       proMode,
       enabled: isTabScopedChatEnabled,
     })
+
+    if (isCreatingNewChatRef.current) {
+      lastModeRef.current = currentChatType
+      debugLog("[useMayaChat] Skip load while creating new chat", { currentChatType })
+      return
+    }
+
     const chatTypeChanged = lastModeRef.current !== null && lastModeRef.current !== currentChatType
 
     debugLog("[useMayaChat] Chat type snapshot", {
@@ -907,8 +915,7 @@ export function useMayaChat({
     saveChatIdToStorage(chatId, chatType)
   }, [chatId, getChatType])
 
-  // Handle new chat
-  const handleNewChat = useCallback(async () => {
+  const handleNewChatForType = useCallback(async (chatType: string): Promise<number | null> => {
     // Reset state for new chat (clearLibrary will be called by component if needed)
     try {
       // Set flag to prevent useEffect from saving chatId and triggering reloads
@@ -922,9 +929,6 @@ export function useMayaChat({
       setMessages([])
       savedMessageIds.current.clear()
       
-      // Create new chat with correct chatType based on activeTab
-      // Feed tab uses "feed-planner", Photos tab uses "maya" or "pro"
-      const chatType = getChatType()
       debugLog("[useMayaChat] Creating new chat", { chatType, activeTab })
       
       const response = await fetch("/api/maya/new-chat", {
@@ -939,6 +943,7 @@ export function useMayaChat({
       
       // Mark as loaded BEFORE setting chatId to prevent useEffect from loading
       hasLoadedChatRef.current = true
+      lastModeRef.current = chatType
       
       // Save to localStorage BEFORE setting chatId (to prevent useEffect from triggering)
       saveChatIdToStorage(data.chatId, chatType)
@@ -960,6 +965,7 @@ export function useMayaChat({
       }, 0)
 
       debugLog("[useMayaChat] New chat created", { chatId: data.chatId, chatType, activeTab })
+      return data.chatId
     } catch (error) {
       console.error("[useMayaChat] ❌ Error creating new chat:", error)
       // On error, ensure messages are still cleared and reset flag
@@ -967,8 +973,17 @@ export function useMayaChat({
       savedMessageIds.current.clear()
       savedFeedCardMessagesRef.current.clear() // Clear feed card tracking
       isCreatingNewChatRef.current = false
+      return null
     }
-  }, [getChatType, activeTab, setMessages])
+  }, [activeTab, setMessages])
+
+  // Handle new chat
+  const handleNewChat = useCallback(async () => {
+    // Create new chat with correct chatType based on activeTab
+    // Feed tab uses "feed-planner", Photos tab uses "maya" or "pro"
+    const chatType = getChatType()
+    await handleNewChatForType(chatType)
+  }, [getChatType, handleNewChatForType])
 
   // Handle select chat
   const handleSelectChat = useCallback(
@@ -1029,6 +1044,7 @@ export function useMayaChat({
     // Chat operations
     loadChat,
     handleNewChat,
+    handleNewChatForType,
     handleSelectChat,
     handleDeleteChat,
 

@@ -173,6 +173,69 @@ describe("useMayaChat handleNewChat", () => {
     )
   })
 
+  it("creates explicit mode-switch chats with type-specific storage", async () => {
+    const setItem = vi.fn()
+    Object.defineProperty(window, "localStorage", {
+      value: {
+        getItem: vi.fn(() => null),
+        setItem,
+        removeItem: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    vi.spyOn(global, "fetch" as any).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+
+      if (url.includes("/api/maya/new-chat")) {
+        expect(init?.body).toBe(JSON.stringify({ chatType: "pro" }))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chatId: 321 }),
+        } as Response
+      }
+
+      if (url.includes("/api/maya/chats")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chats: [] }),
+        } as Response
+      }
+
+      if (url.includes("/api/maya/load-chat")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chatId: null, chatTitle: "Chat with Maya", messages: [] }),
+        } as Response
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      } as Response
+    })
+
+    let hookValue: HookValue | null = null
+
+    render(<HookHarness onReady={(value) => { hookValue = value }} />)
+
+    await waitFor(() => {
+      expect(hookValue).not.toBeNull()
+    })
+
+    await act(async () => {
+      await expect(hookValue!.handleNewChatForType("pro")).resolves.toBe(321)
+    })
+
+    expect(setItem).toHaveBeenCalledWith("mayaCurrentChatId_pro", "321")
+    expect(setItem).not.toHaveBeenCalledWith("mayaCurrentChatId", "321")
+  })
+
   it("isolates the client chat session id between photos and videos tabs", async () => {
     let hookValue: HookValue | null = null
 
