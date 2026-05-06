@@ -677,7 +677,7 @@ export async function POST(req: Request) {
 
       const mayaSnapshot = await getMayaUserSnapshot(dbUserId)
 
-      let activeAssetContext = mayaSnapshot.activeAssetContext
+      let activeAssetContext = mayaSnapshot?.activeAssetContext ?? null
       try {
         if (!activeAssetContext) {
           activeAssetContext = await getMayaActiveAssetContext(dbUserId)
@@ -1453,7 +1453,7 @@ export async function POST(req: Request) {
 
       if (strictStructuredRouting && orchestration.kind === "none") {
         const structuredIntent = detectMayaAssetIntentResult(latestStructuredUserText)
-        if (structuredIntent.intentClass !== "none" && structuredIntent.confidence >= 0.55) {
+        if (structuredIntent && structuredIntent.intentClass !== "none" && structuredIntent.confidence >= 0.55) {
           void logAnalyticsEvent({
             eventName: "maya_structured_fallback_prevented",
             userId: dbUserId,
@@ -1967,21 +1967,25 @@ export async function POST(req: Request) {
     
     const studioProIntent = detectStudioProIntent(lastMessageText)
     const studioProHeader = req.headers.get("x-studio-pro-mode")
-    // CLASSIC MODE SAFETY: Validate header is explicitly "true", not just truthy
-    const hasStudioProHeader = studioProHeader === "true"
+    // MODE SAFETY: When the UI sends an explicit toggle state, it must win over
+    // intent detection. Otherwise "use my trained model" can be misread as Pro/Selfie.
+    const hasExplicitStudioProHeader = studioProHeader === "true" || studioProHeader === "false"
+    const headerStudioProMode = studioProHeader === "true"
+    const resolvedStudioProIntent = hasExplicitStudioProHeader ? headerStudioProMode : studioProIntent.isStudioPro
     
     // CLASSIC MODE SAFETY: Log mode detection for debugging
     console.log("[STUDIO-PRO] Intent detection:", {
-      isStudioPro: studioProIntent.isStudioPro || hasStudioProHeader,
+      isStudioPro: resolvedStudioProIntent,
       mode: studioProIntent.mode,
       confidence: studioProIntent.confidence,
       headerValue: studioProHeader,
-      headerValid: hasStudioProHeader,
+      headerExplicit: hasExplicitStudioProHeader,
+      headerStudioProMode,
     })
 
     // Check for prompt builder chat type first (highest priority)
     // Define isStudioProMode outside conditional so it's available for later use
-    const isStudioProMode = chatType !== "prompt_builder" && (studioProIntent.isStudioPro || hasStudioProHeader)
+    const isStudioProMode = chatType !== "prompt_builder" && resolvedStudioProIntent
     const academyPurchaseProduct = (req.headers.get("x-academy-product") || productFromBody || "").trim() || null
     const headerFirstTimeProductUser = req.headers.get("x-first-time-product-user") === "true"
     const firstTimeProductUser =
@@ -2038,7 +2042,8 @@ export async function POST(req: Request) {
         useFeedPlannerContext,
         userSelectedMode,
         studioProHeader,
-        hasStudioProHeader,
+        hasExplicitStudioProHeader,
+        headerStudioProMode,
         systemPromptLength: systemPrompt.length,
         feedContextLength: getFeedPlannerContextAddon(userSelectedMode).length,
         unifiedSystemLength: unifiedSystemPrompt.length,
@@ -2124,13 +2129,13 @@ ${finalUserContext}
         systemPrompt += `\n\n## CURRENT GENERATION MODE: SELFIE
 The user is in **Selfie mode** — photos are generated using their linked reference selfies (NanoBanana Pro).
 - When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with selfie-optimised prompts.
-- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the header to switch, then I'll generate with your trained model."
+- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the mode toggle to switch, then I'll generate with your trained model."
 - Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
       } else {
         systemPrompt += `\n\n## CURRENT GENERATION MODE: MY MODEL
 The user is in **My Model mode** — photos are generated using their trained custom model (LoRA).
 - When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with model-based prompts.
-- If they ask to "use my selfies", "use my uploaded photos", or want selfie/reference-based generation, don't try to do it in this mode. Say warmly: "You're in My Model mode right now. Tap **SELFIE** in the header to switch, then I'll use your reference photos."
+- If they ask to "use my selfies", "use my uploaded photos", or want selfie/reference-based generation, don't try to do it in this mode. Say warmly: "You're in My Model mode right now. Tap **SELFIE** in the mode toggle to switch, then I'll use your reference photos."
 - If they don't have a trained model yet and ask for model-based generation, guide them: "You haven't trained a model yet. Head to the Train tab to set one up, or tap SELFIE to use your uploaded photos instead."
 - Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
       }

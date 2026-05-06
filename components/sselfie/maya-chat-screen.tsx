@@ -320,7 +320,10 @@ export default function MayaChatScreen({
   }, [])
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--maya-header-height", "0px")
+    document.documentElement.style.setProperty(
+      "--maya-header-height",
+      "var(--studio-app-header-height, 80px)",
+    )
   }, [])
   // Settings managed by useMayaSettings hook
   const {
