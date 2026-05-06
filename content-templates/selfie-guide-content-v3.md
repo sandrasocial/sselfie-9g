@@ -1,9 +1,9 @@
-# YOUR SELFIE GUIDE
-## One Good Selfie Can Build Your Brand
+# YOUR FIRST VISIBLE POST GUIDE
+## Turn One Phone Photo Into Content That Says Something
 
 Here's the thing...
 
-Most women think they need a professional photographer to build a brand online.
+Most women think they need a professional photographer before they can start building online.
 
 They wait. They hesitate. They scroll through other people's perfect feeds and think, "I'm not ready yet."
 
@@ -13,11 +13,11 @@ But let me be really honest for a second.
 
 **Your phone is enough.**
 **Your face is enough.**
-**One good selfie can fuel weeks of content.**
+**One good phone photo can become your first visible post.**
 
-And in this guide, I'm going to show you exactly how to take that selfie.
+And in this guide, I'm going to show you how to take the photo, understand what it is for, and turn it into content.
 
-No fluff. No fancy equipment. Just you, your iPhone, and a few simple tricks that actually work.
+No fluff. No fancy equipment. Just you, your phone, one honest photo, and a simple next step.
 
 I'm Sandra. I've built a 180K+ following and a real, paying business starting with nothing but my phone and a window. If I can do it, so can you.
 
@@ -221,18 +221,26 @@ The goal is not perfection. The goal is getting comfortable being visible. Becau
 
 ---
 
-## PART 6: Grow Your Audience With Every Selfie
+## PART 6: Give the Photo a Job
 
-Let's talk about why any of this matters for your business.
+Let's talk about why any of this matters for your content.
 
 [IMAGE: img-editorial-dark.png — Cohesive Instagram feed with consistent editorial style]
 
-### Visibility Is Revenue
-If people cannot see you, they cannot buy from you. It is that simple.
+### A Photo Is Not the Whole Strategy
+This is where I want to be honest.
 
-Your personal brand is the reason someone chooses you over someone else who sells the same thing. And your personal brand is built through consistent, authentic visibility over time.
+A better selfie can get attention. It can make you feel more confident. It can give you something to post.
 
-Every photo you post is a touchpoint. Every caption is a conversation. Every story is a chance to remind someone that you exist and that you are worth following.
+But the photo itself is not the strategy.
+
+The strategy is what the photo does next.
+
+Every post needs a job.
+
+It can help people find you. It can help people trust you. It can show proof. It can explain what you believe. It can invite someone to take a next step.
+
+That is the difference between posting randomly and building visibility.
 
 ### What Makes Content Perform
 
@@ -244,15 +252,42 @@ Every photo you post is a touchpoint. Every caption is a conversation. Every sto
 
 > One viral post does not build a business. Showing up regularly, even imperfectly, does.
 
-### The Content Formula That Works
+### The 5 Content Jobs
 
-For every selfie you take, you can create:
-- 1 Instagram post (the photo + a caption that tells a story)
-- 1 reel or TikTok (show the process, the before/after, or a tip)
-- 3 to 5 stories (behind the scenes, poll, question sticker, or repost)
-- 1 invitation (a small CTA that tells people what you are building, selling, or helping with)
+Before you post the photo, ask:
 
-That is 5 to 7 pieces of content from one photo session. You do not need to spend hours in front of a camera. You need a system.
+**Is this a reach post?**  
+This teaches a quick tip, shows a visual result, or gives someone something worth saving.
+
+**Is this a trust post?**  
+This tells a real story, shows the honest middle, or helps someone feel understood.
+
+**Is this a proof post?**  
+This shows a result, a before/after, a DM, a lesson learned, or something real that makes the work believable.
+
+**Is this a buyer post?**  
+This explains what you help with, why your work matters, or what someone needs to believe before they buy.
+
+**Is this an invitation post?**  
+This gives someone a clear next step.
+
+That is the content system.
+
+Not more posting. More purpose.
+
+### Turn One Photo Into a Mini Content System
+
+For every phone photo you take, you can create:
+- 1 feed post with the photo and a caption
+- 1 Reel or TikTok showing the process, before/after, or tip
+- 3 to 5 Stories with behind the scenes, a poll, a question, or the honest thought behind the photo
+- 1 invitation that tells people what you are building, selling, or helping with
+
+That is 5 to 7 pieces of content from one photo session.
+
+You do not need to spend hours in front of a camera.
+
+You need a system.
 
 ### Platform-Specific Tips
 - [ ] Instagram: Optimize for saves. Ask yourself "would someone screenshot this?" before you post.
@@ -262,13 +297,17 @@ That is 5 to 7 pieces of content from one photo session. You do not need to spen
 
 ---
 
-## PART 7: Your 7-Day Challenge
+## PART 7: Your 7-Day First Visible Post Challenge
 
 This is where it gets real.
 
 Reading about selfies is one thing. Taking them is another.
 
-Every day for 7 days, you have one simple action. It takes between 10 and 30 minutes. By the end of the week, you will have practiced every skill in this guide, and you will have at least one photo worth posting.
+Every day for 7 days, you have one simple action. It takes between 10 and 30 minutes.
+
+By the end of the week, you will not just have a better photo.
+
+You will have one visible post and a small content system around it.
 
 Complete each day before moving to the next one.
 
@@ -288,25 +327,51 @@ Take your best selfie from days 1 to 3. Open Lightroom Mobile. Apply the 5-step 
 Take a selfie while doing something you love. Cooking, reading, working, walking. No posing. Just take the photo while you're in the moment.
 
 **Day 6 - Caption Writing**
-Write 3 different captions for your day 5 photo. One short (under 10 words), one medium (2 to 3 sentences), and one long (a real story, 5 to 8 sentences). Add one tiny invitation at the end: "If you are building this too, send me a message."
+Write 3 different captions for your day 5 photo.
+
+One reach caption: teach one small thing.
+
+One trust caption: tell the honest story behind the photo.
+
+One invitation caption: name the next step.
+
+Add one tiny invitation at the end: "If you are building this too, send me a message."
 
 **Day 7 - Post It**
-Choose your best selfie from this week. Pick your favorite caption. Post it. Done.
+Choose your best photo from this week. Pick your favorite caption. Post it. Then turn the same idea into 3 Stories.
 
 You do not need permission. You do not need it to be perfect. You just need to go.
 
 ---
 
-## PART 8: Meet Maya, Your AI Brand Partner
+## PART 8: Where SSELFIE Fits
 
 Here's where things get interesting.
 
-You have learned how to take the selfie. Now I want to show you what you can do with it.
+You have learned how to take the photo.
+
+Now I want to show you what happens when the photo becomes part of a real visibility system.
 
 [IMAGE: feed-post-1.png — AI-enhanced selfie gallery showing before and after brand photo results]
 
+### The SSELFIE Path
+
+The photo helps people recognize you.
+
+Your message helps people understand you.
+
+Your content rhythm helps people trust you.
+
+Your offer gives people a next step.
+
+That is the path.
+
+Not just take a selfie and post it.
+
+Take the photo. Know what to say. Show up with a rhythm. Give your visibility somewhere to go.
+
 ### What Maya Does
-Maya is the AI at the heart of SSELFIE Studio. She takes your selfies and transforms them into professional brand photos, in any setting, any mood, any style, with your face.
+Maya is the AI at the heart of SSELFIE Studio. She helps turn your selfies, brand direction, and content needs into professional brand photos, content ideas, captions, and next steps.
 
 Not stock photos. Not someone else's face. Yours.
 
@@ -320,11 +385,11 @@ Hire a photographer (budget: 800 to 2,000 euros). Book a studio or location. Sch
 
 The SSELFIE path looks like this:
 
-Take a selfie on your phone. Open Maya. Get 20 new brand photos in 10 minutes. Repeat whenever you want, with zero extra cost.
+Take a photo on your phone. Open Maya. Create brand visuals, caption ideas, and content directions faster. Repeat whenever you need a new week of content.
 
 ### How Maya Works
 
-1. **You take a selfie** using the techniques from this guide. Natural light. Good angle. Relaxed expression.
+1. **You take a photo** using the techniques from this guide. Natural light. Good angle. Relaxed expression.
 
 2. **You upload it to Maya** in SSELFIE Studio. She reads your face, your style, and your brand if you have set up your Brand Profile.
 
@@ -332,7 +397,7 @@ Take a selfie on your phone. Open Maya. Get 20 new brand photos in 10 minutes. R
 
 4. **Maya generates your brand photo.** Usually under 2 minutes.
 
-5. **You download and post.** No editing required. The photo is ready.
+5. **You turn it into content.** Photo, caption, story, and next step.
 
 ### The Result
 
@@ -364,13 +429,13 @@ Good light. The right settings. An angle that works. A simple edit. And now, an 
 
 But here is the thing I want you to remember.
 
-None of the tools matter if you do not show up.
+None of the tools matter if you do not show up with a direction.
 
 The women who build real audiences, real businesses, and real financial freedom are not the ones with the best cameras or the most followers. They are the ones who keep showing up, week after week, imperfectly and consistently, until the momentum is undeniable.
 
 You do not need more followers to start. You need to start to get more followers.
 
-Take the selfie. Post the photo. Tell the story.
+Take the photo. Write the caption. Tell the story. Give people a next step.
 
 I am rooting for you.
 
@@ -382,17 +447,25 @@ Sandra x
 
 Here's the thing.
 
-You've just learned everything you need to take a great selfie. But a great selfie on its own isn't a brand. It's a start.
+You've just learned everything you need to take a better phone photo.
+
+But a better photo on its own is not a brand.
+
+It is a start.
 
 The women I know who are actually building audiences — they're not winging it. They've got a system. They know who they're talking to. They know what to say. They show up consistently because they're not spending hours staring at a blank caption box.
 
 If you want the next practical step, start with the Starter Kit. It gives you the guide, presets, and a simple 7-day content starter so your first better photo does not just sit in your camera roll.
 
-If you already know the photo part is easier now but the message still feels unclear, the Brand Strategy Pack is the clarity layer: who you help, what to say, and how to turn one selfie into content that sounds like you.
+If you want the full path, go to the Visibility Suite: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.
+
+If you already know the photo part is easier now but the message still feels unclear, the Brand Strategy Pack is the clarity layer: who you help, what to say, and how to turn one photo into content that sounds like you.
 
 Ready?
 
 [Get the Starter Kit](/checkout/starter-kit)
+
+[See the Visibility Suite](/visibility-suite)
 
 [Get the Brand Strategy Pack](/checkout/brand-strategy-pack)
 

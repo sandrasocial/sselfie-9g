@@ -67,7 +67,7 @@ describe("SelfieGuideExperience interactive features", () => {
       screen.getByRole("heading", { name: "PART 2: Light Changes Everything" })
     ).toBeInTheDocument()
     expect(
-      screen.getAllByAltText(/Sandra standing beside a bright window/i).length
+      screen.getAllByAltText(/Sandra taking a selfie with her phone/i).length
     ).toBeGreaterThan(0)
   })
 
@@ -170,18 +170,22 @@ describe("SelfieGuideExperience interactive features", () => {
     )
   })
 
-  it("shows a single short brand strategy upsell at the end of the guide", () => {
+  it("shows a short visibility-suite next step at the end of the guide", () => {
     const markdown = ["## PART 1: Intro", "Short body."].join("\n")
 
     render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
 
-    expect(screen.getByText("Get your Brand Strategy")).toBeInTheDocument()
+    expect(screen.getByText("Keep the path clear")).toBeInTheDocument()
     expect(
-      screen.getByText("Turn the visuals into a message people actually remember.")
+      screen.getByText(/The guide gives you the first visible post/i)
     ).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Checkout Brand Strategy Pack" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "See Visibility Suite" })).toHaveAttribute(
       "href",
-      "/checkout/brand-strategy-pack"
+      "/visibility-suite"
+    )
+    expect(screen.getByRole("link", { name: "Start with Starter Kit" })).toHaveAttribute(
+      "href",
+      "/starter-kit"
     )
     expect(screen.queryByRole("link", { name: "Join Studio Membership" })).not.toBeInTheDocument()
   })

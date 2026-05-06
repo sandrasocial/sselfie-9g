@@ -14,15 +14,15 @@ describe("selfie guide public landing", () => {
     expect(route).not.toContain("One Good Selfie. Your Entire Brand.")
   })
 
-  it("ships the approved public landing content", () => {
-    const componentPath = path.join(ROOT, "components/selfie-guide/selfie-guide-paid-landing.tsx")
+  it("ships the approved free public landing content", () => {
+    const componentPath = path.join(ROOT, "components/freebie/selfie-guide-free-landing.tsx")
     expect(fs.existsSync(componentPath)).toBe(true)
 
     const component = fs.readFileSync(componentPath, "utf8")
-    expect(component).toContain("Selfies you feel good posting.")
-    expect(component).toContain("This is the calmest place to start.")
-    expect(component).toContain("ONE-TIME · €97")
-    expect(component).toContain("GET INSTANT ACCESS")
-    expect(component).toContain("THE SELFIE GUIDE")
+    expect(component).toContain("Your first visible post.")
+    expect(component).toContain("Take one phone photo and turn it into a post that says something.")
+    expect(component).toContain("One phone photo. Four simple jobs.")
+    expect(component).toContain("The photo is not the strategy.")
+    expect(component).toContain("Get the free guide")
   })
 })

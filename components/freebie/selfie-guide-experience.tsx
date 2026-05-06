@@ -71,8 +71,8 @@ type ChapterMoodSpec = {
 // ─── Image Data ─────────────────────────────────────────────────────────────
 
 const HERO_IMAGE: GuideImage = {
-  src: "/images/selfie-guide/window-editorial-portrait.jpg",
-  alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
+  src: "/images/selfie-guide/window-lighting-setup.png",
+  alt: "Sandra taking a selfie with her phone",
   caption: "",
   width: 762,
   height: 1143,
@@ -936,18 +936,24 @@ export default function SelfieGuideExperience({
         {/* ── Sticky top bar ────────────────────────── */}
         <header className="sg-topbar">
           <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-          <span className="sg-topbar-label">Selfie Guide · Complete</span>
+          <span className="sg-topbar-label">First Visible Post Guide · Complete</span>
         </header>
 
         {/* ── Completion card ───────────────────────── */}
         <main className="sg-main sg-main-centered">
           <div className="sg-complete-card">
             <p className="sg-eyebrow">You did it</p>
-            <h1 className={`sg-complete-title ${cormorant.className}`}>You finished it.</h1>
-            <p className="sg-complete-sub">Now let&apos;s see what Maya can do with your selfie.</p>
+            <h1 className={`sg-complete-title ${cormorant.className}`}>You have a starting point.</h1>
+            <p className="sg-complete-sub">
+              Now the next step is making the rest of your content connect: what to say, how to
+              show up, and what people can do next.
+            </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
-              <Link href="/private-shoot" className="sg-cta-primary">
-                Book the Private Offer
+              <Link href="/visibility-suite" className="sg-cta-primary">
+                See Visibility Suite
+              </Link>
+              <Link href="/starter-kit" className="sg-cta-secondary">
+                Start with Starter Kit
               </Link>
             </div>
             <p className="sg-complete-member">
@@ -1029,7 +1035,7 @@ export default function SelfieGuideExperience({
       {/* ── Sticky top bar (replaces sidebar) ───────── */}
       <header className="sg-topbar">
         <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-        <span className="sg-topbar-label">Selfie Guide · 2026</span>
+        <span className="sg-topbar-label">First Visible Post Guide</span>
       </header>
 
       {/* ── Main ────────────────────────────────────── */}
@@ -1049,20 +1055,20 @@ export default function SelfieGuideExperience({
           <div className="sg-hero-gradient" />
 
           <div className="sg-hero-content">
-            <p className="sg-eyebrow">Selfie Guide · 2026 Edition</p>
+            <p className="sg-eyebrow">Free Guide · SSELFIE Path</p>
             <h1 className={`sg-hero-title ${cormorant.className}`}>
-              One Good Selfie<br />Can Build Your Brand
+              Your First<br />Visible Post
             </h1>
             <p className={`sg-hero-for ${cormorant.className}`}>
               Built for {firstName}
             </p>
             <p className="sg-hero-sub">
-              Eight technique parts in the guide, plus intro sections — one phone, real techniques.
+              Take one phone photo, write the caption, and know what the post is supposed to do next.
             </p>
             <div className="sg-hero-badges">
-              <span>Studio-looking results</span>
+              <span>Phone photo basics</span>
               <span>7-day challenge</span>
-              <span>Maya bonus inside</span>
+              <span>Content system inside</span>
             </div>
           </div>
 
@@ -1247,10 +1253,11 @@ export default function SelfieGuideExperience({
               <>
                 <p className="sg-eyebrow">Next step</p>
                 <h3 className={`sg-funnel-title ${cormorant.className}`}>
-                  Get your Brand Strategy
+                  Keep the path clear
                 </h3>
                 <p className="sg-funnel-copy">
-                  Turn the visuals into a message people actually remember.
+                  The guide gives you the first visible post. The Visibility Suite gives you What To Say,
+                  Show Up, Get Paid, and your Maya Visibility Plan in one guided path.
                 </p>
                 <div className="sg-funnel-ctas">
                   {presetDownloadUrl ? (
@@ -1281,13 +1288,22 @@ export default function SelfieGuideExperience({
                       Preparing your Brand Strategy...
                     </button>
                   ) : (
-                    <Link
-                      href="/checkout/brand-strategy-pack"
-                      className="sg-cta-primary"
-                      onClick={() => trackGuideUpsellClick("/checkout/brand-strategy-pack", "brand_strategy_pack")}
-                    >
-                      Checkout Brand Strategy Pack
-                    </Link>
+                    <>
+                      <Link
+                        href="/visibility-suite"
+                        className="sg-cta-primary"
+                        onClick={() => trackGuideUpsellClick("/visibility-suite", "visibility_suite")}
+                      >
+                        See Visibility Suite
+                      </Link>
+                      <Link
+                        href="/starter-kit"
+                        className="sg-cta-secondary"
+                        onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+                      >
+                        Start with Starter Kit
+                      </Link>
+                    </>
                   )}
                 </div>
                 {brandStrategyBumpSelected ? <p className="sg-funnel-status">{brandStrategyStatus}</p> : null}
