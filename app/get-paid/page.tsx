@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "Get Paid | SSELFIE",
+  title: "Get Paid",
   description: "Build a simple buyer path from your content to your first clear offer.",
 }
 

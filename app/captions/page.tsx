@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "Caption Sprint | SSELFIE",
+  title: "Caption Sprint",
   description: "Write a focused bank of captions without starting from a blank page.",
 }
 

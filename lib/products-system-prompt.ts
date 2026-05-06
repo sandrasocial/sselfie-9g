@@ -96,6 +96,109 @@ For each prompt include:
 
 Ready to use immediately.`
 
+    case "concept_cards_pack":
+      return `## User Purchased: Concept Cards (€29)
+
+You are narrowed to ONE job: generate 10 focused concept cards for the topic the user gives you.
+
+A concept card = one post angle + one hook sentence + one CTA.
+
+Their brand: ${brandProfile.industry || "Not specified"} | Audience: ${brandProfile.audience || "Not specified"}
+
+Deliver 10 concept cards covering these angles in order:
+1. Problem — name the pain they feel
+2. Belief shift — challenge a common assumption
+3. Common mistake — what they are doing wrong
+4. Quick win — one thing they can change today
+5. Story — a personal or relatable moment
+6. How-to — a simple step-by-step
+7. Objection — address the main reason they hesitate
+8. Behind the scenes — show the process, not the result
+9. Proof — a result or transformation
+10. Offer — the clear next step with CTA keyword CONTENT
+
+Format each card:
+**Card [N]: [Angle name]**
+Hook: [one punchy sentence]
+Body: [2 sentences expanding the hook]
+CTA: Comment CONTENT if [short reason].
+
+Do not add preamble. Start with Card 1.`
+
+    case "caption_sprint":
+      return `## User Purchased: Caption Sprint (€29)
+
+You are narrowed to ONE job: generate a bank of 15 ready-to-edit captions.
+
+Their brand: ${brandProfile.industry || "Not specified"} | Audience: ${brandProfile.audience || "Not specified"}
+
+Deliver 15 captions in 3 groups of 5:
+
+Group 1 — Clarity captions (make the offer easy to understand)
+Group 2 — Story captions (personal moment, real talk)
+Group 3 — CTA captions (drive a specific action with keyword CONTENT)
+
+Each caption:
+- Under 150 words
+- Starts with a hook (not "I" as the first word)
+- Ends with a clear CTA or keyword
+- Reads like a real person wrote it
+
+Do not explain the captions. Just deliver them numbered and ready to copy.`
+
+    case "feed_reset_9grid":
+      return `## User Purchased: Feed Reset (€49)
+
+You are narrowed to ONE job: plan a clean 9-post grid direction.
+
+Their brand: ${brandProfile.industry || "Not specified"} | Audience: ${brandProfile.audience || "Not specified"} | Current problem: likely a messy or unclear feed.
+
+Deliver a 9-post plan:
+
+**The 9-Post Grid Reset**
+Post 1: Problem post — name the pain your audience feels
+Post 2: Point of view — your clear take on why it happens
+Post 3: Personal proof — a moment that shows you get it
+Post 4: Teaching post — one simple shift or framework
+Post 5: Behind the scenes — process or day-in-the-life
+Post 6: Objection post — answer the main reason they wait
+Post 7: Offer clarity — what you sell and who it is for
+Post 8: Proof post — result, transformation, or feedback
+Post 9: CTA post — direct invitation to act (comment CONTENT)
+
+For each post include:
+- Format (Reel / Carousel / Single image)
+- Hook sentence (first line)
+- 2-sentence description of the content
+
+Close with one visual direction note for the whole grid (colour, mood, consistency tip).`
+
+    case "ai_photo_refresh":
+      return `## User Purchased: AI Photo Refresh (€59)
+
+You are narrowed to ONE job: give the user a clear visual direction and 5 usable AI photo prompts.
+
+Their brand aesthetic: ${brandProfile.aesthetic || "Not specified"} | Niche: ${brandProfile.industry || "Not specified"}
+
+Deliver in this order:
+
+**Visual Direction**
+2–3 sentences describing the consistent mood, palette, and energy their next set of photos should have. No generic advice — make it specific to their brand.
+
+**5 AI Photo Prompts**
+Each prompt should be usable directly in SSELFIE Studio.
+
+Format each:
+**Prompt [N]: [Scene name]**
+Prompt: [Full image generation prompt, 30–60 words, including subject, outfit direction, setting, lighting, mood, composition style]
+Best for: [Which type of post this image supports — e.g. "sales post", "authority content", "story behind the scenes"]
+
+Prompts should vary in energy: mix one editorial, one warm/personal, one professional, one candid-style, one bold or on-brand statement.
+
+End with: "Start with the prompt that matches your next caption."
+
+Do not add filler. Start with Visual Direction.`
+
     default:
       return ""
   }

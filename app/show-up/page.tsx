@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "Show Up | SSELFIE",
+  title: "Show Up",
   description: "Plan what to post this week with a content rhythm that fits your actual business.",
 }
 

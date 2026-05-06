@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "Concept Cards | SSELFIE",
+  title: "Concept Cards",
   description: "Turn one topic into ten clear post angles with a focused SSELFIE mini-product.",
 }
 

@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "What To Say | SSELFIE",
+  title: "What To Say",
   description: "Make your offer easier to understand so people know why they should buy from you.",
 }
 

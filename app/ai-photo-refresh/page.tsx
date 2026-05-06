@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "AI Photo Refresh | SSELFIE",
+  title: "AI Photo Refresh",
   description: "Create a focused AI photo direction for your next five usable visuals.",
 }
 

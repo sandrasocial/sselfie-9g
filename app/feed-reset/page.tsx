@@ -7,7 +7,7 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "Feed Reset | SSELFIE",
+  title: "Feed Reset",
   description: "Plan the next nine posts so your profile has a clearer direction.",
 }
 
