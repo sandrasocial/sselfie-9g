@@ -8,24 +8,28 @@ export interface MayaQuickPromptItem {
 
 const PLAN_PROMPTS: MayaQuickPromptItem[] = [
   {
-    label: "Best next move",
-    prompt: "Look at what you know about me and tell me the single best move to make today. Then help me make it.",
+    label: "Write my next post",
+    prompt: "Help me write my next post. Start with the goal, then give me the hook, caption, visual idea, and CTA.",
   },
   {
-    label: "Plan my week",
-    prompt: "Plan my content for this week with the post order, captions, photo direction, and first action.",
+    label: "Fix my message",
+    prompt: "Help me make my message clearer. Turn what I do into one simple offer line, three hooks, and one CTA.",
   },
   {
-    label: "What should I sell?",
-    prompt: "Help me decide what to sell this week and turn it into one simple offer and one sales post.",
+    label: "Plan this week",
+    prompt: "Plan this week with the post order, captions, photo direction, and one first action for each day.",
   },
   {
-    label: "Write captions",
-    prompt: "Write captions for my next post and give me a soft call to action.",
+    label: "Improve sales post",
+    prompt: "Make this sales post clearer and easier to act on. Keep it simple, specific, and trust-building.",
   },
   {
-    label: "Show up today",
-    prompt: "Help me show up today without overthinking. Give me one simple post idea, photo direction, and caption.",
+    label: "Images for concept",
+    prompt: "Generate image ideas and prompts for this content concept so the visual supports the message.",
+  },
+  {
+    label: "What to sell",
+    prompt: "Tell me what to sell this week based on my current message, audience, and easiest next step.",
   },
 ]
 

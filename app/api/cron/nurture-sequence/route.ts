@@ -10,6 +10,7 @@ import {
 } from "@/lib/email/selfie-guide-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
+import { VISIBILITY_LIFECYCLE_SEQUENCES } from "@/lib/email/visibility-lifecycle-sequences"
 import { generateNurtureStrategyN1Email } from "@/lib/email/templates/nurture-strategy-n1"
 import { generateNurtureStrategyN2Email } from "@/lib/email/templates/nurture-strategy-n2"
 import { generateNurtureStrategyN3Email } from "@/lib/email/templates/nurture-strategy-n3"
@@ -792,6 +793,7 @@ export async function GET(request: Request) {
       n5: results.n5,
       totalSent,
       totalFailed,
+      visibilityLifecycleSequencesConfigured: VISIBILITY_LIFECYCLE_SEQUENCES.map(sequence => sequence.id),
     })
 
     return NextResponse.json({
@@ -799,6 +801,7 @@ export async function GET(request: Request) {
       results,
       totalSent,
       totalFailed,
+      visibilityLifecycleSequencesConfigured: VISIBILITY_LIFECYCLE_SEQUENCES.map(sequence => sequence.id),
       errors: results.errors.slice(0, 20),
     })
   } catch (error: unknown) {

@@ -1,7 +1,9 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { PublicFooter, PublicNav } from "@/components/sselfie/public-marketing"
 import { PublicOfferTracker } from "@/components/analytics/public-offer-tracker"
+import { QuizResultServedTracker } from "@/components/analytics/quiz-result-served-tracker"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
@@ -75,33 +77,46 @@ export default async function QuizResultsPage({
         ctaKeyword={result.keyword}
         source="post_to_paid_quiz"
       />
+      <QuizResultServedTracker quizSlug="post-to-paid" result={key} offerSlug={result.offerSlug} />
       <PublicNav loginHref="/auth/login" />
       <main className={`${inter.className} min-h-screen pt-[58px]`} style={{ background: "#F4F0E6", color: "#0F0D0B" }}>
-        <section className="mx-auto flex min-h-[calc(100vh-58px)] max-w-4xl flex-col justify-center px-6 py-14 text-center md:px-12">
-          <p className="text-[10px] uppercase tracking-[0.45em]" style={{ color: "#7A6F63", fontWeight: 600 }}>
-            Your result
-          </p>
-          <h1 className={`${cormorant.className} mt-5 uppercase`} style={{ fontSize: "clamp(38px, 7vw, 76px)", fontWeight: 300, lineHeight: 1 }}>
-            {result.title}
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[1.75]" style={{ color: "#3D3830" }}>
-            {result.body}
-          </p>
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Link
-              href={`${result.href}${result.href.includes("?") ? "&" : "?"}source=quiz_result&quiz_result=${key}&cta_keyword=${result.keyword}`}
-              className="inline-flex px-8 py-3 text-[10px] uppercase tracking-[0.22em]"
-              style={{ background: "#0F0D0B", color: "#F4F0E6", fontWeight: 600 }}
-            >
-              {result.cta}
-            </Link>
-            <Link
-              href="/visibility-suite"
-              className="inline-flex border px-8 py-3 text-[10px] uppercase tracking-[0.22em]"
-              style={{ borderColor: "rgba(15,13,11,0.14)", color: "#0F0D0B", fontWeight: 600 }}
-            >
-              Compare Full Suite
-            </Link>
+        <section className="grid min-h-[calc(100vh-58px)] lg:grid-cols-[minmax(0,0.68fr)_minmax(0,0.62fr)]">
+          <div className="relative min-h-[340px] overflow-hidden lg:min-h-[calc(100vh-58px)]">
+            <Image
+              src="/academy/visibility-suite/hero.png"
+              alt="Visibility planning workspace"
+              fill
+              sizes="(min-width: 1024px) 42vw, 100vw"
+              className="object-cover"
+              priority
+            />
+          </div>
+          <div className="flex flex-col justify-center px-6 py-14 md:px-12 lg:px-16">
+            <p className="text-[10px] uppercase tracking-[0.45em]" style={{ color: "#7A6F63", fontWeight: 600 }}>
+              Your result
+            </p>
+            <h1 className={`${cormorant.className} mt-5 uppercase`} style={{ fontSize: "clamp(38px, 7vw, 76px)", fontWeight: 300, lineHeight: 1 }}>
+              {result.title}
+            </h1>
+            <p className="mt-6 max-w-xl text-[16px] leading-[1.75]" style={{ color: "#3D3830" }}>
+              {result.body}
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link
+                href={`${result.href}${result.href.includes("?") ? "&" : "?"}source=quiz_result&quiz_result=${key}&cta_keyword=${result.keyword}`}
+                className="inline-flex px-8 py-3 text-[10px] uppercase tracking-[0.22em]"
+                style={{ background: "#0F0D0B", color: "#F4F0E6", fontWeight: 600 }}
+              >
+                {result.cta}
+              </Link>
+              <Link
+                href="/visibility-suite"
+                className="inline-flex border px-8 py-3 text-[10px] uppercase tracking-[0.22em]"
+                style={{ borderColor: "rgba(15,13,11,0.14)", color: "#0F0D0B", fontWeight: 600 }}
+              >
+                Compare Full Suite
+              </Link>
+            </div>
           </div>
         </section>
       </main>

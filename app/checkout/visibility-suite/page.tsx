@@ -29,6 +29,7 @@ export default async function VisibilitySuiteCheckoutPage({
   const attribution = getCheckoutAttributionFromParams(params, {
     source: "visibility_suite_paid",
     returnTo: "/academy/access/visibility-suite",
+    buyerStage: "suite",
   })
   const supabase = await createServerClient()
   const {

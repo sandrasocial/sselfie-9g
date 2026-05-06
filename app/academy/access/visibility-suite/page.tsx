@@ -7,6 +7,7 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import VisibilitySuiteMayaChat from "@/components/academy/visibility-suite-maya-chat"
 import { VisibilityPlanGenerator } from "@/components/academy/visibility-plan-generator"
+import { VISIBILITY_MINI_PRODUCTS } from "@/lib/visibility-products"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -83,6 +84,10 @@ const SUITE_PRODUCTS = [
     purchaseUrl: "/academy/products/get_paid",
   },
 ]
+
+const SUITE_FOCUSED_TOOLS = VISIBILITY_MINI_PRODUCTS.filter(product =>
+  ["concept_cards_pack", "caption_sprint", "feed_reset_9grid", "ai_photo_refresh"].includes(product.id)
+)
 
 export default async function VisibilitySuitePage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/visibility-suite")
@@ -428,6 +433,54 @@ export default async function VisibilitySuitePage() {
             <VisibilityPlanGenerator />
           </div>
         ) : null}
+      </section>
+
+      <section
+        className="px-6 py-12 md:px-20 md:py-16"
+        style={{ borderBottom: `1px solid ${C.div}` }}
+      >
+        <p
+          className="text-[10px] uppercase tracking-[0.5em]"
+          style={{ color: C.muted, fontWeight: 600 }}
+        >
+          Focused Tools
+        </p>
+        <h2
+          className={`${cormorant.className} mt-5 uppercase`}
+          style={{
+            fontWeight: 300,
+            fontSize: "clamp(28px, 5vw, 52px)",
+            lineHeight: 1.04,
+            textShadow: LP_CREAM,
+          }}
+        >
+          Use one tool at a time.
+        </h2>
+        <p
+          className="mt-4 max-w-xl text-[14px] leading-[1.72]"
+          style={{ color: C.onCreamSub, fontWeight: 400 }}
+        >
+          These are the stripped Studio features from the Suite. Each one opens as its own focused
+          workspace, so you do not have to sort through the full Studio.
+        </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {SUITE_FOCUSED_TOOLS.map(product => (
+            <Link
+              key={product.id}
+              href={`/academy/access/${product.slug}`}
+              className="group border p-5 transition-opacity hover:opacity-80"
+              style={{ borderColor: C.divStrong, background: C.cream }}
+            >
+              <p className="text-[9px] uppercase tracking-[0.32em]" style={{ color: C.muted, fontWeight: 600 }}>
+                {product.eyebrow}
+              </p>
+              <h3 className="mt-3 text-[15px] font-semibold">{product.firstAction}</h3>
+              <p className="mt-3 text-[12px] leading-[1.62]" style={{ color: C.onCreamSub }}>
+                {product.promise}
+              </p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* ─── Maya ─────────────────────────────────────────────────────────── */}

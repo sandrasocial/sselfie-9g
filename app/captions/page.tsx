@@ -7,19 +7,20 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "What To Say | SSELFIE",
-  description: "Make your offer easier to understand so people know why they should buy from you.",
+  title: "Caption Sprint | SSELFIE",
+  description: "Write a focused bank of captions without starting from a blank page.",
 }
 
-export default function WhatToSayPage() {
-  const product = VISIBILITY_MINI_PRODUCT_BY_ID.what_to_say
+export default function CaptionsPage() {
+  const product = VISIBILITY_MINI_PRODUCT_BY_ID.caption_sprint
+
   return (
     <OfferLandingPage
       {...product}
       offerSlug={product.slug}
       checkoutHref={getMiniProductCheckoutHref(product.id)}
       checkoutEnabled={hasConfiguredMiniProductPrice(product.id)}
-      ctaLabel="Start What To Say"
+      ctaLabel={hasConfiguredMiniProductPrice(product.id) ? "Start Caption Sprint" : "See The Suite"}
       fallbackHref="/visibility-suite"
     />
   )

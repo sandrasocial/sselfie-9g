@@ -41,6 +41,11 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("starter_kit_checkout_success")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("starter_kit_access_opened")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("masterclass_checkout_success")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("quiz_result_served")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("upsell_viewed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("upsell_accepted")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("studio_entry_from_suite")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("post_keyword_attributed")
   })
 
   it("rejects unknown event names", () => {
@@ -62,5 +67,7 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("starter_kit_checkout_success")).toBe(true)
     expect(isAllowedAnalyticsEventName("masterclass_checkout_success")).toBe(true)
     expect(isAllowedAnalyticsEventName("selfie_guide_access_resolved")).toBe(true)
+    expect(isAllowedAnalyticsEventName("quiz_result_served")).toBe(true)
+    expect(isAllowedAnalyticsEventName("post_keyword_attributed")).toBe(true)
   })
 })

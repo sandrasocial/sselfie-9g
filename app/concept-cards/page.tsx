@@ -7,19 +7,20 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "What To Say | SSELFIE",
-  description: "Make your offer easier to understand so people know why they should buy from you.",
+  title: "Concept Cards | SSELFIE",
+  description: "Turn one topic into ten clear post angles with a focused SSELFIE mini-product.",
 }
 
-export default function WhatToSayPage() {
-  const product = VISIBILITY_MINI_PRODUCT_BY_ID.what_to_say
+export default function ConceptCardsPage() {
+  const product = VISIBILITY_MINI_PRODUCT_BY_ID.concept_cards_pack
+
   return (
     <OfferLandingPage
       {...product}
       offerSlug={product.slug}
       checkoutHref={getMiniProductCheckoutHref(product.id)}
       checkoutEnabled={hasConfiguredMiniProductPrice(product.id)}
-      ctaLabel="Start What To Say"
+      ctaLabel={hasConfiguredMiniProductPrice(product.id) ? "Start Concept Cards" : "See The Suite"}
       fallbackHref="/visibility-suite"
     />
   )

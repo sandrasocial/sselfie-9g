@@ -218,6 +218,8 @@ export async function createLandingCheckoutSession(
       quizResult: attribution.quizResult,
       returnTo: attribution.returnTo,
       entryPath: attribution.entryPath,
+      entryPostSlug: attribution.entryPostSlug,
+      buyerStage: attribution.buyerStage,
       userEmail: customerEmail || null,
       stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
     })

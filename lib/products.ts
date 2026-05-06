@@ -31,6 +31,7 @@ export interface PricingProduct {
     | "starter_kit"
     | "masterclass"
     | "visibility_suite"
+    | "academy_mini_product"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -44,6 +45,10 @@ export interface AcademyProduct {
     | "show_up"
     | "get_paid"
     | "visibility_suite"
+    | "concept_cards_pack"
+    | "caption_sprint"
+    | "feed_reset_9grid"
+    | "ai_photo_refresh"
     | "ai_photo_prompts"
     | "editing_masterclass"
     | "branded_by_sselfie"
@@ -58,10 +63,14 @@ export interface AcademyProduct {
     | "bought_show_up"
     | "bought_get_paid"
     | "bought_visibility_suite"
+    | "bought_concept_cards_pack"
+    | "bought_caption_sprint"
+    | "bought_feed_reset_9grid"
+    | "bought_ai_photo_refresh"
     | "bought_ai_photo_prompts"
     | "bought_editing_masterclass"
     | "bought_branded_by_sselfie"
-  upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say" | "visibility_suite"
+  upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say" | "visibility_suite" | "feed_reset_9grid"
   description: string
 }
 
@@ -71,6 +80,10 @@ export const VISIBILITY_TO_PAID_STRIPE_PRICE_IDS = {
   getPaid: "price_1TRshBEVJvME7vkwsUhzqtBY",
   suiteLaunch: "price_1TRshJEVJvME7vkwK55rwjA0",
   suiteStandard: "price_1TRshKEVJvME7vkwdzk3B1mA",
+  conceptCardsPack: process.env.STRIPE_PRICE_CONCEPT_CARDS_PACK?.trim() || "",
+  captionSprint: process.env.STRIPE_PRICE_CAPTION_SPRINT?.trim() || "",
+  feedReset9Grid: process.env.STRIPE_PRICE_FEED_RESET_9GRID?.trim() || "",
+  aiPhotoRefresh: process.env.STRIPE_PRICE_AI_PHOTO_REFRESH?.trim() || "",
 } as const
 
 // Credit top-up packages for existing members
@@ -286,6 +299,54 @@ export const ACADEMY_PRODUCTS = {
     upsellTo: "membership",
     description:
       "The full guided path to know what to say, what to post, what to sell, and what to do next.",
+  },
+  concept_cards_pack: {
+    id: "concept_cards_pack",
+    name: "Concept Cards",
+    tagline: "Turn one topic into ten clear post angles.",
+    price: 2900,
+    currency: "eur",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.conceptCardsPack,
+    manychatKeyword: "CONTENT",
+    tag: "bought_concept_cards_pack",
+    upsellTo: "show_up",
+    description: "A focused concept workspace for choosing what your next post should actually say.",
+  },
+  caption_sprint: {
+    id: "caption_sprint",
+    name: "Caption Sprint",
+    tagline: "Write a small bank of captions without starting from a blank page.",
+    price: 2900,
+    currency: "eur",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.captionSprint,
+    manychatKeyword: "CONTENT",
+    tag: "bought_caption_sprint",
+    upsellTo: "get_paid",
+    description: "A focused caption workspace for turning your offer, tone, and CTA into ready-to-edit captions.",
+  },
+  feed_reset_9grid: {
+    id: "feed_reset_9grid",
+    name: "Feed Reset",
+    tagline: "Plan the next nine posts so your profile finally has a direction.",
+    price: 4900,
+    currency: "eur",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.feedReset9Grid,
+    manychatKeyword: "CONTENT",
+    tag: "bought_feed_reset_9grid",
+    upsellTo: "visibility_suite",
+    description: "A focused 9-grid workspace for cleaning up your visible message and next posts.",
+  },
+  ai_photo_refresh: {
+    id: "ai_photo_refresh",
+    name: "AI Photo Refresh",
+    tagline: "Create a simple visual direction before you need a full content system.",
+    price: 5900,
+    currency: "eur",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.aiPhotoRefresh,
+    manychatKeyword: "PHOTOS",
+    tag: "bought_ai_photo_refresh",
+    upsellTo: "feed_reset_9grid",
+    description: "A focused visual workspace for prompts, reference notes, and the first five usable image ideas.",
   },
   ai_photo_prompts: {
     id: "ai_photo_prompts",

@@ -2,11 +2,11 @@ import { notFound, redirect } from "next/navigation"
 
 import { stripe } from "@/lib/stripe"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
+import { VISIBILITY_MINI_PRODUCT_BY_ID, VISIBILITY_MINI_PRODUCT_IDS } from "@/lib/visibility-products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCheckoutAttributionFromParams, upsertCheckoutAttribution } from "@/lib/revenue-engine/checkout-attribution"
 
-// Only these three products are sold individually from the public landing page
-const PURCHASABLE_IDS = ["what_to_say", "show_up", "get_paid"] as const
+const PURCHASABLE_IDS = VISIBILITY_MINI_PRODUCT_IDS
 type PurchasableId = (typeof PURCHASABLE_IDS)[number]
 
 export async function generateMetadata({ params }: { params: Promise<{ productId: string }> }) {
@@ -34,6 +34,8 @@ export default async function AcademyProductCheckoutPage({
     cta_keyword?: string
     quiz_result?: string
     entry_path?: string
+    entry_post_slug?: string
+    buyer_stage?: string
   }>
 }) {
   const { productId } = await params
@@ -47,12 +49,15 @@ export default async function AcademyProductCheckoutPage({
   if (!product?.stripePriceId) {
     notFound()
   }
+  const miniProduct = VISIBILITY_MINI_PRODUCT_BY_ID[productId as PurchasableId]
+  const accessPath = `/academy/access/${miniProduct.slug}`
   const attribution = getCheckoutAttributionFromParams(query, {
-    offerSlug: productId.replace(/_/g, "-"),
+    offerSlug: miniProduct.slug,
     source: "micro_offer_landing",
     ctaKeyword: product.manychatKeyword,
-    returnTo: "/academy/access/visibility-suite",
-    entryPath: `/${productId.replace(/_/g, "-")}`,
+    returnTo: accessPath,
+    entryPath: `/${miniProduct.slug}`,
+    buyerStage: "micro",
   })
 
   const supabase = await createServerClient()
@@ -87,7 +92,9 @@ export default async function AcademyProductCheckoutPage({
         ...(attribution.ctaKeyword ? { cta_keyword: attribution.ctaKeyword } : {}),
         ...(attribution.quizResult ? { quiz_result: attribution.quizResult } : {}),
         ...(attribution.entryPath ? { entry_path: attribution.entryPath } : {}),
-        return_to: "/academy/access/visibility-suite",
+        ...(attribution.entryPostSlug ? { entry_post_slug: attribution.entryPostSlug } : {}),
+        ...(attribution.buyerStage ? { buyer_stage: attribution.buyerStage } : {}),
+        return_to: accessPath,
       },
     })
 
@@ -100,7 +107,7 @@ export default async function AcademyProductCheckoutPage({
       checkoutOrigin: authUser?.email ? "authenticated" : "guest",
       productId,
       productType: "academy_mini_product",
-      offerSlug: attribution.offerSlug || productId.replace(/_/g, "-"),
+      offerSlug: attribution.offerSlug || miniProduct.slug,
       funnelStage: "entry_offer",
       source: attribution.source || "visibility_suite_landing",
       utmSource: attribution.utmSource,
@@ -111,14 +118,16 @@ export default async function AcademyProductCheckoutPage({
       referralCode: attribution.referralCode,
       ctaKeyword: attribution.ctaKeyword,
       quizResult: attribution.quizResult,
-      returnTo: "/academy/access/visibility-suite",
+      returnTo: accessPath,
       entryPath: attribution.entryPath,
+      entryPostSlug: attribution.entryPostSlug,
+      buyerStage: attribution.buyerStage,
       userEmail: authUser?.email || null,
       stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
     })
 
     redirect(
-      `/checkout?client_secret=${session.client_secret}&product_type=${productId}&return_to=${encodeURIComponent("/academy/access/visibility-suite")}`,
+      `/checkout?client_secret=${session.client_secret}&product_type=${productId}&return_to=${encodeURIComponent(accessPath)}`,
     )
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error

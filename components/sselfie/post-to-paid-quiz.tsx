@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Cormorant_Garamond, Inter } from "next/font/google"
@@ -109,18 +110,19 @@ export function PostToPaidQuiz() {
     <>
       <PublicNav loginHref="/auth/login" />
       <main className={`${inter.className} min-h-screen pt-[58px]`} style={{ background: "#0F0D0B", color: "#F4F0E6" }}>
-        <section className="mx-auto flex min-h-[calc(100vh-58px)] max-w-4xl flex-col justify-center px-6 py-14 md:px-12">
-          <p className="text-[10px] uppercase tracking-[0.45em]" style={{ color: "#A79B8B", fontWeight: 600 }}>
-            Start Here
-          </p>
-          <h1 className={`${cormorant.className} mt-5 uppercase`} style={{ fontSize: "clamp(38px, 7vw, 76px)", fontWeight: 300, lineHeight: 1 }}>
-            Find your first paid next step.
-          </h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-[1.75]" style={{ color: "rgba(244,240,230,0.76)" }}>
-            Six quick questions. One recommended path.
-          </p>
+        <section className="grid min-h-[calc(100vh-58px)] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,0.58fr)]">
+          <div className="flex flex-col justify-center px-6 py-14 md:px-12 lg:px-20">
+            <p className="text-[10px] uppercase tracking-[0.45em]" style={{ color: "#A79B8B", fontWeight: 600 }}>
+              Start Here
+            </p>
+            <h1 className={`${cormorant.className} mt-5 uppercase`} style={{ fontSize: "clamp(38px, 7vw, 76px)", fontWeight: 300, lineHeight: 1 }}>
+              Find your first paid next step.
+            </h1>
+            <p className="mt-5 max-w-xl text-[15px] leading-[1.75]" style={{ color: "rgba(244,240,230,0.76)" }}>
+              Six quick questions. One recommended path.
+            </p>
 
-          <div className="mt-10 border p-6 md:p-8" style={{ borderColor: "rgba(244,240,230,0.18)" }}>
+            <div className="mt-10 border p-6 md:p-8" style={{ borderColor: "rgba(244,240,230,0.18)" }}>
             <div className="h-1 w-full" style={{ background: "rgba(244,240,230,0.12)" }}>
               <div className="h-1" style={{ width: `${progress}%`, background: "#F4F0E6" }} />
             </div>
@@ -156,6 +158,18 @@ export function PostToPaidQuiz() {
                 Skip to Suite
               </Link>
             </div>
+          </div>
+          </div>
+          <div className="relative hidden overflow-hidden lg:block">
+            <Image
+              src="/academy/visibility-suite/sandra-hero.png"
+              alt="Sandra working on a visibility plan"
+              fill
+              sizes="38vw"
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0" style={{ background: "rgba(15,13,11,0.18)" }} />
           </div>
         </section>
       </main>

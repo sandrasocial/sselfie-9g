@@ -62,6 +62,14 @@ function getProductLabel(productType: string | undefined) {
       return "Show Up"
     case "get_paid":
       return "Get Paid"
+    case "concept_cards_pack":
+      return "Concept Cards"
+    case "caption_sprint":
+      return "Caption Sprint"
+    case "feed_reset_9grid":
+      return "Feed Reset"
+    case "ai_photo_refresh":
+      return "AI Photo Refresh"
     case "paid_blueprint":
       return "30-Day Visibility Reset"
     default:
@@ -132,25 +140,57 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
 
   if (productType === "what_to_say") {
     return {
-      href: "/academy/access/visibility-suite",
+      href: "/academy/access/what-to-say",
       label: "Start What To Say",
-      helper: "Your workbook is ready. Open your Visibility To Paid Path and start Step 01.",
+      helper: "Your focused product home is ready. Start with the message fix workflow.",
     }
   }
 
   if (productType === "show_up") {
     return {
-      href: "/academy/access/visibility-suite",
+      href: "/academy/access/show-up",
       label: "Open Show Up",
-      helper: "Your workbook is ready. Open your Visibility To Paid Path and continue with Step 02.",
+      helper: "Your focused product home is ready. Start with your 7-day posting workflow.",
     }
   }
 
   if (productType === "get_paid") {
     return {
-      href: "/academy/access/visibility-suite",
+      href: "/academy/access/get-paid",
       label: "Open Get Paid",
-      helper: "Your workbook is ready. Open your Visibility To Paid Path and start Step 03.",
+      helper: "Your focused product home is ready. Start with your buyer-path workflow.",
+    }
+  }
+
+  if (productType === "concept_cards_pack") {
+    return {
+      href: "/academy/access/concept-cards",
+      label: "Open Concept Cards",
+      helper: "Your focused product home is ready. Start with one topic and ten post angles.",
+    }
+  }
+
+  if (productType === "caption_sprint") {
+    return {
+      href: "/academy/access/captions",
+      label: "Open Caption Sprint",
+      helper: "Your focused product home is ready. Start with your caption bank.",
+    }
+  }
+
+  if (productType === "feed_reset_9grid") {
+    return {
+      href: "/academy/access/feed-reset",
+      label: "Open Feed Reset",
+      helper: "Your focused product home is ready. Start with your next nine posts.",
+    }
+  }
+
+  if (productType === "ai_photo_refresh") {
+    return {
+      href: "/academy/access/ai-photo-refresh",
+      label: "Open AI Photo Refresh",
+      helper: "Your focused product home is ready. Start with your visual direction.",
     }
   }
 
@@ -510,6 +550,10 @@ export function SuccessContent({
       what_to_say: 47,
       show_up: 67,
       get_paid: 97,
+      concept_cards_pack: 29,
+      caption_sprint: 29,
+      feed_reset_9grid: 49,
+      ai_photo_refresh: 59,
       brand_strategy_pack: 19,
       paid_blueprint: 47,
       credit_topup: 25,
@@ -522,7 +566,16 @@ export function SuccessContent({
     ;(window as any).gtag("event", "purchase", {
       transaction_id: sessionId,
       value,
-      currency: ["visibility_suite", "what_to_say", "show_up", "get_paid"].includes(resolvedType) ? "EUR" : "USD",
+      currency: [
+        "visibility_suite",
+        "what_to_say",
+        "show_up",
+        "get_paid",
+        "concept_cards_pack",
+        "caption_sprint",
+        "feed_reset_9grid",
+        "ai_photo_refresh",
+      ].includes(resolvedType) ? "EUR" : "USD",
       items: [
         {
           item_id: resolvedType,

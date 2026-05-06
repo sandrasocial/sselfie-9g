@@ -25,6 +25,7 @@ import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templat
 import { generateStarterKitDay0DeliveryEmail } from "@/lib/email/templates/starter-kit-day0-delivery"
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
+import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
@@ -967,8 +968,15 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Step 4: Generating password reset link...`)
                   // Include product-specific returnTo so user lands on their purchased product after setup
+                  const academyMiniProductId =
+                    productType === "academy_mini_product" ? String(session.metadata?.product_id || "") : ""
+                  const academyMiniProductSlug =
+                    VISIBILITY_MINI_PRODUCT_BY_ID[
+                      academyMiniProductId as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID
+                    ]?.slug
                   const productSetupNext =
                     productType === "visibility_suite" ? "/academy/access/visibility-suite" :
+                    academyMiniProductSlug ? `/academy/access/${academyMiniProductSlug}` :
                     productType === "starter_kit" ? "/academy/access/starter-kit" :
                     productType === "masterclass" ? "/academy/access/brand-strategy" :
                     productType === "selfie_guide" || productType === "selfie_guide_bundle" ? "/selfie-guide" :
@@ -1181,7 +1189,16 @@ export async function POST(request: NextRequest) {
                 : academyProduct.currency
             const entitlementProductIds =
               productId === "visibility_suite"
-                ? ["visibility_suite", "what_to_say", "show_up", "get_paid"]
+                ? [
+                    "visibility_suite",
+                    "what_to_say",
+                    "show_up",
+                    "get_paid",
+                    "concept_cards_pack",
+                    "caption_sprint",
+                    "feed_reset_9grid",
+                    "ai_photo_refresh",
+                  ]
                 : [productId]
 
             if (paymentIntentId) {
@@ -1272,6 +1289,10 @@ export async function POST(request: NextRequest) {
                 {
                   what_to_say: { name: "Show Up", price: "€67", productId: "show_up" },
                   show_up: { name: "Get Paid", price: "€97", productId: "get_paid" },
+                  concept_cards_pack: { name: "Show Up", price: "€67", productId: "show_up" },
+                  caption_sprint: { name: "Get Paid", price: "€97", productId: "get_paid" },
+                  ai_photo_refresh: { name: "Feed Reset", price: "€49", productId: "feed_reset_9grid" },
+                  feed_reset_9grid: { name: "Visibility To Paid Suite", price: "€97", productId: "visibility_suite" },
                   get_paid: {
                     name: "Creator Studio membership",
                     price: "$97/month",
@@ -1287,6 +1308,10 @@ export async function POST(request: NextRequest) {
                 what_to_say: "What To Say",
                 show_up: "Show Up",
                 get_paid: "Get Paid",
+                concept_cards_pack: "Concept Cards",
+                caption_sprint: "Caption Sprint",
+                feed_reset_9grid: "Feed Reset",
+                ai_photo_refresh: "AI Photo Refresh",
                 visibility_suite: "Visibility To Paid Suite",
                 ai_photo_prompts: "AI Photo Prompt Pack",
               }
@@ -1299,7 +1324,13 @@ export async function POST(request: NextRequest) {
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
               const suiteAccessUrl = `${siteUrl}/academy/access/visibility-suite`
-              const academyAccessUrl = `${siteUrl}/academy`
+              const miniProductSlug =
+                VISIBILITY_MINI_PRODUCT_BY_ID[
+                  productId as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID
+                ]?.slug
+              const academyAccessUrl = miniProductSlug
+                ? `${siteUrl}/academy/access/${miniProductSlug}`
+                : `${siteUrl}/academy`
               const subject =
                 productId === "visibility_suite"
                   ? "Your Visibility To Paid Suite is ready"
@@ -1319,11 +1350,11 @@ export async function POST(request: NextRequest) {
 
               const emailText =
                 productId === "visibility_suite"
-                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Maya Visibility Plan\n\n${suiteAccessCtaText}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
+                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Concept Cards\n- Caption Sprint\n- Feed Reset\n- AI Photo Refresh\n- Maya Visibility Plan\n\n${suiteAccessCtaText}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
                   : `Hey ${firstName},\n\nYou just got ${productName}. I'm so glad you did this for yourself.\n\nStart here: ${academyAccessUrl}${upsellLine}\n\n— Sandra`
               const emailHtml =
                 productId === "visibility_suite"
-                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Maya Visibility Plan</li></ul>${suiteAccessCtaHtml}<p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
+                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Concept Cards</li><li>Caption Sprint</li><li>Feed Reset</li><li>AI Photo Refresh</li><li>Maya Visibility Plan</li></ul>${suiteAccessCtaHtml}<p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
                   : `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong>. I'm so glad you did this for yourself.</p><p><a href="${academyAccessUrl}">Start here</a></p>${upsell ? `<p>Next step when you're ready: <strong>${upsell.name}</strong> (${upsell.price}).</p>` : ""}<p>— Sandra</p>`
 
               await sendEmail({

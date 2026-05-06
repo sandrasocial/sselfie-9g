@@ -18,9 +18,16 @@ function countWorkbookFields(contents: string) {
 }
 
 describe("visibility suite entitlements and routing", () => {
-  it("PRODUCT_ACCESS_ALIASES maps visibility_suite to the three sub-products", () => {
+  it("PRODUCT_ACCESS_ALIASES maps visibility_suite to all focused sub-products", () => {
     const contents = read("lib/academy-entitlements.ts")
-    expect(contents).toContain('visibility_suite: ["what_to_say", "show_up", "get_paid"]')
+    expect(contents).toContain("visibility_suite: [")
+    expect(contents).toContain('"what_to_say"')
+    expect(contents).toContain('"show_up"')
+    expect(contents).toContain('"get_paid"')
+    expect(contents).toContain('"concept_cards_pack"')
+    expect(contents).toContain('"caption_sprint"')
+    expect(contents).toContain('"feed_reset_9grid"')
+    expect(contents).toContain('"ai_photo_refresh"')
   })
 
   it("uses the approved Visibility To Paid live Stripe prices", () => {
@@ -39,7 +46,10 @@ describe("visibility suite entitlements and routing", () => {
     expect(products).toContain("price: 9700")
     expect(checkoutRoute).toContain('"visibility_suite"')
     expect(checkoutRoute).toContain("/academy/access/visibility-suite")
-    expect(webhook).toContain('["visibility_suite", "what_to_say", "show_up", "get_paid"]')
+    expect(webhook).toContain('"concept_cards_pack"')
+    expect(webhook).toContain('"caption_sprint"')
+    expect(webhook).toContain('"feed_reset_9grid"')
+    expect(webhook).toContain('"ai_photo_refresh"')
     expect(webhook).toContain("Your Visibility To Paid Suite is ready")
   })
 

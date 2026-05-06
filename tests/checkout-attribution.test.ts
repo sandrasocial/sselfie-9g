@@ -15,6 +15,8 @@ describe("checkout attribution contract", () => {
       utmCampaign: "spring_push",
       campaignId: "42",
       referralCode: "abc123",
+      entryPostSlug: "may-visibility-post",
+      buyerStage: "micro",
     })
 
     expect(result.offerSlug).toBe("brand-strategy-pack")
@@ -22,6 +24,8 @@ describe("checkout attribution contract", () => {
     expect(result.funnelStage).toBe("primary_upsell")
     expect(result.campaignId).toBe(42)
     expect(result.referralCode).toBe("ABC123")
+    expect(result.entryPostSlug).toBe("may-visibility-post")
+    expect(result.buyerStage).toBe("micro")
   })
 
   it("extracts attribution values from search params", () => {
@@ -33,6 +37,8 @@ describe("checkout attribution contract", () => {
       campaign_id: "18",
       ref: "SSE123456",
       return_to: "/strategy/token",
+      entry_post_slug: "ig-post-1",
+      buyer_stage: "suite",
     })
 
     expect(result).toMatchObject({
@@ -43,6 +49,8 @@ describe("checkout attribution contract", () => {
       campaignId: "18",
       referralCode: "SSE123456",
       returnTo: "/strategy/token",
+      entryPostSlug: "ig-post-1",
+      buyerStage: "suite",
     })
   })
 
@@ -53,6 +61,7 @@ describe("checkout attribution contract", () => {
       utmCampaign: "nurture_day_5",
       campaignId: 81,
       referralCode: "SSE123456",
+      buyerStage: "studio",
     })
 
     expect(metadata).toMatchObject({
@@ -63,6 +72,7 @@ describe("checkout attribution contract", () => {
       utm_campaign: "nurture_day_5",
       campaign_id: "81",
       referral_code: "SSE123456",
+      buyer_stage: "studio",
     })
   })
 

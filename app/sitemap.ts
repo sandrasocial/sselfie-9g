@@ -16,6 +16,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/what-to-say", changeFrequency: "weekly", priority: 0.9 },
     { path: "/show-up", changeFrequency: "weekly", priority: 0.9 },
     { path: "/get-paid", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/concept-cards", changeFrequency: "weekly", priority: 0.86 },
+    { path: "/captions", changeFrequency: "weekly", priority: 0.86 },
+    { path: "/feed-reset", changeFrequency: "weekly", priority: 0.86 },
+    { path: "/ai-photo-refresh", changeFrequency: "weekly", priority: 0.86 },
     { path: "/brand-strategy", changeFrequency: "weekly", priority: 0.9 },
     { path: "/checkout/membership", changeFrequency: "weekly", priority: 0.9 },
 

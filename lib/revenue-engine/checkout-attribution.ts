@@ -10,6 +10,8 @@ export type RevenueFunnelStage =
   | "retention"
   | "expansion"
 
+export type BuyerStage = "lead" | "micro" | "suite" | "studio" | "private"
+
 export type CheckoutAttributionInput = {
   offerSlug?: string | null
   source?: string | null
@@ -23,6 +25,8 @@ export type CheckoutAttributionInput = {
   quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
+  entryPostSlug?: string | null
+  buyerStage?: string | null
 }
 
 export type NormalizedCheckoutAttribution = {
@@ -38,6 +42,8 @@ export type NormalizedCheckoutAttribution = {
   quizResult: string | null
   returnTo: string | null
   entryPath: string | null
+  entryPostSlug: string | null
+  buyerStage: BuyerStage
   funnelStage: RevenueFunnelStage
 }
 
@@ -60,6 +66,8 @@ export type CheckoutAttributionRecord = {
   quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
+  entryPostSlug?: string | null
+  buyerStage?: BuyerStage | string | null
   userId?: string | null
   userEmail?: string | null
   stripeCustomerId?: string | null
@@ -99,6 +107,17 @@ function getDefaultOfferSlug(productId: string, productType?: PricingProduct["ty
   return value.replace(/_/g, "-")
 }
 
+function normalizeBuyerStage(value: unknown, productType?: PricingProduct["type"] | string): BuyerStage {
+  const raw = safeString(value, 40)?.toLowerCase()
+  if (raw === "lead" || raw === "micro" || raw === "suite" || raw === "studio" || raw === "private") {
+    return raw
+  }
+
+  if (productType === "visibility_suite") return "suite"
+  if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") return "studio"
+  return "micro"
+}
+
 export function getRevenueFunnelStage(productType?: PricingProduct["type"] | string): RevenueFunnelStage {
   switch (productType) {
     case "brand_strategy_pack":
@@ -133,6 +152,8 @@ export function normalizeCheckoutAttribution(
     quizResult: safeString(input?.quizResult, 80),
     returnTo: safeString(input?.returnTo, 500),
     entryPath: safeString(input?.entryPath, 500),
+    entryPostSlug: safeString(input?.entryPostSlug, 160),
+    buyerStage: normalizeBuyerStage(input?.buyerStage, productType),
     funnelStage: getRevenueFunnelStage(productType),
   }
 }
@@ -154,6 +175,8 @@ export function getCheckoutAttributionFromParams(
     quizResult: params.quiz_result || defaults?.quizResult || null,
     returnTo: params.returnTo || params.return_to || defaults?.returnTo || null,
     entryPath: params.entry_path || defaults?.entryPath || null,
+    entryPostSlug: params.entry_post_slug || defaults?.entryPostSlug || null,
+    buyerStage: params.buyer_stage || defaults?.buyerStage || null,
   }
 }
 
@@ -177,6 +200,8 @@ export function buildCheckoutAttributionMetadata(
     ...(normalized.quizResult ? { quiz_result: normalized.quizResult } : {}),
     ...(normalized.returnTo ? { return_to: normalized.returnTo } : {}),
     ...(normalized.entryPath ? { entry_path: normalized.entryPath } : {}),
+    ...(normalized.entryPostSlug ? { entry_post_slug: normalized.entryPostSlug } : {}),
+    buyer_stage: normalized.buyerStage,
   }
 }
 
@@ -206,6 +231,8 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
       quiz_result TEXT,
       return_to TEXT,
       entry_path TEXT,
+      entry_post_slug TEXT,
+      buyer_stage TEXT,
       user_id TEXT,
       user_email TEXT,
       stripe_customer_id TEXT,
@@ -227,8 +254,12 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_referral_idx ON checkout_attribution (referral_code, created_at DESC);`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS quiz_result TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS buyer_stage TEXT;`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_cta_keyword_idx ON checkout_attribution (cta_keyword, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_quiz_result_idx ON checkout_attribution (quiz_result, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_entry_post_slug_idx ON checkout_attribution (entry_post_slug, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_buyer_stage_idx ON checkout_attribution (buyer_stage, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_purchase_idx ON checkout_attribution (purchased_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_user_idx ON checkout_attribution (user_id, created_at DESC);`
 }
@@ -258,6 +289,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       quiz_result,
       return_to,
       entry_path,
+      entry_post_slug,
+      buyer_stage,
       user_id,
       user_email,
       stripe_customer_id
@@ -280,6 +313,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       ${record.quizResult || null},
       ${record.returnTo || null},
       ${record.entryPath || null},
+      ${record.entryPostSlug || null},
+      ${record.buyerStage || null},
       ${record.userId || null},
       ${record.userEmail || null},
       ${record.stripeCustomerId || null}
@@ -303,6 +338,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       quiz_result = COALESCE(EXCLUDED.quiz_result, checkout_attribution.quiz_result),
       return_to = COALESCE(EXCLUDED.return_to, checkout_attribution.return_to),
       entry_path = COALESCE(EXCLUDED.entry_path, checkout_attribution.entry_path),
+      entry_post_slug = COALESCE(EXCLUDED.entry_post_slug, checkout_attribution.entry_post_slug),
+      buyer_stage = COALESCE(EXCLUDED.buyer_stage, checkout_attribution.buyer_stage),
       user_id = COALESCE(EXCLUDED.user_id, checkout_attribution.user_id),
       user_email = COALESCE(EXCLUDED.user_email, checkout_attribution.user_email),
       stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, checkout_attribution.stripe_customer_id),

@@ -7,19 +7,20 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "What To Say | SSELFIE",
-  description: "Make your offer easier to understand so people know why they should buy from you.",
+  title: "Feed Reset | SSELFIE",
+  description: "Plan the next nine posts so your profile has a clearer direction.",
 }
 
-export default function WhatToSayPage() {
-  const product = VISIBILITY_MINI_PRODUCT_BY_ID.what_to_say
+export default function FeedResetPage() {
+  const product = VISIBILITY_MINI_PRODUCT_BY_ID.feed_reset_9grid
+
   return (
     <OfferLandingPage
       {...product}
       offerSlug={product.slug}
       checkoutHref={getMiniProductCheckoutHref(product.id)}
       checkoutEnabled={hasConfiguredMiniProductPrice(product.id)}
-      ctaLabel="Start What To Say"
+      ctaLabel={hasConfiguredMiniProductPrice(product.id) ? "Start Feed Reset" : "See The Suite"}
       fallbackHref="/visibility-suite"
     />
   )

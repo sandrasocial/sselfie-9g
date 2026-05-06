@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { ACADEMY_PRODUCTS, PRICING_PRODUCTS } from "@/lib/products"
+import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 
 const MEMBERSHIP_PRODUCT_TYPES = [
   "sselfie_studio_membership",
@@ -115,7 +116,15 @@ type FallbackMetadata = {
 const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
   selfie_guide_bundle: ["selfie_guide", "brand_strategy_pack"],
   masterclass: ["brand_strategy_pack", "branded_by_sselfie", "editing_masterclass"],
-  visibility_suite: ["what_to_say", "show_up", "get_paid"],
+  visibility_suite: [
+    "what_to_say",
+    "show_up",
+    "get_paid",
+    "concept_cards_pack",
+    "caption_sprint",
+    "feed_reset_9grid",
+    "ai_photo_refresh",
+  ],
 }
 
 function priceFromCents(priceCents: number | null): number | null {
@@ -138,7 +147,10 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       active: true,
       sortOrder: (idx + 1) * 10,
       deliveryKind: product.id === "visibility_suite" ? "collection" : "academy_course",
-      accessTarget: product.id === "visibility_suite" ? "visibility-suite" : product.id,
+      accessTarget:
+        product.id === "visibility_suite"
+          ? "visibility-suite"
+          : VISIBILITY_MINI_PRODUCT_BY_ID[product.id as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID]?.slug || product.id,
     })
   )
 
@@ -268,9 +280,7 @@ function resolveAcademyProductAccessUrl(
   }
 
   // academy_course products: the course lives in the library at /academy.
-  // Pointing to /academy/products/{id} would be a circular self-link because
-  // that IS this product's own page.
-  return `/academy`
+  return `/academy/access/${product.accessTarget}`
 }
 
 function resolveAcademyProductPurchaseUrl(

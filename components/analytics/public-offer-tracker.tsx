@@ -26,6 +26,17 @@ export function PublicOfferTracker({
         source,
       },
     })
+    if (ctaKeyword) {
+      trackAnalyticsEvent({
+        event: "post_keyword_attributed",
+        properties: {
+          offer_slug: offerSlug,
+          product_id: productId || null,
+          cta_keyword: ctaKeyword,
+          source,
+        },
+      })
+    }
   }, [ctaKeyword, offerSlug, productId, source])
 
   return null

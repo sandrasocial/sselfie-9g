@@ -7,19 +7,20 @@ import {
 } from "@/lib/visibility-products"
 
 export const metadata: Metadata = {
-  title: "What To Say | SSELFIE",
-  description: "Make your offer easier to understand so people know why they should buy from you.",
+  title: "AI Photo Refresh | SSELFIE",
+  description: "Create a focused AI photo direction for your next five usable visuals.",
 }
 
-export default function WhatToSayPage() {
-  const product = VISIBILITY_MINI_PRODUCT_BY_ID.what_to_say
+export default function AiPhotoRefreshPage() {
+  const product = VISIBILITY_MINI_PRODUCT_BY_ID.ai_photo_refresh
+
   return (
     <OfferLandingPage
       {...product}
       offerSlug={product.slug}
       checkoutHref={getMiniProductCheckoutHref(product.id)}
       checkoutEnabled={hasConfiguredMiniProductPrice(product.id)}
-      ctaLabel="Start What To Say"
+      ctaLabel={hasConfiguredMiniProductPrice(product.id) ? "Start AI Photo Refresh" : "See The Suite"}
       fallbackHref="/visibility-suite"
     />
   )
