@@ -351,6 +351,7 @@ export async function POST(req: Request) {
     }
 
     const dbUserId = user.id
+    let mayaSnapshot: Awaited<ReturnType<typeof getMayaUserSnapshot>> | null = null
 
     debugLog("[Maya Chat API] User authenticated", { userId, dbUserId, userEmail: user.email })
 
@@ -675,7 +676,7 @@ export async function POST(req: Request) {
         }
       }
 
-      const mayaSnapshot = await getMayaUserSnapshot(dbUserId)
+      mayaSnapshot = await getMayaUserSnapshot(dbUserId)
 
       let activeAssetContext = mayaSnapshot?.activeAssetContext ?? null
       try {
@@ -2125,11 +2126,20 @@ ${finalUserContext}
     // Inject current mode context so Maya knows what generation mode is active
     // and can guide users to the MY MODEL ↔ SELFIE toggle when they ask for the other mode.
     if (!isPromptBuilder && !useFeedPlannerContext) {
+      const modelAvailability = mayaSnapshot?.generation || {
+        hasTrainedModel: false,
+        canUseCustomModel: false,
+        canUseSelfies: false,
+      }
+
       if (isStudioProMode) {
         systemPrompt += `\n\n## CURRENT GENERATION MODE: SELFIE
 The user is in **Selfie mode** — photos are generated using their linked reference selfies (NanoBanana Pro).
 - When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with selfie-optimised prompts.
-- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the mode toggle to switch, then I'll generate with your trained model."
+- Trained model available: ${modelAvailability.hasTrainedModel ? "yes" : "no"}.
+- Selfie/reference uploads available: ${modelAvailability.canUseSelfies ? "yes" : "no"}.
+- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation AND they have a trained model, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the mode toggle to switch, then I'll generate with your trained model."
+- If they ask for a trained/custom model but no trained model is available, do not tell them to tap MY MODEL. Keep momentum: either create with Selfie mode if references are available, or guide them to Train once.
 - Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
       } else {
         systemPrompt += `\n\n## CURRENT GENERATION MODE: MY MODEL

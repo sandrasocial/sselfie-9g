@@ -23,6 +23,11 @@ export default function MayaPhotosHome({
 }: MayaPhotosHomeProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
   const sourceLabel = proMode ? "Selfie mode" : hasTrainedModel ? "My Model ready" : "Base photos"
+  const getPhotoPrompt = (modelPrompt: string, selfiePrompt: string, basePrompt: string) => {
+    if (proMode) return selfiePrompt
+    if (hasTrainedModel) return modelPrompt
+    return basePrompt
+  }
 
   return (
     <div className="w-full max-w-3xl space-y-5">
@@ -40,9 +45,11 @@ export default function MayaPhotosHome({
               className="w-full"
               onClick={() =>
                 onSendPrompt(
-                  hasTrainedModel
-                    ? "Use my trained model and create three strong photo concepts for my personal brand."
-                    : "Create three strong photo concepts for my personal brand.",
+                  getPhotoPrompt(
+                    "Use my trained model and create three strong photo concepts for my personal brand.",
+                    "Use my selfies and create three strong photo concepts for my personal brand.",
+                    "Create three strong photo concepts for my personal brand.",
+                  ),
                 )
               }
             >
@@ -61,9 +68,11 @@ export default function MayaPhotosHome({
                 className="w-full justify-start text-left"
                 onClick={() =>
                   onSendPrompt(
-                    hasTrainedModel
-                      ? "Use my trained model and create a soft luxury photo for my brand."
-                      : "Create a soft luxury photo direction for my brand.",
+                    getPhotoPrompt(
+                      "Use my trained model and create a soft luxury photo for my brand.",
+                      "Use my selfies and create a soft luxury photo for my brand.",
+                      "Create a soft luxury photo direction for my brand.",
+                    ),
                   )
                 }
               >
@@ -74,9 +83,11 @@ export default function MayaPhotosHome({
                 className="w-full justify-start text-left"
                 onClick={() =>
                   onSendPrompt(
-                    hasTrainedModel
-                      ? "Use my trained model and create a natural light lifestyle photo for my brand."
-                      : "Create a natural light lifestyle photo direction for my brand.",
+                    getPhotoPrompt(
+                      "Use my trained model and create a natural light lifestyle photo for my brand.",
+                      "Use my selfies and create a natural light lifestyle photo for my brand.",
+                      "Create a natural light lifestyle photo direction for my brand.",
+                    ),
                   )
                 }
               >

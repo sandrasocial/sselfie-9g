@@ -9,6 +9,7 @@ const mockGetOrCreateActiveChat = vi.fn()
 const mockSql = vi.fn()
 const mockDetectStudioProIntent = vi.fn()
 const mockResolveMayaChatTask = vi.fn()
+const mockGetMayaUserSnapshot = vi.fn()
 
 vi.mock("ai", () => ({
   streamText: mockStreamText,
@@ -129,7 +130,7 @@ vi.mock("@/lib/maya/asset-generation", () => ({
 }))
 
 vi.mock("@/lib/maya/user-snapshot", () => ({
-  getMayaUserSnapshot: vi.fn(() => Promise.resolve(null)),
+  getMayaUserSnapshot: mockGetMayaUserSnapshot,
 }))
 
 vi.mock("@/lib/maya/page-generation/snapshot-resolver", () => ({
@@ -184,6 +185,23 @@ describe("Maya mode header precedence", () => {
       confidence: 0.95,
     })
     mockResolveMayaChatTask.mockReturnValue("chat_default")
+    mockGetMayaUserSnapshot.mockResolvedValue({
+      generation: {
+        hasTrainedModel: true,
+        canUseCustomModel: true,
+        canUseSelfies: true,
+        recommendedSource: "custom_model",
+      },
+      uploads: {
+        hasAny: true,
+        total: 6,
+        selfies: 6,
+        products: 0,
+        people: 0,
+        vibes: 0,
+      },
+      activeAssetContext: null,
+    })
     mockStreamText.mockReturnValue({
       toUIMessageStreamResponse: () =>
         new Response("ok", {
@@ -230,5 +248,55 @@ describe("Maya mode header precedence", () => {
       }),
     )
     expect(mockStreamText.mock.calls[0][0].system).not.toContain("## CURRENT GENERATION MODE: SELFIE")
+  })
+
+  it("does not tell no-model users in Selfie mode to tap MY MODEL", async () => {
+    mockGetMayaUserSnapshot.mockResolvedValue({
+      generation: {
+        hasTrainedModel: false,
+        canUseCustomModel: false,
+        canUseSelfies: true,
+        recommendedSource: "selfies",
+      },
+      uploads: {
+        hasAny: true,
+        total: 6,
+        selfies: 6,
+        products: 0,
+        people: 0,
+        vibes: 0,
+      },
+      activeAssetContext: null,
+    })
+
+    const { POST } = await import("@/app/api/maya/chat/route")
+
+    const response = await POST(
+      new Request("http://localhost/api/maya/chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-chat-type": "pro",
+          "x-active-tab": "photos",
+          "x-studio-pro-mode": "true",
+        },
+        body: JSON.stringify({
+          chatType: "pro",
+          messages: [
+            {
+              id: "user-message-1",
+              role: "user",
+              parts: [{ type: "text", text: "Use my trained model for this photo" }],
+            },
+          ],
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    const system = mockStreamText.mock.calls[0][0].system
+    expect(system).toContain("## CURRENT GENERATION MODE: SELFIE")
+    expect(system).toContain("Trained model available: no")
+    expect(system).toContain("do not tell them to tap MY MODEL")
   })
 })
