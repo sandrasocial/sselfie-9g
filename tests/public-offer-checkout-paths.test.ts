@@ -14,20 +14,22 @@ describe("public offer checkout paths", () => {
     expect(checkoutContents).not.toContain("/auth/login?returnTo=")
   })
 
-  it("points the brand strategy upsell straight to membership checkout", () => {
+  it("keeps the brand strategy upsell on the pack checkout and private offer path", () => {
     const upsellContents = fs.readFileSync(
       path.join(ROOT, "components/strategy/brand-strategy-pack-upsell.tsx"),
       "utf8",
     )
 
-    expect(upsellContents).toContain('href="/checkout/membership"')
+    expect(upsellContents).toContain("/checkout/brand-strategy-pack?strategyToken=")
+    expect(upsellContents).toContain('href="/private-shoot"')
     expect(upsellContents).not.toContain("auth/sign-up?checkout=studio_membership")
   })
 
-  it("points the strategy results upsell straight to membership checkout", () => {
+  it("points the strategy results upsell to the current private offer and planner paths", () => {
     const strategyPageContents = fs.readFileSync(path.join(ROOT, "app/strategy/[token]/page.tsx"), "utf8")
 
-    expect(strategyPageContents).toContain('href="https://sselfie.ai/checkout/membership"')
+    expect(strategyPageContents).toContain('href="https://sselfie.ai/private-shoot"')
+    expect(strategyPageContents).toContain('href="https://sselfie.ai/checkout/blueprint"')
     expect(strategyPageContents).not.toContain("auth/sign-up?checkout=studio_membership")
   })
 
