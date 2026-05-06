@@ -47,6 +47,16 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "starter_kit_checkout_success",
   "starter_kit_access_opened",
   "masterclass_checkout_success",
+  "offer_landing_view",
+  "offer_cta_click",
+  "quiz_started",
+  "quiz_completed",
+  "quiz_result_viewed",
+  "micro_offer_cta_clicked",
+  "visibility_suite_upsell_view",
+  "private_sprint_application_started",
+  "private_sprint_application_submitted",
+  "studio_from_suite_clicked",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

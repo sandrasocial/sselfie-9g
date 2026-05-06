@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
       utmContent,
       campaignId,
       referralCode,
+      ctaKeyword,
+      quizResult,
       returnTo,
       entryPath,
     } = await request.json()
@@ -29,6 +31,8 @@ export async function POST(request: NextRequest) {
       utmContent,
       campaignId,
       referralCode,
+      ctaKeyword,
+      quizResult,
       returnTo,
       entryPath,
     })

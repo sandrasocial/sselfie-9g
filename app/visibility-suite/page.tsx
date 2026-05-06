@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { PublicNav, PublicFooter } from "@/components/sselfie/public-marketing"
+import { PublicOfferTracker } from "@/components/analytics/public-offer-tracker"
 
 export const metadata: Metadata = {
   title: "Visibility Suite | SSELFIE",
@@ -92,9 +93,13 @@ const SUITE_OFFER = {
   href: "/checkout/visibility-suite",
 }
 
+const SUITE_CHECKOUT_HREF =
+  "/checkout/visibility-suite?offer_slug=visibility-suite&source=visibility_suite_landing&cta_keyword=SUITE&entry_path=/visibility-suite"
+
 export default function VisibilitySuiteLandingPage() {
   return (
     <>
+      <PublicOfferTracker offerSlug="visibility-suite" productId="visibility_suite" ctaKeyword="SUITE" />
       <PublicNav loginHref="/auth/login" />
       <main
         className={`${inter.className} min-h-screen pt-[58px]`}
@@ -139,18 +144,11 @@ export default function VisibilitySuiteLandingPage() {
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
-              href={SUITE_OFFER.href}
+              href={SUITE_CHECKOUT_HREF}
               className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
               style={{ background: C.creamWarm, color: C.ink, fontWeight: 600 }}
             >
               Get The Visibility To Paid Suite
-            </Link>
-            <Link
-              href="/selfie-guide"
-              className="px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
-              style={{ border: `1px solid ${C.divDark}`, color: C.onDarkSub, fontWeight: 600 }}
-            >
-              Free Guide First
             </Link>
           </div>
           <p
@@ -213,7 +211,7 @@ export default function VisibilitySuiteLandingPage() {
               Launch price · regular {SUITE_OFFER.standardPrice}
             </p>
             <Link
-              href={SUITE_OFFER.href}
+              href={SUITE_CHECKOUT_HREF}
               className="mt-5 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
               style={{ background: C.ink, color: C.creamWarm, fontWeight: 600 }}
             >

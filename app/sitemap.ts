@@ -11,11 +11,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }> = [
     // Core conversion pages — highest priority
     { path: "/", changeFrequency: "daily", priority: 1.0 },
-    { path: "/selfie-guide", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/quiz/post-to-paid", changeFrequency: "weekly", priority: 0.95 },
+    { path: "/visibility-suite", changeFrequency: "weekly", priority: 0.95 },
+    { path: "/what-to-say", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/show-up", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/get-paid", changeFrequency: "weekly", priority: 0.9 },
     { path: "/brand-strategy", changeFrequency: "weekly", priority: 0.9 },
     { path: "/checkout/membership", changeFrequency: "weekly", priority: 0.9 },
 
     // Product & feature pages
+    { path: "/selfie-guide", changeFrequency: "weekly", priority: 0.65 },
     { path: "/why-studio", changeFrequency: "weekly", priority: 0.8 },
     { path: "/blueprint", changeFrequency: "weekly", priority: 0.7 },
     { path: "/whats-new", changeFrequency: "weekly", priority: 0.7 },

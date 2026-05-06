@@ -214,6 +214,8 @@ export async function createLandingCheckoutSession(
       utmContent: attribution.utmContent,
       campaignId: attribution.campaignId,
       referralCode: attribution.referralCode,
+      ctaKeyword: attribution.ctaKeyword,
+      quizResult: attribution.quizResult,
       returnTo: attribution.returnTo,
       entryPath: attribution.entryPath,
       userEmail: customerEmail || null,

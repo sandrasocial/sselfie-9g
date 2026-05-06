@@ -376,10 +376,10 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <nav className="hidden md:flex items-center gap-7">
         {[
-          { href: "/selfie-guide", label: "Free Guide" },
+          { href: "/quiz/post-to-paid", label: "Start Here" },
           { href: "/visibility-suite", label: "Visibility Suite" },
           { href: "/join/studio",  label: "Studio"       },
-          { href: "/work-with-me", label: "Work With Me" },
+          { href: "/work-with-me", label: "Private Sprint" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
             style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
@@ -390,7 +390,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <div className="flex items-center gap-4">
         <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>Login</Link>
-        <Btn href="/selfie-guide" surface="dark">Free guide</Btn>
+        <Btn href="/quiz/post-to-paid" surface="dark">Start Here</Btn>
       </div>
     </header>
   )
@@ -406,9 +406,10 @@ export function PublicFooter() {
         </p>
         <div className="flex flex-wrap gap-6">
           {[
-            "/selfie-guide:Free Guide", "/visibility-suite:Visibility Suite",
-            "/starter-kit:Starter Kit", "/masterclass:Masterclass",
-            "/join/studio:Studio", "/work-with-me:Work With Me",
+            "/quiz/post-to-paid:Start Here", "/what-to-say:What To Say",
+            "/show-up:Show Up", "/get-paid:Get Paid",
+            "/visibility-suite:Visibility Suite", "/join/studio:Studio",
+            "/work-with-me:Private Sprint",
           ].map((s) => {
             const [href, label] = s.split(":")
             return (
@@ -659,7 +660,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           <p>You already have the phone. You already have the story. SSELFIE helps you turn both into a personal brand people understand, trust, and can buy from.</p>
         }
         primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
-        secondary={{ href: r("/selfie-guide"),   label: "Get the Free Selfie Guide" }}
+        secondary={{ href: r("/quiz/post-to-paid"),   label: "Find Your First Step" }}
         imageSrc={IMG.homeHero}
       />
 
@@ -731,10 +732,10 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       <Section eyebrow="Start here" title={<>Choose your next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Free Selfie Guide", price: "Free", body: "Start with your phone and face.", href: "/selfie-guide" },
+            { title: "Start Here", price: "Diagnostic", body: "Find the first paid step for your message, content, sales path, or Studio execution.", href: "/quiz/post-to-paid" },
             { title: "Visibility To Paid Suite", price: "Front door", body: "Know what to say, what to post, what to sell, and what to do next.", href: "/visibility-suite" },
             { title: "SSELFIE Studio", price: "Execution", body: "Use Maya, visuals, and planning tools to create and execute every week.", href: "/join/studio" },
-            { title: "Work With Me", price: "Private Sprint", body: "High-touch support when you want Sandra's eyes on your full message, offer, content, and sales path.", href: "/work-with-me" },
+            { title: "Private Sprint", price: "Private help", body: "High-touch support when you want Sandra's eyes on your full message, offer, content, and sales path.", href: "/work-with-me" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -788,7 +789,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       <CtaClose
         title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
         primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
-        secondary={{ href: r("/selfie-guide"),   label: "Get the Free Guide" }}
+        secondary={{ href: r("/quiz/post-to-paid"),   label: "Find Your First Step" }}
         dark
       />
 

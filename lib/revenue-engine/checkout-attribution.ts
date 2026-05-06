@@ -19,6 +19,8 @@ export type CheckoutAttributionInput = {
   utmContent?: string | null
   campaignId?: number | string | null
   referralCode?: string | null
+  ctaKeyword?: string | null
+  quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
 }
@@ -32,6 +34,8 @@ export type NormalizedCheckoutAttribution = {
   utmContent: string | null
   campaignId: number | null
   referralCode: string | null
+  ctaKeyword: string | null
+  quizResult: string | null
   returnTo: string | null
   entryPath: string | null
   funnelStage: RevenueFunnelStage
@@ -52,6 +56,8 @@ export type CheckoutAttributionRecord = {
   utmContent?: string | null
   campaignId?: number | null
   referralCode?: string | null
+  ctaKeyword?: string | null
+  quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
   userId?: string | null
@@ -123,6 +129,8 @@ export function normalizeCheckoutAttribution(
     utmContent: safeString(input?.utmContent, 160),
     campaignId: safeCampaignId(input?.campaignId),
     referralCode: safeString(input?.referralCode, 64)?.toUpperCase() || null,
+    ctaKeyword: safeString(input?.ctaKeyword, 40)?.toUpperCase() || null,
+    quizResult: safeString(input?.quizResult, 80),
     returnTo: safeString(input?.returnTo, 500),
     entryPath: safeString(input?.entryPath, 500),
     funnelStage: getRevenueFunnelStage(productType),
@@ -142,6 +150,8 @@ export function getCheckoutAttributionFromParams(
     utmContent: params.utm_content || defaults?.utmContent || null,
     campaignId: params.campaign_id || defaults?.campaignId || null,
     referralCode: params.ref || params.referral_code || defaults?.referralCode || null,
+    ctaKeyword: params.cta_keyword || defaults?.ctaKeyword || null,
+    quizResult: params.quiz_result || defaults?.quizResult || null,
     returnTo: params.returnTo || params.return_to || defaults?.returnTo || null,
     entryPath: params.entry_path || defaults?.entryPath || null,
   }
@@ -163,6 +173,8 @@ export function buildCheckoutAttributionMetadata(
     ...(normalized.utmContent ? { utm_content: normalized.utmContent } : {}),
     ...(normalized.campaignId ? { campaign_id: String(normalized.campaignId) } : {}),
     ...(normalized.referralCode ? { referral_code: normalized.referralCode } : {}),
+    ...(normalized.ctaKeyword ? { cta_keyword: normalized.ctaKeyword } : {}),
+    ...(normalized.quizResult ? { quiz_result: normalized.quizResult } : {}),
     ...(normalized.returnTo ? { return_to: normalized.returnTo } : {}),
     ...(normalized.entryPath ? { entry_path: normalized.entryPath } : {}),
   }
@@ -190,6 +202,8 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
       utm_content TEXT,
       campaign_id INTEGER,
       referral_code TEXT,
+      cta_keyword TEXT,
+      quiz_result TEXT,
       return_to TEXT,
       entry_path TEXT,
       user_id TEXT,
@@ -211,6 +225,10 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_status_idx ON checkout_attribution (status, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_campaign_idx ON checkout_attribution (campaign_id, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_referral_idx ON checkout_attribution (referral_code, created_at DESC);`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS quiz_result TEXT;`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_cta_keyword_idx ON checkout_attribution (cta_keyword, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_quiz_result_idx ON checkout_attribution (quiz_result, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_purchase_idx ON checkout_attribution (purchased_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_user_idx ON checkout_attribution (user_id, created_at DESC);`
 }
@@ -236,6 +254,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       utm_content,
       campaign_id,
       referral_code,
+      cta_keyword,
+      quiz_result,
       return_to,
       entry_path,
       user_id,
@@ -256,6 +276,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       ${record.utmContent || null},
       ${record.campaignId || null},
       ${record.referralCode || null},
+      ${record.ctaKeyword || null},
+      ${record.quizResult || null},
       ${record.returnTo || null},
       ${record.entryPath || null},
       ${record.userId || null},
@@ -277,6 +299,8 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       utm_content = COALESCE(EXCLUDED.utm_content, checkout_attribution.utm_content),
       campaign_id = COALESCE(EXCLUDED.campaign_id, checkout_attribution.campaign_id),
       referral_code = COALESCE(EXCLUDED.referral_code, checkout_attribution.referral_code),
+      cta_keyword = COALESCE(EXCLUDED.cta_keyword, checkout_attribution.cta_keyword),
+      quiz_result = COALESCE(EXCLUDED.quiz_result, checkout_attribution.quiz_result),
       return_to = COALESCE(EXCLUDED.return_to, checkout_attribution.return_to),
       entry_path = COALESCE(EXCLUDED.entry_path, checkout_attribution.entry_path),
       user_id = COALESCE(EXCLUDED.user_id, checkout_attribution.user_id),

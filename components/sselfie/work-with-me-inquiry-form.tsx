@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 export function WorkWithMeInquiryForm() {
   const [name, setName] = useState("")
@@ -19,6 +20,10 @@ export function WorkWithMeInquiryForm() {
         event.preventDefault()
         setError("")
         setSuccess(false)
+        trackAnalyticsEvent({
+          event: "private_sprint_application_started",
+          properties: { source: "work_with_me_form" },
+        })
 
         startTransition(async () => {
           try {
@@ -44,6 +49,10 @@ export function WorkWithMeInquiryForm() {
             }
 
             setSuccess(true)
+            trackAnalyticsEvent({
+              event: "private_sprint_application_submitted",
+              properties: { source: "work_with_me_form" },
+            })
             setName("")
             setEmail("")
             setInstagram("")

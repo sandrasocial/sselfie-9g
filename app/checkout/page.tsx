@@ -61,6 +61,27 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying the Visibility To Paid Suite launch offer with encrypted Stripe checkout.",
     footer: "Digital purchase. Your Suite access is delivered right after payment.",
   },
+  what_to_say: {
+    heroTitle: "Complete your What To Say order",
+    heroBody: "Get the message clarity workbook and start with one clear offer line.",
+    heading: "Secure checkout",
+    blurb: "You are buying What To Say with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your workbook access is delivered right after payment.",
+  },
+  show_up: {
+    heroTitle: "Complete your Show Up order",
+    heroBody: "Get the content rhythm workbook and plan your next week.",
+    heading: "Secure checkout",
+    blurb: "You are buying Show Up with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your workbook access is delivered right after payment.",
+  },
+  get_paid: {
+    heroTitle: "Complete your Get Paid order",
+    heroBody: "Get the buyer path workbook and connect content to a clear next step.",
+    heading: "Secure checkout",
+    blurb: "You are buying Get Paid with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your workbook access is delivered right after payment.",
+  },
 }
 
 function CheckoutContent() {

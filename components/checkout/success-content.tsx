@@ -56,6 +56,12 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Masterclass"
     case "visibility_suite":
       return "Visibility To Paid Suite"
+    case "what_to_say":
+      return "What To Say"
+    case "show_up":
+      return "Show Up"
+    case "get_paid":
+      return "Get Paid"
     case "paid_blueprint":
       return "30-Day Visibility Reset"
     default:
@@ -501,6 +507,9 @@ export function SuccessContent({
       starter_kit: 37,
       masterclass: 147,
       visibility_suite: 97,
+      what_to_say: 47,
+      show_up: 67,
+      get_paid: 97,
       brand_strategy_pack: 19,
       paid_blueprint: 47,
       credit_topup: 25,
@@ -513,7 +522,7 @@ export function SuccessContent({
     ;(window as any).gtag("event", "purchase", {
       transaction_id: sessionId,
       value,
-      currency: resolvedType === "visibility_suite" ? "EUR" : "USD",
+      currency: ["visibility_suite", "what_to_say", "show_up", "get_paid"].includes(resolvedType) ? "EUR" : "USD",
       items: [
         {
           item_id: resolvedType,
