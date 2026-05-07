@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { AlertCircle, ArrowRight, Check, Download, Loader2, Sparkles, Upload } from "lucide-react"
+import { AlertCircle, ArrowRight, Check, Download, Loader2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -194,7 +194,7 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C4B5A0]">SSELFIE Transform</p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight">Your AI Photo Studio</h1>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight">Photo Editing Studio</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -210,7 +210,7 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
         {checkoutSuccess && (
           <div className="flex items-center gap-3 border border-green-500/30 bg-green-500/10 px-5 py-4 text-sm text-green-400">
             <Check className="h-4 w-4 flex-shrink-0" />
-            Credits added. You are ready to transform.
+            Credits added. You are ready to start editing.
           </div>
         )}
 
@@ -289,13 +289,13 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
                 {promptText.length}/1200 characters
               </p>
 
-              {/* Today's prompt suggestion */}
+              {/* Featured preset suggestion */}
               {todayPrompt && (
                 <div className="mt-4 border border-[#EDE9E2]/10 bg-[#1E1A15]">
                   <div className="flex items-start justify-between gap-4 px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#C4B5A0]">
-                        Today's style
+                        Featured preset
                       </p>
                       <p className="mt-1 text-sm font-semibold truncate">{todayPrompt.title}</p>
                       {todayPrompt.style_notes && (
@@ -335,14 +335,11 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {phase === "uploading" && "Uploading photo…"}
-                  {phase === "generating" && "Starting transformation…"}
-                  {phase === "polling" && "Transforming… this takes 20-40 seconds"}
+                  {phase === "generating" && "Applying style…"}
+                  {phase === "polling" && "Editing your photo… this takes 20-40 seconds"}
                 </>
               ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Transform · 3 credits
-                </>
+                <>Apply style · 3 credits</>
               )}
             </Button>
 
@@ -368,13 +365,12 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
 
           {/* Right — before/after result */}
           <div className="space-y-4">
-            <p className="text-sm font-medium">3. Your transformation</p>
+            <p className="text-sm font-medium">3. Your result</p>
 
             {phase === "idle" && !outputUrl && (
               <div className="flex min-h-[400px] flex-col items-center justify-center border border-dashed border-[#EDE9E2]/15 text-center">
-                <Sparkles className="mb-3 h-8 w-8 text-[#EDE9E2]/20" />
-                <p className="text-sm text-[#C4B5A0]">Upload a photo and click Generate.</p>
-                <p className="mt-1 text-xs text-[#EDE9E2]/30">Results appear here in 20-40 seconds.</p>
+                <p className="text-sm text-[#C4B5A0]">Upload a photo and apply a style.</p>
+                <p className="mt-1 text-xs text-[#EDE9E2]/30">Your edited photo appears here in 20-40 seconds.</p>
               </div>
             )}
 
@@ -382,7 +378,7 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
               <div className="flex min-h-[400px] flex-col items-center justify-center border border-dashed border-[#EDE9E2]/15 gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-[#C4B5A0]" />
                 <div className="text-center">
-                  <p className="text-sm font-medium">Transforming your photo…</p>
+                  <p className="text-sm font-medium">Applying your style…</p>
                   <p className="mt-1 text-xs text-[#C4B5A0]">Usually 20-40 seconds</p>
                 </div>
                 {/* Animated progress dots */}
@@ -465,7 +461,7 @@ export function TransformStudio({ credits: initialCredits, userId, checkoutSucce
                   }}
                   className="w-full text-[#C4B5A0] hover:text-[#EDE9E2] hover:bg-[#EDE9E2]/5 rounded-none"
                 >
-                  Transform another photo
+                  Edit another photo
                 </Button>
               </div>
             )}

@@ -1,45 +1,43 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { ArrowRight, Check, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { ArrowRight, Check } from "lucide-react"
 
-type Prompt = {
-  id: number
-  title: string
-  prompt_text: string
-  style_notes: string | null
-}
-
-const BEFORE_AFTER_EXAMPLES = [
+const STYLE_PRESETS = [
   {
     label: "The Parisian Editorial",
-    note: "Warm film-grain · editorial",
+    note: "Warm film-grain · soft afternoon light · editorial",
   },
   {
     label: "Studio Headshot",
-    note: "Clean · professional · LinkedIn-ready",
+    note: "Clean white background · sharp · professional",
   },
   {
     label: "Golden Hour Lifestyle",
-    note: "Glowing · outdoor · authentic",
+    note: "Backlit · glowing skin · relaxed and real",
+  },
+  {
+    label: "Dark Editorial",
+    note: "Moody · high contrast · high-fashion",
+  },
+  {
+    label: "Coffee Shop Story",
+    note: "Bright · airy · candid lifestyle",
+  },
+  {
+    label: "Scandinavian Minimalist",
+    note: "White interior · natural light · quiet and considered",
+  },
+  {
+    label: "Brand Founder Portrait",
+    note: "Confident · natural light · website or press-ready",
   },
 ]
 
 export function TransformLanding() {
-  const [todayPrompt, setTodayPrompt] = useState<Prompt | null>(null)
   const [email, setEmail] = useState("")
   const [captured, setCaptured] = useState(false)
   const [capturing, setCapturing] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/transform/today-prompt")
-      .then((r) => r.json())
-      .then((data: Prompt) => {
-        if (data.title) setTodayPrompt(data)
-      })
-      .catch(() => null)
-  }, [])
 
   async function captureEmail(e: React.FormEvent) {
     e.preventDefault()
@@ -69,63 +67,66 @@ export function TransformLanding() {
             className="mt-5 text-5xl font-light leading-[1.1] tracking-tight text-[#EDE9E2] md:text-6xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            Your selfie.
+            Professional photo editing.
             <br />
-            <em>Any style. 30 seconds.</em>
+            <em>From one selfie.</em>
           </h1>
-          <p className="mt-6 text-base leading-7 text-[#C4B5A0] max-w-xl mx-auto">
-            Upload one photo. Pick today's featured style. Watch yourself become a Parisian editorial,
-            a studio headshot, or a golden-hour lifestyle shot — instantly.
+          <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-[#C4B5A0]">
+            Upload your photo. Choose an aesthetic. Get a polished, editorial-quality result
+            you can use on your website, Instagram, or press kit — in under a minute.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4">
             <a
               href="/checkout/transform"
-              className="flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] hover:bg-[#EDE9E2]/90 transition-colors"
+              className="flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
             >
               Get started — $17
               <ArrowRight className="h-4 w-4" />
             </a>
             <p className="text-xs text-[#C4B5A0]">
-              15 credits included · 5 transformations · $9 top-ups anytime
+              5 edits included · $9 top-ups anytime · no subscription
             </p>
           </div>
         </div>
       </section>
 
-      {/* What you get */}
+      {/* How it works */}
       <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            What you get
+            How it works
           </p>
           <h2
             className="mt-4 text-center text-3xl font-light text-[#EDE9E2]"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            Professional photos from your phone
+            Three steps to a finished photo
           </h2>
 
-          <div className="mt-14 grid gap-8 md:grid-cols-3">
+          <div className="mt-14 grid gap-px bg-[#EDE9E2]/10 md:grid-cols-3">
             {[
               {
-                label: "Upload any selfie",
-                body: "A photo from your phone is enough. No professional setup needed.",
+                step: "01",
+                label: "Upload your photo",
+                body: "Any photo from your phone works. You don't need professional lighting or a camera.",
               },
               {
-                label: "One new style every day",
-                body: "Sandra writes a fresh editorial prompt daily. Use it as is or make it yours.",
+                step: "02",
+                label: "Choose your aesthetic",
+                body: "Pick from a library of curated editing styles — editorial, studio, lifestyle, and more.",
               },
               {
-                label: "Download in 30 seconds",
-                body: "AI transforms your photo and delivers a studio-quality result you can post today.",
+                step: "03",
+                label: "Download your result",
+                body: "Your edited photo is ready in under a minute. Save it and use it anywhere.",
               },
             ].map((item) => (
-              <div key={item.label} className="border border-[#EDE9E2]/10 p-6">
-                <div className="mb-3 flex h-8 w-8 items-center justify-center bg-[#EDE9E2]/8">
-                  <Sparkles className="h-4 w-4 text-[#C4B5A0]" />
-                </div>
-                <h3 className="text-base font-semibold">{item.label}</h3>
+              <div key={item.step} className="bg-[#1E1A15] p-8">
+                <p className="text-3xl font-light text-[#EDE9E2]/15" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  {item.step}
+                </p>
+                <h3 className="mt-4 text-base font-semibold">{item.label}</h3>
                 <p className="mt-2 text-sm leading-6 text-[#C4B5A0]">{item.body}</p>
               </div>
             ))}
@@ -133,89 +134,102 @@ export function TransformLanding() {
         </div>
       </section>
 
-      {/* Today's featured prompt */}
-      {todayPrompt && (
-        <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-              Today's featured style
-            </p>
-            <h2
-              className="mt-4 text-3xl font-light text-[#EDE9E2]"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              {todayPrompt.title}
-            </h2>
-            {todayPrompt.style_notes && (
-              <p className="mt-4 text-sm text-[#C4B5A0]">{todayPrompt.style_notes}</p>
-            )}
-            <p className="mt-6 mx-auto max-w-xl text-sm leading-7 text-[#EDE9E2]/60 italic">
-              "{todayPrompt.prompt_text.slice(0, 200)}…"
-            </p>
-            <a
-              href="/checkout/transform"
-              className="mt-8 inline-flex items-center gap-2 bg-[#EDE9E2] px-6 py-3 text-sm font-semibold text-[#0F0D0B] hover:bg-[#EDE9E2]/90 transition-colors"
-            >
-              Try today's style — $17
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-        </section>
-      )}
-
-      {/* Example styles */}
-      <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-20">
+      {/* Style presets */}
+      <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            Style examples
+            Editing styles
           </p>
           <h2
             className="mt-4 text-center text-3xl font-light text-[#EDE9E2]"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            A new look every day
+            Choose your aesthetic
           </h2>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {BEFORE_AFTER_EXAMPLES.map((ex) => (
-              <div key={ex.label} className="border border-[#EDE9E2]/10">
-                <div className="flex aspect-square items-center justify-center bg-[#0F0D0B]">
-                  <p className="text-center text-xs text-[#EDE9E2]/20 px-4">
-                    Before/after example coming soon
-                  </p>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-sm font-semibold">{ex.label}</p>
-                  <p className="mt-0.5 text-xs text-[#C4B5A0]">{ex.note}</p>
-                </div>
+          <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-6 text-[#C4B5A0]">
+            Each style is a specific editing direction — lighting, mood, colour grade, and composition.
+            You paste the one you want and the tool applies it to your photo.
+          </p>
+
+          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {STYLE_PRESETS.map((preset) => (
+              <div
+                key={preset.label}
+                className="border border-[#EDE9E2]/10 bg-[#1E1A15] px-5 py-4"
+              >
+                <p className="text-sm font-semibold">{preset.label}</p>
+                <p className="mt-1 text-xs text-[#C4B5A0]">{preset.note}</p>
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-xs text-[#EDE9E2]/30">
-            Sandra posts real results daily on her Instagram. Follow @sandra.social to see them.
-          </p>
+
+          <div className="mt-10 text-center">
+            <a
+              href="/checkout/transform"
+              className="inline-flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
+            >
+              Start editing — $17
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* Email capture + CTA */}
-      <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
-        <div className="mx-auto max-w-xl text-center">
+      {/* Who it is for */}
+      <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-20">
+        <div className="mx-auto max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            Get tomorrow's prompt
+            Who this is for
           </p>
           <h2
             className="mt-4 text-3xl font-light text-[#EDE9E2]"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            New style delivered daily
+            You want great photos.<br />You don't want to hire a photographer for every post.
+          </h2>
+          <p className="mt-5 text-sm leading-7 text-[#C4B5A0]">
+            SSELFIE Transform is for founders, coaches, and creatives who need consistent,
+            polished personal brand photos without a photoshoot budget or editing skills.
+            You take the photo. The tool handles the edit.
+          </p>
+
+          <ul className="mt-8 space-y-3">
+            {[
+              "Website about page and press photos",
+              "Instagram content without a photographer",
+              "LinkedIn and speaker headshots",
+              "Brand founder portraits for pitches and media",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-3 text-sm text-[#C4B5A0]">
+                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#EDE9E2]" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Email capture */}
+      <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
+        <div className="mx-auto max-w-xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
+            Stay in the loop
+          </p>
+          <h2
+            className="mt-4 text-3xl font-light text-[#EDE9E2]"
+            style={{ fontFamily: "'Cormorant Garamond', serif" }}
+          >
+            New styles added regularly
           </h2>
           <p className="mt-4 text-sm leading-6 text-[#C4B5A0]">
-            Sandra writes a new editorial prompt every day. Enter your email and get it straight to your inbox.
+            Sandra adds new editing styles to the library as she creates content.
+            Drop your email and we will let you know when new presets are available.
           </p>
 
           {captured ? (
-            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-green-400">
+            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#EDE9E2]/70">
               <Check className="h-4 w-4" />
-              You are on the list. Tomorrow's prompt lands in your inbox.
+              You are on the list.
             </div>
           ) : (
             <form onSubmit={captureEmail} className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -230,26 +244,12 @@ export function TransformLanding() {
               <button
                 type="submit"
                 disabled={capturing}
-                className="flex items-center justify-center gap-2 border border-[#EDE9E2]/20 px-6 py-3 text-sm font-medium text-[#EDE9E2] hover:bg-[#EDE9E2]/5 transition-colors"
+                className="border border-[#EDE9E2]/20 px-6 py-3 text-sm font-medium text-[#EDE9E2] transition-colors hover:bg-[#EDE9E2]/5"
               >
-                Send me tomorrow's style
+                Notify me
               </button>
             </form>
           )}
-
-          <div className="mt-12 border-t border-[#EDE9E2]/10 pt-12">
-            <p className="text-sm font-medium">Ready to try it now?</p>
-            <a
-              href="/checkout/transform"
-              className="mt-4 inline-flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] hover:bg-[#EDE9E2]/90 transition-colors"
-            >
-              Get 15 credits — $17
-              <ArrowRight className="h-4 w-4" />
-            </a>
-            <p className="mt-3 text-xs text-[#C4B5A0]">
-              5 transformations · Top up anytime · No subscription
-            </p>
-          </div>
         </div>
       </section>
 
@@ -261,11 +261,11 @@ export function TransformLanding() {
           </p>
           <ul className="mt-6 space-y-3">
             {[
-              "15 credits — enough for 5 photo transformations",
-              "Access to every daily style prompt Sandra writes",
-              "Downloadable results within 30 seconds",
-              "Top up with 15 more credits for $9 anytime",
-              "Upgrade to Studio ($97/mo) for unlimited generations",
+              "5 photo edits included (15 credits)",
+              "Access to the full style preset library",
+              "Download-ready results in under a minute",
+              "Top up with 5 more edits for $9 anytime",
+              "Upgrade to Studio ($97/mo) for unlimited",
             ].map((item) => (
               <li key={item} className="flex items-start gap-3 text-sm text-[#C4B5A0]">
                 <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#EDE9E2]" />
@@ -280,9 +280,9 @@ export function TransformLanding() {
       <section className="border-t border-[#EDE9E2]/10 px-6 py-16 text-center">
         <a
           href="/checkout/transform"
-          className="inline-flex items-center gap-2 bg-[#EDE9E2] px-10 py-4 text-sm font-semibold text-[#0F0D0B] hover:bg-[#EDE9E2]/90 transition-colors"
+          className="inline-flex items-center gap-2 bg-[#EDE9E2] px-10 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
         >
-          Start transforming — $17
+          Get started — $17
           <ArrowRight className="h-4 w-4" />
         </a>
         <p className="mt-4 text-xs text-[#C4B5A0]">
