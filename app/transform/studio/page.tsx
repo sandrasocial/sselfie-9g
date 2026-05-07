@@ -12,7 +12,7 @@ export const metadata = {
 export default async function TransformStudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>
+  searchParams: Promise<{ checkout?: string; style?: string }>
 }) {
   const params = await searchParams
   const supabase = await createServerClient()
@@ -31,12 +31,14 @@ export default async function TransformStudioPage({
 
   const credits = await getUserCredits(String(neonUser.id)).catch(() => 0)
   const checkoutSuccess = params.checkout === "success"
+  const initialStyleSlug = typeof params.style === "string" ? params.style : null
 
   return (
     <TransformStudio
       credits={credits}
       userId={String(neonUser.id)}
       checkoutSuccess={checkoutSuccess}
+      initialStyleSlug={initialStyleSlug}
     />
   )
 }
