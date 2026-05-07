@@ -10,9 +10,10 @@ export const metadata: Metadata = {
 export default async function TransformPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>
+  searchParams: Promise<{ checkout?: string; reason?: string }>
 }) {
   const params = await searchParams
   const checkoutError = params.checkout === "error" || params.checkout === "failed"
-  return <TransformLanding checkoutError={checkoutError} />
+  const checkoutErrorReason = params.reason ?? null
+  return <TransformLanding checkoutError={checkoutError} checkoutErrorReason={checkoutErrorReason} />
 }

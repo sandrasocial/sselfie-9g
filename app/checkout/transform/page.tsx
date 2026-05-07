@@ -21,12 +21,13 @@ export default async function TransformCheckoutPage({
   try {
     clientSecret = await startTransformCheckout(plan)
   } catch (error) {
-    console.error("[Transform Checkout] Error creating session:", error)
-    redirect("/transform?checkout=error")
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("[Transform Checkout] Error creating session:", msg)
+    redirect(`/transform?checkout=error&reason=${encodeURIComponent(msg)}`)
   }
 
   if (!clientSecret) {
-    redirect("/transform?checkout=error")
+    redirect("/transform?checkout=error&reason=no_client_secret")
   }
 
   redirect(
