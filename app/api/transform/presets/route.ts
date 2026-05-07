@@ -2,7 +2,7 @@ import { neon } from "@neondatabase/serverless"
 import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "nodejs"
-export const revalidate = 3600
+export const dynamic = "force-dynamic"
 
 const sql = neon(process.env.DATABASE_URL!)
 
