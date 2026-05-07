@@ -82,6 +82,20 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying Get Paid with encrypted Stripe checkout.",
     footer: "Digital purchase. Your workbook access is delivered right after payment.",
   },
+  transform_starter: {
+    heroTitle: "Complete your Transform order",
+    heroBody: "15 credits — enough for 5 photo transformations.",
+    heading: "Secure checkout",
+    blurb: "You are buying the SSELFIE Transform Starter Pack with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your credits are added instantly after payment.",
+  },
+  transform_topup: {
+    heroTitle: "Top up your Transform credits",
+    heroBody: "15 more credits — 5 more photo transformations.",
+    heading: "Secure checkout",
+    blurb: "You are topping up your SSELFIE Transform credits with encrypted Stripe checkout.",
+    footer: "Digital purchase. Credits are added instantly after payment.",
+  },
 }
 
 function CheckoutContent() {
