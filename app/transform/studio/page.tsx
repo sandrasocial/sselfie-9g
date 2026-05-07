@@ -6,7 +6,7 @@ import { TransformStudio } from "@/components/transform/transform-studio"
 
 export const metadata = {
   title: "SSELFIE Transform",
-  description: "Transform your selfie into stunning editorial photos with AI.",
+  description: "Upload a photo, choose an aesthetic, and download a polished editorial edit.",
 }
 
 export default async function TransformStudioPage({

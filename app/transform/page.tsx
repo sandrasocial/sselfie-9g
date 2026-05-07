@@ -4,7 +4,7 @@ import { TransformLanding } from "@/components/transform/transform-landing"
 export const metadata: Metadata = {
   title: "SSELFIE Transform",
   description:
-    "Upload your selfie. Pick today's style. See yourself transformed in 30 seconds. Professional editorial photos — no camera crew, no studio.",
+    "Upload your selfie, choose an aesthetic, and get a polished editorial edit you can post today.",
 }
 
 export default function TransformPage({

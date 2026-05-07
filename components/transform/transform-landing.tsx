@@ -1,45 +1,43 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import { ArrowRight, Check } from "lucide-react"
 
 const STYLE_PRESETS = [
   {
     slug: "parisian-editorial",
-    label: "The Parisian Editorial",
-    note: "Warm film-grain · soft afternoon light · editorial",
+    label: "Parisian Editorial",
+    note: "Warm light, soft grain, magazine polish.",
   },
   {
     slug: "studio-headshot",
-    label: "Studio Headshot",
-    note: "Clean white background · sharp · professional",
+    label: "Clean Studio",
+    note: "Bright, sharp, simple portrait finish.",
   },
   {
     slug: "golden-hour",
-    label: "Golden Hour Lifestyle",
-    note: "Backlit · glowing skin · relaxed and real",
+    label: "Golden Hour",
+    note: "Glowy skin, warm light, relaxed mood.",
   },
   {
     slug: "dark-editorial",
     label: "Dark Editorial",
-    note: "Moody · high contrast · high-fashion",
+    note: "Moody contrast with a high-fashion feel.",
   },
   {
     slug: "coffee-shop",
-    label: "Coffee Shop Story",
-    note: "Bright · airy · candid lifestyle",
+    label: "Coffee Shop",
+    note: "Airy lifestyle edit with natural color.",
   },
   {
     slug: "scandinavian",
-    label: "Scandinavian Minimalist",
-    note: "White interior · natural light · quiet and considered",
-  },
-  {
-    slug: "brand-founder",
-    label: "Brand Founder Portrait",
-    note: "Confident · natural light · website or press-ready",
+    label: "Scandinavian Light",
+    note: "Clean whites, soft shadows, calm finish.",
   },
 ]
+
+const EDITING_STEPS = ["Upload your photo", "Choose an aesthetic", "Apply the edit", "Download your result"]
 
 export function TransformLanding() {
   const [email, setEmail] = useState("")
@@ -57,166 +55,169 @@ export function TransformLanding() {
         body: JSON.stringify({ email: email.trim() }),
       })
     } catch {
-      // silent
+      // Email capture should never block the page.
     }
     setCaptured(true)
   }
 
   return (
-    <div className="min-h-screen bg-[#0F0D0B] text-[#EDE9E2]">
+    <main className="min-h-screen bg-white text-[#0a0a0a]">
+      <section className="relative min-h-[92vh] overflow-hidden bg-[#0a0a0a] text-white">
+        <Image
+          src="/images/selfie-guide/parisian-cafe-tranquility.png"
+          alt="Editorial portrait used as a temporary SSELFIE Transform hero placeholder"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-70"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/82" />
+        <div className="relative z-10 flex min-h-[92vh] items-end px-5 pb-10 pt-24 sm:px-8 lg:px-12">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">SSELFIE Transform</p>
+              <h1
+                className="mt-5 max-w-2xl text-5xl font-light leading-[0.98] text-white sm:text-6xl lg:text-7xl"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Make your selfie look editorial.
+              </h1>
+              <p className="mt-6 max-w-lg text-base leading-7 text-white/82 sm:text-lg">
+                Upload a photo. Choose an aesthetic. Get a polished edit you can post today.
+              </p>
+              <a
+                href="/checkout/transform"
+                className="mt-8 inline-flex min-h-12 items-center gap-2 bg-white px-7 py-3 text-sm font-semibold text-[#0a0a0a] transition-opacity hover:opacity-90"
+              >
+                Get 5 edits - $17
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+            <div className="max-w-xs border border-white/20 bg-black/30 p-4 text-sm leading-6 text-white/78 backdrop-blur-md">
+              Temporary hero placeholder. Final before/after proof images will replace this in the last launch step.
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Hero */}
-      <section className="px-6 py-24 text-center">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            SSELFIE Transform
-          </p>
-          <h1
-            className="mt-5 text-5xl font-light leading-[1.1] tracking-tight text-[#EDE9E2] md:text-6xl"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            You take the photo.
-            <br />
-            <em>Transform makes it editorial.</em>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-[#C4B5A0]">
-            Upload your selfie, choose an aesthetic, get a polished result you can post today.
-            No editing skills. No photographer. No studio.
-          </p>
-          <div className="mt-10 flex flex-col items-center gap-4">
-            <a
-              href="/checkout/transform"
-              className="flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
+      <section className="px-5 py-20 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8a8780]">Proof slot</p>
+              <h2
+                className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Same photo. Better finish.
+              </h2>
+              <p className="mt-4 text-sm leading-6 text-[#666666]">
+                This section is ready for Sandra's real examples. Until then, the page keeps the layout polished
+                without pretending placeholder proof is final proof.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <div className="flex aspect-[3/4] items-center justify-center border border-[#e5e5e5] bg-[#f5f5f5] px-5 text-center text-sm text-[#8a8780]">
+                  Before image placeholder
+                </div>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#8a8780]">Original</p>
+              </div>
+              <div>
+                <div className="flex aspect-[3/4] items-center justify-center border border-[#0a0a0a] bg-[#0a0a0a] px-5 text-center text-sm text-white/70">
+                  After image placeholder
+                </div>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a0a0a]">Editorial edit</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-[#e5e5e5] bg-[#f5f5f5] px-5 py-20 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8a8780]">How it works</p>
+            <h2
+              className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
             >
-              Get started — $17
+              No prompts. No editing overwhelm.
+            </h2>
+          </div>
+          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {EDITING_STEPS.map((step, index) => (
+              <div key={step} className="border border-[#e5e5e5] bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a8780]">
+                  Step {index + 1}
+                </p>
+                <p className="mt-4 text-lg font-medium text-[#0a0a0a]">{step}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-20 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8a8780]">Editing styles</p>
+              <h2
+                className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Choose your aesthetic.
+              </h2>
+            </div>
+            <a href="/checkout/transform" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0a0a0a]">
+              Get 5 edits - $17
               <ArrowRight className="h-4 w-4" />
             </a>
-            <p className="text-xs text-[#C4B5A0]">
-              5 edits included · $9 top-ups anytime · no subscription
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Before / after — Sandra: replace the two src="" values below with your real images */}
-      {/* To get these: run Transform on your own photo using each style, screenshot the before/after */}
-      <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            See the difference
-          </p>
-          <h2
-            className="mt-4 text-center text-3xl font-light text-[#EDE9E2]"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            Same photo. Different aesthetic.
-          </h2>
-
-          {/* Main before/after — swap src with real image URLs once Sandra provides them */}
-          <div className="mt-12 grid grid-cols-2 gap-2 sm:gap-4">
-            <div className="relative">
-              <div className="aspect-[3/4] w-full bg-[#0F0D0B] flex items-center justify-center border border-[#EDE9E2]/10">
-                {/* Replace with: <Image src="/images/transform/before-parisian.jpg" alt="Before" fill className="object-cover" /> */}
-                <p className="text-center text-xs text-[#EDE9E2]/20 px-6 leading-5">
-                  Before photo coming soon.<br />Sandra is generating examples.
-                </p>
-              </div>
-              <div className="mt-2 text-center text-xs font-medium text-[#C4B5A0] uppercase tracking-[0.16em]">
-                Original
-              </div>
-            </div>
-            <div className="relative">
-              <div className="aspect-[3/4] w-full bg-[#0F0D0B] flex items-center justify-center border border-[#EDE9E2]/10">
-                {/* Replace with: <Image src="/images/transform/after-parisian.jpg" alt="After — The Parisian Editorial" fill className="object-cover" /> */}
-                <p className="text-center text-xs text-[#EDE9E2]/20 px-6 leading-5">
-                  After photo coming soon.<br />The Parisian Editorial style.
-                </p>
-              </div>
-              <div className="mt-2 text-center text-xs font-medium text-[#EDE9E2] uppercase tracking-[0.16em]">
-                The Parisian Editorial
-              </div>
-            </div>
           </div>
 
-          <p className="mt-8 text-center text-xs text-[#C4B5A0]">
-            Your photo. One click. Under a minute.
-          </p>
-        </div>
-      </section>
-
-      {/* Style presets — clickable, links to studio with preset pre-loaded */}
-      <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            Editing styles
-          </p>
-          <h2
-            className="mt-4 text-center text-3xl font-light text-[#EDE9E2]"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            Choose your aesthetic
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-6 text-[#C4B5A0]">
-            Click any style below to open the editor with that look already loaded.
-          </p>
-
-          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {STYLE_PRESETS.map((preset) => (
               <a
                 key={preset.slug}
                 href={`/transform/studio?style=${preset.slug}`}
-                className="group block border border-[#EDE9E2]/10 bg-[#1E1A15] px-5 py-4 transition-colors hover:border-[#EDE9E2]/30 hover:bg-[#EDE9E2]/5"
+                className="group border border-[#e5e5e5] bg-white p-5 transition-colors hover:border-[#0a0a0a]"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">{preset.label}</p>
-                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C4B5A0] opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-base font-semibold text-[#0a0a0a]">{preset.label}</p>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-hover:translate-x-1" />
                 </div>
-                <p className="mt-1 text-xs text-[#C4B5A0]">{preset.note}</p>
+                <p className="mt-3 text-sm leading-6 text-[#666666]">{preset.note}</p>
               </a>
             ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <a
-              href="/checkout/transform"
-              className="inline-flex items-center gap-2 bg-[#EDE9E2] px-8 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
-            >
-              Get 5 edits — $17
-              <ArrowRight className="h-4 w-4" />
-            </a>
           </div>
         </div>
       </section>
 
-      {/* Positioning — method + tool */}
-      <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-20">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            The full picture
-          </p>
-          <h2
-            className="mt-4 text-3xl font-light text-[#EDE9E2]"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            The method teaches you to take it.
-            <br />
-            <em>Transform makes it editorial.</em>
-          </h2>
-          <p className="mt-5 text-sm leading-7 text-[#C4B5A0]">
-            SSELFIE teaches you how to photograph yourself well — the light, the angle,
-            the confidence. Transform takes that photo and applies a professional editing
-            style to it. You still took it. You still know how. The tool just finishes the job.
-          </p>
-
-          <ul className="mt-8 space-y-3">
+      <section className="bg-[#0a0a0a] px-5 py-20 text-white sm:px-8 lg:px-12">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">What you get</p>
+            <h2
+              className="mt-4 text-4xl font-light leading-tight sm:text-5xl"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              Five polished edits for one good selfie.
+            </h2>
+            <p className="mt-5 text-sm leading-7 text-white/70">
+              Use it when your photo is almost there, but the light, color, or finish needs Sandra-level taste.
+            </p>
+          </div>
+          <ul className="space-y-4">
             {[
-              "Website about page and press photos",
-              "Instagram content without booking a photographer",
-              "LinkedIn and speaker headshots",
-              "Brand founder portraits for pitches and media kits",
+              "15 credits included, enough for 5 edits",
+              "All current aesthetic presets included",
+              "Download-ready result after the edit finishes",
+              "Top up with 5 more edits for $9 anytime",
             ].map((item) => (
-              <li key={item} className="flex items-start gap-3 text-sm text-[#C4B5A0]">
-                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#EDE9E2]" />
+              <li key={item} className="flex items-start gap-3 text-sm leading-6 text-white/76">
+                <Check className="mt-1 h-4 w-4 shrink-0 text-white" />
                 {item}
               </li>
             ))}
@@ -224,41 +225,44 @@ export function TransformLanding() {
         </div>
       </section>
 
-      {/* Email capture */}
-      <section className="border-t border-[#EDE9E2]/10 px-6 py-20">
-        <div className="mx-auto max-w-xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            Stay in the loop
-          </p>
+      <section className="px-5 py-20 text-center sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-xl">
           <h2
-            className="mt-4 text-3xl font-light text-[#EDE9E2]"
+            className="text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            New styles added regularly
+            Ready for the edit?
           </h2>
-          <p className="mt-4 text-sm leading-6 text-[#C4B5A0]">
-            Drop your email and we will let you know when new editing presets are available.
+          <p className="mt-4 text-sm leading-6 text-[#666666]">
+            Start with one photo. Choose the aesthetic. Keep the result if it feels like you.
           </p>
+          <a
+            href="/checkout/transform"
+            className="mt-8 inline-flex min-h-12 items-center gap-2 bg-[#0a0a0a] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            Get 5 edits - $17
+            <ArrowRight className="h-4 w-4" />
+          </a>
 
           {captured ? (
-            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#EDE9E2]/70">
+            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#666666]">
               <Check className="h-4 w-4" />
               You are on the list.
             </div>
           ) : (
-            <form onSubmit={captureEmail} className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={captureEmail} className="mx-auto mt-10 flex max-w-md flex-col gap-3 sm:flex-row">
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
-                className="flex-1 border border-[#EDE9E2]/20 bg-[#1E1A15] px-4 py-3 text-sm text-[#EDE9E2] placeholder:text-[#EDE9E2]/30 focus:border-[#EDE9E2]/40 focus:outline-none"
+                placeholder="Email for new styles"
+                className="min-h-12 flex-1 border border-[#d4d4d4] bg-white px-4 text-sm text-[#0a0a0a] placeholder:text-[#8a8780] focus:border-[#0a0a0a] focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={capturing}
-                className="border border-[#EDE9E2]/20 px-6 py-3 text-sm font-medium text-[#EDE9E2] transition-colors hover:bg-[#EDE9E2]/5"
+                className="min-h-12 border border-[#0a0a0a] px-5 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
               >
                 Notify me
               </button>
@@ -266,41 +270,6 @@ export function TransformLanding() {
           )}
         </div>
       </section>
-
-      {/* What $17 includes */}
-      <section className="border-t border-[#EDE9E2]/10 bg-[#1E1A15] px-6 py-16">
-        <div className="mx-auto max-w-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#C4B5A0]">
-            What $17 gets you
-          </p>
-          <ul className="mt-6 space-y-3">
-            {[
-              "5 photo edits included (15 credits)",
-              "Access to all editing style presets",
-              "Download-ready results in under a minute",
-              "Top up with 5 more edits for $9 anytime",
-              "Upgrade to Studio ($97/mo) for unlimited",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-3 text-sm text-[#C4B5A0]">
-                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#EDE9E2]" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Footer CTA */}
-      <section className="border-t border-[#EDE9E2]/10 px-6 py-16 text-center">
-        <a
-          href="/checkout/transform"
-          className="inline-flex items-center gap-2 bg-[#EDE9E2] px-10 py-4 text-sm font-semibold text-[#0F0D0B] transition-colors hover:bg-[#EDE9E2]/90"
-        >
-          Get started — $17
-          <ArrowRight className="h-4 w-4" />
-        </a>
-        <p className="mt-4 text-xs text-[#C4B5A0]">One-time purchase. No subscription required.</p>
-      </section>
-    </div>
+    </main>
   )
 }

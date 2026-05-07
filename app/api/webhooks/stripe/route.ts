@@ -49,6 +49,60 @@ import {
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
 
+function isTransformProductType(productType: unknown): productType is "transform_starter" | "transform_topup" {
+  return productType === "transform_starter" || productType === "transform_topup"
+}
+
+async function sendTransformPurchaseEmail(params: {
+  customerEmail: string
+  customerName?: string | null
+  credits: number
+  passwordSetupUrl?: string
+}) {
+  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const firstName = getFirstNameForEmail({
+    fullName: params.customerName || undefined,
+    email: params.customerEmail,
+  })
+  const actionUrl = params.passwordSetupUrl || `${productionUrl}/transform/studio`
+  const actionLabel = params.passwordSetupUrl ? "Set up your account" : "Open the editor"
+  const subject = params.passwordSetupUrl
+    ? "Your SSELFIE edit credits are ready"
+    : "Your SSELFIE edit credits have been added"
+  const text = [
+    `Hi ${firstName},`,
+    "",
+    `Your ${params.credits} SSELFIE edit credits are ready.`,
+    "Open the editor, upload a photo, choose an aesthetic, and apply your style.",
+    "",
+    `${actionLabel}: ${actionUrl}`,
+    "",
+    "Sandra",
+  ].join("\n")
+  const html = `
+    <div style="font-family: Helvetica, Arial, sans-serif; color: #0a0a0a; line-height: 1.6; max-width: 560px; margin: 0 auto; padding: 32px 20px;">
+      <p>Hi ${firstName},</p>
+      <p>Your ${params.credits} SSELFIE edit credits are ready.</p>
+      <p>Open the editor, upload a photo, choose an aesthetic, and apply your style.</p>
+      <p style="margin: 28px 0;">
+        <a href="${actionUrl}" style="display: inline-block; background: #0a0a0a; color: #ffffff; padding: 14px 22px; text-decoration: none; font-size: 14px; font-weight: 600;">
+          ${actionLabel}
+        </a>
+      </p>
+      <p>Sandra</p>
+    </div>
+  `
+
+  return sendEmail({
+    to: params.customerEmail,
+    subject,
+    html,
+    text,
+    emailType: "transform_purchase_confirmation",
+    tags: ["transform", "purchase-confirmation"],
+  })
+}
+
 async function maybeTrackCheckoutReferralSignup(
   referredUserId: string | null | undefined,
   referralCode: string | null | undefined,
@@ -571,7 +625,8 @@ export async function POST(request: NextRequest) {
             source === "strategy_result_upsell" ||
             source === "starter_kit_paid" ||
             source === "masterclass_paid" ||
-            source === "visibility_suite_paid"
+            source === "visibility_suite_paid" ||
+            source === "transform_paid"
 
           console.log(`[v0] 💳 Payment mode detected`)
           console.log(
@@ -788,7 +843,14 @@ export async function POST(request: NextRequest) {
               referralPurchaseUserId = userId
               console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
 
-              if (source === "app" && productType === "credit_topup") {
+              if (isTransformProductType(productType) && isPaymentPaid && customerEmail) {
+                console.log(`[v0] Sending Transform purchase confirmation email to ${customerEmail}`)
+                await sendTransformPurchaseEmail({
+                  customerEmail,
+                  customerName: session.customer_details?.name,
+                  credits,
+                })
+              } else if (source === "app" && productType === "credit_topup") {
                 console.log(`[v0] Sending credit top-up confirmation email to ${customerEmail}`)
 
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
@@ -846,7 +908,8 @@ export async function POST(request: NextRequest) {
                 productType !== "selfie_guide_bundle" &&
                 productType !== "starter_kit" &&
                 productType !== "masterclass" &&
-                productType !== "visibility_suite"
+                productType !== "visibility_suite" &&
+                !isTransformProductType(productType)
               ) {
                 // ⚠️ Skip for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
                 console.log(
@@ -979,6 +1042,7 @@ export async function POST(request: NextRequest) {
                     academyMiniProductSlug ? `/academy/access/${academyMiniProductSlug}` :
                     productType === "starter_kit" ? "/academy/access/starter-kit" :
                     productType === "masterclass" ? "/academy/access/brand-strategy" :
+                    isTransformProductType(productType) ? "/transform/studio" :
                     productType === "selfie_guide" || productType === "selfie_guide_bundle" ? "/selfie-guide" :
                     "/studio"
                   const { data: resetData, error: resetError } =
@@ -1045,6 +1109,33 @@ export async function POST(request: NextRequest) {
                     console.log(
                       `[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`
                     )
+                  } else if (isTransformProductType(productType)) {
+                    console.log(`[v0] Step 8: Sending Transform setup email...`)
+                    const emailResult = await sendTransformPurchaseEmail({
+                      customerEmail,
+                      customerName: session.customer_details?.name,
+                      credits,
+                      passwordSetupUrl: passwordSetupLink,
+                    })
+
+                    await sql`
+                      INSERT INTO email_logs (
+                        user_email,
+                        email_type,
+                        resend_message_id,
+                        status,
+                        error_message,
+                        sent_at
+                      )
+                      VALUES (
+                        ${customerEmail},
+                        'transform_purchase_confirmation',
+                        ${emailResult.messageId || null},
+                        ${emailResult.success ? 'sent' : 'failed'},
+                        ${emailResult.error || null},
+                        NOW()
+                      )
+                    `
                   } else {
                     const productName =
                       productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
@@ -1622,6 +1713,140 @@ export async function POST(request: NextRequest) {
             } else if (!process.env.RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID) {
               console.log(
                 `[v0] ℹ️ RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID not configured - skipping segment automation`
+              )
+            }
+          } else if (isTransformProductType(productType)) {
+            if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Transform checkout completed but payment is not confirmed yet (status: '${session.payment_status}').`
+              )
+            } else {
+              const isTestMode = !event.livemode
+              const paymentIntentId =
+                typeof session.payment_intent === "string"
+                  ? session.payment_intent
+                  : session.payment_intent?.id
+              const paymentIdForTransform = paymentIntentId || session.id
+
+              let paymentAmountCents = session.amount_total || 0
+              let customerId =
+                typeof session.customer === "string"
+                  ? session.customer
+                  : session.customer?.id || null
+
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                  customerId =
+                    typeof paymentIntent.customer === "string"
+                      ? paymentIntent.customer
+                      : paymentIntent.customer?.id || customerId
+                } catch (piError: any) {
+                  console.error(`[v0] Error retrieving payment intent for Transform:`, piError.message)
+                }
+              }
+
+              if (customerId) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForTransform},
+                      ${customerId},
+                      ${userId},
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'transform',
+                      ${productType},
+                      ${productType === "transform_topup" ? "SSELFIE Transform top-up" : "SSELFIE Transform starter pack"},
+                      ${JSON.stringify(session.metadata || {})},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id) 
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      amount_cents = ${paymentAmountCents},
+                      product_type = ${productType},
+                      updated_at = NOW()
+                  `
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing Transform payment:`, paymentError.message)
+                }
+              }
+
+              const creditResult = await addCredits(
+                userId,
+                credits,
+                "purchase",
+                `${productType === "transform_topup" ? "Transform top-up" : "Transform starter pack"} (${credits} credits)`,
+                paymentIdForTransform,
+                isTestMode,
+                { source: `stripe_webhook:${productType}` }
+              )
+
+              if (!creditResult.success) {
+                console.error(`[v0] ❌ Failed to grant Transform credits: ${creditResult.error}`)
+                return NextResponse.json(
+                  { error: "Failed to grant Transform credits", details: creditResult.error },
+                  { status: 500 }
+                )
+              }
+
+              await sql`
+                UPDATE credit_transactions
+                SET 
+                  product_type = ${productType},
+                  payment_amount_cents = ${paymentAmountCents}
+                WHERE user_id = ${userId}
+                  AND stripe_payment_id = ${paymentIdForTransform}
+                  AND (product_type IS NULL OR payment_amount_cents IS NULL)
+              `
+
+              try {
+                await logAnalyticsEvent({
+                  eventName: "purchase",
+                  userId: String(userId),
+                  properties: {
+                    source: "stripe_webhook",
+                    payment_type: "transform",
+                    product_type: productType,
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    credits,
+                    stripe_payment_id: paymentIdForTransform,
+                    stripe_session_id: session.id,
+                    offer_slug: "transform",
+                    buyer_stage: session.metadata?.buyer_stage || "aesthetic_editing",
+                    attribution_source: session.metadata?.source || null,
+                    is_test_mode: isTestMode,
+                  },
+                })
+              } catch {
+                // ignore analytics failures
+              }
+
+              console.log(
+                `[v0] ✅ Granted Transform credits (${credits}) for ${productType} with payment ID: ${paymentIdForTransform}`
               )
             }
           } else if (productType === "credit_topup") {

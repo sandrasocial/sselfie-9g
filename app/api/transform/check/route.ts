@@ -2,6 +2,7 @@ import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 
 import { requireAcademyUser } from "@/lib/academy-server-access"
+import { refundCredits } from "@/lib/credits"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { neon } from "@neondatabase/serverless"
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: "succeeded", outputUrl: record.output_image_url })
     }
     if (record.status === "failed") {
-      return NextResponse.json({ status: "failed", error: "Generation failed" })
+      return NextResponse.json({ status: "failed", error: "Generation failed. Your credits were returned." })
     }
 
     // Still processing — check Replicate
@@ -67,13 +68,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: "succeeded", outputUrl: blobUrl })
     }
 
-    if (prediction.status === "failed") {
+    if (prediction.status === "failed" || prediction.status === "canceled") {
+      const refund = await refundCredits(
+        neonUser.id,
+        Number(record.credits_used || 0),
+        "Transform edit failed - credits returned",
+        predictionId,
+      )
+
       await sql`
         UPDATE transform_generations
         SET status = 'failed', completed_at = NOW()
         WHERE prediction_id = ${predictionId}
       `
-      return NextResponse.json({ status: "failed", error: "Generation failed. Please try again." })
+      return NextResponse.json({
+        status: "failed",
+        error: refund.success
+          ? "Generation failed. Your credits were returned."
+          : "Generation failed. Please contact support if your credits do not return.",
+        creditsRefunded: refund.refunded,
+        creditsRemaining: refund.success ? refund.newBalance : undefined,
+      })
     }
 
     return NextResponse.json({ status: prediction.status })

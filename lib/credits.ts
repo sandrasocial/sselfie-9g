@@ -355,6 +355,79 @@ export async function deductCredits(
 }
 
 /**
+ * Refund a prior usage deduction exactly once for a reference id.
+ */
+export async function refundCredits(
+  userId: string,
+  amount: number,
+  description: string,
+  referenceId: string,
+): Promise<{ success: boolean; newBalance: number; refunded: boolean; error?: string }> {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - skipping refund")
+    return { success: false, newBalance: 0, refunded: false, error: "Database not available" }
+  }
+
+  try {
+    const result = await sql`
+      WITH existing_refund AS (
+        SELECT balance_after
+        FROM credit_transactions
+        WHERE user_id = ${userId}
+          AND transaction_type = 'refund'
+          AND reference_id = ${referenceId}
+        LIMIT 1
+      ),
+      refund_update AS (
+        UPDATE user_credits
+        SET
+          balance = balance + ${amount},
+          total_used = GREATEST(total_used - ${amount}, 0),
+          updated_at = NOW()
+        WHERE user_id = ${userId}
+          AND NOT EXISTS (SELECT 1 FROM existing_refund)
+        RETURNING balance
+      ),
+      log_entry AS (
+        INSERT INTO credit_transactions (
+          user_id, amount, transaction_type, description,
+          reference_id, balance_after
+        )
+        SELECT
+          ${userId}, ${amount}, 'refund', ${description},
+          ${referenceId}, balance
+        FROM refund_update
+      )
+      SELECT balance, TRUE AS refunded FROM refund_update
+      UNION ALL
+      SELECT balance_after AS balance, FALSE AS refunded FROM existing_refund
+      LIMIT 1
+    `
+
+    if (result.length === 0) {
+      return { success: false, newBalance: 0, refunded: false, error: "Credit refund failed" }
+    }
+
+    const newBalance = Number(result[0].balance)
+    const refunded = Boolean(result[0].refunded)
+
+    if (refunded) {
+      try {
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(userId)
+      } catch (cacheError) {
+        console.warn("[v0] [CREDITS] Failed to invalidate cache after refund:", cacheError)
+      }
+    }
+
+    return { success: true, newBalance, refunded }
+  } catch (error) {
+    console.error("[v0] [CREDITS] Error refunding credits:", error)
+    return { success: false, newBalance: 0, refunded: false, error: "Failed to refund credits" }
+  }
+}
+
+/**
  * Get user's credit transaction history
  */
 export async function getCreditHistory(userId: string, limit = 50) {

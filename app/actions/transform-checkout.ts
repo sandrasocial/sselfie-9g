@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
 type TransformPlan = "starter" | "topup"
+type TransformProductType = "transform_starter" | "transform_topup"
 
 const PLAN_CONFIG = {
   starter: {
@@ -28,6 +29,7 @@ export async function startTransformCheckout(plan: TransformPlan) {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+  const productType: TransformProductType = plan === "topup" ? "transform_topup" : "transform_starter"
 
   const supabase = await createServerClient()
   const {
@@ -63,10 +65,13 @@ export async function startTransformCheckout(plan: TransformPlan) {
     ],
     allow_promotion_codes: true,
     metadata: {
-      product_type: "credit_topup",
+      product_type: productType,
       credits: String(config.credits),
-      source: "transform_checkout",
+      source: "transform_paid",
       plan,
+      return_to: "/transform/studio",
+      buyer_stage: "aesthetic_editing",
+      offer_slug: "transform",
     },
   })
 
