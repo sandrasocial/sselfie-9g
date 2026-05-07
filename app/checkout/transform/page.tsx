@@ -5,6 +5,8 @@ type TransformCheckoutParams = {
   plan?: string
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function TransformCheckoutPage({
   searchParams,
 }: {
@@ -14,20 +16,20 @@ export default async function TransformCheckoutPage({
   const plan = params.plan === "topup" ? "topup" : "starter"
   const productType = plan === "topup" ? "transform_topup" : "transform_starter"
 
+  let clientSecret: string | null = null
+
   try {
-    const clientSecret = await startTransformCheckout(plan)
-    if (clientSecret) {
-      redirect(
-        `/checkout?client_secret=${clientSecret}&product_type=${productType}&return_to=${encodeURIComponent("/transform/studio")}`,
-      )
-    }
-  } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-      throw error
-    }
-    console.error("[Transform Checkout] Error:", error)
-    redirect("/transform?checkout=failed")
+    clientSecret = await startTransformCheckout(plan)
+  } catch (error) {
+    console.error("[Transform Checkout] Error creating session:", error)
+    redirect("/transform?checkout=error")
   }
 
-  redirect("/transform?checkout=failed")
+  if (!clientSecret) {
+    redirect("/transform?checkout=error")
+  }
+
+  redirect(
+    `/checkout?client_secret=${clientSecret}&product_type=${productType}&return_to=${encodeURIComponent("/transform/studio")}`,
+  )
 }

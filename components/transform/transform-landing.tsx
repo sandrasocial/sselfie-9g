@@ -39,7 +39,7 @@ const STYLE_PRESETS = [
 
 const EDITING_STEPS = ["Upload your photo", "Choose an aesthetic", "Apply the edit", "Download your result"]
 
-export function TransformLanding() {
+export function TransformLanding({ checkoutError = false }: { checkoutError?: boolean }) {
   const [email, setEmail] = useState("")
   const [captured, setCaptured] = useState(false)
   const [capturing, setCapturing] = useState(false)
@@ -62,6 +62,15 @@ export function TransformLanding() {
 
   return (
     <main className="min-h-screen bg-white text-[#0a0a0a]">
+      {checkoutError && (
+        <div className="bg-[#0a0a0a] px-5 py-3 text-center text-sm text-white/80">
+          Something went wrong starting checkout. Please try again or{" "}
+          <a href="mailto:support@sselfie.ai" className="underline">
+            contact support
+          </a>
+          .
+        </div>
+      )}
       <section className="relative min-h-[92vh] overflow-hidden bg-[#0a0a0a] text-white">
         <Image
           src="/images/selfie-guide/parisian-cafe-tranquility.png"

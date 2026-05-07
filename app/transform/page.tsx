@@ -7,10 +7,12 @@ export const metadata: Metadata = {
     "Upload your selfie, choose an aesthetic, and get a polished editorial edit you can post today.",
 }
 
-export default function TransformPage({
+export default async function TransformPage({
   searchParams,
 }: {
   searchParams: Promise<{ checkout?: string }>
 }) {
-  return <TransformLanding />
+  const params = await searchParams
+  const checkoutError = params.checkout === "error" || params.checkout === "failed"
+  return <TransformLanding checkoutError={checkoutError} />
 }
