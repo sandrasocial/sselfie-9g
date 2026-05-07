@@ -72,6 +72,10 @@ function getProductLabel(productType: string | undefined) {
       return "AI Photo Refresh"
     case "paid_blueprint":
       return "30-Day Visibility Reset"
+    case "transform_starter":
+      return "SSELFIE Transform — Starter Pack"
+    case "transform_topup":
+      return "Transform Credit Top-up"
     default:
       return "Purchase"
   }
@@ -204,6 +208,14 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
     }
   }
 
+  if (productType === "transform_starter" || productType === "transform_topup") {
+    return {
+      href: "/transform/studio",
+      label: "Open Transform",
+      helper: "Your 15 credits are ready. Upload a photo and choose your first aesthetic.",
+    }
+  }
+
   return {
     href: "/studio",
     label: "Open Studio",
@@ -324,6 +336,14 @@ export function SuccessContent({
         setTimeout(() => {
           router.push("/studio?tab=feed-planner")
         }, 2000)
+        return
+      }
+
+      // For transform, redirect to transform studio after brief confirmation
+      if (user && (purchaseType === "transform_starter" || purchaseType === "transform_topup")) {
+        setTimeout(() => {
+          router.push("/transform/studio?checkout=success")
+        }, 2500)
         return
       }
 
