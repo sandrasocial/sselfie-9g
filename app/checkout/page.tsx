@@ -157,15 +157,9 @@ function CheckoutContent() {
         
         const brandStrategyBumpParam = sessionData.has_brand_strategy_pack ? "&brand_strategy_bump=1" : ""
 
-        if (sessionData.email) {
-          const redirectUrl = `/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
-          console.log("[v0] Redirecting to success page with email:", redirectUrl)
-          router.push(redirectUrl)
-        } else {
-          const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
-          console.log("[v0] No email found, redirecting with session_id only:", redirectUrl)
-          router.push(redirectUrl)
-        }
+        const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
+        console.log("[v0] Redirecting to success page with session_id only:", redirectUrl)
+        router.push(redirectUrl)
       } catch (error) {
         console.error("[v0] Error getting session email:", error)
         const fallbackUrl = `/checkout/success?session_id=${sessionId}`

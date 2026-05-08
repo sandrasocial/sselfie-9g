@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
-import crypto from "crypto"
 
 
 function resolveBroadcastId(eventData: any): string | null {
@@ -212,33 +212,50 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[v0] [Resend Webhook] Event received at:", new Date().toISOString())
 
-    const body = await request.json()
+    const payload = await request.text()
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET?.trim()
+    let body: any
+
+    if (webhookSecret) {
+      const svixId = request.headers.get("svix-id")
+      const svixTimestamp = request.headers.get("svix-timestamp")
+      const svixSignature = request.headers.get("svix-signature")
+
+      if (!svixId || !svixTimestamp || !svixSignature) {
+        console.error("[v0] [Resend Webhook] Missing Svix signature headers")
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+      }
+
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY || "re_webhook_verification")
+        body = resend.webhooks.verify({
+          payload,
+          headers: {
+            id: svixId,
+            timestamp: svixTimestamp,
+            signature: svixSignature,
+          },
+          webhookSecret,
+        })
+        console.log("[v0] [Resend Webhook] ✅ Signature verified")
+      } catch (error) {
+        console.error("[v0] [Resend Webhook] Invalid signature:", error)
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+      }
+    } else {
+      console.warn("[v0] [Resend Webhook] ⚠️ RESEND_WEBHOOK_SECRET not set - skipping signature verification")
+      try {
+        body = JSON.parse(payload)
+      } catch {
+        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+      }
+    }
+
     const eventType = body.type
     const eventData = body.data
 
     console.log("[v0] [Resend Webhook] Event type:", eventType)
     console.log("[v0] [Resend Webhook] Event data:", JSON.stringify(eventData, null, 2))
-
-    // Verify webhook signature if RESEND_WEBHOOK_SECRET is set
-    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
-    if (webhookSecret) {
-      const signature = request.headers.get("resend-signature")
-      if (signature) {
-        // Resend uses HMAC SHA256 for webhook signatures
-        const expectedSignature = crypto
-          .createHmac("sha256", webhookSecret)
-          .update(JSON.stringify(body))
-          .digest("hex")
-
-        if (signature !== expectedSignature) {
-          console.error("[v0] [Resend Webhook] Invalid signature")
-          return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
-        }
-        console.log("[v0] [Resend Webhook] ✅ Signature verified")
-      }
-    } else {
-      console.warn("[v0] [Resend Webhook] ⚠️ RESEND_WEBHOOK_SECRET not set - skipping signature verification")
-    }
 
     // Extract email and message ID from event data
     // Resend webhook format: { data: { email_id: "...", email: "...", ... } }

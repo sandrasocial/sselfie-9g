@@ -3,6 +3,33 @@ import { updateSession } from "@/lib/supabase/middleware"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
+const PUBLIC_MIDDLEWARE_BYPASSES = [
+  {
+    prefix: "/api/webhooks/stripe",
+    reason: "Stripe verifies the raw request body in the route handler.",
+  },
+  {
+    prefix: "/api/webhooks/resend",
+    reason: "Resend verifies Svix headers and the raw request body in the route handler.",
+  },
+  {
+    prefix: "/api/cron/",
+    reason: "Cron routes keep route-level CRON_SECRET checks.",
+  },
+  {
+    prefix: "/api/freebie/",
+    reason: "Public freebie capture and delivery endpoints.",
+  },
+  {
+    prefix: "/api/brand-engine/",
+    reason: "Retired Brand Engine automation endpoints with route-level controls.",
+  },
+] as const
+
+function getPublicBypass(pathname: string) {
+  return PUBLIC_MIDDLEWARE_BYPASSES.find(bypass => pathname.startsWith(bypass.prefix))
+}
+
 export async function middleware(request: NextRequest) {
   if (DEBUG_LOGS) {
     console.log("[v0] middleware:", request.nextUrl.pathname)
@@ -19,36 +46,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  if (request.nextUrl.pathname.startsWith("/api/webhooks/stripe")) {
+  const publicBypass = getPublicBypass(request.nextUrl.pathname)
+  if (publicBypass) {
     if (DEBUG_LOGS) {
-      console.log("[v0] Skipping middleware for Stripe webhook")
-    }
-    return NextResponse.next()
-  }
-
-  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
-    if (DEBUG_LOGS) {
-      console.log("[v0] Skipping middleware for cron routes")
-    }
-    return NextResponse.next()
-  }
-
-  // Skip auth for routes authenticated via x-cron-secret (admin automation endpoints)
-  if (request.headers.get("x-cron-secret") === process.env.CRON_SECRET) {
-    return NextResponse.next()
-  }
-
-  if (request.nextUrl.pathname.startsWith("/api/freebie/")) {
-    if (DEBUG_LOGS) {
-      console.log("[v0] Skipping auth middleware for public freebie API")
-    }
-    return NextResponse.next()
-  }
-
-  // Skip auth for Brand Engine API (used by Make.com automation)
-  if (request.nextUrl.pathname.startsWith("/api/brand-engine/")) {
-    if (DEBUG_LOGS) {
-      console.log("[v0] Skipping auth middleware for Brand Engine API")
+      console.log("[v0] Skipping middleware for public route:", publicBypass.prefix)
     }
     return NextResponse.next()
   }

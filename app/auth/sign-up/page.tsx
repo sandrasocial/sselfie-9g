@@ -24,7 +24,6 @@ export default function SignUpPage() {
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [checkingUser, setCheckingUser] = useState(false)
   const [userExists, setUserExists] = useState(false)
   const [loginHref, setLoginHref] = useState("/auth/login")
   const router = useRouter()
@@ -48,38 +47,6 @@ export default function SignUpPage() {
 
     return { checkoutParam, returnTo, next, referralCode, utmSource }
   }
-
-  // Check if user exists when email is entered (debounced)
-  useEffect(() => {
-    if (!email || !email.includes("@")) {
-      setUserExists(false)
-      return
-    }
-
-    const checkUser = async () => {
-      setCheckingUser(true)
-      try {
-        // Check if user exists in database (users table)
-        const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(email)}`)
-        if (response.ok) {
-          const data = await response.json()
-          // userInfo.hasAccount means user exists in users table
-          setUserExists(!!data.userInfo?.hasAccount)
-        } else {
-          setUserExists(false)
-        }
-      } catch (error) {
-        console.error("[Sign Up] Error checking user:", error)
-        setUserExists(false)
-      } finally {
-        setCheckingUser(false)
-      }
-    }
-
-    // Debounce check (wait 500ms after user stops typing)
-    const timeoutId = setTimeout(checkUser, 500)
-    return () => clearTimeout(timeoutId)
-  }, [email])
 
   useEffect(() => {
     const { returnTo, referralCode } = getRoutingContext()
@@ -329,7 +296,6 @@ export default function SignUpPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
                     />
-                    {checkingUser && <p className="text-xs text-[#8a8780]">Checking...</p>}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="password" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">

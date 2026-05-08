@@ -249,18 +249,26 @@ export function SuccessContent({
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (initialEmail && !isBrandEnginePurchase && !isSelfieGuidePurchase && !isBrandStrategyPurchase) {
+    if (sessionId && !isBrandEnginePurchase && !isSelfieGuidePurchase && !isBrandStrategyPurchase) {
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
 
-      console.log("[v0] Starting user info polling for email:", initialEmail)
+      console.log("[v0] Starting checkout-scoped user info polling for session:", sessionId)
 
       const pollInterval = setInterval(async () => {
         attempts++
         console.log(`[v0] Polling attempt ${attempts}/${MAX_ATTEMPTS}`)
 
         try {
-          const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
+          const response = await fetch(`/api/checkout/user-status?session_id=${encodeURIComponent(sessionId)}`)
+
+          if (response.status === 202) {
+            if (attempts >= MAX_ATTEMPTS) {
+              console.log("[v0] Max attempts reached while checkout user row is pending")
+              clearInterval(pollInterval)
+            }
+            return
+          }
 
           if (!response.ok) {
             console.error(`[v0] API returned ${response.status}`)
@@ -275,15 +283,13 @@ export function SuccessContent({
             setUserInfo(data.userInfo)
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
-            console.log("[v0] Max attempts reached, showing default state")
-            setUserInfo({ email: initialEmail, hasAccount: false })
+            console.log("[v0] Max attempts reached with no checkout user info")
             clearInterval(pollInterval)
           }
         } catch (err) {
           console.error("[v0] Polling error:", err)
           if (attempts >= MAX_ATTEMPTS) {
-            console.log("[v0] Max attempts reached after error, showing default state")
-            setUserInfo({ email: initialEmail, hasAccount: false })
+            console.log("[v0] Max attempts reached after checkout user polling error")
             clearInterval(pollInterval)
           }
         }
@@ -293,7 +299,7 @@ export function SuccessContent({
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail, isBrandEnginePurchase, isBrandStrategyPurchase, isSelfieGuidePurchase, purchaseType])
+  }, [isBrandEnginePurchase, isBrandStrategyPurchase, isSelfieGuidePurchase, purchaseType, sessionId])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -1013,7 +1019,7 @@ export function SuccessContent({
   // Authenticated users auto-redirect (via checkAuth useEffect)
   // Unauthenticated users see account creation form below
 
-  if (!userInfo && initialEmail) {
+  if (!userInfo && sessionId) {
     return (
       <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
         <div className="text-center">
