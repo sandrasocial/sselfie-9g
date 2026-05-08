@@ -48,6 +48,7 @@ import {
 } from "@/lib/referrals/service"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
+import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 
 function isTransformProductType(productType: unknown): productType is "transform_starter" | "transform_topup" {
   return productType === "transform_starter" || productType === "transform_topup"
@@ -307,6 +308,12 @@ function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<s
   return event.id
 }
 
+function stripeWebhookObjectId(event: { data: { object: Record<string, unknown> } }): string | null {
+  const obj = event.data?.object ?? {}
+  const oid = obj.id
+  return typeof oid === "string" && oid.length > 0 ? oid : null
+}
+
 export async function POST(request: NextRequest) {
   console.log("=".repeat(80))
   console.log("[v0] 🔔 WEBHOOK RECEIVED at:", new Date().toISOString())
@@ -350,39 +357,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
-  try {
-    // Ensure webhook_events table exists
-    await sql`
-      CREATE TABLE IF NOT EXISTS webhook_events (
-        id SERIAL PRIMARY KEY,
-        stripe_event_id TEXT UNIQUE,
-        processed_at TIMESTAMP DEFAULT NOW()
-      )
-    `
-
-    const claimed = await sql`
-      INSERT INTO webhook_events (stripe_event_id, processed_at)
-      VALUES (${event.id}, NOW())
-      ON CONFLICT (stripe_event_id) DO NOTHING
-      RETURNING id
-    `
-
-    if (claimed.length === 0) {
-      console.log(`[v0] ⚠️ Duplicate event detected: ${event.id} - skipping processing`)
-      return NextResponse.json({ received: true, duplicate: true })
-    }
-  } catch (idempotencyError: any) {
-    console.error("[v0] Idempotency check error:", idempotencyError.message)
-    // Return 500 so Stripe retries — better to delay than risk double credit grants
-    return NextResponse.json({ error: "Idempotency check failed" }, { status: 500 })
-  }
-
   const rateLimitKey = stripeWebhookRateLimitKey(event)
   const rateLimit = await checkWebhookRateLimit(rateLimitKey)
 
   if (!rateLimit.success) {
     console.log(`[v0] Webhook rate limit exceeded for key ${rateLimitKey}`)
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
+  }
+
+  try {
+    const eventClaim = await claimEvent({
+      provider: "stripe",
+      eventId: event.id,
+      eventType: event.type,
+      objectId: stripeWebhookObjectId(event),
+      livemode: Boolean(event.livemode),
+      metadata: {
+        rate_limit_key: rateLimitKey,
+      },
+    })
+
+    if (eventClaim.duplicate) {
+      console.log(`[v0] ⚠️ Duplicate event detected: ${event.id} - skipping processing`)
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+
+    if (eventClaim.storage === "legacy-stripe-event") {
+      console.warn(
+        "[v0] Stripe webhook idempotency is using legacy stripe_event_id storage. Run migration 56-add-event-idempotency-controls before removing fallback."
+      )
+    }
+  } catch (idempotencyError: any) {
+    console.error("[v0] Idempotency check error:", idempotencyError.message)
+    // Return 500 so Stripe retries — better to delay than risk double credit grants
+    return NextResponse.json({ error: "Idempotency check failed" }, { status: 500 })
   }
 
   console.log("[v0] Stripe webhook event:", event.type)
@@ -5317,9 +5325,17 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] Event data:`, JSON.stringify(event.data.object, null, 2))
     }
 
+    await markEventProcessed("stripe", event.id).catch((statusError) => {
+      console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
+    })
+
     return NextResponse.json({ received: true })
   } catch (error: any) {
     console.error("[v0] Webhook handler error:", error)
+
+    await markEventFailed("stripe", event.id, error).catch((statusError) => {
+      console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+    })
 
     const webhookError = {
       eventType: event.type,

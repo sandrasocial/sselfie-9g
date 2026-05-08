@@ -13,8 +13,24 @@ export interface CreditPackage {
   popular?: boolean
 }
 
+export type PricingProductId =
+  | "one_time_session"
+  | "sselfie_studio_membership"
+  | "sselfie_studio_membership_annual"
+  | "credit_topup"
+  | "paid_blueprint"
+  | "brand_strategy_pack"
+  | "selfie_guide_bundle"
+  | "selfie_guide"
+  | "starter_kit"
+  | "masterclass"
+  | "visibility_suite"
+  | "academy_mini_product"
+
+export type ProductLifecycleStatus = "live" | "archived"
+
 export interface PricingProduct {
-  id: string
+  id: PricingProductId
   name: string
   displayName: string
   description: string
@@ -32,11 +48,20 @@ export interface PricingProduct {
     | "masterclass"
     | "visibility_suite"
     | "academy_mini_product"
+  lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
   credits?: number
   stripePriceId?: string
   popular?: boolean
   tag?: string
+}
+
+export type ProductRevenuePath = {
+  lifecycleStatus: ProductLifecycleStatus
+  checkoutPath: string
+  fulfillmentRule: string
+  successNextAction: string
+  lifecycleEmailEntryPoint: string
 }
 
 export interface AcademyProduct {
@@ -115,24 +140,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
   },
 ]
 
-export const PRICING_PRODUCTS: PricingProduct[] = [
-  {
-    id: "visibility_suite",
-    name: "Visibility To Paid Suite",
-    displayName: "Visibility To Paid Suite",
-    description:
-      "The full guided path: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
-    priceInCents: 9700, // €97 launch price
-    type: "visibility_suite",
-    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch,
-    tag: "bought_visibility_suite",
-    features: [
-      "What To Say workbook",
-      "Show Up workbook",
-      "Get Paid workbook",
-      "Maya Visibility Plan",
-    ],
-  },
+export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   {
     id: "one_time_session",
     name: "Starter Photoshoot",
@@ -249,6 +257,120 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     ],
   },
 ]
+
+export const ARCHIVED_PRICING_PRODUCTS: PricingProduct[] = [
+  {
+    id: "visibility_suite",
+    name: "Visibility To Paid Suite",
+    displayName: "Visibility To Paid Suite",
+    description:
+      "The full guided path: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
+    priceInCents: 9700, // €97 launch price
+    type: "visibility_suite",
+    lifecycleStatus: "archived",
+    stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch,
+    tag: "bought_visibility_suite",
+    features: [
+      "What To Say workbook",
+      "Show Up workbook",
+      "Get Paid workbook",
+      "Maya Visibility Plan",
+    ],
+  },
+]
+
+// Preserve the long-standing export while making product ownership explicit.
+export const PRICING_PRODUCTS: PricingProduct[] = [
+  ...LIVE_PRICING_PRODUCTS,
+  ...ARCHIVED_PRICING_PRODUCTS,
+]
+
+export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath> = {
+  one_time_session: {
+    lifecycleStatus: "live",
+    checkoutPath: "app:startProductCheckoutSession(one_time_session)",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:one_time_session",
+    successNextAction: "/studio",
+    lifecycleEmailEntryPoint: "generateWelcomeEmail",
+  },
+  sselfie_studio_membership: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/membership?interval=month",
+    fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:sselfie_studio_membership",
+    successNextAction: "/studio",
+    lifecycleEmailEntryPoint: "app/api/cron/onboarding-sequence",
+  },
+  sselfie_studio_membership_annual: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/membership?interval=year",
+    fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:sselfie_studio_membership",
+    successNextAction: "/studio",
+    lifecycleEmailEntryPoint: "app/api/cron/onboarding-sequence",
+  },
+  credit_topup: {
+    lifecycleStatus: "live",
+    checkoutPath: "app:startCreditCheckoutSession(packageId)",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:credit_topup",
+    successNextAction: "/studio",
+    lifecycleEmailEntryPoint: "credit_topup_confirmation",
+  },
+  paid_blueprint: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/blueprint",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:paid_blueprint",
+    successNextAction: "/feed-planner",
+    lifecycleEmailEntryPoint: "paid_blueprint_delivery",
+  },
+  brand_strategy_pack: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/brand-strategy-pack",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:brand_strategy_pack",
+    successNextAction: "/academy/access/brand-strategy",
+    lifecycleEmailEntryPoint: "brand-strategy-setup",
+  },
+  selfie_guide_bundle: {
+    lifecycleStatus: "live",
+    checkoutPath: "legacy:webhook-only bundle fulfillment",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_guide_bundle",
+    successNextAction: "/selfie-guide",
+    lifecycleEmailEntryPoint: "selfie_guide_delivery",
+  },
+  selfie_guide: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/selfie-guide",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_guide",
+    successNextAction: "/selfie-guide",
+    lifecycleEmailEntryPoint: "selfie_guide_delivery",
+  },
+  starter_kit: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/starter-kit",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:starter_kit",
+    successNextAction: "/academy/access/starter-kit",
+    lifecycleEmailEntryPoint: "starter_kit_delivery",
+  },
+  masterclass: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/masterclass",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:masterclass",
+    successNextAction: "/academy/access/brand-strategy",
+    lifecycleEmailEntryPoint: "masterclass_delivery",
+  },
+  visibility_suite: {
+    lifecycleStatus: "archived",
+    checkoutPath: "/checkout/visibility-suite",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:visibility_suite",
+    successNextAction: "/academy/access/visibility-suite",
+    lifecycleEmailEntryPoint: "academy_purchase_confirmation",
+  },
+  academy_mini_product: {
+    lifecycleStatus: "archived",
+    checkoutPath: "/checkout/academy-product/[productId]",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:academy_mini_product",
+    successNextAction: "/academy/access/[visibility-mini-product]",
+    lifecycleEmailEntryPoint: "academy_purchase_confirmation",
+  },
+}
 
 export const ACADEMY_PRODUCTS = {
   what_to_say: {
