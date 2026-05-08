@@ -20,10 +20,10 @@ const cardClass = [
 const buttonPrimaryClass = [
   "bg-[color:var(--app-btn-primary-bg)]",
   "text-[color:var(--app-btn-primary-text)]",
-  "rounded-full",
+  "rounded-lg",
   "border",
   "border-[color:var(--app-btn-primary-bg)]",
-  "shadow-[0_10px_28px_rgba(10,10,10,0.14)]",
+  "shadow-[inset_0_1px_0_rgba(255,255,255,0.10),inset_0_-2px_0_rgba(0,0,0,0.35),0_8px_24px_rgba(10,10,10,0.18)]",
   "px-6",
   "sm:px-8",
   "py-3",
