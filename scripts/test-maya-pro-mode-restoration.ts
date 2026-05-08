@@ -10,7 +10,7 @@
  * 4. Personality is adapted for Pro Mode format (150-400 words, structured sections, reference images)
  * 
  * Usage:
- *   npx tsx scripts/test-maya-pro-mode-restoration.ts
+ *   pnpm exec tsx scripts/test-maya-pro-mode-restoration.ts
  */
 
 interface TestResult {

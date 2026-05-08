@@ -6,7 +6,7 @@
  * - Did not receive credits
  * - Did not get subscription created
  * 
- * Usage: npx tsx scripts/fix-paid-blueprint-user.ts [email]
+ * Usage: pnpm exec tsx scripts/fix-paid-blueprint-user.ts [email]
  */
 
 import { config } from "dotenv"

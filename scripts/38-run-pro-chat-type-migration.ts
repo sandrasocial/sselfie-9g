@@ -4,7 +4,7 @@
  * This script runs the SQL migration to update the maya_chats table
  * to allow 'pro' as a valid chat_type value alongside 'maya' and 'feed-designer'.
  * 
- * Run with: npx tsx scripts/38-run-pro-chat-type-migration.ts
+ * Run with: pnpm exec tsx scripts/38-run-pro-chat-type-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

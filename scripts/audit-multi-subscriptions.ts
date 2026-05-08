@@ -6,7 +6,7 @@
  * 
  * This is a read-only diagnostic script.
  * 
- * Usage: npx tsx scripts/audit-multi-subscriptions.ts
+ * Usage: pnpm exec tsx scripts/audit-multi-subscriptions.ts
  */
 
 import { neon } from "@neondatabase/serverless"

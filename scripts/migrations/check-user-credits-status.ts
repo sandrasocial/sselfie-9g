@@ -9,7 +9,7 @@ async function checkUserCreditsStatus() {
   const userId = process.argv[2]
 
   if (!userId) {
-    console.error("Usage: npx tsx scripts/migrations/check-user-credits-status.ts <user_id>")
+    console.error("Usage: pnpm exec tsx scripts/migrations/check-user-credits-status.ts <user_id>")
     process.exit(1)
   }
 

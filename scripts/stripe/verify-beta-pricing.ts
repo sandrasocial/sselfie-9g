@@ -9,7 +9,7 @@
  * 
  * READ-ONLY - No mutations
  * 
- * Usage: npx tsx scripts/stripe/verify-beta-pricing.ts
+ * Usage: pnpm exec tsx scripts/stripe/verify-beta-pricing.ts
  */
 
 import Stripe from "stripe"

@@ -51,7 +51,7 @@ After updating `.env.local`, restart your Next.js dev server:
 # Then restart
 pnpm dev
 # or
-npm run dev
+pnpm dev
 ```
 
 ### Step 5: Test
@@ -112,5 +112,5 @@ You should see the webhook received in your dev server logs.
 If you don't want to use Stripe CLI, you can always use the manual processing script:
 
 ```bash
-npx tsx scripts/manually-process-webhook.ts <session_id>
+pnpm exec tsx scripts/manually-process-webhook.ts <session_id>
 ```

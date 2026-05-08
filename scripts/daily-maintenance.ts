@@ -22,7 +22,7 @@ async function runDailyMaintenance() {
   // 1. TypeScript Check
   console.log('📊 Checking TypeScript...')
   try {
-    execSync('npx tsc --noEmit', { stdio: 'pipe' })
+    execSync('pnpm type-check', { stdio: 'pipe' })
     console.log('  ✅ TypeScript: No errors')
   } catch (error: any) {
     const output = error.stdout?.toString() || ''
@@ -37,7 +37,7 @@ async function runDailyMaintenance() {
   // 2. ESLint Check & Auto-fix
   console.log('\n📋 Checking ESLint...')
   try {
-    execSync('npm run lint -- --fix', { stdio: 'pipe' })
+    execSync('pnpm lint:fix', { stdio: 'pipe' })
     console.log('  ✅ ESLint: Auto-fixed issues')
     report.autoFixes.push('Fixed ESLint issues')
   } catch (error: any) {
@@ -52,7 +52,7 @@ async function runDailyMaintenance() {
   // 3. Find Unused Exports
   console.log('\n🔍 Checking for unused code...')
   try {
-    const output = execSync('npx ts-prune', { encoding: 'utf-8', stdio: 'pipe' })
+    const output = execSync('pnpm exec ts-prune', { encoding: 'utf-8', stdio: 'pipe' })
     const unused = (output.match(/used in module/g) || []).length
     if (unused > 0) {
       report.issues.push(`${unused} unused exports`)
@@ -67,11 +67,18 @@ async function runDailyMaintenance() {
   // 4. Security Audit
   console.log('\n🔒 Checking security...')
   try {
-    execSync('npm audit --json', { stdio: 'pipe' })
+    execSync('pnpm audit --json', { stdio: 'pipe' })
     console.log('  ✅ No security vulnerabilities')
   } catch (error: any) {
     const output = JSON.parse(error.stdout?.toString() || '{}')
-    const vulns = output.metadata?.vulnerabilities?.total || 0
+    const vulnerabilities = output.metadata?.vulnerabilities || {}
+    const vulns =
+      typeof vulnerabilities.total === 'number'
+        ? vulnerabilities.total
+        : Object.values(vulnerabilities).reduce(
+            (total, count) => total + (typeof count === 'number' ? count : 0),
+            0,
+          )
     if (vulns > 0) {
       report.issues.push(`${vulns} security vulnerabilities`)
       report.alerts.push(`CRITICAL: ${vulns} security vulnerabilities found`)
@@ -190,4 +197,3 @@ if (require.main === module) {
 }
 
 export { runDailyMaintenance }
-

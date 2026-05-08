@@ -102,7 +102,7 @@ async function verifyEmailDraftsTable() {
         console.log("\n[EmailDrafts] 🔧 To create the table, please run the migration script:")
         console.log("[EmailDrafts]   psql $DATABASE_URL -f scripts/51-create-email-drafts-table.sql")
         console.log("\n[EmailDrafts] Or if you prefer to run it via TypeScript:")
-        console.log("[EmailDrafts]   npx tsx scripts/run-email-drafts-migration.ts")
+        console.log("[EmailDrafts]   pnpm exec tsx scripts/run-email-drafts-migration.ts")
         return false
       }
   } catch (error: any) {

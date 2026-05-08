@@ -2,7 +2,7 @@
  * Run Quality Baseline Migration
  * 
  * This script creates the prompt_quality_metrics table
- * Run with: npx tsx scripts/run-quality-migration.ts
+ * Run with: pnpm exec tsx scripts/run-quality-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

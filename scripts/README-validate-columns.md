@@ -7,13 +7,13 @@ This script validates SQL queries in your codebase to ensure they use correct co
 ## Usage
 
 ```bash
-npm run validate-columns
+pnpm validate-columns
 ```
 
 Or directly:
 
 ```bash
-npx tsx scripts/validate-column-names.ts
+pnpm exec tsx scripts/validate-column-names.ts
 ```
 
 ## What It Checks
@@ -65,14 +65,14 @@ You can integrate this into your CI/CD pipeline or run it as a pre-commit hook:
 
 ```bash
 # .husky/pre-commit
-npm run validate-columns
+pnpm validate-columns
 ```
 
 ### GitHub Actions
 
 ```yaml
 - name: Validate Column Names
-  run: npm run validate-columns
+  run: pnpm validate-columns
 ```
 
 ## Customization

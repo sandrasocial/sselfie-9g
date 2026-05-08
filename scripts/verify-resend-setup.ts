@@ -1,6 +1,6 @@
 /**
  * Verify Resend segments + webhook config
- * Run with: npx tsx scripts/verify-resend-setup.ts
+ * Run with: pnpm exec tsx scripts/verify-resend-setup.ts
  */
 
 import { Resend } from "resend"

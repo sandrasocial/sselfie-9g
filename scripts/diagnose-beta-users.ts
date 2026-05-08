@@ -3,7 +3,7 @@
  * Beta Users Access Diagnostic Script
  * 
  * Checks all beta users' subscription status and Maya access levels
- * Run: npx tsx scripts/diagnose-beta-users.ts
+ * Run: pnpm exec tsx scripts/diagnose-beta-users.ts
  */
 
 import { config } from "dotenv"

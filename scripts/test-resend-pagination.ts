@@ -1,6 +1,6 @@
 /**
  * Test script to debug Resend API pagination
- * Run with: npx tsx scripts/test-resend-pagination.ts
+ * Run with: pnpm exec tsx scripts/test-resend-pagination.ts
  */
 
 import { Resend } from "resend"

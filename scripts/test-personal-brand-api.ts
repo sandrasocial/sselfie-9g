@@ -1,6 +1,6 @@
 /**
  * Test script to check personal brand data in database
- * Run with: npx tsx scripts/test-personal-brand-api.ts <user-email>
+ * Run with: pnpm exec tsx scripts/test-personal-brand-api.ts <user-email>
  */
 
 import { neon } from "@neondatabase/serverless"
@@ -135,7 +135,7 @@ async function testPersonalBrand(userEmail: string) {
 const userEmail = process.argv[2]
 
 if (!userEmail) {
-  console.error("Usage: npx tsx scripts/test-personal-brand-api.ts <user-email>")
+  console.error("Usage: pnpm exec tsx scripts/test-personal-brand-api.ts <user-email>")
   process.exit(1)
 }
 

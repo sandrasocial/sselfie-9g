@@ -3,8 +3,8 @@
  * Idempotent: only fills NULL user_id values.
  *
  * Usage:
- *   DRY_RUN=true npx tsx scripts/backfill/backfill-blueprint-subscriber-user-ids.ts
- *   npx tsx scripts/backfill/backfill-blueprint-subscriber-user-ids.ts
+ *   DRY_RUN=true pnpm exec tsx scripts/backfill/backfill-blueprint-subscriber-user-ids.ts
+ *   pnpm exec tsx scripts/backfill/backfill-blueprint-subscriber-user-ids.ts
  */
 
 import { config } from "dotenv"

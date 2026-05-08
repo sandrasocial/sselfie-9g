@@ -73,8 +73,8 @@ async function main() {
 
   console.log('✨ Migrations complete!\n')
   console.log('Next steps:')
-  console.log('1. Start dev server: npm run dev')
-  console.log('2. Run tests: npx tsx scripts/test-paid-blueprint-pr4-simple.ts\n')
+  console.log('1. Start dev server: pnpm dev')
+  console.log('2. Run tests: pnpm exec tsx scripts/test-paid-blueprint-pr4-simple.ts\n')
 }
 
 main().catch((error) => {

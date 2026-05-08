@@ -2,7 +2,7 @@
  * Migration: Add feed_planner_welcome_shown to user_personal_brand
  * Phase 3: Welcome Wizard
  * 
- * Run with: npx tsx scripts/migrations/run-feed-planner-welcome-migration.ts
+ * Run with: pnpm exec tsx scripts/migrations/run-feed-planner-welcome-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

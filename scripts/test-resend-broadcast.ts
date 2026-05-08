@@ -1,6 +1,6 @@
 /**
  * Test script to verify Resend broadcast creation works
- * Run with: npx tsx scripts/test-resend-broadcast.ts
+ * Run with: pnpm exec tsx scripts/test-resend-broadcast.ts
  */
 
 import { Resend } from "resend"

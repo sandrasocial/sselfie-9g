@@ -9,7 +9,7 @@
  * - Detailed JSON analysis
  * - Summary report
  * 
- * Usage: npx tsx scripts/stripe/find-affected-users.ts
+ * Usage: pnpm exec tsx scripts/stripe/find-affected-users.ts
  */
 
 import Stripe from "stripe"
@@ -621,7 +621,7 @@ async function main() {
   console.log("1. Review: docs/_CANONICAL/stripe_refund_candidates.csv")
   console.log("2. Review: docs/_CANONICAL/stripe_affected_users_analysis.json")
   console.log("3. Generate remediation report: docs/_CANONICAL/STRIPE_AFFECTED_USERS_REMEDIATION.md")
-  console.log("4. If approved, run: npx tsx scripts/stripe/apply-refunds.ts")
+  console.log("4. If approved, run: pnpm exec tsx scripts/stripe/apply-refunds.ts")
 }
 
 main().catch(error => {

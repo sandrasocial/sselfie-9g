@@ -2,7 +2,7 @@
  * Create a test coupon code for paid_blueprint testing
  * 
  * This creates a 100% off coupon that can be used in Stripe checkout
- * Run with: npx tsx scripts/create-test-coupon.ts
+ * Run with: pnpm exec tsx scripts/create-test-coupon.ts
  */
 
 import Stripe from "stripe"

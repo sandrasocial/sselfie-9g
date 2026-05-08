@@ -5,8 +5,8 @@
  * is missing or incorrectly set to subscription products.
  *
  * Usage:
- *   DRY_RUN=true LIVE_ONLY=true npx tsx scripts/backfill/normalize-stripe-one-time-product-types.ts
- *   DRY_RUN=false LIVE_ONLY=true npx tsx scripts/backfill/normalize-stripe-one-time-product-types.ts
+ *   DRY_RUN=true LIVE_ONLY=true pnpm exec tsx scripts/backfill/normalize-stripe-one-time-product-types.ts
+ *   DRY_RUN=false LIVE_ONLY=true pnpm exec tsx scripts/backfill/normalize-stripe-one-time-product-types.ts
  */
 
 import { config } from "dotenv"

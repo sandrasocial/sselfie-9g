@@ -10,7 +10,7 @@
  * 4. Prompts are creative and include Maya's fashion expertise
  * 
  * Usage:
- *   npx tsx scripts/test-maya-classic-mode-restoration.ts
+ *   pnpm exec tsx scripts/test-maya-classic-mode-restoration.ts
  */
 
 interface TestResult {

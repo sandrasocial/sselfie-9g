@@ -9,7 +9,7 @@
  * - Creates user_credits record for users who already used free grid (0 credits)
  * - Records credit transactions for audit trail
  * 
- * Run with: npx tsx scripts/migrations/run-grant-free-user-credits-migration.ts
+ * Run with: pnpm exec tsx scripts/migrations/run-grant-free-user-credits-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

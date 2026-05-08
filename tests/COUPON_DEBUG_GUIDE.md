@@ -40,7 +40,7 @@ The webhook now includes detailed logging to help identify the issue. Look for t
 
 1. **Use the test script:**
    ```bash
-   npx tsx scripts/test-coupon-webhook.ts
+   pnpm exec tsx scripts/test-coupon-webhook.ts
    ```
    This simulates what should happen with a $0 payment.
 

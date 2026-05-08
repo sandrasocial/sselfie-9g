@@ -1,6 +1,9 @@
 # Maya Audit And Repositioning
 
 Generated: 2026-05-01
+Status: Planning snapshot - not the current implementation source of truth.
+
+> Live Maya guardrails remain in `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`, and `pnpm audit:maya-quality`.
 
 ## Executive Verdict
 
@@ -433,4 +436,3 @@ After the reframe is live, watch for whether users still feel lost. If they do, 
 4. Keep Feed Planner separate.
 5. Keep direct hashes like `#maya/videos` and `#maya/training` working.
 6. Run Maya UI health, prompt authority, type-check, and build.
-

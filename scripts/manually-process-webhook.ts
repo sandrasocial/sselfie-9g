@@ -2,7 +2,7 @@
  * Manually process a Stripe checkout session webhook
  * 
  * Use this when webhooks aren't being received in development
- * Run with: npx tsx scripts/manually-process-webhook.ts <session_id>
+ * Run with: pnpm exec tsx scripts/manually-process-webhook.ts <session_id>
  */
 
 import Stripe from "stripe"
@@ -238,7 +238,7 @@ async function manuallyProcessWebhook(sessionId: string) {
 const sessionId = process.argv[2]
 if (!sessionId) {
   console.error("❌ Please provide a session ID")
-  console.log("Usage: npx tsx scripts/manually-process-webhook.ts <session_id>")
+  console.log("Usage: pnpm exec tsx scripts/manually-process-webhook.ts <session_id>")
   process.exit(1)
 }
 

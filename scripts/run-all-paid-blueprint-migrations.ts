@@ -250,8 +250,8 @@ async function runAllMigrations() {
     
     console.log('\n✨ All migrations complete!\n')
     console.log('Next steps:')
-    console.log('1. Start dev server: npm run dev')
-    console.log('2. Run API tests: npx tsx scripts/test-paid-blueprint-pr4-simple.ts\n')
+    console.log('1. Start dev server: pnpm dev')
+    console.log('2. Run API tests: pnpm exec tsx scripts/test-paid-blueprint-pr4-simple.ts\n')
     
   } catch (error: any) {
     console.error('\n❌ Migration failed:', error.message)

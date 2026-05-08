@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Run all daily automation scripts in order: audits → digests → triage → archive.
- * Use: node scripts/run-automation-daily.mjs (or npm run automation:daily)
+ * Use: node scripts/run-automation-daily.mjs (or pnpm automation:daily)
  * Requires: DATABASE_URL in env or .env.local
  * Writes: output/automation/*.md then archives old files.
  */

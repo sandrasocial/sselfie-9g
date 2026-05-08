@@ -7,7 +7,7 @@
  * 3. Creates blueprint_subscribers record with strategy_data
  * 4. Grants 60 credits
  * 
- * Usage: npx tsx scripts/test-decision2-setup.ts [email]
+ * Usage: pnpm exec tsx scripts/test-decision2-setup.ts [email]
  */
 
 import { neon } from '@neondatabase/serverless'

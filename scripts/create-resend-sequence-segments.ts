@@ -1,6 +1,6 @@
 /**
  * Create required Resend sequence segments and update .env.local with IDs.
- * Run with: npx tsx scripts/create-resend-sequence-segments.ts
+ * Run with: pnpm exec tsx scripts/create-resend-sequence-segments.ts
  */
 
 import { config as loadEnv } from "dotenv"

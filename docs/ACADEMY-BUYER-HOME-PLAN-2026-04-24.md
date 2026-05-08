@@ -1,5 +1,8 @@
 # SSELFIE Buyer Home + Academy Plan
 *Date: 2026-04-24*
+**Status:** Planning snapshot - not the current implementation source of truth.
+
+> Use `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, and the repo routes/tests for live Academy and buyer-home behavior. This document remains background context.
 
 ## Executive Verdict
 
@@ -575,4 +578,3 @@ That is the product shape that gives Sandra both:
 
 - low-friction conversion at the front
 - a believable high-value ladder inside the product
-

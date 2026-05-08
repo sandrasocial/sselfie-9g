@@ -4,7 +4,7 @@
  * This script runs the SQL migration to update the maya_chats table
  * to allow 'prompt_builder' as a valid chat_type value alongside existing values.
  * 
- * Run with: npx tsx scripts/39-run-prompt-builder-chat-type-migration.ts
+ * Run with: pnpm exec tsx scripts/39-run-prompt-builder-chat-type-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

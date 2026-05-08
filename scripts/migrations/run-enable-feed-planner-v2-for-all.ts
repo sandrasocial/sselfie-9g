@@ -3,7 +3,7 @@
  * Migration Runner: Enable Feed Planner V2 for all users
  *
  * Run with:
- *   npx tsx scripts/migrations/run-enable-feed-planner-v2-for-all.ts
+ *   pnpm exec tsx scripts/migrations/run-enable-feed-planner-v2-for-all.ts
  */
 
 import { neon } from "@neondatabase/serverless"

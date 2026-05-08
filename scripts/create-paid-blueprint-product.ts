@@ -8,7 +8,7 @@
  * 4. Outputs the Price ID for environment variable setup
  * 
  * Usage:
- *   npx tsx scripts/create-paid-blueprint-product.ts
+ *   pnpm exec tsx scripts/create-paid-blueprint-product.ts
  * 
  * Requirements:
  *   - STRIPE_SECRET_KEY environment variable must be set (in .env.local or environment)

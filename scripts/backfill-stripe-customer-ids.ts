@@ -2,9 +2,9 @@
  * Script to backfill Stripe customer IDs for existing users
  * 
  * Usage:
- *   npx tsx scripts/backfill-stripe-customer-ids.ts <email>
- *   npx tsx scripts/backfill-stripe-customer-ids.ts --all
- *   npx tsx scripts/backfill-stripe-customer-ids.ts --userId <user-id>
+ *   pnpm exec tsx scripts/backfill-stripe-customer-ids.ts <email>
+ *   pnpm exec tsx scripts/backfill-stripe-customer-ids.ts --all
+ *   pnpm exec tsx scripts/backfill-stripe-customer-ids.ts --userId <user-id>
  */
 
 import Stripe from "stripe"
@@ -183,9 +183,9 @@ async function main() {
   if (args.length === 0) {
     console.log(`
 Usage:
-  npx tsx scripts/backfill-stripe-customer-ids.ts <email>
-  npx tsx scripts/backfill-stripe-customer-ids.ts --all
-  npx tsx scripts/backfill-stripe-customer-ids.ts --userId <user-id>
+  pnpm exec tsx scripts/backfill-stripe-customer-ids.ts <email>
+  pnpm exec tsx scripts/backfill-stripe-customer-ids.ts --all
+  pnpm exec tsx scripts/backfill-stripe-customer-ids.ts --userId <user-id>
 `)
     process.exit(1)
   }

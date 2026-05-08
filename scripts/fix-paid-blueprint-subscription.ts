@@ -11,7 +11,7 @@
  * 4. Grants credits if missing
  * 
  * Usage:
- *   npx tsx scripts/fix-paid-blueprint-subscription.ts [user-email]
+ *   pnpm exec tsx scripts/fix-paid-blueprint-subscription.ts [user-email]
  */
 
 // Load environment variables first
@@ -191,7 +191,7 @@ async function fixPaidBlueprintSubscription(userEmail?: string) {
         console.log(`  - Payment: ${payment.stripe_payment_id}, Email: ${email} (user_id = NULL)`)
       })
       console.log("\n[Fix] ⚠️  Payments with user_id = NULL need manual fixing with email:")
-      console.log(`  npx tsx scripts/fix-paid-blueprint-subscription.ts <user-email>`)
+      console.log(`  pnpm exec tsx scripts/fix-paid-blueprint-subscription.ts <user-email>`)
     }
     
     if (paymentsNeedingFix.length > 0) {
@@ -200,7 +200,7 @@ async function fixPaidBlueprintSubscription(userEmail?: string) {
         console.log(`  - Payment: ${payment.stripe_payment_id}, User: ${payment.user_email} (${payment.user_id})`)
       })
       console.log("\n[Fix] To fix a specific user, run:")
-      console.log(`  npx tsx scripts/fix-paid-blueprint-subscription.ts <user-email>`)
+      console.log(`  pnpm exec tsx scripts/fix-paid-blueprint-subscription.ts <user-email>`)
     }
     
   } catch (error: any) {

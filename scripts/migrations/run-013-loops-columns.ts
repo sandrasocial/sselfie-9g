@@ -4,7 +4,7 @@
  * This script adds loops_contact_id, synced_to_loops, and loops_synced_at
  * columns to freebie_subscribers and blueprint_subscribers tables.
  * 
- * Run with: npx tsx scripts/migrations/run-013-loops-columns.ts
+ * Run with: pnpm exec tsx scripts/migrations/run-013-loops-columns.ts
  */
 
 import { neon } from "@neondatabase/serverless"

@@ -2,7 +2,7 @@
  * Import Feed Planner V2 variations from JSON.
  *
  * Usage:
- *   npx tsx scripts/import-feed-style-variations-v2.ts path/to/variations.json
+ *   pnpm exec tsx scripts/import-feed-style-variations-v2.ts path/to/variations.json
  */
 
 import * as dotenv from "dotenv"

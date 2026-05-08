@@ -2,7 +2,7 @@
  * Test script to simulate $0 payment webhook for paid_blueprint with coupon code
  * 
  * This simulates what Stripe sends when a 100% off coupon is used
- * Run with: npx tsx scripts/test-coupon-webhook.ts
+ * Run with: pnpm exec tsx scripts/test-coupon-webhook.ts
  */
 
 import { neon } from "@neondatabase/serverless"
