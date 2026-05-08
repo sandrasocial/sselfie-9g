@@ -150,7 +150,7 @@ async function syncStudioMembers(): Promise<SyncResult> {
   try {
     // Get active Studio members not yet synced to Resend
     const missingStudio = await sql`
-      SELECT DISTINCT u.id, u.email, u.first_name, s.product_type, s.status
+      SELECT DISTINCT u.id, u.email, u.display_name AS first_name, s.product_type, s.status
       FROM users u
       JOIN subscriptions s ON u.id = s.user_id
       WHERE s.status = 'active'
