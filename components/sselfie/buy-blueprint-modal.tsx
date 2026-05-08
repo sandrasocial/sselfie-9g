@@ -78,22 +78,7 @@ export default function BuyBlueprintModal({
     if (clientSecret) {
       const sessionId = clientSecret.split("_secret_")[0]
       console.log("[BuyBlueprintModal] Extracted session ID:", sessionId)
-      
-      // Try to get email from session
-      try {
-        const response = await fetch(`/api/checkout-session?session_id=${sessionId}`)
-        const sessionData = await response.json()
-        
-        if (sessionData.email) {
-          router.push(`/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}&type=paid_blueprint`)
-        } else {
-          router.push(`/checkout/success?session_id=${sessionId}&type=paid_blueprint`)
-        }
-      } catch (error) {
-        console.error("[BuyBlueprintModal] Error fetching session:", error)
-        // Fallback: redirect without session ID (success page will handle it)
-        router.push(`/checkout/success?session_id=${sessionId}&type=paid_blueprint`)
-      }
+      router.push(`/checkout/success?session_id=${sessionId}&type=paid_blueprint`)
     } else {
       // Fallback: redirect without session ID
       console.warn("[BuyBlueprintModal] No client secret available, redirecting without session ID")

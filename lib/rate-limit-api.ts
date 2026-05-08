@@ -123,6 +123,13 @@ export async function rateLimit(
   options: RateLimitOptions,
 ): Promise<{ success: boolean; retryAfter?: number }> {
   try {
+    const client = getRedis()
+    if (!client) {
+      // Fail open intentionally when Redis is absent so paid generation routes
+      // do not break during env drift. Configured Redis still enforces limits.
+      return { success: true }
+    }
+
     // Get user identifier from auth or IP
     const identifier = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "anonymous"
 
@@ -130,7 +137,7 @@ export async function rateLimit(
     const now = Date.now()
     const windowStart = now - options.windowMs
 
-    const pipeline = redis.pipeline()
+    const pipeline = client.pipeline()
     pipeline.zremrangebyscore(key, 0, windowStart)
     pipeline.zcard(key)
     pipeline.zadd(key, { score: now, member: `${now}` })
