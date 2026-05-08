@@ -51,10 +51,10 @@ export function TransformLanding({
   }
 
   return (
-    <main className="min-h-screen bg-white text-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <main className="min-h-screen bg-white text-brand-obsidian" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {checkoutError && (
-        <div className="bg-[#0a0a0a] px-5 py-3 text-center text-sm text-white/75">
+        <div className="bg-brand-obsidian px-5 py-3 text-center text-sm text-white/75">
           Something went wrong starting checkout.
           {checkoutErrorReason ? ` (${checkoutErrorReason})` : ""}
           {" "}Please try again or{" "}
@@ -65,7 +65,7 @@ export function TransformLanding({
       )}
 
       {/* Hero */}
-      <section className="relative min-h-[90vh] overflow-hidden bg-[#0a0a0a] text-white">
+      <section className="relative min-h-[90vh] overflow-hidden bg-brand-obsidian text-white">
         <Image
           src="/images/selfie-guide/parisian-cafe-tranquility.png"
           alt="SSELFIE Edit Studio"
@@ -90,7 +90,7 @@ export function TransformLanding({
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
                 href="/checkout/transform"
-                className="inline-flex min-h-12 items-center gap-2 bg-white px-7 py-3 text-sm font-semibold text-[#0a0a0a] transition-opacity hover:opacity-90"
+                className="inline-flex min-h-12 items-center gap-2 bg-white px-7 py-3 text-sm font-semibold text-brand-obsidian transition-opacity hover:opacity-90"
               >
                 Get 5 edits · $17
                 <ArrowRight className="h-4 w-4" />
@@ -102,15 +102,15 @@ export function TransformLanding({
       </section>
 
       {/* Trust statement */}
-      <section className="border-b border-[#e5e5e5] px-5 py-10 sm:px-8 lg:px-12">
+      <section className="border-b border-brand-whisper px-5 py-10 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-6xl">
           <p
-            className="max-w-2xl text-2xl font-light text-[#0a0a0a] sm:text-3xl"
+            className="max-w-2xl text-2xl font-light text-brand-obsidian sm:text-3xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
             Your photo stays your photo. SSELFIE Edit Studio improves light, tone, skin, and polish — without changing who you are.
           </p>
-          <p className="mt-4 text-sm text-[#8a8780]">
+          <p className="mt-4 text-sm text-stone">
             No background swaps. No face changes. No AI generation. Just professional editing applied to your real photo.
           </p>
         </div>
@@ -121,29 +121,29 @@ export function TransformLanding({
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">Before · After</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">Before · After</p>
               <h2
-                className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+                className="mt-4 text-4xl font-light leading-tight text-brand-obsidian sm:text-5xl"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Same photo. Better light, tone, and finish.
               </h2>
-              <p className="mt-4 text-sm leading-6 text-[#666666]">
+              <p className="mt-4 text-sm leading-6 text-brand-smoke">
                 Real examples coming soon. The edit preserves every detail — face, pose, background — and improves only the light and finish.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <div className="flex aspect-[3/4] items-center justify-center border border-[#e5e5e5] bg-[#f5f5f5] px-5 text-center text-xs text-[#8a8780]">
+                <div className="flex aspect-[3/4] items-center justify-center border border-brand-whisper bg-brand-pearl px-5 text-center text-xs text-stone">
                   Before
                 </div>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a8780]">Original</p>
+                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone">Original</p>
               </div>
               <div>
-                <div className="flex aspect-[3/4] items-center justify-center border border-[#0a0a0a] bg-[#0a0a0a] px-5 text-center text-xs text-white/60">
+                <div className="flex aspect-[3/4] items-center justify-center border border-brand-obsidian bg-brand-obsidian px-5 text-center text-xs text-white/60">
                   After
                 </div>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#0a0a0a]">Professional edit</p>
+                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-obsidian">Professional edit</p>
               </div>
             </div>
           </div>
@@ -151,12 +151,12 @@ export function TransformLanding({
       </section>
 
       {/* How it works */}
-      <section className="border-y border-[#e5e5e5] bg-[#f5f5f5] px-5 py-20 sm:px-8 lg:px-12">
+      <section className="border-y border-brand-whisper bg-brand-pearl px-5 py-20 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">How it works</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">How it works</p>
             <h2
-              className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+              className="mt-4 text-4xl font-light leading-tight text-brand-obsidian sm:text-5xl"
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
             >
               Upload. Choose. Download.
@@ -164,11 +164,11 @@ export function TransformLanding({
           </div>
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {EDITING_STEPS.map((step, i) => (
-              <div key={step} className="border border-[#e5e5e5] bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a8780]">
+              <div key={step} className="border border-brand-whisper bg-white p-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone">
                   {String(i + 1).padStart(2, "0")}
                 </p>
-                <p className="mt-4 text-sm font-medium text-[#0a0a0a]">{step}</p>
+                <p className="mt-4 text-sm font-medium text-brand-obsidian">{step}</p>
               </div>
             ))}
           </div>
@@ -180,9 +180,9 @@ export function TransformLanding({
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">Edit finishes</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">Edit finishes</p>
               <h2
-                className="mt-4 text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+                className="mt-4 text-4xl font-light leading-tight text-brand-obsidian sm:text-5xl"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Choose your edit finish.
@@ -190,7 +190,7 @@ export function TransformLanding({
             </div>
             <a
               href="/checkout/transform"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#0a0a0a]"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-obsidian"
             >
               Get 5 edits · $17
               <ArrowRight className="h-4 w-4" />
@@ -202,13 +202,13 @@ export function TransformLanding({
               <a
                 key={finish.slug}
                 href={`/transform/studio?style=${finish.slug}`}
-                className="group border border-[#e5e5e5] bg-white p-5 transition-colors hover:border-[#0a0a0a]"
+                className="group border border-brand-whisper bg-white p-5 transition-colors hover:border-brand-obsidian"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[#0a0a0a]">{finish.label}</p>
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#8a8780] transition-transform group-hover:translate-x-0.5" />
+                  <p className="text-sm font-semibold text-brand-obsidian">{finish.label}</p>
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-stone transition-transform group-hover:translate-x-0.5" />
                 </div>
-                <p className="mt-2.5 text-xs leading-5 text-[#666666]">{finish.note}</p>
+                <p className="mt-2.5 text-xs leading-5 text-brand-smoke">{finish.note}</p>
               </a>
             ))}
           </div>
@@ -216,7 +216,7 @@ export function TransformLanding({
       </section>
 
       {/* What you get */}
-      <section className="bg-[#0a0a0a] px-5 py-20 text-white sm:px-8 lg:px-12">
+      <section className="bg-brand-obsidian px-5 py-20 text-white sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/50">What you get</p>
@@ -251,24 +251,24 @@ export function TransformLanding({
       <section className="px-5 py-20 text-center sm:px-8 lg:px-12">
         <div className="mx-auto max-w-xl">
           <h2
-            className="text-4xl font-light leading-tight text-[#0a0a0a] sm:text-5xl"
+            className="text-4xl font-light leading-tight text-brand-obsidian sm:text-5xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
             Ready for your edit?
           </h2>
-          <p className="mt-4 text-sm leading-6 text-[#666666]">
+          <p className="mt-4 text-sm leading-6 text-brand-smoke">
             Upload one photo. Choose a finish. Keep the result if it looks like you — just better.
           </p>
           <a
             href="/checkout/transform"
-            className="mt-8 inline-flex min-h-12 items-center gap-2 bg-[#0a0a0a] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+            className="mt-8 inline-flex min-h-12 items-center gap-2 bg-brand-obsidian px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-85"
           >
             Get 5 edits · $17
             <ArrowRight className="h-4 w-4" />
           </a>
 
           {captured ? (
-            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#666666]">
+            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-brand-smoke">
               <Check className="h-4 w-4" />
               You are on the list.
             </div>
@@ -280,12 +280,12 @@ export function TransformLanding({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email for updates"
-                className="min-h-12 flex-1 border border-[#d4d1cc] bg-white px-4 text-sm text-[#0a0a0a] placeholder:text-[#8a8780] focus:border-[#0a0a0a] focus:outline-none"
+                className="min-h-12 flex-1 border border-stone-soft bg-white px-4 text-sm text-brand-obsidian placeholder:text-stone focus:border-brand-obsidian focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={capturing}
-                className="min-h-12 border border-[#0a0a0a] px-5 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
+                className="min-h-12 border border-brand-obsidian px-5 text-sm font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-white"
               >
                 Notify me
               </button>

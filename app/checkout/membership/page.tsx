@@ -56,8 +56,8 @@ export default async function MembershipCheckoutPage({
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(196,181,160,0.18), transparent 32%), #0f0d0b",
-        color: "#f4f0e6",
+          "radial-gradient(circle at top, rgba(229,229,229,0.14), transparent 32%), var(--color-obsidian)",
+        color: "var(--color-porcelain)",
         padding: "88px 24px 56px",
       }}
     >
@@ -68,7 +68,7 @@ export default async function MembershipCheckoutPage({
             fontSize: 12,
             textTransform: "uppercase",
             letterSpacing: "0.28em",
-            color: "rgba(244,240,230,0.48)",
+            color: "rgba(229,229,229,0.56)",
           }}
         >
           SSELFIE Update
@@ -91,7 +91,7 @@ export default async function MembershipCheckoutPage({
             maxWidth: 620,
             fontSize: "1.02rem",
             lineHeight: 1.9,
-            color: "rgba(244,240,230,0.72)",
+            color: "rgba(229,229,229,0.78)",
           }}
         >
           Studio is the weekly execution layer with Maya. Join monthly when you are ready for the
@@ -103,8 +103,8 @@ export default async function MembershipCheckoutPage({
             style={{
               display: "inline-flex",
               padding: "16px 24px",
-              background: "#f4f0e6",
-              color: "#0f0d0b",
+              background: "var(--color-porcelain)",
+              color: "var(--color-obsidian)",
               textDecoration: "none",
               textTransform: "uppercase",
               letterSpacing: "0.2em",
@@ -118,8 +118,8 @@ export default async function MembershipCheckoutPage({
             style={{
               display: "inline-flex",
               padding: "16px 24px",
-              border: "1px solid rgba(244,240,230,0.2)",
-              color: "rgba(244,240,230,0.82)",
+              border: "1px solid rgba(229,229,229,0.22)",
+              color: "rgba(229,229,229,0.86)",
               textDecoration: "none",
               textTransform: "uppercase",
               letterSpacing: "0.2em",
@@ -133,8 +133,8 @@ export default async function MembershipCheckoutPage({
             style={{
               display: "inline-flex",
               padding: "16px 24px",
-              border: "1px solid rgba(244,240,230,0.2)",
-              color: "rgba(244,240,230,0.82)",
+              border: "1px solid rgba(229,229,229,0.22)",
+              color: "rgba(229,229,229,0.86)",
               textDecoration: "none",
               textTransform: "uppercase",
               letterSpacing: "0.2em",

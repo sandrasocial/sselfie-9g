@@ -152,17 +152,17 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0c0b] overflow-x-hidden">
+    <div className="min-h-screen bg-brand-obsidian overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-5 py-5 pt-[calc(20px+env(safe-area-inset-top))] flex justify-between items-center pointer-events-none bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)]">
+      <nav className="fixed top-0 left-0 right-0 z-50 px-5 py-5 pt-[calc(20px+env(safe-area-inset-top))] flex justify-between items-center pointer-events-none bg-[color:var(--glass-bg)] backdrop-blur-[50px] border-b border-[color:var(--div-dark)]">
         <div className="pointer-events-auto" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-          <Link href="/" className="text-xl text-[#f0ede8] tracking-[0.3em] uppercase font-light">
+          <Link href="/" className="text-xl text-brand-porcelain tracking-[0.3em] uppercase font-light">
             SSELFIE
           </Link>
         </div>
         <Link
           href={loginHref}
-          className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-[#a8a49c] hover:text-[#c8c4bb] transition-colors py-2"
+          className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-stone hover:text-brand-whisper transition-colors py-2"
           onClick={() => trackCTAClick("nav", "Login", loginHref)}
         >
           Login
@@ -216,16 +216,16 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             <div
               className="fade-up inline-flex items-center gap-2 mx-auto mb-6"
               style={{
-                background: "rgba(13,12,11,0.6)",
+                background: "rgba(10, 10, 10, 0.6)",
                 backdropFilter: "blur(20px)",
-                border: "1px solid rgba(195,190,182,0.25)",
+                border: "1px solid var(--div-dark)",
                 borderRadius: "100px",
                 padding: "6px 16px",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#c8c4bb] inline-block" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-whisper inline-block" />
               <span
-                className="text-[10px] uppercase tracking-[0.2em] text-[#c8c4bb]"
+                className="text-[10px] uppercase tracking-[0.2em] text-brand-whisper"
                 style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
               >
                 180K+ creators following
@@ -247,7 +247,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             <p
               className="description fade-up mx-auto max-w-sm"
               style={{
-                color: "#c8c4bb",
+                color: "var(--color-whisper)",
                 textShadow: "0 1px 8px rgba(0,0,0,0.55)",
               }}
             >
@@ -279,7 +279,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   trackCTAClick("hero", "See Studio", "#membership")
                   scrollToPricing()
                 }}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#c8c4bb] hover:text-[#f0ede8] transition-colors py-2"
+                className="text-[10px] uppercase tracking-[0.2em] text-brand-whisper hover:text-brand-porcelain transition-colors py-2"
               >
                 See what&apos;s inside →
               </a>
@@ -293,8 +293,8 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           className="scene"
           style={{
             minHeight: "100dvh",
-            backgroundColor: "#1c1b19",
-            color: "#f0ede8",
+            backgroundColor: "var(--stone-dark)",
+            color: "var(--color-porcelain)",
             position: "relative",
           }}
         >
@@ -326,7 +326,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   width: "72%",
                   height: "72%",
                   overflow: "hidden",
-                  border: "1px solid rgba(195,190,182,0.08)",
+                  border: "1px solid var(--div-dark)",
                   filter: "grayscale(100%)",
                   transition: "filter 0.7s",
                 }}
@@ -344,14 +344,14 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                     position: "absolute",
                     top: "12px",
                     left: "12px",
-                    background: "rgba(13,12,11,0.8)",
+                    background: "rgba(10, 10, 10, 0.8)",
                     backdropFilter: "blur(8px)",
                     padding: "4px 10px",
                     fontSize: "9px",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                     border: "1px solid rgba(195,190,182,0.2)",
-                    color: "#a8a49c",
+                    color: "var(--stone)",
                   }}
                 >
                   Your selfie
@@ -369,7 +369,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   overflow: "hidden",
                   boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
                   zIndex: 10,
-                  border: "1px solid rgba(195,190,182,0.25)",
+                  border: "1px solid var(--div-dark)",
                 }}
                 className="group"
               >
@@ -384,8 +384,8 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                     position: "absolute",
                     bottom: "12px",
                     right: "12px",
-                    background: "#c8c4bb",
-                    color: "#0d0c0b",
+                    background: "var(--color-whisper)",
+                    color: "var(--color-obsidian)",
                     padding: "4px 12px",
                     fontSize: "9px",
                     textTransform: "uppercase",
@@ -415,19 +415,19 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
               >
                 From selfie to brand photo in minutes.
               </h2>
-              <div className="description fade-up text-sm md:text-base space-y-4" style={{ color: "#a8a49c" }}>
+              <div className="description fade-up text-sm md:text-base space-y-4" style={{ color: "var(--stone)" }}>
                 <p>
-                  <strong style={{ color: "#c8c4bb" }}>1. Upload a few selfies.</strong>
+                  <strong style={{ color: "var(--color-whisper)" }}>1. Upload a few selfies.</strong>
                   <br />
                   Maya learns your face, your style, your vibe.
                 </p>
                 <p>
-                  <strong style={{ color: "#c8c4bb" }}>2. She creates your photo library.</strong>
+                  <strong style={{ color: "var(--color-whisper)" }}>2. She creates your photo library.</strong>
                   <br />
                   Brand-ready images that actually look like you — no photoshoot needed.
                 </p>
                 <p>
-                  <strong style={{ color: "#c8c4bb" }}>3. Plan and post with confidence.</strong>
+                  <strong style={{ color: "var(--color-whisper)" }}>3. Plan and post with confidence.</strong>
                   <br />
                   Fill your feed, write captions, and show up consistently.
                 </p>
@@ -484,24 +484,24 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 <div
                   className="absolute inset-0"
                   style={{
-                    background: "linear-gradient(to bottom, rgba(13,12,11,0.1) 0%, rgba(13,12,11,0.75) 100%)",
+                    background: "linear-gradient(to bottom, rgba(10, 10, 10, 0.1) 0%, rgba(10, 10, 10, 0.75) 100%)",
                   }}
                 />
               </div>
               <div className="relative z-10 h-full flex flex-col justify-end items-start text-left p-8 pb-10">
                 <span
                   className="text-[9px] uppercase tracking-[0.2em] mb-2"
-                  style={{ color: "#8a8780", fontFamily: "Inter, sans-serif" }}
+                  style={{ color: "var(--stone)", fontFamily: "Inter, sans-serif" }}
                 >
                   Photos
                 </span>
                 <h3
-                  className="text-2xl md:text-3xl mb-2 text-[#f0ede8]"
+                  className="text-2xl md:text-3xl mb-2 text-brand-porcelain"
                   style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}
                 >
                   Photos that look like you, not stock.
                 </h3>
-                <p className="text-[#a8a49c] text-xs md:text-sm font-light leading-relaxed">
+                <p className="text-stone text-xs md:text-sm font-light leading-relaxed">
                   Maya trains on your selfies and generates brand photos in your exact style. She remembers what you love and what you don&apos;t.
                 </p>
               </div>
@@ -509,7 +509,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
             {/* Feed planning */}
             <div
-              className="relative bg-[#0d0c0b] overflow-hidden md:w-1/2"
+              className="relative bg-brand-obsidian overflow-hidden md:w-1/2"
               style={{ width: "100%", aspectRatio: "1/1", flexShrink: 0 }}
             >
               <div className="absolute inset-0">
@@ -523,24 +523,24 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 <div
                   className="absolute inset-0"
                   style={{
-                    background: "linear-gradient(to bottom, rgba(13,12,11,0.1) 0%, rgba(13,12,11,0.75) 100%)",
+                    background: "linear-gradient(to bottom, rgba(10, 10, 10, 0.1) 0%, rgba(10, 10, 10, 0.75) 100%)",
                   }}
                 />
               </div>
               <div className="relative z-10 h-full flex flex-col justify-end items-start text-left p-8 pb-10">
                 <span
                   className="text-[9px] uppercase tracking-[0.2em] mb-2"
-                  style={{ color: "#8a8780", fontFamily: "Inter, sans-serif" }}
+                  style={{ color: "var(--stone)", fontFamily: "Inter, sans-serif" }}
                 >
                   Feed Planner
                 </span>
                 <h3
-                  className="text-2xl md:text-3xl mb-2 text-[#f0ede8]"
+                  className="text-2xl md:text-3xl mb-2 text-brand-porcelain"
                   style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}
                 >
                   Your next 9 posts, planned and captioned.
                 </h3>
-                <p className="text-[#a8a49c] text-xs md:text-sm font-light leading-relaxed">
+                <p className="text-stone text-xs md:text-sm font-light leading-relaxed">
                   Maya builds your feed strategy, writes your captions, and keeps your grid looking cohesive — without the Sunday-night stress.
                 </p>
               </div>
@@ -551,14 +551,14 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           <div
             className="absolute top-8 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full shadow-xl"
             style={{
-              background: "rgba(13,12,11,0.92)",
-              border: "1px solid rgba(195,190,182,0.25)",
+              background: "rgba(10, 10, 10, 0.92)",
+              border: "1px solid var(--div-dark)",
               backdropFilter: "blur(50px)",
             }}
           >
             <span
               className="text-[9px] uppercase tracking-widest whitespace-nowrap"
-              style={{ color: "#8a8780" }}
+              style={{ color: "var(--stone)" }}
             >
               Meet Maya
             </span>
@@ -571,7 +571,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           className="scene"
           style={{
             minHeight: "100dvh",
-            backgroundColor: "#1c1b19",
+            backgroundColor: "var(--stone-dark)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -604,7 +604,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(to bottom, rgba(28,27,25,0.1) 0%, rgba(28,27,25,0.4) 100%)",
+                    "linear-gradient(to bottom, rgba(44, 43, 41, 0.10) 0%, rgba(44, 43, 41, 0.40) 100%)",
                 }}
               />
             </div>
@@ -616,7 +616,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             >
               <div
                 className="border-l pl-6 fade-up"
-                style={{ borderColor: "rgba(195,190,182,0.25)" }}
+                style={{ borderColor: "var(--div-dark)" }}
               >
                 <span className="label" style={{ marginBottom: "8px" }}>
                   Who it&apos;s for
@@ -633,7 +633,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 </h2>
                 <div
                   className="description text-sm md:text-base mb-4 space-y-3"
-                  style={{ color: "#a8a49c" }}
+                  style={{ color: "var(--stone)" }}
                 >
                   <p>✓ Coaches, creators, and entrepreneurs who want to be visible</p>
                   <p>✓ Women building a personal brand without a team behind them</p>
@@ -641,7 +641,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 </div>
                 <p
                   className="description text-sm md:text-base italic"
-                  style={{ color: "#8a8780", fontSize: "14px" }}
+                  style={{ color: "var(--stone)", fontSize: "14px" }}
                 >
                   If you&apos;ve been overthinking every post — SSELFIE gives you a clear, repeatable system.
                 </p>
@@ -656,7 +656,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           className="scene"
           style={{
             minHeight: "100dvh",
-            backgroundColor: "#0d0c0b",
+            backgroundColor: "var(--color-obsidian)",
             paddingTop: "60px",
             paddingBottom: "40px",
             display: "flex",
@@ -706,7 +706,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(0deg, #0d0c0b 10%, rgba(13,12,11,0.85) 60%, rgba(13,12,11,0.7) 100%)",
+                "linear-gradient(0deg, var(--color-obsidian) 10%, rgba(10, 10, 10, 0.85) 60%, rgba(10, 10, 10, 0.7) 100%)",
             }}
           />
           <div className="h-full w-full overflow-y-auto relative z-10">
@@ -723,7 +723,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
               >
                 Start small. Grow into it.
               </h2>
-              <p className="description text-center mb-8 fade-up" style={{ color: "#a8a49c" }}>
+              <p className="description text-center mb-8 fade-up" style={{ color: "var(--stone)" }}>
                 Pick the Selfie Guide to get started, or jump straight into Studio for the full system.
               </p>
 
@@ -755,7 +755,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                     <div className="text-right">
                       <span
                         className="text-2xl"
-                        style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f0ede8" }}
+                        style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--color-porcelain)" }}
                       >
                         {selfieGuidePrice}
                       </span>
@@ -777,8 +777,8 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 </div>
 
                 {/* Studio Card */}
-                <div className="pricing-card fade-up relative overflow-hidden flex-1" style={{ border: "1px solid rgba(200,196,187,0.45)" }}>
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-[#c8c4bb]" />
+                <div className="pricing-card fade-up relative overflow-hidden flex-1" style={{ border: "1px solid var(--div-dark)" }}>
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-brand-whisper" />
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3
@@ -794,7 +794,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                     <div className="text-right">
                       <span
                         className="text-2xl"
-                        style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f0ede8" }}
+                        style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--color-porcelain)" }}
                       >
                         {membershipPrice}
                       </span>
@@ -829,7 +829,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         <section
           ref={(el) => (scenesRef.current[6] = el)}
           className="scene"
-          style={{ minHeight: "100dvh", backgroundColor: "#1c1b19" }}
+          style={{ minHeight: "100dvh", backgroundColor: "var(--stone-dark)" }}
         >
           <div className="content h-full justify-center">
             <div className="fade-up">
@@ -858,16 +858,16 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   className="absolute inset-0"
                   style={{
                     background:
-                      "linear-gradient(to bottom, rgba(28,27,25,0.1) 0%, rgba(28,27,25,0.35) 100%)",
+                      "linear-gradient(to bottom, rgba(44, 43, 41, 0.10) 0%, rgba(44, 43, 41, 0.35) 100%)",
                   }}
                 />
               </div>
-              <p className="description mb-4" style={{ color: "#a8a49c", maxWidth: "480px" }}>
+              <p className="description mb-4" style={{ color: "var(--stone)", maxWidth: "480px" }}>
                 I was tired of hiding behind my logo and filters. I wanted something that helped me — and other women — feel confident and consistent online without needing a whole production.
                 <br /><br />
                 That&apos;s what SSELFIE Studio is. I use it myself, every week.
               </p>
-              <p className="text-xs mt-2" style={{ color: "#666666" }}>
+              <p className="text-xs mt-2" style={{ color: "var(--color-smoke)" }}>
                 — Sandra, Founder
               </p>
             </div>
@@ -878,7 +878,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         <section
           ref={(el) => (scenesRef.current[7] = el)}
           className="scene relative h-auto min-h-[50dvh] py-16"
-          style={{ backgroundColor: "#0d0c0b", color: "#8a8780" }}
+          style={{ backgroundColor: "var(--color-obsidian)", color: "var(--stone)" }}
         >
           <div className="container mx-auto px-6 max-w-4xl h-full flex flex-col justify-center">
             {/* Closing CTA */}
@@ -888,7 +888,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 style={{
                   fontSize: "clamp(28px,5vw,40px)",
                   fontFamily: "'Cormorant Garamond', serif",
-                  color: "#f0ede8",
+                  color: "var(--color-porcelain)",
                 }}
               >
                 You don&apos;t need perfect photos. You just need to show up.
@@ -905,36 +905,36 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             {/* FAQ */}
             <div
               className="grid gap-8 mb-12 pb-12"
-              style={{ borderBottom: "1px solid rgba(175,170,162,0.12)" }}
+              style={{ borderBottom: "1px solid var(--glass-bg)" }}
             >
               <div>
                 <h4
                   className="text-lg mb-4"
-                  style={{ color: "#f0ede8", fontFamily: "'Cormorant Garamond', serif" }}
+                  style={{ color: "var(--color-porcelain)", fontFamily: "'Cormorant Garamond', serif" }}
                 >
                   Common questions
                 </h4>
                 <div className="space-y-4 text-xs font-light leading-relaxed">
                   <div>
-                    <p className="mb-1" style={{ color: "#c8c4bb" }}>
+                    <p className="mb-1" style={{ color: "var(--color-whisper)" }}>
                       Do I need to be good at taking photos?
                     </p>
                     <p>No. The Selfie Guide teaches you the basics. Maya does the rest.</p>
                   </div>
                   <div>
-                    <p className="mb-1" style={{ color: "#c8c4bb" }}>
+                    <p className="mb-1" style={{ color: "var(--color-whisper)" }}>
                       Are the photos mine to use?
                     </p>
                     <p>Yes. Everything you create is yours, forever.</p>
                   </div>
                   <div>
-                    <p className="mb-1" style={{ color: "#c8c4bb" }}>
+                    <p className="mb-1" style={{ color: "var(--color-whisper)" }}>
                       Can I cancel Studio?
                     </p>
                     <p>Yes, cancel anytime with one click from your account settings. No hoops.</p>
                   </div>
                   <div>
-                    <p className="mb-1" style={{ color: "#c8c4bb" }}>
+                    <p className="mb-1" style={{ color: "var(--color-whisper)" }}>
                       Is my payment secure?
                     </p>
                     <p>We use Stripe. We never see your card details.</p>
@@ -946,19 +946,19 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             {/* Footer links */}
             <div
               className="flex flex-col gap-4 text-[10px] tracking-wider uppercase"
-              style={{ color: "#8a8780" }}
+              style={{ color: "var(--stone)" }}
             >
               <div
                 className="text-lg normal-case tracking-[0.3em] mb-2"
-                style={{ color: "#f0ede8", fontFamily: "'Cormorant Garamond', serif" }}
+                style={{ color: "var(--color-porcelain)", fontFamily: "'Cormorant Garamond', serif" }}
               >
                 SSELFIE
               </div>
               <div className="flex gap-6">
-                <Link href="/terms" className="hover:text-[#c8c4bb] transition-colors">
+                <Link href="/terms" className="hover:text-brand-whisper transition-colors">
                   Terms
                 </Link>
-                <Link href="/privacy" className="hover:text-[#c8c4bb] transition-colors">
+                <Link href="/privacy" className="hover:text-brand-whisper transition-colors">
                   Privacy
                 </Link>
               </div>
@@ -978,7 +978,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
             onClick={() => scrollToScene(index)}
             className="w-1 h-1 rounded-full transition-all"
             style={{
-              background: "#c8c4bb",
+              background: "var(--color-whisper)",
               opacity: activeScene === index ? 1 : 0.3,
               transform: activeScene === index ? "scale(1.5)" : "scale(1)",
             }}
@@ -992,20 +992,20 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         <div
           className="fixed bottom-0 left-0 right-0 z-50 py-4 sm:py-5 shadow-lg"
           style={{
-            background: "rgba(13,12,11,0.95)",
+            background: "rgba(10, 10, 10, 0.95)",
             backdropFilter: "blur(50px)",
-            borderTop: "1px solid rgba(195,190,182,0.15)",
+            borderTop: "1px solid var(--div-dark)",
           }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <div className="text-center sm:text-left">
               <p
                 className="text-base sm:text-lg font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f0ede8" }}
+                style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--color-porcelain)" }}
               >
                 SSELFIE Studio
               </p>
-              <p className="text-[11px] font-light" style={{ color: "#8a8780" }}>
+              <p className="text-[11px] font-light" style={{ color: "var(--stone)" }}>
                 Brand photos + feed planner + Maya AI
               </p>
             </div>
@@ -1015,9 +1015,9 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 onClick={() => trackSelfieGuideEntryClick("sticky_footer")}
                 className="px-6 py-3 text-[11px] font-medium uppercase tracking-wider transition-all duration-200 min-h-[44px] flex items-center rounded-full"
                 style={{
-                  background: "rgba(175,170,162,0.15)",
+                  background: "var(--glass-bg)",
                   border: "1px solid rgba(195,190,182,0.3)",
-                  color: "#c8c4bb",
+                  color: "var(--color-whisper)",
                 }}
               >
                 Selfie Guide — {selfieGuidePrice}
@@ -1029,12 +1029,12 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 }}
                 disabled={checkoutLoading === "sselfie_studio_membership"}
                 className="px-6 sm:px-8 py-3 text-[11px] font-medium uppercase tracking-wider transition-all duration-200 min-h-[44px] flex items-center rounded-full disabled:opacity-50"
-                style={{ background: "#c8c4bb", color: "#0d0c0b" }}
+                style={{ background: "var(--color-whisper)", color: "var(--color-obsidian)" }}
                 onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLButtonElement).style.background = "#f0ede8"
+                  ;(e.currentTarget as HTMLButtonElement).style.background = "var(--color-porcelain)"
                 }}
                 onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLButtonElement).style.background = "#c8c4bb"
+                  ;(e.currentTarget as HTMLButtonElement).style.background = "var(--color-whisper)"
                 }}
               >
                 {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "Join Studio →"}
@@ -1085,13 +1085,13 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           font-size: 10px;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--stone);
           margin-bottom: 12px;
           display: block;
         }
         .hero-title {
           font-size: clamp(30px, 7vw, 56px);
-          color: #f0ede8;
+          color: var(--color-porcelain);
           margin-bottom: 16px;
           font-family: 'Cormorant Garamond', serif;
           font-weight: 300;
@@ -1104,7 +1104,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           font-size: 15px;
           line-height: 1.6;
           font-weight: 300;
-          color: #8a8780;
+          color: var(--stone);
           margin-bottom: 24px;
         }
         @media (min-width: 768px) {
@@ -1119,8 +1119,8 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           justify-content: center;
           padding: 16px 32px;
           min-height: 48px;
-          background: #c8c4bb;
-          color: #0d0c0b;
+          background: var(--color-whisper);
+          color: var(--color-obsidian);
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.15em;
@@ -1129,12 +1129,12 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           border-radius: 100px;
           transition: all 0.3s ease;
           cursor: pointer;
-          border: 1px solid #c8c4bb;
+          border: 1px solid var(--color-whisper);
           width: fit-content;
         }
         .btn:hover {
-          background: #f0ede8;
-          border-color: #f0ede8;
+          background: var(--color-porcelain);
+          border-color: var(--color-porcelain);
         }
         .btn:active {
           transform: scale(0.96);
@@ -1150,7 +1150,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
           }
         }
         .pricing-card {
-          background: rgba(175, 170, 162, 0.08);
+          background: var(--glass-bg);
           border: 1px solid rgba(195, 190, 182, 0.2);
           backdrop-filter: blur(50px);
           padding: 24px;

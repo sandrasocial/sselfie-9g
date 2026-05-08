@@ -350,117 +350,117 @@ export default function AIBrandPhotosPage() {
       </footer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .page { background: #0d0c0b; color: #f0ede8; min-height: 100vh; }
+        .page { background: var(--color-obsidian); color: var(--color-porcelain); min-height: 100vh; }
 
         /* HEADER */
         .site-header {
           padding: 24px 48px; display: flex; align-items: center; justify-content: space-between;
-          border-bottom: 1px solid rgba(195,190,182,0.12); position: sticky; top: 0; z-index: 50;
-          background: rgba(13,12,11,0.92); backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--div-dark); position: sticky; top: 0; z-index: 50;
+          background: rgba(10, 10, 10, 0.92); backdrop-filter: blur(20px);
         }
-        .logo { font-size: 22px; letter-spacing: 0.12em; color: #f0ede8; text-decoration: none; font-weight: 300; }
+        .logo { font-size: 22px; letter-spacing: 0.12em; color: var(--color-porcelain); text-decoration: none; font-weight: 300; }
         .header-cta {
-          font-size: 12px; letter-spacing: 0.12em; color: #0d0c0b; background: #c8c4bb;
+          font-size: 12px; letter-spacing: 0.12em; color: var(--color-obsidian); background: var(--color-whisper);
           padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: 500;
         }
-        .header-cta:hover { background: #f0ede8; }
+        .header-cta:hover { background: var(--color-porcelain); }
 
         /* HERO */
         .hero { position: relative; height: 70vh; min-height: 480px; display: flex; align-items: flex-end; }
         .hero-image-wrap { position: absolute; inset: 0; }
         .hero-content {
           position: relative; z-index: 1; padding: 56px 48px;
-          background: linear-gradient(to top, rgba(13,12,11,0.85) 0%, transparent 100%);
+          background: linear-gradient(to top, rgba(10, 10, 10, 0.85) 0%, transparent 100%);
           width: 100%;
         }
-        .eyebrow { font-size: 11px; letter-spacing: 0.18em; color: #8a8780; margin-bottom: 16px; }
+        .eyebrow { font-size: 11px; letter-spacing: 0.18em; color: var(--stone); margin-bottom: 16px; }
         h1 { font-size: clamp(36px, 5vw, 58px); font-weight: 300; line-height: 1.15; max-width: 760px; margin: 0 0 20px; }
-        .hero-sub { font-size: 17px; font-weight: 300; color: #c8c4bb; max-width: 560px; line-height: 1.65; margin: 0 0 16px; }
-        .byline { font-size: 12px; color: #8a8780; letter-spacing: 0.08em; }
+        .hero-sub { font-size: 17px; font-weight: 300; color: var(--color-whisper); max-width: 560px; line-height: 1.65; margin: 0 0 16px; }
+        .byline { font-size: 12px; color: var(--stone); letter-spacing: 0.08em; }
 
         /* ARTICLE */
         .article { max-width: 860px; margin: 0 auto; padding: 0 24px; }
 
         /* PROSE SECTION */
-        .prose-section { padding: 72px 0 40px; border-top: 1px solid rgba(195,190,182,0.10); margin-top: 8px; }
-        .section-label { font-size: 10px; letter-spacing: 0.2em; color: #8a8780; text-transform: uppercase; margin-bottom: 24px; }
+        .prose-section { padding: 72px 0 40px; border-top: 1px solid var(--div-dark); margin-top: 8px; }
+        .section-label { font-size: 10px; letter-spacing: 0.2em; color: var(--stone); text-transform: uppercase; margin-bottom: 24px; }
         .prose-section h2 { font-size: clamp(28px, 3.5vw, 42px); font-weight: 300; line-height: 1.2; margin: 0 0 28px; }
-        .prose-section p { font-size: 16px; line-height: 1.8; color: #c8c4bb; margin-bottom: 20px; }
+        .prose-section p { font-size: 16px; line-height: 1.8; color: var(--color-whisper); margin-bottom: 20px; }
 
         /* STEPS */
         .step-card {
-          margin: 32px 0; padding: 28px 32px; border: 1px solid rgba(195,190,182,0.12);
-          border-radius: 12px; background: rgba(175,170,162,0.05);
+          margin: 32px 0; padding: 28px 32px; border: 1px solid var(--div-dark);
+          border-radius: 12px; background: var(--glass-bg);
         }
-        .step-num { font-size: 10px; letter-spacing: 0.2em; color: #8a8780; display: block; margin-bottom: 10px; }
+        .step-num { font-size: 10px; letter-spacing: 0.2em; color: var(--stone); display: block; margin-bottom: 10px; }
         .step-card h3 { font-size: 24px; font-weight: 300; margin: 0 0 14px; }
-        .step-card p { font-size: 15px; line-height: 1.75; color: #c8c4bb; margin: 0; }
+        .step-card p { font-size: 15px; line-height: 1.75; color: var(--color-whisper); margin: 0; }
 
         /* GALLERY */
-        .gallery-section { padding: 72px 0 40px; border-top: 1px solid rgba(195,190,182,0.10); }
+        .gallery-section { padding: 72px 0 40px; border-top: 1px solid var(--div-dark); }
         .gallery-heading { font-size: clamp(28px, 3.5vw, 42px); font-weight: 300; margin: 0 0 40px; }
         .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .gallery-item { position: relative; aspect-ratio: 3/4; border-radius: 10px; overflow: hidden; background: #1a1917; }
+        .gallery-item { position: relative; aspect-ratio: 3/4; border-radius: 10px; overflow: hidden; background: var(--stone-dark); }
         .gallery-caption { grid-column: 1 / -1; padding: 16px 0; }
-        .gallery-caption p { font-size: 13px; color: #8a8780; line-height: 1.6; }
+        .gallery-caption p { font-size: 13px; color: var(--stone); line-height: 1.6; }
 
         /* COST TABLE */
-        .comparison-section { padding: 72px 0 40px; border-top: 1px solid rgba(195,190,182,0.10); }
+        .comparison-section { padding: 72px 0 40px; border-top: 1px solid var(--div-dark); }
         .comparison-section h2 { font-size: clamp(28px, 3.5vw, 42px); font-weight: 300; margin: 0 0 32px; }
         .cost-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .cost-table th {
           text-align: left; padding: 12px 16px; font-size: 10px; font-weight: 500;
-          letter-spacing: 0.15em; color: #8a8780; border-bottom: 1px solid rgba(195,190,182,0.15);
+          letter-spacing: 0.15em; color: var(--stone); border-bottom: 1px solid var(--div-dark);
         }
-        .cost-table td { padding: 14px 16px; color: #c8c4bb; border-bottom: 1px solid rgba(195,190,182,0.08); }
-        .row-highlight td { color: #f0ede8; background: rgba(175,170,162,0.07); }
+        .cost-table td { padding: 14px 16px; color: var(--color-whisper); border-bottom: 1px solid var(--div-dark); }
+        .row-highlight td { color: var(--color-porcelain); background: var(--glass-bg); }
         .row-highlight td:first-child { border-left: 2px solid rgba(195,190,182,0.4); }
-        .table-note { font-size: 14px; color: #8a8780; margin-top: 20px; line-height: 1.6; }
+        .table-note { font-size: 14px; color: var(--stone); margin-top: 20px; line-height: 1.6; }
 
         /* NOTE */
         .note-section {
           margin: 72px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-          border: 1px solid rgba(195,190,182,0.12); border-radius: 16px; overflow: hidden;
+          border: 1px solid var(--div-dark); border-radius: 16px; overflow: hidden;
         }
         .note-image-wrap { position: relative; min-height: 480px; }
         .note-body { padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; }
         .note-body blockquote {
-          font-size: 17px; line-height: 1.8; color: #c8c4bb; margin: 0 0 24px;
+          font-size: 17px; line-height: 1.8; color: var(--color-whisper); margin: 0 0 24px;
           font-style: italic; border: none; padding: 0;
         }
-        .sig { font-size: 13px; color: #8a8780; margin-bottom: 32px; }
+        .sig { font-size: 13px; color: var(--stone); margin-bottom: 32px; }
         .note-cta {
           align-self: flex-start; font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
-          color: #0d0c0b; background: #c8c4bb; padding: 12px 24px; border-radius: 8px;
+          color: var(--color-obsidian); background: var(--color-whisper); padding: 12px 24px; border-radius: 8px;
           text-decoration: none; transition: background 0.15s;
         }
-        .note-cta:hover { background: #f0ede8; }
+        .note-cta:hover { background: var(--color-porcelain); }
 
         /* FAQ */
-        .faq-section { padding: 72px 0 40px; border-top: 1px solid rgba(195,190,182,0.10); }
+        .faq-section { padding: 72px 0 40px; border-top: 1px solid var(--div-dark); }
         .faq-section h2 { font-size: clamp(28px, 3.5vw, 42px); font-weight: 300; margin: 0 0 40px; }
         .faq-item {
-          border-bottom: 1px solid rgba(195,190,182,0.10); padding: 20px 0; cursor: pointer;
+          border-bottom: 1px solid var(--div-dark); padding: 20px 0; cursor: pointer;
         }
-        .faq-item summary { font-size: 20px; font-weight: 300; color: #f0ede8; list-style: none; cursor: pointer; }
+        .faq-item summary { font-size: 20px; font-weight: 300; color: var(--color-porcelain); list-style: none; cursor: pointer; }
         .faq-item summary::-webkit-details-marker { display: none; }
-        .faq-item p { font-size: 15px; line-height: 1.75; color: #c8c4bb; margin: 16px 0 4px; }
+        .faq-item p { font-size: 15px; line-height: 1.75; color: var(--color-whisper); margin: 16px 0 4px; }
 
         /* CTA SECTION */
         .cta-section {
-          padding: 80px 0; text-align: center; border-top: 1px solid rgba(195,190,182,0.10); margin-top: 40px;
+          padding: 80px 0; text-align: center; border-top: 1px solid var(--div-dark); margin-top: 40px;
         }
         .cta-section h2 { font-size: clamp(32px, 4vw, 52px); font-weight: 300; margin: 0 0 16px; }
-        .cta-section p { font-size: 16px; color: #8a8780; margin-bottom: 36px; }
+        .cta-section p { font-size: 16px; color: var(--stone); margin-bottom: 36px; }
         .cta-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .btn-primary {
-          font-size: 14px; font-weight: 500; letter-spacing: 0.06em; color: #0d0c0b;
-          background: #c8c4bb; padding: 14px 28px; border-radius: 8px; text-decoration: none;
+          font-size: 14px; font-weight: 500; letter-spacing: 0.06em; color: var(--color-obsidian);
+          background: var(--color-whisper); padding: 14px 28px; border-radius: 8px; text-decoration: none;
           transition: background 0.15s;
         }
-        .btn-primary:hover { background: #f0ede8; }
+        .btn-primary:hover { background: var(--color-porcelain); }
         .btn-outline {
-          font-size: 14px; font-weight: 400; letter-spacing: 0.06em; color: #f0ede8;
+          font-size: 14px; font-weight: 400; letter-spacing: 0.06em; color: var(--color-porcelain);
           background: transparent; border: 1px solid rgba(195,190,182,0.3); padding: 14px 28px;
           border-radius: 8px; text-decoration: none; transition: border-color 0.15s;
         }
@@ -468,14 +468,14 @@ export default function AIBrandPhotosPage() {
 
         /* FOOTER */
         .site-footer {
-          border-top: 1px solid rgba(195,190,182,0.12); padding: 40px 48px;
+          border-top: 1px solid var(--div-dark); padding: 40px 48px;
           display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
         }
-        .footer-logo { font-size: 18px; letter-spacing: 0.12em; color: #f0ede8; text-decoration: none; }
+        .footer-logo { font-size: 18px; letter-spacing: 0.12em; color: var(--color-porcelain); text-decoration: none; }
         .footer-nav { display: flex; gap: 24px; flex: 1; }
-        .footer-nav a { font-size: 12px; color: #8a8780; text-decoration: none; letter-spacing: 0.08em; }
-        .footer-nav a:hover { color: #f0ede8; }
-        .footer-copy { font-size: 11px; color: #8a8780; letter-spacing: 0.06em; }
+        .footer-nav a { font-size: 12px; color: var(--stone); text-decoration: none; letter-spacing: 0.08em; }
+        .footer-nav a:hover { color: var(--color-porcelain); }
+        .footer-copy { font-size: 11px; color: var(--stone); letter-spacing: 0.06em; }
 
         @media (max-width: 768px) {
           .site-header { padding: 20px 24px; }
