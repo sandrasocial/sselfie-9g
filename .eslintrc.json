@@ -17,7 +17,18 @@
         "allow": ["warn", "error"]
       }
     ],
-    "prefer-const": "warn"
+    "prefer-const": "warn",
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,6}/]",
+        "message": "Hardcoded hex color. Use a CSS variable, Tailwind token alias, or lib/design-tokens.ts instead."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/#[0-9a-fA-F]{3,6}/]",
+        "message": "Hardcoded hex color. Use a CSS variable, Tailwind token alias, or lib/design-tokens.ts instead."
+      }
+    ]
   },
   "overrides": [
     {
@@ -34,7 +45,8 @@
         "@typescript-eslint/no-unused-vars": "off",
         "react-hooks/exhaustive-deps": "off",
         "react/no-unescaped-entities": "off",
-        "@next/next/no-img-element": "off"
+        "@next/next/no-img-element": "off",
+        "no-restricted-syntax": "off"
       }
     }
   ],
