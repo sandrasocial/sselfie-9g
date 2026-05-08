@@ -18,6 +18,9 @@ const removedLegacyRoutes = [
   "archived/email/cron/send-scheduled-campaigns/route.ts",
   "archived/email/cron/subscription-ending-soon/route.ts",
   "archived/email/cron/upsell-campaigns/route.ts",
+  "app/api/cron/blueprint-email-sequence/route.ts",
+  "app/api/cron/welcome-back-sequence/route.ts",
+  "app/api/cron/welcome-sequence/route.ts",
 ]
 
 const transactionalRoutes = [
@@ -26,7 +29,7 @@ const transactionalRoutes = [
   "app/api/cron/win-back-sequence/route.ts",
 ]
 
-const disabledLegacyRoutes = ["app/api/cron/welcome-sequence/route.ts"]
+const disabledLegacyRoutes: string[] = []
 
 describe("Email routing separation", () => {
   it("broadcast-only routes should not call sendEmail", () => {

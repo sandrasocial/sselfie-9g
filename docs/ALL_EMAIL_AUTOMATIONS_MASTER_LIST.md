@@ -1,7 +1,9 @@
 # SSELFIE Studio - Complete Email System Master List
 
 **Last Updated:** January 29, 2026  
-**Status:** Production - All Systems Running
+**Status:** Historical inventory - not the live cron source of truth
+
+> Live cron ownership moved to `docs/source-of-truth/route-cron-diet.md` on 2026-05-08. Use that file and `vercel.json` for the active cron schedule.
 
 This document lists EVERY email that is currently set up and being sent to your audience.
 
@@ -30,12 +32,12 @@ This document lists EVERY email that is currently set up and being sent to your 
 
 ## 1️⃣ AUTOMATED WELCOME & ONBOARDING SEQUENCES
 
-### ✅ Welcome Sequence (Paid Members)
+### Historical Welcome Sequence (Paid Members)
 
 **Trigger:** User completes payment and creates account  
-**Cron Job:** `/api/cron/welcome-sequence`  
-**Schedule:** Daily at 10:00 AM UTC  
-**Status:** ✅ **FULLY AUTOMATED**
+**Cron Job:** Superseded by `/api/cron/onboarding-sequence`  
+**Schedule:** Not scheduled  
+**Status:** Removed in Phase 5 to prevent duplicate onboarding delivery.
 
 #### Emails Sent:
 
@@ -710,24 +712,24 @@ This document lists EVERY email that is currently set up and being sent to your 
 
 | Cron Job | Schedule | Purpose | Status |
 |----------|----------|---------|--------|
-| `sync-audience-segments` | Daily 2:00 AM UTC | Sync segments to Resend | ✅ Active |
-| `refresh-segments` | Daily 3:00 AM UTC | Refresh email segments | ✅ Active |
-| `send-blueprint-followups` | Daily 10:00 AM UTC | Blueprint sequence | ✅ Active |
-| `welcome-sequence` | Daily 10:00 AM UTC | New member welcome | ✅ Active |
-| `upsell-campaigns` | Daily 10:00 AM UTC | Upsell sequences | ✅ Active |
-| `nurture-sequence` | Daily 11:00 AM UTC | Freebie conversion | ✅ Active |
-| `reactivation-campaigns` | Daily 11:00 AM UTC | Inactive member reactivation | ✅ Active |
-| `blueprint-discovery-funnel` | Daily 12:00 PM UTC | Blueprint education | ✅ Active |
-| `reengagement-campaigns` | Daily 12:00 PM UTC | Inactive re-engagement | ✅ Active |
-| `referral-rewards` | Daily 1:00 PM UTC | Process referral rewards | ✅ Active |
-| `milestone-bonuses` | Daily 2:00 PM UTC | Award milestone bonuses | ✅ Active |
-| `send-scheduled-campaigns` | Every 15 minutes | Process scheduled broadcasts | ✅ Active |
-| `backfill-resend-audience` | Hourly (30min mark) | Sync subscribers to Resend | ✅ Active |
-| `admin-alerts` | Daily 7:00 AM UTC | System health alerts | ✅ Active |
-| `resolve-pending-payments` | Every 5 minutes | Payment reconciliation | ✅ Active |
-| `reconcile-credits` | Daily 5:00 AM UTC | Credit balance sync | ✅ Active |
-| `cron-health-check` | Hourly | Monitor cron job health | ✅ Active |
-| `reindex-codebase` | Weekly (Sunday 3 AM) | AI codebase reindex | ✅ Active |
+| `resolve-pending-payments` | Every 5 minutes | Payment reconciliation | Active |
+| `reconcile-generation-assets` | Every 5 minutes | Maya asset reconciliation | Active |
+| `reconcile-generations` | Every 30 minutes | Maya generation reconciliation | Active |
+| `reconcile-subscriptions` | Every 30 minutes | Subscription reconciliation | Active |
+| `reconcile-credits` | Daily 5:00 AM UTC | Credit balance sync | Active |
+| `sync-audience-segments` | Weekly Sunday 3:00 AM UTC | Sync audience segments | Active |
+| `refresh-segments` | Daily 3:00 AM UTC | Refresh email segments | Active |
+| `blueprint-followup-sequence` | Daily 10:10 AM UTC | Blueprint lifecycle email | Active |
+| `nurture-sequence` | Daily 10:00 AM UTC | Freebie conversion | Active |
+| `onboarding-sequence` | Daily 10:05 AM UTC | New member onboarding | Active |
+| `referral-bonus-notifications` | Daily 10:15 AM UTC | Referral bonus notifications | Active |
+| `send-scheduled-newsletters` | Every 15 minutes | Scheduled broadcasts | Active |
+| `win-back-sequence` | Daily 10:00 AM UTC | Win-back lifecycle email | Active |
+| `admin-alerts` | Daily 7:00 AM UTC | System health alerts | Active |
+| `cron-health-check` | Hourly | Cron health monitoring | Active |
+| `funnel-report-daily` | Daily 8:00 AM UTC | Funnel reporting | Active |
+| `maya-instagram-trends-weekly` | Weekly Monday 6:30 AM UTC | Maya trend intelligence | Active |
+| `revenue-engine-weekly` | Weekly Monday 9:00 AM UTC | Revenue reporting | Active |
 
 ---
 
