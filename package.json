@@ -40,6 +40,7 @@
     "validate-columns": "tsx scripts/validate-column-names.ts",
     "check:prompt-authority": "tsx scripts/check-prompt-authority.ts",
     "routes:inventory": "node scripts/inventory-routes.mjs",
+    "routes:classify": "tsx scripts/classify-routes.ts",
     "audit:repo-map": "tsx scripts/audit/repo-cartographer.ts",
     "audit:dead-code": "tsx scripts/audit/dead-code-hunter.ts",
     "audit:journey": "tsx scripts/audit/user-journey-scanner.ts",

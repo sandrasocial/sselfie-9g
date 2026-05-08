@@ -50,7 +50,7 @@ The script will:
    ✅ Should be: u.last_login_at
    Context: ...WHERE s.status = 'active' AND u.last_activity_at < NOW()...
 
-📄 app/api/cron/welcome-sequence/route.ts
+📄 app/api/cron/onboarding-sequence/route.ts
    Line 47, Column 30:
    ❌ Found: u.first_name
    ✅ Should be: u.display_name
