@@ -83,17 +83,17 @@ const CHECKOUT_COPY: Record<
     footer: "Digital purchase. Your workbook access is delivered right after payment.",
   },
   transform_starter: {
-    heroTitle: "Complete your Transform order",
-    heroBody: "15 credits — enough for 5 photo transformations.",
+    heroTitle: "Complete your Edit Studio order",
+    heroBody: "15 credits — enough for 5 professional photo edits.",
     heading: "Secure checkout",
-    blurb: "You are buying the SSELFIE Transform Starter Pack with encrypted Stripe checkout.",
+    blurb: "You are buying the SSELFIE Edit Studio Starter Pack with encrypted Stripe checkout.",
     footer: "Digital purchase. Your credits are added instantly after payment.",
   },
   transform_topup: {
-    heroTitle: "Top up your Transform credits",
-    heroBody: "15 more credits — 5 more photo transformations.",
+    heroTitle: "Top up your Edit Studio credits",
+    heroBody: "15 more credits — 5 more professional edits.",
     heading: "Secure checkout",
-    blurb: "You are topping up your SSELFIE Transform credits with encrypted Stripe checkout.",
+    blurb: "You are topping up your SSELFIE Edit Studio credits with encrypted Stripe checkout.",
     footer: "Digital purchase. Credits are added instantly after payment.",
   },
 }

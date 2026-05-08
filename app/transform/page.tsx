@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { TransformLanding } from "@/components/transform/transform-landing"
 
 export const metadata: Metadata = {
-  title: "SSELFIE Transform",
+  title: "SSELFIE Edit Studio",
   description:
-    "Upload your selfie, choose an aesthetic, and get a polished editorial edit you can post today.",
+    "Upload your photo, choose a professional edit finish, and download a polished result that still looks like you.",
 }
 
 export default async function TransformPage({

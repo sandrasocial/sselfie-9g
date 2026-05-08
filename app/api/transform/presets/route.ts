@@ -6,22 +6,23 @@ export const dynamic = "force-dynamic"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const SLUG_TO_TITLE: Record<string, string> = {
+  "natural-clean": "Natural Clean Edit",
+  "soft-glow": "Soft Glow Edit",
+  "lightroom-warm": "Lightroom Warm Edit",
+  "crisp-editorial": "Crisp Editorial Edit",
+  "luxury-soft-contrast": "Luxury Soft Contrast",
+  "face-brighten": "Face Brighten Edit",
+  "skin-light-polish": "Skin + Light Polish",
+  "content-ready": "Content Ready Edit",
+}
+
 export async function GET(request: NextRequest) {
   try {
     const slug = request.nextUrl.searchParams.get("slug")
 
     if (slug) {
-      // Map URL slug back to title
-      const titleMap: Record<string, string> = {
-        "parisian-editorial": "The Parisian Editorial",
-        "studio-headshot": "Studio Headshot",
-        "golden-hour": "Golden Hour Lifestyle",
-        "dark-editorial": "Dark Editorial",
-        "coffee-shop": "Coffee Shop Story",
-        "scandinavian": "Scandinavian Minimalist",
-        "brand-founder": "Brand Founder Portrait",
-      }
-      const title = titleMap[slug]
+      const title = SLUG_TO_TITLE[slug]
       if (title) {
         const rows = await sql`
           SELECT id, title, prompt_text, style_notes
@@ -33,7 +34,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Return all presets ordered by prompt_date
     const rows = await sql`
       SELECT id, title, prompt_text, style_notes
       FROM transform_daily_prompts
