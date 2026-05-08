@@ -10,12 +10,12 @@ type TransformPlan = "starter" | "topup"
 
 const PLAN_CONFIG = {
   starter: {
-    priceId: () => process.env.STRIPE_PRICE_TRANSFORM_STARTER ?? "",
+    priceId: () => (process.env.STRIPE_PRICE_TRANSFORM_STARTER ?? "").trim(),
     credits: 15,
     productType: "transform_starter" as const,
   },
   topup: {
-    priceId: () => process.env.STRIPE_PRICE_TRANSFORM_TOPUP ?? "",
+    priceId: () => (process.env.STRIPE_PRICE_TRANSFORM_TOPUP ?? "").trim(),
     credits: 15,
     productType: "transform_topup" as const,
   },
