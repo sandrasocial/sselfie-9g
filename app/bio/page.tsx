@@ -16,20 +16,20 @@ const primaryLinks = [
     featured: true,
   },
   {
-    href: "/visibility-suite",
-    title: "Show me the first step",
-    description: "For when you want to make money online, but everything feels too big.",
+    href: "/starter-kit",
+    title: "Give me a simple first week",
+    description: "A starter path when you need less noise and one place to begin.",
     popular: true,
+  },
+  {
+    href: "/masterclass",
+    title: "Learn the full method",
+    description: "For when you want the photo, message, content, and offer path in order.",
   },
   {
     href: "/join/studio",
     title: "Create with Maya",
     description: "Photos, captions, planning, and the next move when your brain is doing too much.",
-  },
-  {
-    href: "/starter-kit",
-    title: "Give me a simple first week",
-    description: "A starter path when you need less noise and one place to begin.",
   },
   {
     href: "/work-with-me",
@@ -88,7 +88,7 @@ export default function BioPage() {
         <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-[color:var(--color-smoke)] shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
           <div className="relative aspect-[4/5] min-h-[360px]">
             <Image
-              src="/academy/visibility-suite/sandra-hero.png"
+              src="/images/selfie-guide/window-editorial-portrait.jpg"
               alt="Sandra from SSELFIE"
               fill
               priority

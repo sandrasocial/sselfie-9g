@@ -22,9 +22,11 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("My Model")
-    expect(prompts.map((item) => item.label)).toContain("Write a caption")
+    expect(prompts.map((item) => item.label)).toContain("Use My Model")
+    expect(prompts.map((item) => item.label)).toContain("Concept cards")
+    expect(prompts.map((item) => item.label)).toContain("Reuse gallery")
     expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
+    expect(prompts.map((item) => item.label)).not.toContain("Write a caption")
     expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 
@@ -35,10 +37,11 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("New Photo")
-    expect(prompts.map((item) => item.label)).toContain("Upload & Create")
-    expect(prompts.map((item) => item.label)).toContain("Write a caption")
+    expect(prompts.map((item) => item.label)).toContain("Use my selfies")
+    expect(prompts.map((item) => item.label)).toContain("Upload references")
+    expect(prompts.map((item) => item.label)).toContain("Reuse gallery")
     expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
+    expect(prompts.map((item) => item.label)).not.toContain("Write a caption")
     expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 
@@ -50,7 +53,7 @@ describe("maya prompt contract", () => {
     })
 
     expect(prompts.map((item) => item.label)).toEqual([
-      "Animate a Photo",
+      "Make Video",
       "Latest Photo",
       "Create a Reel",
     ])

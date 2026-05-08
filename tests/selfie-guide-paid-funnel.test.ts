@@ -43,14 +43,13 @@ describe("selfie guide paid funnel", () => {
 
   it("ships a paid landing page with a direct guide checkout path", () => {
     const checkoutRoutePath = path.join(ROOT, "app/checkout/selfie-guide/page.tsx")
-    const landingContents = fs.readFileSync(
-      path.join(ROOT, "components/selfie-guide/selfie-guide-paid-landing.tsx"),
-      "utf8",
-    )
+    const landingContents = fs.readFileSync(path.join(ROOT, "components/freebie/selfie-guide-free-landing.tsx"), "utf8")
     const checkoutContents = fs.readFileSync(checkoutRoutePath, "utf8")
 
     expect(fs.existsSync(checkoutRoutePath)).toBe(true)
-    expect(landingContents).toContain('href="/checkout/selfie-guide?plan=guide"')
+    expect(landingContents).toContain('href: "/starter-kit"')
+    expect(landingContents).toContain('href: "/masterclass"')
+    expect(landingContents).not.toContain('href: "/visibility-suite"')
     expect(checkoutContents).toContain('createLandingCheckoutSession("selfie_guide"')
     expect(checkoutContents).toContain('startProductCheckoutSession("selfie_guide"')
     expect(checkoutContents).toContain("createLandingCheckoutSession")

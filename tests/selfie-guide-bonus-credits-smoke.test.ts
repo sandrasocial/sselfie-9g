@@ -17,9 +17,11 @@ vi.mock("crypto", () => ({
 
 vi.mock("@/lib/db/client", () => ({
   sql: sqlMock,
+  getDb: vi.fn(() => sqlMock),
 }))
 
 vi.mock("@/lib/stripe", () => ({
+  getStripeWebhookSecret: vi.fn(() => process.env.STRIPE_WEBHOOK_SECRET || "whsec_test"),
   stripe: {
     webhooks: {
       constructEvent: constructEventMock,
@@ -290,4 +292,3 @@ describe("selfie guide bonus credits smoke", () => {
     expect(addCreditsMock).not.toHaveBeenCalled()
   })
 })
-

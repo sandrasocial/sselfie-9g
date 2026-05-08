@@ -5,6 +5,7 @@ import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-s
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
+import { generateVisibilityPlanPromptViaAuthority } from "@/lib/generation/prompt"
 import {
   getVisibilityPlanProductLabel,
   parseVisibilityPlanJson,
@@ -243,69 +244,23 @@ function buildFallbackVisibilityPlan(input: {
   }
 }
 
-function buildPrompt(input: {
-  name: string
+function getVisibilityPlanPromptSections(input: {
   answers: VisibilityPlanWorkbookAnswer[]
   productIds: VisibilityPlanProductId[]
 }) {
-  const grouped = input.productIds
+  return input.productIds
     .map(productId => {
       const answers = input.answers.filter(answer => answer.productId === productId)
-      if (!answers.length) return ""
-      return `## ${getVisibilityPlanProductLabel(productId)}
-${answers.map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}`).join("\n\n")}`
+      if (!answers.length) return null
+      return {
+        heading: getVisibilityPlanProductLabel(productId),
+        answers: answers.map(answer => ({
+          label: answer.label,
+          value: answer.value,
+        })),
+      }
     })
-    .filter(Boolean)
-    .join("\n\n")
-
-  return `You are Maya, the SSELFIE strategy partner.
-
-Create a personalized Maya Visibility Plan from this user's workbook answers.
-The plan must feel specific, practical, and current.
-It should turn static workbook answers into usable assets, not more reflection.
-
-User name: ${input.name || "Friend"}
-
-Workbook answers:
-${grouped}
-
-Return ONLY valid JSON in this exact shape:
-{
-  "cover": {"title":"Maya Visibility Plan","subtitle":"...","createdFor":"..."},
-  "message": {
-    "positioning":"...",
-    "audience":"...",
-    "brandPhrases":["..."],
-    "pillars":[{"name":"...","description":"...","postIdeas":["..."]}]
-  },
-  "content": {
-    "weeklyThemes":["..."],
-    "firstFivePosts":[{"day":"Day 1","type":"Story","hook":"...","caption":"...","cta":"..."}],
-    "batchingChecklist":["..."]
-  },
-  "sales": {
-    "offerStatement":"...",
-    "buyerProfile":"...",
-    "first500Plan":["..."],
-    "salesPost":{"hook":"...","body":"...","cta":"..."},
-    "dmScripts":["..."],
-    "followUps":["..."]
-  },
-  "nextSevenDays":[{"day":"Day 1","action":"...","output":"..."}]
-}
-
-Rules:
-- Keep it honest. No income guarantees.
-- Use the user's exact context when possible.
-- If one workbook is missing, infer carefully from what they did provide.
-- What To Say inputs should shape the positioning, audience, proof points, brand phrases, and content-to-offer bridge.
-- Show Up inputs should shape the weekly capacity, best formats, asset reuse, repurposing, weekly themes, and first five posts.
-- Get Paid inputs should shape the buyer urgency, willingness-to-pay signal, offer statement, delivery boundaries, first 10 buyer path, sales post, and DM scripts.
-- Treat pricing as practical guidance, not a promise. Suggest a simple starter path when the user seems early.
-- Make every section usable today.
-- Short sentences.
-- No corporate language.
-- No markdown. JSON only.`
+    .filter((section): section is NonNullable<typeof section> => Boolean(section))
 }
 
 export async function POST(request: NextRequest) {
@@ -351,10 +306,13 @@ export async function POST(request: NextRequest) {
         ? body.name.trim().slice(0, 80)
         : authUser.email?.split("@")[0] || "Friend"
 
-    const prompt = buildPrompt({
+    const { prompt } = generateVisibilityPlanPromptViaAuthority({
       name: displayName,
-      answers: entitledAnswers,
-      productIds: productIds as VisibilityPlanProductId[],
+      userId: neonUser.id,
+      sections: getVisibilityPlanPromptSections({
+        answers: entitledAnswers,
+        productIds: productIds as VisibilityPlanProductId[],
+      }),
     })
 
     let plan: VisibilityPlanJson

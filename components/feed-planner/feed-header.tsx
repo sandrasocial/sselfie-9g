@@ -25,10 +25,10 @@ interface FeedHeaderProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedHeaderCompactChipClass =
-  "rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-2.5 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] sm:px-3 min-h-[34px] sm:min-h-[36px]"
+  "stone-chip rounded-full px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] min-h-[34px] sm:min-h-[36px]"
 
 const feedHeaderChipClass =
-  "rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] sm:px-4 sm:text-[11px] min-h-[34px] sm:min-h-[36px]"
+  "stone-chip rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] sm:px-4 sm:text-[11px] min-h-[34px] sm:min-h-[36px]"
 
 const feedHeaderStatClass = "rounded-[8px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.62)] px-2 py-1.5 text-center"
 

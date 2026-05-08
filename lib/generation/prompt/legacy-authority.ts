@@ -16,7 +16,7 @@ export type { WorkbenchContext, PromptSuggestion } from "@/lib/maya/prompt-gener
 // TYPES
 // ============================================================================
 
-export type PromptMode = 'classic' | 'pro' | 'blueprint-preview' | 'video' | 'profile-image'
+export type PromptMode = 'classic' | 'pro' | 'blueprint-preview' | 'video' | 'profile-image' | 'academy'
 export type PromptFeature = 
   | 'concept-card'
   | 'feed-prompt'
@@ -26,6 +26,7 @@ export type PromptFeature =
   | 'blueprint-preview'
   | 'feed-planner-batch'
   | 'prompt-suggestions'
+  | 'visibility-plan'
 
 export interface PromptGenerationContext {
   // User identity
@@ -129,6 +130,14 @@ export interface FeedPlannerPostContext extends PromptGenerationContext {
   shotType: string
   brandVibe: string
   colorPalette?: any
+}
+
+export interface VisibilityPlanPromptSection {
+  heading: string
+  answers: Array<{
+    label: string
+    value: string
+  }>
 }
 
 // ============================================================================
@@ -1273,6 +1282,132 @@ Return ONLY the JSON array, no markdown, no explanations, no code blocks.`
     metadata: {
       routeId: 'EP-07',
       promptType: 'studio-pro-prompts',
+      fingerprint,
+      timestamp,
+    },
+  }
+}
+
+// ============================================================================
+// ACADEMY VISIBILITY PLAN PROMPT WRAPPER
+// ============================================================================
+
+/**
+ * Generate the archived Visibility Suite plan prompt via the Authority Layer.
+ *
+ * The route remains available for existing customers with historical access,
+ * but prompt construction still needs audit coverage and a single compliant
+ * entry point.
+ */
+export function generateVisibilityPlanPromptViaAuthority(context: {
+  name: string
+  sections: VisibilityPlanPromptSection[]
+  userId?: string | number
+}): {
+  prompt: string
+  metadata: {
+    routeId: 'EP-ACADEMY-VISIBILITY-PLAN'
+    promptKind: 'visibility-plan'
+    fingerprint: string
+    timestamp: string
+  }
+} {
+  const startTime = Date.now()
+  const timestamp = new Date().toISOString()
+
+  const grouped = context.sections
+    .map(section => {
+      const answers = section.answers
+        .map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}`)
+        .join('\n\n')
+      if (!answers) return ''
+      return `## ${section.heading}\n${answers}`
+    })
+    .filter(Boolean)
+    .join('\n\n')
+
+  const prompt = `You are Maya, the SSELFIE strategy partner.
+
+Create a personalized Maya Visibility Plan from this user's workbook answers.
+The plan must feel specific, practical, and current.
+It should turn static workbook answers into usable assets, not more reflection.
+
+User name: ${context.name || "Friend"}
+
+Workbook answers:
+${grouped}
+
+Return ONLY valid JSON in this exact shape:
+{
+  "cover": {"title":"Maya Visibility Plan","subtitle":"...","createdFor":"..."},
+  "message": {
+    "positioning":"...",
+    "audience":"...",
+    "brandPhrases":["..."],
+    "pillars":[{"name":"...","description":"...","postIdeas":["..."]}]
+  },
+  "content": {
+    "weeklyThemes":["..."],
+    "firstFivePosts":[{"day":"Day 1","type":"Story","hook":"...","caption":"...","cta":"..."}],
+    "batchingChecklist":["..."]
+  },
+  "sales": {
+    "offerStatement":"...",
+    "buyerProfile":"...",
+    "first500Plan":["..."],
+    "salesPost":{"hook":"...","body":"...","cta":"..."},
+    "dmScripts":["..."],
+    "followUps":["..."]
+  },
+  "nextSevenDays":[{"day":"Day 1","action":"...","output":"..."}]
+}
+
+Rules:
+- Keep it honest. No income guarantees.
+- Use the user's exact context when possible.
+- If one workbook is missing, infer carefully from what they did provide.
+- What To Say inputs should shape the positioning, audience, proof points, brand phrases, and content-to-offer bridge.
+- Show Up inputs should shape the weekly capacity, best formats, asset reuse, repurposing, weekly themes, and first five posts.
+- Get Paid inputs should shape the buyer urgency, willingness-to-pay signal, offer statement, delivery boundaries, first 10 buyer path, sales post, and DM scripts.
+- Treat pricing as practical guidance, not a promise. Suggest a simple starter path when the user seems early.
+- Make every section usable today.
+- Short sentences.
+- No corporate language.
+- No markdown. JSON only.`
+
+  const fingerprint = hashOutput(prompt)
+  const inputHash = createHash('sha256')
+    .update(JSON.stringify({
+      name: context.name,
+      sectionCount: context.sections.length,
+      answerCount: context.sections.reduce((count, section) => count + section.answers.length, 0),
+      headings: context.sections.map(section => section.heading),
+    }))
+    .digest('hex')
+    .substring(0, 16)
+
+  logAudit({
+    timestamp,
+    mode: 'academy',
+    feature: 'visibility-plan',
+    userId: context.userId?.toString(),
+    builder: 'visibility-plan-builder',
+    executionTimeMs: Date.now() - startTime,
+    success: true,
+    promptLength: prompt.length,
+    inputHash,
+    outputHash: fingerprint,
+    pathUsed: 'authority',
+    routeId: 'EP-ACADEMY-VISIBILITY-PLAN',
+    routePath: '/api/academy/visibility-suite/plan/generate',
+    promptType: 'visibility-plan',
+  })
+
+  return {
+    prompt,
+    metadata: {
+      routeId: 'EP-ACADEMY-VISIBILITY-PLAN',
+      promptKind: 'visibility-plan',
       fingerprint,
       timestamp,
     },

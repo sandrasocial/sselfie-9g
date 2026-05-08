@@ -190,6 +190,7 @@ describe("visibility suite entitlements and routing", () => {
     const generator = read("components/academy/visibility-plan-generator.tsx")
     const workbookRoute = read("app/api/academy/visibility-suite/workbook/route.ts")
     const planRoute = read("app/api/academy/visibility-suite/plan/generate/route.ts")
+    const promptAuthority = read("lib/generation/prompt/legacy-authority.ts")
     const suitePage = read("app/academy/access/visibility-suite/page.tsx")
 
     expect(whatToSay).toContain("Message Test")
@@ -229,7 +230,8 @@ describe("visibility suite entitlements and routing", () => {
     expect(generator).toContain("Who do you help?")
     expect(generator).toContain("First 10 buyers")
     expect(workbookRoute).toContain("first 10 buyer invite list")
-    expect(planRoute).toContain("Get Paid inputs should shape the buyer urgency")
+    expect(planRoute).toContain("generateVisibilityPlanPromptViaAuthority")
+    expect(promptAuthority).toContain("Get Paid inputs should shape the buyer urgency")
     expect(suitePage).toContain("Your Visibility To Paid Path")
     expect(countWorkbookFields(whatToSay)).toBe(26)
     expect(countWorkbookFields(showUp)).toBe(16)

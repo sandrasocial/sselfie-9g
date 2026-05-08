@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockSql = vi.fn()
 const mockPersistMayaAssetAsPersonalPage = vi.fn()
+const mockResolveMayaLandingSnapshot = vi.fn()
 
 vi.mock("@/lib/db/client", () => ({
   sql: mockSql,
@@ -9,6 +10,10 @@ vi.mock("@/lib/db/client", () => ({
 
 vi.mock("@/lib/maya/personal-pages", () => ({
   persistMayaAssetAsPersonalPage: mockPersistMayaAssetAsPersonalPage,
+}))
+
+vi.mock("@/lib/maya/page-generation/snapshot-resolver", () => ({
+  resolveMayaLandingSnapshot: mockResolveMayaLandingSnapshot,
 }))
 
 describe("Maya memory persistence schema drift", () => {
@@ -20,6 +25,22 @@ describe("Maya memory persistence schema drift", () => {
       ownerSlug: "creator-test",
       slug: "landing",
       version: 1,
+    })
+    mockResolveMayaLandingSnapshot.mockResolvedValue({
+      userId: "user-42",
+      snapshot: {
+        offerBrief: { prefill: {} },
+        memoryData: {},
+      },
+      brandProfile: {},
+      memoryOfferBrief: {},
+      resolvedOffer: "Coaching offer",
+      resolvedAudience: "Female founders",
+      resolvedTransformation: "Book premium clients",
+      resolvedStyle: "Clean luxury",
+      resolvedProofPoints: "",
+      resolvedCta: "Book a call",
+      missingCriticalFields: [],
     })
   })
 
