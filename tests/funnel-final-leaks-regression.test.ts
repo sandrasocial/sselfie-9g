@@ -81,7 +81,7 @@ describe("remaining funnel leak regression", () => {
     expect(oneTimeContents).not.toContain("/auth/sign-up?checkout=one_time")
 
     expect(failurePageContents).toContain("Try checkout again")
-    expect(failurePageContents).toContain("/private-shoot")
+    expect(failurePageContents).toContain('one_time_session: "/checkout/one-time"')
   })
 
   it("keeps brand strategy attribution sources aligned to the actual path", () => {

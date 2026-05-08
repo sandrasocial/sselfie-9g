@@ -13,9 +13,12 @@ describe("selfie guide content links", () => {
     )
 
     expect(guideContents).toContain("[Open Maya in Studio](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)")
-    expect(guideContents).toContain("[Get the $19 Brand Strategy](/checkout/brand-strategy-pack)")
+    expect(guideContents).toContain("[Get the Starter Kit](/checkout/starter-kit)")
+    expect(guideContents).toContain("[See the Masterclass](/masterclass)")
+    expect(guideContents).toContain("[Get the Brand Strategy Pack](/checkout/brand-strategy-pack)")
     expect(guideContents).toContain("[Join Studio Membership](/checkout/membership)")
     expect(guideContents).not.toContain("[Open Maya in Studio](/studio?tab=maya)")
     expect(guideContents).not.toContain("[Get the €17 Brand Strategy](/brand-strategy)")
+    expect(guideContents).not.toContain("[See the Visibility Suite](/visibility-suite)")
   })
 })

@@ -21,15 +21,16 @@ describe("MembershipHomeCard", () => {
       />,
     )
 
-    expect(screen.getByText("Your studio lives here")).toBeInTheDocument()
+    expect(screen.getByText("Pick up where you left off")).toBeInTheDocument()
     expect(screen.getByText("247 credits")).toBeInTheDocument()
     expect(screen.getByText("Storm campaign draft")).toBeInTheDocument()
-    expect(screen.queryByText("This Month")).not.toBeInTheDocument()
+    expect(screen.queryByText("This month")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /^open$/i }))
     fireEvent.click(screen.getByRole("button", { name: /create a post/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^open chat$/i }))
+    fireEvent.click(screen.getByRole("button", { name: /more options/i }))
     fireEvent.click(screen.getByRole("button", { name: /browse styles/i }))
-    fireEvent.click(screen.getByRole("button", { name: /upload assets/i }))
+    fireEvent.click(screen.getByRole("button", { name: /upload brand assets/i }))
 
     expect(onContinue).toHaveBeenCalledTimes(1)
     expect(onGeneratePhoto).toHaveBeenCalledTimes(1)
@@ -57,10 +58,10 @@ describe("MembershipHomeCard", () => {
       />,
     )
 
-    expect(screen.getByText("This Month")).toBeInTheDocument()
+    expect(screen.getByText("This month")).toBeInTheDocument()
     expect(screen.getByText("Coastal Summer style pack")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /^explore$/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^open in academy$/i }))
     expect(onExploreMonthlyDrop).toHaveBeenCalledTimes(1)
   })
 })

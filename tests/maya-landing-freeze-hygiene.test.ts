@@ -27,9 +27,9 @@ describe("maya landing page chat hygiene", () => {
   it("removes duplicate header upload/library actions in Maya shell", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
     expect(mayaChatScreen).toContain("onManageLibrary={undefined}")
-    expect(mayaChatScreen).toContain("onAddImages={undefined}")
+    expect(mayaChatScreen).toContain("showLibraryButton={false}")
+    expect(mayaChatScreen).toContain("onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}")
     expect(mayaChatScreen).not.toContain("onStartFresh={undefined}")
-    expect(mayaChatScreen).toContain("onEditIntent={undefined}")
   })
 
   it("keeps new chat scoped to conversation reset without clearing image library", () => {

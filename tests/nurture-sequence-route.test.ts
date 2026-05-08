@@ -71,21 +71,32 @@ describe("GET /api/cron/nurture-sequence", () => {
     expect(cronSuccessMock).toHaveBeenCalledTimes(1)
     expect(cronErrorMock).not.toHaveBeenCalled()
 
-    expect(queries).toHaveLength(6)
+    expect(queries).toHaveLength(22)
 
-    const selfieGuideQuery = queries[0]
-    expect(selfieGuideQuery).toContain("COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name")
-    expect(selfieGuideQuery).not.toContain("u.name")
-    expect(selfieGuideQuery).not.toContain("UNION")
+    for (const query of queries) {
+      expect(query).not.toContain("u.name")
+      expect(query).not.toContain("UNION")
+    }
 
-    const strategyQueries = queries.slice(1)
+    const selfieGuideQueries = queries.slice(0, 5)
+    const starterKitQueries = queries.slice(5, 12)
+    const masterclassQueries = queries.slice(12, 17)
+    const strategyQueries = queries.slice(17)
+
+    for (const query of [...selfieGuideQueries, ...starterKitQueries]) {
+      expect(query).toContain("COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name")
+    }
+
+    for (const query of masterclassQueries) {
+      expect(query).toContain("NULLIF(BTRIM(u.display_name), '') AS name")
+      expect(query).toContain("s.product_type = 'masterclass'")
+    }
+
     expect(strategyQueries).toHaveLength(5)
 
     for (const query of strategyQueries) {
       expect(query).toContain("NULLIF(BTRIM(u.display_name), '') AS name")
       expect(query).toContain("fbs.setup_token IS NOT NULL")
-      expect(query).not.toContain("u.name")
-      expect(query).not.toContain("UNION")
     }
   })
 })

@@ -416,7 +416,7 @@ export default async function AcademyPage() {
                   className={`${inter.className} ${eyebrow}`}
                   style={{ color: C.muted, fontWeight: 600 }}
                 >
-                  Masterclass Path
+                  Recommended Path
                 </p>
                 <div className="mt-6 grid gap-4 lg:grid-cols-3">
                   {home.implementationPath.map((step) => (

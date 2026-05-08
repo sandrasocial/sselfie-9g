@@ -63,10 +63,10 @@ const NEXT_STEPS = [
     href: "/starter-kit",
   },
   {
-    title: "Visibility Suite",
-    label: "Best next step",
-    body: "What To Say, Show Up, Get Paid, and your Maya Visibility Plan in one guided path.",
-    href: "/visibility-suite",
+    title: "Masterclass",
+    label: "Full method",
+    body: "Go deeper into the visibility, content, offer, and showing-up system.",
+    href: "/masterclass",
   },
   {
     title: "Studio",

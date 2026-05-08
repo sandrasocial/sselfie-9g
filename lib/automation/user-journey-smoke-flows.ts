@@ -13,10 +13,10 @@ export const USER_JOURNEY_SMOKE_FLOWS: JourneySmokeFlow[] = [
   {
     name: "Selfie Guide",
     landingPath: "/selfie-guide",
-    expectedTitle: /Selfie Guide/i,
+    expectedTitle: /Free Guide|First Visible Post/i,
     trigger: {
       type: "goto",
-      href: "/checkout/selfie-guide?plan=guide",
+      href: "/checkout/selfie-guide",
     },
   },
   {

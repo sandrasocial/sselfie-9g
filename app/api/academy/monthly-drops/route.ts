@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { sql } from "@/lib/db/client"
 import {
+  AcademyRouteError,
   academyRouteErrorToResponse,
   requireAcademyMembershipCollectionAccess,
 } from "@/lib/academy-server-access"
@@ -67,6 +68,13 @@ export async function GET() {
       monthlyDrops: dedupeMonthlyDrops(monthlyDrops as MonthlyDropRow[]),
     })
   } catch (error) {
+    if (error instanceof AcademyRouteError && error.status === 403) {
+      return NextResponse.json({
+        hasAccess: false,
+        monthlyDrops: [],
+      })
+    }
+
     const response = academyRouteErrorToResponse(error)
     if (response) {
       return response

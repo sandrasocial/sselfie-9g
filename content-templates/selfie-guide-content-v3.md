@@ -297,7 +297,7 @@ You need a system.
 
 ---
 
-## PART 7: Your 7-Day First Visible Post Challenge
+## PART 7: Your 7-Day Challenge: First Visible Post
 
 This is where it gets real.
 
@@ -457,7 +457,7 @@ The women I know who are actually building audiences — they're not winging it.
 
 If you want the next practical step, start with the Starter Kit. It gives you the guide, presets, and a simple 7-day content starter so your first better photo does not just sit in your camera roll.
 
-If you want the full path, go to the Visibility Suite: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.
+If you want the full path, go to the Masterclass. That is where the selfie work turns into the full visibility, content, offer, and showing-up system.
 
 If you already know the photo part is easier now but the message still feels unclear, the Brand Strategy Pack is the clarity layer: who you help, what to say, and how to turn one photo into content that sounds like you.
 
@@ -465,7 +465,7 @@ Ready?
 
 [Get the Starter Kit](/checkout/starter-kit)
 
-[See the Visibility Suite](/visibility-suite)
+[See the Masterclass](/masterclass)
 
 [Get the Brand Strategy Pack](/checkout/brand-strategy-pack)
 

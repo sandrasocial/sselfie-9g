@@ -71,8 +71,8 @@ type ChapterMoodSpec = {
 // ─── Image Data ─────────────────────────────────────────────────────────────
 
 const HERO_IMAGE: GuideImage = {
-  src: "/images/selfie-guide/window-lighting-setup.png",
-  alt: "Sandra taking a selfie with her phone",
+  src: "/images/selfie-guide/window-editorial-portrait.jpg",
+  alt: "Sandra taking a selfie with her phone in soft window light for an editorial guide portrait",
   caption: "",
   width: 762,
   height: 1143,
