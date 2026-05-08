@@ -212,7 +212,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
   })
   const [contentPillars, setContentPillars] = useState<any[]>([])
   const [customColors, setCustomColors] = useState<string[]>(
-    existingData?.customColors ? JSON.parse(existingData.customColors) : ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
+    existingData?.customColors ? JSON.parse(existingData.customColors) : ["var(--stone-200)", "var(--stone)", "var(--stone)", "var(--stone-dark)"],
   )
 
   // 🔴 CRITICAL FIX: Update formData when existingData changes or modal opens
@@ -389,25 +389,25 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl text-[#f0ede8]">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[color:var(--glass-bg)] backdrop-blur-[70px] border border-[color:var(--div-dark)] rounded-3xl text-brand-porcelain">
         <div className="space-y-8 py-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">{step.subtitle}</span>
-              <span className="text-xs text-[#8a8780]">{Math.round(progress)}%</span>
+              <span className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">{step.subtitle}</span>
+              <span className="text-xs text-stone">{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-1 bg-[rgba(175,170,162,0.20)]" />
+            <Progress value={progress} className="h-1 bg-[color:var(--glass-bg)]" />
           </div>
 
-          <div className="bg-[rgba(175,170,162,0.10)] rounded-xl p-6 border border-[rgba(195,190,182,0.20)]">
+          <div className="bg-[color:var(--glass-bg)] rounded-xl p-6 border border-[color:var(--div-dark)]">
             <div className="space-y-3">
-              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">MAYA</p>
-              <p className="text-sm leading-relaxed text-[#8a8780]">{step.mayaMessage}</p>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">MAYA</p>
+              <p className="text-sm leading-relaxed text-stone">{step.mayaMessage}</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl md:text-4xl tracking-wide text-[#f0ede8]">
+            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl md:text-4xl tracking-wide text-brand-porcelain">
               {step.title}
             </h2>
 
@@ -420,8 +420,8 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                       onClick={() => handleColorThemeSelect(theme.id)}
                       className={`relative p-6 rounded-xl border transition-all text-left ${
                         formData.colorTheme === theme.id
-                          ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
-                          : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                          ? "border-stone bg-[color:var(--glass-bg-mid)]"
+                          : "border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] hover:border-[color:var(--div-dark)]"
                       }`}
                     >
                       <div className="flex gap-2 mb-4">
@@ -429,45 +429,45 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                           ? customColors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-10 h-10 rounded-full border border-[rgba(195,190,182,0.25)]"
+                                className="w-10 h-10 rounded-full border border-[color:var(--div-dark)]"
                                 style={{ backgroundColor: color }}
                               />
                             ))
                           : theme.colors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-10 h-10 rounded-full border border-[rgba(195,190,182,0.25)]"
+                                className="w-10 h-10 rounded-full border border-[color:var(--div-dark)]"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
                       </div>
 
                       <div className="space-y-2">
-                        <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">{theme.name}</p>
-                        <p className="text-sm text-[#8a8780]">{theme.description}</p>
+                        <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-brand-porcelain">{theme.name}</p>
+                        <p className="text-sm text-stone">{theme.description}</p>
                       </div>
 
                       {formData.colorTheme === theme.id && (
-                        <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full" />
+                        <div className="absolute top-4 right-4 w-6 h-6 bg-stone rounded-full" />
                       )}
                     </button>
                   ))}
                 </div>
 
                 {formData.colorTheme === "custom" && (
-                  <div className="bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-xl p-6 space-y-6">
+                  <div className="bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl p-6 space-y-6">
                     <div className="space-y-2">
-                      <h3 className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#a8a49c]">
+                      <h3 className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-stone">
                         CUSTOMIZE YOUR BRAND COLORS
                       </h3>
-                      <p className="text-sm text-[#8a8780]">
+                      <p className="text-sm text-stone">
                         Choose 4 colors that represent your brand. These will be used throughout your content.
                       </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {customColors.map((color, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
+                          <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-stone">
                             Color {index + 1}
                           </label>
                           <div className="flex gap-2">
@@ -475,14 +475,14 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                               type="text"
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
-                              placeholder="#000000"
-                              className="flex-1 px-4 py-3 text-sm border border-[rgba(195,190,182,0.25)] rounded-xl bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] focus:outline-none transition-colors"
+                              placeholder="var(--color-obsidian)"
+                              className="flex-1 px-4 py-3 text-sm border border-[color:var(--div-dark)] rounded-xl bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone focus:outline-none transition-colors"
                             />
                             <input
                               type="color"
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
-                              className="w-14 h-12 rounded-xl border border-[rgba(195,190,182,0.25)] cursor-pointer bg-transparent"
+                              className="w-14 h-12 rounded-xl border border-[color:var(--div-dark)] cursor-pointer bg-transparent"
                             />
                           </div>
                         </div>
@@ -494,7 +494,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             ) : step.isVisualAestheticSelector ? (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">SELECT ALL THAT APPLY</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">SELECT ALL THAT APPLY</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {VISUAL_AESTHETICS.map((aesthetic) => {
                       const isSelected = formData.visualAesthetic.includes(aesthetic.id)
@@ -503,18 +503,18 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                           key={aesthetic.id}
                           onClick={() => handleMultiSelectToggle("visualAesthetic", aesthetic.id)}
                           className={`relative p-6 rounded-xl border transition-all text-left ${
-                            isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                            isSelected ? "border-stone bg-[color:var(--glass-bg-mid)]" : "border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] hover:border-[color:var(--div-dark)]"
                           }`}
                         >
                           <div className="space-y-2">
-                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">
+                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-brand-porcelain">
                               {aesthetic.name}
                             </p>
-                            <p className="text-sm text-[#8a8780]">{aesthetic.description}</p>
+                            <p className="text-sm text-stone">{aesthetic.description}</p>
                           </div>
                           {isSelected && (
-                            <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-[#0d0c0b] rounded-sm" />
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-brand-obsidian rounded-sm" />
                             </div>
                           )}
                         </button>
@@ -526,7 +526,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                 {formData.visualAesthetic.length > 0 && (
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                         PREFERRED SETTINGS (SELECT ALL THAT APPLY)
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -537,17 +537,17 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                               key={setting.id}
                               onClick={() => handleMultiSelectToggle("settingsPreference", setting.id)}
                               className={`p-4 rounded-xl border text-left transition-all ${
-                                isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                                isSelected ? "border-stone bg-[color:var(--glass-bg-mid)]" : "border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] hover:border-[color:var(--div-dark)]"
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <p className="text-sm text-[#f0ede8]">{setting.name}</p>
-                                  <p className="text-xs text-[#8a8780] mt-1">{setting.description}</p>
+                                  <p className="text-sm text-brand-porcelain">{setting.name}</p>
+                                  <p className="text-xs text-stone mt-1">{setting.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-[#a8a49c] rounded-full flex items-center justify-center shrink-0">
-                                    <div className="w-2.5 h-2.5 bg-[#0d0c0b] rounded-sm" />
+                                  <div className="w-5 h-5 bg-stone rounded-full flex items-center justify-center shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-brand-obsidian rounded-sm" />
                                   </div>
                                 )}
                               </div>
@@ -558,7 +558,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     </div>
 
                     <div className="space-y-2">
-                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                         FASHION STYLE (SELECT ALL THAT APPLY)
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -569,17 +569,17 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                               key={style.id}
                               onClick={() => handleMultiSelectToggle("fashionStyle", style.id)}
                               className={`p-4 rounded-xl border text-left transition-all ${
-                                isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                                isSelected ? "border-stone bg-[color:var(--glass-bg-mid)]" : "border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] hover:border-[color:var(--div-dark)]"
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <p className="text-sm text-[#f0ede8]">{style.name}</p>
-                                  <p className="text-xs text-[#8a8780] mt-1">{style.description}</p>
+                                  <p className="text-sm text-brand-porcelain">{style.name}</p>
+                                  <p className="text-xs text-stone mt-1">{style.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-[#a8a49c] rounded-full flex items-center justify-center shrink-0">
-                                    <div className="w-2.5 h-2.5 bg-[#0d0c0b] rounded-sm" />
+                                  <div className="w-5 h-5 bg-stone rounded-full flex items-center justify-center shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-brand-obsidian rounded-sm" />
                                   </div>
                                 )}
                               </div>
@@ -594,46 +594,46 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             ) : step.isAudienceBuilder ? (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                     DESCRIBE YOUR IDEAL CLIENT/FOLLOWER
                   </label>
                   <Textarea
                     value={formData.idealAudience}
                     onChange={(e) => handleInputChange("idealAudience", e.target.value)}
                     placeholder="e.g., Female entrepreneurs in their 30s-40s who want to build a personal brand..."
-                    className="min-h-[100px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
+                    className="min-h-[100px] resize-none border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone text-sm leading-relaxed rounded-xl"
                     autoFocus
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                     WHAT&apos;S THEIR BIGGEST CHALLENGE?
                   </label>
                   <Textarea
                     value={formData.audienceChallenge}
                     onChange={(e) => handleInputChange("audienceChallenge", e.target.value)}
                     placeholder="e.g., They struggle with showing up consistently on social media..."
-                    className="min-h-[80px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
+                    className="min-h-[80px] resize-none border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone text-sm leading-relaxed rounded-xl"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                     WHAT TRANSFORMATION DO THEY WANT?
                   </label>
                   <Textarea
                     value={formData.audienceTransformation}
                     onChange={(e) => handleInputChange("audienceTransformation", e.target.value)}
                     placeholder="e.g., They want to become confident, visible leaders in their industry..."
-                    className="min-h-[80px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
+                    className="min-h-[80px] resize-none border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone text-sm leading-relaxed rounded-xl"
                   />
                 </div>
               </div>
             ) : step.isCommunicationVoiceSelector ? (
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">SELECT ALL THAT APPLY</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">SELECT ALL THAT APPLY</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {COMMUNICATION_VOICES.map((voice) => {
                       const isSelected = formData.communicationVoice.includes(voice.id)
@@ -642,16 +642,16 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                           key={voice.id}
                           onClick={() => handleMultiSelectToggle("communicationVoice", voice.id)}
                           className={`relative p-6 rounded-xl border transition-all text-left ${
-                            isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                            isSelected ? "border-stone bg-[color:var(--glass-bg-mid)]" : "border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] hover:border-[color:var(--div-dark)]"
                           }`}
                         >
                           <div className="space-y-2">
-                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">{voice.name}</p>
-                            <p className="text-sm text-[#8a8780]">{voice.description}</p>
+                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-brand-porcelain">{voice.name}</p>
+                            <p className="text-sm text-stone">{voice.description}</p>
                           </div>
                           {isSelected && (
-                            <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-[#0d0c0b] rounded-sm" />
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-brand-obsidian rounded-sm" />
                             </div>
                           )}
                         </button>
@@ -662,14 +662,14 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
                 {formData.communicationVoice.length > 0 && (
                   <div className="space-y-2 pt-4">
-                    <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
+                    <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone">
                       ANY SIGNATURE PHRASES OR WORDS YOU USE? (OPTIONAL)
                     </label>
                     <Input
                       value={formData.signaturePhrases}
                       onChange={(e) => handleInputChange("signaturePhrases", e.target.value)}
                       placeholder="e.g., Let's make it happen, Your time is now, etc."
-                      className="border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] rounded-xl text-sm"
+                      className="border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone rounded-xl text-sm"
                     />
                   </div>
                 )}
@@ -687,7 +687,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
-                    className="min-h-[140px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
+                    className="min-h-[140px] resize-none border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone text-sm leading-relaxed rounded-xl"
                     autoFocus
                   />
                 ) : (
@@ -695,24 +695,24 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
-                    className="border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] rounded-xl text-sm"
+                    className="border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] text-brand-porcelain placeholder:text-stone focus:border-stone rounded-xl text-sm"
                     autoFocus
                   />
                 )}
                 {step.isOptional && (
-                  <p className="text-xs text-[#8a8780] italic">This step is optional - skip if you prefer</p>
+                  <p className="text-xs text-stone italic">This step is optional - skip if you prefer</p>
                 )}
               </div>
             ) : null}
           </div>
 
           {!step.isContentPillarBuilder && (
-            <div className="flex items-center justify-between pt-6 border-t border-[rgba(195,190,182,0.20)]">
+            <div className="flex items-center justify-between pt-6 border-t border-[color:var(--div-dark)]">
               <Button
                 variant="ghost"
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] hover:text-[#f0ede8] hover:bg-transparent disabled:opacity-30"
+                className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-stone hover:text-brand-porcelain hover:bg-transparent disabled:opacity-30"
               >
                 BACK
               </Button>
@@ -723,14 +723,14 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     onClick={() => handleComplete({ redirectToStrategy: true })}
                     disabled={!canProceed() || isSaving}
                     variant="outline"
-                    className="border-[rgba(195,190,182,0.35)] bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] hover:text-[#f0ede8] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-6 py-3 rounded-full transition-colors"
+                    className="border-[color:var(--div-dark)] bg-transparent text-stone hover:bg-[color:var(--glass-bg)] hover:text-brand-porcelain font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-6 py-3 rounded-full transition-colors"
                   >
                     Generate my Brand Strategy
                   </Button>
                   <Button
                     onClick={() => handleComplete()}
                     disabled={!canProceed() || isSaving}
-                    className="bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
+                    className="bg-brand-whisper hover:bg-brand-porcelain text-brand-obsidian font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
                   >
                     {isSaving ? "SAVING..." : "COMPLETE"}
                   </Button>
@@ -739,7 +739,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                 <Button
                   onClick={handleNext}
                   disabled={!canProceed()}
-                  className="bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
+                  className="bg-brand-whisper hover:bg-brand-porcelain text-brand-obsidian font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
                 >
                   {isIntroStep ? "LET'S START" : step.isOptional ? "SKIP" : "NEXT"}
                 </Button>

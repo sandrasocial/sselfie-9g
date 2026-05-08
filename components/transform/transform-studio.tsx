@@ -239,10 +239,10 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
   const canApply = Boolean(uploadedFile && selectedFinish && credits >= 3 && !isRunning)
 
   return (
-    <main className="min-h-screen bg-white text-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <main className="min-h-screen bg-white text-brand-obsidian" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Header */}
-      <header className="border-b border-[#e5e5e5] bg-[#0a0a0a] px-5 py-5 sm:px-8">
+      <header className="border-b border-brand-whisper bg-brand-obsidian px-5 py-5 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/50">SSELFIE</p>
@@ -267,8 +267,8 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
 
         {/* Checkout success banner */}
         {checkoutSuccess && (
-          <div className="mb-8 flex items-center gap-3 border border-[#e5e5e5] bg-[#f5f5f5] px-5 py-4 text-sm text-[#0a0a0a]">
-            <Check className="h-4 w-4 shrink-0 text-[#0a0a0a]" />
+          <div className="mb-8 flex items-center gap-3 border border-brand-whisper bg-brand-pearl px-5 py-4 text-sm text-brand-obsidian">
+            <Check className="h-4 w-4 shrink-0 text-brand-obsidian" />
             <span>Credits added. Upload your first photo to get started.</span>
           </div>
         )}
@@ -281,11 +281,11 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
             {/* Step 1 — Upload */}
             <div>
               <div className="mb-4 flex items-baseline gap-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">01</span>
-                <p className="text-sm font-medium text-[#0a0a0a]">Upload your photo</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">01</span>
+                <p className="text-sm font-medium text-brand-obsidian">Upload your photo</p>
               </div>
               <div
-                className="relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center border border-dashed border-[#d4d1cc] bg-[#f5f5f5] transition-colors hover:border-[#0a0a0a]"
+                className="relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center border border-dashed border-stone-soft bg-brand-pearl transition-colors hover:border-brand-obsidian"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
@@ -293,16 +293,16 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                 {uploadedPreview ? (
                   <div className="relative h-full min-h-[240px] w-full">
                     <Image src={uploadedPreview} alt="Your photo" fill className="object-contain" unoptimized />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#0a0a0a] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap bg-brand-obsidian px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white">
                       Change photo
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-4 px-8 text-center">
-                    <Upload className="h-7 w-7 text-[#8a8780]" />
+                    <Upload className="h-7 w-7 text-stone" />
                     <div>
-                      <p className="text-sm font-medium text-[#0a0a0a]">Drop your photo here</p>
-                      <p className="mt-1 text-xs leading-5 text-[#8a8780]">or click to browse · JPG, PNG, WEBP · max 10 MB</p>
+                      <p className="text-sm font-medium text-brand-obsidian">Drop your photo here</p>
+                      <p className="mt-1 text-xs leading-5 text-stone">or click to browse · JPG, PNG, WEBP · max 10 MB</p>
                     </div>
                   </div>
                 )}
@@ -314,7 +314,7 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
                 />
               </div>
-              <p className="mt-2 text-[11px] text-[#8a8780]">
+              <p className="mt-2 text-[11px] text-stone">
                 For best results, use a clear iPhone photo with natural light.
               </p>
             </div>
@@ -322,8 +322,8 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
             {/* Step 2 — Choose edit finish */}
             <div>
               <div className="mb-4 flex items-baseline gap-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">02</span>
-                <p className="text-sm font-medium text-[#0a0a0a]">Choose your edit finish</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">02</span>
+                <p className="text-sm font-medium text-brand-obsidian">Choose your edit finish</p>
               </div>
 
               <div className="grid gap-2">
@@ -337,15 +337,15 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                       onClick={() => setSelectedFinish(isSelected ? null : finish)}
                       className={`w-full border px-4 py-3.5 text-left transition-colors disabled:opacity-50 ${
                         isSelected
-                          ? "border-[#0a0a0a] bg-[#0a0a0a] text-white"
-                          : "border-[#e5e5e5] bg-white hover:border-[#0a0a0a]"
+                          ? "border-brand-obsidian bg-brand-obsidian text-white"
+                          : "border-brand-whisper bg-white hover:border-brand-obsidian"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold">{finish.title}</p>
                         {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
                       </div>
-                      <p className={`mt-1 text-xs leading-5 ${isSelected ? "text-white/65" : "text-[#666666]"}`}>
+                      <p className={`mt-1 text-xs leading-5 ${isSelected ? "text-white/65" : "text-brand-smoke"}`}>
                         {finish.subtext}
                       </p>
                     </button>
@@ -353,7 +353,7 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                 })}
               </div>
 
-              <p className="mt-4 text-[11px] leading-5 text-[#8a8780]">
+              <p className="mt-4 text-[11px] leading-5 text-stone">
                 Your photo stays your photo. SSELFIE Edit Studio improves light, tone, skin, and polish
                 without changing who you are.
               </p>
@@ -361,8 +361,8 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
 
             {/* Error */}
             {errorMsg && phase !== "slow" && (
-              <div className="flex items-start gap-3 border border-[#e5e5e5] bg-[#f5f5f5] px-4 py-3 text-sm text-[#0a0a0a]">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#666666]" />
+              <div className="flex items-start gap-3 border border-brand-whisper bg-brand-pearl px-4 py-3 text-sm text-brand-obsidian">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand-smoke" />
                 {errorMsg}
               </div>
             )}
@@ -370,14 +370,14 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
             {/* Step 3 — Apply */}
             <div>
               <div className="mb-4 flex items-baseline gap-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">03</span>
-                <p className="text-sm font-medium text-[#0a0a0a]">Apply professional edit</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">03</span>
+                <p className="text-sm font-medium text-brand-obsidian">Apply professional edit</p>
               </div>
               <button
                 type="button"
                 onClick={startGeneration}
                 disabled={!canApply}
-                className="flex min-h-13 w-full items-center justify-center gap-2 bg-[#0a0a0a] px-6 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-35 disabled:cursor-not-allowed"
+                className="flex min-h-13 w-full items-center justify-center gap-2 bg-brand-obsidian px-6 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-35 disabled:cursor-not-allowed"
               >
                 {isRunning ? (
                   <>
@@ -396,14 +396,14 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
 
             {/* Low credits */}
             {lowCredits && (
-              <div className="border border-[#e5e5e5] bg-[#f5f5f5] p-5">
-                <p className="text-sm font-semibold text-[#0a0a0a]">
+              <div className="border border-brand-whisper bg-brand-pearl p-5">
+                <p className="text-sm font-semibold text-brand-obsidian">
                   {credits === 0 ? "No credits remaining" : `${credits} credits left`}
                 </p>
-                <p className="mt-1 text-xs text-[#666666]">Top up with 5 more edits for $9.</p>
+                <p className="mt-1 text-xs text-brand-smoke">Top up with 5 more edits for $9.</p>
                 <a
                   href="/checkout/transform?plan=topup"
-                  className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 bg-[#0a0a0a] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+                  className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 bg-brand-obsidian px-4 text-sm font-semibold text-white transition-opacity hover:opacity-85"
                 >
                   Top up · $9
                   <ArrowRight className="h-4 w-4" />
@@ -415,38 +415,38 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
           {/* Right column — output */}
           <div className="space-y-4">
             <div className="flex items-baseline gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8a8780]">04</span>
-              <p className="text-sm font-medium text-[#0a0a0a]">Compare and download</p>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-stone">04</span>
+              <p className="text-sm font-medium text-brand-obsidian">Compare and download</p>
             </div>
 
             {phase === "idle" && !outputUrl && (
-              <div className="flex min-h-[400px] flex-col items-center justify-center border border-dashed border-[#d4d1cc] bg-[#f5f5f5] px-6 text-center">
-                <p className="text-sm font-medium text-[#0a0a0a]">Your edited photo appears here.</p>
-                <p className="mt-2 text-xs leading-5 text-[#8a8780]">Most edits finish in 20–40 seconds.</p>
+              <div className="flex min-h-[400px] flex-col items-center justify-center border border-dashed border-stone-soft bg-brand-pearl px-6 text-center">
+                <p className="text-sm font-medium text-brand-obsidian">Your edited photo appears here.</p>
+                <p className="mt-2 text-xs leading-5 text-stone">Most edits finish in 20–40 seconds.</p>
               </div>
             )}
 
             {isRunning && (
-              <div className="flex min-h-[400px] flex-col items-center justify-center gap-5 border border-dashed border-[#d4d1cc] bg-[#f5f5f5] px-6 text-center">
-                <Loader2 className="h-7 w-7 animate-spin text-[#0a0a0a]" />
+              <div className="flex min-h-[400px] flex-col items-center justify-center gap-5 border border-dashed border-stone-soft bg-brand-pearl px-6 text-center">
+                <Loader2 className="h-7 w-7 animate-spin text-brand-obsidian" />
                 <div>
-                  <p className="text-sm font-medium text-[#0a0a0a]">Applying your edit...</p>
-                  <p className="mt-1.5 text-xs text-[#8a8780]">Keep this page open while the edit finishes.</p>
+                  <p className="text-sm font-medium text-brand-obsidian">Applying your edit...</p>
+                  <p className="mt-1.5 text-xs text-stone">Keep this page open while the edit finishes.</p>
                 </div>
               </div>
             )}
 
             {phase === "slow" && (
-              <div className="flex min-h-[320px] flex-col items-center justify-center gap-5 border border-[#e5e5e5] bg-[#f5f5f5] px-6 text-center">
-                <RefreshCw className="h-6 w-6 text-[#8a8780]" />
+              <div className="flex min-h-[320px] flex-col items-center justify-center gap-5 border border-brand-whisper bg-brand-pearl px-6 text-center">
+                <RefreshCw className="h-6 w-6 text-stone" />
                 <div>
-                  <p className="text-sm font-medium text-[#0a0a0a]">Still processing.</p>
-                  <p className="mt-1.5 text-xs leading-5 text-[#666666]">{errorMsg}</p>
+                  <p className="text-sm font-medium text-brand-obsidian">Still processing.</p>
+                  <p className="mt-1.5 text-xs leading-5 text-brand-smoke">{errorMsg}</p>
                 </div>
                 <button
                   type="button"
                   onClick={checkAgain}
-                  className="border border-[#0a0a0a] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#0a0a0a] transition-colors hover:bg-[#0a0a0a] hover:text-white"
+                  className="border border-brand-obsidian px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-white"
                 >
                   Check again
                 </button>
@@ -454,9 +454,9 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
             )}
 
             {phase === "error" && (
-              <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 border border-[#e5e5e5] bg-[#f5f5f5] px-6 text-center">
-                <AlertCircle className="h-5 w-5 text-[#666666]" />
-                <p className="text-sm text-[#0a0a0a]">{errorMsg ?? "The edit failed. Please try again."}</p>
+              <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 border border-brand-whisper bg-brand-pearl px-6 text-center">
+                <AlertCircle className="h-5 w-5 text-brand-smoke" />
+                <p className="text-sm text-brand-obsidian">{errorMsg ?? "The edit failed. Please try again."}</p>
               </div>
             )}
 
@@ -466,21 +466,21 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                 <div className="grid grid-cols-2 gap-3">
                   {uploadedPreview && (
                     <div>
-                      <div className="relative aspect-[4/5] overflow-hidden bg-[#f5f5f5]">
+                      <div className="relative aspect-[4/5] overflow-hidden bg-brand-pearl">
                         <Image src={uploadedPreview} alt="Before" fill className="object-cover" unoptimized />
                       </div>
-                      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a8780]">Before</p>
+                      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-stone">Before</p>
                     </div>
                   )}
                   <div>
-                    <div className="relative aspect-[4/5] overflow-hidden bg-[#f5f5f5]">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-brand-pearl">
                       <Image src={outputUrl} alt="After" fill className="object-cover" unoptimized />
                     </div>
-                    <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-[#0a0a0a]">Edited</p>
+                    <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-obsidian">Edited</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-[#0a0a0a]">
+                <div className="flex items-center gap-2 text-xs text-brand-obsidian">
                   <Check className="h-3.5 w-3.5 shrink-0" />
                   Edit complete. Download your photo below.
                 </div>
@@ -490,7 +490,7 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                   download="sselfie-edit.jpg"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-12 w-full items-center justify-center gap-2 bg-[#0a0a0a] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+                  className="flex min-h-12 w-full items-center justify-center gap-2 bg-brand-obsidian px-4 text-sm font-semibold text-white transition-opacity hover:opacity-85"
                 >
                   <Download className="h-4 w-4" />
                   Download photo
@@ -499,7 +499,7 @@ export function TransformStudio({ credits: initialCredits, checkoutSuccess, init
                 <button
                   type="button"
                   onClick={resetEditor}
-                  className="flex min-h-12 w-full items-center justify-center border border-[#e5e5e5] px-4 text-sm font-medium text-[#666666] transition-colors hover:border-[#0a0a0a] hover:text-[#0a0a0a]"
+                  className="flex min-h-12 w-full items-center justify-center border border-brand-whisper px-4 text-sm font-medium text-brand-smoke transition-colors hover:border-brand-obsidian hover:text-brand-obsidian"
                 >
                   Edit another photo
                 </button>

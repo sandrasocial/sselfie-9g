@@ -42,7 +42,7 @@ async function getPlan(token: string): Promise<VisibilityPlanRow | null> {
 
 function StatusPage({ title, body }: { title: string; body: string }) {
   return (
-    <main className={`min-h-screen bg-[#0F0D0B] px-6 py-20 text-[#F4F0E6] ${inter.className}`}>
+    <main className={`min-h-screen bg-brand-obsidian px-6 py-20 text-brand-pearl ${inter.className}`}>
       <div className="mx-auto max-w-xl border border-white/12 bg-white/[0.04] p-8">
         <p className="text-[10px] uppercase tracking-[0.42em] text-white/42">SSELFIE</p>
         <h1 className={`${cormorant.className} mt-5 text-5xl uppercase leading-none`}>{title}</h1>
@@ -60,10 +60,10 @@ function List({ items, tone = "light" }: { items?: string[]; tone?: "light" | "d
         <li
           key={`${item}-${index}`}
           className={`flex gap-3 text-sm leading-6 ${
-            tone === "dark" ? "text-white/64" : "text-[#3D3830]"
+            tone === "dark" ? "text-white/64" : "text-stone-dark"
           }`}
         >
-          <span className="text-[#C4B5A0]">—</span>
+          <span className="text-stone-soft">—</span>
           <span>{item}</span>
         </li>
       ))}
@@ -109,23 +109,23 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
       ]
 
   return (
-    <main className={`visibility-plan min-h-screen bg-white text-[#0F0D0B] ${inter.className}`}>
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#0F0D0B]/10 bg-white/90 px-6 py-5 backdrop-blur md:px-12 print:static">
+    <main className={`visibility-plan min-h-screen bg-white text-brand-obsidian ${inter.className}`}>
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-brand-obsidian/10 bg-white/90 px-6 py-5 backdrop-blur md:px-12 print:static">
         <a
           href="/academy/access/visibility-suite"
-          className={`${cormorant.className} text-sm uppercase tracking-[0.32em] text-[#0F0D0B] no-underline`}
+          className={`${cormorant.className} text-sm uppercase tracking-[0.32em] text-brand-obsidian no-underline`}
         >
           SSELFIE
         </a>
         <PrintPlanButton />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#7A6F63]">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.34em] text-stone">
           Maya Visibility Plan
         </span>
       </header>
 
       <section className="relative grid min-h-[78vh] overflow-hidden lg:grid-cols-[1fr_0.72fr] print:min-h-0">
         <div className="px-6 py-16 md:px-16 md:py-24">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#7A6F63]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
             Created For
           </p>
           <h1
@@ -133,25 +133,25 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
           >
             {createdFor}
           </h1>
-          <p className="mt-7 max-w-xl text-[16px] leading-[1.8] text-[#3D3830]">
+          <p className="mt-7 max-w-xl text-[16px] leading-[1.8] text-stone-dark">
             {plan.cover?.subtitle ||
               "Your message, content rhythm, sales path, and next 7 days in one Maya Visibility Plan."}
           </p>
           <div className="mt-10 grid max-w-xl gap-4 sm:grid-cols-3">
-            <div className="border border-[#0F0D0B]/12 p-4">
-              <p className="text-[9px] uppercase tracking-[0.32em] text-[#7A6F63]">Date</p>
+            <div className="border border-brand-obsidian/12 p-4">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-stone">Date</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em]">
                 {formatDate(row.created_at)}
               </p>
             </div>
-            <div className="border border-[#0F0D0B]/12 p-4">
-              <p className="text-[9px] uppercase tracking-[0.32em] text-[#7A6F63]">Inputs</p>
+            <div className="border border-brand-obsidian/12 p-4">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-stone">Inputs</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em]">
                 {productCount || 1} Workbooks
               </p>
             </div>
-            <div className="border border-[#0F0D0B]/12 p-4">
-              <p className="text-[9px] uppercase tracking-[0.32em] text-[#7A6F63]">Focus</p>
+            <div className="border border-brand-obsidian/12 p-4">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-stone">Focus</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em]">Next 7 Days</p>
             </div>
           </div>
@@ -168,15 +168,15 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         </div>
 
         {plan.message?.brandPhrases?.length ? (
-          <div className="mt-10 border border-[#0F0D0B]/12 bg-[#EDE9E2] p-6">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+          <div className="mt-10 border border-brand-obsidian/12 bg-brand-pearl p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
               Brand Phrases
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {plan.message.brandPhrases.map((phrase, index) => (
                 <span
                   key={`${phrase}-${index}`}
-                  className="border border-[#0F0D0B]/12 px-3 py-2 text-xs leading-5 text-[#3D3830]"
+                  className="border border-brand-obsidian/12 px-3 py-2 text-xs leading-5 text-stone-dark"
                 >
                   {phrase}
                 </span>
@@ -186,8 +186,8 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         ) : null}
       </section>
 
-      <section className="border-t border-[#0F0D0B]/10 px-6 py-14 md:px-16 md:py-20">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#7A6F63]">
+      <section className="border-t border-brand-obsidian/10 px-6 py-14 md:px-16 md:py-20">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
           01 — Message
         </p>
         <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -197,15 +197,15 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
             >
               What you are here to say.
             </h2>
-            <p className="mt-5 text-sm leading-7 text-[#3D3830]">
+            <p className="mt-5 text-sm leading-7 text-stone-dark">
               {plan.message?.audience || "Your audience and message direction are ready to refine."}
             </p>
           </div>
-          <div className="border border-[#0F0D0B]/12 bg-[#EDE9E2] p-6 md:p-8">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+          <div className="border border-brand-obsidian/12 bg-brand-pearl p-6 md:p-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
               Positioning
             </p>
-            <p className={`${cormorant.className} mt-4 text-3xl leading-tight text-[#0F0D0B]`}>
+            <p className={`${cormorant.className} mt-4 text-3xl leading-tight text-brand-obsidian`}>
               {plan.message?.positioning ||
                 "I help my audience move from unclear to visible with a simple system."}
             </p>
@@ -225,23 +225,23 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
           ).map((pillar, index) => (
             <article
               key={`${pillar.name}-${index}`}
-              className="border border-[#0F0D0B]/12 bg-[#F4F0E6] p-5"
+              className="border border-brand-obsidian/12 bg-brand-pearl p-5"
             >
-              <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-[#C4B5A0]">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-stone-soft">
                 Pillar {String(index + 1).padStart(2, "0")}
               </p>
               <h3 className={`${cormorant.className} mt-3 text-3xl uppercase leading-none`}>
                 {pillar.name}
               </h3>
-              <p className="mt-4 text-sm leading-6 text-[#3D3830]">{pillar.description}</p>
+              <p className="mt-4 text-sm leading-6 text-stone-dark">{pillar.description}</p>
               <List items={pillar.postIdeas} />
             </article>
           ))}
         </div>
       </section>
 
-      <section className="bg-[#0F0D0B] px-6 py-14 text-[#F4F0E6] md:px-16 md:py-20">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#C4B5A0]">
+      <section className="bg-brand-obsidian px-6 py-14 text-brand-pearl md:px-16 md:py-20">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone-soft">
           02 — Content
         </p>
         <h2
@@ -262,7 +262,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
                 {post.hook || "Start with the clearest hook."}
               </h3>
               <p className="mt-4 text-sm leading-6 text-white/64">{post.caption}</p>
-              <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#C4B5A0]">
+              <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-soft">
                 {post.cta || "Invite a reply"}
               </p>
             </article>
@@ -282,7 +282,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
             <ul className="mt-4 space-y-2">
               {(plan.content?.batchingChecklist || []).map((item, index) => (
                 <li key={`${item}-${index}`} className="flex gap-3 text-sm leading-6 text-white/64">
-                  <span className="text-[#C4B5A0]">—</span>
+                  <span className="text-stone-soft">—</span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -292,7 +292,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
       </section>
 
       <section className="px-6 py-14 md:px-16 md:py-20">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#7A6F63]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
           03 — Sales
         </p>
         <div className="mt-8 grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
@@ -302,27 +302,27 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
             >
               The path to paid.
             </h2>
-            <p className="mt-5 text-sm leading-7 text-[#3D3830]">
+            <p className="mt-5 text-sm leading-7 text-stone-dark">
               {plan.sales?.buyerProfile ||
                 "Sell to the person who already feels the problem and wants a simpler next step."}
             </p>
             <List items={plan.sales?.first500Plan} />
           </div>
-          <article className="border border-[#0F0D0B]/12 bg-[#EDE9E2] p-6 md:p-8">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+          <article className="border border-brand-obsidian/12 bg-brand-pearl p-6 md:p-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
               Offer Statement
             </p>
             <p className={`${cormorant.className} mt-4 text-3xl leading-tight`}>
               {plan.sales?.offerStatement || "A clear offer gives your visibility somewhere to go."}
             </p>
-            <div className="mt-8 border-t border-[#0F0D0B]/10 pt-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+            <div className="mt-8 border-t border-brand-obsidian/10 pt-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
                 Sales Post
               </p>
               <p className={`${cormorant.className} mt-3 text-2xl leading-tight`}>
                 {plan.sales?.salesPost?.hook}
               </p>
-              <p className="mt-4 text-sm leading-7 text-[#3D3830]">{plan.sales?.salesPost?.body}</p>
+              <p className="mt-4 text-sm leading-7 text-stone-dark">{plan.sales?.salesPost?.body}</p>
               <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.24em]">
                 {plan.sales?.salesPost?.cta}
               </p>
@@ -331,14 +331,14 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <div className="border border-[#0F0D0B]/12 p-6">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+          <div className="border border-brand-obsidian/12 p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
               DM Scripts
             </p>
             <List items={plan.sales?.dmScripts} />
           </div>
-          <div className="border border-[#0F0D0B]/12 p-6">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#7A6F63]">
+          <div className="border border-brand-obsidian/12 p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-stone">
               Follow Ups
             </p>
             <List items={plan.sales?.followUps} />
@@ -346,24 +346,24 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="border-t border-[#0F0D0B]/10 px-6 py-14 md:px-16 md:py-20">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-[#7A6F63]">
+      <section className="border-t border-brand-obsidian/10 px-6 py-14 md:px-16 md:py-20">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
           04 — Next 7 Days
         </p>
         <div className="mt-8 grid gap-3 md:grid-cols-7">
           {nextDays.map((day, index) => (
-            <article key={`${day.day}-${index}`} className="border border-[#0F0D0B]/12 p-4">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-[#7A6F63]">
+            <article key={`${day.day}-${index}`} className="border border-brand-obsidian/12 p-4">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-stone">
                 {day.day || `Day ${index + 1}`}
               </p>
               <p className="mt-3 text-sm font-medium leading-6">{day.action}</p>
-              <p className="mt-3 text-xs leading-5 text-[#7A6F63]">{day.output}</p>
+              <p className="mt-3 text-xs leading-5 text-stone">{day.output}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <footer className="bg-[#0F0D0B] px-6 py-12 text-center text-[#F4F0E6] print:hidden">
+      <footer className="bg-brand-obsidian px-6 py-12 text-center text-brand-pearl print:hidden">
         <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/42">
           SSELFIE Studio
         </p>
@@ -375,13 +375,13 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
         </p>
         <a
           href={`/studio?tab=maya&maya_plan=${token}#maya`}
-          className="mt-7 inline-flex bg-[#F4F0E6] px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0F0D0B] no-underline"
+          className="mt-7 inline-flex bg-brand-pearl px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-obsidian no-underline"
         >
           Open In Studio Maya
         </a>
         <a
           href="/work-with-me"
-          className="ml-0 mt-3 inline-flex border border-white/18 px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-[#F4F0E6] no-underline sm:ml-3"
+          className="ml-0 mt-3 inline-flex border border-white/18 px-8 py-[13px] text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-pearl no-underline sm:ml-3"
         >
           Apply For Private Sprint
         </a>
@@ -390,8 +390,8 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
       <style>{`
         @media print {
           .visibility-plan {
-            background: #FFFFFF !important;
-            color: #0F0D0B !important;
+            background: var(--color-porcelain) !important;
+            color: var(--color-obsidian) !important;
           }
           section {
             break-inside: avoid;

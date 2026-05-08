@@ -697,15 +697,15 @@ export function SuccessContent({
 
   if (isPollingSelfieGuideAccess && isSelfieGuidePurchase) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
-        <p className="text-lg font-medium text-[#f0ede8]">{selfieGuideStatus}</p>
-        <p className="text-sm text-[#f5f5f5]">
+        <p className="text-lg font-medium text-brand-porcelain">{selfieGuideStatus}</p>
+        <p className="text-sm text-brand-pearl">
           Estimated time remaining: {Math.max(0, 120 - (selfieGuidePollAttempts * 2))}s
         </p>
-        <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
-            className="bg-[#c8c4bb] h-2 rounded-full transition-all duration-1000"
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
             style={{ width: `${(selfieGuidePollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
           />
         </div>
@@ -715,12 +715,12 @@ export function SuccessContent({
 
   if (showSelfieGuideTimeout && isSelfieGuidePurchase) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
-        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
-          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
             Your guide is still syncing
           </h2>
-          <p className="text-[#f5f5f5] max-w-md">{selfieGuideRecoveryMessage}</p>
+          <p className="text-brand-pearl max-w-md">{selfieGuideRecoveryMessage}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
@@ -731,14 +731,14 @@ export function SuccessContent({
               setIsPollingSelfieGuideAccess(true)
             }}
             variant="default"
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
           >
             Try Again
           </Button>
           <Button
             asChild
             variant="outline"
-            className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">Email Support</a>
           </Button>
@@ -749,15 +749,15 @@ export function SuccessContent({
 
   if (isPollingBrandStrategySetup && isBrandStrategyPurchase) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
-        <p className="text-lg font-medium text-[#f0ede8]">{brandStrategyStatus}</p>
-        <p className="text-sm text-[#f5f5f5]">
+        <p className="text-lg font-medium text-brand-porcelain">{brandStrategyStatus}</p>
+        <p className="text-sm text-brand-pearl">
           Estimated time remaining: {Math.max(0, 120 - (brandStrategyPollAttempts * 2))}s
         </p>
-        <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
-            className="bg-[#c8c4bb] h-2 rounded-full transition-all duration-1000"
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
             style={{ width: `${(brandStrategyPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
           />
         </div>
@@ -767,12 +767,12 @@ export function SuccessContent({
 
   if (showBrandStrategyTimeout && isBrandStrategyPurchase) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
-        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
-          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
             Your strategy is still syncing
           </h2>
-          <p className="text-[#f5f5f5] max-w-md">
+          <p className="text-brand-pearl max-w-md">
             Your payment went through. We&apos;re still preparing your private setup link.
           </p>
         </div>
@@ -785,7 +785,7 @@ export function SuccessContent({
               setIsPollingBrandStrategySetup(true)
             }}
             variant="default"
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
           >
             Try Again
           </Button>
@@ -798,14 +798,14 @@ export function SuccessContent({
               router.push("/private-shoot")
             }}
             variant="outline"
-            className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             Private Offer
           </Button>
         </div>
-        <p className="text-sm text-[#f5f5f5]">
+        <p className="text-sm text-brand-pearl">
           We also sent your setup link by email. If you still need help,{" "}
-          <a href="mailto:support@sselfie.ai" className="underline text-[#f5f5f5] hover:text-white">
+          <a href="mailto:support@sselfie.ai" className="underline text-brand-pearl hover:text-white">
             contact support
           </a>
           .
@@ -820,15 +820,15 @@ export function SuccessContent({
   // Show polling status
   if (isPollingAccess && purchaseType === "paid_blueprint") {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
         <LoadingSpinner size="lg" />
-        <p className="text-lg font-medium text-[#f0ede8]">{pollingMessage}</p>
-        <p className="text-sm text-[#f5f5f5]">
+        <p className="text-lg font-medium text-brand-porcelain">{pollingMessage}</p>
+        <p className="text-sm text-brand-pearl">
           {timeRemaining > 0 ? `Estimated time remaining: ${timeRemaining}s` : "Please wait..."}
         </p>
-        <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
-            className="bg-[#c8c4bb] h-2 rounded-full transition-all duration-1000"
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
             style={{ width: `${(pollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
           />
         </div>
@@ -839,12 +839,12 @@ export function SuccessContent({
   // Show timeout actions
   if (showTimeoutActions && purchaseType === "paid_blueprint") {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
-        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
-          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
             Payment Processing
           </h2>
-          <p className="text-[#f5f5f5] max-w-md">
+          <p className="text-brand-pearl max-w-md">
             Your payment was successful. Access is syncing and should complete within a few minutes.
           </p>
         </div>
@@ -852,21 +852,21 @@ export function SuccessContent({
           <Button
             onClick={() => window.location.reload()}
             variant="default"
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
           >
             Refresh Status
           </Button>
           <Button
             onClick={() => router.push('/feed-planner?purchase=success')}
             variant="outline"
-            className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             Continue to Feed Planner
           </Button>
         </div>
-        <p className="text-sm text-[#f5f5f5]">
+        <p className="text-sm text-brand-pearl">
           If access is not available after 5 minutes, please{" "}
-          <a href="mailto:support@sselfie.ai" className="underline text-[#f5f5f5] hover:text-white">
+          <a href="mailto:support@sselfie.ai" className="underline text-brand-pearl hover:text-white">
             contact support
           </a>
         </p>
@@ -931,7 +931,7 @@ export function SuccessContent({
 
   if (purchaseType === "credit_topup") {
     return (
-      <div className="min-h-screen bg-[#0d0c0b]">
+      <div className="min-h-screen bg-brand-obsidian">
         <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
@@ -940,13 +940,13 @@ export function SuccessContent({
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-obsidian/60 via-brand-obsidian/30 to-brand-obsidian" />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4">
+            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4">
               CREDITS ADDED
             </div>
-            <p className="text-sm sm:text-base md:text-lg text-[#c8c4bb] font-light max-w-md">
+            <p className="text-sm sm:text-base md:text-lg text-brand-whisper font-light max-w-md">
               Your credits are ready to use
             </p>
           </div>
@@ -954,10 +954,10 @@ export function SuccessContent({
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <div className="text-center mb-8 sm:mb-12">
-            <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
+            <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4 px-2">
               ALL SET
             </h1>
-            <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
+            <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
               Your credits have been added to your account. Redirecting you back to the studio...
             </p>
           </div>
@@ -965,7 +965,7 @@ export function SuccessContent({
           <div className="text-center">
             <button
               onClick={() => router.push("/studio?tab=feed-planner")}
-              className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
+              className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
             >
               Back to Studio
             </button>
@@ -977,7 +977,7 @@ export function SuccessContent({
 
   if (isBrandEnginePurchase) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b]">
+      <div className="min-h-screen bg-brand-obsidian">
         <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
@@ -986,27 +986,27 @@ export function SuccessContent({
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-obsidian/60 via-brand-obsidian/30 to-brand-obsidian" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
+            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-brand-porcelain mb-3">
               PAYMENT CONFIRMED
             </div>
-            <p className="text-sm sm:text-base text-[#c8c4bb] font-light max-w-md">
+            <p className="text-sm sm:text-base text-brand-whisper font-light max-w-md">
               You&apos;re confirmed for Brand Engine.
             </p>
           </div>
         </div>
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 text-center">
-          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4">
+          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-4">
             YOU&apos;RE IN
           </h1>
-          <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto mb-8">
+          <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto mb-8">
             We&apos;ve received your payment. You&apos;ll get onboarding details by email soon.
           </p>
           <button
             onClick={() => router.push("/brand-engine")}
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
           >
             Back to Brand Engine
           </button>
@@ -1021,12 +1021,12 @@ export function SuccessContent({
 
   if (!userInfo && sessionId) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-brand-obsidian flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4 animate-pulse">
+          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-4 animate-pulse">
             PREPARING YOUR PURCHASE
           </div>
-          <div className="text-xs sm:text-sm text-[#f5f5f5] font-light">Finalizing everything for you...</div>
+          <div className="text-xs sm:text-sm text-brand-pearl font-light">Finalizing everything for you...</div>
         </div>
       </div>
     )
@@ -1034,17 +1034,17 @@ export function SuccessContent({
 
   if (!userInfo && !initialEmail) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4 sm:p-6">
+      <div className="min-h-screen bg-brand-obsidian flex items-center justify-center p-4 sm:p-6">
         <div className="max-w-2xl text-center">
-          <div className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl md:text-5xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4 sm:mb-6">
+          <div className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl md:text-5xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-4 sm:mb-6">
             PAYMENT PENDING
           </div>
-          <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed mb-6 sm:mb-8 px-4">
+          <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed mb-6 sm:mb-8 px-4">
             Your payment is being processed. Check your email for confirmation.
           </p>
           <button
             onClick={() => router.push("/")}
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 sm:px-8 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 sm:px-8 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
           >
             Return Home
           </button>
@@ -1055,7 +1055,7 @@ export function SuccessContent({
 
   if (userInfo && !userInfo.hasAccount && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b]">
+      <div className="min-h-screen bg-brand-obsidian">
         <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
@@ -1064,34 +1064,34 @@ export function SuccessContent({
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-obsidian/60 via-brand-obsidian/30 to-brand-obsidian" />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4">
+            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4">
               S S E L F I E
             </div>
-            <p className="text-sm sm:text-base md:text-lg text-[#c8c4bb] font-light max-w-md">You&apos;re in</p>
+            <p className="text-sm sm:text-base md:text-lg text-brand-whisper font-light max-w-md">You&apos;re in</p>
           </div>
         </div>
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <div className="text-center mb-8 sm:mb-12">
-            <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
+            <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4 px-2">
               LET&apos;S GET YOU STARTED
             </h1>
-            <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
+            <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
               {resolvedProductType === "visibility_suite"
                 ? "Your purchase is ready. Create your password so you can access your Visibility To Paid Suite anytime."
                 : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
             </p>
           </div>
 
-          <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8 md:p-10">
+          <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-6 sm:p-8 md:p-10">
             <form onSubmit={handleCompleteAccount} className="space-y-5 sm:space-y-6">
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Your Name
                 </label>
@@ -1101,7 +1101,7 @@ export function SuccessContent({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                  className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                   placeholder="What should we call you?"
                 />
               </div>
@@ -1109,7 +1109,7 @@ export function SuccessContent({
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Email
                 </label>
@@ -1118,14 +1118,14 @@ export function SuccessContent({
                   id="email"
                   value={userInfo.email || initialEmail}
                   disabled
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#f5f5f5] text-sm sm:text-base font-light"
+                  className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl text-brand-pearl text-sm sm:text-base font-light"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Choose Password
                 </label>
@@ -1136,7 +1136,7 @@ export function SuccessContent({
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                  className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                   placeholder="At least 8 characters"
                 />
               </div>
@@ -1144,7 +1144,7 @@ export function SuccessContent({
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                  className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                 >
                   Confirm Password
                 </label>
@@ -1155,21 +1155,21 @@ export function SuccessContent({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                  className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                   placeholder="One more time"
                 />
               </div>
 
               {error && (
-                <div className="bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-[#f0ede8] font-light">{error}</p>
+                <div className="bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-brand-porcelain font-light">{error}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                className="w-full bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {isSubmitting
                   ? "SETTING UP..."
@@ -1178,14 +1178,14 @@ export function SuccessContent({
                     : "LET'S GO"}
               </button>
 
-              <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light text-center leading-relaxed">
+              <p className="text-[10px] sm:text-xs text-brand-pearl font-light text-center leading-relaxed">
                 By continuing, you agree to our Terms of Service and Privacy Policy
               </p>
             </form>
           </div>
 
           <div className="mt-6 sm:mt-8 text-center">
-            <p className="text-xs sm:text-sm text-[#f5f5f5] font-light leading-relaxed">
+            <p className="text-xs sm:text-sm text-brand-pearl font-light leading-relaxed">
               Check your email for your receipt and welcome message from Sandra
             </p>
           </div>
@@ -1195,7 +1195,7 @@ export function SuccessContent({
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0c0b]">
+    <div className="min-h-screen bg-brand-obsidian">
       <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
         <Image
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
@@ -1204,13 +1204,13 @@ export function SuccessContent({
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-obsidian/60 via-brand-obsidian/30 to-brand-obsidian" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4">
+          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4">
             S S E L F I E
           </div>
-          <p className="text-sm sm:text-base md:text-lg text-[#c8c4bb] font-light max-w-md">
+          <p className="text-sm sm:text-base md:text-lg text-brand-whisper font-light max-w-md">
             {isAuthenticated ? "Welcome back" : "You're in"}
           </p>
         </div>
@@ -1220,20 +1220,20 @@ export function SuccessContent({
         {!userInfo.hasAccount && !isAuthenticated ? (
           <>
             <div className="text-center mb-8 sm:mb-12">
-              <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
+              <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4 px-2">
                 LET&apos;S GET YOU STARTED
               </h1>
-              <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
+              <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
                 Add your password so you can open everything inside SSELFIE. This takes less than a minute.
               </p>
             </div>
 
-            <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8 md:p-10">
+            <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-6 sm:p-8 md:p-10">
               <form onSubmit={handleCompleteAccount} className="space-y-5 sm:space-y-6">
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Your Name
                   </label>
@@ -1243,7 +1243,7 @@ export function SuccessContent({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                    className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                     placeholder="What should we call you?"
                   />
                 </div>
@@ -1251,7 +1251,7 @@ export function SuccessContent({
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Email
                   </label>
@@ -1260,14 +1260,14 @@ export function SuccessContent({
                     id="email"
                     value={userInfo.email || initialEmail}
                     disabled
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.06)] border border-[rgba(195,190,182,0.15)] rounded-xl text-[#f5f5f5] text-sm sm:text-base font-light"
+                    className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl text-brand-pearl text-sm sm:text-base font-light"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Choose Password
                   </label>
@@ -1278,7 +1278,7 @@ export function SuccessContent({
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                    className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                     placeholder="At least 8 characters"
                   />
                 </div>
@@ -1286,7 +1286,7 @@ export function SuccessContent({
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase mb-2"
+                    className="block text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase mb-2"
                   >
                     Confirm Password
                   </label>
@@ -1297,33 +1297,33 @@ export function SuccessContent({
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 sm:py-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl focus:border-[#a8a49c] focus:outline-none transition-colors text-sm sm:text-base text-[#f0ede8] font-light placeholder:text-white/40"
+                    className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                     placeholder="One more time"
                   />
                 </div>
 
                 {error && (
-                  <div className="bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-xl p-3 sm:p-4">
-                    <p className="text-xs sm:text-sm text-[#f0ede8] font-light">{error}</p>
+                  <div className="bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl p-3 sm:p-4">
+                    <p className="text-xs sm:text-sm text-brand-porcelain font-light">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                  className="w-full bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isSubmitting ? "SETTING UP..." : "LET'S GO"}
                 </button>
 
-                <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light text-center leading-relaxed">
+                <p className="text-[10px] sm:text-xs text-brand-pearl font-light text-center leading-relaxed">
                   By continuing, you agree to our Terms of Service and Privacy Policy
                 </p>
               </form>
             </div>
 
             <div className="mt-6 sm:mt-8 text-center">
-              <p className="text-xs sm:text-sm text-[#f5f5f5] font-light leading-relaxed">
+              <p className="text-xs sm:text-sm text-brand-pearl font-light leading-relaxed">
                 Check your email for your receipt and welcome message from Sandra
               </p>
             </div>
@@ -1331,10 +1331,10 @@ export function SuccessContent({
         ) : (
           <>
             <div className="text-center mb-8 sm:mb-12">
-              <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-3 sm:mb-4 px-2">
+              <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4 px-2">
                 {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
-              <p className="text-sm sm:text-base text-[#f5f5f5] font-light leading-relaxed max-w-xl mx-auto px-4">
+              <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
                 {isPollingAccess
                   ? `Setting up your paid access... (${pollAttempts + 1}/${MAX_POLL_ATTEMPTS})`
                   : isAuthenticated
@@ -1343,44 +1343,44 @@ export function SuccessContent({
               </p>
             </div>
 
-            <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8 md:p-10 mb-6 sm:mb-8">
-              <h2 className="font-['Cormorant_Garamond'] font-light text-lg sm:text-xl tracking-[0.2em] uppercase text-[#f0ede8] mb-6 sm:mb-8">
+            <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-6 sm:p-8 md:p-10 mb-6 sm:mb-8">
+              <h2 className="font-['Cormorant_Garamond'] font-light text-lg sm:text-xl tracking-[0.2em] uppercase text-brand-porcelain mb-6 sm:mb-8">
                 ORDER DETAILS
               </h2>
               <div className="space-y-4 sm:space-y-5">
-                <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Product</span>
-                  <span className="text-sm sm:text-base text-[#f0ede8] font-light">
+                <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Product</span>
+                  <span className="text-sm sm:text-base text-brand-porcelain font-light">
                     {getProductLabel(resolvedProductType)}
                   </span>
                 </div>
                 {resolvedProductType === "visibility_suite" && (
-                  <div className="flex justify-between items-start pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                    <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Included</span>
+                  <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
                     <div className="text-right space-y-1">
                       {VISIBILITY_SUITE_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-[#f0ede8] font-light">{item}</p>
+                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
                       ))}
                     </div>
                   </div>
                 )}
                 {userInfo.credits && Number(userInfo.credits) > 0 && CREDIT_GRANTING_TYPES.has(resolvedProductType) && (
-                  <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                    <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">
+                  <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
                       {resolvedProductType === "sselfie_studio_membership" ? "Monthly Credits" : "Credits Included"}
                     </span>
-                    <span className="text-sm sm:text-base text-[#f0ede8] font-light">{userInfo.credits} credits</span>
+                    <span className="text-sm sm:text-base text-brand-porcelain font-light">{userInfo.credits} credits</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
-                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Email</span>
-                  <span className="text-sm sm:text-base text-[#f0ede8] font-light">
+                <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Email</span>
+                  <span className="text-sm sm:text-base text-brand-porcelain font-light">
                     {userInfo.email || initialEmail}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-[#f5f5f5] font-light tracking-[0.3em] uppercase">Status</span>
-                  <span className="text-sm sm:text-base text-[#f5f5f5] font-light">Active</span>
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Status</span>
+                  <span className="text-sm sm:text-base text-brand-pearl font-light">Active</span>
                 </div>
               </div>
             </div>
@@ -1400,7 +1400,7 @@ export function SuccessContent({
                     router.push(successAction.href)
                   }
                 }}
-                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
+                className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
               >
                 {!isAuthenticated && userInfo?.hasAccount ? "Log in to open your products" : successAction.label}
               </button>
@@ -1415,13 +1415,13 @@ export function SuccessContent({
                       }
                       router.push(successAction.secondaryHref!)
                     }}
-                    className="text-[10px] sm:text-xs text-[#c8c4bb] font-light uppercase tracking-[0.2em] underline underline-offset-4"
+                    className="text-[10px] sm:text-xs text-brand-whisper font-light uppercase tracking-[0.2em] underline underline-offset-4"
                   >
                     {successAction.secondaryLabel}
                   </button>
                 </div>
               ) : null}
-              <p className="text-[10px] sm:text-xs text-[#f5f5f5] font-light mt-4 sm:mt-6">
+              <p className="text-[10px] sm:text-xs text-brand-pearl font-light mt-4 sm:mt-6">
                 A confirmation email has been sent to {userInfo.email || initialEmail}
               </p>
             </div>

@@ -113,37 +113,37 @@ export default function InstagramPhotoCard({
 
   return (
     <>
-      <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.20)] rounded-[20px] overflow-hidden max-w-[470px] mx-auto">
+      <div className="bg-stone-dark border border-[color:var(--div-dark)] rounded-[20px] overflow-hidden max-w-[470px] mx-auto">
         {/* Instagram Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[rgba(175,170,162,0.08)] border-b border-[rgba(195,190,182,0.12)]">
+        <div className="flex items-center justify-between px-4 py-3 bg-[color:var(--glass-bg)] border-b border-[color:var(--div-dark)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] p-[2px]">
-              <div className="w-full h-full rounded-full bg-[#1c1b19] flex items-center justify-center">
-                <span className="text-xs font-semibold text-[#f0ede8]">S</span>
+            <div className="w-8 h-8 rounded-full border border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] p-[2px]">
+              <div className="w-full h-full rounded-full bg-stone-dark flex items-center justify-center">
+                <span className="text-xs font-semibold text-brand-porcelain">S</span>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-[#f0ede8]">sselfie</p>
-              <p className="text-xs text-[#8a8780]">{concept.category}</p>
+              <p className="text-sm font-medium text-brand-porcelain">sselfie</p>
+              <p className="text-xs text-stone">{concept.category}</p>
             </div>
           </div>
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="rounded-full border border-[rgba(195,190,182,0.25)] px-3 py-1.5 hover:bg-[rgba(175,170,162,0.12)] transition-colors"
+              className="rounded-full border border-[color:var(--div-dark)] px-3 py-1.5 hover:bg-[color:var(--glass-bg)] transition-colors"
               aria-label="More options"
             >
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">Menu</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-stone">Menu</span>
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-[#2e2c29] rounded-xl shadow-2xl border border-[rgba(195,190,182,0.15)] py-2 w-48 z-10">
+              <div className="absolute right-0 top-full mt-1 bg-stone-dark rounded-xl shadow-2xl border border-[color:var(--div-dark)] py-2 w-48 z-10">
                 {onAnimate && (
                   <button
                     onClick={() => {
                       handleAnimate()
                       setShowMenu(false)
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] transition-colors"
+                    className="w-full px-4 py-2.5 text-left text-sm text-stone hover:bg-[color:var(--glass-bg)] transition-colors"
                   >
                     Animate to Video
                   </button>
@@ -153,7 +153,7 @@ export default function InstagramPhotoCard({
                     setIsViewerOpen(true)
                     setShowMenu(false)
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm text-stone hover:bg-[color:var(--glass-bg)] transition-colors"
                 >
                   View Full Size
                 </button>
@@ -173,7 +173,7 @@ export default function InstagramPhotoCard({
 
         {/* Instagram Image */}
         <div
-          className="relative aspect-square bg-[#1c1b19] cursor-pointer group"
+          className="relative aspect-square bg-stone-dark cursor-pointer group"
           onClick={(e) => {
             if (showAnimateOverlay && onAnimate && (e.target as HTMLElement).closest(".animate-overlay")) {
               handleAnimate()
@@ -191,21 +191,21 @@ export default function InstagramPhotoCard({
           />
 
           {showAnimateOverlay && onAnimate && (
-            <div className="animate-overlay absolute inset-0 bg-[rgba(13,12,11,0.40)] md:bg-[rgba(13,12,11,0.00)] md:group-hover:bg-[rgba(13,12,11,0.40)] transition-all duration-300 flex flex-col items-center justify-center">
+            <div className="animate-overlay absolute inset-0 bg-[rgba(10, 10, 10, 0.40)] md:bg-[rgba(10, 10, 10, 0.00)] md:group-hover:bg-[rgba(10, 10, 10, 0.40)] transition-all duration-300 flex flex-col items-center justify-center">
               {isGenerating || isCreatingPhotoshoot ? (
                 <div className="flex flex-col items-center gap-3 px-4">
-                  <div className="w-16 h-16 bg-[rgba(175,170,162,0.20)] backdrop-blur-sm rounded-full flex items-center justify-center border border-[rgba(195,190,182,0.25)]">
-                    <div className="w-8 h-8 border-2 border-[#f0ede8] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-16 h-16 bg-[color:var(--glass-bg)] backdrop-blur-sm rounded-full flex items-center justify-center border border-[color:var(--div-dark)]">
+                    <div className="w-8 h-8 border-2 border-brand-porcelain border-t-transparent rounded-full animate-spin" />
                   </div>
-                  <p className="text-[#f0ede8] font-light text-[11px] tracking-[0.28em] uppercase text-center">
+                  <p className="text-brand-porcelain font-light text-[11px] tracking-[0.28em] uppercase text-center">
                     {generationStatus || (isCreatingPhotoshoot ? "Analyzing Motion..." : "Generating Video...")}
                   </p>
                   {generationProgress !== undefined && (
                     <>
-                      <p className="text-[#a8a49c] font-light text-xs tracking-wide">{generationProgress}% complete</p>
-                      <div className="w-32 bg-[rgba(175,170,162,0.20)] rounded-full h-1.5 overflow-hidden mt-1">
+                      <p className="text-stone font-light text-xs tracking-wide">{generationProgress}% complete</p>
+                      <div className="w-32 bg-[color:var(--glass-bg)] rounded-full h-1.5 overflow-hidden mt-1">
                         <div
-                          className="bg-[#a8a49c] h-full transition-all duration-300"
+                          className="bg-stone h-full transition-all duration-300"
                           style={{ width: `${generationProgress}%` }}
                         />
                       </div>
@@ -213,14 +213,14 @@ export default function InstagramPhotoCard({
                   )}
                 </div>
               ) : (
-                <div className="px-4 py-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(13,12,11,0.50)] backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                <div className="px-4 py-2 rounded-full border border-[color:var(--div-dark)] bg-[rgba(10, 10, 10, 0.50)] backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                   {animateOverlayStyle === "create" ? (
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-white text-2xl leading-none">✦</span>
                       <span className="text-white text-[11px] tracking-[0.22em] uppercase font-medium">Animate -&gt;</span>
                     </div>
                   ) : (
-                    <p className="text-[#f0ede8] text-[11px] tracking-[0.28em] uppercase font-medium text-center">
+                    <p className="text-brand-porcelain text-[11px] tracking-[0.28em] uppercase font-medium text-center">
                       Click to Create B-Roll
                     </p>
                   )}
@@ -231,19 +231,19 @@ export default function InstagramPhotoCard({
         </div>
 
         {/* Instagram Action Bar */}
-        <div className="px-4 py-3 space-y-4 bg-[rgba(175,170,162,0.10)] backdrop-blur-sm border-t border-[rgba(195,190,182,0.12)]">
+        <div className="px-4 py-3 space-y-4 bg-[color:var(--glass-bg)] backdrop-blur-sm border-t border-[color:var(--div-dark)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsViewerOpen(true)}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors"
+                className="text-[10px] uppercase tracking-[0.2em] text-stone hover:text-brand-porcelain transition-colors"
                 aria-label="Download"
               >
                 Download
               </button>
               <button
                 onClick={handleLike}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors"
+                className="text-[10px] uppercase tracking-[0.2em] text-stone hover:text-brand-porcelain transition-colors"
                 aria-label={liked ? "Unlike" : "Like"}
               >
                 {liked ? "Favourited" : "Favourite"}
@@ -251,28 +251,28 @@ export default function InstagramPhotoCard({
               <button
                 onClick={handleCreatePhotoshoot}
                 disabled={!onCreatePhotoshoot || isCreatingPhotoshoot || isCreatingProPhotoshoot}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors disabled:opacity-50"
+                className="text-[10px] uppercase tracking-[0.2em] text-stone hover:text-brand-porcelain transition-colors disabled:opacity-50"
                 aria-label="Create Photoshoot"
               >
                 Photoshoot
               </button>
             </div>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">{concept.category}</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-stone">{concept.category}</span>
           </div>
 
           {/* Engagement */}
           <div className="space-y-1">
             {liked && (
-              <p className="text-sm font-semibold text-[#f0ede8]">
+              <p className="text-sm font-semibold text-brand-porcelain">
                 Liked by <span className="font-bold">you</span>
               </p>
             )}
             <div className="text-sm">
-              <span className="font-semibold text-[#f0ede8]">sselfie</span>{" "}
+              <span className="font-semibold text-brand-porcelain">sselfie</span>{" "}
               {!isEditingCaption ? (
                 <span
                   onClick={() => setIsEditingCaption(true)}
-                  className={`cursor-text hover:bg-[rgba(175,170,162,0.10)] rounded px-1 -mx-1 transition-all whitespace-pre-wrap ${concept.description ? "text-[#a8a49c]" : "text-[#5a5752] italic"}`}
+                  className={`cursor-text hover:bg-[color:var(--glass-bg)] rounded px-1 -mx-1 transition-all whitespace-pre-wrap ${concept.description ? "text-stone" : "text-stone-dark italic"}`}
                   title="Click to edit caption"
                 >
                   {concept.description ? formatCaption(concept.description) : "Write your caption..."}
@@ -282,24 +282,24 @@ export default function InstagramPhotoCard({
                   <textarea
                     value={captionValue}
                     onChange={(e) => setCaptionValue(e.target.value)}
-                    className="w-full text-sm resize-none bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.15)] rounded-lg px-3 py-2 text-[#f0ede8] focus:border-[rgba(195,190,182,0.30)] focus:outline-none"
+                    className="w-full text-sm resize-none bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-lg px-3 py-2 text-brand-porcelain focus:border-[color:var(--div-dark)] focus:outline-none"
                     rows={4}
                     maxLength={500}
                     placeholder="Write your caption..."
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#8a8780]">{captionValue.length}/500</span>
+                    <span className="text-xs text-stone">{captionValue.length}/500</span>
                     <div className="flex gap-2">
                       <button
                         onClick={handleCancelCaption}
-                        className="px-3 py-1.5 text-xs font-medium text-[#8a8780] hover:text-[#f0ede8] transition-all"
+                        className="px-3 py-1.5 text-xs font-medium text-stone hover:text-brand-porcelain transition-all"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSaveCaption}
                         disabled={captionValue === concept.description}
-                        className="px-3 py-1.5 bg-[rgba(175,170,162,0.18)] hover:bg-[rgba(175,170,162,0.28)] text-[#f0ede8] text-xs font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 bg-[color:var(--glass-bg)] hover:bg-[color:var(--glass-bg)] text-brand-porcelain text-xs font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Save
                       </button>
@@ -308,8 +308,8 @@ export default function InstagramPhotoCard({
                 </div>
               )}
             </div>
-            {isGenerating && <p className="text-[10px] text-[#8a8780] tracking-wide uppercase">AI-generated</p>}
-            <p className="text-xs text-[#8a8780] uppercase tracking-wide">Just now</p>
+            {isGenerating && <p className="text-[10px] text-stone tracking-wide uppercase">AI-generated</p>}
+            <p className="text-xs text-stone uppercase tracking-wide">Just now</p>
           </div>
 
           {/* Create Photoshoot Buttons */}
@@ -318,11 +318,11 @@ export default function InstagramPhotoCard({
               <button
                 onClick={handleCreatePhotoshoot}
                 disabled={isCreatingPhotoshoot || isCreatingProPhotoshoot}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.15)] text-[#f0ede8] rounded-[20px] font-medium text-[11px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[color:var(--glass-bg)] hover:bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] text-brand-porcelain rounded-[20px] font-medium text-[11px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreatingPhotoshoot ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-[#f0ede8] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-brand-porcelain border-t-transparent rounded-full animate-spin" />
                     <span>Creating Photoshoot</span>
                   </>
                 ) : (
@@ -331,17 +331,17 @@ export default function InstagramPhotoCard({
               </button>
             )}
             {onCreatePhotoshoot && !isCreatingPhotoshoot && (
-              <p className="text-[11px] text-[#8a8780] text-center uppercase tracking-[0.14em]">6-9 matching photos, ~3 min</p>
+              <p className="text-[11px] text-stone text-center uppercase tracking-[0.14em]">6-9 matching photos, ~3 min</p>
             )}
             {onCreateProPhotoshoot && studioProMode && (
               <button
                 onClick={handleCreateProPhotoshoot}
                 disabled={isCreatingPhotoshoot || isCreatingProPhotoshoot}
-                className="w-full flex items-center justify-center px-4 py-2.5 bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.15)] text-[#f0ede8] rounded-[20px] font-medium text-[11px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center px-4 py-2.5 bg-[color:var(--glass-bg)] hover:bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] text-brand-porcelain rounded-[20px] font-medium text-[11px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreatingProPhotoshoot ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-[#f0ede8] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-brand-porcelain border-t-transparent rounded-full animate-spin" />
                     <span>Creating Pro Photoshoot...</span>
                   </>
                 ) : (
