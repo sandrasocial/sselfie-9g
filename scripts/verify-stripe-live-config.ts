@@ -4,7 +4,7 @@
  * Programmatically verifies all Stripe Price IDs and configuration
  * using the Stripe API. Part of emergency billing audit.
  * 
- * Usage: npx tsx scripts/verify-stripe-live-config.ts
+ * Usage: pnpm exec tsx scripts/verify-stripe-live-config.ts
  */
 
 import Stripe from "stripe"

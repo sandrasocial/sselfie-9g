@@ -326,7 +326,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ### Install Dependencies
 
 \`\`\`bash
-npm install
+pnpm install
 \`\`\`
 
 ### Run Database Migrations
@@ -339,7 +339,7 @@ npm install
 ### Start Development Server
 
 \`\`\`bash
-npm run dev
+pnpm dev
 \`\`\`
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.

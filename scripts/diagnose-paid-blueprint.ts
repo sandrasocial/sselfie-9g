@@ -1,6 +1,6 @@
 /**
  * Diagnostic script to check paid blueprint purchase status
- * Usage: npx tsx scripts/diagnose-paid-blueprint.ts <email>
+ * Usage: pnpm exec tsx scripts/diagnose-paid-blueprint.ts <email>
  */
 
 import { neon } from "@neondatabase/serverless"
@@ -132,7 +132,7 @@ async function diagnose(email: string) {
 const email = process.argv[2]
 if (!email) {
   console.error("❌ Please provide an email address")
-  console.error("Usage: npx tsx scripts/diagnose-paid-blueprint.ts <email>")
+  console.error("Usage: pnpm exec tsx scripts/diagnose-paid-blueprint.ts <email>")
   process.exit(1)
 }
 

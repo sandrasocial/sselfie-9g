@@ -3,7 +3,7 @@
  * Run Brand Engine migration
  * Creates all necessary tables for the Brand Engine system
  *
- * Usage: npx tsx scripts/migrations/run-brand-engine-migration.ts
+ * Usage: pnpm exec tsx scripts/migrations/run-brand-engine-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

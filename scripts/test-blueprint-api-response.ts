@@ -4,7 +4,7 @@
  * This script verifies the /api/blueprint/state endpoint response
  * to ensure Decision 2 implementation is working correctly.
  * 
- * Usage: npx tsx scripts/test-blueprint-api-response.ts [email]
+ * Usage: pnpm exec tsx scripts/test-blueprint-api-response.ts [email]
  */
 
 import { neon } from '@neondatabase/serverless'

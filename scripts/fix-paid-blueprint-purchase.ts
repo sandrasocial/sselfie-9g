@@ -2,7 +2,7 @@
  * Script to manually fix a paid blueprint purchase
  * This can be used if the webhook didn't fire or failed
  * 
- * Usage: npx tsx scripts/fix-paid-blueprint-purchase.ts <email> [stripe-payment-intent-id]
+ * Usage: pnpm exec tsx scripts/fix-paid-blueprint-purchase.ts <email> [stripe-payment-intent-id]
  */
 
 import { neon } from "@neondatabase/serverless"
@@ -160,7 +160,7 @@ const paymentIntentId = process.argv[3]
 
 if (!email) {
   console.error("❌ Please provide an email address")
-  console.error("Usage: npx tsx scripts/fix-paid-blueprint-purchase.ts <email> [stripe-payment-intent-id]")
+  console.error("Usage: pnpm exec tsx scripts/fix-paid-blueprint-purchase.ts <email> [stripe-payment-intent-id]")
   process.exit(1)
 }
 

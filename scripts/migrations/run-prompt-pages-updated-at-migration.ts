@@ -1,6 +1,6 @@
 /**
  * Migration script to add updated_at column to prompt_pages table
- * Run with: npx tsx scripts/migrations/run-prompt-pages-updated-at-migration.ts
+ * Run with: pnpm exec tsx scripts/migrations/run-prompt-pages-updated-at-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

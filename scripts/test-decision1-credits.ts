@@ -10,7 +10,7 @@
  * 3. Credit deduction logic works
  * 4. Database queries are correct
  * 
- * Run with: npx tsx scripts/test-decision1-credits.ts
+ * Run with: pnpm exec tsx scripts/test-decision1-credits.ts
  */
 
 import { neon } from "@neondatabase/serverless"

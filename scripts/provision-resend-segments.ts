@@ -2,7 +2,7 @@
  * Provision Resend audience segments and print the IDs for .env
  *
  * Usage:
- *   RESEND_API_KEY=re_... npx tsx scripts/provision-resend-segments.ts
+ *   RESEND_API_KEY=re_... pnpm exec tsx scripts/provision-resend-segments.ts
  *
  * This script is idempotent — it lists existing segments and only creates
  * ones that don't exist yet (matched by name). Run it once, then paste the

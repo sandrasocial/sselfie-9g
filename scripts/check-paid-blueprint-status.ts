@@ -158,7 +158,7 @@ async function checkPaidBlueprintStatus(userEmail: string) {
 
 const userEmail = process.argv[2]
 if (!userEmail) {
-  console.error("Usage: npx tsx scripts/check-paid-blueprint-status.ts <user-email>")
+  console.error("Usage: pnpm exec tsx scripts/check-paid-blueprint-status.ts <user-email>")
   process.exit(1)
 }
 

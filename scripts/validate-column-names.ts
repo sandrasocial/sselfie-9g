@@ -6,9 +6,9 @@
  * Reports incorrect column usage that could cause runtime errors.
  * 
  * Usage:
- *   npm run validate-columns
+ *   pnpm validate-columns
  *   or
- *   tsx scripts/validate-column-names.ts
+ *   pnpm exec tsx scripts/validate-column-names.ts
  */
 
 import { readFileSync, readdirSync, statSync } from "fs"

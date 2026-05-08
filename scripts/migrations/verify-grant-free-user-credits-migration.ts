@@ -4,7 +4,7 @@
  * 
  * Purpose: Verify that credits were granted correctly to free users
  * 
- * Run with: npx tsx scripts/migrations/verify-grant-free-user-credits-migration.ts
+ * Run with: pnpm exec tsx scripts/migrations/verify-grant-free-user-credits-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

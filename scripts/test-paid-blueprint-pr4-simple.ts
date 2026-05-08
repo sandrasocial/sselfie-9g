@@ -156,7 +156,7 @@ async function main() {
     console.log(`   Error: ${JSON.stringify(status1.data || status1.error)}\n`)
     
     if (status1.status === 0) {
-      console.log('⚠️  Is the dev server running? Try: npm run dev\n')
+      console.log('⚠️  Is the dev server running? Try: pnpm dev\n')
     }
   }
 

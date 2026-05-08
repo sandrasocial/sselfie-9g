@@ -4,7 +4,7 @@
  * This script verifies that the email_preview_data column exists
  * and checks if email previews are being saved correctly.
  * 
- * Run with: npx tsx scripts/verify-email-preview-schema.ts
+ * Run with: pnpm exec tsx scripts/verify-email-preview-schema.ts
  */
 
 import { neon } from "@neondatabase/serverless"

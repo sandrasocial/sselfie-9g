@@ -8,7 +8,7 @@ const sql = neon(process.env.DATABASE_URL!)
  * Finds cases where user_credits.balance doesn't match sum of credit_transactions
  * and creates missing transaction logs.
  * 
- * Usage: npx tsx scripts/repair-missing-credit-transactions.ts
+ * Usage: pnpm exec tsx scripts/repair-missing-credit-transactions.ts
  */
 async function repairMissingTransactions() {
   console.log("[REPAIR] Starting credit transaction reconciliation...")

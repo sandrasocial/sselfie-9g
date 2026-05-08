@@ -1,6 +1,6 @@
 /**
  * List Resend segments (REST API)
- * Run with: npx tsx scripts/list-resend-segments.ts
+ * Run with: pnpm exec tsx scripts/list-resend-segments.ts
  */
 
 import { config as loadEnv } from "dotenv"

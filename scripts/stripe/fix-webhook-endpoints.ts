@@ -1,6 +1,6 @@
 /**
  * Fixes misconfigured Stripe webhook URLs (e.g. site root instead of /api/webhooks/stripe).
- * Run: npx tsx scripts/stripe/fix-webhook-endpoints.ts
+ * Run: pnpm exec tsx scripts/stripe/fix-webhook-endpoints.ts
  *
  * Loads .env.local for STRIPE_SECRET_KEY (must be live key sk_live_... for production webhooks).
  */

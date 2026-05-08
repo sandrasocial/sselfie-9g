@@ -4,7 +4,7 @@
  * This script adds the email_preview_data JSONB column to store structured
  * email preview data (HTML, subject, preview text) from the compose_email tool.
  * 
- * Run with: npx tsx scripts/38-run-email-preview-data-migration.ts
+ * Run with: pnpm exec tsx scripts/38-run-email-preview-data-migration.ts
  */
 
 import { neon } from "@neondatabase/serverless"

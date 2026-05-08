@@ -12,10 +12,10 @@
  * 
  * Usage:
  *   # Dry-run (shows what would happen):
- *   npx tsx scripts/stripe/apply-refunds.ts
+ *   pnpm exec tsx scripts/stripe/apply-refunds.ts
  * 
  *   # Execute refunds:
- *   APPLY_REFUNDS=true npx tsx scripts/stripe/apply-refunds.ts
+ *   APPLY_REFUNDS=true pnpm exec tsx scripts/stripe/apply-refunds.ts
  */
 
 import Stripe from "stripe"
@@ -111,7 +111,7 @@ async function loadRefundCandidates(): Promise<RefundCandidate[]> {
     return candidates
   } catch (error: any) {
     console.error("Error loading refund candidates:", error.message)
-    console.error("Please run: npx tsx scripts/stripe/find-affected-users.ts")
+    console.error("Please run: pnpm exec tsx scripts/stripe/find-affected-users.ts")
     process.exit(1)
   }
 }
@@ -232,7 +232,7 @@ async function main() {
   
   if (!APPLY_REFUNDS) {
     console.log("⚠️  DRY-RUN MODE (no refunds will be issued)")
-    console.log("⚠️  To execute refunds, run: APPLY_REFUNDS=true npx tsx scripts/stripe/apply-refunds.ts")
+    console.log("⚠️  To execute refunds, run: APPLY_REFUNDS=true pnpm exec tsx scripts/stripe/apply-refunds.ts")
     console.log()
   } else {
     console.log("🔴 LIVE MODE - REFUNDS WILL BE ISSUED")
@@ -349,7 +349,7 @@ async function main() {
     console.log()
   } else {
     console.log("To execute refunds, run:")
-    console.log("  APPLY_REFUNDS=true npx tsx scripts/stripe/apply-refunds.ts")
+    console.log("  APPLY_REFUNDS=true pnpm exec tsx scripts/stripe/apply-refunds.ts")
     console.log()
   }
 }

@@ -2,7 +2,7 @@
  * Script to create the Selfie Guide product in Stripe.
  *
  * Usage:
- *   npx tsx scripts/create-selfie-guide-product.ts
+ *   pnpm exec tsx scripts/create-selfie-guide-product.ts
  */
 
 import { config } from "dotenv"

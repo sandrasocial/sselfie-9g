@@ -1,6 +1,9 @@
 # Maya 2.0 E2E Execution Plan
 
 Generated: 2026-05-01
+Status: Planning snapshot - not the current implementation source of truth.
+
+> Live Maya guardrails remain in `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`, and `pnpm audit:maya-quality`.
 
 ## Executive Decision
 

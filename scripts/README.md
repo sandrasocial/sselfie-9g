@@ -35,7 +35,7 @@ psql $DATABASE_URL -f scripts/00-create-all-tables.sql
 ### TypeScript Scripts
 Run with tsx:
 \`\`\`bash
-npx tsx scripts/sync-stripe-products.ts
+pnpm exec tsx scripts/sync-stripe-products.ts
 \`\`\`
 
 ## Instagram API Integration Setup

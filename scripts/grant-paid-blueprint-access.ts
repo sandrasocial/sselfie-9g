@@ -5,11 +5,11 @@
  * Use this when webhook processing is delayed or when testing locally.
  * 
  * Usage:
- *   npx tsx scripts/grant-paid-blueprint-access.ts <user_id_or_email>
+ *   pnpm exec tsx scripts/grant-paid-blueprint-access.ts <user_id_or_email>
  * 
  * Example:
- *   npx tsx scripts/grant-paid-blueprint-access.ts user@example.com
- *   npx tsx scripts/grant-paid-blueprint-access.ts c15e91f4-6711-4801-bfe5-7482e6d6703e
+ *   pnpm exec tsx scripts/grant-paid-blueprint-access.ts user@example.com
+ *   pnpm exec tsx scripts/grant-paid-blueprint-access.ts c15e91f4-6711-4801-bfe5-7482e6d6703e
  */
 
 import { config } from 'dotenv'
@@ -221,11 +221,11 @@ const identifier = process.argv[2]
 
 if (!identifier) {
   console.error(`
-❌ Usage: npx tsx scripts/grant-paid-blueprint-access.ts <user_id_or_email>
+❌ Usage: pnpm exec tsx scripts/grant-paid-blueprint-access.ts <user_id_or_email>
 
 Examples:
-  npx tsx scripts/grant-paid-blueprint-access.ts user@example.com
-  npx tsx scripts/grant-paid-blueprint-access.ts c15e91f4-6711-4801-bfe5-7482e6d6703e
+  pnpm exec tsx scripts/grant-paid-blueprint-access.ts user@example.com
+  pnpm exec tsx scripts/grant-paid-blueprint-access.ts c15e91f4-6711-4801-bfe5-7482e6d6703e
 `)
   process.exit(1)
 }

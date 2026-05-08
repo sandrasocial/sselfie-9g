@@ -2,7 +2,7 @@
  * Run Phase 5A & 6A Migrations
  * 
  * This script creates the prompt_audit_events and incident_events tables
- * Run with: npx tsx scripts/run-phase-5a-6a-migrations.ts
+ * Run with: pnpm exec tsx scripts/run-phase-5a-6a-migrations.ts
  */
 
 import { neon } from "@neondatabase/serverless"

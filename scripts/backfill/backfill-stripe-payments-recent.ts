@@ -2,8 +2,8 @@
  * Backfill recent Stripe payments into stripe_payments (idempotent).
  *
  * Usage:
- *   DRY_RUN=true DAYS=30 npx tsx scripts/backfill/backfill-stripe-payments-recent.ts
- *   DAYS=30 npx tsx scripts/backfill/backfill-stripe-payments-recent.ts
+ *   DRY_RUN=true DAYS=30 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
+ *   DAYS=30 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
  */
 
 import { config } from "dotenv"

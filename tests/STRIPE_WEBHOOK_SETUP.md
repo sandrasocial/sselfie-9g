@@ -54,7 +54,7 @@ STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxx"  # Use the secret from Stripe CLI
 After updating `.env.local`, restart your Next.js dev server:
 
 ```bash
-npm run dev
+pnpm dev
 # or
 pnpm dev
 ```
@@ -109,7 +109,7 @@ In production, the webhook secret `whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV` shoul
 
 1. **Check Stripe CLI is running**: Make sure `stripe listen` is active
 2. **Check the secret matches**: The secret in `.env.local` must match what Stripe CLI shows
-3. **Check dev server is running**: Make sure `npm run dev` is running on port 3000
+3. **Check dev server is running**: Make sure `pnpm dev` is running on port 3000
 4. **Check logs**: Look for `🔔 WEBHOOK RECEIVED` in your terminal
 
 ### Webhook received but fails?

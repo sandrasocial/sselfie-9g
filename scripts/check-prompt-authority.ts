@@ -10,8 +10,8 @@
  * - Inline prompt templates
  * 
  * Usage:
- *   npm run check:prompt-authority
- *   npx tsx scripts/check-prompt-authority.ts
+ *   pnpm check:prompt-authority
+ *   pnpm exec tsx scripts/check-prompt-authority.ts
  */
 
 import * as fs from 'fs'

@@ -3,8 +3,8 @@
  * Idempotent: skips users with existing welcome bonus transaction.
  *
  * Usage:
- *   DRY_RUN=true npx tsx scripts/backfill/backfill-free-welcome-credits.ts
- *   npx tsx scripts/backfill/backfill-free-welcome-credits.ts
+ *   DRY_RUN=true pnpm exec tsx scripts/backfill/backfill-free-welcome-credits.ts
+ *   pnpm exec tsx scripts/backfill/backfill-free-welcome-credits.ts
  */
 
 import { config } from "dotenv"

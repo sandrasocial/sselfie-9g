@@ -3,8 +3,8 @@
  * Idempotent: only grants if last subscription_grant is missing or older than 40 days.
  *
  * Usage:
- *   DRY_RUN=true npx tsx scripts/backfill/backfill-membership-credits.ts
- *   npx tsx scripts/backfill/backfill-membership-credits.ts
+ *   DRY_RUN=true pnpm exec tsx scripts/backfill/backfill-membership-credits.ts
+ *   pnpm exec tsx scripts/backfill/backfill-membership-credits.ts
  */
 
 import { config } from "dotenv"

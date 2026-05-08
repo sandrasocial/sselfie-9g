@@ -8,7 +8,7 @@
  * 4. Error handling
  * 5. Progress tracking
  * 
- * Run with: npx tsx scripts/test-feed-planner-issues.ts
+ * Run with: pnpm exec tsx scripts/test-feed-planner-issues.ts
  */
 
 import { readFileSync } from "fs"

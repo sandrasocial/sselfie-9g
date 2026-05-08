@@ -19,7 +19,7 @@ if curl -s http://localhost:3000/api/gpt-actions > /dev/null 2>&1; then
     DEV_SERVER_RUNNING=true
 else
     echo "🚀 Starting dev server..."
-    npm run dev &
+    pnpm dev &
     DEV_PID=$!
     DEV_SERVER_RUNNING=false
     
@@ -106,4 +106,3 @@ trap cleanup INT
 
 # Keep script running
 wait
-

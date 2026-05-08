@@ -2,6 +2,10 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.23.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -31,6 +35,7 @@
     "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",
     "product-qa-digest": "tsx scripts/product-qa-digest.ts",
     "product-qa-digest:node": "node scripts/product-qa-digest.mjs",
+    "diagnostics:core": "node scripts/run-core-diagnostics.mjs",
     "revenue-engine:weekly": "tsx scripts/revenue-engine-weekly-digest.ts",
     "cleanup-legacy-generation-trackers": "node scripts/cleanup-legacy-generation-trackers.mjs",
     "retry-blueprint-followups": "tsx scripts/retry-blueprint-followup-failures.ts",
@@ -108,7 +113,6 @@
     "@upstash/vector": "latest",
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
-    "@vercel/postgres": "0.10.0",
     "ai": "latest",
     "autoprefixer": "^10.4.20",
     "canvas": "latest",
@@ -128,7 +132,6 @@
     "next": "16.0.7",
     "next-themes": "latest",
     "node-fetch": "latest",
-    "nodemailer": "latest",
     "openai": "^6.15.0",
     "prettier": "^3.7.3",
     "react": "19.2.0",
