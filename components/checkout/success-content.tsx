@@ -73,9 +73,9 @@ function getProductLabel(productType: string | undefined) {
     case "paid_blueprint":
       return "30-Day Visibility Reset"
     case "transform_starter":
-      return "SSELFIE Transform — Starter Pack"
+      return "SSELFIE Edit Studio — Starter Pack"
     case "transform_topup":
-      return "Transform Credit Top-up"
+      return "Edit Studio Credit Top-up"
     default:
       return "Purchase"
   }
@@ -211,8 +211,8 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
   if (productType === "transform_starter" || productType === "transform_topup") {
     return {
       href: "/transform/studio",
-      label: "Open Transform",
-      helper: "Your 15 credits are ready. Upload a photo and choose your first aesthetic.",
+      label: "Open Edit Studio",
+      helper: "Your 15 credits are ready. Upload a photo and choose your edit finish.",
     }
   }
 
