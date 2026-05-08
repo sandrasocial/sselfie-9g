@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
 import { sql } from "@/lib/db/client"
@@ -111,12 +112,12 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
   return (
     <main className={`visibility-plan min-h-screen bg-white text-brand-obsidian ${inter.className}`}>
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-brand-obsidian/10 bg-white/90 px-6 py-5 backdrop-blur md:px-12 print:static">
-        <a
+        <Link
           href="/academy/access/visibility-suite"
           className={`${cormorant.className} text-sm uppercase tracking-[0.32em] text-brand-obsidian no-underline`}
         >
           SSELFIE
-        </a>
+        </Link>
         <PrintPlanButton />
         <span className="text-[10px] font-semibold uppercase tracking-[0.34em] text-stone">
           Maya Visibility Plan
