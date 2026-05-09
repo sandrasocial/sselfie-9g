@@ -16,14 +16,6 @@ const PUBLIC_MIDDLEWARE_BYPASSES = [
     prefix: "/api/cron/",
     reason: "Cron routes keep route-level CRON_SECRET checks.",
   },
-  {
-    prefix: "/api/freebie/",
-    reason: "Public freebie capture and delivery endpoints.",
-  },
-  {
-    prefix: "/api/brand-engine/",
-    reason: "Retired Brand Engine automation endpoints with route-level controls.",
-  },
 ] as const
 
 function getPublicBypass(pathname: string) {

@@ -145,11 +145,10 @@ function formatTags(tags: Record<string, string>): Array<{ name: string; value: 
   return Object.entries(tags).map(([name, value]) => ({ name, value }))
 }
 
-async function addContactToSegmentById(contactId: string, segmentId: string, email?: string) {
+async function addContactToSegmentById(contactId: string, segmentId: string, _email?: string) {
   const resend = requireResendClient()
   const { error } = await resend.contacts.segments.add({
     contactId,
-    email,
     segmentId,
   })
 
@@ -158,11 +157,10 @@ async function addContactToSegmentById(contactId: string, segmentId: string, ema
   }
 }
 
-async function removeContactFromSegmentById(contactId: string, segmentId: string, email?: string) {
+async function removeContactFromSegmentById(contactId: string, segmentId: string, _email?: string) {
   const resend = requireResendClient()
   const { error } = await resend.contacts.segments.remove({
     contactId,
-    email,
     segmentId,
   })
 
@@ -328,6 +326,7 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
 }
 
 export async function syncMarketingContacts(input: ContactSyncInput) {
+  const resend = requireResendClient()
   const audienceId = EMAIL_ENV.resendAudienceId
   if (!audienceId) {
     throw new Error("RESEND_AUDIENCE_ID not configured for marketing sync")
@@ -362,7 +361,6 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
         audienceId,
         email,
         firstName: contact.firstName || undefined,
-        tags: formatTags({ [input.tagKey]: input.tagValue }),
       })
 
       if (created?.error) {

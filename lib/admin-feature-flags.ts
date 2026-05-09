@@ -72,7 +72,7 @@ export async function requireAdmin(): Promise<{ isAdmin: boolean; userId?: numbe
       return { isAdmin: false, error: "Not an admin" }
     }
 
-    return { isAdmin: true, userId: user.id }
+    return { isAdmin: true, userId: Number(user.id) }
   } catch (error) {
     console.error("[AdminFeatureFlags] Error checking admin access:", error)
     return { isAdmin: false, error: "Error checking admin status" }

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       model: "anthropic/claude-sonnet-4-20250514",
       system: systemPrompt,
       prompt: userPrompt,
-      maxTokens: 1000,
+      maxOutputTokens: 1000,
     } as any)
 
     // Parse JSON response

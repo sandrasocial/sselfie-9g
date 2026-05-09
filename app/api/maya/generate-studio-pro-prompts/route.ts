@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const { text } = await generateText({
       model: createMayaOpenRouterModel("prompt_builder"),
       prompt: promptGenerationPrompt,
-      maxTokens: 4000,
+      maxOutputTokens: 4000,
     } as any)
 
     // Parse JSON from response

@@ -187,7 +187,11 @@ export async function sendNewsletterBroadcast(
       broadcastPayload.scheduled_at = scheduledAt.toISOString()
     }
 
-    const broadcast = await resend.broadcasts.create(broadcastPayload)
+    const { data: broadcast, error: broadcastError } = await resend.broadcasts.create(broadcastPayload)
+
+    if (broadcastError || !broadcast) {
+      throw new Error(`Resend broadcast creation failed: ${broadcastError?.message ?? "unknown error"}`)
+    }
 
     console.log(`[Newsletter Broadcast] ✅ Broadcast created in Resend:`, {
       id: broadcast.id,
@@ -242,6 +246,7 @@ export async function sendTestEmail(
   testEmail: string
 ): Promise<void> {
   const sql = getDb()
+  const resend = requireResendClient()
 
   // Load campaign
   const campaigns = await sql`
@@ -293,6 +298,7 @@ export async function sendTestEmail(
  */
 export async function updateBroadcastStatus(campaignId: number): Promise<void> {
   const sql = getDb()
+  const resend = requireResendClient()
 
   const campaigns = await sql`
     SELECT resend_broadcast_id, id
@@ -310,7 +316,11 @@ export async function updateBroadcastStatus(campaignId: number): Promise<void> {
 
   try {
     // Get broadcast details from Resend
-    const broadcast = await resend.broadcasts.get(campaign.resend_broadcast_id)
+    const { data: broadcastData, error: broadcastError } = await resend.broadcasts.get(campaign.resend_broadcast_id)
+    if (broadcastError || !broadcastData) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const broadcast = broadcastData as any
 
     // Update metrics in database
     await sql`

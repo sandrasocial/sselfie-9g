@@ -190,7 +190,7 @@ You use Claude's native web search to stay updated on the latest Instagram best 
 You provide COMPREHENSIVE strategies with NO length limits - your advice is thorough, specific, and actionable.`,
       prompt: strategyPrompt,
       temperature: 0.8,
-      maxTokens: 16000,
+      maxOutputTokens: 16000,
     })
 
     console.log("[v0] Instagram Strategy Agent: Strategy generated, parsing JSON...")

@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    "app/actions/**/*.ts",
+    "app/actions/**/*.tsx",
+    "app/api/webhooks/**/*.ts",
+    "app/api/checkout/**/*.ts",
+    "app/api/cron/**/*.ts",
+    "app/api/user-by-email/**/*.ts",
+    "app/checkout/**/*.ts",
+    "app/checkout/**/*.tsx",
+    "lib/credits.ts",
+    "lib/stripe.ts",
+    "lib/db*.ts",
+    "lib/user-mapping.ts",
+    "lib/events/**/*.ts",
+    "lib/products.ts",
+    "lib/cron/**/*.ts",
+    "lib/rate-limit-api.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next/**",
+    "scripts",
+    "tests"
+  ]
+}

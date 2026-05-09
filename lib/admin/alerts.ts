@@ -51,9 +51,14 @@ export function checkReferralConversion(rate: number, threshold = 0.1): boolean 
  * Alert thresholds
  */
 const ALERT_THRESHOLDS = {
-  grossMarginThreshold: 45, // Below 45% = warning
-  claudeCostThreshold: 20, // Above $20 avg = critical
+  grossMarginThreshold: 45,   // Below 45% = warning
+  grossMarginWarning: 40,     // Below 40% = warning tier
+  grossMarginCritical: 30,    // Below 30% = critical
+  claudeCostThreshold: 20,    // Above $20 avg = critical
   referralConversionThreshold: 0.1, // Below 10% = warning
+  mrrDeclineCritical: -10,    // Below -10% MoM = critical
+  creditCostRatioWarning: 0.4, // Credit cost above 40% of revenue = warning
+  referralROIWarning: 2,       // Referral ROI below 2x = warning
 } as const
 
 export interface Alert {

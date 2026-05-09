@@ -62,7 +62,7 @@ export async function refreshSegment(segmentId: number) {
     }
 
     if (havingConditions.length > 0) {
-      engagementQuery = sql`${engagementQuery} HAVING ${sql.join(havingConditions, sql` AND `)}`
+      engagementQuery = sql`${engagementQuery} HAVING ${havingConditions.reduce((acc, cond, i) => i === 0 ? cond : sql`${acc} AND ${cond}`)}`
     }
 
     const engagementMembers = await engagementQuery

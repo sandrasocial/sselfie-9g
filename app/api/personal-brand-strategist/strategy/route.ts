@@ -84,7 +84,7 @@ ${brandProfile.goals || "Not specified"}
       system: PERSONAL_BRAND_STRATEGIST_PROMPT + brandContext,
       prompt: prompt,
       temperature: 0.7,
-      maxTokens: 2000,
+      maxOutputTokens: 2000,
     } as any)
 
     console.log("[v0] Brand Strategist streaming response")

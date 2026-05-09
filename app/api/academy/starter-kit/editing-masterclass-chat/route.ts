@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const { text } = await generateText({
       model: "anthropic/claude-haiku-4-5-20251001",
       temperature: 0.35,
-      maxTokens: 700,
+      maxOutputTokens: 700,
       system: `You are Maya inside SSELFIE Starter Kit.
 
 You answer from Sandra's Editing Masterclass transcript only.

@@ -26,6 +26,11 @@ export type SelfieGuideEmailType =
   | "selfie-guide-day14-maya-bridge"
   | "selfie-guide-day21-final"
   | "selfie-guide-complete"
+  | "nurture-strategy-n1"
+  | "nurture-strategy-n2"
+  | "nurture-strategy-n3"
+  | "nurture-strategy-n4"
+  | "nurture-strategy-n5"
 
 export const SELFIE_GUIDE_EMAIL_TOUCHES: EmailTouchDefinition[] = [
   { days: 0, emailType: "selfie-guide-activation-day0" },

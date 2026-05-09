@@ -1244,7 +1244,7 @@ Output the JSON array of 9 posts only.`
       model,
       system: systemPrompt,
       prompt: userPrompt,
-      maxTokens: 4096,
+      maxOutputTokens: 4096,
       temperature: 0.7,
     })
 

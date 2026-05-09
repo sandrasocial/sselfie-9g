@@ -345,7 +345,7 @@ export async function POST(request: NextRequest) {
 
     await ensureVisibilityPlanTable()
 
-    const rows = await sql<{ access_token: string }[]>`
+    const rows = (await sql`
       INSERT INTO visibility_suite_plans (user_id, plan_json, source_answers, product_ids, created_at, updated_at)
       VALUES (
         ${neonUser.id},
@@ -356,7 +356,7 @@ export async function POST(request: NextRequest) {
         NOW()
       )
       RETURNING access_token::text
-    `
+    `) as Array<{ access_token: string }>
 
     const token = rows[0]?.access_token
     if (!token) {

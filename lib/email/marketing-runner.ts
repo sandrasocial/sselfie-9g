@@ -158,7 +158,7 @@ export async function processMarketingRun(input: {
   if (!run) return
 
   const tagKey = input.tagKey || run.tag_key || run.sequence_key
-  const segmentId = normalizeEmailIdentifier(input.segmentId || run.segment_id) || null
+  const segmentId = normalizeEmailIdentifier(input.segmentId || run.segment_id) || undefined
   const campaignKey = input.campaignKey || run.campaign_key
   const emailType = input.emailType || run.email_type || run.sequence_key
   const subject = input.subject || run.subject

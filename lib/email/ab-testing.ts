@@ -211,16 +211,13 @@ export async function updateABTestResults(testId: number, email: string, event: 
 
   if (!result || result.length === 0) return
 
-  const updateField = event === "opened" ? "opened" : event === "clicked" ? "clicked" : "converted"
-  const timestampField = `${updateField}_at`
-
-  await sql`
-    UPDATE email_ab_test_results
-    SET 
-      ${sql(updateField)} = TRUE,
-      ${sql(timestampField)} = NOW()
-    WHERE test_id = ${testId} AND recipient_email = ${email}
-  `
+  if (event === "opened") {
+    await sql`UPDATE email_ab_test_results SET opened = TRUE, opened_at = NOW() WHERE test_id = ${testId} AND recipient_email = ${email}`
+  } else if (event === "clicked") {
+    await sql`UPDATE email_ab_test_results SET clicked = TRUE, clicked_at = NOW() WHERE test_id = ${testId} AND recipient_email = ${email}`
+  } else {
+    await sql`UPDATE email_ab_test_results SET converted = TRUE, converted_at = NOW() WHERE test_id = ${testId} AND recipient_email = ${email}`
+  }
 }
 
 /**

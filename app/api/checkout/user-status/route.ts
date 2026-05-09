@@ -32,12 +32,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ userInfo: null }, { status: 202 })
     }
 
-    const rows = await sql<UserStatusRow[]>`
+    const rows = (await sql`
       SELECT email, password_setup_complete
       FROM users
       WHERE LOWER(email) = ${email}
       LIMIT 1
-    `
+    `) as UserStatusRow[]
 
     const user = rows[0]
     if (!user) {

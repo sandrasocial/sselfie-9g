@@ -193,7 +193,7 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
       system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,
-      maxTokens: 2000,
+      maxOutputTokens: 2000,
     } as any)
 
     // Deduct credits after successful response start

@@ -108,7 +108,7 @@ export async function POST(request: Request) {
 
     const { text } = await generateText({
       model: anthropic(MODEL_ID),
-      maxTokens: MAX_TOKENS,
+      maxOutputTokens: MAX_TOKENS,
       messages: [
         {
           role: "user",

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const result = streamText({
       model: createMayaOpenRouterModel("chat_pro"),
       temperature: 0.45,
-      maxTokens: Math.min(getMayaMaxTokensForTask("chat_pro"), 3000),
+      maxOutputTokens: Math.min(getMayaMaxTokensForTask("chat_pro"), 3000),
       system: `${BASE_SYSTEM}\n\n${productPrompt}`,
       prompt: userMessage,
     })
