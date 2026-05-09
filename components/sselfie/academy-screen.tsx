@@ -118,22 +118,22 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
   what_to_say: {
     image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
-    href: "/academy/what_to_say",
+    href: "/academy/access/what-to-say",
   },
   show_up: {
     image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
-    href: "/academy/show_up",
+    href: "/academy/access/show-up",
   },
   get_paid: {
     image: "/academy/sselfie-minimalism/academy-workbook.jpg",
     label: "Workbook",
-    href: "/academy/get_paid",
+    href: "/academy/access/get-paid",
   },
   ai_photo_prompts: {
     image: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
     label: "Prompt pack",
-    href: "/academy/ai_photo_prompts",
+    href: "/academy/access/ai-photo-prompts",
   },
 }
 
@@ -154,7 +154,7 @@ const RESOURCE_HUB_CARDS = [
     title: "Masterclass bonus library",
     description: "Workbooks, downloads, and bonus files from Branded by SSELFIE.",
     cta: "Open library",
-    href: "/academy/access/masterclass#bonus-library",
+    href: "/academy/access/masterclass",
     image: "/academy/sselfie-minimalism/academy-bonus-library.jpg",
     visibleFor: ["masterclass", "branded_by_sselfie"],
   },

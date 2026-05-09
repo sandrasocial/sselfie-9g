@@ -54,6 +54,7 @@ import {
   readMayaProModePreference,
 } from "@/lib/maya/mode-storage"
 import {
+  isStudioTab,
   readStudioTabFromHash,
   readStudioTabFromSearchParams,
   resolveStudioTab,
@@ -448,6 +449,7 @@ export default function SselfieApp({
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const lastScrollY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const hasRedirectedToAcademyRef = useRef(false)
   const [creditsFetchFailed, setCreditsFetchFailed] = useState(false)
   const upgradeImpressionsLogged = useRef<Set<string>>(new Set())
   const [upgradeOpportunities, setUpgradeOpportunities] = useState<UpgradeOpportunity[]>([])
@@ -468,6 +470,30 @@ export default function SselfieApp({
     if (!tabFromSearchParams) return
     setActiveTab((currentTab) => (currentTab === tabFromSearchParams ? currentTab : tabFromSearchParams))
   }, [tabFromSearchParams])
+
+  // Redirect academy-only buyers to the Academy tab on first load.
+  // Fires once myProductsData resolves — before that hasAcademyPurchases is false.
+  useEffect(() => {
+    if (!myProductsData) return // wait for SWR to resolve
+    if (hasRedirectedToAcademyRef.current) return // only run once
+    if (!isAcademyOnlyUser) return // only for academy-only buyers
+
+    // Respect explicit tab param in URL (e.g. from a checkout redirect)
+    const explicitTab =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("tab")
+        : null
+    if (explicitTab && isStudioTab(explicitTab) && explicitTab !== "maya") return
+
+    hasRedirectedToAcademyRef.current = true
+    setActiveTab("academy")
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      url.searchParams.set("tab", "academy")
+      url.hash = "academy"
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
+    }
+  }, [myProductsData, isAcademyOnlyUser])
 
   useEffect(() => {
     let cancelScheduledTabSync: (() => void) | null = null
@@ -536,10 +562,19 @@ export default function SselfieApp({
   const hasAcademyPurchases = ownedProducts.length > 0
   const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
+  const { toast } = useToast()
+
   const handleTabChange = (tabId: StudioTab) => {
-    // If user has no credits and no subscription, still let them into Maya —
-    // but the generation API will surface the upgrade modal naturally when they try.
-    // Only hard-block if they've been explicitly downgraded (no credits, no plan, no blueprint).
+    // Guard: if the tab is locked, show an informational toast instead of navigating.
+    const tabDef = tabs.find((t) => t.id === tabId)
+    if (tabDef?.locked) {
+      toast({
+        title: `${tabDef.label} · Studio`,
+        description: tabDef.lockMessage ?? "Available with Studio membership.",
+      })
+      return
+    }
+
     setActiveTab(tabId)
     // Keep query tab + hash aligned for deep-linking and back/forward consistency.
     const nextUrl = new URL(window.location.href)
@@ -839,14 +874,40 @@ export default function SselfieApp({
     }
   }, [shouldShowCheckout, isLoadingCredits])
 
-  const tabs = [
-    { id: "maya", label: "Maya" },
-    { id: "studio", label: "Studio" },
-    { id: "gallery", label: "Gallery" },
+  // ─── Tiered nav visibility ────────────────────────────────────────────────
+  // Every user sees all 6 tabs; locked tabs are dimmed + show a toast on click.
+  // Rules:
+  //   Full Studio member / admin → nothing locked
+  //   Blueprint-only            → maya, studio, gallery locked
+  //   Academy-only buyer        → maya, studio, gallery, feed-planner locked
+  //   Free / zero-credit user   → studio, gallery, feed-planner, academy locked
+  const isAcademyOnlyUser = hasAcademyPurchases && !access.isMember && !isPaidBlueprintUserForAccess
+  const STUDIO_LOCK_MSG = "Included with Studio membership"
+
+  type AppTab = { id: StudioTab; label: string; locked?: boolean; lockMessage?: string }
+
+  const BASE_TABS: AppTab[] = [
+    { id: "maya",         label: "Maya" },
+    { id: "studio",       label: "Studio" },
+    { id: "gallery",      label: "Gallery" },
     { id: "feed-planner", label: "Feed" },
-    { id: "academy", label: "Academy" },
-    { id: "account", label: "Account" },
+    { id: "academy",      label: "Academy" },
+    { id: "account",      label: "Account" },
   ]
+
+  const lockedTabIds: StudioTab[] = (() => {
+    if (access.hasFullAccess) return []
+    if (isPaidBlueprintUserForAccess) return ["maya", "studio", "gallery"]
+    if (isAcademyOnlyUser) return ["maya", "studio", "gallery", "feed-planner"]
+    // Free / no-credit users
+    return ["studio", "gallery", "feed-planner", "academy"]
+  })()
+
+  const tabs: AppTab[] = BASE_TABS.map((tab) =>
+    lockedTabIds.includes(tab.id)
+      ? { ...tab, locked: true, lockMessage: STUDIO_LOCK_MSG }
+      : tab,
+  )
 
   const user: UserType = {
     // Ensure id is a non-empty string for useMayaChat hook (convert number to string if needed)
@@ -1059,7 +1120,6 @@ export default function SselfieApp({
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(id) => handleTabChange(id as StudioTab)}
-        isNewUser={isNewUser}
         mayaSubTabs={MAYA_SUB_TABS}
         activeMayaSubTab={activeMayaSubTab}
         onMayaSubTabChange={handleMayaSubTabChange}
@@ -1175,21 +1235,30 @@ export default function SselfieApp({
                   <div className="grid grid-cols-2 gap-1">
                     {tabs.map((tab) => {
                       const isMenuTabActive = activeTab === tab.id
+                      const isMenuTabLocked = !!tab.locked
 
                       return (
                         <button
                           key={`menu-${tab.id}`}
                           onClick={() => {
-                            handleTabChange(tab.id)
-                            setIsMenuOpen(false)
+                            handleTabChange(tab.id as StudioTab)
+                            if (!isMenuTabLocked) setIsMenuOpen(false)
                           }}
-                          className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} text-left transition-colors ${
-                            isMenuTabActive
+                          className={`flex items-center justify-between ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} text-left transition-colors ${
+                            isMenuTabActive && !isMenuTabLocked
                               ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                              : isMenuTabLocked
+                              ? "text-[color:var(--app-text-secondary)] opacity-50 cursor-default"
                               : "text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
                           }`}
                         >
                           <span className="text-xs font-medium">{tab.label}</span>
+                          {isMenuTabLocked && (
+                            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" aria-hidden className="shrink-0 opacity-60">
+                              <rect x="1" y="4" width="6" height="5" rx="0.5" fill="currentColor" />
+                              <path d="M2.5 4V3a1.5 1.5 0 0 1 3 0v1" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+                            </svg>
+                          )}
                         </button>
                       )
                     })}

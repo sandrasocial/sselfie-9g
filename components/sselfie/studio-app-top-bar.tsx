@@ -6,6 +6,10 @@ import { DesignClasses } from "@/lib/design-tokens"
 export interface StudioAppTabItem {
   id: string
   label: string
+  /** When true the tab is visible but clicking it triggers a toast instead of navigation */
+  locked?: boolean
+  /** Human-readable reason shown in the toast when a locked tab is clicked */
+  lockMessage?: string
 }
 
 export interface StudioAppMayaSubTabItem {
@@ -17,7 +21,8 @@ interface StudioAppTopBarProps {
   tabs: StudioAppTabItem[]
   activeTab: string
   onTabChange: (id: string) => void
-  isNewUser: boolean
+  /** @deprecated Use per-tab `locked` prop instead */
+  isNewUser?: boolean
   /** Maya: ≡ menu. Other tabs: Feeds + account menu, etc. */
   trailing?: ReactNode
   mayaSubTabs?: StudioAppMayaSubTabItem[]
@@ -34,7 +39,6 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
     tabs,
     activeTab,
     onTabChange,
-    isNewUser,
     trailing,
     mayaSubTabs = [],
     activeMayaSubTab,
@@ -119,8 +123,7 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
               <div className="flex gap-1 sm:gap-1.5 min-w-max pr-1">
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.id
-                  const isGated =
-                    isNewUser && ["studio", "gallery", "feed-planner", "academy"].includes(tab.id)
+                  const isLocked = !!tab.locked
                   const isMaya = tab.id === "maya"
 
                   return (
@@ -133,15 +136,17 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                         onClick={() => handlePrimaryTabClick(tab)}
                         className={`relative touch-manipulation rounded-md px-2.5 sm:px-3 py-2 min-h-[44px] transition-all duration-200 ${
                           isActive ? "" : "hover:bg-[rgba(15,13,11,0.05)] active:scale-[0.98]"
-                        } ${isGated ? "opacity-50" : ""}`}
+                        } ${isLocked ? "opacity-40" : ""}`}
                         aria-label={
-                          isGated ? `${tab.label} — unlocks as you create with Maya` : `Open ${tab.label}`
+                          isLocked
+                            ? `${tab.label} — ${tab.lockMessage ?? "requires an upgrade"}`
+                            : `Open ${tab.label}`
                         }
                         aria-current={isActive ? "page" : undefined}
                         aria-expanded={isMaya && showMayaSubTabs ? isMayaSubnavOpen : undefined}
                         aria-haspopup={isMaya && showMayaSubTabs ? "menu" : undefined}
                       >
-                        {isActive && (
+                        {isActive && !isLocked && (
                           <span
                             className="absolute inset-0 rounded-md pointer-events-none"
                             style={{
@@ -152,15 +157,31 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                           />
                         )}
                         <span
-                          className={`relative z-10 block whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                            isActive ? "text-[color:var(--app-btn-primary-text)]" : "text-[color:var(--app-text-secondary)]"
+                          className={`relative z-10 flex items-center gap-1 whitespace-nowrap text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                            isActive && !isLocked
+                              ? "text-[color:var(--app-btn-primary-text)]"
+                              : "text-[color:var(--app-text-secondary)]"
                           }`}
                         >
                           {tab.label}
-                          {isGated ? (
-                            <span className="ml-1 text-[8px] font-normal uppercase tracking-normal opacity-60">
-                              soon
-                            </span>
+                          {isLocked ? (
+                            <svg
+                              width="8"
+                              height="9"
+                              viewBox="0 0 8 9"
+                              fill="none"
+                              aria-hidden
+                              className="opacity-70 shrink-0"
+                            >
+                              <rect x="1" y="4" width="6" height="5" rx="0.5" fill="currentColor" />
+                              <path
+                                d="M2.5 4V3a1.5 1.5 0 0 1 3 0v1"
+                                stroke="currentColor"
+                                strokeWidth="1.1"
+                                fill="none"
+                                strokeLinecap="round"
+                              />
+                            </svg>
                           ) : null}
                         </span>
                       </button>
@@ -222,14 +243,6 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
               })}
             </div>
           </div>
-        ) : null}
-        {isNewUser ? (
-          <p
-            className="text-[10px] sm:text-xs text-center px-3 pb-2 leading-snug"
-            style={{ color: "var(--app-text-secondary)" }}
-          >
-            Create with Maya to unlock Gallery, Feed &amp; Academy
-          </p>
         ) : null}
       </header>
     )
