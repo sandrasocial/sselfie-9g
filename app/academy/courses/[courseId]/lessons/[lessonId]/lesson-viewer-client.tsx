@@ -62,6 +62,9 @@ type LessonViewerClientProps = {
   lessons: CourseLesson[]
   previousLesson: { id: number; title: string } | null
   nextLesson: { id: number; title: string } | null
+  /** In-app mode: provide these to stay inside the app shell */
+  onBack?: () => void
+  onNavigateLesson?: (lessonId: number) => void
 }
 
 type LessonNotesResponse = {
@@ -119,6 +122,8 @@ export function LessonViewerClient({
   lessons,
   previousLesson,
   nextLesson,
+  onBack,
+  onNavigateLesson,
 }: LessonViewerClientProps) {
   const lessonContent = lesson.content || {}
   const vimeoId = parseVimeoId(lesson.video_url)
@@ -330,41 +335,56 @@ export function LessonViewerClient({
 
       {!sidebarCollapsed ? (
         <div className="mt-5 space-y-1">
-          {lessonStates.map((item) => (
-            <Link
-              key={item.id}
-              href={`/academy/courses/${course.id}/lessons/${item.id}`}
-              className="grid grid-cols-[16px_36px_minmax(0,1fr)_46px] items-center gap-3 px-3 py-2 transition-colors"
-              style={{
-                background: item.current ? "rgba(244,240,230,0.08)" : "transparent",
-              }}
-            >
-              <span
-                className={`${inter.className} text-[10px]`}
-                style={{ color: item.completed ? C.stone : "transparent", fontWeight: 600 }}
+          {lessonStates.map((item) => {
+            const lessonInnerContent = (
+              <>
+                <span
+                  className={`${inter.className} text-[10px]`}
+                  style={{ color: item.completed ? C.stone : "transparent", fontWeight: 600 }}
+                >
+                  {item.completed ? "✓" : item.current ? "→" : ""}
+                </span>
+                <span
+                  className={`${cormorant.className}`}
+                  style={{ fontWeight: 300, fontSize: 22, color: C.stone, lineHeight: 1 }}
+                >
+                  {String(item.lesson_number).padStart(2, "0")}
+                </span>
+                <span
+                  className={`${inter.className} truncate text-[13px]`}
+                  style={{ color: item.current ? C.cream : C.body, fontWeight: 400 }}
+                >
+                  {item.title}
+                </span>
+                <span
+                  className={`${inter.className} text-right text-[10px] uppercase tracking-[0.2em]`}
+                  style={{ color: C.muted, fontWeight: 600 }}
+                >
+                  {formatLessonDuration(item.durationSeconds)}
+                </span>
+              </>
+            )
+            return onNavigateLesson ? (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigateLesson(item.id)}
+                className="grid w-full grid-cols-[16px_36px_minmax(0,1fr)_46px] items-center gap-3 px-3 py-2 transition-colors text-left"
+                style={{ background: item.current ? "rgba(244,240,230,0.08)" : "transparent" }}
               >
-                {item.completed ? "✓" : item.current ? "→" : ""}
-              </span>
-              <span
-                className={`${cormorant.className}`}
-                style={{ fontWeight: 300, fontSize: 22, color: C.stone, lineHeight: 1 }}
+                {lessonInnerContent}
+              </button>
+            ) : (
+              <Link
+                key={item.id}
+                href={`/academy/courses/${course.id}/lessons/${item.id}`}
+                className="grid grid-cols-[16px_36px_minmax(0,1fr)_46px] items-center gap-3 px-3 py-2 transition-colors"
+                style={{ background: item.current ? "rgba(244,240,230,0.08)" : "transparent" }}
               >
-                {String(item.lesson_number).padStart(2, "0")}
-              </span>
-              <span
-                className={`${inter.className} truncate text-[13px]`}
-                style={{ color: item.current ? C.cream : C.body, fontWeight: 400 }}
-              >
-                {item.title}
-              </span>
-              <span
-                className={`${inter.className} text-right text-[10px] uppercase tracking-[0.2em]`}
-                style={{ color: C.muted, fontWeight: 600 }}
-              >
-                {formatLessonDuration(item.durationSeconds)}
-              </span>
-            </Link>
-          ))}
+                {lessonInnerContent}
+              </Link>
+            )
+          })}
         </div>
       ) : (
         <p
@@ -629,9 +649,12 @@ export function LessonViewerClient({
   ) : null
 
   // ─── Render ───────────────────────────────────────────────────────────────
+  // When rendered in-app (onBack provided), skip the <main> shell — the app
+  // already provides the page wrapper and background.
+  const Wrapper = onBack ? "div" : "main"
   return (
-    <main
-      className="min-h-screen"
+    <Wrapper
+      className={onBack ? "min-h-0" : "min-h-screen"}
       style={{ background: C.ink, color: C.cream }}
     >
       <div className="mx-auto max-w-[1480px] px-6 py-10 md:px-10 md:py-12">
@@ -639,14 +662,25 @@ export function LessonViewerClient({
 
           {/* ── Main column ── */}
           <section className="space-y-6">
-            {/* Back link */}
-            <Link
-              href={`/academy/courses/${course.id}`}
-              className={`${inter.className} text-[10px] uppercase tracking-[0.5em] transition-opacity hover:opacity-70`}
-              style={{ color: C.muted, fontWeight: 600 }}
-            >
-              ← {course.title}
-            </Link>
+            {/* Back link / button */}
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className={`${inter.className} text-[10px] uppercase tracking-[0.5em] transition-opacity hover:opacity-70`}
+                style={{ color: C.muted, fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+              >
+                ← {course.title}
+              </button>
+            ) : (
+              <Link
+                href={`/academy/courses/${course.id}`}
+                className={`${inter.className} text-[10px] uppercase tracking-[0.5em] transition-opacity hover:opacity-70`}
+                style={{ color: C.muted, fontWeight: 600 }}
+              >
+                ← {course.title}
+              </Link>
+            )}
 
             {/* Video */}
             <div
@@ -712,24 +746,46 @@ export function LessonViewerClient({
               style={{ borderTop: `1px solid ${C.div}` }}
             >
               {previousLesson ? (
-                <Link
-                  href={`/academy/courses/${course.id}/lessons/${previousLesson.id}`}
-                  className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
-                  style={{ color: C.muted, fontWeight: 600 }}
-                >
-                  ← Previous
-                </Link>
+                onNavigateLesson ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateLesson(previousLesson.id)}
+                    className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.muted, fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    ← Previous
+                  </button>
+                ) : (
+                  <Link
+                    href={`/academy/courses/${course.id}/lessons/${previousLesson.id}`}
+                    className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    ← Previous
+                  </Link>
+                )
               ) : (
                 <span />
               )}
               {nextLesson ? (
-                <Link
-                  href={`/academy/courses/${course.id}/lessons/${nextLesson.id}`}
-                  className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
-                  style={{ color: C.muted, fontWeight: 600 }}
-                >
-                  Next →
-                </Link>
+                onNavigateLesson ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateLesson(nextLesson.id)}
+                    className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.muted, fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    Next →
+                  </button>
+                ) : (
+                  <Link
+                    href={`/academy/courses/${course.id}/lessons/${nextLesson.id}`}
+                    className={`${inter.className} text-[10px] uppercase tracking-[0.4em] transition-opacity hover:opacity-70`}
+                    style={{ color: C.muted, fontWeight: 600 }}
+                  >
+                    Next →
+                  </Link>
+                )
               ) : null}
             </div>
 
@@ -873,6 +929,6 @@ export function LessonViewerClient({
           opacity: 1;
         }
       `}</style>
-    </main>
+    </Wrapper>
   )
 }

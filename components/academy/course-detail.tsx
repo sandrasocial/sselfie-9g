@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import LessonModal from "./lesson-modal"
+import InAppLessonViewer from "./in-app-lesson-viewer"
 
 interface Lesson {
   id: string
@@ -80,26 +80,6 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
     fetchCourseData()
   }
 
-  const handleNextLesson = () => {
-    if (!selectedLessonId) return
-
-    const currentIndex = lessons.findIndex((l) => l.id === selectedLessonId)
-    if (currentIndex < lessons.length - 1) {
-      const nextLesson = lessons[currentIndex + 1]
-      if (!nextLesson.is_locked) {
-        setSelectedLessonId(nextLesson.id)
-      }
-    }
-  }
-
-  const handlePrevLesson = () => {
-    if (!selectedLessonId) return
-
-    const currentIndex = lessons.findIndex((l) => l.id === selectedLessonId)
-    if (currentIndex > 0) {
-      setSelectedLessonId(lessons[currentIndex - 1].id)
-    }
-  }
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -161,9 +141,30 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
   const completedLessons = course.completed_lessons ?? 0
   const lessonCount = course.lesson_count ?? 0
 
-  const currentLessonIndex = selectedLessonId ? lessons.findIndex((l) => l.id === selectedLessonId) : -1
-  const hasNextLesson = currentLessonIndex >= 0 && currentLessonIndex < lessons.length - 1
-  const hasPrevLesson = currentLessonIndex > 0
+  // ── Lesson viewer: full-screen in-app viewer (replaces dark modal) ─────────
+  if (selectedLessonId) {
+    return (
+      <InAppLessonViewer
+        courseId={courseId}
+        lessonId={selectedLessonId}
+        courseTitle={course.title}
+        courseDescription={course.description}
+        lessons={lessons.map((l, idx) => ({
+          id: l.id,
+          lesson_number: idx + 1,
+          title: l.title,
+          duration_seconds: l.duration_seconds,
+          order_index: l.order_index ?? idx,
+          is_completed: l.is_completed,
+        }))}
+        onBack={() => {
+          setSelectedLessonId(null)
+          fetchCourseData() // refresh progress after returning
+        }}
+        onNavigate={(id) => setSelectedLessonId(id)}
+      />
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -312,17 +313,6 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
         </div>
       </div>
 
-      {/* Lesson Modal */}
-      {selectedLessonId && (
-        <LessonModal
-          lessonId={selectedLessonId}
-          courseId={courseId}
-          onClose={() => setSelectedLessonId(null)}
-          onLessonComplete={handleLessonComplete}
-          onNextLesson={hasNextLesson ? handleNextLesson : undefined}
-          onPrevLesson={hasPrevLesson ? handlePrevLesson : undefined}
-        />
-      )}
     </div>
   )
 }
