@@ -471,30 +471,6 @@ export default function SselfieApp({
     setActiveTab((currentTab) => (currentTab === tabFromSearchParams ? currentTab : tabFromSearchParams))
   }, [tabFromSearchParams])
 
-  // Redirect academy-only buyers to the Academy tab on first load.
-  // Fires once myProductsData resolves — before that hasAcademyPurchases is false.
-  useEffect(() => {
-    if (!myProductsData) return // wait for SWR to resolve
-    if (hasRedirectedToAcademyRef.current) return // only run once
-    if (!isAcademyOnlyUser) return // only for academy-only buyers
-
-    // Respect explicit tab param in URL (e.g. from a checkout redirect)
-    const explicitTab =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("tab")
-        : null
-    if (explicitTab && isStudioTab(explicitTab) && explicitTab !== "maya") return
-
-    hasRedirectedToAcademyRef.current = true
-    setActiveTab("academy")
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href)
-      url.searchParams.set("tab", "academy")
-      url.hash = "academy"
-      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
-    }
-  }, [myProductsData, isAcademyOnlyUser])
-
   useEffect(() => {
     let cancelScheduledTabSync: (() => void) | null = null
     const handlePopState = () => {
@@ -882,6 +858,32 @@ export default function SselfieApp({
   //   Academy-only buyer        → maya, studio, gallery, feed-planner locked
   //   Free / zero-credit user   → studio, gallery, feed-planner, academy locked
   const isAcademyOnlyUser = hasAcademyPurchases && !access.isMember && !isPaidBlueprintUserForAccess
+
+  // Redirect academy-only buyers to the Academy tab on first load.
+  // Placed here (after isAcademyOnlyUser is declared) to avoid a TDZ crash
+  // — dep arrays are evaluated immediately when the function body executes.
+  useEffect(() => {
+    if (!myProductsData) return // wait for SWR to resolve
+    if (hasRedirectedToAcademyRef.current) return // only run once
+    if (!isAcademyOnlyUser) return // only for academy-only buyers
+
+    // Respect explicit tab param in URL (e.g. from a checkout redirect)
+    const explicitTab =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("tab")
+        : null
+    if (explicitTab && isStudioTab(explicitTab) && explicitTab !== "maya") return
+
+    hasRedirectedToAcademyRef.current = true
+    setActiveTab("academy")
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      url.searchParams.set("tab", "academy")
+      url.hash = "academy"
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
+    }
+  }, [myProductsData, isAcademyOnlyUser])
+
   const STUDIO_LOCK_MSG = "Included with Studio membership"
 
   type AppTab = { id: StudioTab; label: string; locked?: boolean; lockMessage?: string }
