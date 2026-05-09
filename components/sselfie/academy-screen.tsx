@@ -1185,11 +1185,16 @@ export default function AcademyScreen() {
                     const copy = getProductAccessCopy(product)
                     const visual = PRODUCT_VISUALS[product.id]
                     const href = visual?.href || product.accessUrl
+                    // Workbook products open directly in-app without a page navigation
+                    const workbookSlug = product.slug && VISIBILITY_MINI_PRODUCT_BY_SLUG[product.slug] ? product.slug : null
+                    const handleClick = workbookSlug
+                      ? () => { setSelectedWorkbookSlug(workbookSlug); setSelectedView("workbook") }
+                      : () => href && router.push(href)
                     return (
                       <button
                         key={product.id}
                         type="button"
-                        onClick={() => href && router.push(href)}
+                        onClick={handleClick}
                         className={`${academyHubCardClass} min-h-[260px]`}
                       >
                         <img
