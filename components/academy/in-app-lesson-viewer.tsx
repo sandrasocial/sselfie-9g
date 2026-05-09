@@ -121,23 +121,10 @@ export default function InAppLessonViewer({
     }
   }, [courseId, lessonId])
 
-  // ── Loading / error states (cream/ink to match the viewer) ────────────────
-  const C = {
-    ink: "#0F0D0B",
-    cream: "#F4F0E6",
-    muted: "#A79B8B",
-  }
-
   if (loading) {
     return (
-      <div
-        className="flex min-h-[60vh] items-center justify-center"
-        style={{ background: C.ink, color: C.cream }}
-      >
-        <p
-          className="text-[10px] uppercase tracking-[0.5em]"
-          style={{ color: C.muted, fontFamily: "Inter, sans-serif", fontWeight: 600 }}
-        >
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="font-['Inter'] text-[10px] uppercase tracking-[0.5em] font-semibold text-[color:var(--app-text-muted,#8a8780)]">
           Loading lesson…
         </p>
       </div>
@@ -146,21 +133,15 @@ export default function InAppLessonViewer({
 
   if (error || !lessonDetail) {
     return (
-      <div
-        className="flex min-h-[60vh] flex-col items-center justify-center gap-6"
-        style={{ background: C.ink, color: C.cream }}
-      >
-        <p
-          className="text-[13px]"
-          style={{ color: C.muted, fontFamily: "Inter, sans-serif" }}
-        >
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6">
+        <p className="font-['Inter'] text-[13px] text-[color:var(--app-text-secondary,#666666)]">
           {error || "Lesson not found"}
         </p>
         <button
           type="button"
           onClick={onBack}
-          className="text-[10px] uppercase tracking-[0.5em] transition-opacity hover:opacity-70"
-          style={{ color: C.muted, fontFamily: "Inter, sans-serif", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+          className="font-['Inter'] text-[10px] uppercase tracking-[0.5em] font-semibold text-[color:var(--app-text-muted,#8a8780)] hover:opacity-70 transition-opacity"
+          style={{ background: "none", border: "none", cursor: "pointer" }}
         >
           ← Back to course
         </button>

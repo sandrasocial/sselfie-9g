@@ -218,26 +218,26 @@
   --duration-ui-fast: 160ms;
   --duration-ui: 200ms;
 
-  /* shadcn semantic tokens — map to stone */
-  --background: 0 0% 5%;
-  --foreground: 30 20% 94%;
-  --card: 30 8% 10%;
-  --card-foreground: 30 20% 94%;
-  --popover: 30 8% 10%;
-  --popover-foreground: 30 20% 94%;
-  --primary: 35 10% 75%;
-  --primary-foreground: 0 0% 5%;
-  --secondary: 30 5% 18%;
-  --secondary-foreground: 30 20% 94%;
-  --muted: 30 5% 18%;
-  --muted-foreground: 30 5% 54%;
-  --accent: 30 7% 64%;
-  --accent-foreground: 0 0% 5%;
+  /* shadcn semantic tokens — light (white/pearl) default per DESIGN_SYSTEM.md */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 4%;
+  --card: 0 0% 96%;
+  --card-foreground: 0 0% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 0 0% 4%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 0% 90%;
+  --accent-foreground: 0 0% 4%;
   --destructive: 0 62% 40%;
-  --destructive-foreground: 30 20% 94%;
-  --border: rgba(195, 190, 182, 0.20);
-  --input: rgba(175, 170, 162, 0.10);
-  --ring: rgba(195, 190, 182, 0.40);
+  --destructive-foreground: 0 0% 100%;
+  --border: #e5e5e5;
+  --input: rgba(10, 10, 10, 0.06);
+  --ring: rgba(10, 10, 10, 0.28);
   --radius: 0.75rem;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);

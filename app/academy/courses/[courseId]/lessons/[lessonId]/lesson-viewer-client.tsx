@@ -20,32 +20,41 @@ const inter = Inter({
   weight: ["300", "500", "600"],
 })
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens — single source, maps to app CSS variables ─────────────────
+// All authenticated lesson content uses the studio app design system:
+// white/pearl backgrounds, obsidian text, whisper borders, rounded corners.
 const C = {
-  ink: "#0F0D0B",
-  inkSoft: "#1B1713",
-  inkLift: "#241F19",
-  cream: "#F4F0E6",
-  stone: "#C4B5A0",
-  body: "#D8CFC0",
-  muted: "#A79B8B",
-  quiet: "#84786A",
-  div: "rgba(244,240,230,0.16)",
-  divStrong: "rgba(244,240,230,0.28)",
+  bg: "var(--app-bg, #ffffff)",
+  surface: "var(--app-glass-bg, #f5f5f5)",
+  text: "var(--app-text-primary, #0a0a0a)",
+  body: "var(--app-text-secondary, #666666)",
+  muted: "var(--app-text-muted, #8a8780)",
+  border: "var(--app-border, #e5e5e5)",
+  borderSoft: "var(--app-glass-border, #e5e5e5)",
+  // Keep backward aliases so existing references compile
+  ink: "var(--app-text-primary, #0a0a0a)",
+  cream: "var(--app-bg, #ffffff)",
+  stone: "var(--app-text-muted, #8a8780)",
+  div: "var(--app-border, #e5e5e5)",
+  divStrong: "var(--app-border, #e5e5e5)",
+  inkSoft: "var(--app-glass-bg, #f5f5f5)",
+  inkLift: "var(--app-btn-secondary-bg, rgba(10,10,10,0.04))",
+  quiet: "var(--app-text-muted, #8a8780)",
 }
 
+// Letterpress on light surface (DESIGN_SYSTEM.md light formula)
 const LP =
-  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
+  "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)"
 
-const PAPER_INPUT_BORDER = "rgba(15,13,11,0.18)"
-const PAPER_INPUT_FOCUS = "rgba(15,13,11,0.42)"
+const PAPER_INPUT_BORDER = "rgba(10,10,10,0.12)"
+const PAPER_INPUT_FOCUS = "rgba(10,10,10,0.28)"
 const paperInputStyle = {
-  background: C.cream,
+  background: "#ffffff",
   border: `1px solid ${PAPER_INPUT_BORDER}`,
-  color: C.ink,
+  color: "var(--app-text-primary, #0a0a0a)",
   fontWeight: 400,
   boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -1px 0 rgba(0,0,0,0.08)",
+    "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(10,10,10,0.06)",
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -655,7 +664,7 @@ export function LessonViewerClient({
   return (
     <Wrapper
       className={onBack ? "min-h-0" : "min-h-screen"}
-      style={{ background: C.ink, color: C.cream }}
+      style={{ background: C.bg, color: C.text }}
     >
       <div className="mx-auto max-w-[1480px] px-6 py-10 md:px-10 md:py-12">
         <div className="grid gap-10 md:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">

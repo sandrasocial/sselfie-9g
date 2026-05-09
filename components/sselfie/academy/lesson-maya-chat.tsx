@@ -5,21 +5,21 @@ import { useCallback, useRef, useState } from "react"
 
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
-// ─── Design tokens (mirror lesson-viewer-client) ──────────────────────────────
+// ─── Design tokens — mirrors app CSS variables (single design system) ────────
 const C = {
-  ink: "#0F0D0B",
-  inkSoft: "#1B1713",
-  inkLift: "#241F19",
-  cream: "#F4F0E6",
-  stone: "#C4B5A0",
-  body: "#D8CFC0",
-  muted: "#A79B8B",
-  div: "rgba(244,240,230,0.16)",
-  divStrong: "rgba(244,240,230,0.28)",
+  ink: "var(--app-text-primary, #0a0a0a)",
+  inkSoft: "var(--app-glass-bg, #f5f5f5)",
+  inkLift: "var(--app-btn-secondary-bg, rgba(10,10,10,0.04))",
+  cream: "var(--app-bg, #ffffff)",
+  stone: "var(--app-text-muted, #8a8780)",
+  body: "var(--app-text-secondary, #666666)",
+  muted: "var(--app-text-muted, #8a8780)",
+  div: "var(--app-border, #e5e5e5)",
+  divStrong: "var(--app-border, #e5e5e5)",
 }
 
-const PAPER_INPUT_BORDER = "rgba(15,13,11,0.18)"
-const PAPER_INPUT_FOCUS = "rgba(15,13,11,0.42)"
+const PAPER_INPUT_BORDER = "rgba(10,10,10,0.12)"
+const PAPER_INPUT_FOCUS = "rgba(10,10,10,0.28)"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ActionLevel = "bare_minimum" | "bold_move" | "bonus_vibe"

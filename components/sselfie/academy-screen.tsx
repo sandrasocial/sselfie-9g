@@ -7,6 +7,8 @@ import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import MiniProductCard from "./mini-product-card"
+import { MiniProductWorkspace } from "../academy/mini-product-workspace"
+import { VISIBILITY_MINI_PRODUCT_BY_SLUG } from "@/lib/visibility-products"
 import UnifiedLoading from "./unified-loading"
 import { useRouter, useSearchParams } from "next/navigation"
 import { parseAcademyViewParam } from "@/lib/academy/view-routing"
@@ -225,15 +227,17 @@ export default function AcademyScreen() {
   const initialAcademyView = parseAcademyViewParam(
     searchParams.get("academy_view") ?? searchParams.get("academyView")
   )
-  // Deep-link support: ?academy_course_id=X opens the course directly within the in-app
-  // viewer. The access gate pages redirect here instead of to the standalone course route.
+  // Deep-link support: ?academy_course_id=X opens a course, ?academy_workbook=slug opens a workbook.
+  // Access gate pages redirect here so everything stays inside the app shell.
   const initialCourseId = searchParams.get("academy_course_id") ?? null
+  const initialWorkbookSlug = searchParams.get("academy_workbook") ?? null
   const [selectedView, setSelectedView] = useState<AcademyView>(
-    initialCourseId ? "courses" : (initialAcademyView ?? "overview")
+    initialCourseId ? "courses" : initialWorkbookSlug ? "workbook" : (initialAcademyView ?? "overview")
   )
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<string>("all")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(initialCourseId)
+  const [selectedWorkbookSlug, setSelectedWorkbookSlug] = useState<string | null>(initialWorkbookSlug)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
@@ -255,6 +259,13 @@ export default function AcademyScreen() {
     nextUrl.searchParams.delete("academy_course_id")
     window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
   }, [initialCourseId])
+
+  useEffect(() => {
+    if (!initialWorkbookSlug || typeof window === "undefined") return
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.delete("academy_workbook")
+    window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+  }, [initialWorkbookSlug])
 
   // Load membership status first so studio-only endpoints can be conditionally gated.
   const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
@@ -834,6 +845,25 @@ export default function AcademyScreen() {
         )}
       </div>
     )
+  }
+
+  // ── Workbook view — renders MiniProductWorkspace inside the app shell ────────
+  if (selectedView === "workbook" && selectedWorkbookSlug) {
+    const product = VISIBILITY_MINI_PRODUCT_BY_SLUG[selectedWorkbookSlug]
+    if (product) {
+      return (
+        <div className="space-y-6">
+          <button
+            type="button"
+            onClick={() => { setSelectedView("overview"); setSelectedWorkbookSlug(null) }}
+            className="font-['Inter'] text-xs font-semibold uppercase tracking-[0.5em] text-[color:var(--app-text-muted)] hover:text-[color:var(--app-text-primary)] transition-colors"
+          >
+            ← Academy
+          </button>
+          <MiniProductWorkspace product={product} />
+        </div>
+      )
+    }
   }
 
   if (selectedView === "courses") {
