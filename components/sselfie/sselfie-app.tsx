@@ -889,11 +889,11 @@ export default function SselfieApp({
   type AppTab = { id: StudioTab; label: string; locked?: boolean; lockMessage?: string }
 
   const BASE_TABS: AppTab[] = [
+    { id: "academy",      label: "Academy" },
     { id: "maya",         label: "Maya" },
     { id: "studio",       label: "Studio" },
     { id: "gallery",      label: "Gallery" },
     { id: "feed-planner", label: "Feed" },
-    { id: "academy",      label: "Academy" },
     { id: "account",      label: "Account" },
   ]
 

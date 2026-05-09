@@ -40,13 +40,16 @@ const fetcher = async (url: string) => {
 
 const getFriendlyTierName = (tier: string): string => {
   const tierMap: Record<string, string> = {
-    sselfie_studio_membership: "Studio Member",
-    one_time_session: "One-Time Session",
+    sselfie_studio_membership: "Studio",
+    academy_purchases: "Academy",
+    one_time_session: "One-Time",
     starter: "Starter",
     pro: "Pro",
     elite: "Elite",
   }
-  return tierMap[tier.toLowerCase()] || tier
+  // Strip suffixes like "/2" that some API responses append
+  const base = tier.split("/")[0].toLowerCase().trim()
+  return tierMap[base] ?? tierMap[tier.toLowerCase().trim()] ?? "Member"
 }
 
 const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }> = {
@@ -241,50 +244,42 @@ export default function AcademyScreen() {
     window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
   }, [initialAcademyView])
 
+  // Load membership status first so studio-only endpoints can be conditionally gated.
+  const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
+  const hasStudioMembership = myProductsData?.hasStudioMembership ?? false
+
   const {
     data: coursesData,
     error: coursesError,
     isLoading: coursesLoading,
-  } = useSWR("/api/academy/courses", fetcher, {
-    onSuccess: data => console.log("[v0] Courses data loaded successfully:", data),
-    onError: error => console.error("[v0] Courses SWR error:", error),
-  })
+  } = useSWR("/api/academy/courses", fetcher)
   const {
     data: templatesData,
     error: templatesError,
     isLoading: templatesLoading,
-  } = useSWR("/api/academy/templates", fetcher, {
-    onSuccess: data => console.log("[v0] Templates data loaded successfully:", data),
-    onError: error => console.error("[v0] Templates SWR error:", error),
-  })
+    // Only call if the user is a Studio member — non-members get 403 from this endpoint.
+  } = useSWR(hasStudioMembership ? "/api/academy/templates" : null, fetcher)
   const {
     data: monthlyDropsData,
     error: monthlyDropsError,
     isLoading: monthlyDropsLoading,
-  } = useSWR("/api/academy/monthly-drops", fetcher, {
-    onSuccess: data => console.log("[v0] Monthly drops data loaded successfully:", data),
-    onError: error => console.error("[v0] Monthly drops SWR error:", error),
-  })
+  } = useSWR("/api/academy/monthly-drops", fetcher)
   const {
     data: flatlayImagesData,
     error: flatlayImagesError,
     isLoading: flatlayImagesLoading,
-  } = useSWR("/api/academy/flatlay-images", fetcher, {
-    onSuccess: data => console.log("[v0] Flatlay images data loaded successfully:", data),
-    onError: error => console.error("[v0] Flatlay images SWR error:", error),
-  })
+    // Only call if the user is a Studio member — non-members get 403 from this endpoint.
+  } = useSWR(hasStudioMembership ? "/api/academy/flatlay-images" : null, fetcher)
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
 
   useSWR("/api/user/credits", fetcher, {
     onSuccess: data => setCreditBalance(data?.balance || 0),
   })
-  const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
 
   const templatesHasAccess = templatesData?.hasAccess ?? false
   const monthlyDropsHasAccess = monthlyDropsData?.hasAccess ?? false
   const flatlayImagesHasAccess = flatlayImagesData?.hasAccess ?? false
-  const hasStudioMembership = myProductsData?.hasStudioMembership ?? false
   const userTier = (coursesData?.userTier ||
     (hasStudioMembership ? "sselfie_studio_membership" : userInfoData?.plan || "starter")) as string
   const allCourses = coursesData?.courses || []
@@ -1093,25 +1088,25 @@ export default function AcademyScreen() {
               </div>
 
               <div className="grid max-w-2xl grid-cols-3 border-y border-[color:var(--app-glass-border)]">
-                <div className="border-r border-[color:var(--app-glass-border)] py-5 pr-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">Plan</div>
-                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
+                <div className="min-w-0 overflow-hidden border-r border-[color:var(--app-glass-border)] py-4 pr-3">
+                  <div className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">Plan</div>
+                  <div className="mt-1.5 truncate font-serif text-base text-[color:var(--app-text-primary)] sm:text-lg">
                     {getFriendlyTierName(userTier)}
                   </div>
                 </div>
-                <div className="border-r border-[color:var(--app-glass-border)] px-4 py-5">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
+                <div className="min-w-0 overflow-hidden border-r border-[color:var(--app-glass-border)] px-3 py-4">
+                  <div className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
                     Completed
                   </div>
-                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
+                  <div className="mt-1.5 font-serif text-base text-[color:var(--app-text-primary)] sm:text-lg">
                     {completedCoursesCount}/{totalEnrolledCourses}
                   </div>
                 </div>
-                <div className="py-5 pl-4">
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
+                <div className="min-w-0 overflow-hidden py-4 pl-3">
+                  <div className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--app-text-muted)]">
                     In progress
                   </div>
-                  <div className="mt-2 font-serif text-lg text-[color:var(--app-text-primary)] sm:text-xl">
+                  <div className="mt-1.5 font-serif text-base text-[color:var(--app-text-primary)] sm:text-lg">
                     {inProgressCourses.length}
                   </div>
                 </div>
