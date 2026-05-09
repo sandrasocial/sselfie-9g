@@ -7,7 +7,6 @@ import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import MiniProductCard from "./mini-product-card"
-import { MiniProductWorkspace } from "../academy/mini-product-workspace"
 import { VISIBILITY_MINI_PRODUCT_BY_SLUG } from "@/lib/visibility-products"
 import UnifiedLoading from "./unified-loading"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -847,20 +846,34 @@ export default function AcademyScreen() {
     )
   }
 
-  // ── Workbook view — renders MiniProductWorkspace inside the app shell ────────
+  // ── Workbook view — embeds the correct static workbook HTML via iframe ────────
+  // Maps product slug → the static workbook URL (served from /public/academy/*)
+  const WORKBOOK_IFRAME_URLS: Record<string, string> = {
+    "what-to-say": "/academy/what_to_say/",
+    "show-up": "/academy/show_up/",
+    "get-paid": "/academy/get_paid/",
+  }
+
   if (selectedView === "workbook" && selectedWorkbookSlug) {
-    const product = VISIBILITY_MINI_PRODUCT_BY_SLUG[selectedWorkbookSlug]
-    if (product) {
+    const iframeSrc = WORKBOOK_IFRAME_URLS[selectedWorkbookSlug]
+    if (iframeSrc) {
       return (
-        <div className="space-y-6">
-          <button
-            type="button"
-            onClick={() => { setSelectedView("overview"); setSelectedWorkbookSlug(null) }}
-            className="font-['Inter'] text-xs font-semibold uppercase tracking-[0.5em] text-[color:var(--app-text-muted)] hover:text-[color:var(--app-text-primary)] transition-colors"
-          >
-            ← Academy
-          </button>
-          <MiniProductWorkspace product={product} />
+        <div className="flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
+          <div className="flex items-center gap-4 px-1 py-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => { setSelectedView("overview"); setSelectedWorkbookSlug(null) }}
+              className="font-['Inter'] text-xs font-semibold uppercase tracking-[0.5em] text-[color:var(--app-text-muted)] hover:text-[color:var(--app-text-primary)] transition-colors"
+            >
+              ← Academy
+            </button>
+          </div>
+          <iframe
+            src={iframeSrc}
+            title="Workbook"
+            className="flex-1 w-full border-0"
+            style={{ borderTop: "1px solid var(--app-border, #e5e5e5)" }}
+          />
         </div>
       )
     }
