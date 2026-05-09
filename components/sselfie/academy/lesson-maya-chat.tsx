@@ -228,7 +228,8 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
       className="overflow-hidden"
       style={{
         border: `1px solid ${C.divStrong}`,
-        background: C.inkSoft,
+        background: C.cream,
+        boxShadow: "0 8px 32px rgba(10,10,10,0.12), 0 2px 8px rgba(10,10,10,0.08)",
       }}
     >
       {/* ── Header / toggle ── */}
@@ -281,17 +282,17 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
           {hasMessages && (
             <div
               className="flex-1 overflow-y-auto px-5 py-4 space-y-5"
-              style={{ scrollbarWidth: "none" }}
+              style={{ scrollbarWidth: "none", background: C.inkSoft }}
             >
               {messages.map((msg, i) => (
                 <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
                   {msg.role === "user" ? (
                     <p
-                      className={`${inter.className} max-w-[80%] rounded-sm px-4 py-3 text-[13px] leading-[1.65]`}
+                      className={`${inter.className} max-w-[80%] px-4 py-3 text-[13px] leading-[1.65]`}
                       style={{
-                        background: "rgba(244,240,230,0.08)",
-                        color: C.cream,
-                        fontWeight: 300,
+                        background: C.inkSoft,
+                        color: C.ink,
+                        fontWeight: 400,
                         border: `1px solid ${C.div}`,
                       }}
                     >
@@ -300,7 +301,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                   ) : (
                     <p
                       className={`${inter.className} text-[13px] leading-[1.75]`}
-                      style={{ color: C.body, fontWeight: 400 }}
+                      style={{ color: C.ink, fontWeight: 400 }}
                     >
                       {msg.content}
                     </p>
@@ -312,7 +313,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
               {streamingText && (
                 <p
                   className={`${inter.className} text-[13px] leading-[1.75]`}
-                  style={{ color: C.body, fontWeight: 400 }}
+                  style={{ color: C.ink, fontWeight: 400 }}
                 >
                   {streamingText}
                   <span
@@ -362,12 +363,12 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                     style={
                       chip.primary
                         ? {
-                            background: C.cream,
-                            color: C.ink,
+                            background: C.ink,
+                            color: C.cream,
                             border: "1px solid transparent",
                             fontWeight: 600,
                             boxShadow:
-                              "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4)",
+                              "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)",
                           }
                         : {
                             background: "transparent",
@@ -418,8 +419,8 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
               disabled={isStreaming || !input.trim()}
               className={`${inter.className} shrink-0 px-4 py-2 text-[10px] uppercase tracking-[0.22em] transition-opacity disabled:opacity-30`}
               style={{
-                background: input.trim() ? C.cream : "transparent",
-                color: input.trim() ? C.ink : C.muted,
+                background: input.trim() ? C.ink : "transparent",
+                color: input.trim() ? C.cream : C.muted,
                 border: input.trim()
                   ? "1px solid transparent"
                   : `1px solid ${C.divStrong}`,

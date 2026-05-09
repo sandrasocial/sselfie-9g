@@ -115,8 +115,8 @@ function TabChip({
         border: active
           ? `1px solid ${C.divStrong}`
           : `1px solid ${C.div}`,
-        background: active ? "rgba(244,240,230,0.09)" : "transparent",
-        color: active ? C.cream : C.muted,
+        background: active ? C.inkLift : "transparent",
+        color: active ? C.text : C.muted,
       }}
     >
       {children}
@@ -161,8 +161,9 @@ export function LessonViewerClient({
     let active = true
 
     async function bootstrap() {
+      // Enroll + mark started — fire-and-forget, don't block lesson loading
       try {
-        const [enrollResponse, progressResponse] = await Promise.all([
+        await Promise.all([
           fetch("/api/academy/enroll", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -174,39 +175,34 @@ export function LessonViewerClient({
             body: JSON.stringify({ lessonId: lesson.id, action: "start" }),
           }),
         ])
+      } catch {
+        // Non-fatal — lesson is still viewable even if tracking fails
+      }
 
-        if (!enrollResponse.ok) {
-          throw new Error(await getApiErrorMessage(enrollResponse, "Failed to enroll in course"))
-        }
+      if (!active) return
 
-        if (!progressResponse.ok) {
-          throw new Error(await getApiErrorMessage(progressResponse, "Failed to start lesson"))
-        }
-
+      // Load saved notes — gracefully degrade with empty state if unavailable
+      try {
         const notesResponse = await fetch(`/api/academy/lessons/${lesson.id}/notes`, {
           cache: "no-store",
         })
 
-        if (!notesResponse.ok) {
-          throw new Error("Failed to load lesson notes")
+        if (notesResponse.ok) {
+          const notes = (await notesResponse.json()) as LessonNotesResponse
+          if (!active) return
+          setReflection(notes.reflection || "")
+          setProfileAnswer(notes.profile_answer || "")
+          setChosenActionLevel(notes.action_level)
+          if (notes.action_level) {
+            setSelectedActionTab(notes.action_level)
+          }
         }
-
-        const notes = (await notesResponse.json()) as LessonNotesResponse
-        if (!active) return
-
-        setReflection(notes.reflection || "")
-        setProfileAnswer(notes.profile_answer || "")
-        setChosenActionLevel(notes.action_level)
-        if (notes.action_level) {
-          setSelectedActionTab(notes.action_level)
-        }
-        setNotesLoaded(true)
-      } catch (bootstrapError) {
-        if (!active) return
-        setError(
-          bootstrapError instanceof Error ? bootstrapError.message : "Failed to load lesson"
-        )
+      } catch {
+        // Non-fatal — show lesson with empty notes
       }
+
+      if (!active) return
+      setNotesLoaded(true)
     }
 
     void bootstrap()
@@ -361,7 +357,7 @@ export function LessonViewerClient({
                 </span>
                 <span
                   className={`${inter.className} truncate text-[13px]`}
-                  style={{ color: item.current ? C.cream : C.body, fontWeight: 400 }}
+                  style={{ color: item.current ? C.text : C.body, fontWeight: 400 }}
                 >
                   {item.title}
                 </span>
@@ -588,7 +584,7 @@ export function LessonViewerClient({
             className={`${inter.className} px-6 py-[10px] text-[10px] uppercase tracking-[0.22em] transition-opacity disabled:opacity-40`}
             style={{
               border: `1px solid ${C.divStrong}`,
-              color: C.cream,
+              color: C.body,
               fontWeight: 600,
               background: "transparent",
             }}
@@ -647,7 +643,7 @@ export function LessonViewerClient({
             </span>
             <span
               className={`${inter.className} shrink-0 text-[10px] uppercase tracking-[0.35em]`}
-              style={{ color: C.cream, fontWeight: 600 }}
+              style={{ color: C.body, fontWeight: 600 }}
             >
               ↓ Download
             </span>
@@ -714,17 +710,7 @@ export function LessonViewerClient({
               )}
             </div>
 
-            {/* Maya chat — embedded directly below video, no page navigation */}
-            <LessonMayaChat
-              lessonTitle={lesson.title}
-              courseTitle={course.title}
-              keyTakeaways={keyTakeaways as string[]}
-              actionStep={actionStep as Record<string, string>}
-              chosenActionLevel={chosenActionLevel}
-              reflectionPrompt={lessonContent.reflection_prompt ?? undefined}
-              lessonContext={lessonContent.maya_context ?? lessonContent.transcript_summary ?? undefined}
-              workbookFocus={lessonContent.workbook_focus ?? undefined}
-            />
+            {/* Maya chat is rendered as a floating corner bubble — see bottom of layout */}
 
             {/* Lesson meta */}
             <div className="space-y-4">
@@ -810,16 +796,16 @@ export function LessonViewerClient({
                 style={
                   currentLessonCompleted
                     ? {
-                        background: C.cream,
-                        color: C.ink,
+                        background: C.text,
+                        color: C.bg,
                         border: "1px solid transparent",
                         fontWeight: 600,
                         boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+                          "inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.15)",
                       }
                     : {
                         background: "transparent",
-                        color: C.cream,
+                        color: C.body,
                         border: `1px solid ${C.divStrong}`,
                         fontWeight: 600,
                       }
@@ -864,21 +850,7 @@ export function LessonViewerClient({
                     {reflectionSection}
                   </>
                 ) : null}
-                {mobileTab === "action" ? (
-                  <>
-                    {actionSection}
-                    <LessonMayaChat
-                      lessonTitle={lesson.title}
-                      courseTitle={course.title}
-                      keyTakeaways={keyTakeaways as string[]}
-                      actionStep={actionStep as Record<string, string>}
-                      chosenActionLevel={chosenActionLevel}
-                      reflectionPrompt={lessonContent.reflection_prompt ?? undefined}
-                      lessonContext={lessonContent.maya_context ?? lessonContent.transcript_summary ?? undefined}
-                      workbookFocus={lessonContent.workbook_focus ?? undefined}
-                    />
-                  </>
-                ) : null}
+                {mobileTab === "action" ? actionSection : null}
                 {mobileTab === "resources"
                   ? resourcesSection || (
                       <p
@@ -932,6 +904,30 @@ export function LessonViewerClient({
           </p>
         ) : null}
       </div>
+
+      {/* ── Floating Maya chat bubble ─────────────────────────────────────── */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          width: 360,
+          maxWidth: "calc(100vw - 32px)",
+          zIndex: 60,
+        }}
+      >
+        <LessonMayaChat
+          lessonTitle={lesson.title}
+          courseTitle={course.title}
+          keyTakeaways={keyTakeaways as string[]}
+          actionStep={actionStep as Record<string, string>}
+          chosenActionLevel={chosenActionLevel}
+          reflectionPrompt={lessonContent.reflection_prompt ?? undefined}
+          lessonContext={lessonContent.maya_context ?? lessonContent.transcript_summary ?? undefined}
+          workbookFocus={lessonContent.workbook_focus ?? undefined}
+        />
+      </div>
+
       <style>{`
         .academy-paper-input::placeholder {
           color: rgba(15, 13, 11, 0.52);
