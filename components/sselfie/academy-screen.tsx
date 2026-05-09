@@ -225,10 +225,15 @@ export default function AcademyScreen() {
   const initialAcademyView = parseAcademyViewParam(
     searchParams.get("academy_view") ?? searchParams.get("academyView")
   )
-  const [selectedView, setSelectedView] = useState<AcademyView>(initialAcademyView ?? "overview")
+  // Deep-link support: ?academy_course_id=X opens the course directly within the in-app
+  // viewer. The access gate pages redirect here instead of to the standalone course route.
+  const initialCourseId = searchParams.get("academy_course_id") ?? null
+  const [selectedView, setSelectedView] = useState<AcademyView>(
+    initialCourseId ? "courses" : (initialAcademyView ?? "overview")
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<string>("all")
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(initialCourseId)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
@@ -243,6 +248,13 @@ export default function AcademyScreen() {
     nextUrl.searchParams.delete("academyView")
     window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
   }, [initialAcademyView])
+
+  useEffect(() => {
+    if (!initialCourseId || typeof window === "undefined") return
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.delete("academy_course_id")
+    window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+  }, [initialCourseId])
 
   // Load membership status first so studio-only endpoints can be conditionally gated.
   const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)

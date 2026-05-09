@@ -45,5 +45,5 @@ export default async function MasterclassAccessPage() {
     redirect("/masterclass")
   }
 
-  redirect(`/academy/courses/${course.id}`)
+  redirect(`/studio?tab=academy&academy_view=courses&academy_course_id=${course.id}`)
 }

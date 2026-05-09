@@ -39,5 +39,5 @@ export default async function AcademyStarterKitAccessPage() {
     redirect("/starter-kit")
   }
 
-  redirect(`/academy/courses/${course.id}`)
+  redirect(`/studio?tab=academy&academy_view=courses&academy_course_id=${course.id}`)
 }

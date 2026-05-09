@@ -51,8 +51,8 @@ export default async function ProductAccessPage() {
   const course = (rows as { id: number }[])[0]
   if (!course) redirect("/product-marketing-page")
 
-  // 4. Redirect into the course viewer
-  redirect(`/academy/courses/${course.id}`)
+  // 4. Redirect into the in-app course viewer (inside the main app shell at /studio)
+  redirect(`/studio?tab=academy&academy_view=courses&academy_course_id=${course.id}`)
 }
 ```
 
