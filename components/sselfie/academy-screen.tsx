@@ -70,6 +70,10 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
     subText: "50 done-for-you prompts across 10 brand scenarios.",
     ctaLabel: "Open prompts",
   },
+  visibility_suite: {
+    subText: "What To Say, Show Up, and Get Paid — your full visibility path.",
+    ctaLabel: "Open suite",
+  },
   selfie_guide: {
     subText: "Your full selfie training and challenge flow.",
     ctaLabel: "Open guide",
@@ -138,6 +142,10 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
     image: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
     label: "Prompt pack",
     href: "/academy/access/ai-photo-prompts",
+  },
+  visibility_suite: {
+    image: "/academy/visibility-suite/hero.png",
+    label: "Bundle",
   },
 }
 
@@ -852,6 +860,7 @@ export default function AcademyScreen() {
     "what-to-say": "/academy/what_to_say/",
     "show-up": "/academy/show_up/",
     "get-paid": "/academy/get_paid/",
+    "visibility-suite": "/academy/access/visibility-suite",
   }
 
   if (selectedView === "workbook" && selectedWorkbookSlug) {
@@ -1199,7 +1208,11 @@ export default function AcademyScreen() {
                     const visual = PRODUCT_VISUALS[product.id]
                     const href = visual?.href || product.accessUrl
                     // Workbook products open directly in-app without a page navigation
-                    const workbookSlug = product.slug && VISIBILITY_MINI_PRODUCT_BY_SLUG[product.slug] ? product.slug : null
+                    // Individual workbooks (what-to-say, show-up, get-paid) + the Visibility Suite bundle hub
+                    const workbookSlug =
+                      (product.slug && VISIBILITY_MINI_PRODUCT_BY_SLUG[product.slug]) ? product.slug :
+                      (product.id === "visibility_suite") ? "visibility-suite" :
+                      null
                     const handleClick = workbookSlug
                       ? () => { setSelectedWorkbookSlug(workbookSlug); setSelectedView("workbook") }
                       : () => href && router.push(href)

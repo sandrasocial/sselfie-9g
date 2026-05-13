@@ -21,7 +21,7 @@ const CHECKOUT_COPY: Record<
 > = {
   selfie_guide: {
     heroTitle: "Complete your Selfie Guide order",
-    heroBody: "Secure your guide, challenge, and preset bonus.",
+    heroBody: "Secure your guide and 7-day challenge.",
     heading: "Secure checkout",
     blurb: "You are buying the Selfie Guide with encrypted Stripe checkout.",
     footer: "Digital purchase. Your guide access is delivered right after payment.",

@@ -40,7 +40,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-2xl font-serif font-light mb-4 tracking-wide">Introduction</h2>
             <p className="text-base font-light leading-relaxed">
               At SSELFIE, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose,
-              and safeguard your information when you use our AI-powered photo generation platform. Please read this
+              and safeguard your information when you use our personal branding platform and services. Please read this
               privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access
               the site.
             </p>
@@ -87,6 +87,7 @@ export default function PrivacyPolicy() {
             <ul className="list-disc list-inside space-y-2 ml-4 text-base font-light leading-relaxed">
               <li>Provide, maintain, and improve our services</li>
               <li>Generate AI photos based on your uploaded images</li>
+              <li>Deliver education products, guides, and account-based access experiences</li>
               <li>Process your payments and manage your subscription</li>
               <li>Send you technical notices, updates, and support messages</li>
               <li>Respond to your comments and questions</li>

@@ -9,10 +9,6 @@
       "schedule": "0 5 * * *"
     },
     {
-      "path": "/api/cron/funnel-report-daily",
-      "schedule": "0 8 * * *"
-    },
-    {
       "path": "/api/cron/cron-health-check",
       "schedule": "0 * * * *"
     },
@@ -41,20 +37,8 @@
       "schedule": "5 10 * * *"
     },
     {
-      "path": "/api/cron/referral-bonus-notifications",
-      "schedule": "15 10 * * *"
-    },
-    {
-      "path": "/api/cron/maya-instagram-trends-weekly",
-      "schedule": "30 6 * * 1"
-    },
-    {
       "path": "/api/cron/admin-alerts",
       "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/sync-audience-segments",
-      "schedule": "0 3 * * 0"
     },
     {
       "path": "/api/cron/blueprint-followup-sequence",
@@ -67,10 +51,6 @@
     {
       "path": "/api/cron/refresh-segments",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/revenue-engine-weekly",
-      "schedule": "0 9 * * 1"
     }
   ]
 }

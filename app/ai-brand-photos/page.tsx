@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     images: [{ url: "https://sselfie.ai/og-image.png", width: 1200, height: 630 }],
   },
   alternates: { canonical: "https://sselfie.ai/ai-brand-photos" },
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"

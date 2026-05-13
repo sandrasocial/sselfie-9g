@@ -26,17 +26,6 @@ export function PublicOfferTracker({
         source,
       },
     })
-    if (ctaKeyword) {
-      trackAnalyticsEvent({
-        event: "post_keyword_attributed",
-        properties: {
-          offer_slug: offerSlug,
-          product_id: productId || null,
-          cta_keyword: ctaKeyword,
-          source,
-        },
-      })
-    }
   }, [ctaKeyword, offerSlug, productId, source])
 
   return null
@@ -49,6 +38,20 @@ export function trackOfferCtaClick(input: PublicOfferTrackerProps & { href: stri
       offer_slug: input.offerSlug,
       product_id: input.productId || null,
       cta_keyword: input.ctaKeyword || null,
+      source: input.source || "public_offer",
+      href: input.href,
+    },
+  })
+}
+
+export function trackPostKeywordAttributed(input: PublicOfferTrackerProps & { href: string }) {
+  if (!input.ctaKeyword) return
+  trackAnalyticsEvent({
+    event: "post_keyword_attributed",
+    properties: {
+      offer_slug: input.offerSlug,
+      product_id: input.productId || null,
+      cta_keyword: input.ctaKeyword,
       source: input.source || "public_offer",
       href: input.href,
     },

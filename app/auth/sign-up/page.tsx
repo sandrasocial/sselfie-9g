@@ -208,7 +208,7 @@ export default function SignUpPage() {
             </div>
             <CardTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8] tracking-wide">Create your account</CardTitle>
             <CardDescription className="font-['Inter'] text-[#8a8780] text-sm">
-              Join SSELFIE and start creating stunning AI photos
+              Join SSELFIE and start building clear, consistent visibility for your brand
             </CardDescription>
           </CardHeader>
           <CardContent>

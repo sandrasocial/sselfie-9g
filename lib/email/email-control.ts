@@ -17,14 +17,17 @@ export async function isEmailSendingEnabled(): Promise<boolean> {
       WHERE key = 'email_sending_enabled'
     `
     if (result.length === 0) {
-      // Default to false if flag doesn't exist
-      return false
+      // Flag not set = emails are enabled. Explicit disable required to stop sending.
+      // Previously this defaulted to false, which silently dropped all emails when
+      // the flag was missing. That was the primary cause of unreliable delivery.
+      return true
     }
     return result[0].value === true || result[0].value === "true"
   } catch (error) {
-    console.error("[EmailControl] Error checking email sending enabled:", error)
-    // Fail safe: default to false
-    return false
+    console.error("[EmailControl] Error checking email sending enabled — defaulting to ENABLED:", error)
+    // DB failure should not silence email delivery. Explicit kill switch must be set
+    // intentionally; a transient DB error is not a reason to drop customer emails.
+    return true
   }
 }
 

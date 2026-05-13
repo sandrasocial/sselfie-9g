@@ -71,7 +71,7 @@ export default function SelfieGuideLanding() {
                     $17
                   </p>
                   <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.74)]">
-                    Full course access, the 7-day challenge, and the preset bonus.
+                    Full course access and the 7-day challenge.
                   </p>
                   <Link
                     href="/selfie-guide"

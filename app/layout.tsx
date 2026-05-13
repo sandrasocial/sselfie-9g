@@ -14,20 +14,19 @@ export const metadata: Metadata = {
     template: "%s | SSELFIE",
   },
   description:
-    "Create stunning professional brand photos every month with AI. No photographer needed. Built by Sandra, a single mom who turned selfies into a business. Get AI-generated photos styled for your brand and ready to use on Instagram, LinkedIn, and everywhere else.",
+    "SSELFIE helps women move from selfie confidence to clear messaging, consistent content, and a path to paid. Start with the guide, grow through the method, and use Maya to execute weekly.",
   keywords: [
-    "AI photography",
-    "personal brand photos",
-    "professional headshots",
-    "AI selfies",
+    "selfie branding",
+    "visibility to paid",
     "brand photography",
-    "Instagram photos",
-    "content creator tools",
-    "AI photo generator",
-    "professional photos without photographer",
+    "content strategy",
+    "offer clarity",
+    "instagram visibility",
+    "creator business",
+    "personal brand education",
     "personal branding",
     "social media content",
-    "AI portraits",
+    "maya ai assistant",
   ],
   authors: [{ name: "Sandra", url: "https://instagram.com/sandra.social" }],
   creator: "Sandra - SSELFIE",
@@ -42,9 +41,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://sselfie.ai",
     siteName: "SSELFIE",
-    title: "SSELFIE - Your Personal AI Photographer",
+    title: "SSELFIE - Selfie To Visibility To Paid",
     description:
-      "Professional brand photos every month. No photographer needed. Just AI selfies that look like you, styled for your brand.",
+      "From selfie to strategy: build a personal brand people understand, trust, and buy from, then use Maya to execute weekly.",
     images: [
       {
         url: "https://sselfie.ai/og-image.png",
@@ -56,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SSELFIE - Your Personal AI Photographer",
+    title: "SSELFIE - Selfie To Visibility To Paid",
     description:
-      "Professional brand photos every month. No photographer needed. Built by a single mom who turned selfies into a business.",
+      "Selfie-first personal branding, visibility systems, and weekly execution support inside SSELFIE.",
     images: ["https://sselfie.ai/og-image.png"],
     creator: "@sandra.social",
   },
@@ -134,7 +133,7 @@ export default function RootLayout({
               applicationCategory: "PhotographyApplication",
               operatingSystem: "Web",
               description:
-                "AI personal branding platform that creates professional brand photos, plans Instagram feeds, and writes captions — without a photographer. Train a custom AI model on your face and generate unlimited on-brand content through Maya, your personal brand AI.",
+                "Personal branding platform that moves you from selfie confidence to clear messaging, consistent content, and a path to paid. Includes education, planning tools, and Maya for weekly execution.",
               offers: [
                 {
                   "@type": "Offer",
@@ -161,11 +160,11 @@ export default function RootLayout({
                   "@type": "Offer",
                   name: "Studio Membership",
                   price: "97",
-                  priceCurrency: "USD",
+                  priceCurrency: "EUR",
                   priceSpecification: {
                     "@type": "UnitPriceSpecification",
                     price: "97",
-                    priceCurrency: "USD",
+                    priceCurrency: "EUR",
                     unitCode: "MON",
                   },
                   url: "https://sselfie.ai/checkout/membership",
@@ -192,7 +191,7 @@ export default function RootLayout({
               url: "https://sselfie.ai",
               logo: "https://sselfie.ai/favicon.png",
               description:
-                "AI personal branding platform helping coaches, consultants, and content creators produce professional brand photos and content without photographers.",
+                "Personal branding platform helping coaches, consultants, and content creators move from visibility to paid with clearer messaging, content systems, and weekly execution support.",
               founder: {
                 "@type": "Person",
                 name: "Sandra",
@@ -219,7 +218,7 @@ export default function RootLayout({
                   name: "What is SSELFIE?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "SSELFIE is an AI personal branding platform. You upload selfies, train a custom AI model on your face, and then generate unlimited professional brand photos through Maya — your personal brand AI. Maya also plans your Instagram feed and writes captions in your voice. No photographer needed.",
+                    text: "SSELFIE is a selfie-first personal branding platform. You start with clear photo and content foundations, then use structured products and Maya support to build message clarity, consistent visibility, and a path to paid.",
                   },
                 },
                 {
@@ -227,7 +226,7 @@ export default function RootLayout({
                   name: "How is SSELFIE different from other AI photo tools?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Most AI photo tools use generic models that produce images of a random person. SSELFIE trains a custom LoRA model specifically on your face, so every generated photo looks like you. Maya also knows your brand profile — your voice, colors, and style — so every photo is on-brand, not just on-face.",
+                    text: "Most tools focus only on image generation. SSELFIE combines selfie-first education, offer clarity, content planning, and execution support so your visuals and message work together toward business outcomes.",
                   },
                 },
                 {

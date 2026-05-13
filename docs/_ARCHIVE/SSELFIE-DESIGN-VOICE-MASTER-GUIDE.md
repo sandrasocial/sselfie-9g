@@ -1,3 +1,6 @@
+# ARCHIVED DOCUMENT - DO NOT USE AS ACTIVE DESIGN SYSTEM
+# Replaced by: docs/brand/DESIGN_SYSTEM.md (single visual + product UI contract)
+# Archived on: 2026-05-12
 # SSELFIE Design + Voice Master Guide
 # Version 1.0 — 2026-02-28
 # Owner: Sandra (SSELFIE) | Maintained by: North + Claude

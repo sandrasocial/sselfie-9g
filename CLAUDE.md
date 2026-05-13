@@ -278,25 +278,26 @@ Target: €197/month minimum. Not €97. Not €27.
 
 → Skills in Cowork: `sselfie-voice`, `scandinavian-design`, `instagram-strategy`, `tiktok-strategy`
 
-### Design System — SSELFIE Agents (updated 2026-04-24)
-*Full spec: `docs/brand/DESIGN_SYSTEM.md`. The canonical implementation is `components/sselfie/public-marketing.tsx`.*
+### Design System — Single Contract (updated 2026-05-12)
+*Single visual + product UI source of truth: `docs/brand/DESIGN_SYSTEM.md`. If anything here differs from that file, `DESIGN_SYSTEM.md` wins immediately.*
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `ink` | `#0F0D0B` | Dark surfaces, body text on cream |
-| `cream` | `#EDE9E2` | Light surfaces, headings/text on dark |
-| `stone` | `#C4B5A0` | Secondary text on dark, accents |
-| `inkSoft` | `#1E1A15` | Cards on dark surfaces |
-| `creamWarm` | `#F4F0E6` | Cards on cream surfaces |
+| `obsidian` | `#0A0A0A` | Primary dark surface, primary text on light |
+| `porcelain` | `#FFFFFF` | Clean white surfaces and text on dark |
+| `pearl` | `#F5F5F5` | Secondary backgrounds and soft card fills |
+| `smoke` | `#666666` | Body text, captions, secondary copy |
+| `whisper` | `#E5E5E5` | Borders, dividers, subtle separators |
+| `stone` | `#8A8780` | Muted labels and metadata |
+| `stoneDark` | `#2C2B29` | Dark gray text/panels when pure black is too strong |
+| `stoneSoft` | `#D4D1CC` | Soft gray borders and quiet fills |
 
-**Fonts:** Cormorant Garamond (display, weight 300–700 only — weight 200 does NOT exist) + Inter (UI/body)
+**Fonts:** Cormorant Garamond (display/headings, 300-500) + Inter (body/UI, 400-600).
 
-**Rules that never bend:**
-- **Zero border-radius** — everywhere, always
-- **Letterpress text-shadow** on all headings (dark surface formula / cream surface formula — see DESIGN_SYSTEM.md)
-- **Paper texture** SVG overlay on every section (`<PaperTexture dark={bool} />`)
-- **Alternating dark/cream sections** — always start dark (hero), always end dark (footer)
-- **Sharp inset-shadow buttons** — no pill shapes, no gradient fills
-- **No glassmorphism** — no `backdrop-filter: blur()` on cards
-- **No gold accent** (`#c9a96e` is retired)
-- **No gradient text** (`background-clip: text` — absolute ban)
+**Rules that never bend (mirrors `DESIGN_SYSTEM.md`):**
+- Rounded product UI stays. Do not apply zero-radius globally.
+- Letterpress is required on major headings/surface labels and should not be applied to body copy.
+- Avoid glassmorphism and random translucent card effects.
+- No gradients on buttons and no gradient text.
+- Gold accent `#c9a96e` is retired and must not be reintroduced.
+- No new colors, fonts, or token systems without Sandra approval.

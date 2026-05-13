@@ -23,8 +23,12 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
   const selfieGuideProduct = getProductById("selfie_guide")
   const membershipProduct = getProductById("sselfie_studio_membership")
-  const selfieGuidePrice = selfieGuideProduct ? formatPriceFromCents(selfieGuideProduct.priceInCents) : "€17"
-  const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "€97"
+  const selfieGuidePrice = selfieGuideProduct
+    ? formatPriceFromCents(selfieGuideProduct.priceInCents, { currency: "usd" })
+    : "$17"
+  const membershipPrice = membershipProduct
+    ? formatPriceFromCents(membershipProduct.priceInCents, { currency: "eur" })
+    : "€97"
   const loginHref = buildReferralLoginHref({ returnTo: "/studio", referralCode })
   const selfieGuideHref = appendReferralParam("/selfie-guide", referralCode)
 

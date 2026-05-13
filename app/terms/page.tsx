@@ -48,9 +48,9 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-serif font-light mb-4 tracking-wide">Description of Service</h2>
             <p className="text-base font-light leading-relaxed">
-              SSELFIE is an AI-powered photo generation platform that allows users to create professional brand photos
-              using artificial intelligence. The service includes AI photo generation, brand profile management, content
-              strategy tools, and personalized AI assistance through Maya.
+              SSELFIE is a personal branding platform that helps users move from selfie confidence to clear messaging,
+              consistent content, and a path to paid. The service includes guided education products, brand profile
+              tools, content planning support, and AI assistance through Maya.
             </p>
           </section>
 

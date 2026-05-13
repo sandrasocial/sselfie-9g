@@ -236,7 +236,6 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "Full Selfie Guide access",
       "Personal Brand Strategy Pack unlocked",
       "Interactive checklists and 7-Day Selfie Challenge",
-      "Lightroom preset pack bonus",
     ],
   },
   {
@@ -253,7 +252,6 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "7-Day Selfie Challenge",
       "One caption/post prompt",
       "Meet Maya - your weekly content stylist inside Studio",
-      "Lightroom preset pack bonus",
     ],
   },
 ]
@@ -520,7 +518,18 @@ export function getCreditPackageById(packageId: string): CreditPackage | undefin
   return CREDIT_PACKAGES.find((p) => p.id === packageId)
 }
 
-export function formatPriceFromCents(priceInCents: number, decimals?: number) {
-  const resolvedDecimals = decimals ?? (priceInCents % 100 === 0 ? 0 : 2)
-  return `$${(priceInCents / 100).toFixed(resolvedDecimals)}`
+export function formatPriceFromCents(
+  priceInCents: number,
+  options?: { decimals?: number; currency?: "usd" | "eur" }
+) {
+  const resolvedDecimals = options?.decimals ?? (priceInCents % 100 === 0 ? 0 : 2)
+  const currency = options?.currency ?? "usd"
+  const locale = currency === "eur" ? "de-DE" : "en-US"
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: resolvedDecimals,
+    maximumFractionDigits: resolvedDecimals,
+  }).format(priceInCents / 100)
 }
