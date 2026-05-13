@@ -149,8 +149,8 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
             The next thing that usually gets hard is knowing what to say. Brand Strategy Pack helps you get clear on
             your message before you move into the full Studio system.
           </p>
-          <Link href="/checkout/brand-strategy-pack?source=selfie_guide_followon&utm_source=site&utm_medium=upsell&utm_campaign=selfie_guide_to_brand_strategy" className="studio-followon-link">
-            Add Brand Strategy Pack →
+          <Link href="/masterclass?source=selfie_guide_followon&utm_source=site&utm_medium=upsell&utm_campaign=selfie_guide_to_masterclass" className="studio-followon-link">
+            See the Masterclass →
           </Link>
         </div>
       </section>

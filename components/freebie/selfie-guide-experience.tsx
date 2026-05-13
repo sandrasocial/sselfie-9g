@@ -947,8 +947,8 @@ export default function SelfieGuideExperience({
               show up, and what people can do next.
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
-              <Link href="/visibility-suite" className="sg-cta-primary">
-                See Visibility Suite
+              <Link href="/starter-kit" className="sg-cta-primary">
+                See Starter Kit
               </Link>
               <Link href="/starter-kit" className="sg-cta-secondary">
                 Start with Starter Kit

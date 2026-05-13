@@ -32,16 +32,15 @@ export default function SignUpSuccessPage() {
                   What&apos;s Next?
                 </p>
                 <p className="text-sm leading-relaxed text-[color:var(--color-smoke)]">
-                  After confirming your email, you can purchase a One-Time Session ($24.50) to start creating your
-                  professional feed with our AI photo generator.
+                  After confirming your email, start with the Selfie Guide or join Studio when you are ready for Maya.
                 </p>
               </div>
             </div>
 
             <div className="pt-2">
               <Button asChild className="h-12 w-full">
-                <Link href="/checkout/one-time">
-                  View Pricing & Get Started
+                <Link href="/selfie-guide">
+                  Start With The Selfie Guide
                 </Link>
               </Button>
               <p className="mt-3 text-center text-xs text-[color:var(--color-smoke)]">

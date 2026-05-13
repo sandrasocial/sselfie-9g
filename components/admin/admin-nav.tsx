@@ -14,8 +14,7 @@ export function AdminNav() {
     { label: 'REVIEW', href: '/admin/webhook-review' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
     { label: 'ACADEMY', href: '/admin/academy' },
-    { label: 'CLEANUP', href: '/admin/funnel-cleanup' },
-    { label: 'MAYA', href: '/admin/maya-studio' },
+    { label: 'TESTIMONIALS', href: '/admin/testimonials' },
     { label: 'USERS', href: '/admin/credits' }
   ]
   

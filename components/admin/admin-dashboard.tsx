@@ -246,25 +246,25 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/mission-control"
+              href="/admin/customer-support"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                Mission Control
+                Customer Support
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Daily tasks, health checks
+                Access, delivery, help
               </p>
             </Link>
             <Link
-              href="/admin/maya-studio"
+              href="/admin/webhook-review"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                Maya Replicate
+                Webhook Review
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Image generation studio
+                Stripe fulfillment safety
               </p>
             </Link>
           </div>
@@ -354,14 +354,14 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
-              href="/admin/mission-control"
+              href="/admin/customer-support"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Mission Control
+                Support
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                Daily tasks + health
+                Customers + access
               </p>
             </Link>
             <Link
@@ -398,25 +398,25 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/maya-studio"
+              href="/admin/webhook-review"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Maya Replicate
+                Webhooks
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                Image generation
+                Stripe events
               </p>
             </Link>
             <Link
-              href="/admin/funnel-cleanup"
+              href="/admin/testimonials"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Cleanup
+                Testimonials
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                Route review
+                Social proof
               </p>
             </Link>
             {/* removed in CLEANUP-01: /admin/feed-styles-v2 and /admin/project-tracker */}
@@ -431,7 +431,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             {[
               { label: 'Feedback', href: '/admin/feedback', description: 'Customer replies' },
               { label: 'Testimonials', href: '/admin/testimonials', description: 'Social proof' },
-              { label: 'Retention', href: '/admin/retention', description: 'Studio cohorts' },
+              { label: 'Analytics', href: '/admin/analytics', description: 'Revenue + cohorts' },
               { label: 'Login As User', href: '/admin/login-as-user', description: 'Debug only' },
             ].map((item) => (
               <Link

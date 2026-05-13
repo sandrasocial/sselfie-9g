@@ -1,46 +1,5 @@
-import { sql } from "@/lib/db/client"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { createServerClient } from "@/lib/supabase/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { NextResponse } from "next/server"
 
-
-export async function GET(request: Request) {
-  try {
-    const supabase = await createServerClient()
-
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return new Response("Unauthorized", { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-    if (!user?.id) {
-      return new Response("Unauthorized", { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const niche = searchParams.get("niche")
-
-    if (!niche) {
-      return Response.json({ error: "Niche is required" }, { status: 400 })
-    }
-
-    // Get latest research for this user and niche
-    const research = await sql`
-      SELECT * FROM content_research
-      WHERE user_id = ${user.id} AND niche = ${niche}
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
-
-    if (research.length === 0) {
-      return Response.json({ research: null })
-    }
-
-    return Response.json({ research: research[0] })
-  } catch (error) {
-    console.error("[v0] Get research error:", error)
-    return new Response("Internal Server Error", { status: 500 })
-  }
+export async function GET() {
+  return NextResponse.json({ error: "Content research strategist is retired" }, { status: 410 })
 }

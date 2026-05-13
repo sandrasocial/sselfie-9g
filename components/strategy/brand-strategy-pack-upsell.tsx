@@ -8,7 +8,7 @@ type BrandStrategyPackUpsellProps = {
 }
 
 export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategyPackUpsellProps) {
-  const checkoutHref = `/checkout/brand-strategy-pack?strategyToken=${encodeURIComponent(strategyToken)}`
+  const checkoutHref = `/masterclass?strategyToken=${encodeURIComponent(strategyToken)}`
 
   useEffect(() => {
     trackAnalyticsEvent({
@@ -33,7 +33,7 @@ export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategy
       <a href={checkoutHref} className="btn-primary" onClick={handleCheckoutClick}>
         Get your Brand Strategy Pack instantly — $19
       </a>
-      <a href="/private-shoot" className="btn-secondary">
+      <a href="/work-with-me" className="btn-secondary">
         Book the Private Offer
       </a>
     </div>

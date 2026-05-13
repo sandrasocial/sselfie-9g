@@ -588,9 +588,9 @@ export default function WhyStudioPage() {
                   <span className="text-[9px] uppercase text-stone-500 block">quoted after inquiry</span>
                 </div>
                 <Link
-                  href="/private-shoot"
+                  href="/work-with-me"
                   className="btn w-full text-[10px] text-center"
-                  onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/private-shoot")}
+                  onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/work-with-me")}
                 >
                   Book the Private Offer →
                 </Link>
@@ -729,9 +729,9 @@ export default function WhyStudioPage() {
                     <p>• A smaller, calmer delivery path</p>
                   </div>
                   <Link
-                    href="/private-shoot"
+                    href="/work-with-me"
                     className="btn w-full text-[10px] text-center"
-                    onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/private-shoot")}
+                    onClick={() => trackCTAClick("why_studio", "Private brand shoot", "/work-with-me")}
                   >
                     Book the Private Offer →
                   </Link>

@@ -100,8 +100,10 @@ export async function POST(request: NextRequest) {
     const accessibleIds = new Set(entitlementState.accessibleProductIds)
 
     const body = await request.json().catch(() => null)
-    const productId = isProductId(body?.productId) ? body.productId : null
-    const action = isAction(body?.action) ? body.action : null
+    const rawProductId: unknown = body?.productId
+    const rawAction: unknown = body?.action
+    const productId = isProductId(rawProductId) ? rawProductId : null
+    const action = isAction(rawAction) ? rawAction : null
     const answers = normalizeAnswers(body?.answers)
 
     if (!productId || !action) {

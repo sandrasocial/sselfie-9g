@@ -90,10 +90,10 @@ export default function SelfieGuideLanding() {
                     Add the Brand Strategy Pack when you want the message and content direction behind the visuals.
                   </p>
                   <Link
-                    href="/checkout/brand-strategy-pack"
+                    href="/masterclass"
                     className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-[#f0ede8] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#0d0c0b] transition hover:bg-white"
                   >
-                    Get the Brand Strategy Pack
+                    See the Masterclass
                   </Link>
                 </div>
               </div>

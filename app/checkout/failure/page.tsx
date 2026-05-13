@@ -8,8 +8,8 @@ type FailurePageProps = {
 
 const RETRY_PATHS: Record<string, string> = {
   sselfie_studio_membership: "/checkout/membership",
-  visibility_suite: "/checkout/visibility-suite",
-  one_time_session: "/checkout/one-time",
+  visibility_suite: "/checkout/masterclass",
+  one_time_session: "/checkout/membership",
 }
 
 export default async function CheckoutFailurePage({ searchParams }: FailurePageProps) {

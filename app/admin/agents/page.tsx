@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation"
 
-export const dynamic = "force-dynamic"
-
-export default function AgentsPage() {
-  redirect("/admin/maya-studio")
+export default function AgentsAdminRedirectPage() {
+  redirect("/admin")
 }

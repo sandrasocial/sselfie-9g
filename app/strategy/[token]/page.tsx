@@ -480,10 +480,10 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
             you want private help around the visuals and content, start there.
           </p>
           <div className="upsell-buttons">
-            <a href="https://sselfie.ai/private-shoot" className="btn-primary">
+            <a href="https://sselfie.ai/work-with-me" className="btn-primary">
               Book the Private Offer
             </a>
-            <a href="https://sselfie.ai/checkout/blueprint" className="btn-secondary">
+            <a href="https://sselfie.ai/feed-planner" className="btn-secondary">
               Try Feed Planner first
             </a>
           </div>

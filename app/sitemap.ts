@@ -17,14 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/join/studio", changeFrequency: "weekly", priority: 0.9 },
     { path: "/work-with-me", changeFrequency: "weekly", priority: 0.85 },
 
-    // Paid active products
-    { path: "/brand-strategy", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/visibility-suite", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/checkout/membership", changeFrequency: "weekly", priority: 0.75 },
-
-    // Feature / AI pages
-    { path: "/ai-brand-photos", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/academy", changeFrequency: "weekly", priority: 0.6 },
+    // Studio education
     { path: "/why-studio", changeFrequency: "weekly", priority: 0.6 },
 
     // Legal

@@ -1,7 +1,5 @@
-import BlueprintLanding from "@/components/blueprint/blueprint-landing"
+import { redirect } from "next/navigation"
 
-export const dynamic = "force-dynamic"
-
-export default function BlueprintPage() {
-  return <BlueprintLanding />
+export default function BlueprintRedirectPage() {
+  redirect("/feed-planner")
 }

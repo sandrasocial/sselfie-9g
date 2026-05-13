@@ -1255,10 +1255,10 @@ export default function AnalyticsPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/admin/funnel-cleanup"
+              href="/admin/customer-support"
               className="px-6 py-3 bg-white text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-200 transition-colors rounded-none"
             >
-              Open Cleanup Review
+              Open Customer Support
             </Link>
             {/* removed in CLEANUP-01: /admin/marketing */}
           </div>

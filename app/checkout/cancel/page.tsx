@@ -73,10 +73,10 @@ export default function CheckoutCancelPage() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/visibility-suite"
+            href="/masterclass"
             className="bg-stone-950 text-stone-50 px-8 py-4 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 inline-block"
           >
-            Back To Visibility Suite
+            Back To Masterclass
           </Link>
           <button
             onClick={() => router.push("/")}
