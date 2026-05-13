@@ -208,14 +208,16 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       accessTarget: "selfie-guide",
     },
     {
+      // Archived — no longer sold standalone. Existing buyers access via /strategy/[token].
+      // Included via access aliases in selfie_guide_bundle and masterclass purchases.
       id: "brand_strategy_pack",
       slug: "brand-strategy-pack",
       title: "Brand Strategy Pack",
       type: "pack",
       membershipIncluded: true,
-      purchasable: true,
-      stripePriceId: process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim() || null,
-      active: true,
+      purchasable: false,
+      stripePriceId: null,
+      active: false,
       sortOrder: 90,
       deliveryKind: "direct_private",
       accessTarget: "brand-strategy",
@@ -300,7 +302,8 @@ function resolveAcademyProductPurchaseUrl(
 
   if (product.deliveryKind === "direct_private") {
     if (product.accessTarget === "brand-strategy") {
-      return "/brand-strategy"
+      // Archived product — route new visitors to Masterclass
+      return "/masterclass"
     }
     if (product.accessTarget === "starter-kit") {
       return "/starter-kit"

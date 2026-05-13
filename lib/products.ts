@@ -180,15 +180,6 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     credits: 60, // 30 images × 2 credits per image
   },
   {
-    id: "brand_strategy_pack",
-    name: "Brand Strategy Pack",
-    displayName: "Brand Strategy Pack",
-    description: "Get your personalized Brand Strategy Pack instantly.",
-    priceInCents: 1900, // $19 one-time
-    type: "brand_strategy_pack",
-    tag: "bought_brand_strategy_pack",
-  },
-  {
     id: "starter_kit",
     name: "Selfie Starter Kit",
     displayName: "Selfie Starter Kit",
@@ -258,6 +249,16 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
 
 export const ARCHIVED_PRICING_PRODUCTS: PricingProduct[] = [
   {
+    id: "brand_strategy_pack",
+    name: "Brand Strategy Pack",
+    displayName: "Brand Strategy Pack",
+    description: "Get your personalized Brand Strategy Pack instantly.",
+    priceInCents: 1900, // $19 one-time — archived, redirects to Masterclass
+    type: "brand_strategy_pack",
+    lifecycleStatus: "archived",
+    tag: "bought_brand_strategy_pack",
+  },
+  {
     id: "visibility_suite",
     name: "Visibility To Paid Suite",
     displayName: "Visibility To Paid Suite",
@@ -320,11 +321,12 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "paid_blueprint_delivery",
   },
   brand_strategy_pack: {
-    lifecycleStatus: "live",
-    checkoutPath: "/checkout/brand-strategy-pack",
+    // Archived — public pages redirect to /masterclass. Existing buyer access at /strategy/[token] stays live.
+    lifecycleStatus: "archived",
+    checkoutPath: "/checkout/masterclass",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:brand_strategy_pack",
-    successNextAction: "/academy/access/brand-strategy",
-    lifecycleEmailEntryPoint: "brand-strategy-setup",
+    successNextAction: "/strategy/[token]",
+    lifecycleEmailEntryPoint: "none — archived product",
   },
   selfie_guide_bundle: {
     lifecycleStatus: "live",

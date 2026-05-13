@@ -111,21 +111,24 @@ export async function getEmailControlSettings(): Promise<{
     ])
 
     // Handle JSONB value - it can be boolean, string "true"/"false", or null
-    const getBooleanValue = (val: any): boolean => {
+    const getBooleanValue = (val: any, defaultValue: boolean): boolean => {
       if (val === true || val === "true") return true
       if (val === false || val === "false") return false
-      return false // Default to false if missing or invalid
+      return defaultValue
     }
 
     return {
-      emailSendingEnabled: getBooleanValue(enabledResult[0]?.value),
-      emailTestMode: getBooleanValue(testModeResult[0]?.value),
+      // email_sending_enabled: missing flag = enabled (explicit kill switch required to stop)
+      emailSendingEnabled: getBooleanValue(enabledResult[0]?.value, true),
+      // email_test_mode: missing flag = not in test mode
+      emailTestMode: getBooleanValue(testModeResult[0]?.value, false),
     }
   } catch (error) {
-    console.error("[EmailControl] Error getting settings:", error)
-    // Fail safe: return false for both
+    console.error("[EmailControl] Error getting settings — defaulting sending ENABLED:", error)
+    // DB failure must not silence email delivery. An explicit kill switch requires intentional action;
+    // a transient DB error is not a valid reason to drop customer emails.
     return {
-      emailSendingEnabled: false,
+      emailSendingEnabled: true,
       emailTestMode: false,
     }
   }
