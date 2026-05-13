@@ -376,10 +376,10 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <nav className="hidden md:flex items-center gap-7">
         {[
-          { href: "/quiz/post-to-paid", label: "Start Here" },
-          { href: "/visibility-suite", label: "Visibility Suite" },
-          { href: "/join/studio",  label: "Studio"       },
-          { href: "/work-with-me", label: "Private Sprint" },
+          { href: "/selfie-guide",  label: "Free Guide"     },
+          { href: "/masterclass",   label: "Masterclass"    },
+          { href: "/join/studio",   label: "Studio"         },
+          { href: "/work-with-me",  label: "Private Sprint" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
             style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
@@ -390,7 +390,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
 
       <div className="flex items-center gap-4">
         <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>Login</Link>
-        <Btn href="/quiz/post-to-paid" surface="dark">Start Here</Btn>
+        <Btn href="/selfie-guide" surface="dark">Start Free</Btn>
       </div>
     </header>
   )
@@ -406,9 +406,11 @@ export function PublicFooter() {
         </p>
         <div className="flex flex-wrap gap-6">
           {[
-            "/quiz/post-to-paid:Start Here", "/what-to-say:What To Say",
-            "/show-up:Show Up", "/get-paid:Get Paid",
-            "/visibility-suite:Visibility Suite", "/join/studio:Studio",
+            "/selfie-guide:Free Selfie Guide",
+            "/starter-kit:Starter Kit",
+            "/masterclass:Masterclass",
+            "/visibility-suite:Visibility Suite",
+            "/join/studio:Studio",
             "/work-with-me:Private Sprint",
           ].map((s) => {
             const [href, label] = s.split(":")
@@ -659,8 +661,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         body={
           <p>You already have the phone. You already have the story. SSELFIE helps you turn both into a personal brand people understand, trust, and can buy from.</p>
         }
-        primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
-        secondary={{ href: r("/quiz/post-to-paid"),   label: "Find Your First Step" }}
+        primary={{ href: r("/selfie-guide"), label: "Start with the Free Guide" }}
+        secondary={{ href: r("/starter-kit"),   label: "Take the Starter Kit Next" }}
         imageSrc={IMG.homeHero}
       />
 
@@ -729,13 +731,13 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       />
 
       {/* OFFER LADDER — cream */}
-      <Section eyebrow="Start here" title={<>Choose your next step.</>} dark={false}>
+      <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Start Here", price: "Diagnostic", body: "Find the first paid step for your message, content, sales path, or Studio execution.", href: "/quiz/post-to-paid" },
-            { title: "Visibility To Paid Suite", price: "Front door", body: "Know what to say, what to post, what to sell, and what to do next.", href: "/visibility-suite" },
-            { title: "SSELFIE Studio", price: "Execution", body: "Use Maya, visuals, and planning tools to create and execute every week.", href: "/join/studio" },
-            { title: "Private Sprint", price: "Private help", body: "High-touch support when you want Sandra's eyes on your full message, offer, content, and sales path.", href: "/work-with-me" },
+            { title: "Free Selfie Guide", price: "Free", body: "Start here. The photo fundamentals that every creator skips and every brand needs.", href: "/selfie-guide" },
+            { title: "Starter Kit", price: "$37", body: "Presets, quick-start checklist, and a 7-day content starter — the first paid step.", href: "/starter-kit" },
+            { title: "Masterclass", price: "$147", body: "Your deeper Selfie Branding layer with strategy, content, and implementation support.", href: "/masterclass" },
+            { title: "Studio", price: "€97/mo", body: "Use Maya and the full execution layer weekly once your foundations are clear.", href: "/join/studio" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -750,22 +752,6 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
               <span style={{ ...ty("eyebrow", false), marginTop: "18px" }}>See page →</span>
             </Link>
           ))}
-        </div>
-        <div className="mf mt-10 pt-8" style={{ borderTop: `1px solid ${C.divCream}` }}>
-          <span style={{ ...ty("eyebrow", false), marginBottom: "16px" }}>Secondary learning resources</span>
-          <div className="grid gap-3 md:grid-cols-2">
-            {[
-              { title: "Starter Kit", price: "$37", body: "Selfie Guide, presets, quick-start, and a 7-day content starter. One time.", href: "/starter-kit" },
-              { title: "Masterclass", price: "$147", body: "Brand Strategy Pack included, plus visibility, content, and offer implementation.", href: "/masterclass" },
-            ].map((p) => (
-              <Link key={p.title} href={r(p.href)} className="block"
-                style={{ ...cardSx(false), minHeight: "160px", textDecoration: "none" }}>
-                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{p.price}</span>
-                <h3 style={{ ...ty("h3", false), fontSize: "20px", marginBottom: "8px" }}>{p.title}</h3>
-                <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.body}</p>
-              </Link>
-            ))}
-          </div>
         </div>
       </Section>
 
@@ -782,14 +768,14 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgSrc={IMG.homeFounder}
         imgFirst
         dark={false}
-        cta={<Btn href={r("/visibility-suite")} surface="cream">Start with Visibility To Paid</Btn>}
+        cta={<Btn href={r("/starter-kit")} surface="cream">Start with Starter Kit</Btn>}
       />
 
       {/* CTA CLOSE — dark */}
       <CtaClose
         title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
-        primary={{ href: r("/visibility-suite"), label: "Start with Visibility To Paid" }}
-        secondary={{ href: r("/quiz/post-to-paid"),   label: "Find Your First Step" }}
+        primary={{ href: r("/starter-kit"), label: "Start with Starter Kit" }}
+        secondary={{ href: r("/selfie-guide"), label: "Start with the free guide" }}
         dark
       />
 
@@ -1130,7 +1116,7 @@ export function WorkWithMePageContent() {
         title={<>Four weeks to build your message, offer, content direction, and first sales path with me.</>}
         body={<p>For women who do not want another course, but want Sandra&apos;s eyes on the full picture: what to say, what to post, what to sell, and what to do next.</p>}
         primary={{ href: "#inquiry",       label: "Apply for the Private Sprint" }}
-        secondary={{ href: "/visibility-suite", label: "Start with the Visibility To Paid Suite" }}
+        secondary={{ href: "/masterclass", label: "Start with the Masterclass" }}
         imageSrc={IMG.founder}
       />
 
@@ -1178,7 +1164,7 @@ export function WorkWithMePageContent() {
           <p style={{ color: C.onDarkMuted }}>This is not a promise of instant income. It is a focused 4-week sprint to build the foundation: message, offer, content direction, and first sales path.</p>
           <div className="flex flex-wrap gap-3 pt-3">
             <Btn href="#inquiry" surface="dark">Apply for the Private Sprint</Btn>
-            <Btn href="/visibility-suite" surface="dark" ghost>Start with the Suite</Btn>
+            <Btn href="/masterclass" surface="dark" ghost>Start with the Masterclass</Btn>
           </div>
         </div>
       </Section>

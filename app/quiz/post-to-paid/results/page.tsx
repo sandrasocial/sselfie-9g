@@ -2,7 +2,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { PublicFooter, PublicNav } from "@/components/sselfie/public-marketing"
-import { PublicOfferTracker } from "@/components/analytics/public-offer-tracker"
+import {
+  PublicOfferTracker,
+  trackOfferCtaClick,
+  trackPostKeywordAttributed,
+} from "@/components/analytics/public-offer-tracker"
 import { QuizResultServedTracker } from "@/components/analytics/quiz-result-served-tracker"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
@@ -10,32 +14,32 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
 const RESULTS = {
   message: {
-    title: "Start with What To Say.",
-    body: "Your first paid next step is message clarity. Make the offer easier to understand before you ask content to sell it.",
-    href: "/what-to-say",
-    cta: "Open What To Say",
+    title: "Start with the Masterclass.",
+    body: "Your first step is message clarity. The Masterclass builds your full Selfie Branding foundation — what to say, what to show, and how to make it land.",
+    href: "/masterclass",
+    cta: "Open The Masterclass",
     keyword: "SAY",
-    offerSlug: "what-to-say",
+    offerSlug: "masterclass",
   },
   consistency: {
-    title: "Start with Show Up.",
-    body: "Your first paid next step is a weekly rhythm. You need content that repeats the right message without draining you.",
-    href: "/show-up",
-    cta: "Open Show Up",
+    title: "Start with the Starter Kit.",
+    body: "Your first step is a simple weekly rhythm. The Starter Kit gives you the photo basics, presets, and a 7-day content starter so you can actually post.",
+    href: "/starter-kit",
+    cta: "Get The Starter Kit",
     keyword: "CONTENT",
-    offerSlug: "show-up",
+    offerSlug: "starter-kit",
   },
   sales: {
-    title: "Start with Get Paid.",
-    body: "Your first paid next step is the buyer path. Connect one post, one keyword, one landing page, and one offer.",
-    href: "/get-paid",
-    cta: "Open Get Paid",
+    title: "Start with the Masterclass.",
+    body: "Your first step is a clear buyer path. The Masterclass connects your message, content, and offer so people know what to do next.",
+    href: "/masterclass",
+    cta: "Open The Masterclass",
     keyword: "PAID",
-    offerSlug: "get-paid",
+    offerSlug: "masterclass",
   },
   suite: {
     title: "Start with the Visibility To Paid Suite.",
-    body: "You do not need one isolated fix. You need the message, content rhythm, sales path, and Maya plan in order.",
+    body: "You do not need one isolated fix. You need the message, content rhythm, and sales path in order.",
     href: "/visibility-suite",
     cta: "Open The Suite",
     keyword: "SUITE",
@@ -104,6 +108,21 @@ export default async function QuizResultsPage({
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
                 href={`${result.href}${result.href.includes("?") ? "&" : "?"}source=quiz_result&quiz_result=${key}&cta_keyword=${result.keyword}`}
+                onClick={() => {
+                  const href = `${result.href}${result.href.includes("?") ? "&" : "?"}source=quiz_result&quiz_result=${key}&cta_keyword=${result.keyword}`
+                  trackOfferCtaClick({
+                    offerSlug: result.offerSlug,
+                    ctaKeyword: result.keyword,
+                    source: "post_to_paid_quiz",
+                    href,
+                  })
+                  trackPostKeywordAttributed({
+                    offerSlug: result.offerSlug,
+                    ctaKeyword: result.keyword,
+                    source: "post_to_paid_quiz",
+                    href,
+                  })
+                }}
                 className="inline-flex px-8 py-3 text-[10px] uppercase tracking-[0.22em]"
                 style={{ background: "#0F0D0B", color: "#F4F0E6", fontWeight: 600 }}
               >
