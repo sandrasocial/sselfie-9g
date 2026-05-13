@@ -1,43 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getReplicateClient } from "@/lib/replicate-client"
+import { NextResponse } from "next/server"
 
-export async function POST(req: NextRequest) {
-  if (process.env.ENABLE_BLUEPRINT_CONCEPT_IMAGE !== "true") {
-    return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
-  }
-
-  try {
-    const { prompt, aspectRatio = "1:1" } = await req.json()
-
-    console.log("[v0] Generating concept image with FLUX.1 Dev:", { prompt, aspectRatio })
-
-    const replicate = getReplicateClient()
-
-    const prediction = await replicate.predictions.create({
-      model: "black-forest-labs/flux-dev",
-      input: {
-        prompt: prompt, // Use the full detailed prompt as-is
-        aspect_ratio: aspectRatio,
-        num_outputs: 1,
-        guidance: 2.5, // Aligned with Maya Classic Flux presets
-        num_inference_steps: 28, // High quality setting
-        output_format: "png",
-        output_quality: 100, // Maximum quality
-      },
-    })
-
-    console.log("[v0] FLUX.1 Dev prediction created:", prediction.id, prediction.status)
-
-    return NextResponse.json({
-      success: true,
-      predictionId: prediction.id,
-      status: prediction.status,
-    })
-  } catch (error) {
-    console.error("[v0] Error generating image:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate image" },
-      { status: 500 },
-    )
-  }
+export async function POST() {
+  // DISABLED_RETIRED_AI_SURFACE: old public Blueprint concept-image generation is retired.
+  return NextResponse.json({ error: "Blueprint concept-image generation is retired" }, { status: 410 })
 }

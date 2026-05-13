@@ -14,7 +14,7 @@ if ! command -v ngrok &> /dev/null; then
 fi
 
 # Check if dev server is already running
-if curl -s http://localhost:3000/api/gpt-actions > /dev/null 2>&1; then
+if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
     echo "✅ Dev server already running on port 3000"
     DEV_SERVER_RUNNING=true
 else
@@ -25,7 +25,7 @@ else
     
     echo "⏳ Waiting for dev server to start..."
     for i in {1..30}; do
-        if curl -s http://localhost:3000/api/gpt-actions > /dev/null 2>&1; then
+        if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
             echo "✅ Dev server is ready!"
             DEV_SERVER_RUNNING=true
             break
