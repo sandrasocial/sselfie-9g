@@ -50,9 +50,9 @@ const SEGMENTS = [
   { envKey: "RESEND_SEGMENT_WELCOME_DAY_3",         name: "Welcome Day 3" },
   { envKey: "RESEND_SEGMENT_WELCOME_DAY_7",         name: "Welcome Day 7" },
   { envKey: "RESEND_SEGMENT_WIN_BACK_OFFER",        name: "Win Back Offer" },
-  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_1",  name: "Paid Blueprint Day 1" },
-  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_3",  name: "Paid Blueprint Day 3" },
-  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_7",  name: "Paid Blueprint Day 7" },
+  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_1",  name: "Legacy Feed Planner Day 1" },
+  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_3",  name: "Legacy Feed Planner Day 3" },
+  { envKey: "RESEND_SEGMENT_PAID_BLUEPRINT_DAY_7",  name: "Legacy Feed Planner Day 7" },
 ] as const
 
 async function resendFetch(path: string, options: RequestInit = {}) {

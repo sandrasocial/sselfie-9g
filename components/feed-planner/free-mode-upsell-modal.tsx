@@ -2,10 +2,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CREDIT_PACKAGES, formatPriceFromCents, getProductById } from "@/lib/products"
+import { CREDIT_PACKAGES, formatPriceFromCents } from "@/lib/products"
 import { trackCTAClick } from "@/lib/analytics"
 
 interface FreeModeUpsellModalProps {
@@ -20,20 +18,16 @@ interface FreeModeUpsellModalProps {
  * Shows after free user has used 2 credits
  * Offers three options:
  * 1. Test More (10 credits) - $9.99 - Low friction entry point
- * 2. Unlock Full Blueprint - $47 - Best value for serious creators
+ * 2. Join Studio - current full-access path
  * 3. Get More Credits (100 credits) - $45 - For power users
  */
 export default function FreeModeUpsellModal({
   open,
   onOpenChange,
-  feedId,
 }: FreeModeUpsellModalProps) {
   const router = useRouter()
-  const [showBlueprintModal, setShowBlueprintModal] = useState(false)
-  const blueprintProduct = getProductById("paid_blueprint")
   const starterPack = CREDIT_PACKAGES.find((pkg) => pkg.id === "credits_topup_10")
   const powerPack = CREDIT_PACKAGES.find((pkg) => pkg.id === "credits_topup_100")
-  const blueprintPrice = blueprintProduct ? formatPriceFromCents(blueprintProduct.priceInCents) : "$47"
   const starterPrice = starterPack ? formatPriceFromCents(starterPack.priceInCents) : "$9.99"
   const powerPrice = powerPack ? formatPriceFromCents(powerPack.priceInCents) : "$45"
 
@@ -44,14 +38,10 @@ export default function FreeModeUpsellModal({
     router.push("/checkout/credits")
   }
 
-  const handleUnlockBlueprint = () => {
-    // Close upsell modal first to prevent duplicate modals
-    trackCTAClick("free_mode_upsell", "Unlock Full Blueprint", "/checkout/blueprint")
+  const handleJoinStudio = () => {
+    trackCTAClick("free_mode_upsell", "Join Studio", "/checkout/membership")
     onOpenChange(false)
-    // Small delay to ensure upsell modal is fully closed before showing blueprint modal
-    setTimeout(() => {
-      setShowBlueprintModal(true)
-    }, 100)
+    router.push("/checkout/membership")
   }
 
   const handleGetMoreCredits = () => {
@@ -62,8 +52,7 @@ export default function FreeModeUpsellModal({
   }
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-md mx-4 sm:mx-auto p-4 sm:p-6">
           <DialogHeader className="text-center sm:text-left px-0 sm:px-0">
             <DialogTitle className="text-xl sm:text-2xl font-serif font-light text-stone-900 leading-tight">
@@ -90,15 +79,15 @@ export default function FreeModeUpsellModal({
               </div>
             </Button>
 
-            {/* Option 2: Unlock Full Blueprint - Best value */}
+            {/* Option 2: Join Studio - current full access path */}
             <Button
-              onClick={handleUnlockBlueprint}
+              onClick={handleJoinStudio}
               className="w-full justify-start h-auto py-3 sm:py-4 px-3 sm:px-4 bg-stone-900 hover:bg-stone-800 transition-all touch-manipulation"
             >
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1 text-left min-w-0">
-                  <div className="font-medium text-white text-sm sm:text-base">Unlock Full Blueprint</div>
-                  <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">{blueprintPrice} • 60 Credits • Full Feed Planner</div>
+                  <div className="font-medium text-white text-sm sm:text-base">Join Studio</div>
+                  <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">Studio access • Maya • Full Feed Planner</div>
                 </div>
                 <span className="text-[10px] uppercase tracking-[0.2em] text-stone-300 shrink-0">Next</span>
               </div>
@@ -120,14 +109,6 @@ export default function FreeModeUpsellModal({
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
-
-      {/* Embedded checkout modal */}
-      <BuyBlueprintModal
-        open={showBlueprintModal}
-        onOpenChange={setShowBlueprintModal}
-        feedId={feedId}
-      />
-    </>
+    </Dialog>
   )
 }

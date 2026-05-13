@@ -65,7 +65,7 @@ export async function GET() {
       const tierMap: Record<string, string> = {
         sselfie_studio_membership: "Creator Studio",
         brand_studio_membership: "Brand Studio (Legacy)",
-        one_time_session: "Starter Photoshoot",
+        one_time_session: "Legacy One-Time Session",
       }
       const tier = tierMap[sub.product_type] || sub.product_type
       

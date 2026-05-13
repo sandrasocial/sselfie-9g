@@ -110,7 +110,7 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
           {email && <p className="setup-email-note">Building strategy for: {email}</p>}
         </div>
 
-        <section className="outcome-grid" aria-label="What your Brand Strategy Pack creates">
+        <section className="outcome-grid" aria-label="What your strategy foundation creates">
           {STRATEGY_OUTCOMES.map((item) => (
             <article key={item.label} className="outcome-card">
               <p className="outcome-label">{item.label}</p>

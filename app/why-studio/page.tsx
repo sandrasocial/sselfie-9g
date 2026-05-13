@@ -556,7 +556,7 @@ export default function WhyStudioPage() {
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
                   <p>• A calm way back into posting yourself</p>
                   <p>• 7-day challenge to build real momentum</p>
-                  <p>• Then add Brand Strategy Pack if the words still feel muddy</p>
+                  <p>• Then use Masterclass if the words still feel muddy</p>
                 </div>
                 <div className="mb-6">
                   <span className="text-xl font-serif text-white">$17</span>

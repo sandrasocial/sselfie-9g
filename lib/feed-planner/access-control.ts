@@ -30,7 +30,7 @@ export interface FeedPlannerAccess {
  * 
  * Determines what features are available based on user's subscription type:
  * - Free: One 9:16 placeholder, generation allowed only while credits > 0, no gallery access
- * - Paid Blueprint: Full 3x3 grid, all generation buttons, gallery access, 3 feed planners max
+ * - LEGACY_ACCESS_ONLY: old paid_blueprint buyers keep full 3x3 grid, all generation buttons, gallery access, 3 feed planners max
  * - One-Time Session: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
  * - Membership: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
  * 

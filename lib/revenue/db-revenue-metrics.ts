@@ -45,7 +45,7 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       `
 
-      // One-Time Revenue (Starter Photoshoot)
+      // LEGACY_ACCESS_ONLY: old one-time session revenue
       const [oneTimeRevenue] = await sql`
         SELECT COALESCE(SUM(amount_cents), 0)::int as total_cents
         FROM stripe_payments
@@ -152,4 +152,3 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
     }
   }
 }
-

@@ -22,7 +22,7 @@ export default function CheckoutCancelPage() {
         </h1>
 
         <p className="text-lg text-stone-600 font-light leading-relaxed mb-12 max-w-xl mx-auto">
-          No worries. Your payment was not processed. You can come back to the Visibility To Paid path whenever you&apos;re ready.
+          No worries. Your payment was not processed. You can come back to SSELFIE whenever you&apos;re ready.
         </p>
 
         {/* What You&apos;re Missing */}
@@ -36,21 +36,21 @@ export default function CheckoutCancelPage() {
                 ✓
               </div>
               <p className="text-sm text-stone-700 font-light">
-                What To Say helps you find the words people remember.
+                The Selfie Guide helps you take the first photo you feel good posting.
               </p>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
                 ✓
               </div>
-              <p className="text-sm text-stone-700 font-light">Show Up turns your message into content you can keep up with.</p>
+              <p className="text-sm text-stone-700 font-light">The Starter Kit turns that photo into your first brand-ready week.</p>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
                 ✓
               </div>
               <p className="text-sm text-stone-700 font-light">
-                Get Paid gives your visibility one clear next step.
+                The Masterclass gives you Sandra&apos;s full selfie and content method.
               </p>
             </div>
             <div className="flex gap-3">

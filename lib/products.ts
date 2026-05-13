@@ -142,15 +142,6 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
 
 export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   {
-    id: "one_time_session",
-    name: "Starter Photoshoot",
-    displayName: "Starter Photoshoot",
-    description: "A low-risk first creation offer when you want brand photos before joining the weekly Studio system.",
-    priceInCents: 4900, // $49 one-time
-    type: "one_time_session",
-    credits: 50,
-  },
-  {
     id: "sselfie_studio_membership",
     name: "Creator Studio",
     displayName: "Creator Studio",
@@ -169,15 +160,6 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     type: "sselfie_studio_membership_annual",
     credits: 200,
     popular: false,
-  },
-  {
-    id: "paid_blueprint",
-    name: "Brand Blueprint - Paid",
-    displayName: "30-Day Visibility Reset",
-    description: "A 30-day program to restore your consistent, recognizable presence — 60 credits to generate brand photos across the full month",
-    priceInCents: 4700, // $47 one-time
-    type: "paid_blueprint",
-    credits: 60, // 30 images × 2 credits per image
   },
   {
     id: "starter_kit",
@@ -206,7 +188,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     type: "masterclass",
     tag: "bought_masterclass",
     features: [
-      "Brand Strategy Pack included",
+      "Strategy foundation included",
       "Full method walkthrough",
       "Module-based training access",
       "Income-ready visibility curriculum",
@@ -217,15 +199,15 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "selfie_guide_bundle",
-    name: "Selfie Guide + Brand Strategy Bundle",
-    displayName: "Selfie Guide + Brand Strategy Bundle",
-    description: "Get the Selfie Guide and Brand Strategy Pack together at the bundle price.",
+    name: "Selfie Guide + Strategy Bundle",
+    displayName: "Selfie Guide + Strategy Bundle",
+    description: "Get the Selfie Guide and strategy foundation together at the bundle price.",
     priceInCents: 2700, // $27 one-time
     type: "selfie_guide_bundle",
     tag: "bought_selfie_guide_bundle",
     features: [
       "Full Selfie Guide access",
-      "Personal Brand Strategy Pack unlocked",
+      "Personal brand strategy foundation unlocked",
       "Interactive checklists and 7-Day Selfie Challenge",
     ],
   },
@@ -249,19 +231,43 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
 
 export const ARCHIVED_PRICING_PRODUCTS: PricingProduct[] = [
   {
+    // LEGACY_ACCESS_ONLY: kept for old payment records and credit grants. No public sales surface.
+    id: "one_time_session",
+    name: "Legacy One-Time Session",
+    displayName: "Legacy One-Time Session",
+    description: "Archived one-time creation offer preserved for historical Stripe/customer records.",
+    priceInCents: 4900,
+    type: "one_time_session",
+    lifecycleStatus: "archived",
+    credits: 50,
+  },
+  {
+    // LEGACY_ACCESS_ONLY: required by historical Feed Planner buyers and paid_blueprint DB columns.
+    id: "paid_blueprint",
+    name: "Legacy Feed Planner Access",
+    displayName: "Legacy Feed Planner Access",
+    description: "Archived Feed Planner purchase preserved for existing buyer access.",
+    priceInCents: 4700,
+    type: "paid_blueprint",
+    lifecycleStatus: "archived",
+    credits: 60,
+  },
+  {
+    // PRESERVE_FOR_EXISTING_BUYERS: strategy tokens and masterclass bundle access still depend on this ID.
     id: "brand_strategy_pack",
-    name: "Brand Strategy Pack",
-    displayName: "Brand Strategy Pack",
-    description: "Get your personalized Brand Strategy Pack instantly.",
+    name: "Legacy Strategy Pack",
+    displayName: "Legacy Strategy Pack",
+    description: "Archived strategy product preserved for existing strategy-token access.",
     priceInCents: 1900, // $19 one-time — archived, redirects to Masterclass
     type: "brand_strategy_pack",
     lifecycleStatus: "archived",
     tag: "bought_brand_strategy_pack",
   },
   {
+    // PRESERVE_FOR_EXISTING_BUYERS: existing suite buyers keep academy access.
     id: "visibility_suite",
-    name: "Visibility To Paid Suite",
-    displayName: "Visibility To Paid Suite",
+    name: "Legacy Visibility Suite",
+    displayName: "Legacy Visibility Suite",
     description:
       "The full guided path: What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
     priceInCents: 9700, // €97 launch price
@@ -314,8 +320,9 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "credit_topup_confirmation",
   },
   paid_blueprint: {
-    lifecycleStatus: "live",
-    checkoutPath: "/checkout/blueprint",
+    // LEGACY_ACCESS_ONLY: preserved for paid_blueprint fulfillment and Feed Planner historical access.
+    lifecycleStatus: "archived",
+    checkoutPath: "legacy:no-new-public-checkout",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:paid_blueprint",
     successNextAction: "/feed-planner",
     lifecycleEmailEntryPoint: "paid_blueprint_delivery",
@@ -357,21 +364,25 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "masterclass_delivery",
   },
   visibility_suite: {
+    // PRESERVE_FOR_EXISTING_BUYERS
     lifecycleStatus: "archived",
-    checkoutPath: "/checkout/visibility-suite",
+    checkoutPath: "legacy:existing-buyer-access-only",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:visibility_suite",
     successNextAction: "/academy/access/visibility-suite",
     lifecycleEmailEntryPoint: "academy_purchase_confirmation",
   },
   academy_mini_product: {
+    // PRESERVE_FOR_EXISTING_BUYERS
     lifecycleStatus: "archived",
-    checkoutPath: "/checkout/academy-product/[productId]",
+    checkoutPath: "legacy:existing-buyer-access-only",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:academy_mini_product",
     successNextAction: "/academy/access/[visibility-mini-product]",
     lifecycleEmailEntryPoint: "academy_purchase_confirmation",
   },
 }
 
+// PRESERVE_FOR_EXISTING_BUYERS: archived mini-product metadata is still used by
+// academy access, admin resend, and webhook compatibility paths.
 export const ACADEMY_PRODUCTS = {
   what_to_say: {
     id: "what_to_say",
@@ -411,8 +422,8 @@ export const ACADEMY_PRODUCTS = {
   },
   visibility_suite: {
     id: "visibility_suite",
-    name: "Visibility To Paid Suite",
-    tagline: "What To Say, Show Up, Get Paid, and your Maya Visibility Plan.",
+    name: "Legacy Visibility Suite",
+    tagline: "Archived bundle access for existing buyers.",
     price: 9700,
     currency: "eur",
     stripePriceId: VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch,

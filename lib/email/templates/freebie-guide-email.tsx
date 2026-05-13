@@ -22,7 +22,7 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
       "Your first visible post",
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open the guide", guideAccessLink)}</div>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#a8a49c;">After you finish the guide, the natural next step is the Starter Kit if you want your first 7 days of content, or the Visibility Suite if you want the full What To Say, Show Up, Get Paid path.</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#a8a49c;">After you finish the guide, the natural next step is the Starter Kit if you want your first 7 days of content, or the Masterclass if you want Sandra&apos;s full SSELFIE method.</p>
   `
 
   const html = renderStoneShell({
@@ -50,7 +50,7 @@ Start here:
 Open the guide:
 ${guideAccessLink}
 
-After you finish the guide, the natural next step is the Starter Kit if you want your first 7 days of content, or the Visibility Suite if you want the full What To Say, Show Up, Get Paid path.
+After you finish the guide, the natural next step is the Starter Kit if you want your first 7 days of content, or the Masterclass if you want Sandra's full SSELFIE method.
 
 Start small. One photo. One post. One next step.
 

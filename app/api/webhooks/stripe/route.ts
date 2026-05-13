@@ -740,6 +740,8 @@ export async function POST(request: NextRequest) {
             })
           }
 
+          // DO_NOT_REMOVE_WEBHOOK_COMPATIBILITY: legacy Brand Engine/Private AI Brand OS
+          // payments may still reconcile through this metadata branch.
           if (isBrandEngineCheckoutProductType(productType)) {
             console.log(`[v0] 💎 Brand Engine payment detected for product_type=${productType}`)
 
@@ -802,7 +804,7 @@ export async function POST(request: NextRequest) {
                     ${isPaymentPaid ? "succeeded" : "pending"},
                     'brand_engine_offer',
                     ${productType},
-                    ${"Brand Engine offer payment"},
+                    ${"Private AI Brand OS offer payment"},
                     ${JSON.stringify({
                       ...session.metadata,
                       session_id: session.id,
@@ -882,7 +884,7 @@ export async function POST(request: NextRequest) {
                 const receiptText = [
                   `Hi ${firstName},`,
                   "",
-                  "Payment received. You're confirmed for Brand Engine.",
+                  "Payment received. You're confirmed for Private AI Brand OS.",
                   "You'll receive onboarding steps shortly.",
                   "",
                   "— Sandra",
@@ -890,14 +892,14 @@ export async function POST(request: NextRequest) {
                 const receiptHtml = `
                   <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1c1917; line-height: 1.5;">
                     <p>Hi ${firstName},</p>
-                    <p>Payment received. You're confirmed for Brand Engine.</p>
+                    <p>Payment received. You're confirmed for Private AI Brand OS.</p>
                     <p>You'll receive onboarding steps shortly.</p>
                     <p>— Sandra</p>
                   </div>
                 `
                 await sendEmail({
                   to: customerEmail,
-                  subject: "Payment received — Brand Engine",
+                  subject: "Payment received — Private AI Brand OS",
                   html: receiptHtml,
                   text: receiptText,
                   emailType: "brand_engine_payment_confirmation",
@@ -1459,36 +1461,6 @@ export async function POST(request: NextRequest) {
             }
 
             if (academyCustomerEmail) {
-              const upsellMap: Record<string, { name: string; price: string; productId: string }> =
-                {
-                  what_to_say: { name: "Show Up", price: "€67", productId: "show_up" },
-                  show_up: { name: "Get Paid", price: "€97", productId: "get_paid" },
-                  concept_cards_pack: { name: "Show Up", price: "€67", productId: "show_up" },
-                  caption_sprint: { name: "Get Paid", price: "€97", productId: "get_paid" },
-                  ai_photo_refresh: { name: "Feed Reset", price: "€49", productId: "feed_reset_9grid" },
-                  feed_reset_9grid: { name: "Visibility To Paid Suite", price: "€97", productId: "visibility_suite" },
-                  get_paid: {
-                    name: "Creator Studio membership",
-                    price: "$97/month",
-                    productId: "membership",
-                  },
-                  ai_photo_prompts: {
-                    name: "What To Say",
-                    price: "€47",
-                    productId: "what_to_say",
-                  },
-                }
-              const productNames: Record<string, string> = {
-                what_to_say: "What To Say",
-                show_up: "Show Up",
-                get_paid: "Get Paid",
-                concept_cards_pack: "Concept Cards",
-                caption_sprint: "Caption Sprint",
-                feed_reset_9grid: "Feed Reset",
-                ai_photo_refresh: "AI Photo Refresh",
-                visibility_suite: "Visibility To Paid Suite",
-                ai_photo_prompts: "AI Photo Prompt Pack",
-              }
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
               const miniProductSlug =
                 VISIBILITY_MINI_PRODUCT_BY_ID[
@@ -2138,7 +2110,7 @@ export async function POST(request: NextRequest) {
                       'succeeded',
                       'brand_strategy_pack',
                       'brand_strategy_pack',
-                      ${"Brand Strategy Pack"},
+                      ${"Strategy Foundation"},
                       ${JSON.stringify(session.metadata || {})},
                       NOW(),
                       ${isTestMode},
@@ -2468,8 +2440,8 @@ export async function POST(request: NextRequest) {
                 try {
                   const bspSourceProductType = isSelfieGuideBundle ? "selfie_guide_bundle" : "selfie_guide"
                   const bspPackDescription = isSelfieGuideBundle
-                    ? "Brand Strategy Pack (included in Selfie Guide bundle)"
-                    : "Brand Strategy Pack (Selfie Guide order bump)"
+                    ? "Strategy Foundation (included in Selfie Guide bundle)"
+                    : "Strategy Foundation (Selfie Guide order bump)"
                   const bspUserTagSource = isSelfieGuideBundle
                     ? "selfie_guide_bundle_included"
                     : "selfie_guide_order_bump"
@@ -3177,7 +3149,8 @@ export async function POST(request: NextRequest) {
               }
             }
           } else if (productType === "paid_blueprint") {
-            // ✨ PAID BLUEPRINT: Log payment, tag contact, grant credits and subscription
+            // LEGACY_ACCESS_ONLY: historical Feed Planner buyers still use paid_blueprint fulfillment.
+            // Log payment, tag contact, grant credits and subscription.
             // ⚠️ CRITICAL: Process if payment is confirmed OR if $0 payment (coupon code)
             if (!isPaymentPaid) {
               console.log(

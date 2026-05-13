@@ -379,7 +379,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
           { href: "/selfie-guide",  label: "Free Guide"     },
           { href: "/masterclass",   label: "Masterclass"    },
           { href: "/join/studio",   label: "Studio"         },
-          { href: "/work-with-me",  label: "Private Sprint" },
+          { href: "/work-with-me",  label: "Work With Me" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
             style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
@@ -409,9 +409,8 @@ export function PublicFooter() {
             "/selfie-guide:Free Selfie Guide",
             "/starter-kit:Starter Kit",
             "/masterclass:Masterclass",
-            "/visibility-suite:Visibility Suite",
             "/join/studio:Studio",
-            "/work-with-me:Private Sprint",
+            "/work-with-me:Work With Me",
           ].map((s) => {
             const [href, label] = s.split(":")
             return (
@@ -622,7 +621,7 @@ const FAQS = {
   ],
   masterclass: [
     { question: "Do I need the Starter Kit first?",
-      answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper and now includes Brand Strategy Pack so you build from a clearer offer." },
+      answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper so you build from a clearer offer and content direction." },
     { question: "Is this a photography course?",
       answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online: your brand, your pillars, your content system." },
     { question: "How long does it take?",
@@ -699,9 +698,9 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       <Section eyebrow="The SSELFIE Path" title={<>Know what to say, post, show, sell, and do next.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-4">
           {[
-            { step: "01", title: "What To Say", body: "Find the words." },
-            { step: "02", title: "Show Up", body: "Plan the content." },
-            { step: "03", title: "Get Paid", body: "Build the offer path." },
+            { step: "01", title: "Clarify", body: "Find the words." },
+            { step: "02", title: "Create", body: "Plan the content." },
+            { step: "03", title: "Convert", body: "Build the offer path." },
             { step: "04", title: "Studio", body: "Create and execute." },
           ].map((item) => (
             <article key={item.step} className="mf" style={{ ...cardSx(false), minHeight: "170px" }}>
@@ -895,7 +894,7 @@ export function MasterclassPageContent() {
       <Hero
         eyebrow="Masterclass · $147"
         title={<>Build income-ready visibility with a clearer offer.</>}
-        body={<p>Brand Strategy Pack included, then Sandra&apos;s full SSELFIE method for showing up, creating content, and knowing what your weekly execution should actually support.</p>}
+        body={<p>Your strategy foundation comes first, then Sandra&apos;s full SSELFIE method for showing up, creating content, and knowing what your weekly execution should actually support.</p>}
         primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
@@ -906,7 +905,7 @@ export function MasterclassPageContent() {
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
           <p>But consistency isn&apos;t the problem. Clarity is.</p>
-          <p>That is why Masterclass now starts with your Brand Strategy Pack. Know what you sell, who it helps, and what you want to be known for before you build the content system.</p>
+          <p>That is why Masterclass now starts with your strategy foundation. Know what you sell, who it helps, and what you want to be known for before you build the content system.</p>
         </div>
       </Section>
 
@@ -914,7 +913,7 @@ export function MasterclassPageContent() {
       <Section eyebrow="Inside the course" title="Strategy first. Then content, confidence, and execution." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
-            { title: "Brand Strategy Pack", body: "Your positioning, audience, pillars, and next content ideas before the lessons begin." },
+            { title: "Strategy Foundation", body: "Your positioning, audience, pillars, and next content ideas before the lessons begin." },
             { title: "How You Show Up",     body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait." },
             { title: "Your Visual Brand",   body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they even see your name." },
             { title: "Content-To-Cash",     body: "Weekly rhythm, calls to action, DM follow-up, and simple sales conversations without income guarantees." },
@@ -927,7 +926,7 @@ export function MasterclassPageContent() {
       <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
-            { num: "01", title: "Start Here: Brand Strategy Pack"     },
+            { num: "01", title: "Start Here: Strategy Foundation"     },
             { num: "02", title: "Welcome & What This Changes"         },
             { num: "03", title: "Starting to Show Up"                 },
             { num: "04", title: "Your Energy on Camera"               },
@@ -987,7 +986,7 @@ export function MasterclassPageContent() {
       {/* WHAT YOU LEAVE WITH — dark */}
       <Section eyebrow="After the course" title="What you'll have that you don't have now." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark title="Your Brand Strategy Pack" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
+          <FCard dark title="Your Strategy Foundation" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
           <FCard dark title="Your brand pillars"     body="The three topics you always come back to. Every content idea filters through these." />
           <FCard dark title="Your content-to-cash system" body="What you post, where it leads, and how to invite the right people into a simple conversation." />
           <FCard dark title="A 30-day action plan"  body="You won't finish this course with notes. You'll finish it with posts, scripts, and a tracking rhythm." />
@@ -1112,16 +1111,16 @@ export function WorkWithMePageContent() {
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="Visibility To Paid Private Sprint"
+        eyebrow="Work With Me"
         title={<>Four weeks to build your message, offer, content direction, and first sales path with me.</>}
         body={<p>For women who do not want another course, but want Sandra&apos;s eyes on the full picture: what to say, what to post, what to sell, and what to do next.</p>}
-        primary={{ href: "#inquiry",       label: "Apply for the Private Sprint" }}
+        primary={{ href: "#inquiry",       label: "Apply to Work With Me" }}
         secondary={{ href: "/masterclass", label: "Start with the Masterclass" }}
         imageSrc={IMG.founder}
       />
 
       {/* WHAT WE BUILD — cream */}
-      <Section eyebrow="Private Sprint" title="What we build together" dark={false}>
+      <Section eyebrow="Private AI Brand OS" title="What we build together" dark={false}>
         <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>This is not another content course. This is where we look at the full picture and build the pieces you need to move from visible to paid.</p>
         </div>
@@ -1140,7 +1139,7 @@ export function WorkWithMePageContent() {
           ))}
         </div>
         <div className="mt-10">
-          <Btn href="#inquiry" surface="dark">Apply for the Private Sprint</Btn>
+          <Btn href="#inquiry" surface="dark">Apply to Work With Me</Btn>
         </div>
       </Section>
 
@@ -1163,7 +1162,7 @@ export function WorkWithMePageContent() {
           <p>Payment is not taken when you apply. If your application is accepted, Sandra will send you a private payment link.</p>
           <p style={{ color: C.onDarkMuted }}>This is not a promise of instant income. It is a focused 4-week sprint to build the foundation: message, offer, content direction, and first sales path.</p>
           <div className="flex flex-wrap gap-3 pt-3">
-            <Btn href="#inquiry" surface="dark">Apply for the Private Sprint</Btn>
+            <Btn href="#inquiry" surface="dark">Apply to Work With Me</Btn>
             <Btn href="/masterclass" surface="dark" ghost>Start with the Masterclass</Btn>
           </div>
         </div>
@@ -1175,7 +1174,7 @@ export function WorkWithMePageContent() {
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
           <div className="mf">
             <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
-            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply for the Private Sprint</h2>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply to Work With Me</h2>
             <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand where you are, what you are trying to build, and whether this is the right fit.</p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
@@ -1333,7 +1332,7 @@ function InquiryForm() {
           // Zero border-radius — SSELFIE Agents system
         }}
       >
-        {pending ? "Sending…" : "Apply for the Private Sprint"}
+        {pending ? "Sending…" : "Apply to Work With Me"}
       </button>
       {error && <p style={{ fontSize: "13px", color: "#f87171", fontFamily: F.sans }}>{error}</p>}
     </form>

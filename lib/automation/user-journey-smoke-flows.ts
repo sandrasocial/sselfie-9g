@@ -25,7 +25,7 @@ export const USER_JOURNEY_SMOKE_FLOWS: JourneySmokeFlow[] = [
     expectedTitle: /Brand Strategy/i,
     trigger: {
       type: "href",
-      href: "/checkout/brand-strategy-pack",
+      href: "/checkout/masterclass",
     },
   },
   {

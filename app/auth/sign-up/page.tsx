@@ -35,7 +35,7 @@ export default function SignUpPage() {
       checkoutParam === "studio_membership"
         ? "/checkout/membership"
         : checkoutParam === "brand_strategy_pack"
-          ? "/checkout/brand-strategy-pack"
+          ? "/checkout/masterclass"
           : "/studio"
     const returnTo = sanitizeRedirect(
       urlParams.get("returnTo"),
@@ -86,7 +86,7 @@ export default function SignUpPage() {
       if (checkoutParam === "studio_membership") {
         redirectTo = "/checkout/membership"
       } else if (checkoutParam === "brand_strategy_pack") {
-        redirectTo = "/checkout/brand-strategy-pack"
+        redirectTo = "/checkout/masterclass"
       }
       router.push(redirectTo)
     } catch (error: unknown) {
@@ -159,7 +159,7 @@ export default function SignUpPage() {
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
         } else if (checkoutParam === "brand_strategy_pack") {
-          redirectTo = "/checkout/brand-strategy-pack"
+          redirectTo = "/checkout/masterclass"
         }
 
         if (referralCode) {

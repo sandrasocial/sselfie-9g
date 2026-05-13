@@ -13,7 +13,7 @@ export const CREDIT_COSTS = {
 
 export const SUBSCRIPTION_CREDITS = {
   sselfie_studio_membership: 200, // Creator Studio: 200 credits/month (~100 Pro photos OR ~200 Classic photos, fair use: ~4 photoshoots/month)
-  one_time_session: 50, // Starter Photoshoot: 50 credits (one-time grant, 50 images)
+  one_time_session: 50, // LEGACY_ACCESS_ONLY: one-time grant, 50 images
 } as const
 
 export type TransactionType =
@@ -523,7 +523,7 @@ export async function grantFreeUserCredits(userId: string): Promise<{ success: b
  * Grant paid blueprint credits (60 credits for 30 images)
  * Decision 1: Credit System for All Users
  * Called from Stripe webhook on paid blueprint purchase
- * Paid Blueprint Package: 3 feed planners, 30 images total (2 credits per image)
+ * LEGACY_ACCESS_ONLY: old Feed Planner package, 3 planners, 30 images total (2 credits per image)
  */
 export async function grantPaidBlueprintCredits(
   userId: string,
@@ -543,7 +543,7 @@ export async function grantPaidBlueprintCredits(
     userId,
     credits,
     "purchase",
-    "Paid Blueprint purchase (60 credits - 30 images)",
+    "Legacy Feed Planner purchase (60 credits - 30 images)",
     stripePaymentId,
     isTestMode,
     options,

@@ -14,7 +14,7 @@ const MAX_OUTPUT_TOKENS = 2400
 function buildPrompt(brandData: Record<string, any>) {
   return `You are Maya, a warm, sharp brand strategist.
 
-Your job: generate a **Brand Strategy Pack** that feels personal, confident, and useful — not generic.
+Your job: generate a **strategy foundation** that feels personal, confident, and useful — not generic.
 Use short sentences. Use Sandra’s tone (warm, honest, permission-giving). No corporate words.
 
 **User brand data:**

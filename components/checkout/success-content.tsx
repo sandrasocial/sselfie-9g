@@ -41,19 +41,19 @@ function getProductLabel(productType: string | undefined) {
     case "sselfie_studio_membership_annual":
       return "Studio Membership"
     case "one_time_session":
-      return "Starter Photoshoot"
+      return "Legacy One-Time Session"
     case "credit_topup":
       return "Credit Top-Up"
     case "selfie_guide":
       return "Selfie Guide"
     case "selfie_guide_bundle":
-      return "Selfie Guide + Brand Strategy Bundle"
+      return "Selfie Guide + Strategy Bundle"
     case "starter_kit":
       return "Selfie Starter Kit"
     case "masterclass":
       return "Selfie Masterclass"
     case "visibility_suite":
-      return "Visibility To Paid Suite"
+      return "Legacy Visibility Suite"
     case "what_to_say":
       return "What To Say"
     case "show_up":
@@ -69,7 +69,7 @@ function getProductLabel(productType: string | undefined) {
     case "ai_photo_refresh":
       return "AI Photo Refresh"
     case "paid_blueprint":
-      return "30-Day Visibility Reset"
+      return "Legacy Feed Planner Access"
     case "transform_starter":
       return "SSELFIE Edit Studio — Starter Pack"
     case "transform_topup":
@@ -122,18 +122,19 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       href: "/academy/access/brand-strategy",
       label: "Start with Brand Strategy",
       helper:
-        "Your Masterclass includes Brand Strategy Pack. Complete your positioning first, then move into the lessons with a clearer offer.",
+        "Your Masterclass starts with your strategy foundation. Complete your positioning first, then move into the lessons with a clearer offer.",
       secondaryHref: "/academy",
       secondaryLabel: "Open Masterclass Library",
     }
   }
 
+  // PRESERVE_FOR_EXISTING_BUYERS: old academy buyers may still land here after delayed Stripe redirects.
   if (productType === "visibility_suite") {
     return {
       href: "/academy/access/visibility-suite",
-      label: "Open your Visibility To Paid Path",
+      label: "Open your legacy access",
       helper:
-        "Your Suite is ready. Start with What To Say, then move through Show Up, Get Paid, and your Maya Visibility Plan.",
+        "Your legacy academy access is ready. Open it from your Academy library any time.",
     }
   }
 
@@ -228,8 +229,8 @@ export function SuccessContent({
 }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
-  const isBrandEnginePurchase = false // Brand Engine retired — no new purchases
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
+  const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/studio")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
@@ -827,46 +828,6 @@ export function SuccessContent({
     )
   }
 
-  if (isBrandEnginePurchase) {
-    return (
-      <div className="min-h-screen bg-brand-obsidian">
-        <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
-          <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
-            fill
-            alt="Brand Engine Confirmation"
-            className="object-cover object-center"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-obsidian/60 via-brand-obsidian/30 to-brand-obsidian" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-brand-porcelain mb-3">
-              PAYMENT CONFIRMED
-            </div>
-            <p className="text-sm sm:text-base text-brand-whisper font-light max-w-md">
-              You&apos;re confirmed for Brand Engine.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 text-center">
-          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-4">
-            YOU&apos;RE IN
-          </h1>
-          <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto mb-8">
-            We&apos;ve received your payment. You&apos;ll get onboarding details by email soon.
-          </p>
-          <button
-            onClick={() => router.push("/brand-engine")}
-            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
-          >
-            Back to Brand Engine
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   // Fix #1: Paid blueprint now uses same flow as other products
   // Authenticated users auto-redirect (via checkAuth useEffect)
   // Unauthenticated users see account creation form below
@@ -933,7 +894,7 @@ export function SuccessContent({
             </h1>
             <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
               {resolvedProductType === "visibility_suite"
-                ? "Your purchase is ready. Create your password so you can access your Visibility To Paid Suite anytime."
+                ? "Your purchase is ready. Create your password so you can access your legacy academy purchase anytime."
                 : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
             </p>
           </div>

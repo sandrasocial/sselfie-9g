@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
-import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import { trackCTAClick } from "@/lib/analytics"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
@@ -15,7 +14,7 @@ interface FeedSinglePlaceholderProps {
   feedId: number
   post: any | null // The single post for free users
   onAddImage?: () => void // Open gallery selector (upload + gallery) for free users
-  onGenerateImage?: () => void // Callback to refresh feed data after generation
+  onGenerateImage?: () => void | Promise<void> // Callback to refresh feed data after generation
   onRequireFeedStyle?: () => void
   onRequireOnboarding?: () => void
   generationMode?: "classic" | "pro"
@@ -42,7 +41,6 @@ export default function FeedSinglePlaceholder({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   // Store predictionId from generate-single response for polling
@@ -230,7 +228,7 @@ export default function FeedSinglePlaceholder({
       // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
       // This allows the loading state to show immediately while data refreshes in background
       if (onGenerateImage) {
-        onGenerateImage().catch((err) => {
+        Promise.resolve(onGenerateImage()).catch((err: unknown) => {
           console.error("[Feed Single Placeholder] Error refreshing feed data:", err)
           // Don't show error to user - this is just a background refresh
         })
@@ -303,7 +301,7 @@ export default function FeedSinglePlaceholder({
 
       setPredictionId(null)
       if (onGenerateImage) {
-        onGenerateImage().catch(() => {})
+        Promise.resolve(onGenerateImage()).catch(() => {})
       }
 
       const refundNote = data.refunded ? "Credit refunded." : "No credit refund needed."
@@ -662,13 +660,12 @@ export default function FeedSinglePlaceholder({
             </p>
           </div>
           
-          {/* "Continue Creating" button - shows embedded checkout modal (BuyBlueprintModal) */}
+          {/* "Continue Creating" button - routes to current Studio membership checkout */}
           {/* Does NOT trigger upsell modal (modal shows automatically after generation) */}
           <Button
             onClick={() => {
-              // Always show the embedded checkout modal with 30 photos card
-              trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/blueprint")
-              setShowBlueprintModal(true)
+              trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/membership")
+              router.push("/checkout/membership")
             }}
             className="w-full border border-white/25 bg-white/12 text-white font-medium shadow-lg backdrop-blur-xl hover:bg-white/18 transition-all"
             size="default"
@@ -678,13 +675,6 @@ export default function FeedSinglePlaceholder({
           </Button>
         </div>
       </div>
-
-      {/* Embedded checkout modal (for users with < 2 credits) */}
-      <BuyBlueprintModal
-        open={showBlueprintModal}
-        onOpenChange={setShowBlueprintModal}
-        feedId={feedId}
-      />
 
       {/* Credit-based upsell modal (for users with 2+ credits used) */}
       <FreeModeUpsellModal

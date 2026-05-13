@@ -65,7 +65,7 @@ export const VISIBILITY_LIFECYCLE_SEQUENCES: VisibilityLifecycleSequence[] = [
     touches: [
       { days: 1, emailType: "micro-to-suite-day1", goal: "Help the buyer complete the first win." },
       { days: 3, emailType: "micro-to-suite-day3", goal: "Show the next product in the path." },
-      { days: 4, emailType: "micro-to-suite-day4", goal: "Invite into Visibility Suite." },
+      { days: 4, emailType: "micro-to-suite-day4", goal: "Invite into Masterclass or Studio." },
     ],
   },
   {
@@ -84,7 +84,7 @@ export const VISIBILITY_LIFECYCLE_SEQUENCES: VisibilityLifecycleSequence[] = [
     tags: ["visibility", "studio", "private-sprint"],
     touches: [
       { days: 7, emailType: "studio-to-sprint-day7", goal: "Identify where private help would remove friction." },
-      { days: 14, emailType: "studio-to-sprint-day14", goal: "Invite into Private Sprint application." },
+      { days: 14, emailType: "studio-to-sprint-day14", goal: "Invite into Work With Me application." },
     ],
   },
 ]

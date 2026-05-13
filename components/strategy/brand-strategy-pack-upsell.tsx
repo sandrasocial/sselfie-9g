@@ -31,7 +31,7 @@ export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategy
   return (
     <div className="upsell-buttons">
       <a href={checkoutHref} className="btn-primary" onClick={handleCheckoutClick}>
-        Get your Brand Strategy Pack instantly — $19
+        See the Selfie Masterclass
       </a>
       <a href="/work-with-me" className="btn-secondary">
         Book the Private Offer

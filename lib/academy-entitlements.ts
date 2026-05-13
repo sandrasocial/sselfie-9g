@@ -212,7 +212,7 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       // Included via access aliases in selfie_guide_bundle and masterclass purchases.
       id: "brand_strategy_pack",
       slug: "brand-strategy-pack",
-      title: "Brand Strategy Pack",
+      title: "Strategy Foundation",
       type: "pack",
       membershipIncluded: true,
       purchasable: false,
@@ -297,7 +297,8 @@ function resolveAcademyProductPurchaseUrl(
   }
 
   if (product.id === "visibility_suite") {
-    return "/checkout/visibility-suite"
+    // LEGACY_ACCESS_ONLY: existing suite buyers keep access, but new visitors go to Masterclass.
+    return "/masterclass"
   }
 
   if (product.deliveryKind === "direct_private") {

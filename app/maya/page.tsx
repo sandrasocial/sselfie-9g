@@ -49,7 +49,7 @@ export default async function MayaPage() {
 
   // Check Maya access: Studio members always have access, even if they also have paid blueprint
   // Priority 1: Studio Membership (highest tier) - always gets Maya
-  // Priority 2: Paid Blueprint only (no studio) - blocked from Maya
+  // Priority 2: LEGACY_ACCESS_ONLY paid_blueprint only (no studio) - blocked from Maya
   // Priority 3: All others (free, one-time session) - Maya access granted
   const { hasStudioMembership, hasPaidBlueprint } = await import("@/lib/subscription")
   

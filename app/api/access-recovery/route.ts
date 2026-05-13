@@ -31,15 +31,15 @@ interface PurchaseRecord {
 const PRODUCT_LABEL: Record<string, string> = {
   starter_kit: "Selfie Starter Kit",
   selfie_guide: "Selfie Guide",
-  selfie_guide_bundle: "Selfie Guide + Brand Strategy Bundle",
+  selfie_guide_bundle: "Selfie Guide + Strategy Bundle",
   masterclass: "Selfie Masterclass",
-  brand_strategy_pack: "Brand Strategy Pack",
-  visibility_suite: "Visibility To Paid Suite",
+  brand_strategy_pack: "Legacy Strategy Pack",
+  visibility_suite: "Legacy Visibility Suite",
   what_to_say: "What To Say",
   show_up: "Show Up",
   get_paid: "Get Paid",
   sselfie_studio_membership: "SSELFIE Studio",
-  paid_blueprint: "30-Day Visibility Reset",
+  paid_blueprint: "Legacy Feed Planner Access",
 }
 
 const PRODUCT_ACCESS_URL: Record<string, string> = {

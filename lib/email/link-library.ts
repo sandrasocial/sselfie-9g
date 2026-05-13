@@ -35,12 +35,12 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
     description: 'Blueprint landing page (free offering - educational)'
   },
 
-  blueprintCheckout: {
-    id: 'blueprint-checkout',
-    url: `${BASE_URL}/checkout/blueprint`,
+  studioMembershipCheckout: {
+    id: 'studio-membership-checkout',
+    url: `${BASE_URL}/checkout/membership`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Blueprint checkout (direct purchase intent)'
+    description: 'Studio membership checkout (direct purchase intent)'
   },
 
   studio: {

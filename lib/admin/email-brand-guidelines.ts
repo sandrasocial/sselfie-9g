@@ -162,7 +162,7 @@ Use proper <img> tags with inline styles:
 - If no link specified, ask the user where the CTA should go
 - NEVER use placeholder or default links
 - **NEVER use /studio links** - they require login and will send users to login page
-- **For checkout CTAs:** Use /checkout/membership or /checkout/one-time (public, no login required)
+- **For checkout CTAs:** Use /checkout/membership, /checkout/starter-kit, /checkout/masterclass, or /checkout/selfie-guide (public, no login required)
 - **For learning more:** Use /why-studio, /blueprint, or /whats-new (public landing pages)
 - Always include proper UTM parameters for tracking
 
@@ -176,7 +176,7 @@ Use proper <img> tags with inline styles:
 
 **Checkout Pages (Public - No login required):**
 - Studio Membership checkout: ${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-- One-Time Session checkout: ${siteUrl}/checkout/one-time?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+- Studio membership checkout: ${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
 
 **Public Landing Pages (No login required):**
 - Why Studio page: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
@@ -190,14 +190,14 @@ Use proper <img> tags with inline styles:
 - ❌ ${siteUrl}/studio (requires login - sends users to login page)
 
 **Link Selection Rules:**
-1. For checkout/purchase CTAs: Use /checkout/membership or /checkout/one-time (public, no login)
+1. For checkout/purchase CTAs: Use /checkout/membership, /checkout/starter-kit, /checkout/masterclass, or /checkout/selfie-guide (public, no login)
 2. For learning more: Use /why-studio or /blueprint (public landing pages)
 3. For general navigation: Use homepage / or /whats-new
 4. NEVER use /studio links in emails (they require login and will frustrate users)
 
 **Link Format Examples (with tracking - PUBLIC LINKS ONLY):**
 - Primary CTA (Studio Membership): <a href="${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Join SSELFIE Studio</a>
-- Primary CTA (One-Time Session): <a href="${siteUrl}/checkout/one-time?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Try Once</a>
+- Primary CTA (Studio): <a href="${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Join Studio</a>
 - Secondary link (Learn More): <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Learn more</a>
 - Secondary link (Brand Blueprint): <a href="${siteUrl}/blueprint?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Get Your Brand Blueprint</a>
 
@@ -774,4 +774,3 @@ NEVER create an email without the footer and unsubscribe link.`
 
   return prompt
 }
-

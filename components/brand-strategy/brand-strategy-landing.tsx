@@ -47,7 +47,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
             Maya builds your custom brand positioning, content pillars, voice guide, and caption
             starters in minutes. Yours to keep forever.
           </p>
-          <a href="/checkout/brand-strategy-pack" className="bs-btn-primary">
+          <a href="/masterclass" className="bs-btn-primary">
             GET YOUR STRATEGY — $19 →
           </a>
         </div>
@@ -99,7 +99,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
               <p className="bs-error">Something went wrong with checkout. Please try again.</p>
             ) : null}
 
-            <a href="/checkout/brand-strategy-pack" className="bs-btn-primary">
+            <a href="/masterclass" className="bs-btn-primary">
               GET YOUR STRATEGY — $19 →
             </a>
 
@@ -172,7 +172,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
               you&apos;ve been trying to say.&rdquo;
             </p>
             <p className="bs-note-sig">— Sandra, Founder of SSELFIE</p>
-            <a href="/checkout/brand-strategy-pack" className="bs-btn-outline">
+            <a href="/masterclass" className="bs-btn-outline">
               GET YOUR STRATEGY — $19 →
             </a>
           </div>

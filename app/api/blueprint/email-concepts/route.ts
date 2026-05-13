@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
               <h2>READY TO SHOW UP?</h2>
               <p>SSELFIE Studio makes implementing this strategy effortless. Get photos that look like you, automated content planning, and Maya's personalized coaching.</p>
               <p style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Join SSELFIE Studio →</a>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/membership" class="cta">Join SSELFIE Studio →</a>
               </p>
               
               <p style="margin-top: 40px; font-size: 12px; color: #a8a29e; text-align: center;">

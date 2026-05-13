@@ -1,5 +1,7 @@
 /**
  * north-notifier.ts
+ * DO_NOT_REMOVE_WEBHOOK_COMPATIBILITY: Stripe subscription webhooks still call this
+ * best-effort notifier. It is intentionally non-blocking and must not affect payments.
  * Fire-and-forget POST to OpenClaw (North agent) for business automation events.
  * Never throws — failures are logged silently so they never break Stripe webhook responses.
  */

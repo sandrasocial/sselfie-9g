@@ -81,10 +81,10 @@ export async function POST(req: NextRequest) {
 
     const adminEmailResult = await sendEmail({
       to: adminEmail,
-      subject: `New Private Sprint application from ${name}`,
+      subject: `New Work With Me application from ${name}`,
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
-          <h1 style="margin: 0 0 20px; font-size: 28px; font-weight: 600;">New Private Sprint application</h1>
+          <h1 style="margin: 0 0 20px; font-size: 28px; font-weight: 600;">New Work With Me application</h1>
           <p style="margin: 0 0 12px;"><strong>Name:</strong> ${safeName}</p>
           <p style="margin: 0 0 12px;"><strong>Email:</strong> ${safeEmail}</p>
           <p style="margin: 0 0 24px;"><strong>Instagram:</strong> ${safeHandle || "Not provided"}</p>
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         </div>
       `,
       text: [
-        "New Private Sprint application",
+        "New Work With Me application",
         `Name: ${name}`,
         `Email: ${email}`,
         `Instagram: ${instagramHandle || "Not provided"}`,
@@ -141,11 +141,11 @@ export async function POST(req: NextRequest) {
 
     await sendEmail({
       to: email,
-      subject: "Your Private Sprint application has been received",
+      subject: "Your Work With Me application has been received",
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
           <p>Hi ${safeName},</p>
-          <p>Thank you for applying for the Visibility To Paid Private Sprint.</p>
+          <p>Thank you for applying to work privately with Sandra.</p>
           <p>Sandra reviews every application personally. If it looks like the right fit, she will reply with the next step and payment link.</p>
           <p>No payment has been taken.</p>
           <p>Sandra</p>
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       text: [
         `Hi ${name},`,
         "",
-        "Thank you for applying for the Visibility To Paid Private Sprint.",
+        "Thank you for applying to work privately with Sandra.",
         "Sandra reviews every application personally. If it looks like the right fit, she will reply with the next step and payment link.",
         "No payment has been taken.",
         "",

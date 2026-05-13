@@ -9,7 +9,6 @@ import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-u
 import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-card"
 import { Button } from "@/components/ui/button"
 import { Copy, Check, Edit } from "lucide-react"
-import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import { trackCTAClick } from "@/lib/analytics"
 
 interface BlueprintScreenProps {
@@ -760,7 +759,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        setShowBlueprintModal(true)
+                        router.push("/checkout/membership")
                       }} />
                     )}
                   </div>
@@ -843,7 +842,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        setShowBlueprintModal(true)
+                        router.push("/checkout/membership")
                       }} />
                     )}
                   </div>
@@ -903,18 +902,12 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        setShowBlueprintModal(true)
+                        router.push("/checkout/membership")
                       }} />
                     )}
                   </div>
                 )}
               </div>
-
-              {/* Embedded checkout modal */}
-              <BuyBlueprintModal
-                open={showBlueprintModal}
-                onOpenChange={setShowBlueprintModal}
-              />
             </div>
           )}
         </div>
@@ -953,7 +946,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
   )
 }
 
-// Upsell Component - Promotes Paid Blueprint
+// Upsell Component - Promotes the current Studio membership path
 function BlueprintUpsell({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div className="bg-stone-50 border border-stone-200 rounded-lg p-6 sm:p-8 max-w-2xl mx-auto">
@@ -998,12 +991,12 @@ function BlueprintUpsell({ onUpgrade }: { onUpgrade: () => void }) {
         <div className="text-center pt-2">
           <Button
             onClick={() => {
-              trackCTAClick("blueprint_screen_upsell", "Get my 30 photos", "/checkout/blueprint")
+              trackCTAClick("blueprint_screen_upsell", "Join Studio", "/checkout/membership")
               onUpgrade()
             }}
             className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 rounded-lg"
           >
-            Get my 30 photos
+            Join Studio
           </Button>
         </div>
       </div>

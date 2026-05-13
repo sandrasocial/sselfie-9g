@@ -58,7 +58,8 @@ const RESENDABLE_PRODUCTS = [
   { id: "starter_kit", label: "Starter Kit" },
   { id: "selfie_guide", label: "Selfie Guide" },
   { id: "masterclass", label: "Masterclass" },
-  { id: "visibility_suite", label: "Visibility Suite" },
+  // PRESERVE_FOR_EXISTING_BUYERS
+  { id: "visibility_suite", label: "Legacy Visibility Suite" },
   { id: "what_to_say", label: "What To Say" },
   { id: "show_up", label: "Show Up" },
   { id: "get_paid", label: "Get Paid" },

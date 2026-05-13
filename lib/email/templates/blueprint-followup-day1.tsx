@@ -32,12 +32,12 @@ export function generateBlueprintFollowupDay1Email(params: BlueprintFollowupDay1
 
   const html = renderStoneShell({
     title: "Your Visibility Reset is waiting",
-    eyebrow: "30-Day Visibility Reset",
+    eyebrow: "Feed Planner",
     subtitle: "Start with one post. Build from there.",
     bodyHtml,
   })
 
-  const text = `30-Day Visibility Reset
+  const text = `Feed Planner
 
 Hey ${displayName},
 
@@ -60,3 +60,4 @@ Sandra`
     subject: "Your Visibility Reset starts today",
   }
 }
+// PRESERVE_FOR_EXISTING_BUYERS: old paid_blueprint lifecycle email.

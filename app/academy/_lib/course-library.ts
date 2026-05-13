@@ -152,8 +152,8 @@ export async function getAccessibleLibraryCourses(userId: string): Promise<{
       const totalDurationSeconds = getTotalDurationSeconds(lessons)
       const completedLessonIds = new Set(
         (progressData?.lessonProgress || [])
-          .filter((lessonProgress: { status?: string }) => lessonProgress.status === "completed")
-          .map((lessonProgress: { lesson_id: number }) => lessonProgress.lesson_id)
+          .filter((lessonProgress: Record<string, unknown>) => lessonProgress.status === "completed")
+          .map((lessonProgress: Record<string, unknown>) => Number(lessonProgress.lesson_id))
       )
       const completedLessons = completedLessonIds.size
       const firstIncompleteLessonId =
@@ -242,7 +242,7 @@ export function getMasterclassImplementationPath({
       step: "01",
       title: "Clarify your offer",
       description:
-        "Start with Brand Strategy Pack so you know who you help, what you sell, and what your content needs to make clear.",
+        "Start with your strategy foundation so you know who you help, what you sell, and what your content needs to make clear.",
       href: hasBrandStrategyAccess ? "/academy/access/brand-strategy" : "/brand-strategy",
       ctaLabel: hasBrandStrategyAccess ? "Start Strategy" : "See Strategy",
       status: "start",
@@ -328,7 +328,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   if (primaryCourse) {
     if (hasMasterclass && accessibleIds.has("brand_strategy_pack")) {
       heroDescription =
-        "Your Masterclass home now holds the course path, Brand Strategy Pack, bonuses, workbooks, and presets in one place."
+        "Your Masterclass home now holds the course path, strategy foundation, bonuses, workbooks, and presets in one place."
       primaryLink = {
         href: "/academy/access/masterclass",
         label: "Open Masterclass",
@@ -497,8 +497,8 @@ export async function getAccessibleCourseDetail(
   const progressData = await getUserCourseProgress(userId, courseId)
   const completedLessonIds = new Set(
     (progressData?.lessonProgress || [])
-      .filter((lessonProgress: { status?: string }) => lessonProgress.status === "completed")
-      .map((lessonProgress: { lesson_id: number }) => lessonProgress.lesson_id)
+      .filter((lessonProgress: Record<string, unknown>) => lessonProgress.status === "completed")
+      .map((lessonProgress: Record<string, unknown>) => Number(lessonProgress.lesson_id))
   )
   const firstIncompleteLessonId =
     course.lessons?.find(lesson => !completedLessonIds.has(lesson.id))?.id ||

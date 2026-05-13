@@ -168,7 +168,7 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
         </div>
       )}
 
-      {/* Hero Content - positioned at bottom (matching Paid Blueprint) */}
+      {/* Hero Content - positioned at bottom */}
       <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-8 sm:pb-20 pt-8 sm:pt-20">
         <span
           className="block mb-2 sm:mb-4 text-xs sm:text-base font-light tracking-[0.2em] uppercase text-white"
@@ -198,7 +198,7 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
             : "Get your free 30-day content calendar, caption templates, brand strategy guide, and generate your free Instagram grid with your selfies."}
         </p>
 
-        {/* Email Capture Form - matching Paid Blueprint style */}
+        {/* Email Capture Form */}
         <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-4 sm:mb-6 w-full">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <input

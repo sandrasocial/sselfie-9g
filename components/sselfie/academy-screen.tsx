@@ -181,7 +181,7 @@ const RESOURCE_HUB_CARDS = [
   },
   {
     id: "brand-strategy",
-    title: "Brand Strategy Pack",
+    title: "Strategy Foundation",
     description: "Your personal brand output and strategy assets.",
     cta: "Open strategy",
     href: "/academy/access/brand-strategy",

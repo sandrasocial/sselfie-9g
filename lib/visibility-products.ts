@@ -360,7 +360,8 @@ export const VISIBILITY_MINI_PRODUCT_BY_SLUG = Object.fromEntries(
 ) as Record<string, VisibilityMiniProductConfig>
 
 export function getMiniProductCheckoutHref(productId: VisibilityMiniProductId) {
-  return `/checkout/academy-product/${productId}`
+  // LEGACY_ACCESS_ONLY: mini-products are no longer sold directly.
+  return "/masterclass"
 }
 
 export function hasConfiguredMiniProductPrice(productId: VisibilityMiniProductId) {

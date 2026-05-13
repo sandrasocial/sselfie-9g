@@ -29,7 +29,7 @@ interface WelcomeWizardProps {
 }
 
 /**
- * Welcome Wizard for Paid Blueprint Users
+ * Welcome Wizard for legacy Feed Planner buyers
  * 
  * Interactive tutorial matching the unified wizard style
  * Explains how to use the full feed planner with consistent UI

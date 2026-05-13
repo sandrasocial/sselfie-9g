@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { WorkWithMePageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
-  title: "Visibility To Paid Private Sprint | SSELFIE",
-  description: "Apply for Sandra's 4-week private sprint to build your message, offer, content direction, homepage direction, and first sales path.",
+  title: "Work With Me | Private AI Brand OS | SSELFIE",
+  description: "Apply to work privately with Sandra on your personal brand, content direction, Studio workflow, and AI Brand OS.",
 }
 
 export default function WorkWithMePage() {

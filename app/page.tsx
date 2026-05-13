@@ -10,7 +10,7 @@ import { sanitizeRedirect } from "@/lib/security/url-validator"
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "SSELFIE | Personal Branding, Content & Visibility To Paid",
+  title: "SSELFIE | Phone-First Personal Brand & Selfie Education",
   description:
     "SSELFIE helps women turn their phone, story, content, and first offer into a personal brand people understand, trust, and can buy from.",
 }

@@ -5,7 +5,8 @@ export interface PaidBlueprintDeliveryParams {
   photoPreviewUrls?: string[]
 }
 
-export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your 30-Day Visibility Reset is ready"
+// PRESERVE_FOR_EXISTING_BUYERS: old paid_blueprint purchases still receive Feed Planner access.
+export const PAID_BLUEPRINT_DELIVERY_SUBJECT = "Your Feed Planner access is ready"
 
 export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDeliveryParams): {
   html: string
@@ -23,7 +24,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your 30-Day Visibility Reset is ready</title>
+  <title>Your Feed Planner access is ready</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -48,7 +49,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
-                Your 30-Day Visibility Reset is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
+                Your Feed Planner access is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">

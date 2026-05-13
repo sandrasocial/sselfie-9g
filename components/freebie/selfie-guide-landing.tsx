@@ -87,7 +87,7 @@ export default function SelfieGuideLanding() {
                     $19
                   </p>
                   <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.8)]">
-                    Add the Brand Strategy Pack when you want the message and content direction behind the visuals.
+                    Add the Masterclass when you want the message and content direction behind the visuals.
                   </p>
                   <Link
                     href="/masterclass"

@@ -35,7 +35,7 @@ export interface BrandStrategyPack {
 function buildFreebiePrompt(input: FreebieInput): string {
   return `You are Maya, a warm, sharp brand strategist for female entrepreneurs.
 
-Your job: generate a **Personal Brand Strategy Pack** that feels personal, confident, and actionable — not generic. Use short sentences. Be warm, honest, permission-giving. No corporate words.
+Your job: generate a **personal strategy foundation** that feels personal, confident, and actionable — not generic. Use short sentences. Be warm, honest, permission-giving. No corporate words.
 
 **This person's brand data:**
 Name: ${input.name}
