@@ -108,6 +108,45 @@ async function sendTransformPurchaseEmail(params: {
   })
 }
 
+/**
+ * Flag a checkout event for admin review when critical fields (email, product_type)
+ * are missing or processing fails. Inserts into webhook_events_needs_review so the
+ * admin dashboard can surface it and manually resolve the delivery.
+ */
+async function flagForReview(params: {
+  stripeEventId: string
+  eventType: string
+  sessionId?: string
+  customerEmail?: string | null
+  productType?: string | null
+  amountCents?: number | null
+  currency?: string | null
+  reason: "missing_email" | "missing_product_type" | "processing_error" | "missing_metadata"
+  rawMetadata?: Record<string, unknown> | null
+  notes?: string
+}): Promise<void> {
+  try {
+    await sql`
+      INSERT INTO webhook_events_needs_review
+        (stripe_event_id, event_type, session_id, customer_email, product_type,
+         amount_cents, currency, reason, raw_metadata, notes, created_at)
+      VALUES
+        (${params.stripeEventId}, ${params.eventType}, ${params.sessionId ?? null},
+         ${params.customerEmail ?? null}, ${params.productType ?? null},
+         ${params.amountCents ?? null}, ${params.currency ?? null},
+         ${params.reason}, ${JSON.stringify(params.rawMetadata ?? {})},
+         ${params.notes ?? null}, NOW())
+      ON CONFLICT DO NOTHING
+    `
+    console.error(
+      `[v0] 🚨 NEEDS REVIEW: ${params.reason} — event=${params.stripeEventId} session=${params.sessionId ?? "?"} email=${params.customerEmail ?? "MISSING"} product=${params.productType ?? "MISSING"}`
+    )
+  } catch (err) {
+    // Don't let the review flag itself crash the webhook
+    console.error("[v0] ⚠️ Failed to insert into webhook_events_needs_review:", err)
+  }
+}
+
 async function maybeTrackCheckoutReferralSignup(
   referredUserId: string | null | undefined,
   referralCode: string | null | undefined,
@@ -628,7 +667,11 @@ export async function POST(request: NextRequest) {
           // Tracked outside user-creation block so delivery email can include setup link for new users
           let isNewUserForEmail = false
           let purchasePasswordSetupLink = ""
-          const customerEmail = session.customer_details?.email || session.customer_email
+          const customerEmail =
+            session.customer_details?.email ||
+            session.customer_email ||
+            session.metadata?.customer_email ||
+            null
           const source = session.metadata.source
           const isPublicPaidCheckoutSource =
             source === "landing_page" ||
@@ -639,6 +682,22 @@ export async function POST(request: NextRequest) {
             source === "masterclass_paid" ||
             source === "visibility_suite_paid" ||
             source === "transform_paid"
+
+          if (!customerEmail) {
+            console.error(`[v0] 🚨 CRITICAL: No customer email found for payment session ${session.id}. Flagging for admin review.`)
+            await flagForReview({
+              stripeEventId: event.id,
+              eventType: event.type,
+              sessionId: session.id,
+              customerEmail: null,
+              productType: session.metadata?.product_type ?? null,
+              amountCents: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              reason: "missing_email",
+              rawMetadata: session.metadata as Record<string, unknown>,
+              notes: `No email in customer_details, customer_email, or metadata. Session mode: payment. Amount: ${session.amount_total}`,
+            })
+          }
 
           console.log(`[v0] 💳 Payment mode detected`)
           console.log(
@@ -666,7 +725,19 @@ export async function POST(request: NextRequest) {
           if (!productType) {
             console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)
             console.error(`[v0] Available metadata keys:`, Object.keys(session.metadata || {}))
-            console.error(`[v0] ❌ This will cause the webhook to skip processing paid_blueprint!`)
+            console.error(`[v0] ❌ This will cause the webhook to skip processing!`)
+            await flagForReview({
+              stripeEventId: event.id,
+              eventType: event.type,
+              sessionId: session.id,
+              customerEmail: customerEmail || null,
+              productType: null,
+              amountCents: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              reason: "missing_product_type",
+              rawMetadata: session.metadata as Record<string, unknown>,
+              notes: `product_type missing. Available keys: ${Object.keys(session.metadata || {}).join(", ")}`,
+            })
           }
 
           if (isBrandEngineCheckoutProductType(productType)) {

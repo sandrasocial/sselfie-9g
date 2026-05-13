@@ -11,6 +11,7 @@ export function AdminNav() {
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
     { label: 'SUPPORT', href: '/admin/customer-support' },
+    { label: 'REVIEW', href: '/admin/webhook-review' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
     { label: 'ACADEMY', href: '/admin/academy' },
     { label: 'CLEANUP', href: '/admin/funnel-cleanup' },

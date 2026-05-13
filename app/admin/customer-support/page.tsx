@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
 
 interface CustomerData {
@@ -83,7 +84,8 @@ function cents(amount: number, currency: string) {
 }
 
 export default function CustomerSupportPage() {
-  const [email, setEmail] = useState("")
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState(searchParams.get("q") || "")
   const [data, setData] = useState<CustomerData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +93,27 @@ export default function CustomerSupportPage() {
   const [resendLoading, setResendLoading] = useState(false)
   const [resendMessage, setResendMessage] = useState<string | null>(null)
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
+
+  // Auto-search if email was pre-filled from the ?q= param
+  useEffect(() => {
+    const q = searchParams.get("q")
+    if (q) {
+      setEmail(q)
+      // Trigger lookup automatically
+      const trimmed = q.trim()
+      if (trimmed) {
+        setLoading(true)
+        fetch(`/api/admin/customer-support?email=${encodeURIComponent(trimmed)}`)
+          .then((r) => r.json())
+          .then((j) => {
+            if (j.error) setError(j.error)
+            else setData(j)
+          })
+          .catch(() => setError("Network error"))
+          .finally(() => setLoading(false))
+      }
+    }
+  }, [])
 
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault()
