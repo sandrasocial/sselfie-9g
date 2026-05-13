@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
 import { sql } from "@/lib/db/client"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -163,6 +164,13 @@ export default async function StarterKitAccessPage({
 
   const desktopPresetDownloadUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || null
   const guideAccessUrl = `/selfie-guide/access/${token}`
+
+  // Log access event (fire-and-forget — do not block render)
+  logAnalyticsEvent({
+    eventName: "starter_kit_access_opened",
+    path: `/access/starter-kit/${token}`,
+    properties: { source: result.data.source ?? null },
+  }).catch(() => {})
 
   return (
     <main className={`starter-kit-page ${inter.className}`}>

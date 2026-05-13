@@ -16,6 +16,7 @@ import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { renderStoneButton, renderStoneShell } from "@/lib/email/templates/stone-email"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 export const maxDuration = 30
 
@@ -71,6 +72,13 @@ export async function POST(req: NextRequest) {
     await logRecoveryAttempt(null, "invalid_email", logData)
     return NextResponse.json({ ok: true }) // Always return ok to prevent enumeration
   }
+
+  // Log analytics event for recovery request
+  logAnalyticsEvent({
+    eventName: "access_recovery_requested",
+    path: "/api/access-recovery",
+    properties: { email_domain: email.split("@")[1] },
+  }).catch(() => {})
 
   try {
     // Look up purchases from multiple sources
@@ -180,6 +188,16 @@ export async function POST(req: NextRequest) {
     })
 
     await logRecoveryAttempt(email, "email_sent", { ...logData, product_count: productLines.length })
+
+    // Log analytics event for successful recovery email send
+    logAnalyticsEvent({
+      eventName: "access_recovery_email_sent",
+      path: "/api/access-recovery",
+      properties: {
+        product_count: productLines.length,
+        products: productLines.map((p) => p.label).join(", "),
+      },
+    }).catch(() => {})
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {
