@@ -89,6 +89,12 @@ const CREDIT_GRANTING_TYPES = new Set([
 ])
 
 const VISIBILITY_SUITE_INCLUDES = ["What To Say", "Show Up", "Get Paid", "Maya Visibility Plan"]
+const STARTER_KIT_INCLUDES = [
+  "Lightroom preset download",
+  "Selfie Guide access",
+  "Quick-start checklist",
+  "7-day content starter",
+]
 
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
@@ -118,7 +124,9 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
       href: "/academy/access/starter-kit",
       label: "Open your Starter Kit",
       helper:
-        "Your Starter Kit is ready. Start with the quick win, then use the 7-day starter to create your first brand-ready week.",
+        "Your Lightroom presets, Selfie Guide, and 7-day content starter are ready. Open the kit to download your presets first.",
+      secondaryHref: "mailto:support@sselfie.ai?subject=Starter%20Kit%20access",
+      secondaryLabel: "Need help? Email support",
     }
   }
 
@@ -1359,6 +1367,16 @@ export function SuccessContent({
                     <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
                     <div className="text-right space-y-1">
                       {VISIBILITY_SUITE_INCLUDES.map(item => (
+                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {resolvedProductType === "starter_kit" && (
+                  <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <div className="text-right space-y-1">
+                      {STARTER_KIT_INCLUDES.map(item => (
                         <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
                       ))}
                     </div>

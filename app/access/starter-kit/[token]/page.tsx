@@ -161,10 +161,7 @@ export default async function StarterKitAccessPage({
     )
   }
 
-  const desktopPresetDownloadUrl =
-    process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
-    process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL ||
-    null
+  const desktopPresetDownloadUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || null
   const guideAccessUrl = `/selfie-guide/access/${token}`
 
   return (

@@ -5,15 +5,14 @@ import { sql } from "@/lib/db/client"
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 
 /**
- * Thin auth + redirect gate for Starter Kit buyers.
+ * Starter Kit access gate.
  *
- * Auth → entitlement check → look up editing_masterclass course ID → redirect into the
- * in-app course viewer at /academy/courses/[id].
+ * Auth → entitlement check → look up the buyer's freebie_subscribers token →
+ * redirect to /access/starter-kit/[token].
  *
- * The course viewer (app/academy/courses/[courseId]) is the canonical
- * experience: it lives inside the app shell, has lesson resources attached
- * (presets, PDFs, guides), and includes the Maya chat bubble. Add new
- * resources there via the admin, not here.
+ * The token-based route is the canonical Starter Kit experience: it shows
+ * presets download, selfie guide link, quick-start checklist, and 7-day
+ * content starter — all without requiring an active Studio session.
  */
 export default async function AcademyStarterKitAccessPage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/starter-kit")
@@ -27,17 +26,24 @@ export default async function AcademyStarterKitAccessPage() {
     redirect("/starter-kit")
   }
 
+  // Resolve the buyer's personal access token from freebie_subscribers.
+  // The token is created by upsertStarterKitSubscriber during the webhook.
   const rows = await sql`
-    SELECT id FROM academy_courses
-    WHERE product_id = 'editing_masterclass'
-      AND status = 'published'
+    SELECT fs.access_token
+    FROM freebie_subscribers fs
+    INNER JOIN users u ON LOWER(u.email) = LOWER(fs.email)
+    WHERE u.id = ${neonUser.id}
+      AND fs.access_token IS NOT NULL
     LIMIT 1
   `
 
-  const course = (rows as { id: number }[])[0]
-  if (!course) {
-    redirect("/starter-kit")
+  const token = (rows as { access_token: string }[])[0]?.access_token
+
+  if (token) {
+    redirect(`/access/starter-kit/${encodeURIComponent(token)}`)
   }
 
-  redirect(`/studio?tab=academy&academy_view=courses&academy_course_id=${course.id}`)
+  // Fallback: token not found (e.g. manually granted entitlement) — redirect
+  // to the public landing page so the user can contact support.
+  redirect("/starter-kit")
 }

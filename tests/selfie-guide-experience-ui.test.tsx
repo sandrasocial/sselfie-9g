@@ -190,20 +190,4 @@ describe("SelfieGuideExperience interactive features", () => {
     expect(screen.queryByRole("link", { name: "Join Studio Membership" })).not.toBeInTheDocument()
   })
 
-  it("shows the preset bundle CTA when a preset URL is available", () => {
-    const markdown = ["## PART 1: Intro", "Short body."].join("\n")
-
-    render(
-      <SelfieGuideExperience
-        firstName="SANDRA"
-        guideMarkdown={markdown}
-        presetDownloadUrl="https://example.com/presets"
-      />
-    )
-
-    expect(screen.getByRole("link", { name: "Open preset pack" })).toHaveAttribute(
-      "href",
-      "https://example.com/presets"
-    )
-  })
 })

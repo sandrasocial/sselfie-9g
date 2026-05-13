@@ -5,7 +5,6 @@ export interface SelfieGuidePaidDeliveryParams {
   firstName: string
   email: string
   accessUrl: string
-  presetPackUrl?: string
   passwordSetupLink?: string
 }
 
@@ -16,7 +15,7 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
   text: string
   subject: string
 } {
-  const { firstName, email, accessUrl, presetPackUrl, passwordSetupLink } = params
+  const { firstName, email, accessUrl, passwordSetupLink } = params
   const name = getFirstNameForEmail({ fullName: firstName, email })
 
   const guidePanel = renderStonePanel(
@@ -24,14 +23,6 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
      <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">Your first win is simple: one photo you would actually post, one caption idea, and one clear job for that post.</p>`,
     "What You'll Open",
   )
-
-  const presetPackBlock = presetPackUrl
-    ? renderStonePanel(
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.75;color:#f0ede8;">Your preset pack is here too, so everything lives in one place.</p>
-         <div>${renderStoneButton("Open the preset pack", presetPackUrl, "outline")}</div>`,
-        "Bonus",
-      )
-    : ""
 
   const passwordBlock = passwordSetupLink
     ? renderStonePanel(
@@ -48,7 +39,6 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
     ${guidePanel}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your guide", accessUrl)}</div>
     <p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#a8a49c;">Start with the first part in the sidebar. Then take one new photo today, choose its content job, and write the simplest caption you can actually post.</p>
-    ${presetPackBlock}
     ${passwordBlock}
     ${renderStonePanel(
       `<p style="margin:0 0 12px;font-size:15px;line-height:1.75;color:#f0ede8;">If you want the next practical step, the Starter Kit gives you the presets, quick-start workflow, and a simple 7-day content starter.</p>
@@ -77,12 +67,6 @@ Open your guide: ${accessUrl}
 Start with the first part in the sidebar. Then take one new photo today, choose its content job, and write the simplest caption you can actually post.
 
 ${
-    presetPackUrl
-      ? `Your preset pack is here too: ${presetPackUrl}
-
-`
-      : ""
-  }${
     passwordSetupLink
       ? `Set your password so you can come back anytime: ${passwordSetupLink}
 

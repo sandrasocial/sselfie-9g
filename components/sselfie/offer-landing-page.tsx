@@ -1,8 +1,14 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { PublicFooter, PublicNav } from "@/components/sselfie/public-marketing"
-import { PublicOfferTracker } from "@/components/analytics/public-offer-tracker"
+import {
+  PublicOfferTracker,
+  trackOfferCtaClick,
+  trackPostKeywordAttributed,
+} from "@/components/analytics/public-offer-tracker"
 import type { VisibilityMiniProductId } from "@/lib/visibility-products"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
@@ -95,6 +101,22 @@ export function OfferLandingPage(props: OfferLandingPageProps) {
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Link
                   href={checkoutHref}
+                onClick={() => {
+                  trackOfferCtaClick({
+                    offerSlug: props.offerSlug,
+                    productId: props.productId,
+                    ctaKeyword: props.ctaKeyword,
+                    source: "public_offer",
+                    href: checkoutHref,
+                  })
+                  trackPostKeywordAttributed({
+                    offerSlug: props.offerSlug,
+                    productId: props.productId,
+                    ctaKeyword: props.ctaKeyword,
+                    source: "public_offer",
+                    href: checkoutHref,
+                  })
+                }}
                   className="inline-flex min-h-12 items-center justify-center px-7 py-3 text-[10px] uppercase tracking-[0.22em]"
                   style={{ background: C.cream, color: C.ink, fontWeight: 600 }}
                 >

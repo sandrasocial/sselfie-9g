@@ -634,7 +634,6 @@ interface SelfieGuideExperienceProps {
   guideMarkdown: string
   checkoutSessionId?: string
   brandStrategyBumpSelected?: boolean
-  presetDownloadUrl?: string
   /** When true (bundle, prior BSP purchase, etc.), hide hard sell to checkout Brand Strategy. */
   hasBrandStrategyAccess?: boolean
   token?: string
@@ -645,7 +644,6 @@ export default function SelfieGuideExperience({
   guideMarkdown,
   checkoutSessionId,
   brandStrategyBumpSelected = false,
-  presetDownloadUrl,
   hasBrandStrategyAccess = false,
   token,
 }: SelfieGuideExperienceProps) {
@@ -1230,16 +1228,6 @@ export default function SelfieGuideExperience({
                   strategy anytime.
                 </p>
                 <div className="sg-funnel-ctas">
-                  {presetDownloadUrl ? (
-                    <a
-                      href={presetDownloadUrl}
-                      className="sg-cta-secondary"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open preset pack
-                    </a>
-                  ) : null}
                   <Link
                     href="/academy"
                     className="sg-cta-primary"
@@ -1256,20 +1244,10 @@ export default function SelfieGuideExperience({
                   Keep the path clear
                 </h3>
                 <p className="sg-funnel-copy">
-                  The guide gives you the first visible post. The Visibility Suite gives you What To Say,
-                  Show Up, Get Paid, and your Maya Visibility Plan in one guided path.
+                  The guide gives you the first visible post. The Starter Kit gives you the first paid
+                  implementation step with presets, quick-start, and a 7-day content starter.
                 </p>
                 <div className="sg-funnel-ctas">
-                  {presetDownloadUrl ? (
-                    <a
-                      href={presetDownloadUrl}
-                      className="sg-cta-secondary"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open preset pack
-                    </a>
-                  ) : null}
                   {brandStrategySetupToken ? (
                     <Link
                       href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`}
@@ -1290,18 +1268,18 @@ export default function SelfieGuideExperience({
                   ) : (
                     <>
                       <Link
-                        href="/visibility-suite"
-                        className="sg-cta-primary"
-                        onClick={() => trackGuideUpsellClick("/visibility-suite", "visibility_suite")}
-                      >
-                        See Visibility Suite
-                      </Link>
-                      <Link
                         href="/starter-kit"
-                        className="sg-cta-secondary"
+                        className="sg-cta-primary"
                         onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
                       >
                         Start with Starter Kit
+                      </Link>
+                      <Link
+                        href="/masterclass"
+                        className="sg-cta-secondary"
+                        onClick={() => trackGuideUpsellClick("/masterclass", "masterclass")}
+                      >
+                        See Masterclass
                       </Link>
                     </>
                   )}

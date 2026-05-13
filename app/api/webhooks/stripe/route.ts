@@ -24,6 +24,10 @@ import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed
 import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templates/brand-strategy-setup-notification"
 import { generateStarterKitDay0DeliveryEmail } from "@/lib/email/templates/starter-kit-day0-delivery"
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
+import {
+  generateAcademyProductDeliveryEmail,
+  generateVisibilitySuiteDeliveryEmail,
+} from "@/lib/email/templates/academy-product-delivery"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
@@ -1414,15 +1418,7 @@ export async function POST(request: NextRequest) {
                 visibility_suite: "Visibility To Paid Suite",
                 ai_photo_prompts: "AI Photo Prompt Pack",
               }
-              const productName = productNames[productId] || productId
-              const upsell = upsellMap[productId]
-              const firstName = getFirstNameForEmail({
-                fullName: session.customer_details?.name,
-                email: academyCustomerEmail,
-              })
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-
-              const suiteAccessUrl = `${siteUrl}/academy/access/visibility-suite`
               const miniProductSlug =
                 VISIBILITY_MINI_PRODUCT_BY_ID[
                   productId as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID
@@ -1430,37 +1426,31 @@ export async function POST(request: NextRequest) {
               const academyAccessUrl = miniProductSlug
                 ? `${siteUrl}/academy/access/${miniProductSlug}`
                 : `${siteUrl}/academy`
-              const subject =
-                productId === "visibility_suite"
-                  ? "Your Visibility To Paid Suite is ready"
-                  : `You're in — here's your ${productName}`
-              const upsellLine = upsell
-                ? `\n\nNext step when you're ready: ${upsell.name} (${upsell.price}).`
-                : ""
+              const suiteAccessUrl = `${siteUrl}/academy/access/visibility-suite`
+              const resolvedPasswordSetupLink = isNewUserForEmail ? purchasePasswordSetupLink : undefined
 
-              // For new users: include a password setup CTA so they can access their product
-              // For returning users: link directly to the product (they're already set up)
-              const suiteAccessCtaText = isNewUserForEmail && purchasePasswordSetupLink
-                ? `Create your password and open your Suite:\n${purchasePasswordSetupLink}\n\nAlready have a password? Log in here:\n${suiteAccessUrl}`
-                : `Open your Visibility To Paid Path:\n${suiteAccessUrl}`
-              const suiteAccessCtaHtml = isNewUserForEmail && purchasePasswordSetupLink
-                ? `<p><a href="${purchasePasswordSetupLink}"><strong>Create password and open your Suite</strong></a></p><p>If you already have a password, <a href="${suiteAccessUrl}">log in here</a>.</p>`
-                : `<p><a href="${suiteAccessUrl}">Open your Visibility To Paid Path</a></p>`
-
-              const emailText =
+              // Use the stone-email templates for consistent, premium delivery emails
+              const emailContent =
                 productId === "visibility_suite"
-                  ? `Hey ${firstName},\n\nYour Visibility To Paid Suite is ready.\n\nYou now have access to:\n- What To Say\n- Show Up\n- Get Paid\n- Concept Cards\n- Caption Sprint\n- Feed Reset\n- AI Photo Refresh\n- Maya Visibility Plan\n\n${suiteAccessCtaText}\n\nNo rush. Start with Step 01 and move in order.\n\n— Sandra`
-                  : `Hey ${firstName},\n\nYou just got ${productName}. I'm so glad you did this for yourself.\n\nStart here: ${academyAccessUrl}${upsellLine}\n\n— Sandra`
-              const emailHtml =
-                productId === "visibility_suite"
-                  ? `<p>Hey ${firstName},</p><p>Your <strong>Visibility To Paid Suite</strong> is ready.</p><p>You now have access to:</p><ul><li>What To Say</li><li>Show Up</li><li>Get Paid</li><li>Concept Cards</li><li>Caption Sprint</li><li>Feed Reset</li><li>AI Photo Refresh</li><li>Maya Visibility Plan</li></ul>${suiteAccessCtaHtml}<p>No rush. Start with Step 01 and move in order.</p><p>— Sandra</p>`
-                  : `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong>. I'm so glad you did this for yourself.</p><p><a href="${academyAccessUrl}">Start here</a></p>${upsell ? `<p>Next step when you're ready: <strong>${upsell.name}</strong> (${upsell.price}).</p>` : ""}<p>— Sandra</p>`
+                  ? generateVisibilitySuiteDeliveryEmail({
+                      firstName: session.customer_details?.name || "",
+                      email: academyCustomerEmail,
+                      accessUrl: suiteAccessUrl,
+                      passwordSetupUrl: resolvedPasswordSetupLink || undefined,
+                    })
+                  : generateAcademyProductDeliveryEmail({
+                      productId,
+                      firstName: session.customer_details?.name || "",
+                      email: academyCustomerEmail,
+                      accessUrl: academyAccessUrl,
+                      passwordSetupUrl: resolvedPasswordSetupLink || undefined,
+                    })
 
               await sendEmail({
                 to: academyCustomerEmail,
-                subject,
-                html: emailHtml,
-                text: emailText,
+                subject: emailContent.subject,
+                html: emailContent.html,
+                text: emailContent.text,
                 emailType: "academy_purchase_confirmation",
                 tags: ["academy", productId],
               })
@@ -2597,7 +2587,6 @@ export async function POST(request: NextRequest) {
               // Send delivery email with download link
               try {
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-                const presetPackUrl = process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL || undefined
                 const firstName = getFirstNameForEmail({
                   fullName: session.customer_details?.name,
                   email: customerEmail,
@@ -2648,7 +2637,6 @@ export async function POST(request: NextRequest) {
                   firstName,
                   email: customerEmail!,
                   accessUrl,
-                  presetPackUrl,
                   passwordSetupLink,
                 })
 
@@ -2833,10 +2821,7 @@ export async function POST(request: NextRequest) {
 
               try {
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-                const presetPackUrl =
-                  process.env.STARTER_KIT_PRESET_DOWNLOAD_URL ||
-                  process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL ||
-                  undefined
+                const presetPackUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || undefined
                 const subscriberRecord = await upsertStarterKitSubscriber(
                   customerEmail!,
                   session.customer_details?.name
@@ -2869,7 +2854,18 @@ export async function POST(request: NextRequest) {
                   tags: ["starter-kit", "delivery"],
                 })
 
-                if (!emailResult.success) {
+                if (emailResult.success) {
+                  console.log(
+                    `[v0] ✅ Starter Kit delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`
+                  )
+                  await sql`
+                    UPDATE freebie_subscribers
+                    SET guide_access_email_sent = TRUE,
+                        guide_access_email_sent_at = NOW(),
+                        updated_at = NOW()
+                    WHERE id = ${subscriberRecord.subscriberId}
+                  `
+                } else {
                   console.error(
                     `[v0] ❌ Failed to send Starter Kit delivery email: ${emailResult.error}`
                   )
