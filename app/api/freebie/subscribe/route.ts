@@ -96,15 +96,18 @@ export async function POST(request: NextRequest) {
               guideAccessLink: guideUrl,
             })
 
-            await resend.emails.send({
+            const { error: resendError } = await resend.emails.send({
               from: "SSELFIE <hello@sselfie.ai>",
               to: subscriber.email,
               replyTo: "hello@sselfie.ai",
-              subject: "Your Free Selfie Guide is Ready 📸",
+              subject: "Your free guide is here",
               html: emailContent.html,
               text: emailContent.text,
               tags: [{ name: "freebie-guide", value: "resend" }],
             })
+            if (resendError) {
+              throw new Error(resendError.message || "Failed to send guide access email")
+            }
 
             emailSent = true
             console.log("[v0] Guide access email sent successfully to existing subscriber")
@@ -230,7 +233,7 @@ export async function POST(request: NextRequest) {
           from: "SSELFIE <hello@sselfie.ai>",
           to: email,
           replyTo: "hello@sselfie.ai",
-          subject: "Your Free Selfie Guide is Ready 📸",
+          subject: "Your free guide is here",
           html: emailContent.html,
           text: emailContent.text,
           tags: ["freebie-guide"],

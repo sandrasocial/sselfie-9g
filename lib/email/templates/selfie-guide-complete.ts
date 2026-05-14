@@ -1,12 +1,11 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
+import { masterclassLandingUrl } from "./selfie-education-links"
 
 export interface SelfieGuideCompleteParams {
   firstName?: string
   recipientEmail: string
 }
-
-const STUDIO_CHECKOUT_URL = "https://sselfie.ai/checkout/membership"
 
 export function generateSelfieGuideCompleteEmail({
   firstName,
@@ -24,11 +23,11 @@ export function generateSelfieGuideCompleteEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That matters. Most people don't finish things.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You have everything you need to take a great selfie. The settings. The light. The angles. The edit. And you've actually done the practice.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Now here's the honest truth about what comes next.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Knowing how to take a great selfie is the beginning. The part that actually moves the needle for your business is what happens after you take it: consistent, strategic visibility, week after week, without burning out or spending hours on every caption.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's what SSELFIE Studio is for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maya already knows how to take everything you learned in this guide and execute it at scale. One selfie. A month of content. Your face, your brand, your voice — just faster.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Your first two photos are free. Come try it.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open Studio", STUDIO_CHECKOUT_URL)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Knowing how to take a great selfie is the beginning. The next layer is knowing what to say with it, where it fits in your content, and what step it leads to.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is what the Masterclass is for.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It gives you Sandra's full method for captions, content rhythm, your simple offer, and a 30-day plan so your photos are not just sitting in your camera roll.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">If you want the whole path, go there next.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("See the Masterclass", masterclassLandingUrl())}</div>
   `
 
   const html = renderStoneShell({
@@ -36,7 +35,7 @@ export function generateSelfieGuideCompleteEmail({
     eyebrow: "Selfie Guide",
     subtitle: "Here's what comes next.",
     bodyHtml,
-    footerLead: "Reply if you want to talk through whether Studio is right for you.",
+    footerLead: "Reply if you want to talk through the next step.",
     footerSignoff: "Sandra x",
   })
 
@@ -52,17 +51,17 @@ You have everything you need to take a great selfie. The settings. The light. Th
 
 Now here's the honest truth about what comes next.
 
-Knowing how to take a great selfie is the beginning. The part that actually moves the needle for your business is what happens after you take it: consistent, strategic visibility, week after week, without burning out or spending hours on every caption.
+Knowing how to take a great selfie is the beginning. The next layer is knowing what to say with it, where it fits in your content, and what step it leads to.
 
-That's what SSELFIE Studio is for.
+That is what the Masterclass is for.
 
-Maya already knows how to take everything you learned in this guide and execute it at scale. One selfie. A month of content. Your face, your brand, your voice — just faster.
+It gives you Sandra's full method for captions, content rhythm, your simple offer, and a 30-day plan so your photos are not just sitting in your camera roll.
 
-Your first two photos are free. Come try it.
+If you want the whole path, go there next.
 
-Open Studio: ${STUDIO_CHECKOUT_URL}
+See the Masterclass: ${masterclassLandingUrl()}
 
-Reply if you want to talk through whether Studio is right for you.
+Reply if you want to talk through the next step.
 Sandra x`
 
   return {

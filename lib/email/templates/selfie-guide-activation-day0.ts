@@ -39,13 +39,13 @@ export function generateSelfieGuideActivationDay0Email({
 
   const html = renderStoneShell({
     title: "Your guide is waiting",
-    eyebrow: "First Visible Post",
+    eyebrow: "Selfie Guide",
     subtitle: "Start simple. One chapter. One photo. One post with a job.",
     bodyHtml,
     footerLead: "Start small. Keep it easy.",
   })
 
-  const text = `First Visible Post Guide
+  const text = `Selfie Guide
 
 Hey ${name},
 

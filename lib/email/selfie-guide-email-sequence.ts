@@ -40,6 +40,8 @@ export const SELFIE_GUIDE_EMAIL_TOUCHES: EmailTouchDefinition[] = [
   { days: 21, emailType: "selfie-guide-day21-final" },
 ]
 
+// LEGACY_ACCESS_ONLY: preserved for old Brand Strategy-style templates, but not wired to
+// Free Selfie Guide subscribers in /api/cron/nurture-sequence.
 export const FREEBIE_STRATEGY_EMAIL_TOUCHES: EmailTouchDefinition[] = [
   { days: 2, emailType: "nurture-strategy-n1" },
   { days: 5, emailType: "nurture-strategy-n2" },

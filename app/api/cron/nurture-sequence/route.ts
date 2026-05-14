@@ -7,9 +7,15 @@ import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
   SELFIE_GUIDE_EMAIL_TOUCHES,
 } from "@/lib/email/selfie-guide-email-sequence"
+import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
 import { VISIBILITY_LIFECYCLE_SEQUENCES } from "@/lib/email/visibility-lifecycle-sequences"
+import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/freebie-guide-day1-light-tip"
+import { generateFreebieGuideDay3EditBridgeEmail } from "@/lib/email/templates/freebie-guide-day3-edit-bridge"
+import { generateFreebieGuideDay5StoryEmail } from "@/lib/email/templates/freebie-guide-day5-story"
+import { generateFreebieGuideDay8StarterKitDirectEmail } from "@/lib/email/templates/freebie-guide-day8-starter-kit-direct"
+import { generateFreebieGuideDay14MasterclassBridgeEmail } from "@/lib/email/templates/freebie-guide-day14-masterclass-bridge"
 import { generateSelfieGuideActivationDay0Email } from "@/lib/email/templates/selfie-guide-activation-day0"
 import { generateSelfieGuideDay3CheckinEmail } from "@/lib/email/templates/selfie-guide-day3-checkin"
 import { generateSelfieGuideDay7ChallengeEmail } from "@/lib/email/templates/selfie-guide-day7-challenge"
@@ -48,6 +54,13 @@ interface SelfieGuideTouchCandidate {
   subscription_created_at: string
 }
 
+interface FreebieGuideTouchCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  created_at: string
+}
+
 interface StarterKitCandidate {
   email: string
   name: string | null
@@ -71,7 +84,7 @@ function errorMessage(error: unknown): string {
   return "unknown"
 }
 
-function selfieGuideAccessUrl(candidate: SelfieGuideActivationCandidate): string {
+function selfieGuideAccessUrl(candidate: { access_token: string | null }): string {
   const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/selfie-guide/access/${token}` : `${SITE_URL}/selfie-guide`
 }
@@ -129,6 +142,29 @@ async function getSelfieGuideTouchCandidates(days: number, emailType: string): P
     ORDER BY LOWER(u.email), s.created_at DESC
     LIMIT 200
   `) as SelfieGuideTouchCandidate[]
+}
+
+async function getFreebieGuideTouchCandidates(days: number, emailType: string): Promise<FreebieGuideTouchCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(fs.email))
+      fs.email,
+      NULLIF(BTRIM(fs.name), '') AS name,
+      fs.access_token,
+      fs.created_at
+    FROM freebie_subscribers fs
+    WHERE fs.created_at <= NOW() - (${`${days} days`}::interval)
+      AND fs.email IS NOT NULL
+      AND fs.email <> ''
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(fs.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered')
+      )
+    ORDER BY LOWER(fs.email), fs.created_at DESC
+    LIMIT 200
+  `) as FreebieGuideTouchCandidate[]
 }
 
 async function getStarterKitCandidates(days: number, emailType: string): Promise<StarterKitCandidate[]> {
@@ -226,6 +262,47 @@ async function sendSelfieGuideTouchEmail(
     text: email.text,
     emailType,
     tags: ["selfie-guide", emailType],
+  })
+}
+
+async function sendFreebieGuideTouchEmail(
+  emailType: string,
+  candidate: FreebieGuideTouchCandidate,
+  accessUrl: string,
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "freebie-guide-day1-light-tip":
+      email = generateFreebieGuideDay1LightTipEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "freebie-guide-day3-edit-bridge":
+      email = generateFreebieGuideDay3EditBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "freebie-guide-day5-story":
+      email = generateFreebieGuideDay5StoryEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "freebie-guide-day8-starter-kit-direct":
+      email = generateFreebieGuideDay8StarterKitDirectEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    case "freebie-guide-day14-masterclass-bridge":
+      email = generateFreebieGuideDay14MasterclassBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      break
+    default:
+      throw new Error(`Unknown freebie guide email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["freebie-guide", emailType],
   })
 }
 
@@ -372,6 +449,11 @@ export async function GET(request: Request) {
     }
 
     const results = {
+      freebieGuideDay1: { found: 0, sent: 0, failed: 0 },
+      freebieGuideDay3: { found: 0, sent: 0, failed: 0 },
+      freebieGuideDay5: { found: 0, sent: 0, failed: 0 },
+      freebieGuideDay8: { found: 0, sent: 0, failed: 0 },
+      freebieGuideDay14: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay3: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay7: { found: 0, sent: 0, failed: 0 },
@@ -390,6 +472,46 @@ export async function GET(request: Request) {
       masterclassDay7: { found: 0, sent: 0, failed: 0 },
       masterclassDay10: { found: 0, sent: 0, failed: 0 },
       errors: [] as Array<{ email: string; touch: string; error: string }>,
+    }
+
+    const freebieGuideTouchResultKeys = [
+      "freebieGuideDay1",
+      "freebieGuideDay3",
+      "freebieGuideDay5",
+      "freebieGuideDay8",
+      "freebieGuideDay14",
+    ] as const
+
+    for (const [index, touch] of FREEBIE_GUIDE_EMAIL_TOUCHES.entries()) {
+      const resultKey = freebieGuideTouchResultKeys[index]
+      const candidates = await getFreebieGuideTouchCandidates(touch.days, touch.emailType)
+      results[resultKey].found = candidates.length
+
+      for (const candidate of candidates) {
+        const accessUrl = selfieGuideAccessUrl(candidate)
+        try {
+          const result = await sendFreebieGuideTouchEmail(touch.emailType, candidate, accessUrl)
+          if (result.success) {
+            results[resultKey].sent += 1
+          } else {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: result.error || "unknown",
+            })
+          }
+        } catch (error: unknown) {
+          results[resultKey].failed += 1
+          results.errors.push({
+            email: candidate.email,
+            touch: touch.emailType,
+            error: errorMessage(error),
+          })
+        }
+
+        await sleep(150)
+      }
     }
 
     // Day 0 activation
@@ -545,6 +667,11 @@ export async function GET(request: Request) {
     }
 
     const totalSent =
+      results.freebieGuideDay1.sent +
+      results.freebieGuideDay3.sent +
+      results.freebieGuideDay5.sent +
+      results.freebieGuideDay8.sent +
+      results.freebieGuideDay14.sent +
       results.selfieGuideDay0.sent +
       results.selfieGuideDay3.sent +
       results.selfieGuideDay7.sent +
@@ -563,6 +690,11 @@ export async function GET(request: Request) {
       results.masterclassDay7.sent +
       results.masterclassDay10.sent
     const totalFailed =
+      results.freebieGuideDay1.failed +
+      results.freebieGuideDay3.failed +
+      results.freebieGuideDay5.failed +
+      results.freebieGuideDay8.failed +
+      results.freebieGuideDay14.failed +
       results.selfieGuideDay0.failed +
       results.selfieGuideDay3.failed +
       results.selfieGuideDay7.failed +
@@ -582,6 +714,11 @@ export async function GET(request: Request) {
       results.masterclassDay10.failed
 
     await cronLogger.success({
+      freebieGuideDay1: results.freebieGuideDay1,
+      freebieGuideDay3: results.freebieGuideDay3,
+      freebieGuideDay5: results.freebieGuideDay5,
+      freebieGuideDay8: results.freebieGuideDay8,
+      freebieGuideDay14: results.freebieGuideDay14,
       selfieGuideDay0: results.selfieGuideDay0,
       selfieGuideDay3: results.selfieGuideDay3,
       selfieGuideDay7: results.selfieGuideDay7,
