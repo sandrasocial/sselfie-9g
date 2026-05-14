@@ -332,7 +332,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
       onComplete()
 
       if (options?.redirectToStrategy) {
-        router.push("/brand-strategy")
+        router.push("/masterclass")
       }
     } catch (error) {
       console.error("[v0] Error saving brand profile:", error)

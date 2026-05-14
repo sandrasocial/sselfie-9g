@@ -154,8 +154,8 @@ export function PostToPaidQuiz() {
               >
                 Back
               </button>
-              <Link href="/visibility-suite" className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "#A79B8B" }}>
-                Skip to Suite
+              <Link href="/starter-kit" className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "#A79B8B" }}>
+                Skip to Starter Kit
               </Link>
             </div>
           </div>

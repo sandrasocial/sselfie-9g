@@ -642,7 +642,6 @@ interface SelfieGuideExperienceProps {
 export default function SelfieGuideExperience({
   firstName,
   guideMarkdown,
-  checkoutSessionId,
   brandStrategyBumpSelected = false,
   hasBrandStrategyAccess = false,
   token,
@@ -660,10 +659,6 @@ export default function SelfieGuideExperience({
   const [guideComplete, setGuideComplete] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
-  const [brandStrategySetupToken, setBrandStrategySetupToken] = useState<string | null>(null)
-  const [brandStrategyStatus, setBrandStrategyStatus] = useState(
-    brandStrategyBumpSelected ? "Preparing your Brand Strategy..." : "",
-  )
 
   // Restore progress from localStorage on mount
   useEffect(() => {
@@ -708,65 +703,6 @@ export default function SelfieGuideExperience({
     if (!target) return
     window.history.replaceState(null, "", `#${target.id}`)
   }, [activeChapterIndex, chapters])
-
-  useEffect(() => {
-    if (!brandStrategyBumpSelected || !checkoutSessionId || brandStrategySetupToken) {
-      return
-    }
-
-    let cancelled = false
-    let attempts = 0
-
-    const pollSetupToken = async () => {
-      try {
-        const response = await fetch(
-          `/api/brand-strategy/setup-token?session_id=${encodeURIComponent(checkoutSessionId)}`,
-          { cache: "no-store" },
-        )
-        const data = await response.json()
-
-        if (cancelled) {
-          return
-        }
-
-        if (response.ok && data.setupToken) {
-          setBrandStrategySetupToken(data.setupToken)
-          setBrandStrategyStatus("Your strategy is ready.")
-          return
-        }
-
-        attempts += 1
-
-        if (response.status === 409) {
-          setBrandStrategyStatus(
-            attempts < 20
-              ? "Preparing your Brand Strategy..."
-              : attempts < 40
-                ? "Payment confirmed. Finalizing your Brand Strategy..."
-                : "Almost there. Your Brand Strategy is still syncing.",
-          )
-          return
-        }
-
-        setBrandStrategyStatus(data.error || "Your Brand Strategy is still syncing. We also sent your setup link by email.")
-      } catch {
-        if (!cancelled) {
-          attempts += 1
-          if (attempts >= 40) {
-            setBrandStrategyStatus("Your Brand Strategy is still syncing. We also sent your setup link by email.")
-          }
-        }
-      }
-    }
-
-    const interval = setInterval(pollSetupToken, 2000)
-    pollSetupToken()
-
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [brandStrategyBumpSelected, brandStrategySetupToken, checkoutSessionId])
 
   function markChapterComplete() {
     const nextIndex = activeChapterIndex + 1
@@ -1248,43 +1184,21 @@ export default function SelfieGuideExperience({
                   implementation step with presets, quick-start, and a 7-day content starter.
                 </p>
                 <div className="sg-funnel-ctas">
-                  {brandStrategySetupToken ? (
-                    <Link
-                      href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`}
-                      className="sg-cta-primary"
-                      onClick={() =>
-                        trackGuideUpsellClick(
-                          `/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`,
-                          "brand_strategy_pack",
-                        )
-                      }
-                    >
-                      Build My Brand Strategy
-                    </Link>
-                  ) : brandStrategyBumpSelected ? (
-                    <button type="button" className="sg-cta-primary is-disabled" disabled>
-                      Preparing your Brand Strategy...
-                    </button>
-                  ) : (
-                    <>
-                      <Link
-                        href="/starter-kit"
-                        className="sg-cta-primary"
-                        onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
-                      >
-                        Start with Starter Kit
-                      </Link>
-                      <Link
-                        href="/masterclass"
-                        className="sg-cta-secondary"
-                        onClick={() => trackGuideUpsellClick("/masterclass", "masterclass")}
-                      >
-                        See Masterclass
-                      </Link>
-                    </>
-                  )}
+                  <Link
+                    href="/starter-kit"
+                    className="sg-cta-primary"
+                    onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+                  >
+                    Start with Starter Kit
+                  </Link>
+                  <Link
+                    href="/masterclass"
+                    className="sg-cta-secondary"
+                    onClick={() => trackGuideUpsellClick("/masterclass", "masterclass")}
+                  >
+                    See Masterclass
+                  </Link>
                 </div>
-                {brandStrategyBumpSelected ? <p className="sg-funnel-status">{brandStrategyStatus}</p> : null}
               </>
             )}
           </div>

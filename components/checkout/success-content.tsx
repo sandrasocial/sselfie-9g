@@ -119,10 +119,10 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
 
   if (productType === "masterclass") {
     return {
-      href: "/academy/access/brand-strategy",
-      label: "Start with Brand Strategy",
+      href: "/academy/access/masterclass",
+      label: "Open Masterclass",
       helper:
-        "Your Masterclass starts with your strategy foundation. Complete your positioning first, then move into the lessons with a clearer offer.",
+        "Your Masterclass access is ready. Start with the lessons, then use Academy to keep moving through the material.",
       secondaryHref: "/academy",
       secondaryLabel: "Open Masterclass Library",
     }
@@ -138,6 +138,7 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
     }
   }
 
+  // LEGACY_ACCESS_ONLY: old academy mini-product buyers may still land here after delayed Stripe redirects.
   if (productType === "what_to_say") {
     return {
       href: "/academy/access/what-to-say",
@@ -206,9 +207,9 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
 
   if (productType === "transform_starter" || productType === "transform_topup") {
     return {
-      href: "/transform/studio",
-      label: "Open Edit Studio",
-      helper: "Your 15 credits are ready. Upload a photo and choose your edit finish.",
+      href: "/studio",
+      label: "Open Studio",
+      helper: "Your visual credits are ready. Open Studio and continue from the current AI workspace.",
     }
   }
 
@@ -334,10 +335,10 @@ export function SuccessContent({
         return
       }
 
-      // For transform, redirect to transform studio after brief confirmation
+      // LEGACY_ACCESS_ONLY: Transform purchases now land in Studio instead of the retired Transform surface.
       if (user && (purchaseType === "transform_starter" || purchaseType === "transform_topup")) {
         setTimeout(() => {
-          router.push("/transform/studio?checkout=success")
+          router.push("/studio")
         }, 2500)
         return
       }

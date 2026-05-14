@@ -8,7 +8,7 @@ export interface NurtureStrategyEmailProps {
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-const STRATEGY_FALLBACK_URL = `${SITE_URL}/brand-strategy`
+const STRATEGY_FALLBACK_URL = `${SITE_URL}/masterclass`
 
 export function generateNurtureStrategyN1Email({
   firstName,
