@@ -199,7 +199,7 @@ function getOwnedProductEyebrow(productId: string): string {
     case "selfie_guide":
       return "Selfie Guide"
     case "brand_strategy_pack":
-      return "Brand Strategy"
+      return "Strategy Foundation"
     case "what_to_say":
       return "Message Clarity"
     case "show_up":
@@ -243,8 +243,8 @@ export function getMasterclassImplementationPath({
       title: "Clarify your offer",
       description:
         "Start with your strategy foundation so you know who you help, what you sell, and what your content needs to make clear.",
-      href: hasBrandStrategyAccess ? "/academy/access/brand-strategy" : "/brand-strategy",
-      ctaLabel: hasBrandStrategyAccess ? "Start Strategy" : "See Strategy",
+      href: hasBrandStrategyAccess ? "/academy/access/brand-strategy" : "/academy/access/masterclass",
+      ctaLabel: hasBrandStrategyAccess ? "Open Strategy Foundation" : "Open Masterclass",
       status: "start",
     },
     {
@@ -335,7 +335,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       }
       secondaryLink = {
         href: "/academy/access/brand-strategy",
-        label: "Brand Strategy",
+        label: "Strategy Foundation",
       }
     } else {
       heroDescription = primaryCourse.started

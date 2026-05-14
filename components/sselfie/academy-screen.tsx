@@ -80,7 +80,7 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
   },
   brand_strategy_pack: {
     subText: "Your personalized brand strategy output.",
-    ctaLabel: "Open strategy",
+    ctaLabel: "Open strategy foundation",
   },
 }
 
@@ -121,6 +121,7 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
   brand_strategy_pack: {
     image: "/academy/sselfie-minimalism/academy-brand-strategy.jpg",
     label: "Product home",
+    // LEGACY_ACCESS_ONLY: keep direct access for confirmed Brand Strategy Pack buyers.
     href: "/academy/access/brand-strategy",
   },
   what_to_say: {
@@ -183,10 +184,10 @@ const RESOURCE_HUB_CARDS = [
     id: "brand-strategy",
     title: "Strategy Foundation",
     description: "Your personal brand output and strategy assets.",
-    cta: "Open strategy",
+    cta: "Open strategy foundation",
     href: "/academy/access/brand-strategy",
     image: "/academy/sselfie-minimalism/academy-brand-strategy.jpg",
-    visibleFor: ["brand_strategy_pack", "masterclass", "selfie_guide_bundle"],
+    visibleFor: ["brand_strategy_pack"],
   },
   {
     id: "templates",
