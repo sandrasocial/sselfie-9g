@@ -641,7 +641,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 >
                   <p>✓ Coaches, creators, and entrepreneurs who want to be visible</p>
                   <p>✓ Women building a personal brand without a team behind them</p>
-                  <p>✓ Anyone who's been hiding behind their logo or skipping posts</p>
+                  <p>✓ Anyone who&apos;s been hiding behind their logo or skipping posts</p>
                 </div>
                 <p
                   className="description text-sm md:text-base italic"

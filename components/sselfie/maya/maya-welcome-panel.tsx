@@ -108,7 +108,7 @@ export default function MayaWelcomePanel({
       >
         <div className="space-y-6 border-t border-[rgba(195,190,182,0.12)] pt-6">
           <p className="text-sm leading-relaxed text-[color:var(--text-accent)]">
-            Start with the week ahead. I'll help you choose what to post, what photos to create, and what to say.
+            Start with the week ahead. I&apos;ll help you choose what to post, what photos to create, and what to say.
           </p>
 
           {uploadHint ? (
@@ -117,12 +117,12 @@ export default function MayaWelcomePanel({
             </p>
           ) : null}
 
-          {/* This week's themes — tapping one starts the weekly ritual */}
+          {/* This week&apos;s themes — tapping one starts the weekly ritual */}
           {themes.length > 0 && onThemeChipClick ? (
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">
-                  This week's themes
+                  This week&apos;s themes
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
