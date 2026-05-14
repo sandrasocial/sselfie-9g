@@ -6,7 +6,7 @@ import { FormEvent, useState } from "react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { PublicFooter, PublicNav } from "@/components/sselfie/public-marketing"
 
-const HERO_IMAGE = "/images/selfie-guide/window-lighting-setup.png"
+const HERO_IMAGE = "/images/selfie-guide/sandra-mirror-dark.jpg"
 
 const C = {
   ink: "var(--color-obsidian)",
@@ -59,13 +59,13 @@ const NEXT_STEPS = [
   {
     title: "Starter Kit",
     label: "$37",
-    body: "Your first 7 days of phone-first content, with presets and a quick-start workflow.",
+    body: "Presets, editing walkthroughs, and your first 7 days of content from one session.",
     href: "/starter-kit",
   },
   {
     title: "Masterclass",
     label: "Full method",
-    body: "Go deeper into the visibility, content, offer, and showing-up system.",
+    body: "Sandra's full method — brand, content, offer, and a 30-day plan.",
     href: "/masterclass",
   },
   {
@@ -138,7 +138,7 @@ export default function SelfieGuideFree() {
       <PublicNav loginHref="/auth/login" />
 
       <section className="relative grid min-h-screen overflow-hidden pt-[58px] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.82fr)]">
-        <div className="relative z-10 flex flex-col justify-center px-6 py-14 md:px-12 lg:px-20">
+        <div className="relative z-10 flex flex-col justify-center px-6 py-8 md:py-14 md:px-12 lg:px-20">
           <p className="text-[10px] uppercase tracking-[0.5em]" style={{ color: C.stone }}>
             Free Guide
           </p>
@@ -154,11 +154,11 @@ export default function SelfieGuideFree() {
               textShadow: LP_DARK,
             }}
           >
-            Your first visible post.
+            Better selfies. With your iPhone.
           </h1>
           <p className="mt-6 max-w-xl text-[16px] leading-[1.75]" style={{ color: C.onDarkSub }}>
-            Take one phone photo and turn it into a post that says something. Not just a better
-            selfie. A first piece of content with a job.
+            Mirror selfies, car selfies, full-body shots — your phone can already take the photo.
+            This guide shows you the exact techniques Sandra uses every day.
           </p>
 
           <form
@@ -311,13 +311,13 @@ export default function SelfieGuideFree() {
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.78fr_1fr] lg:items-center">
           <div>
             <p className="text-[10px] uppercase tracking-[0.5em]" style={{ color: C.stone }}>
-              Why this exists
+              What happens next
             </p>
             <h2
               className="mt-4 uppercase"
               style={{ fontFamily: F.serif, fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 300, lineHeight: 1.04 }}
             >
-              Better selfies are useful. They are not the whole business.
+              The selfie is just the beginning.
             </h2>
           </div>
           <div className="space-y-4 text-[15px] leading-[1.78]" style={{ color: C.onDarkSub }}>
