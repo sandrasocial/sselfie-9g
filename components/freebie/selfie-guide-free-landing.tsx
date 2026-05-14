@@ -177,11 +177,6 @@ export default function SelfieGuideFree() {
             >
               Better selfies. With your iPhone.
             </h1>
-            <p className="mb-8 text-center text-[16px] leading-[1.75]" style={{ color: C.onDarkSub }}>
-              Mirror selfies, car selfies, full-body shots. Your phone can already take the photo.
-              This guide shows you the exact techniques Sandra uses every day.
-            </p>
-
             <form
               onSubmit={handleSubmit}
               style={{
@@ -203,11 +198,7 @@ export default function SelfieGuideFree() {
               >
                 Start with the guide.
               </h2>
-              <p className="mt-3 text-sm leading-[1.7]" style={{ color: C.onDarkSub }}>
-                The guide, the 7-day plan, and the first caption prompt.
-              </p>
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <input
                   type="text"
                   value={name}
