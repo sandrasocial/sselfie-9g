@@ -484,7 +484,7 @@ function Section({
 }) {
   const surface = dark ? C.ink : C.cream
   return (
-    <section style={{ position: "relative", background: surface, padding: "88px 24px", overflow: "hidden" }}>
+    <section style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden" }}>
       <PaperTexture dark={dark} />
       <div className={`mx-auto relative ${narrow ? "max-w-3xl" : "max-w-6xl"}`} style={{ zIndex: 2 }}>
         {eyebrow && <span className="mf block mb-4" style={ty("eyebrow", dark)}>{eyebrow}</span>}
@@ -527,7 +527,7 @@ function Split({
     </div>
   )
   return (
-    <section style={{ position: "relative", background: surface, padding: "88px 24px", overflow: "hidden" }}>
+    <section style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden" }}>
       <PaperTexture dark={dark} />
       <div className="max-w-6xl mx-auto grid gap-14 md:grid-cols-2 md:items-center relative" style={{ zIndex: 2 }}>
         {imgFirst ? <>{img}{txt}</> : <>{txt}{img}</>}
@@ -547,7 +547,7 @@ function CtaClose({
 }) {
   const surface = dark ? C.ink : C.cream
   return (
-    <section style={{ position: "relative", background: surface, padding: "100px 24px", borderTop: `1px solid ${dark ? C.divDark : C.divCream}`, overflow: "hidden" }}>
+    <section style={{ position: "relative", background: surface, padding: "clamp(72px, 9vw, 100px) clamp(18px, 4vw, 24px)", borderTop: `1px solid ${dark ? C.divDark : C.divCream}`, overflow: "hidden" }}>
       <PaperTexture dark={dark} />
       <div className="max-w-xl mx-auto text-center relative" style={{ zIndex: 2 }}>
         <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: "36px" }}>{title}</h2>
@@ -623,7 +623,7 @@ const FAQS = {
     { question: "Do I need the Starter Kit first?",
       answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper so you build from a clearer offer and content direction." },
     { question: "Is this a photography course?",
-      answer: "No. There's one lesson on taking better selfies, but this is mostly about who you are online: your brand, your pillars, your content system." },
+      answer: "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
     { question: "How long does it take?",
       answer: "Start with Brand Strategy, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
     { question: "How is this different from Studio?",
@@ -682,12 +682,12 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       {/* WHAT THIS ACTUALLY IS — dark */}
       <Split
         eyebrow="What this actually is"
-        title={<>A visibility-to-paid system for women starting online.</>}
+        title={<>It starts with the selfie. Everything builds from there.</>}
         body={
           <div className="space-y-4">
-            <p>SSELFIE is not just about better selfies.</p>
-            <p>It is a visibility-to-paid system for women who want to use their phone, story, content, and first offer to start building a personal brand online.</p>
-            <p>The photo helps people recognize you. The message helps people understand you. The content helps people trust you. The offer gives people a next step.</p>
+            <p>Better iPhone selfies are how people find you. The car selfie, the mirror photo, the full-body shot that finally looks the way you wanted. That is where it begins.</p>
+            <p>Then Sandra shows you what to do with it. The caption. The content rhythm. The first offer. One clear path from first photo to first sale.</p>
+            <p>Phone-first personal branding for women who are ready to be known for something.</p>
           </div>
         }
         imgSrc={IMG.homeStudio}
@@ -714,29 +714,28 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
 
       {/* WHY SELFIES STILL MATTER — dark */}
       <Split
-        eyebrow="Why selfies still matter"
-        title={<>Your photos are not the whole business.</>}
+        eyebrow="Start with the selfie"
+        title={<>Your selfie is doing more than you think.</>}
         body={
           <div className="space-y-4">
-            <p>They are the cover, the trust signal, and the visual identity that help people recognize you.</p>
-            <p>SSELFIE starts with your phone, but it does not stop at the photo.</p>
-            <p>Once people recognize you, they still need to understand what you say, what you offer, and what step to take next.</p>
+            <p>People decide in seconds. A great iPhone selfie makes them stop. The caption makes them read. The content rhythm makes them come back.</p>
+            <p>It starts with one photo from your phone. Sandra shows you the rest.</p>
           </div>
         }
         imgSrc={IMG.homeSelfie}
         imgFirst
         dark
-        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Want the photo basics first? Explore the Starter Kit</Btn>}
+        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Start with the photo basics. See the Starter Kit</Btn>}
       />
 
       {/* OFFER LADDER — cream */}
       <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Free Selfie Guide", price: "Free", body: "Start here. The photo fundamentals that every creator skips and every brand needs.", href: "/selfie-guide" },
-            { title: "Starter Kit", price: "$37", body: "Presets, quick-start checklist, and a 7-day content starter — the first paid step.", href: "/starter-kit" },
-            { title: "Masterclass", price: "$147", body: "Your deeper Selfie Branding layer with strategy, content, and implementation support.", href: "/masterclass" },
-            { title: "Studio", price: "€97/mo", body: "Use Maya and the full execution layer weekly once your foundations are clear.", href: "/join/studio" },
+            { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day: light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
+            { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
+            { title: "Masterclass", price: "$147", body: "Strategy, content, offer, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
+            { title: "Studio", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -794,7 +793,7 @@ export function StarterKitPageContent() {
       <Hero
         eyebrow="Starter Kit · $37"
         title={<>Your first better selfie. Your first week of content.</>}
-        body={<p>The Selfie Guide, presets, quick-start, and a simple 7-day content starter so one photo becomes something you can actually post.</p>}
+        body={<p>Presets, editing walkthroughs, and 7 days of content from one session.</p>}
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
@@ -893,8 +892,8 @@ export function MasterclassPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Masterclass · $147"
-        title={<>Build income-ready visibility with a clearer offer.</>}
-        body={<p>Your strategy foundation comes first, then Sandra&apos;s full SSELFIE method for showing up, creating content, and knowing what your weekly execution should actually support.</p>}
+        title={<>You showed up. You took the selfie. Now build what comes next.</>}
+        body={<p>Strategy, content, offer, and a 30-day plan so your photos have somewhere to lead. Sandra&apos;s full method, one time.</p>}
         primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
@@ -1025,7 +1024,7 @@ export function StudioPageContent() {
       <Hero
         eyebrow="Studio · €97/mo"
         title={<>Maya helps you show up every week.</>}
-        body={<p>Studio is the weekly execution layer for the SSELFIE method: photo ideas, captions, content plans, and next actions in one place.</p>}
+        body={<p>You know your look. You know your edit. Studio keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
         primary={{ href: "/checkout/membership?interval=month&source=studio_page", label: "Join Studio" }}
         secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
         imageSrc={IMG.feed}
@@ -1086,7 +1085,7 @@ export function WorkWithMePageContent() {
     "Your content direction",
     "Your first sales post",
     "Warm DM scripts",
-    "Your 30-day visibility plan",
+    "Your 30-day content plan",
     "Your next best move",
   ]
   const fitItems = [
@@ -1120,9 +1119,9 @@ export function WorkWithMePageContent() {
       />
 
       {/* WHAT WE BUILD — cream */}
-      <Section eyebrow="Private AI Brand OS" title="What we build together" dark={false}>
+      <Section eyebrow="Four weeks, private" title="What we build together" dark={false}>
         <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>This is not another content course. This is where we look at the full picture and build the pieces you need to move from visible to paid.</p>
+          <p>This is not another content course. Four weeks, private. Sandra looks at the full picture and builds the pieces you actually need to move forward.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {buildItems.map((item) => (
@@ -1169,7 +1168,7 @@ export function WorkWithMePageContent() {
       </Section>
 
       {/* INQUIRY FORM — dark */}
-      <section id="inquiry" style={{ position: "relative", background: C.ink, padding: "88px 24px", overflow: "hidden", scrollMarginTop: "60px" }}>
+      <section id="inquiry" style={{ position: "relative", background: C.ink, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
         <PaperTexture dark />
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
           <div className="mf">
