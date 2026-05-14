@@ -7,16 +7,26 @@
  * Access: Admin only (add auth check in production)
  */
 
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { PRICING_PRODUCTS } from "@/lib/products"
+import { requireAdmin } from "@/lib/admin-feature-flags"
 import { getValidationStatus } from "@/lib/stripe/validate-pricing-config"
 
-export async function GET(request: NextRequest) {
+function unauthorized(error?: string) {
+  return NextResponse.json(
+    { error: error || "Admin access required" },
+    { status: error === "Not authenticated" ? 401 : 403 },
+  )
+}
+
+export async function GET() {
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.isAdmin) {
+    return unauthorized(adminCheck.error)
+  }
+
   try {
-    // TODO: Add admin authentication check here
-    // For now, this is a diagnostic endpoint
-    
     const results: any = {
       timestamp: new Date().toISOString(),
       validationCacheStatus: getValidationStatus(),

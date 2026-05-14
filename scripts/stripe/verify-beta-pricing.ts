@@ -73,7 +73,6 @@ async function identifyBetaUsers(): Promise<BetaUser[]> {
   console.log()
   
   // Beta users = first 100 Creator Studio subscribers (sselfie_studio_membership)
-  // Based on app/api/admin/dashboard/beta-users/route.ts logic
   const betaUsers = await sql`
     SELECT 
       u.id as user_id,

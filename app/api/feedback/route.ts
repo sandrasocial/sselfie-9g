@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const feedbackId = result[0].id
 
     try {
-      const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"}/admin/feedback`
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"}/admin/customer-support`
 
       const emailContent = generateFeedbackAdminNotification({
         userName: userName || "Anonymous",

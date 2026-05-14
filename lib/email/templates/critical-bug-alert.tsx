@@ -23,7 +23,7 @@ export default function CriticalBugAlertEmail({
   suggestedFiles,
   createdAt,
 }: CriticalBugAlertEmailProps) {
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/admin/feedback`
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/admin/customer-support`
 
   return (
     <html>

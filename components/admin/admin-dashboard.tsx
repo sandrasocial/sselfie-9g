@@ -423,31 +423,6 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           </div>
         </div>
 
-        <div className="border-t border-stone-200 pt-8 sm:pt-12 mt-8 sm:mt-12">
-          <h2 className="font-['Times_New_Roman'] text-lg sm:text-xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-4 sm:mb-6">
-            HIDDEN TOOLS
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              { label: 'Feedback', href: '/admin/feedback', description: 'Customer replies' },
-              { label: 'Testimonials', href: '/admin/testimonials', description: 'Social proof' },
-              { label: 'Analytics', href: '/admin/analytics', description: 'Revenue + cohorts' },
-              { label: 'Login As User', href: '/admin/login-as-user', description: 'Debug only' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="bg-white border border-stone-200 p-4 hover:border-stone-400 transition-all rounded-none"
-              >
-                <p className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                  {item.label}
-                </p>
-                <p className="text-[10px] text-stone-400">{item.description}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-        
       </div>
     </div>
   )
