@@ -793,7 +793,7 @@ export function StarterKitPageContent() {
       <Hero
         eyebrow="Starter Kit · $37"
         title={<>Your first better selfie. Your first week of content.</>}
-        body={<p>The Selfie Guide, presets, quick-start, and a simple 7-day content starter so one photo becomes something you can actually post.</p>}
+        body={<p>Presets, editing walkthroughs, and 7 days of content from one session.</p>}
         primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
