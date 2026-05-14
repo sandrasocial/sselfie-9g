@@ -65,7 +65,7 @@ const NEXT_STEPS = [
   {
     title: "Masterclass",
     label: "Full method",
-    body: "Sandra's full method — brand, content, offer, and a 30-day plan.",
+    body: "Sandra's full method: brand, content, offer, and a 30-day plan.",
     href: "/masterclass",
   },
   {
@@ -137,126 +137,119 @@ export default function SelfieGuideFree() {
     <main style={{ minHeight: "100vh", background: C.ink, color: C.onDark, fontFamily: F.sans }}>
       <PublicNav loginHref="/auth/login" />
 
-      <section className="relative grid min-h-screen overflow-hidden pt-[58px] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.82fr)]">
-        <div className="relative z-10 flex flex-col justify-center px-6 py-8 md:py-14 md:px-12 lg:px-20">
-          <p className="text-[10px] uppercase tracking-[0.5em]" style={{ color: C.stone }}>
-            Free Guide
-          </p>
-          <h1
-            className="mt-6 max-w-[12ch] uppercase"
-            style={{
-              fontFamily: F.serif,
-              fontSize: "clamp(44px, 7vw, 86px)",
-              fontWeight: 300,
-              lineHeight: 0.96,
-              letterSpacing: "-0.02em",
-              color: C.onDark,
-              textShadow: LP_DARK,
-            }}
-          >
-            Better selfies. With your iPhone.
-          </h1>
-          <p className="mt-6 max-w-xl text-[16px] leading-[1.75]" style={{ color: C.onDarkSub }}>
-            Mirror selfies, car selfies, full-body shots — your phone can already take the photo.
-            This guide shows you the exact techniques Sandra uses every day.
-          </p>
+      <section
+        className="relative"
+        style={{ minHeight: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column" }}
+      >
+        <img
+          src={HERO_IMAGE}
+          alt="Sandra taking a mirror selfie with her iPhone"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "50% 20%" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 8%, transparent) 36%, color-mix(in srgb, var(--color-obsidian) 90%, transparent) 100%)",
+          }}
+        />
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-9 max-w-xl"
-            style={{
-              border: `1px solid ${C.divDark}`,
-              background: "color-mix(in srgb, var(--stone-dark) 84%, transparent)",
-              padding: "26px",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-            }}
-          >
-            <p
-              className="text-[10px] uppercase tracking-[0.42em]"
-              style={{ color: C.stone, fontWeight: 600 }}
+        <div
+          className="relative flex flex-col items-center justify-end flex-1"
+          style={{ padding: "0 20px 60px", paddingTop: "80px", zIndex: 2 }}
+        >
+          <div className="max-w-lg mx-auto w-full">
+            <p className="text-[10px] uppercase tracking-[0.5em] mb-5 text-center" style={{ color: C.stone }}>
+              Free Guide
+            </p>
+            <h1
+              className="mb-5 uppercase text-center"
+              style={{
+                fontFamily: F.serif,
+                fontSize: "clamp(44px, 7vw, 82px)",
+                fontWeight: 300,
+                lineHeight: 0.96,
+                letterSpacing: "-0.02em",
+                color: C.onDark,
+                textShadow: LP_DARK,
+              }}
             >
-              Instant access
+              Better selfies. With your iPhone.
+            </h1>
+            <p className="mb-8 text-center text-[16px] leading-[1.75]" style={{ color: C.onDarkSub }}>
+              Mirror selfies, car selfies, full-body shots. Your phone can already take the photo.
+              This guide shows you the exact techniques Sandra uses every day.
             </p>
-            <h2
-              className="mt-3 uppercase"
-              style={{ fontFamily: F.serif, fontSize: 34, lineHeight: 1.02, fontWeight: 300 }}
+
+            <form
+              onSubmit={handleSubmit}
+              style={{
+                border: `1px solid ${C.divDark}`,
+                background: "color-mix(in srgb, var(--stone-dark) 84%, transparent)",
+                padding: "26px",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
             >
-              Start with the guide.
-            </h2>
-            <p className="mt-3 text-sm leading-[1.7]" style={{ color: C.onDarkSub }}>
-              You will get the guide, the 7-day practice plan, and the first caption prompt.
-            </p>
+              <p
+                className="text-[10px] uppercase tracking-[0.42em]"
+                style={{ color: C.stone, fontWeight: 600 }}
+              >
+                Instant access
+              </p>
+              <h2
+                className="mt-3 uppercase"
+                style={{ fontFamily: F.serif, fontSize: 32, lineHeight: 1.02, fontWeight: 300 }}
+              >
+                Start with the guide.
+              </h2>
+              <p className="mt-3 text-sm leading-[1.7]" style={{ color: C.onDarkSub }}>
+                The guide, the 7-day plan, and the first caption prompt.
+              </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="First name"
-                required
-                className="min-h-[50px] border px-4 text-sm outline-none"
-                style={{
-                  borderColor: C.divDark,
-                  background: "rgba(240,237,232,0.04)",
-                  color: C.onDark,
-                }}
-              />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-                className="min-h-[50px] border px-4 text-sm outline-none"
-                style={{
-                  borderColor: C.divDark,
-                  background: "rgba(240,237,232,0.04)",
-                  color: C.onDark,
-                }}
-              />
-            </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="First name"
+                  required
+                  className="min-h-[50px] border px-4 text-sm outline-none"
+                  style={{
+                    borderColor: C.divDark,
+                    background: "rgba(240,237,232,0.04)",
+                    color: C.onDark,
+                  }}
+                />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  required
+                  className="min-h-[50px] border px-4 text-sm outline-none"
+                  style={{
+                    borderColor: C.divDark,
+                    background: "rgba(240,237,232,0.04)",
+                    color: C.onDark,
+                  }}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-4 inline-flex min-h-[50px] w-full items-center justify-center px-6 text-[10px] font-semibold uppercase tracking-[0.24em] transition hover:opacity-90 disabled:opacity-60"
-              style={{ background: C.cream, color: C.ink }}
-            >
-              {loading ? "Opening your guide..." : "Get the free guide"}
-            </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-4 inline-flex min-h-[50px] w-full items-center justify-center px-6 text-[10px] font-semibold uppercase tracking-[0.24em] transition hover:opacity-90 disabled:opacity-60"
+                style={{ background: C.cream, color: C.ink }}
+              >
+                {loading ? "Opening your guide..." : "Get the free guide"}
+              </button>
 
-            {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
-            <p className="mt-4 text-[11px] leading-[1.6]" style={{ color: C.stone }}>
-              No spam. Just the guide and the next useful step when you are ready.
-            </p>
-          </form>
-        </div>
-
-        <div className="relative min-h-[460px] border-t lg:min-h-full lg:border-l lg:border-t-0" style={{ borderColor: C.divDark }}>
-          <img
-            src={HERO_IMAGE}
-            alt="Sandra taking a selfie with her phone"
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ objectPosition: "50% 24%" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d0c0b] via-transparent to-transparent lg:bg-gradient-to-l lg:from-transparent lg:to-[#0d0c0b]/30" />
-          <div
-            className="absolute bottom-6 left-6 right-6 max-w-md p-5 md:bottom-10 md:left-10"
-            style={{
-              border: `1px solid ${C.divDark}`,
-              background: "rgba(13,12,11,0.68)",
-              backdropFilter: "blur(18px)",
-            }}
-          >
-            <p className="text-[10px] uppercase tracking-[0.36em]" style={{ color: C.stone }}>
-              The shift
-            </p>
-            <p
-              className="mt-3 text-[24px] leading-[1.18]"
-              style={{ fontFamily: F.serif, fontWeight: 300, color: C.onDark }}
-            >
-              The photo is not the strategy. It is the first piece of the content system.
-            </p>
+              {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
+              <p className="mt-4 text-[11px] leading-[1.6]" style={{ color: C.stone }}>
+                No spam. Just the guide and the next useful step.
+              </p>
+            </form>
           </div>
         </div>
       </section>

@@ -623,7 +623,7 @@ const FAQS = {
     { question: "Do I need the Starter Kit first?",
       answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper so you build from a clearer offer and content direction." },
     { question: "Is this a photography course?",
-      answer: "It starts with your camera confidence — getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
+      answer: "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
     { question: "How long does it take?",
       answer: "Start with Brand Strategy, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
     { question: "How is this different from Studio?",
@@ -685,7 +685,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         title={<>It starts with the selfie. Everything builds from there.</>}
         body={
           <div className="space-y-4">
-            <p>Better iPhone selfies are how people find you. The car selfie, the mirror photo, the full-body shot that finally looks the way you wanted — that is where it begins.</p>
+            <p>Better iPhone selfies are how people find you. The car selfie, the mirror photo, the full-body shot that finally looks the way you wanted. That is where it begins.</p>
             <p>Then Sandra shows you what to do with it. The caption. The content rhythm. The first offer. One clear path from first photo to first sale.</p>
             <p>Phone-first personal branding for women who are ready to be known for something.</p>
           </div>
@@ -725,14 +725,14 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgSrc={IMG.homeSelfie}
         imgFirst
         dark
-        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Start with the photo basics — see the Starter Kit</Btn>}
+        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Start with the photo basics. See the Starter Kit</Btn>}
       />
 
       {/* OFFER LADDER — cream */}
       <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day — light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
+            { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day: light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
             { title: "Masterclass", price: "$147", body: "Strategy, content, offer, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
             { title: "Studio", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
@@ -1024,7 +1024,7 @@ export function StudioPageContent() {
       <Hero
         eyebrow="Studio · €97/mo"
         title={<>Maya helps you show up every week.</>}
-        body={<p>You know your look. You know your edit. Studio keeps it moving — photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
+        body={<p>You know your look. You know your edit. Studio keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
         primary={{ href: "/checkout/membership?interval=month&source=studio_page", label: "Join Studio" }}
         secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
         imageSrc={IMG.feed}
