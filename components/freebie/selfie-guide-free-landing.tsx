@@ -145,7 +145,7 @@ export default function SelfieGuideFree() {
           src={HERO_IMAGE}
           alt="Sandra taking a mirror selfie with her iPhone"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "50% 20%" }}
+          style={{ objectPosition: "50% 0%" }}
         />
         <div
           className="absolute inset-0"
@@ -167,7 +167,7 @@ export default function SelfieGuideFree() {
               className="mb-5 uppercase text-center"
               style={{
                 fontFamily: F.serif,
-                fontSize: "clamp(44px, 7vw, 82px)",
+                fontSize: "clamp(36px, 7vw, 82px)",
                 fontWeight: 300,
                 lineHeight: 0.96,
                 letterSpacing: "-0.02em",
