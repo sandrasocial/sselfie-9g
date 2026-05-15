@@ -1,41 +1,6 @@
-# YOUR FIRST VISIBLE POST GUIDE
-## Turn One Phone Photo Into Content That Says Something
+## iPhone Settings
 
-Here's the thing...
-
-Most women think they need a professional photographer before they can start building online.
-
-They wait. They hesitate. They scroll through other people's perfect feeds and think, "I'm not ready yet."
-
-I get it. Because I used to think the same thing.
-
-But let me be really honest for a second.
-
-**Your phone is enough.**
-**Your face is enough.**
-**One good phone photo can become your first visible post.**
-
-And in this guide, I'm going to show you how to take the photo, understand what it is for, and turn it into content.
-
-No fluff. No fancy equipment. Just you, your phone, one honest photo, and a simple next step.
-
-I'm Sandra. I've built a 180K+ following and a real, paying business starting with nothing but my phone and a window. If I can do it, so can you.
-
-### Your Result Today
-
-By the end of this guide, I do not want you to have "learned about selfies."
-
-I want you to have one photo you would actually post, one simple caption idea, and one tiny next step toward being more visible online.
-
-That is the win.
-
-Ready? Let's go.
-
----
-
-## PART 1: Your iPhone Camera Settings
-
-Before you take another selfie, check these settings. It takes 60 seconds and it makes a massive difference.
+Before you take another selfie, check these settings. It takes 60 seconds and it makes a real difference.
 
 [IMAGE: iphone-settings-mockup.png — iPhone Settings → Camera screen showing Grid, Mirror Front Camera, Smart HDR enabled and Live Photos disabled]
 
@@ -45,75 +10,73 @@ Go to: **Settings → Camera**
 **Turn these ON:**
 - [ ] Grid — Helps you line up shots and keep your face centered
 - [ ] Mirror Front Camera — So your selfie looks the way you see yourself, not flipped
-- [ ] Smart HDR — Balances light automatically, especially good for harsh lighting
+- [ ] Smart HDR — Balances light automatically, especially in mixed lighting
 
 **Turn these OFF:**
 - [ ] Live Photos — Uses extra storage and you rarely need the motion
-- [ ] View Outside the Frame — Distracting while you're shooting
+- [ ] View Outside the Frame — Distracting while you are shooting
 
 ### For iPhone 15 and 16 Users
 - Use **Photographic Styles** and try "Natural" or "Vibrant" for more control over skin tones
-- Enable **Action Mode** if you're filming video content (stabilizes shaky hands)
-- Use **Portrait Mode** for blurred backgrounds that make you look more polished
+- Enable **Action Mode** if you are filming video content
+- Use **Portrait Mode** for blurred backgrounds that look more polished
 
 ### Quick Camera Access
 Swipe left from your lock screen. Or set a shortcut via Settings → Accessibility → Side Button.
 
 ### The One Setting Most People Miss
-**Video format matters.** For content you'll post, shoot in 1080p at 30fps. It uploads faster, edits easier, and looks great on every platform.
+**Video format matters.** For content you will post, shoot in 1080p at 30fps. It uploads faster, edits easier, and looks good on every platform.
 
 Go to **Settings → Camera → Record Video** and select 1080p HD at 30 fps.
 
 ---
 
-## PART 2: Light Changes Everything
+## Window Light
 
-I want you to understand something before we go any further.
+You can have the right settings, the right angles, and a good outfit. But if the light is wrong, the photo will look wrong. Every time.
 
-> You can have perfect settings, the right angles, and a great outfit. But if the light is wrong, the photo will look wrong. Every time.
->
-> Good light is not optional. It is the whole thing.
+Good light is not optional. It is the whole thing.
 
 [IMAGE: window-lighting-setup.png — Example of window lighting setup with subject standing beside a window facing natural light]
 
 ### The Free Light You Already Have
-Natural window light is the best light. It's soft, it's flattering, and it's completely free.
+Natural window light is the best light. It is soft, flattering, and completely free.
 
-Here's how to use it:
+Here is how to use it:
 
 1. Find a window that gets indirect light (not direct sun blasting through)
 2. Face the window directly, so the light falls on your face from the front
-3. Stand about 1 to 2 meters back from the window
+3. Stand about 1 to 2 metres back from the window
 4. Hold your phone at eye level or slightly above
 5. Take the shot
 
-That's it. No ring light required.
+No ring light required.
 
 [IMAGE: lighting-comparison-grid.png — Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples]
 
 ### The 4 Lights Worth Knowing
 
-**Window light** is soft and even. Best for close-up portraits and professional-looking content.
+**Window light** is soft and even. Best for close-up portraits and content that looks intentional.
 
-**Golden hour** (30 to 60 minutes after sunrise or before sunset) gives you warm, glowing skin tones. Beautiful for lifestyle content and stories.
+**Golden hour** (30 to 60 minutes after sunrise or before sunset) gives you warm, glowing skin tones. Good for lifestyle content and stories.
 
 **Overcast daylight** (cloudy days) acts like a giant softbox. Flattering on everyone. Underrated.
 
-**Ring light** is great for consistency indoors at night. Position it directly in front of you at eye level. Do not angle it from above or below.
+**Ring light** works well for consistency indoors at night. Position it directly in front of you at eye level. Do not angle it from above or below.
 
 ### What to Avoid
 - Overhead lighting (fluorescent office lights, ceiling lights behind you) — creates harsh shadows under your eyes
 - Backlighting (window or lamp behind you) — turns your face into a silhouette
-- Mixed lighting (window on one side, lamp on the other) — creates uneven color tones on your face
+- Mixed lighting (window on one side, lamp on the other) — creates uneven colour tones on your face
 
-### The Quick Test
-Take one selfie right now in your current light. Look at the image. Are the shadows under your eyes soft or harsh? Is your skin tone even? If not, move closer to a window or step outside.
+### Quick Test
+Take one selfie right now in your current light. Look at the photo. Are the shadows under your eyes soft or harsh? Is your skin tone even? If not, move closer to a window or step outside.
 
 ---
 
-## PART 3: Angles, Poses and Presence
+## Angles and Presence
 
-You have found great light. Now let's talk about how you hold the camera, how you position your body, and why none of this has anything to do with being "photogenic."
+You have found good light. Now let us talk about how you hold the camera, how you position your body, and why none of this has anything to do with being "photogenic."
 
 [IMAGE: angle-comparison-grid.png — Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions]
 
@@ -122,7 +85,7 @@ Hold your phone **15 degrees above eye level**. Not high above your head. Just s
 
 Then tilt your chin down slightly toward the camera.
 
-This combination does two things: it slims the face naturally, and it creates a direct, confident gaze that connects with whoever is looking at your content.
+This combination does two things: it slims the face naturally, and it creates a direct gaze that connects with whoever is looking at your photo.
 
 ### What to Do With Your Body
 
@@ -132,7 +95,7 @@ You do not need to pose in a way that feels fake. You just need to break the "pa
 
 Try these:
 - **Turn 45 degrees.** Face your body slightly away from the camera, then turn your face back toward it. Adds dimension.
-- **Shift your weight.** Put your weight on one hip. This creates a natural curve and breaks stiffness.
+- **Shift your weight.** Put your weight on one hip. Creates a natural line and breaks stiffness.
 - **Use a prop.** Hold a coffee cup, touch your collar, rest your chin on your hand. Something natural for your hands to do.
 - **Move between shots.** Take 10 photos in 30 seconds. Mid-movement photos often look more natural than posed ones.
 
@@ -148,20 +111,80 @@ Nobody is born photogenic. It is just familiarity with your own face in photos. 
 
 ---
 
-## PART 4: Edit Like a Pro
+## Mirror Selfies
+
+People love to act like mirror selfies are lazy. They are not.
+
+When it is done right, a mirror selfie shows your outfit, your environment, and your face in one frame. That is a lot of information in one shot.
+
+### Distance
+Stand about two arm-lengths from the mirror. Closer and the phone blocks your face. Further away and you lose the detail that makes the photo feel personal.
+
+### Phone Placement
+Hold the phone at chest height or slightly below for a straight-on shot. Tilting the phone down slightly slims the composition. Tilting up creates a long-body effect that works well for full-length.
+
+### The Flash Problem
+Turn flash off. Always. The mirror sends the flash straight back at your lens. Use window light instead. Position yourself so the light hits your face, not the mirror.
+
+### What to Show
+Include enough of the room to give context, but not so much that the background competes with you. A clean wall, a good lamp, or a simple shelf behind you all work. A pile of laundry does not.
+
+---
+
+## Car Selfies
+
+The car is probably the most underrated selfie location you have.
+
+Soft diffused light through a window. A clean neutral background. No background clutter to manage. Brands pay photographers thousands for setups that look like this.
+
+### Window vs. Direct Sun
+Park so your face is toward soft light. Overcast sky, shade, or the sky on a cloudy day works best. Direct sunlight through the windshield creates hard shadows and squinting. You want diffused, not direct.
+
+### Steering Wheel
+You can rest your wrist on the steering wheel and hold the phone up at a slight angle. This looks natural, like you took it between places, and that reads as real.
+
+### Seatbelt
+If you are parked, seatbelt on looks more candid. Seatbelt off looks more styled. Either way, take the photo before you drive.
+
+### Angle
+Slightly above eye level, angled down slightly. The car window frame often gives you a natural crop that feels editorial without trying.
+
+---
+
+## Full-Body Selfies
+
+Full-body selfies are harder than face selfies, mostly because the phone needs to be further away.
+
+The self-timer is your main tool here. You do not need a tripod. You need something to lean the phone against.
+
+### The Setup
+Prop your phone against a stack of books, a glass, a candle, or anything stable at the right height. For full-length, the phone should be at hip height or lower, pointing slightly up. This elongates the body and gives a cleaner composition.
+
+### What to Lean On
+A wall, a doorframe, a kitchen counter. Pick something clean and use it. The lean reads as casual and confident. Standing in the middle of a room with nothing around you can look staged.
+
+### Self-Timer Flow
+Set a 10-second timer and use burst mode. You will get several frames from one attempt. One of them will be right. This is faster than it sounds.
+
+### The Phone Height Rule
+Below your waist elongates. At chest height is standard. Above your head is unflattering on almost everyone. Start below the waist and adjust from there.
+
+---
+
+## Simple Editing
 
 The goal of editing is not to change how you look. It is to make the photo feel like the best version of what was already there.
 
 [IMAGE: editing-before-after.png — Before and after selfie editing comparison showing subtle improvements in light and contrast]
 
 ### The Apps Worth Using
-**Lightroom Mobile** (free) for consistent color grading. This is your main editing tool.
+**Lightroom Mobile** (free) for consistent colour grading. This is your main editing tool.
 
-**CapCut** for video content. Simple interface, great for reels and TikTok.
+**CapCut** for video content. Simple interface, good for reels and clips.
 
 **Hypic** for quick portrait retouching when you want a polished finish without heavy editing.
 
-**VSCO** for a consistent film-style preset if you want a signature aesthetic across your feed.
+**VSCO** for a consistent film-style preset if you want a signature look across your feed.
 
 ### Your 5-Step Edit in Lightroom
 
@@ -174,130 +197,21 @@ The goal of editing is not to change how you look. It is to make the photo feel 
 That is your base edit. It takes 2 minutes and it works on almost any photo taken in good light.
 
 ### Save a Preset
-Once you find edits you like, save them as a preset in Lightroom. Then you can apply your entire edit to a new photo in one tap. This keeps your feed looking consistent without spending 20 minutes editing every single photo.
+Once you find edits you like, save them as a preset in Lightroom. Then you can apply your entire edit to a new photo in one tap. This keeps your photos looking consistent without spending 20 minutes on every single one.
+
+The Starter Kit presets do this in one tap. But running through it manually first means you actually understand what the preset is doing.
 
 ### What Not to Do
 - Do not smooth skin to the point where texture disappears. It looks digital and unreal.
 - Do not push saturation. It makes skin look orange and backgrounds look fake.
 - Do not use the same filter on every photo if the lighting conditions were different. The results will be inconsistent.
 
-### The Before/After Test
-Before you post anything, zoom in to 100% on your face. Ask: does this still look like a real photo of a real person? If yes, you're done. If it looks retouched, pull back.
+### The Before and After Test
+Before you post anything, zoom in to 100% on your face. Ask: does this still look like a real photo of a real person? If yes, you are done. If it looks retouched, pull back.
 
 ---
 
-## PART 5: Confidence Is the Point
-
-Here's what nobody tells you about personal branding photos.
-
-The technical things, settings, light, angles, editing, are all learnable in a weekend. And yes, they matter.
-
-> The thing that makes someone's content magnetic is not technique. It is presence.
->
-> It is whether you actually showed up in the photo, or whether you were hiding behind your best angle.
-
-### Why This Feels Hard
-
-Most women were never taught that their face is worth looking at. We were taught to shrink. To ask "does this look okay?" before we posted anything. To wait until we lost the weight, or bought the outfit, or had the perfect background.
-
-That conditioning is the real thing standing between you and consistent, visible content.
-
-Not your phone. Not your lighting. Not your jaw angle.
-
-### What Presence Actually Looks Like
-
-Presence is not about looking serious or powerful. It is about looking like you are actually there.
-
-Try this before your next selfie: take 3 slow breaths. Unclench your jaw. Think of something that makes you genuinely happy, a memory, a person, a moment. Then take the photo.
-
-Your face will look completely different.
-
-### Practice Without Judgment
-- [ ] Take 20 selfies this week that you never intend to post. Just practice being in front of the camera.
-- [ ] Look at each photo once and notice what you actually see, not what you fear people will see.
-- [ ] Pick one photo from the 20 that you genuinely like something about. One thing.
-
-The goal is not perfection. The goal is getting comfortable being visible. Because visibility is how people find you, trust you, and buy from you.
-
----
-
-## PART 6: Give the Photo a Job
-
-Let's talk about why any of this matters for your content.
-
-[IMAGE: img-editorial-dark.png — Cohesive Instagram feed with consistent editorial style]
-
-### A Photo Is Not the Whole Strategy
-This is where I want to be honest.
-
-A better selfie can get attention. It can make you feel more confident. It can give you something to post.
-
-But the photo itself is not the strategy.
-
-The strategy is what the photo does next.
-
-Every post needs a job.
-
-It can help people find you. It can help people trust you. It can show proof. It can explain what you believe. It can invite someone to take a next step.
-
-That is the difference between posting randomly and building visibility.
-
-### What Makes Content Perform
-
-**Saves beat likes.** Instagram shows your content to more people when someone saves it. Educational carousels, tips, and how-tos get saved more than anything else.
-
-**The first 3 seconds.** On TikTok and Reels, watch time is everything. If someone scrolls past in the first 3 seconds, the algorithm buries your content. Your hook has to be immediate.
-
-**Consistency over virality.**
-
-> One viral post does not build a business. Showing up regularly, even imperfectly, does.
-
-### The 5 Content Jobs
-
-Before you post the photo, ask:
-
-**Is this a reach post?**  
-This teaches a quick tip, shows a visual result, or gives someone something worth saving.
-
-**Is this a trust post?**  
-This tells a real story, shows the honest middle, or helps someone feel understood.
-
-**Is this a proof post?**  
-This shows a result, a before/after, a DM, a lesson learned, or something real that makes the work believable.
-
-**Is this a buyer post?**  
-This explains what you help with, why your work matters, or what someone needs to believe before they buy.
-
-**Is this an invitation post?**  
-This gives someone a clear next step.
-
-That is the content system.
-
-Not more posting. More purpose.
-
-### Turn One Photo Into a Mini Content System
-
-For every phone photo you take, you can create:
-- 1 feed post with the photo and a caption
-- 1 Reel or TikTok showing the process, before/after, or tip
-- 3 to 5 Stories with behind the scenes, a poll, a question, or the honest thought behind the photo
-- 1 invitation that tells people what you are building, selling, or helping with
-
-That is 5 to 7 pieces of content from one photo session.
-
-You do not need to spend hours in front of a camera.
-
-You need a system.
-
-### Platform-Specific Tips
-- [ ] Instagram: Optimize for saves. Ask yourself "would someone screenshot this?" before you post.
-- [ ] TikTok: Hook in the first 2 seconds. Show your face immediately.
-- [ ] LinkedIn: Use the same selfie but lead with a professional insight or lesson.
-- [ ] Pinterest: Every image needs a text overlay or keyword-rich description to be found.
-
----
-
-## PART 7: Your 7-Day Challenge: First Visible Post
+## 7-Day Challenge
 
 This is where it gets real.
 
@@ -305,14 +219,12 @@ Reading about selfies is one thing. Taking them is another.
 
 Every day for 7 days, you have one simple action. It takes between 10 and 30 minutes.
 
-By the end of the week, you will not just have a better photo.
-
-You will have one visible post and a small content system around it.
+By the end of the week, you will not just have a better photo. You will have one photo you would not have taken a week ago.
 
 Complete each day before moving to the next one.
 
 **Day 1 - Window Light Selfie**
-Take one selfie using natural window light. No ring light. Just you and a window. Use the settings from Part 1. Take at least 10 shots.
+Take one selfie using natural window light. No ring light. Just you and a window. Use the settings from the first chapter. Take at least 10 shots.
 
 **Day 2 - Rule of Thirds**
 Turn on your grid. Frame your eyes on the top third line. Take 5 shots. Notice how differently your face reads in the frame.
@@ -321,152 +233,41 @@ Turn on your grid. Frame your eyes on the top third line. Take 5 shots. Notice h
 Hold your phone 15 degrees above eye level. Tilt your chin down slightly. Take 3 shots and compare them to your eye-level shots from day 2.
 
 **Day 4 - Editing Pass**
-Take your best selfie from days 1 to 3. Open Lightroom Mobile. Apply the 5-step edit from Part 4. Save the result and compare it to the original.
+Take your best selfie from days 1 to 3. Open Lightroom Mobile. Apply the 5-step edit from the editing chapter. Save the result and compare it to the original.
 
-**Day 5 - Confidence Shot**
-Take a selfie while doing something you love. Cooking, reading, working, walking. No posing. Just take the photo while you're in the moment.
+**Day 5 - Mirror or Car**
+Try either a mirror selfie or a car selfie using the techniques from this guide. Take at least 10 shots.
 
 **Day 6 - Caption Writing**
 Write 3 different captions for your day 5 photo.
 
-One reach caption: teach one small thing.
+One short caption: one sentence, what you see or how you felt.
 
-One trust caption: tell the honest story behind the photo.
+One medium caption: two to three sentences, the honest context behind the photo.
 
-One invitation caption: name the next step.
-
-Add one tiny invitation at the end: "If you are building this too, send me a message."
+One longer caption: tell a real story. Where were you. What were you thinking.
 
 **Day 7 - Post It**
-Choose your best photo from this week. Pick your favorite caption. Post it. Then turn the same idea into 3 Stories.
+Choose your best photo from this week. Pick your favourite caption. Post it.
 
 You do not need permission. You do not need it to be perfect. You just need to go.
 
----
-
-## PART 8: Where SSELFIE Fits
-
-Here's where things get interesting.
-
-You have learned how to take the photo.
-
-Now I want to show you what happens when the photo becomes part of a real visibility system.
-
-[IMAGE: feed-post-1.png — AI-enhanced selfie gallery showing before and after brand photo results]
-
-### The SSELFIE Path
-
-The photo helps people recognize you.
-
-Your message helps people understand you.
-
-Your content rhythm helps people trust you.
-
-Your offer gives people a next step.
-
-That is the path.
-
-Not just take a selfie and post it.
-
-Take the photo. Know what to say. Show up with a rhythm. Give your visibility somewhere to go.
-
-### What Maya Does
-Maya is the AI at the heart of SSELFIE Studio. She helps turn your selfies, brand direction, and content needs into professional brand photos, content ideas, captions, and next steps.
-
-Not stock photos. Not someone else's face. Yours.
-
-Paris cafe. Studio portrait. Editorial magazine shoot. Coastal lifestyle. Business headshot. Maya generates all of it from a single selfie, in minutes.
-
-### Why This Changes Everything
-
-The traditional path to professional brand photos looks like this:
-
-Hire a photographer (budget: 800 to 2,000 euros). Book a studio or location. Schedule a shoot day. Wait 2 to 3 weeks for edits. Get 30 to 50 photos. Repeat every 6 months when your content needs refreshing.
-
-The SSELFIE path looks like this:
-
-Take a photo on your phone. Open Maya. Create brand visuals, caption ideas, and content directions faster. Repeat whenever you need a new week of content.
-
-### How Maya Works
-
-1. **You take a photo** using the techniques from this guide. Natural light. Good angle. Relaxed expression.
-
-2. **You upload it to Maya** in SSELFIE Studio. She reads your face, your style, and your brand if you have set up your Brand Profile.
-
-3. **You choose a scene or describe what you want.** "Editorial magazine portrait with warm studio lighting." "Lifestyle photo at a Parisian cafe." "Professional headshot against a minimal white background."
-
-4. **Maya generates your brand photo.** Usually under 2 minutes.
-
-5. **You turn it into content.** Photo, caption, story, and next step.
-
-### The Result
-
-[IMAGE: feed-post-3.png — Sandra's brand photo with consistent editorial style and cohesive aesthetic]
-
-A consistent, professional visual brand that looks like you hired a photographer for every single post.
-
-Because the photos are all generated from your face, they have a visual consistency that stock photos can never achieve. Your audience starts to recognize your aesthetic. Your feed looks intentional. Your brand feels real.
-
-### What Maya Is Not
-
-Maya does not replace you. She amplifies you.
-
-The selfie she works from has to be good. The better your selfie, the better the result. This guide exists because the input matters. And now you know how to give Maya exactly what she needs.
-
-### Try Maya Free
-
-If you are not already inside SSELFIE Studio, you can join and generate your first brand photos today.
-
-[Open Maya in Studio](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)
+You have done the hard part. Seven days of real photos. The next step is making them easier to edit and use.
 
 ---
 
-## You Are Ready
+## Your Next Step
 
-You have everything you need.
+The Starter Kit takes what you just learned and gives you everything to do it faster.
 
-Good light. The right settings. An angle that works. A simple edit. And now, an AI that can take one selfie and turn it into a month of content.
+Presets that match the edits in this guide. One tap in Lightroom Mobile and the look is done.
 
-But here is the thing I want you to remember.
+Editing walkthroughs so you can see exactly what each adjustment does and why.
 
-None of the tools matter if you do not show up with a direction.
+A 7-day content starter that turns one phone session into a full week of posts. You show up once. The content keeps going.
 
-The women who build real audiences, real businesses, and real financial freedom are not the ones with the best cameras or the most followers. They are the ones who keep showing up, week after week, imperfectly and consistently, until the momentum is undeniable.
+[Get the Starter Kit](/starter-kit)
 
-You do not need more followers to start. You need to start to get more followers.
+$37 · One time. No subscription. Yours to keep.
 
-Take the photo. Write the caption. Tell the story. Give people a next step.
-
-I am rooting for you.
-
-Sandra x
-
----
-
-### Here's Where To Go Next
-
-Here's the thing.
-
-You've just learned everything you need to take a better phone photo.
-
-But a better photo on its own is not a brand.
-
-It is a start.
-
-The women I know who are actually building audiences — they're not winging it. They've got a system. They know who they're talking to. They know what to say. They show up consistently because they're not spending hours staring at a blank caption box.
-
-If you want the next practical step, start with the Starter Kit. It gives you the guide, presets, and a simple 7-day content starter so your first better photo does not just sit in your camera roll.
-
-If you want the full path, go to the Masterclass. That is where the selfie work turns into the full visibility, content, offer, and showing-up system.
-
-If you already know the photo part is easier now but the message still feels unclear, the Brand Strategy Pack is the clarity layer: who you help, what to say, and how to turn one photo into content that sounds like you.
-
-Ready?
-
-[Get the Starter Kit](/checkout/starter-kit)
-
-[See the Masterclass](/masterclass)
-
-[Get the Brand Strategy Pack](/checkout/brand-strategy-pack)
-
-[Join Studio Membership](/checkout/membership)
+Questions? Reply to your welcome email.

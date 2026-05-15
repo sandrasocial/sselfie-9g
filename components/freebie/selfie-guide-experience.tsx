@@ -246,28 +246,25 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     ],
   },
   {
-    match: /audience|social|visibility|grow/i,
-    eyebrow: "Distribution",
-    title: "One shoot can fuel a lot more than one post",
-    copy: "When the visuals are coherent, one selfie becomes a post, a reel, stories, and the seed of a real brand system.",
-    items: [
-      {
-        src: "/images/selfie-guide/scandinavian-light-dreamy-collage.png",
-        alt: "Moodboard collage from the original guide showing Scandinavian light and dreamy textures for a cohesive visual direction",
-        caption: "A single visual direction travels well across formats.",
-        width: 432,
-        height: 432,
-        layout: "square",
-      },
-      {
-        src: "/images/selfie-guide/nordic-deep-urban-collage.png",
-        alt: "Moodboard collage from the original guide showing Nordic deep urban styling references and textures",
-        caption: "The content feels more premium when the aesthetic is consistent.",
-        width: 432,
-        height: 432,
-        layout: "square",
-      },
-    ],
+    match: /mirror/i,
+    eyebrow: "Mirror Selfies",
+    title: "Distance, placement, no flash",
+    copy: "Done right, a mirror selfie shows your outfit, your room, and your face in one frame. Two arm-lengths back. Flash off. Window light on.",
+    items: [],
+  },
+  {
+    match: /car/i,
+    eyebrow: "Car Selfies",
+    title: "The most underrated location you have",
+    copy: "Soft diffused window light, clean neutral background, no clutter. Overcast day, parked in shade, phone above eye level.",
+    items: [],
+  },
+  {
+    match: /full.?body/i,
+    eyebrow: "Full-Body Selfies",
+    title: "The self-timer is your tripod",
+    copy: "You do not need a tripod. You need something to lean the phone against, burst mode, and hip-height placement.",
+    items: [],
   },
   {
     match: /7[-\s]?day|challenge/i,
@@ -467,9 +464,9 @@ const PHONE_TIP: Record<GuidePhoneType, string> = {
 }
 
 const FREQUENCY_TIP: Record<GuidePostingFrequency, string> = {
-  never: "Pick one selfie from this chapter and treat it as your first visibility rep. No pressure for perfect.",
-  sometimes: "Batch two selfies now and save one as your backup post for the next low-energy day.",
-  regularly: "Reuse this chapter's setup as your weekly baseline so your feed stays consistent without overthinking.",
+  never: "Pick one window. Take ten shots. You do not need to post any of them yet. Just start.",
+  sometimes: "Take two photos today. Save one as your backup for next time.",
+  regularly: "Keep the same setup as your weekly baseline. Consistency matters more than perfection.",
 }
 
 function getQuickWinTip(chapterTitle: string, personalization: GuidePersonalization): string {
@@ -634,7 +631,6 @@ interface SelfieGuideExperienceProps {
   guideMarkdown: string
   checkoutSessionId?: string
   brandStrategyBumpSelected?: boolean
-  /** When true (bundle, prior BSP purchase, etc.), hide hard sell to checkout Brand Strategy. */
   hasBrandStrategyAccess?: boolean
   token?: string
 }
@@ -675,8 +671,7 @@ export default function SelfieGuideExperience({
   const currentChapterTitle = normalizeChapterTitle(currentChapter.title)
   const currentChapterComparable = normalizeComparableText(currentChapterTitle)
   const showSevenDayChallenge = /7[-\s]?day|challenge/i.test(currentChapter.title)
-  const isMayaChapter = activeChapterIndex === 7 || /maya/i.test(currentChapter.title)
-  const isEditChapter = activeChapterIndex === 3 || /edit/i.test(currentChapter.title)
+  const isEditChapter = /edit/i.test(currentChapter.title)
   const currentChapterMood = getChapterMood(currentChapter.title)
   const partNumber = activeChapterIndex + 1
   const quickWinTip = personalization ? getQuickWinTip(currentChapterTitle, personalization) : null
@@ -820,14 +815,10 @@ export default function SelfieGuideExperience({
           className="prose-link"
           onClick={() => {
             const destination = href || "#"
-            if (destination.startsWith("/checkout/")) {
+            if (destination.startsWith("/checkout/") || destination === "/starter-kit") {
               trackGuideUpsellClick(
                 destination,
-                destination.includes("starter-kit")
-                  ? "starter_kit"
-                  : destination.includes("brand-strategy-pack")
-                    ? "brand_strategy_pack"
-                    : "checkout",
+                destination.includes("starter-kit") ? "starter_kit" : "checkout",
               )
             }
           }}
@@ -870,7 +861,7 @@ export default function SelfieGuideExperience({
         {/* ── Sticky top bar ────────────────────────── */}
         <header className="sg-topbar">
           <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-          <span className="sg-topbar-label">First Visible Post Guide · Complete</span>
+          <span className="sg-topbar-label">Selfie Guide · Complete</span>
         </header>
 
         {/* ── Completion card ───────────────────────── */}
@@ -879,20 +870,19 @@ export default function SelfieGuideExperience({
             <p className="sg-eyebrow">You did it</p>
             <h1 className={`sg-complete-title ${cormorant.className}`}>You have a starting point.</h1>
             <p className="sg-complete-sub">
-              Now the next step is making the rest of your content connect: what to say, how to
-              show up, and what people can do next.
+              Seven days of real photos done. The next step is making them easier to edit and use.
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
-              <Link href="/starter-kit" className="sg-cta-primary">
-                See Starter Kit
-              </Link>
-              <Link href="/starter-kit" className="sg-cta-secondary">
-                Start with Starter Kit
+              <Link
+                href="/starter-kit"
+                className="sg-cta-primary"
+                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+              >
+                Get the Starter Kit
               </Link>
             </div>
-            <p className="sg-complete-member">
-              Already a Studio member?{" "}
-              <Link href="/studio?tab=maya" className="prose-link">Open Maya →</Link>
+            <p className="sg-funnel-price" style={{ marginTop: "14px", fontSize: "12px", color: "rgba(200,196,187,0.6)" }}>
+              $37 · One time. No subscription.
             </p>
           </div>
         </main>
@@ -969,7 +959,7 @@ export default function SelfieGuideExperience({
       {/* ── Sticky top bar (replaces sidebar) ───────── */}
       <header className="sg-topbar">
         <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-        <span className="sg-topbar-label">First Visible Post Guide</span>
+        <span className="sg-topbar-label">Selfie Guide</span>
       </header>
 
       {/* ── Main ────────────────────────────────────── */}
@@ -989,20 +979,20 @@ export default function SelfieGuideExperience({
           <div className="sg-hero-gradient" />
 
           <div className="sg-hero-content">
-            <p className="sg-eyebrow">Free Guide · SSELFIE Path</p>
+            <p className="sg-eyebrow">Free Selfie Guide</p>
             <h1 className={`sg-hero-title ${cormorant.className}`}>
-              Your First<br />Visible Post
+              Better selfies.<br />With your iPhone.
             </h1>
             <p className={`sg-hero-for ${cormorant.className}`}>
               Built for {firstName}
             </p>
             <p className="sg-hero-sub">
-              Take one phone photo, write the caption, and know what the post is supposed to do next.
+              Mirror selfies, car selfies, window light, and simple editing. Everything you need to take a better phone photo.
             </p>
             <div className="sg-hero-badges">
-              <span>Phone photo basics</span>
+              <span>iPhone selfie tips</span>
               <span>7-day challenge</span>
-              <span>Content system inside</span>
+              <span>Mirror, car, full-body</span>
             </div>
           </div>
 
@@ -1118,13 +1108,6 @@ export default function SelfieGuideExperience({
             </div>
           )}
 
-          {/* Maya moment (if this is the Maya chapter) */}
-          {isMayaChapter && (
-            <div className="sg-prose">
-              <MayaMoment token={token} />
-            </div>
-          )}
-
           {/* Mark complete + navigation */}
           <div className="sg-chapter-nav">
             <button
@@ -1155,52 +1138,28 @@ export default function SelfieGuideExperience({
         {/* ── Funnel CTA ────────────────────────────── */}
         <section className="sg-funnel">
           <div className="sg-funnel-inner">
-            {hasBrandStrategyAccess && !brandStrategyBumpSelected ? (
-              <>
-                <p className="sg-eyebrow">Brand Strategy</p>
-                <h3 className={`sg-funnel-title ${cormorant.className}`}>You&apos;re already covered</h3>
-                <p className="sg-funnel-copy">
-                  Your account includes Brand Strategy access. Open Academy to continue your setup or revisit your
-                  strategy anytime.
-                </p>
-                <div className="sg-funnel-ctas">
-                  <Link
-                    href="/academy"
-                    className="sg-cta-primary"
-                    onClick={() => trackGuideUpsellClick("/academy", "academy")}
-                  >
-                    Open Academy
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="sg-eyebrow">Next step</p>
-                <h3 className={`sg-funnel-title ${cormorant.className}`}>
-                  Keep the path clear
-                </h3>
-                <p className="sg-funnel-copy">
-                  The guide gives you the first visible post. The Starter Kit gives you the first paid
-                  implementation step with presets, quick-start, and a 7-day content starter.
-                </p>
-                <div className="sg-funnel-ctas">
-                  <Link
-                    href="/starter-kit"
-                    className="sg-cta-primary"
-                    onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
-                  >
-                    Start with Starter Kit
-                  </Link>
-                  <Link
-                    href="/masterclass"
-                    className="sg-cta-secondary"
-                    onClick={() => trackGuideUpsellClick("/masterclass", "masterclass")}
-                  >
-                    See Masterclass
-                  </Link>
-                </div>
-              </>
-            )}
+            <p className="sg-eyebrow">Starter Kit</p>
+            <h3 className={`sg-funnel-title ${cormorant.className}`}>
+              One session. Seven days of content.
+            </h3>
+            <p className="sg-funnel-copy">
+              The Starter Kit takes what you just learned and gives you everything to do it faster.
+              Presets that match the edits in this guide. One tap in Lightroom Mobile and the look is done.
+              Editing walkthroughs so you can see exactly what each adjustment does and why.
+              A 7-day content starter that turns one phone session into a full week of posts. You show up once. The content keeps going.
+            </p>
+            <p className="sg-funnel-price">$37 · One time.</p>
+            <div className="sg-funnel-ctas">
+              <Link
+                href="/starter-kit"
+                className="sg-cta-primary"
+                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+              >
+                Get the Starter Kit
+              </Link>
+            </div>
+            <p className="sg-funnel-note">No subscription. Yours to keep.</p>
+            <p className="sg-funnel-quiet">Questions? Reply to your welcome email.</p>
           </div>
         </section>
       </main>
@@ -2162,6 +2121,29 @@ export default function SelfieGuideExperience({
         .sg-cta-primary.is-disabled {
           opacity: 0.72;
           cursor: wait;
+        }
+
+        .sg-funnel-price {
+          margin: 0 0 20px;
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+        }
+
+        .sg-funnel-note {
+          margin-top: 14px;
+          font-size: 13px;
+          font-weight: 300;
+          color: var(--c-smoke);
+        }
+
+        .sg-funnel-quiet {
+          margin-top: 6px;
+          font-size: 12px;
+          font-weight: 300;
+          color: rgba(200, 196, 187, 0.55);
         }
 
         .sg-funnel-status {
