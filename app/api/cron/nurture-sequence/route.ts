@@ -10,7 +10,6 @@ import {
 import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
-import { VISIBILITY_LIFECYCLE_SEQUENCES } from "@/lib/email/visibility-lifecycle-sequences"
 import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/freebie-guide-day1-light-tip"
 import { generateFreebieGuideDay3EditBridgeEmail } from "@/lib/email/templates/freebie-guide-day3-edit-bridge"
 import { generateFreebieGuideDay5StoryEmail } from "@/lib/email/templates/freebie-guide-day5-story"
@@ -738,7 +737,6 @@ export async function GET(request: Request) {
       masterclassDay10: results.masterclassDay10,
       totalSent,
       totalFailed,
-      visibilityLifecycleSequencesConfigured: VISIBILITY_LIFECYCLE_SEQUENCES.map(sequence => sequence.id),
     })
 
     return NextResponse.json({
@@ -746,7 +744,6 @@ export async function GET(request: Request) {
       results,
       totalSent,
       totalFailed,
-      visibilityLifecycleSequencesConfigured: VISIBILITY_LIFECYCLE_SEQUENCES.map(sequence => sequence.id),
       errors: results.errors.slice(0, 20),
     })
   } catch (error: unknown) {
