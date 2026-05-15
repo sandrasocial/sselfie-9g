@@ -45,6 +45,7 @@ async function getGuideMarkdown() {
       .replace(/\]\(#\)/g, "](/masterclass)")
       .replace(/\]\(\/studio\?tab=maya\)/g, "](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)")
       .replace(/\]\(\/brand-strategy\)/g, "](/masterclass)")
+      .replace(/\]\(\/checkout\/brand-strategy-pack\)/g, "](/starter-kit)")
     return cachedGuideMarkdown
   } catch (error) {
     console.error("[selfie-guide access] failed to load markdown:", error)

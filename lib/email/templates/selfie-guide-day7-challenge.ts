@@ -1,6 +1,7 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
+import { starterKitLandingUrl } from "./selfie-education-links"
 
 export interface SelfieGuideDay7ChallengeParams {
   firstName?: string
@@ -18,9 +19,9 @@ export function generateSelfieGuideDay7ChallengeEmail({
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
-  const trackedAccessUrl = buildRevenueEmailLink(accessUrl, {
+  const trackedStarterKitUrl = buildRevenueEmailLink(starterKitLandingUrl(), {
     campaign: "selfie_guide_day7_challenge",
-    content: "start_challenge",
+    content: "starter_kit",
   })
 
   const bodyHtml = `
@@ -35,7 +36,7 @@ export function generateSelfieGuideDay7ChallengeEmail({
     )}
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the guide and start there.</p>
     <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">This is the part that changes things.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Start the 7-Day Challenge", trackedAccessUrl)}</div>
+    <div style="margin:26px 0 22px;">${renderStoneButton("See the Starter Kit", trackedStarterKitUrl)}</div>
   `
 
   const html = renderStoneShell({
@@ -65,7 +66,7 @@ Open the guide and start there.
 
 This is the part that changes things.
 
-Start the 7-Day Challenge: ${trackedAccessUrl}
+See the Starter Kit: ${trackedStarterKitUrl}
 
 Reply and tell me how Day 1 goes. I want to know.
 Sandra x`

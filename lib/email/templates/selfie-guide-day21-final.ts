@@ -7,7 +7,7 @@ export interface SelfieGuideDay21FinalParams {
   firstName?: string
   recipientEmail: string
   accessUrl: string
-  expiryDate: string
+  expiryDate?: string
 }
 
 export function generateSelfieGuideDay21FinalEmail({

@@ -156,20 +156,28 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "The guide reads better when the lesson is visual. Use these references to see exactly how light changes the whole mood of a selfie.",
     items: [
       {
-        src: "/images/selfie-guide/notebook-window-closeup.jpg",
-        alt: "Sandra reading beside a window in soft natural light with clean skin tones and gentle shadow",
+        src: "/images/selfie-guide/sg-window-01.png",
+        alt: "Sandra in soft window light showing the natural, flattering quality of indirect daylight",
         caption: "Soft daylight gives shape without harshness.",
-        width: 692,
-        height: 1229,
+        width: 1024,
+        height: 1536,
         layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/ring-light-setup.jpg",
-        alt: "Simple ring light setup on a neutral wall background",
-        caption: "A ring light works when it stays directly in front of you.",
-        width: 1272,
-        height: 850,
-        layout: "landscape",
+        src: "/images/selfie-guide/sg-window-02.png",
+        alt: "Sandra using window light for a selfie, demonstrating frontal placement relative to the light source",
+        caption: "Face the window directly. Stand back a little.",
+        width: 1024,
+        height: 1536,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-window-03.png",
+        alt: "Sandra in window light showing how natural indirect light creates even, flattering skin tones",
+        caption: "No ring light required.",
+        width: 1024,
+        height: 1536,
+        layout: "portrait",
       },
     ],
   },
@@ -180,19 +188,19 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "Angles and posture should support your expression, not overpower it. The visual goal is relaxed control.",
     items: [
       {
-        src: "/images/selfie-guide/studio-black-portrait.png",
-        alt: "Sandra in a black long-sleeve top seated in soft studio light",
-        caption: "Shoulders relaxed. Chin soft. Eyes steady.",
-        width: 645,
-        height: 1398,
+        src: "/images/selfie-guide/sg-angles-01.png",
+        alt: "Sandra taking a mirror selfie with the phone held above eye level, showing the flattering 15-degree angle in practice",
+        caption: "Phone slightly above eye level. Chin softly down.",
+        width: 1024,
+        height: 1536,
         layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/mirror-selfie-closeup.jpg",
-        alt: "Close-up mirror selfie of Sandra holding her phone near her face",
-        caption: "Micro-adjustments are what make a selfie feel expensive.",
-        width: 908,
-        height: 1613,
+        src: "/images/selfie-guide/sg-angles-02.png",
+        alt: "Four-panel pose guide showing Turn 45 degrees, Shift your weight, Use a prop, and Move between shots",
+        caption: "Four small shifts. None of them require posing.",
+        width: 1122,
+        height: 1402,
         layout: "portrait",
       },
     ],
@@ -204,19 +212,35 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "The best edit still looks like skin, daylight, and a human being. Keep it close to reality.",
     items: [
       {
-        src: "/images/selfie-guide/laptop-lifestyle.png",
-        alt: "Sandra smiling while seated with a laptop in a warm interior",
-        caption: "A polished image still needs real texture and expression.",
-        width: 324,
-        height: 324,
-        layout: "square",
+        src: "/images/selfie-guide/sg-editing-01.png",
+        alt: "Four editing apps worth using: Lightroom Mobile, CapCut, Hypic, and VSCO",
+        caption: "Four tools. Lightroom for everything.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/cloudy-day-portrait.jpg",
-        alt: "Sandra standing outdoors on an overcast day in front of a mountain landscape",
-        caption: "Flat light can become elegant with the right edit.",
-        width: 576,
-        height: 1024,
+        src: "/images/selfie-guide/sg-editing-02.png",
+        alt: "Your 5-step Lightroom edit showing Exposure, Contrast, Highlights, Shadows, and Warmth",
+        caption: "Five adjustments. Two minutes.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-editing-03.png",
+        alt: "Save a preset in Lightroom: edit once and apply your entire look to any new photo in one tap",
+        caption: "Edit once. Apply forever.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-editing-04.png",
+        alt: "What not to do when editing — over-smoothing, saturation, inconsistent filters",
+        caption: "Keep the skin real. Pull back before you post.",
+        width: 1122,
+        height: 1402,
         layout: "portrait",
       },
     ],
@@ -246,26 +270,146 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     ],
   },
   {
-    match: /audience|social|visibility|grow/i,
-    eyebrow: "Distribution",
-    title: "One shoot can fuel a lot more than one post",
-    copy: "When the visuals are coherent, one selfie becomes a post, a reel, stories, and the seed of a real brand system.",
+    match: /mirror/i,
+    eyebrow: "Mirror Selfies",
+    title: "Distance, placement, no flash",
+    copy: "Done right, a mirror selfie shows your outfit, your room, and your face in one frame. Two arm-lengths back. Flash off. Window light on.",
     items: [
       {
-        src: "/images/selfie-guide/scandinavian-light-dreamy-collage.png",
-        alt: "Moodboard collage from the original guide showing Scandinavian light and dreamy textures for a cohesive visual direction",
-        caption: "A single visual direction travels well across formats.",
-        width: 432,
-        height: 432,
-        layout: "square",
+        src: "/images/selfie-guide/sg-mirror-01.png",
+        alt: "Sandra taking a mirror selfie two arm-lengths back, showing full outfit framing with clean background",
+        caption: "Two arm-lengths back. Full outfit in frame.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/nordic-deep-urban-collage.png",
-        alt: "Moodboard collage from the original guide showing Nordic deep urban styling references and textures",
-        caption: "The content feels more premium when the aesthetic is consistent.",
-        width: 432,
-        height: 432,
-        layout: "square",
+        src: "/images/selfie-guide/sg-mirror-02.png",
+        alt: "Sandra demonstrating mirror selfie phone placement at chest height with flash off and window light on",
+        caption: "Flash off. Window light only.",
+        width: 1086,
+        height: 1448,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-mirror-03.png",
+        alt: "Mirror selfie showing clean room context with Sandra slightly angled to the mirror",
+        caption: "Show just enough room to give context.",
+        width: 1086,
+        height: 1448,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-mirror-04.png",
+        alt: "Sandra in a mirror selfie with natural window light falling across her face",
+        caption: "Light on the face, not the mirror.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-mirror-05.png",
+        alt: "Full-length mirror selfie of Sandra showing outfit detail and clean background",
+        caption: "One shot. Outfit, room, face.",
+        width: 1122,
+        height: 1402,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-mirror-06.png",
+        alt: "Sandra mirror selfie with phone held at a natural angle, showing relaxed hand placement",
+        caption: "Relaxed hold. No white-knuckle grip.",
+        width: 1086,
+        height: 1448,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /car/i,
+    eyebrow: "Car Selfies",
+    title: "The most underrated location you have",
+    copy: "Soft diffused window light, clean neutral background, no clutter. Overcast day, parked in shade, phone above eye level.",
+    items: [
+      {
+        src: "/images/selfie-guide/sg-car-01.png",
+        alt: "Sandra taking a car selfie with soft diffused light through the car window, phone held above eye level",
+        caption: "Diffused window light. No clutter. Clean result.",
+        width: 941,
+        height: 1672,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-car-02.png",
+        alt: "Car selfie of Sandra with the steering wheel visible, showing a natural candid look",
+        caption: "Wrist on the wheel. Looks real.",
+        width: 941,
+        height: 1672,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-car-03.png",
+        alt: "Sandra in a car selfie using overcast natural light through the windshield for an even, flattering tone",
+        caption: "Overcast sky through the glass. Natural softbox.",
+        width: 941,
+        height: 1672,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-car-04.png",
+        alt: "Car selfie showing Sandra with seatbelt on, parked, looking candid and approachable",
+        caption: "Seatbelt on reads candid. Either way works.",
+        width: 1024,
+        height: 1536,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-car-05.png",
+        alt: "Sandra photographing herself in the car with the window frame providing a natural crop",
+        caption: "The car frame does the editorial work for you.",
+        width: 1024,
+        height: 1536,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-car-06.png",
+        alt: "Close car selfie of Sandra with even window light and a neutral headrest background",
+        caption: "Neutral background. Even light. Zero effort.",
+        width: 1024,
+        height: 1536,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /full.?body/i,
+    eyebrow: "Full-Body Selfies",
+    title: "The self-timer is your tripod",
+    copy: "You do not need a tripod. You need something to lean the phone against, burst mode, and hip-height placement.",
+    items: [
+      {
+        src: "/images/selfie-guide/sg-fullbody-01.jpg",
+        alt: "Sandra full-body selfie using self-timer with phone propped at hip height showing a clean full-length result",
+        caption: "Phone at hip height. Timer set. Burst mode on.",
+        width: 1916,
+        height: 3406,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-fullbody-02.jpg",
+        alt: "Full-body selfie of Sandra leaning against a wall showing natural posture and clean vertical framing",
+        caption: "Lean into something. It looks intentional.",
+        width: 2268,
+        height: 4032,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/sg-fullbody-03.jpg",
+        alt: "Sandra full-body selfie with phone propped against a stable object showing the elongating effect of lower camera placement",
+        caption: "Below the waist elongates. Above the head does not.",
+        width: 1763,
+        height: 3135,
+        layout: "portrait",
       },
     ],
   },
@@ -276,19 +420,19 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "The challenge should look achievable, not abstract. Use the cards below as your tracker.",
     items: [
       {
-        src: "/images/selfie-guide/mirror-selfie-white-cardigan.jpg",
-        alt: "Mirror selfie of Sandra in a white cardigan showing a simple, repeatable phone practice shot",
-        caption: "Day 1 starts with a phone, a window, and one repeatable frame.",
-        width: 454,
-        height: 807,
+        src: "/images/selfie-guide/sg-challenge-hero.png",
+        alt: "Sandra holding her phone ready for a 7-day selfie challenge photo session",
+        caption: "Seven days. One photo each. That is it.",
+        width: 1086,
+        height: 1448,
         layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/alpine-rock-portrait.jpg",
-        alt: "Sandra seated on a rock overlooking the fjord in natural outdoor light",
-        caption: "Simple location. Strong result.",
-        width: 681,
-        height: 1210,
+        src: "/images/selfie-guide/sg-challenge-01.png",
+        alt: "Sandra taking a window light selfie for Day 1 of the 7-day selfie challenge",
+        caption: "Day 1 starts with a window and ten shots.",
+        width: 1122,
+        height: 1402,
         layout: "portrait",
       },
     ],
@@ -297,25 +441,53 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
 
 const SETTINGS_WALKTHROUGH_IMAGES: readonly GuideImage[] = [
   {
-    src: "/images/selfie-guide/settings-original-page-1.png",
-    alt: "Original settings walkthrough page 1 showing the iPhone Camera menu and recommended entry point",
-    caption: "Step 1",
-    width: 1241,
-    height: 1755,
+    src: "/images/selfie-guide/sg-settings-01.png",
+    alt: "Steps 01–02: Open Settings app, scroll down and tap Camera",
+    caption: "01–02 · Go to Settings → Camera",
+    width: 1055,
+    height: 1491,
   },
   {
-    src: "/images/selfie-guide/settings-original-page-2.png",
-    alt: "Original settings walkthrough page 2 showing grid and framing controls from the guide",
-    caption: "Step 2",
-    width: 1241,
-    height: 1755,
+    src: "/images/selfie-guide/sg-settings-02.png",
+    alt: "Steps 03–04: Tap Formats then tap Preserve Settings inside Camera settings",
+    caption: "03–04 · Formats + Preserve Settings",
+    width: 1055,
+    height: 1491,
   },
   {
-    src: "/images/selfie-guide/settings-original-page-3.png",
-    alt: "Original settings walkthrough page 3 showing the final camera toggles from the guide",
-    caption: "Step 3",
-    width: 1241,
-    height: 1755,
+    src: "/images/selfie-guide/sg-settings-03.png",
+    alt: "Step 05: Back in main Camera settings, check Record Video and Photographic Styles",
+    caption: "05 · Back in Camera Settings",
+    width: 1055,
+    height: 1491,
+  },
+  {
+    src: "/images/selfie-guide/sg-settings-04.png",
+    alt: "Step 06: Turn Grid, Mirror Front Camera, Smart HDR ON — turn Live Photos and View Outside the Frame OFF",
+    caption: "06 · Turn ON / Turn OFF",
+    width: 1055,
+    height: 1491,
+  },
+  {
+    src: "/images/selfie-guide/sg-settings-05.png",
+    alt: "Step 07: iPhone 15 and 16 users — Photographic Styles, Action Mode, Portrait Mode",
+    caption: "07 · iPhone 15 & 16 Users",
+    width: 1055,
+    height: 1491,
+  },
+  {
+    src: "/images/selfie-guide/sg-settings-06.png",
+    alt: "Step 08: Quick Camera Access — swipe left from lock screen or set shortcut via Accessibility",
+    caption: "08 · Quick Camera Access",
+    width: 1055,
+    height: 1491,
+  },
+  {
+    src: "/images/selfie-guide/sg-settings-07.png",
+    alt: "Step 09: Video format — go to Settings → Camera → Record Video and select 1080p HD at 30 fps",
+    caption: "09 · Video Format: 1080p at 30fps",
+    width: 1055,
+    height: 1491,
   },
 ] as const
 
@@ -358,26 +530,44 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   "window-lighting-setup.png": {
     label: "THE WINDOW TECHNIQUE",
     caption: "Face the light, stand back a little, and let the phone do less work.",
-    src: "/images/selfie-guide/window-lighting-setup.png",
+    src: "/images/selfie-guide/sg-window-01.png",
     alt: "Sandra taking a selfie in soft window light with her phone raised at a flattering angle",
   },
   "angle-comparison-grid.png": {
     label: "ANGLE GUIDE",
-    caption: "15 degrees above eye level. That's the range to remember.",
-    src: "/images/selfie-guide/angle-comparison-grid.png",
-    alt: "Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions",
+    caption: "Phone slightly above eye level, chin softly down. That is the combination.",
+    src: "/images/selfie-guide/sg-angles-01.png",
+    alt: "Sandra taking a mirror selfie with the phone held above eye level, demonstrating the flattering 15-degree angle",
   },
   "pose-guide-grid.png": {
     label: "NATURAL POSES",
-    caption: "Four small shifts that stop the shot from feeling stiff.",
-    src: "/images/selfie-guide/pose-guide-grid.png",
-    alt: "Grid of four natural portrait pose variations for selfie practice",
+    caption: "Turn 45°. Shift your weight. Use a prop. Move between shots.",
+    src: "/images/selfie-guide/sg-angles-02.png",
+    alt: "Four-panel grid showing natural pose variations: Turn 45 degrees, Shift your weight, Use a prop, Move between shots",
+  },
+  "editing-apps.png": {
+    label: "THE APPS",
+    caption: "Four tools. Lightroom for everything. The others when you need them.",
+    src: "/images/selfie-guide/sg-editing-01.png",
+    alt: "Four editing apps worth using: Lightroom Mobile, CapCut, Hypic, and VSCO with descriptions",
   },
   "editing-before-after.png": {
-    label: "EDITING BEFORE & AFTER",
-    caption: "Small edits are enough. Keep the skin real and the light believable.",
-    src: "/images/selfie-guide/editing-before-after.png",
-    alt: "Before and after selfie editing comparison showing subtle improvements in light and contrast",
+    label: "YOUR 5-STEP EDIT",
+    caption: "Exposure, Contrast, Highlights, Shadows, Warmth. Two minutes. Done.",
+    src: "/images/selfie-guide/sg-editing-02.png",
+    alt: "Your 5-step edit in Lightroom Mobile showing the exact slider values for each adjustment",
+  },
+  "editing-preset.png": {
+    label: "SAVE A PRESET",
+    caption: "Edit once. Apply in one tap. Same look, every photo.",
+    src: "/images/selfie-guide/sg-editing-03.png",
+    alt: "Save a preset in Lightroom: edit once and apply your entire look to any new photo in one tap",
+  },
+  "editing-what-not.png": {
+    label: "WHAT NOT TO DO",
+    caption: "Over-smoothed, over-saturated, over-filtered. Pull back before you post.",
+    src: "/images/selfie-guide/sg-editing-04.png",
+    alt: "What not to do when editing: over-smoothing, pushing saturation, and inconsistent filters — with a before/after comparison",
   },
   "feed-post-3.png": {
     label: "THE RESULT",
@@ -467,9 +657,9 @@ const PHONE_TIP: Record<GuidePhoneType, string> = {
 }
 
 const FREQUENCY_TIP: Record<GuidePostingFrequency, string> = {
-  never: "Pick one selfie from this chapter and treat it as your first visibility rep. No pressure for perfect.",
-  sometimes: "Batch two selfies now and save one as your backup post for the next low-energy day.",
-  regularly: "Reuse this chapter's setup as your weekly baseline so your feed stays consistent without overthinking.",
+  never: "Pick one window. Take ten shots. You do not need to post any of them yet. Just start.",
+  sometimes: "Take two photos today. Save one as your backup for next time.",
+  regularly: "Keep the same setup as your weekly baseline. Consistency matters more than perfection.",
 }
 
 function getQuickWinTip(chapterTitle: string, personalization: GuidePersonalization): string {
@@ -493,7 +683,7 @@ function getQuickWinTip(chapterTitle: string, personalization: GuidePersonalizat
 function ChapterImages({ spec }: { spec: ChapterMoodSpec }) {
   return (
     <div className="chapter-images">
-      {spec.items.slice(0, 2).map(image => {
+      {spec.items.map(image => {
         const isWide = image.layout === "feature" || image.layout === "feature-wide" || image.layout === "landscape"
         return (
           <figure key={image.src} className={`chapter-img-item ${isWide ? "is-wide" : "is-narrow"}`}>
@@ -634,7 +824,6 @@ interface SelfieGuideExperienceProps {
   guideMarkdown: string
   checkoutSessionId?: string
   brandStrategyBumpSelected?: boolean
-  /** When true (bundle, prior BSP purchase, etc.), hide hard sell to checkout Brand Strategy. */
   hasBrandStrategyAccess?: boolean
   token?: string
 }
@@ -675,8 +864,7 @@ export default function SelfieGuideExperience({
   const currentChapterTitle = normalizeChapterTitle(currentChapter.title)
   const currentChapterComparable = normalizeComparableText(currentChapterTitle)
   const showSevenDayChallenge = /7[-\s]?day|challenge/i.test(currentChapter.title)
-  const isMayaChapter = activeChapterIndex === 7 || /maya/i.test(currentChapter.title)
-  const isEditChapter = activeChapterIndex === 3 || /edit/i.test(currentChapter.title)
+  const isEditChapter = /edit/i.test(currentChapter.title)
   const currentChapterMood = getChapterMood(currentChapter.title)
   const partNumber = activeChapterIndex + 1
   const quickWinTip = personalization ? getQuickWinTip(currentChapterTitle, personalization) : null
@@ -820,14 +1008,10 @@ export default function SelfieGuideExperience({
           className="prose-link"
           onClick={() => {
             const destination = href || "#"
-            if (destination.startsWith("/checkout/")) {
+            if (destination.startsWith("/checkout/") || destination === "/starter-kit") {
               trackGuideUpsellClick(
                 destination,
-                destination.includes("starter-kit")
-                  ? "starter_kit"
-                  : destination.includes("brand-strategy-pack")
-                    ? "brand_strategy_pack"
-                    : "checkout",
+                destination.includes("starter-kit") ? "starter_kit" : "checkout",
               )
             }
           }}
@@ -870,7 +1054,7 @@ export default function SelfieGuideExperience({
         {/* ── Sticky top bar ────────────────────────── */}
         <header className="sg-topbar">
           <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-          <span className="sg-topbar-label">First Visible Post Guide · Complete</span>
+          <span className="sg-topbar-label">Selfie Guide · Complete</span>
         </header>
 
         {/* ── Completion card ───────────────────────── */}
@@ -879,20 +1063,19 @@ export default function SelfieGuideExperience({
             <p className="sg-eyebrow">You did it</p>
             <h1 className={`sg-complete-title ${cormorant.className}`}>You have a starting point.</h1>
             <p className="sg-complete-sub">
-              Now the next step is making the rest of your content connect: what to say, how to
-              show up, and what people can do next.
+              Seven days of real photos done. The next step is making them easier to edit and use.
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
-              <Link href="/starter-kit" className="sg-cta-primary">
-                See Starter Kit
-              </Link>
-              <Link href="/starter-kit" className="sg-cta-secondary">
-                Start with Starter Kit
+              <Link
+                href="/starter-kit"
+                className="sg-cta-primary"
+                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+              >
+                See what's inside
               </Link>
             </div>
-            <p className="sg-complete-member">
-              Already a Studio member?{" "}
-              <Link href="/studio?tab=maya" className="prose-link">Open Maya →</Link>
+            <p className="sg-funnel-price" style={{ marginTop: "14px", fontSize: "12px", color: "rgba(200,196,187,0.6)" }}>
+              $37 · One time. No subscription.
             </p>
           </div>
         </main>
@@ -969,7 +1152,7 @@ export default function SelfieGuideExperience({
       {/* ── Sticky top bar (replaces sidebar) ───────── */}
       <header className="sg-topbar">
         <Link href="/" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</Link>
-        <span className="sg-topbar-label">First Visible Post Guide</span>
+        <span className="sg-topbar-label">Selfie Guide</span>
       </header>
 
       {/* ── Main ────────────────────────────────────── */}
@@ -989,20 +1172,20 @@ export default function SelfieGuideExperience({
           <div className="sg-hero-gradient" />
 
           <div className="sg-hero-content">
-            <p className="sg-eyebrow">Free Guide · SSELFIE Path</p>
+            <p className="sg-eyebrow">Free Selfie Guide</p>
             <h1 className={`sg-hero-title ${cormorant.className}`}>
-              Your First<br />Visible Post
+              Better selfies.<br />With your iPhone.
             </h1>
             <p className={`sg-hero-for ${cormorant.className}`}>
               Built for {firstName}
             </p>
             <p className="sg-hero-sub">
-              Take one phone photo, write the caption, and know what the post is supposed to do next.
+              Mirror selfies, car selfies, window light, and simple editing. Everything you need to take a better phone photo.
             </p>
             <div className="sg-hero-badges">
-              <span>Phone photo basics</span>
+              <span>iPhone selfie tips</span>
               <span>7-day challenge</span>
-              <span>Content system inside</span>
+              <span>Mirror, car, full-body</span>
             </div>
           </div>
 
@@ -1118,13 +1301,6 @@ export default function SelfieGuideExperience({
             </div>
           )}
 
-          {/* Maya moment (if this is the Maya chapter) */}
-          {isMayaChapter && (
-            <div className="sg-prose">
-              <MayaMoment token={token} />
-            </div>
-          )}
-
           {/* Mark complete + navigation */}
           <div className="sg-chapter-nav">
             <button
@@ -1155,52 +1331,37 @@ export default function SelfieGuideExperience({
         {/* ── Funnel CTA ────────────────────────────── */}
         <section className="sg-funnel">
           <div className="sg-funnel-inner">
-            {hasBrandStrategyAccess && !brandStrategyBumpSelected ? (
-              <>
-                <p className="sg-eyebrow">Brand Strategy</p>
-                <h3 className={`sg-funnel-title ${cormorant.className}`}>You&apos;re already covered</h3>
-                <p className="sg-funnel-copy">
-                  Your account includes Brand Strategy access. Open Academy to continue your setup or revisit your
-                  strategy anytime.
-                </p>
-                <div className="sg-funnel-ctas">
-                  <Link
-                    href="/academy"
-                    className="sg-cta-primary"
-                    onClick={() => trackGuideUpsellClick("/academy", "academy")}
-                  >
-                    Open Academy
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="sg-eyebrow">Next step</p>
-                <h3 className={`sg-funnel-title ${cormorant.className}`}>
-                  Keep the path clear
-                </h3>
-                <p className="sg-funnel-copy">
-                  The guide gives you the first visible post. The Starter Kit gives you the first paid
-                  implementation step with presets, quick-start, and a 7-day content starter.
-                </p>
-                <div className="sg-funnel-ctas">
-                  <Link
-                    href="/starter-kit"
-                    className="sg-cta-primary"
-                    onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
-                  >
-                    Start with Starter Kit
-                  </Link>
-                  <Link
-                    href="/masterclass"
-                    className="sg-cta-secondary"
-                    onClick={() => trackGuideUpsellClick("/masterclass", "masterclass")}
-                  >
-                    See Masterclass
-                  </Link>
-                </div>
-              </>
-            )}
+            <p className="sg-eyebrow">Starter Kit</p>
+            <h3 className={`sg-funnel-title ${cormorant.className}`}>
+              One session. Seven days of content.
+            </h3>
+            <p className="sg-funnel-copy">
+              The Starter Kit takes what you just learned and gives you everything to do it faster.
+              Presets that match the edits in this guide. One tap in Lightroom Mobile and the look is done.
+              Editing walkthroughs so you can see exactly what each adjustment does and why.
+              A 7-day content starter that turns one phone session into a full week of posts. You show up once. The content keeps going.
+            </p>
+            <div className="sg-funnel-product-img">
+              <Image
+                src="/images/selfie-guide/sg-cta-01.png"
+                alt="The Selfie Starter Kit — presets, editing walkthroughs, and a 7-day content starter"
+                width={1448}
+                height={1086}
+                style={{ width: "100%", height: "auto", borderRadius: "8px", display: "block" }}
+              />
+            </div>
+            <p className="sg-funnel-price">$37 · One time.</p>
+            <div className="sg-funnel-ctas">
+              <Link
+                href="/starter-kit"
+                className="sg-cta-primary"
+                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+              >
+                See what's inside
+              </Link>
+            </div>
+            <p className="sg-funnel-note">No subscription. Yours to keep.</p>
+            <p className="sg-funnel-quiet">Questions? Reply to your welcome email.</p>
           </div>
         </section>
       </main>
@@ -1639,24 +1800,16 @@ export default function SelfieGuideExperience({
         /* ── Chapter images ──────────── */
 
         .chapter-images {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
           gap: 12px;
           padding: 0 clamp(24px, 5vw, 64px) 48px;
           max-width: calc(var(--prose-w) + 200px);
           margin: 0 auto;
-          overflow: hidden;
         }
 
         .chapter-img-item {
           margin: 0;
-        }
-
-        .chapter-img-item.is-wide {
-          flex: 1.6;
-        }
-
-        .chapter-img-item.is-narrow {
-          flex: 1;
         }
 
         .chapter-img-wrap {
@@ -2120,6 +2273,12 @@ export default function SelfieGuideExperience({
           margin-bottom: 28px;
         }
 
+        .sg-funnel-product-img {
+          margin: 0 0 28px;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
         .sg-funnel-ctas {
           display: flex;
           flex-wrap: wrap;
@@ -2164,6 +2323,29 @@ export default function SelfieGuideExperience({
           cursor: wait;
         }
 
+        .sg-funnel-price {
+          margin: 0 0 20px;
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+        }
+
+        .sg-funnel-note {
+          margin-top: 14px;
+          font-size: 13px;
+          font-weight: 300;
+          color: var(--c-smoke);
+        }
+
+        .sg-funnel-quiet {
+          margin-top: 6px;
+          font-size: 12px;
+          font-weight: 300;
+          color: rgba(200, 196, 187, 0.55);
+        }
+
         .sg-funnel-status {
           margin-top: 14px;
           font-size: 12px;
@@ -2183,13 +2365,7 @@ export default function SelfieGuideExperience({
           }
 
           .chapter-images {
-            flex-direction: column;
-          }
-
-          .chapter-img-item.is-wide,
-          .chapter-img-item.is-narrow {
-            flex: none;
-            width: 100%;
+            grid-template-columns: 1fr;
           }
 
           .challenge-grid {

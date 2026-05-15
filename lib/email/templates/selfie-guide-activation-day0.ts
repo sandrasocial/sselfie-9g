@@ -70,6 +70,6 @@ Sandra`
   return {
     html,
     text,
-    subject: "Your first visible post starts here",
+    subject: "Your guide is ready",
   }
 }
