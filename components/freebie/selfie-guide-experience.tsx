@@ -1071,7 +1071,7 @@ export default function SelfieGuideExperience({
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
-                See what's inside
+                See what&apos;s inside
               </Link>
             </div>
             <p className="sg-funnel-price" style={{ marginTop: "14px", fontSize: "12px", color: "rgba(200,196,187,0.6)" }}>
@@ -1357,7 +1357,7 @@ export default function SelfieGuideExperience({
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
-                See what's inside
+                See what&apos;s inside
               </Link>
             </div>
             <p className="sg-funnel-note">No subscription. Yours to keep.</p>
