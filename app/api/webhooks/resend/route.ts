@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
 
+const WEBHOOK_EVENT_TYPES = new Set([
+  "email.sent",
+  "email.delivered",
+  "email.opened",
+  "email.clicked",
+  "email.bounced",
+  "email.complained",
+  "email.failed",
+  "email.delivery_delayed",
+  "email.suppressed",
+  "email.scheduled",
+])
+
+type EmailLogStatus =
+  | "sent"
+  | "delivered"
+  | "bounced"
+  | "complained"
+  | "failed"
+  | "delivery_delayed"
+  | "suppressed"
+  | "scheduled"
+
+interface ResendEventContext {
+  body: any
+  eventType: string
+  eventData: any
+  recipientEmail: string | null
+  messageId: string | null
+  broadcastId: string | null
+  campaignId: number | null
+  resolvedEmailType: string | null
+  resendEventId: string | null
+  eventTimestamp: Date
+}
 
 function resolveBroadcastId(eventData: any): string | null {
   return eventData?.broadcast_id || eventData?.broadcastId || eventData?.broadcast?.id || null
@@ -10,8 +45,14 @@ function resolveBroadcastId(eventData: any): string | null {
 function resolveEmailTypeFromTags(eventData: any): string | null {
   const tags = eventData?.tags
   if (!Array.isArray(tags)) return null
-  const tag = tags.find((entry) => entry?.name === "type")
-  return tag?.value || null
+
+  const typeTag = tags.find((entry) => entry?.name === "type")
+  if (typeTag?.value) return String(typeTag.value)
+
+  // Most app sends currently pass tags as { name: tag, value: tag }. Prefer the
+  // lifecycle-looking tag when present so fallback matching is as narrow as possible.
+  const lifecycleTag = tags.find((entry) => typeof entry?.name === "string" && entry.name.includes("-"))
+  return lifecycleTag?.name || null
 }
 
 function looksLikeEmail(value: string): boolean {
@@ -24,7 +65,7 @@ function normalizeRecipientEmail(raw: any): string | null {
 
   if (typeof raw === "string") {
     const s = raw.trim()
-    if (looksLikeEmail(s)) return s
+    if (looksLikeEmail(s)) return s.toLowerCase()
     if ((s.startsWith("{") || s.startsWith("[")) && s.length < 512) {
       try {
         return normalizeRecipientEmail(JSON.parse(s))
@@ -44,12 +85,12 @@ function normalizeRecipientEmail(raw: any): string | null {
   }
 
   if (typeof raw === "object") {
-    if (typeof raw.email === "string" && looksLikeEmail(raw.email)) return raw.email.trim()
-    if (typeof raw.address === "string" && looksLikeEmail(raw.address)) return raw.address.trim()
-    if (typeof raw.value === "string" && looksLikeEmail(raw.value)) return raw.value.trim()
+    if (typeof raw.email === "string" && looksLikeEmail(raw.email)) return raw.email.trim().toLowerCase()
+    if (typeof raw.address === "string" && looksLikeEmail(raw.address)) return raw.address.trim().toLowerCase()
+    if (typeof raw.value === "string" && looksLikeEmail(raw.value)) return raw.value.trim().toLowerCase()
 
     const keys = Object.keys(raw)
-    if (keys.length === 1 && looksLikeEmail(keys[0])) return keys[0]
+    if (keys.length === 1 && looksLikeEmail(keys[0])) return keys[0].toLowerCase()
 
     for (const key of keys) {
       const normalized = normalizeRecipientEmail((raw as any)[key])
@@ -57,6 +98,44 @@ function normalizeRecipientEmail(raw: any): string | null {
     }
   }
 
+  return null
+}
+
+function maskEmail(email: string | null): string | null {
+  if (!email) return null
+  const [local, domain] = email.toLowerCase().split("@")
+  if (!domain) return "***"
+  return `${local.slice(0, 2)}***@${domain}`
+}
+
+function resolveMessageId(eventData: any, body: any): string | null {
+  return eventData?.email_id || eventData?.message_id || eventData?.id || body?.email_id || body?.message_id || null
+}
+
+function resolveResendEventId(body: any): string | null {
+  return body?.id || body?.event_id || body?.eventId || null
+}
+
+function resolveEventTimestamp(eventData: any, body: any): Date {
+  const raw = eventData?.timestamp || eventData?.created_at || body?.created_at || body?.timestamp
+  if (raw) {
+    const parsed = new Date(raw)
+    if (Number.isFinite(parsed.getTime())) return parsed
+  }
+  return new Date()
+}
+
+function eventErrorMessage(eventType: string, eventData: any): string | null {
+  if (eventType === "email.bounced") {
+    const bounceType = eventData?.bounce_type || eventData?.type || "unknown"
+    const bounceReason = eventData?.bounce_reason || eventData?.reason || eventData?.message || "Unknown bounce reason"
+    return `Bounced: ${bounceType} - ${bounceReason}`
+  }
+
+  if (eventType === "email.complained") return "User marked email as spam"
+  if (eventType === "email.failed") return eventData?.reason || eventData?.message || eventData?.error || "Resend marked email as failed"
+  if (eventType === "email.delivery_delayed") return eventData?.reason || eventData?.message || "Delivery delayed"
+  if (eventType === "email.suppressed") return eventData?.reason || eventData?.message || "Recipient suppressed by Resend"
   return null
 }
 
@@ -95,498 +174,350 @@ async function resolveCampaignKeyByBroadcastId(broadcastId: string | null): Prom
   return String(rows?.[0]?.campaign_key || "").trim() || null
 }
 
-async function updateRecentEmailLogByRecipient(input: {
+async function persistEmailEvent(context: ResendEventContext): Promise<number | null> {
+  const metadata = {
+    provider: "resend",
+    resend_event_id: context.resendEventId,
+    resend_message_id: context.messageId,
+    recipient_email: context.recipientEmail,
+    recipient_masked: maskEmail(context.recipientEmail),
+    event_type: context.eventType,
+    event_data: context.eventData,
+    raw_event: context.body,
+    received_at: new Date().toISOString(),
+  }
+
+  if (context.resendEventId) {
+    const existing = await sql`
+      SELECT id
+      FROM email_events
+      WHERE metadata->>'resend_event_id' = ${context.resendEventId}
+      LIMIT 1
+    `
+    if (existing.length > 0) return Number(existing[0].id)
+  }
+
+  const inserted = await sql`
+    INSERT INTO email_events (
+      email_type,
+      campaign_id,
+      status,
+      metadata,
+      created_at,
+      campaign_key,
+      provider_broadcast_id,
+      recipient_count,
+      event_type
+    ) VALUES (
+      ${context.resolvedEmailType || context.eventType},
+      ${context.campaignId},
+      'received',
+      ${metadata}::jsonb,
+      NOW(),
+      ${context.resolvedEmailType || null},
+      ${context.broadcastId},
+      ${context.recipientEmail ? 1 : null},
+      ${context.eventType}
+    )
+    RETURNING id
+  `
+
+  return inserted?.[0]?.id ? Number(inserted[0].id) : null
+}
+
+async function updateEmailEventStatus(eventRowId: number | null, status: string, errorMessage?: string | null) {
+  if (!eventRowId) return
+  await sql`
+    UPDATE email_events
+    SET status = ${status},
+        error_message = ${errorMessage || null},
+        metadata = COALESCE(metadata, '{}'::jsonb) || ${JSON.stringify({ processed_at: new Date().toISOString() })}::jsonb
+    WHERE id = ${eventRowId}
+  `
+}
+
+async function updateByMessageId(input: {
+  messageId: string
+  status?: EmailLogStatus
+  campaignId?: number | null
+  errorMessage?: string | null
+  openedAt?: Date | null
+  clickedAt?: Date | null
+}) {
+  return await sql`
+    UPDATE email_logs
+    SET
+      status = CASE
+        WHEN status IN ('bounced', 'complained', 'failed', 'suppressed')
+          AND ${input.status || null} IN ('sent', 'delivered', 'scheduled')
+        THEN status
+        ELSE COALESCE(${input.status || null}, status)
+      END,
+      campaign_id = COALESCE(${input.campaignId || null}, campaign_id),
+      error_message = COALESCE(${input.errorMessage || null}, error_message),
+      opened = CASE WHEN ${input.openedAt || null}::timestamptz IS NULL THEN opened ELSE true END,
+      opened_at = COALESCE(opened_at, ${input.openedAt || null}),
+      clicked = CASE WHEN ${input.clickedAt || null}::timestamptz IS NULL THEN clicked ELSE true END,
+      clicked_at = COALESCE(clicked_at, ${input.clickedAt || null})
+    WHERE resend_message_id = ${input.messageId}
+    RETURNING id, user_email, email_type, campaign_id
+  `
+}
+
+async function updateUniqueRecentLogByRecipient(input: {
   recipientEmail: string | null
   messageId: string | null
   emailType?: string | null
   campaignId?: number | null
-  status: "sent" | "delivered" | "bounced" | "complained"
+  status?: EmailLogStatus
   errorMessage?: string | null
+  openedAt?: Date | null
+  clickedAt?: Date | null
 }) {
   if (!input.recipientEmail) return [] as any[]
-  if (input.emailType) {
-    return await sql`
-      WITH target AS (
+
+  const candidates = input.emailType
+    ? await sql`
         SELECT id
         FROM email_logs
-        WHERE user_email = ${input.recipientEmail}
+        WHERE LOWER(BTRIM(user_email)) = ${input.recipientEmail}
           AND resend_message_id IS NULL
           AND sent_at > NOW() - INTERVAL '14 days'
           AND email_type = ${input.emailType}
         ORDER BY sent_at DESC
-        LIMIT 1
-      )
-      UPDATE email_logs
-      SET
-        resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
-        status = ${input.status},
-        error_message = COALESCE(${input.errorMessage || null}, error_message),
-        campaign_id = COALESCE(${input.campaignId || null}, campaign_id)
-      WHERE id IN (SELECT id FROM target)
-      RETURNING id
-    `
-  }
+        LIMIT 2
+      `
+    : await sql`
+        SELECT id
+        FROM email_logs
+        WHERE LOWER(BTRIM(user_email)) = ${input.recipientEmail}
+          AND resend_message_id IS NULL
+          AND sent_at > NOW() - INTERVAL '14 days'
+        ORDER BY sent_at DESC
+        LIMIT 2
+      `
+
+  if (candidates.length !== 1) return [] as any[]
 
   return await sql`
-    WITH target AS (
-      SELECT id
-      FROM email_logs
-      WHERE user_email = ${input.recipientEmail}
-        AND resend_message_id IS NULL
-        AND sent_at > NOW() - INTERVAL '14 days'
-      ORDER BY sent_at DESC
-      LIMIT 1
-    )
     UPDATE email_logs
     SET
       resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
-      status = ${input.status},
+      status = CASE
+        WHEN status IN ('bounced', 'complained', 'failed', 'suppressed')
+          AND ${input.status || null} IN ('sent', 'delivered', 'scheduled')
+        THEN status
+        ELSE COALESCE(${input.status || null}, status)
+      END,
+      campaign_id = COALESCE(${input.campaignId || null}, campaign_id),
       error_message = COALESCE(${input.errorMessage || null}, error_message),
-      campaign_id = COALESCE(${input.campaignId || null}, campaign_id)
-    WHERE id IN (SELECT id FROM target)
-    RETURNING id
+      opened = CASE WHEN ${input.openedAt || null}::timestamptz IS NULL THEN opened ELSE true END,
+      opened_at = COALESCE(opened_at, ${input.openedAt || null}),
+      clicked = CASE WHEN ${input.clickedAt || null}::timestamptz IS NULL THEN clicked ELSE true END,
+      clicked_at = COALESCE(clicked_at, ${input.clickedAt || null})
+    WHERE id = ${candidates[0].id}
+    RETURNING id, user_email, email_type, campaign_id
   `
 }
 
-async function ensureEmailLogEntry(params: {
-  recipientEmail: string | null
-  messageId: string | null
-  status: string
-  opened?: boolean
-  openedAt?: Date
-  clicked?: boolean
-  clickedAt?: Date
-  emailType?: string | null
-  campaignId?: number | null
-  errorMessage?: string | null
-}) {
-  if (!params.recipientEmail) return
-  await sql`
-    INSERT INTO email_logs (
-      user_email,
-      email_type,
+async function updateEmailLog(context: ResendEventContext) {
+  const errorMessage = eventErrorMessage(context.eventType, context.eventData)
+  const openedAt = context.eventType === "email.opened" ? context.eventTimestamp : null
+  const clickedAt = context.eventType === "email.clicked" ? context.eventTimestamp : null
+  const statusByEvent: Record<string, EmailLogStatus | undefined> = {
+    "email.sent": "sent",
+    "email.delivered": "delivered",
+    "email.opened": "delivered",
+    "email.clicked": "delivered",
+    "email.bounced": "bounced",
+    "email.complained": "complained",
+    "email.failed": "failed",
+    "email.delivery_delayed": "delivery_delayed",
+    "email.suppressed": "suppressed",
+    "email.scheduled": "scheduled",
+  }
+
+  const status = statusByEvent[context.eventType]
+  if (!status && !openedAt && !clickedAt) return { matched: false, matchCount: 0, rows: [] as any[] }
+
+  let rows: any[] = []
+  if (context.messageId) {
+    rows = await updateByMessageId({
+      messageId: context.messageId,
       status,
-      resend_message_id,
-      opened,
-      opened_at,
-      clicked,
-      clicked_at,
-      campaign_id,
-      error_message,
-      sent_at,
-      created_at
-    ) VALUES (
-      ${params.recipientEmail},
-      ${params.emailType || "resend-webhook"},
-      ${params.status},
-      ${params.messageId},
-      ${params.opened || false},
-      ${params.openedAt || null},
-      ${params.clicked || false},
-      ${params.clickedAt || null},
-      ${params.campaignId || null},
-      ${params.errorMessage || null},
-      NOW(),
-      NOW()
-    )
-    ON CONFLICT DO NOTHING
-  `
+      campaignId: context.campaignId,
+      errorMessage,
+      openedAt,
+      clickedAt,
+    })
+  }
+
+  if (rows.length === 0) {
+    rows = await updateUniqueRecentLogByRecipient({
+      recipientEmail: context.recipientEmail,
+      messageId: context.messageId,
+      emailType: context.resolvedEmailType,
+      campaignId: context.campaignId,
+      status,
+      errorMessage,
+      openedAt,
+      clickedAt,
+    })
+  }
+
+  return { matched: rows.length > 0, matchCount: rows.length, rows }
+}
+
+async function updateABTestIfNeeded(rows: any[], eventType: string) {
+  if (eventType !== "email.opened" && eventType !== "email.clicked") return
+  const abEvent = eventType === "email.opened" ? "opened" : "clicked"
+
+  for (const row of rows) {
+    const emailType = String(row.email_type || "")
+    const abTestMatch = emailType.match(/ab_test_(\d+)_variant_([AB])/)
+    if (!abTestMatch) continue
+
+    const testId = parseInt(abTestMatch[1], 10)
+    const { updateABTestResults } = await import("@/lib/email/ab-testing")
+    await updateABTestResults(testId, row.user_email, abEvent)
+  }
+}
+
+async function buildContext(body: any): Promise<ResendEventContext> {
+  const eventType = String(body?.type || "unknown")
+  const eventData = body?.data || {}
+  const recipientEmail =
+    normalizeRecipientEmail(eventData?.email) ||
+    normalizeRecipientEmail(eventData?.to) ||
+    normalizeRecipientEmail(eventData?.recipient) ||
+    normalizeRecipientEmail(eventData?.delivered_to)
+  const messageId = resolveMessageId(eventData, body)
+  const broadcastId = resolveBroadcastId(eventData)
+  const campaignId = await resolveCampaignId(broadcastId)
+  const campaignType = await resolveCampaignTypeById(campaignId)
+  const campaignKeyFromEvents = await resolveCampaignKeyByBroadcastId(broadcastId)
+  const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
+  const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || null
+
+  return {
+    body,
+    eventType,
+    eventData,
+    recipientEmail,
+    messageId,
+    broadcastId,
+    campaignId,
+    resolvedEmailType,
+    resendEventId: resolveResendEventId(body),
+    eventTimestamp: resolveEventTimestamp(eventData, body),
+  }
+}
+
+function verifyWebhook(request: NextRequest, payload: string) {
+  const webhookSecret = process.env.RESEND_WEBHOOK_SECRET?.trim()
+  const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+
+  if (!webhookSecret) {
+    if (isProduction) {
+      throw new Error("RESEND_WEBHOOK_SECRET is required in production")
+    }
+
+    console.warn("[v0] [Resend Webhook] RESEND_WEBHOOK_SECRET not set; parsing unverified webhook in non-production")
+    return JSON.parse(payload)
+  }
+
+  const svixId = request.headers.get("svix-id")
+  const svixTimestamp = request.headers.get("svix-timestamp")
+  const svixSignature = request.headers.get("svix-signature")
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    throw new Error("Missing Svix signature headers")
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY || "re_webhook_verification")
+  return resend.webhooks.verify({
+    payload,
+    headers: {
+      id: svixId,
+      timestamp: svixTimestamp,
+      signature: svixSignature,
+    },
+    webhookSecret,
+  })
 }
 
 /**
  * Resend Webhook Handler
- * 
- * Handles Resend webhook events for email tracking:
- * - email.sent: Email was sent
- * - email.delivered: Email was delivered
- * - email.opened: Email was opened
- * - email.clicked: Link in email was clicked
- * - email.bounced: Email bounced
- * - email.complained: User marked as spam
- * 
- * POST /api/webhooks/resend
- * 
+ *
  * Webhook URL in Resend: https://sselfie.ai/api/webhooks/resend
  */
 export async function POST(request: NextRequest) {
-  try {
-    console.log("[v0] [Resend Webhook] Event received at:", new Date().toISOString())
+  const receivedAt = new Date().toISOString()
+  let eventRowId: number | null = null
 
+  try {
     const payload = await request.text()
-    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET?.trim()
     let body: any
 
-    if (webhookSecret) {
-      const svixId = request.headers.get("svix-id")
-      const svixTimestamp = request.headers.get("svix-timestamp")
-      const svixSignature = request.headers.get("svix-signature")
-
-      if (!svixId || !svixTimestamp || !svixSignature) {
-        console.error("[v0] [Resend Webhook] Missing Svix signature headers")
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
-      }
-
-      try {
-        const resend = new Resend(process.env.RESEND_API_KEY || "re_webhook_verification")
-        body = resend.webhooks.verify({
-          payload,
-          headers: {
-            id: svixId,
-            timestamp: svixTimestamp,
-            signature: svixSignature,
-          },
-          webhookSecret,
-        })
-        console.log("[v0] [Resend Webhook] ✅ Signature verified")
-      } catch (error) {
-        console.error("[v0] [Resend Webhook] Invalid signature:", error)
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
-      }
-    } else {
-      console.warn("[v0] [Resend Webhook] ⚠️ RESEND_WEBHOOK_SECRET not set - skipping signature verification")
-      try {
-        body = JSON.parse(payload)
-      } catch {
-        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
-      }
+    try {
+      body = verifyWebhook(request, payload)
+    } catch (error) {
+      console.error("[v0] [Resend Webhook] Signature verification failed:", error instanceof Error ? error.message : "unknown")
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 
-    const eventType = body.type
-    const eventData = body.data
+    const context = await buildContext(body)
 
-    console.log("[v0] [Resend Webhook] Event type:", eventType)
-    console.log("[v0] [Resend Webhook] Event data:", JSON.stringify(eventData, null, 2))
-
-    // Extract email and message ID from event data
-    // Resend webhook format: { data: { email_id: "...", email: "...", ... } }
-    const recipientEmail =
-      normalizeRecipientEmail(eventData?.email) ||
-      normalizeRecipientEmail(eventData?.to) ||
-      normalizeRecipientEmail(eventData?.recipient) ||
-      normalizeRecipientEmail(eventData?.delivered_to)
-    const messageId = eventData?.email_id || eventData?.message_id || eventData?.id || body.id
-    const broadcastId = resolveBroadcastId(eventData)
-    const campaignId = await resolveCampaignId(broadcastId)
-    const campaignType = await resolveCampaignTypeById(campaignId)
-    const campaignKeyFromEvents = await resolveCampaignKeyByBroadcastId(broadcastId)
-    const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
-    const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || null
-
-    console.log("[v0] [Resend Webhook] Extracted:", {
-      recipientEmail,
-      messageId,
-      eventDataKeys: eventData ? Object.keys(eventData) : [],
-      bodyKeys: Object.keys(body),
+    console.log("[v0] [Resend Webhook] Event received", {
+      eventType: context.eventType,
+      messageId: context.messageId,
+      recipient: maskEmail(context.recipientEmail),
+      receivedAt,
     })
 
-    if (!recipientEmail && !messageId) {
-      console.warn("[v0] [Resend Webhook] No email or message ID in event data")
-      console.warn("[v0] [Resend Webhook] Full event data:", JSON.stringify(body, null, 2))
-      return NextResponse.json({ received: true, warning: "No email or message ID" })
+    eventRowId = await persistEmailEvent(context)
+    console.log("[v0] [Resend Webhook] Event persisted", {
+      eventType: context.eventType,
+      eventRowId,
+      messageId: context.messageId,
+    })
+
+    if (!WEBHOOK_EVENT_TYPES.has(context.eventType)) {
+      await updateEmailEventStatus(eventRowId, "ignored")
+      console.log("[v0] [Resend Webhook] Unknown event ignored", { eventType: context.eventType, eventRowId })
+      return NextResponse.json({ received: true, eventType: context.eventType, ignored: true })
     }
 
-    // Handle different event types
-    switch (eventType) {
-      case "email.sent":
-        // Email was sent (already logged in send-email.ts, but update if needed)
-        if (messageId || recipientEmail) {
-          let updated = await sql`
-            UPDATE email_logs
-            SET resend_message_id = ${messageId || null}, status = 'sent'
-            WHERE (
-              resend_message_id = ${messageId || null}
-              OR (user_email = ${recipientEmail || ""} AND resend_message_id IS NULL)
-            )
-            RETURNING id
-          `
+    const result = await updateEmailLog(context)
+    await updateABTestIfNeeded(result.rows, context.eventType)
 
-          if ((!updated || updated.length === 0) && recipientEmail) {
-            updated = await updateRecentEmailLogByRecipient({
-              recipientEmail,
-              messageId,
-              emailType: resolvedEmailType,
-              campaignId,
-              status: "sent",
-            })
-          }
+    const eventStatus = result.matched ? "processed" : "unmatched"
+    await updateEmailEventStatus(eventRowId, eventStatus)
 
-          if (!updated || updated.length === 0) {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "sent",
-              emailType: resolvedEmailType,
-              campaignId,
-            })
-          }
+    console.log("[v0] [Resend Webhook] Event processed", {
+      eventType: context.eventType,
+      eventRowId,
+      matched: result.matched,
+      matchCount: result.matchCount,
+      messageId: context.messageId,
+      recipient: maskEmail(context.recipientEmail),
+    })
 
-          console.log(`[v0] [Resend Webhook] ✅ Updated email_logs for sent: ${recipientEmail}`)
-        }
-        break
-
-      case "email.delivered":
-        // Email was delivered successfully
-        if (messageId) {
-          let delivered = await sql`
-            UPDATE email_logs
-            SET status = 'delivered'
-            WHERE resend_message_id = ${messageId}
-            RETURNING id
-          `
-          if ((!delivered || delivered.length === 0) && recipientEmail) {
-            delivered = await updateRecentEmailLogByRecipient({
-              recipientEmail,
-              messageId,
-              emailType: resolvedEmailType,
-              campaignId,
-              status: "delivered",
-            })
-          }
-          if (!delivered || delivered.length === 0) {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "delivered",
-              emailType: resolvedEmailType,
-              campaignId,
-            })
-          }
-          console.log(`[v0] [Resend Webhook] ✅ Marked as delivered: ${messageId}`)
-        }
-        break
-
-      case "email.opened":
-        // Email was opened
-        if (messageId) {
-          const openedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
-          
-          // Try to find email by message ID first
-          let emailLog = await sql`
-            UPDATE email_logs
-            SET opened = true, opened_at = ${openedAt}
-            WHERE resend_message_id = ${messageId}
-            AND opened = false
-            RETURNING id, user_email, email_type, campaign_id
-          `
-          
-          // If not found by message ID, try by email (for older emails without resend_message_id)
-          if (!emailLog || emailLog.length === 0) {
-            console.log(`[v0] [Resend Webhook] Message ID ${messageId} not found, trying by email: ${recipientEmail}`)
-            if (recipientEmail) {
-              emailLog = await sql`
-                UPDATE email_logs
-                SET opened = true, opened_at = ${openedAt}, resend_message_id = ${messageId}
-                WHERE id IN (
-                  SELECT id FROM email_logs
-                  WHERE user_email = ${recipientEmail}
-                  AND resend_message_id IS NULL
-                  AND opened = false
-                  ORDER BY sent_at DESC
-                  LIMIT 1
-                )
-                RETURNING id, user_email, email_type, campaign_id
-              `
-            }
-          }
-          
-          if (emailLog && emailLog.length > 0) {
-            console.log(`[v0] [Resend Webhook] ✅ Marked as opened: ${messageId} (email: ${emailLog[0].user_email})`)
-          } else {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "delivered",
-              opened: true,
-              openedAt,
-              emailType: resolvedEmailType,
-              campaignId,
-            })
-            console.warn(`[v0] [Resend Webhook] ⚠️ Created email_logs entry for opened event: ${messageId}`)
-          }
-          
-          // Update A/B test results if this is an A/B test email
-          if (emailLog && emailLog.length > 0) {
-            const log = emailLog[0]
-            const emailType = log.email_type as string
-            const abTestMatch = emailType.match(/ab_test_(\d+)_variant_([AB])/)
-            if (abTestMatch) {
-              const testId = parseInt(abTestMatch[1])
-              const { updateABTestResults } = await import("@/lib/email/ab-testing")
-              await updateABTestResults(testId, log.user_email, "opened")
-              console.log(`[v0] [Resend Webhook] ✅ Updated A/B test ${testId} for opened`)
-            }
-          } else {
-            console.warn(`[v0] [Resend Webhook] ⚠️ No email_logs entry updated for opened event`)
-          }
-        } else {
-          console.warn(`[v0] [Resend Webhook] ⚠️ email.opened event received but no messageId:`, eventData)
-        }
-        break
-
-      case "email.clicked":
-        // Link in email was clicked
-        if (messageId) {
-          const clickedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
-          const clickedUrl = eventData?.link || eventData?.url || null
-          
-          // Try to find email by message ID first
-          let emailLog = await sql`
-            UPDATE email_logs
-            SET clicked = true, clicked_at = ${clickedAt}
-            WHERE resend_message_id = ${messageId}
-            AND clicked = false
-            RETURNING id, user_email, email_type, campaign_id
-          `
-          
-          // If not found by message ID, try by email
-          if (!emailLog || emailLog.length === 0) {
-            console.log(`[v0] [Resend Webhook] Message ID ${messageId} not found for click, trying by email: ${recipientEmail}`)
-            if (recipientEmail) {
-              emailLog = await sql`
-                UPDATE email_logs
-                SET clicked = true, clicked_at = ${clickedAt}, resend_message_id = ${messageId}
-                WHERE id IN (
-                  SELECT id FROM email_logs
-                  WHERE user_email = ${recipientEmail}
-                  AND resend_message_id IS NULL
-                  AND clicked = false
-                  ORDER BY sent_at DESC
-                  LIMIT 1
-                )
-                RETURNING id, user_email, email_type, campaign_id
-              `
-            }
-          }
-          
-          if (emailLog && emailLog.length > 0) {
-            console.log(`[v0] [Resend Webhook] ✅ Marked as clicked: ${messageId} (email: ${emailLog[0].user_email}, URL: ${clickedUrl})`)
-          } else {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "delivered",
-              clicked: true,
-              clickedAt,
-              emailType: resolvedEmailType,
-              campaignId,
-            })
-            console.warn(`[v0] [Resend Webhook] ⚠️ Created email_logs entry for clicked event: ${messageId}`)
-          }
-          
-          // Update A/B test results if this is an A/B test email
-          if (emailLog && emailLog.length > 0) {
-            const log = emailLog[0]
-            const emailType = log.email_type as string
-            const abTestMatch = emailType.match(/ab_test_(\d+)_variant_([AB])/)
-            if (abTestMatch) {
-              const testId = parseInt(abTestMatch[1])
-              const { updateABTestResults } = await import("@/lib/email/ab-testing")
-              await updateABTestResults(testId, log.user_email, "clicked")
-              console.log(`[v0] [Resend Webhook] ✅ Updated A/B test ${testId} for clicked`)
-            }
-          }
-        }
-        break
-
-      case "email.bounced":
-        // Email bounced (hard or soft bounce)
-        if (messageId) {
-          const bounceType = eventData?.bounce_type || "hard"
-          const bounceReason = eventData?.bounce_reason || "Unknown"
-          
-          let bounced = await sql`
-            UPDATE email_logs
-            SET status = 'bounced', error_message = ${`Bounced: ${bounceType} - ${bounceReason}`}
-            WHERE resend_message_id = ${messageId}
-            RETURNING id
-          `
-          if ((!bounced || bounced.length === 0) && recipientEmail) {
-            bounced = await updateRecentEmailLogByRecipient({
-              recipientEmail,
-              messageId,
-              emailType: resolvedEmailType,
-              campaignId,
-              status: "bounced",
-              errorMessage: `Bounced: ${bounceType} - ${bounceReason}`,
-            })
-          }
-          if (!bounced || bounced.length === 0) {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "bounced",
-              emailType: resolvedEmailType,
-              campaignId,
-              errorMessage: `Bounced: ${bounceType} - ${bounceReason}`,
-            })
-          }
-          console.log(`[v0] [Resend Webhook] ⚠️ Marked as bounced: ${messageId} (${bounceType})`)
-        }
-        break
-
-      case "email.complained":
-        // User marked email as spam
-        if (messageId) {
-          let complained = await sql`
-            UPDATE email_logs
-            SET status = 'complained', error_message = 'User marked as spam'
-            WHERE resend_message_id = ${messageId}
-            RETURNING id
-          `
-          if ((!complained || complained.length === 0) && recipientEmail) {
-            complained = await updateRecentEmailLogByRecipient({
-              recipientEmail,
-              messageId,
-              emailType: resolvedEmailType,
-              campaignId,
-              status: "complained",
-              errorMessage: "User marked as spam",
-            })
-          }
-          if (!complained || complained.length === 0) {
-            await ensureEmailLogEntry({
-              recipientEmail,
-              messageId,
-              status: "complained",
-              emailType: resolvedEmailType,
-              campaignId,
-              errorMessage: "User marked as spam",
-            })
-          }
-          console.log(`[v0] [Resend Webhook] ⚠️ Marked as complained (spam): ${messageId}`)
-          
-          // Also mark in blueprint_subscribers and welcome_back_sequence to stop sending
-          if (recipientEmail) {
-            await sql`
-              UPDATE blueprint_subscribers
-              SET converted_to_user = true, updated_at = NOW()
-              WHERE email = ${recipientEmail}
-            `
-            await sql`
-              UPDATE welcome_back_sequence
-              SET converted = true, updated_at = NOW()
-              WHERE user_email = ${recipientEmail}
-            `
-            console.log(`[v0] [Resend Webhook] ✅ Stopped sequences for ${recipientEmail} (spam complaint)`)
-          }
-        }
-        break
-
-      default:
-        console.log(`[v0] [Resend Webhook] Unhandled event type: ${eventType}`)
-    }
-
-    return NextResponse.json({ received: true, eventType })
+    return NextResponse.json({
+      received: true,
+      eventType: context.eventType,
+      matched: result.matched,
+      eventStatus,
+    })
   } catch (error: any) {
-    console.error("[v0] [Resend Webhook] Error processing webhook:", error)
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : "Internal server error"
+    console.error("[v0] [Resend Webhook] Error processing webhook:", message)
+    await updateEmailEventStatus(eventRowId, "failed", message).catch(() => {})
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
-// Handle GET requests for webhook verification (some services require this)
+// Handle GET requests for webhook verification and operational health checks.
 export async function GET() {
   return NextResponse.json({
     message: "Resend webhook endpoint is active",
