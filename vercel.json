@@ -39,18 +39,6 @@
     {
       "path": "/api/cron/admin-alerts",
       "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/blueprint-followup-sequence",
-      "schedule": "10 10 * * *"
-    },
-    {
-      "path": "/api/cron/send-scheduled-newsletters",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-segments",
-      "schedule": "0 3 * * *"
     }
   ]
 }
