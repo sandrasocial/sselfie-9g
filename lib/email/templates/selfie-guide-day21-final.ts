@@ -1,47 +1,43 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
+import { masterclassLandingUrl } from "./selfie-education-links"
 
 export interface SelfieGuideDay21FinalParams {
   firstName?: string
   recipientEmail: string
   accessUrl: string
-  expiryDate: string
+  expiryDate?: string
 }
-
-const STUDIO_CHECKOUT_URL = "https://sselfie.ai/checkout/membership?bonus=4credits"
 
 export function generateSelfieGuideDay21FinalEmail({
   firstName,
   recipientEmail,
   accessUrl,
-  expiryDate,
 }: SelfieGuideDay21FinalParams): {
   html: string
   text: string
   subject: string
 } {
   const name = getFirstNameForEmail({ fullName: firstName, email: recipientEmail })
-  const trackedStudioUrl = buildRevenueEmailLink(STUDIO_CHECKOUT_URL, {
-    campaign: "selfie_guide_day21_studio",
-    content: "studio_checkout_bonus",
+  const trackedMasterclassUrl = buildRevenueEmailLink(masterclassLandingUrl(), {
+    campaign: "selfie_guide_day21_masterclass",
+    content: "masterclass_cta",
     source: "selfie_guide_day21_email",
   })
   const trackedGuideUrl = buildRevenueEmailLink(accessUrl, {
-    campaign: "selfie_guide_day21_studio",
+    campaign: "selfie_guide_day21_masterclass",
     content: "return_to_guide",
   })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you did not need more time.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you needed less pressure. Less starting over. Less having to become the whole system by yourself every single time.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is the real job of Studio.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not to make you more motivated. To make it easier to keep showing up when motivation is gone.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you join this week, I&apos;ll keep the 4 bonus credits offer open for you until ${expiryDate}.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That gives you room to test the system with your own face, your own brand, and your own content rhythm.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">The offer&apos;s good until ${expiryDate}.</p>
-    <div style="margin:26px 0 14px;">${renderStoneButton("Join Studio with 4 Bonus Credits", trackedStudioUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you needed less pressure. Less starting over. Less having to figure out the whole system by yourself every single time.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is what the Masterclass is for.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not to add more to your plate. To give you a method that holds so showing up gets easier, not harder.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Light, pose, edit, post, repeat. In the right order. Once.</p>
+    <div style="margin:26px 0 14px;">${renderStoneButton("See the Masterclass", trackedMasterclassUrl)}</div>
     <p style="margin:0;font-size:14px;line-height:1.7;text-align:center;"><a href="${trackedGuideUrl}" style="color:#a8a49c;text-decoration:underline;">Need to go back to the guide first? That&apos;s fine.</a></p>
   `
 
@@ -60,19 +56,15 @@ Hi ${name},
 
 Maybe you did not need more time.
 
-Maybe you needed less pressure. Less starting over. Less having to become the whole system by yourself every single time.
+Maybe you needed less pressure. Less starting over. Less having to figure out the whole system by yourself every single time.
 
-That is the real job of Studio.
+That is what the Masterclass is for.
 
-Not to make you more motivated. To make it easier to keep showing up when motivation is gone.
+Not to add more to your plate. To give you a method that holds so showing up gets easier, not harder.
 
-If you join this week, I'll keep the 4 bonus credits offer open for you until ${expiryDate}.
+Light, pose, edit, post, repeat. In the right order. Once.
 
-That gives you room to test the system with your own face, your own brand, and your own content rhythm.
-
-The offer's good until ${expiryDate}.
-
-Join Studio with 4 Bonus Credits: ${trackedStudioUrl}
+See the Masterclass: ${trackedMasterclassUrl}
 
 Need to go back to the guide first? ${trackedGuideUrl}
 

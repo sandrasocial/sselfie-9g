@@ -28,9 +28,9 @@ export function generateSelfieGuideDay3CheckinEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is usually where people disappear.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not because they don&apos;t care. Because it gets awkward when it is finally time to put your own face in the frame.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So make today smaller.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open Part 2. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open chapter two. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.</p>
     <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Five minutes is enough.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open Part 2", trackedAccessUrl)}</div>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open chapter two", trackedAccessUrl)}</div>
   `
 
   const html = renderStoneShell({
@@ -52,11 +52,11 @@ Not because they don't care. Because it gets awkward when it is finally time to 
 
 So make today smaller.
 
-Open Part 2. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.
+Open chapter two. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.
 
 Five minutes is enough.
 
-Open Part 2: ${trackedAccessUrl}
+Open chapter two: ${trackedAccessUrl}
 
 Reply if you get stuck. Tell me what feels hard.
 Sandra x`

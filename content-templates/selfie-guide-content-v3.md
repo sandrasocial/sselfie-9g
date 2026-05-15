@@ -175,9 +175,10 @@ Below your waist elongates. At chest height is standard. Above your head is unfl
 
 The goal of editing is not to change how you look. It is to make the photo feel like the best version of what was already there.
 
-[IMAGE: editing-before-after.png — Before and after selfie editing comparison showing subtle improvements in light and contrast]
-
 ### The Apps Worth Using
+
+[IMAGE: editing-apps.png — Four editing apps: Lightroom Mobile, CapCut, Hypic, and VSCO with brief descriptions of each]
+
 **Lightroom Mobile** (free) for consistent colour grading. This is your main editing tool.
 
 **CapCut** for video content. Simple interface, good for reels and clips.
@@ -188,6 +189,8 @@ The goal of editing is not to change how you look. It is to make the photo feel 
 
 ### Your 5-Step Edit in Lightroom
 
+[IMAGE: editing-before-after.png — Your 5-step Lightroom edit showing Exposure, Contrast, Highlights, Shadows, and Warmth adjustments]
+
 1. **Exposure** — Lift shadows slightly if the photo looks dark. Do not blow out the highlights.
 2. **Contrast** — Small amount. Around +10 to +15 gives depth without making skin look harsh.
 3. **Highlights** — Pull down slightly (-15 to -25) to recover detail in bright areas.
@@ -197,11 +200,17 @@ The goal of editing is not to change how you look. It is to make the photo feel 
 That is your base edit. It takes 2 minutes and it works on almost any photo taken in good light.
 
 ### Save a Preset
+
+[IMAGE: editing-preset.png — Save a Preset: edit once, apply in one tap to keep your feed consistent]
+
 Once you find edits you like, save them as a preset in Lightroom. Then you can apply your entire edit to a new photo in one tap. This keeps your photos looking consistent without spending 20 minutes on every single one.
 
 The Starter Kit presets do this in one tap. But running through it manually first means you actually understand what the preset is doing.
 
 ### What Not to Do
+
+[IMAGE: editing-what-not.png — What not to do: over-smoothing, pushing saturation, inconsistent filters — plus the before/after test]
+
 - Do not smooth skin to the point where texture disappears. It looks digital and unreal.
 - Do not push saturation. It makes skin look orange and backgrounds look fake.
 - Do not use the same filter on every photo if the lighting conditions were different. The results will be inconsistent.
