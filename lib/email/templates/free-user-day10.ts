@@ -9,7 +9,9 @@
  * CTA: upgrade to Studio. The case is made simply and cleanly.
  */
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
+  .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+  .replace(/\/+$/, "")
 
 export function generateFreeUserDay10Email(input: { firstName?: string }): {
   subject: string

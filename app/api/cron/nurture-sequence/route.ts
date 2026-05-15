@@ -33,7 +33,9 @@ import { generateMasterclassDay5DeepenEmail } from "@/lib/email/templates/master
 import { generateMasterclassDay7SoftWorkWithMeEmail } from "@/lib/email/templates/masterclass-day7-soft-work-with-me"
 import { generateMasterclassDay10DirectInviteEmail } from "@/lib/email/templates/masterclass-day10-direct-invite"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
+  .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+  .replace(/\/+$/, "")
 const STARTER_KIT_FALLBACK_URL = `${SITE_URL}/starter-kit`
 const MASTERCLASS_FALLBACK_URL = `${SITE_URL}/masterclass`
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
@@ -109,7 +111,7 @@ async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivati
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(u.email)
           AND el.email_type = 'selfie-guide-activation-day0'
-          AND el.status IN ('sent', 'delivered')
+          AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(u.email), s.created_at DESC
     LIMIT 200
@@ -136,7 +138,7 @@ async function getSelfieGuideTouchCandidates(days: number, emailType: string): P
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(u.email)
           AND el.email_type = ${emailType}
-          AND el.status IN ('sent', 'delivered')
+          AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(u.email), s.created_at DESC
     LIMIT 200
@@ -159,7 +161,7 @@ async function getFreebieGuideTouchCandidates(days: number, emailType: string): 
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(fs.email)
           AND el.email_type = ${emailType}
-          AND el.status IN ('sent', 'delivered')
+          AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(fs.email), fs.created_at DESC
     LIMIT 200
@@ -186,7 +188,7 @@ async function getStarterKitCandidates(days: number, emailType: string): Promise
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(u.email)
           AND el.email_type = ${emailType}
-          AND el.status IN ('sent', 'delivered')
+          AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(u.email), s.created_at DESC
     LIMIT 200
@@ -211,7 +213,7 @@ async function getMasterclassCandidates(days: number, emailType: string): Promis
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(u.email)
           AND el.email_type = ${emailType}
-          AND el.status IN ('sent', 'delivered')
+          AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(u.email), s.created_at DESC
     LIMIT 200
@@ -261,6 +263,7 @@ async function sendSelfieGuideTouchEmail(
     text: email.text,
     emailType,
     tags: ["selfie-guide", emailType],
+    marketing: true,
   })
 }
 
@@ -302,6 +305,7 @@ async function sendFreebieGuideTouchEmail(
     text: email.text,
     emailType,
     tags: ["freebie-guide", emailType],
+    marketing: true,
   })
 }
 
@@ -363,6 +367,7 @@ async function sendStarterKitTouchEmail(
     text: email.text,
     emailType,
     tags: ["starter-kit", emailType],
+    marketing: emailType !== "starter-kit-day0-delivery",
   })
 }
 
@@ -404,6 +409,7 @@ async function sendMasterclassTouchEmail(
     text: email.text,
     emailType,
     tags: ["masterclass", emailType],
+    marketing: emailType !== "masterclass-day0-delivery",
   })
 }
 

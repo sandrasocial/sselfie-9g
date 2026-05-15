@@ -12,7 +12,7 @@ import { generateFreeUserDay5Email } from "@/lib/email/templates/free-user-day5"
 import { generateFreeUserDay10Email } from "@/lib/email/templates/free-user-day10"
 import { logAdminError } from "@/lib/admin-error-log"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
-import { MARKETING_SEGMENTS } from "@/lib/email/config"
+import { EMAIL_CONFIG, MARKETING_SEGMENTS } from "@/lib/email/config"
 
 
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = u.email
         AND el.email_type = 'onboarding-day-0'
         AND (
-          el.status IN ('sent', 'delivered')
+          el.status IN ('sent', 'delivered', 'suppressed')
           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '24 hours')
         )
       WHERE s.status = 'active'
@@ -182,7 +182,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = u.email
         AND el.email_type = 'onboarding-day-2'
         AND (
-          el.status IN ('sent', 'delivered')
+          el.status IN ('sent', 'delivered', 'suppressed')
           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
         )
       WHERE s.status = 'active'
@@ -255,7 +255,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = u.email
         AND el.email_type = 'onboarding-day-7'
         AND (
-          el.status IN ('sent', 'delivered')
+          el.status IN ('sent', 'delivered', 'suppressed')
           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
         )
       WHERE s.status = 'active'
@@ -365,8 +365,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "welcome-first-generation-nudge",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["lifecycle", "first-gen-nudge"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -443,8 +445,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "post-activation-upgrade",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["lifecycle", "post-activation-upgrade"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -511,8 +515,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "free-user-welcome-day0",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["lifecycle", "free-welcome-day0"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -572,8 +578,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "free-user-day5",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["lifecycle", "free-day5"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -633,8 +641,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "free-user-day10",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["lifecycle", "free-day10"],
+          marketing: true,
         })
 
         if (result.success) {

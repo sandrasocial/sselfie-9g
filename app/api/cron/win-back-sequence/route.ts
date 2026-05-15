@@ -25,6 +25,7 @@ import { generateWinBackDay7Email } from "@/lib/email/templates/win-back-day7"
 import { generateWinBackDay14Email } from "@/lib/email/templates/win-back-day14"
 import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
 import { logAdminError } from "@/lib/admin-error-log"
+import { EMAIL_CONFIG } from "@/lib/email/config"
 
 
 export async function GET(request: Request) {
@@ -106,8 +107,10 @@ export async function GET(request: Request) {
           html: email.html,
           text: email.text,
           emailType: "win-back-day3",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["win-back", "win-back-day3"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -152,7 +155,7 @@ export async function GET(request: Request) {
           SELECT 1 FROM email_logs el
           WHERE el.user_email = u.email
             AND el.email_type = 'win-back-day7'
-            AND el.status IN ('sent', 'delivered')
+            AND el.status IN ('sent', 'delivered', 'suppressed')
         )
         -- Has not reactivated
         AND NOT EXISTS (
@@ -183,8 +186,10 @@ export async function GET(request: Request) {
           html: email.html,
           text: email.text,
           emailType: "win-back-day7",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["win-back", "win-back-day7"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -221,14 +226,14 @@ export async function GET(request: Request) {
           SELECT 1 FROM email_logs el
           WHERE el.user_email = u.email
             AND el.email_type = 'win-back-day7'
-            AND el.status IN ('sent', 'delivered')
+            AND el.status IN ('sent', 'delivered', 'suppressed')
         )
         -- Day 14 not yet sent
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
           WHERE el.user_email = u.email
             AND el.email_type = 'win-back-day14'
-            AND el.status IN ('sent', 'delivered')
+            AND el.status IN ('sent', 'delivered', 'suppressed')
         )
         -- Has not reactivated
         AND NOT EXISTS (
@@ -256,8 +261,10 @@ export async function GET(request: Request) {
           html: email.html,
           text: email.text,
           emailType: "win-back-day14",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["win-back", "win-back-day14"],
+          marketing: true,
         })
 
         if (result.success) {
@@ -332,8 +339,10 @@ export async function GET(request: Request) {
           html: emailContent.html,
           text: emailContent.text,
           emailType: "dormant-member-reengagement",
-          replyTo: "hello@sselfie.ai",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
           tags: ["retention", "dormant-member"],
+          marketing: true,
         })
 
         if (result.success) {

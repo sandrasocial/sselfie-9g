@@ -42,7 +42,7 @@ export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeli
     ${passwordBlock}
     ${renderStonePanel(
       `<p style="margin:0 0 12px;font-size:15px;line-height:1.75;color:#f0ede8;">If you want the next practical step, the Starter Kit gives you the presets, quick-start workflow, and a simple 7-day content starter.</p>
-       <div>${renderStoneButton("See the Starter Kit", "https://sselfie.ai/starter-kit", "outline")}</div>`,
+       <div>${renderStoneButton("See the Starter Kit", "https://www.sselfie.ai/starter-kit", "outline")}</div>`,
       "Next Step",
     )}
   `
@@ -72,7 +72,7 @@ ${
 
 `
       : ""
-  }If you want the next practical step, the Starter Kit is here: https://sselfie.ai/starter-kit
+  }If you want the next practical step, the Starter Kit is here: https://www.sselfie.ai/starter-kit
 
 Reply if you need me. I read every message.
 Sandra`

@@ -7,7 +7,9 @@
  * - Supports dynamic campaign_id and email placeholders
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://sselfie.ai'
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sselfie.ai')
+  .replace(/^https:\/\/sselfie\.ai$/, 'https://www.sselfie.ai')
+  .replace(/\/+$/, '')
 
 export interface LinkConfig {
   /** Link identifier */

@@ -9,7 +9,9 @@ import { hasResendApiKey } from "@/lib/resend/api-key"
 const DELIVERY_RESEND_COOLDOWN_MINUTES = 15
 
 function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+  return (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.sselfie.ai")
+    .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+    .replace(/\/+$/, "")
 }
 
 function selfieGuideAccessUrl(accessToken: string): string {

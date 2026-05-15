@@ -14,7 +14,9 @@ export interface WinBackDay7Params {
   offerCode?: string // Optional promo code for 7-day free trial or credit bonus
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
+  .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+  .replace(/\/+$/, "")
 
 export function generateWinBackDay7Email(params: WinBackDay7Params): {
   html: string

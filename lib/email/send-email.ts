@@ -3,6 +3,13 @@ import { Resend } from "resend"
 import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
 import { sql } from "@/lib/db/client"
+import { EMAIL_CONFIG } from "@/lib/email/config"
+import {
+  addMarketingUnsubscribeFooter,
+  buildListUnsubscribeHeaders,
+  buildUnsubscribeUrl,
+  getMarketingEmailSuppression,
+} from "@/lib/email/unsubscribe"
 
 export interface EmailOptions {
   to: string | string[]
@@ -14,6 +21,8 @@ export interface EmailOptions {
   tags?: string[]
   emailType?: string // Optional: type of email for logging (e.g., 'welcome', 'campaign', 'feedback')
   campaignId?: number // Optional: campaign ID for tracking
+  marketing?: boolean
+  headers?: Record<string, string>
 }
 
 
@@ -77,6 +86,7 @@ async function sendEmailWithRetry(
         html: options.html,
         text: options.text ?? "",
         ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+        ...(options.headers ? { headers: options.headers } : {}),
         tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
       })
 
@@ -153,6 +163,7 @@ async function logEmailSend(
     | "sent"
     | "delivered"
     | "failed"
+    | "suppressed"
     | "error"
     | "skipped_disabled"
     | "skipped_test_mode"
@@ -194,8 +205,8 @@ async function getRecipientSuppression(email: string): Promise<{ suppressed: boo
       SELECT status, error_message, sent_at
       FROM email_logs
       WHERE user_email = ${email}
-        AND status IN ('complained', 'bounced')
-        AND sent_at > NOW() - INTERVAL '30 days'
+        AND status IN ('complained', 'bounced', 'suppressed')
+        AND sent_at > NOW() - INTERVAL '180 days'
       ORDER BY sent_at DESC
       LIMIT 1
     `
@@ -225,6 +236,7 @@ export async function sendEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const recipient = Array.isArray(options.to) ? options.to[0] : options.to
   const emailType = options.emailType || "general"
+  let preparedOptions = options
 
   if (!options.subject || options.subject.trim().length === 0) {
     const errorMessage = "Missing subject field"
@@ -286,6 +298,34 @@ export async function sendEmail(
     }
   }
 
+  if (options.marketing) {
+    const marketingSuppression = await getMarketingEmailSuppression(recipient)
+
+    if (marketingSuppression.suppressed) {
+      const reason = `Suppressed marketing send: ${marketingSuppression.reason}`
+      await logEmailSend(recipient, emailType, "suppressed", undefined, reason, options.campaignId)
+      return {
+        success: false,
+        error: reason,
+      }
+    }
+
+    const unsubscribeUrl = buildUnsubscribeUrl(recipient)
+    const compliantBody = addMarketingUnsubscribeFooter(options.html, options.text, unsubscribeUrl)
+
+    preparedOptions = {
+      ...options,
+      from: options.from || EMAIL_CONFIG.marketing.from,
+      replyTo: options.replyTo || EMAIL_CONFIG.marketing.replyTo,
+      html: compliantBody.html,
+      text: compliantBody.text,
+      headers: {
+        ...options.headers,
+        ...buildListUnsubscribeHeaders(unsubscribeUrl),
+      },
+    }
+  }
+
   const rateLimit = await checkEmailRateLimit(recipient)
 
   if (!rateLimit.success) {
@@ -308,7 +348,7 @@ export async function sendEmail(
     }
   }
 
-  const result = await sendEmailWithRetry(options, 3)
+  const result = await sendEmailWithRetry(preparedOptions, 3)
 
   // Log the email send result (non-blocking)
   if (result.success) {

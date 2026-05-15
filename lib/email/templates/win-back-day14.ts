@@ -13,7 +13,9 @@ export interface WinBackDay14Params {
   recipientEmail: string
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
+  .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+  .replace(/\/+$/, "")
 
 export function generateWinBackDay14Email(params: WinBackDay14Params): {
   html: string

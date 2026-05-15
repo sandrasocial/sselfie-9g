@@ -30,7 +30,10 @@ export function generateTrackedLink(params: TrackedLinkParams): string {
     .replace(/^-+|-+$/g, '')
 
   // Build URL with tracking parameters
-  const url = new URL(baseUrl, process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai')
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sselfie.ai')
+    .replace(/^https:\/\/sselfie\.ai$/, 'https://www.sselfie.ai')
+    .replace(/\/+$/, '')
+  const url = new URL(baseUrl, siteUrl)
   
   // Add checkout parameter if product type specified
   if (productType) {
@@ -59,7 +62,9 @@ export function generateTrackedCheckoutLink(
   campaignType: string,
   productType: 'studio_membership' | 'one_time',
 ): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai'
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sselfie.ai')
+    .replace(/^https:\/\/sselfie\.ai$/, 'https://www.sselfie.ai')
+    .replace(/\/+$/, '')
   const baseUrl = `${siteUrl}/studio`
   
   return generateTrackedLink({
@@ -71,7 +76,6 @@ export function generateTrackedCheckoutLink(
     productType,
   })
 }
-
 
 
 
