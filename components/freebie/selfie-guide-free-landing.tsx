@@ -82,6 +82,7 @@ export default function SelfieGuideFree() {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -91,6 +92,7 @@ export default function SelfieGuideFree() {
     }
 
     setError(null)
+    setStatusMessage(null)
     setLoading(true)
     trackAnalyticsEvent({
       event: "selfie_guide_opt_in_submit",
@@ -117,9 +119,18 @@ export default function SelfieGuideFree() {
         properties: {
           source: "selfie_guide_free_landing",
           access_token_created: Boolean(data.accessToken),
+          email_sent: Boolean(data.emailSent),
+          email_skipped_reason: data.emailSkippedReason || null,
         },
       })
-      router.push(`/selfie-guide/access/${data.accessToken}`)
+      setStatusMessage(
+        data.emailSent
+          ? "Your guide is on the way. You can also open it now."
+          : "You already have access. Check your inbox or open the guide here.",
+      )
+      window.setTimeout(() => {
+        router.push(`/selfie-guide/access/${data.accessToken}`)
+      }, 900)
     } catch (err: any) {
       trackAnalyticsEvent({
         event: "selfie_guide_opt_in_failed",
@@ -237,6 +248,11 @@ export default function SelfieGuideFree() {
               </button>
 
               {error ? <p className="mt-3 text-sm text-red-200">{error}</p> : null}
+              {statusMessage ? (
+                <p className="mt-3 text-sm" style={{ color: C.onDarkSub }} aria-live="polite">
+                  {statusMessage}
+                </p>
+              ) : null}
               <p className="mt-4 text-[11px] leading-[1.6]" style={{ color: C.stone }}>
                 No spam. Just the guide and the next useful step.
               </p>

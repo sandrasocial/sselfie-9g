@@ -1,5 +1,9 @@
 export const SELFIE_GUIDE_TAGS = ["freebie-subscriber", "sselfie-guide", "freebie-selfie-guide"] as const
 
+export function normalizeFreebieEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
 export function normalizeFreebieEmailTags(existingTags?: string[] | null): string[] {
   const set = new Set<string>((existingTags || []).filter(Boolean))
   for (const tag of SELFIE_GUIDE_TAGS) {
