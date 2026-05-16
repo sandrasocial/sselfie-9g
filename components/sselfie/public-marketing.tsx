@@ -839,9 +839,9 @@ export function StarterKitPageContent() {
       <Section eyebrow="The preset collection" title="Three styles. Pick the one that feels most like you." dark>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { label: "Beige & warm",    img: IMG.presetBeige, note: "Soft, golden, editorial" },
-            { label: "Light & minimal", img: IMG.presetLight, note: "Clean, airy, Scandinavian" },
-            { label: "Dark & moody",    img: IMG.presetDark,  note: "Rich, dramatic, confident" },
+            { label: "Scandinavian Light & Dreamy", img: IMG.presetBeige, note: "Soft, golden, editorial" },
+            { label: "Nordic Deep Urban",           img: IMG.presetLight, note: "Clean, airy, Scandinavian" },
+            { label: "Scandinavian Dark & Moody",   img: IMG.presetDark,  note: "Rich, dramatic, confident" },
           ].map((s) => (
             <div key={s.label} className="mf" style={{ ...cardSx(true, false), padding: "16px" }}>
               <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "1/1" }}>
