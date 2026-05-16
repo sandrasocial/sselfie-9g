@@ -34,11 +34,10 @@ export default function AiPromptsOptInPage() {
 
         <section className="opt-bridge">
           <p className={`opt-bridge-headline ${cormorant.className}`}>
-            The better the original selfie, the better the AI result.
+            Your photo is the starting point.
           </p>
           <p className="opt-bridge-body">
-            If you want to get the photo right before you run it through AI, start with the
-            Free Selfie Guide. It is free.
+            The better the original, the better the AI result. If you want to get the photo right before you run it through AI, start with the Free Selfie Guide. It is free.
           </p>
           <Link
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=landing_page&utm_campaign=ai_prompts_to_selfie_guide"
@@ -52,8 +51,8 @@ export default function AiPromptsOptInPage() {
       <style>{`
         .opt-page {
           min-height: 100vh;
-          background: #0a0a0a;
-          color: #f5f5f5;
+          background: #f5f5f5;
+          color: #0a0a0a;
           padding: 64px 24px 80px;
         }
 
@@ -71,7 +70,7 @@ export default function AiPromptsOptInPage() {
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(245, 245, 245, 0.38);
+          color: rgba(10, 10, 10, 0.36);
         }
 
         .opt-headline {
@@ -80,14 +79,14 @@ export default function AiPromptsOptInPage() {
           font-weight: 300;
           line-height: 1.0;
           letter-spacing: -0.02em;
-          color: #f5f5f5;
+          color: #0a0a0a;
         }
 
         .opt-sub {
           margin: 0;
           font-size: 16px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.62);
+          color: rgba(10, 10, 10, 0.54);
         }
 
         .opt-form-section {
@@ -101,7 +100,7 @@ export default function AiPromptsOptInPage() {
           font-weight: 500;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.46);
+          color: rgba(10, 10, 10, 0.42);
         }
 
         .opt-fields {
@@ -121,17 +120,17 @@ export default function AiPromptsOptInPage() {
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.08em;
-          color: rgba(245, 245, 245, 0.44);
+          color: rgba(10, 10, 10, 0.4);
           text-transform: uppercase;
         }
 
         .opt-input {
           width: 100%;
           padding: 14px 16px;
-          background: rgba(245, 245, 245, 0.05);
-          border: 1px solid rgba(245, 245, 245, 0.12);
+          background: #ffffff;
+          border: 1px solid rgba(10, 10, 10, 0.14);
           border-radius: 10px;
-          color: #f5f5f5;
+          color: #0a0a0a;
           font-size: 15px;
           font-family: inherit;
           outline: none;
@@ -140,18 +139,18 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-input::placeholder {
-          color: rgba(245, 245, 245, 0.24);
+          color: rgba(10, 10, 10, 0.28);
         }
 
         .opt-input:focus {
-          border-color: rgba(245, 245, 245, 0.32);
+          border-color: rgba(10, 10, 10, 0.3);
         }
 
         .opt-submit {
           width: 100%;
           padding: 16px 20px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0a0a0a;
+          color: #f5f5f5;
           border: none;
           border-radius: 999px;
           font-size: 11px;
@@ -165,21 +164,21 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-submit:hover {
-          opacity: 0.88;
+          opacity: 0.82;
         }
 
         .opt-trust {
           margin: 14px 0 0;
           font-size: 12px;
           line-height: 1.6;
-          color: rgba(245, 245, 245, 0.3);
+          color: rgba(10, 10, 10, 0.32);
           text-align: center;
         }
 
         .opt-confirmation {
           padding: 28px 24px;
-          background: rgba(245, 245, 245, 0.04);
-          border: 1px solid rgba(245, 245, 245, 0.1);
+          background: rgba(10, 10, 10, 0.04);
+          border: 1px solid rgba(10, 10, 10, 0.1);
           border-radius: 14px;
         }
 
@@ -187,13 +186,13 @@ export default function AiPromptsOptInPage() {
           margin: 0;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.7);
+          color: rgba(10, 10, 10, 0.58);
         }
 
         .opt-rule {
           margin: 56px 0;
           height: 1px;
-          background: rgba(245, 245, 245, 0.07);
+          background: rgba(10, 10, 10, 0.08);
         }
 
         .opt-bridge {
@@ -205,14 +204,14 @@ export default function AiPromptsOptInPage() {
           font-size: clamp(1.5rem, 5vw, 2rem);
           font-weight: 300;
           line-height: 1.15;
-          color: #f5f5f5;
+          color: #0a0a0a;
         }
 
         .opt-bridge-body {
           margin: 0 0 24px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.56);
+          color: rgba(10, 10, 10, 0.5);
         }
 
         .opt-bridge-link {
@@ -221,16 +220,16 @@ export default function AiPromptsOptInPage() {
           font-weight: 600;
           letter-spacing: 0.24em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.62);
+          color: rgba(10, 10, 10, 0.52);
           text-decoration: none;
-          border-bottom: 1px solid rgba(245, 245, 245, 0.18);
+          border-bottom: 1px solid rgba(10, 10, 10, 0.2);
           padding-bottom: 2px;
           transition: color 0.15s ease, border-color 0.15s ease;
         }
 
         .opt-bridge-link:hover {
-          color: #f5f5f5;
-          border-color: rgba(245, 245, 245, 0.48);
+          color: #0a0a0a;
+          border-color: rgba(10, 10, 10, 0.5);
         }
 
         @media (min-width: 640px) {
