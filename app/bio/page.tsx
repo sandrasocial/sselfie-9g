@@ -47,10 +47,10 @@ export default function BioPage() {
             So what do your photos say about you?
           </p>
           <p className="bio-sub">
-            Selfie tips, editing tools, and content from the phone you already have.
+            Better selfies, cleaner edits, and content you can actually post from your phone.
           </p>
           <p className="bio-positioning">
-            For women who want better photos of themselves without a photographer, a studio, or overthinking it.
+            No photographer. No studio. No overthinking.
           </p>
         </div>
 
