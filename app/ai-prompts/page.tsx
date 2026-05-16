@@ -183,10 +183,36 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-confirmation-text {
-          margin: 0;
+          margin: 0 0 20px;
           font-size: 15px;
           line-height: 1.75;
           color: rgba(10, 10, 10, 0.58);
+        }
+
+        .opt-open-btn {
+          display: inline-block;
+          padding: 14px 24px;
+          background: #0a0a0a;
+          color: #f5f5f5;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: opacity 0.15s ease;
+        }
+
+        .opt-open-btn:hover {
+          opacity: 0.82;
+        }
+
+        .opt-error {
+          margin: 12px 0 0;
+          font-size: 13px;
+          line-height: 1.6;
+          color: rgba(180, 60, 60, 0.82);
+          text-align: center;
         }
 
         .opt-rule {
