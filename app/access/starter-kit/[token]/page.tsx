@@ -17,7 +17,7 @@ const inter = Inter({
 const STARTER_KIT_DNG_PRESET_URL =
   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/starter-kit-dng-presets.zip"
 const STARTER_KIT_PRESET_GUIDE_URL =
-  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf"
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/sselfie-preset-setup-guide.pdf"
 const STARTER_KIT_POSING_GUIDE_URL =
   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-posing-guide.pdf"
 const STARTER_KIT_CAPTIONS_URL =
