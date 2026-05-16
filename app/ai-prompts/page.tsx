@@ -14,25 +14,38 @@ export const metadata: Metadata = {
 
 export default function AiPromptsOptInPage() {
   return (
-    <main className={`opt-page ${inter.className}`}>
-      <div className="opt-container">
-        <section className="opt-hero">
-          <p className="opt-eyebrow">FREE DOWNLOAD</p>
-          <h1 className={`opt-headline ${cormorant.className}`}>
-            The ChatGPT Selfie Prompt Pack.
-          </h1>
-          <p className="opt-sub">
-            12 copy-paste prompts. Upload your selfie. Choose the look.
-          </p>
-        </section>
+    <main className={inter.className}>
 
-        <section className="opt-form-section">
-          <OptInForm />
-        </section>
+      {/* ── Full-bleed hero ────────────────────────────────────────────── */}
+      <section className="opt-hero-section">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/ai-prompts/ai-prompts-hero.jpg"
+          alt="Sandra in the car mirror — editorial selfie"
+          className="opt-hero-img"
+        />
+        <div className="opt-hero-overlay" aria-hidden="true" />
 
-        <div className="opt-rule" aria-hidden="true" />
+        <div className="opt-hero-content">
+          <div className="opt-container">
+            <p className="opt-eyebrow">FREE DOWNLOAD</p>
+            <h1 className={`opt-headline ${cormorant.className}`}>
+              The ChatGPT Selfie Prompt Pack.
+            </h1>
+            <p className="opt-sub">
+              12 copy-paste prompts. Upload your selfie. Choose the look.
+            </p>
 
-        <section className="opt-bridge">
+            <div className="opt-form-card">
+              <OptInForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bridge section ─────────────────────────────────────────────── */}
+      <section className="opt-bridge">
+        <div className="opt-container">
           <p className={`opt-bridge-headline ${cormorant.className}`}>
             Your photo is the starting point.
           </p>
@@ -45,62 +58,97 @@ export default function AiPromptsOptInPage() {
           >
             Get the Free Selfie Guide
           </Link>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <style>{`
-        .opt-page {
-          min-height: 100vh;
-          background: #f5f5f5;
-          color: #0a0a0a;
-          padding: 64px 24px 80px;
-        }
-
+        /* ── Page shell ──────────────────────────────────────────────── */
         .opt-container {
           max-width: 540px;
           margin: 0 auto;
         }
 
-        .opt-hero {
-          margin-bottom: 48px;
+        /* ── Hero ────────────────────────────────────────────────────── */
+        .opt-hero-section {
+          position: relative;
+          min-height: 100dvh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
 
+        .opt-hero-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: 50% 20%;
+        }
+
+        .opt-hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to bottom,
+            rgba(10,10,10,0.30) 0%,
+            rgba(10,10,10,0.06) 30%,
+            rgba(10,10,10,0.88) 100%
+          );
+        }
+
+        .opt-hero-content {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          flex: 1;
+          padding: 80px 24px 56px;
+        }
+
+        /* ── Hero typography ─────────────────────────────────────────── */
         .opt-eyebrow {
           margin: 0 0 16px;
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(10, 10, 10, 0.36);
+          color: rgba(245, 245, 245, 0.5);
         }
 
         .opt-headline {
-          margin: 0 0 18px;
+          margin: 0 0 16px;
           font-size: clamp(2.4rem, 8vw, 3.6rem);
           font-weight: 300;
           line-height: 1.0;
           letter-spacing: -0.02em;
-          color: #0a0a0a;
+          color: #f5f5f5;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.4);
         }
 
         .opt-sub {
-          margin: 0;
+          margin: 0 0 32px;
           font-size: 16px;
           line-height: 1.75;
-          color: rgba(10, 10, 10, 0.54);
+          color: rgba(245, 245, 245, 0.62);
         }
 
-        .opt-form-section {
-          margin-bottom: 0;
+        /* ── Form card (dark overlay card, same pattern as selfie guide) */
+        .opt-form-card {
+          background: rgba(20, 19, 18, 0.82);
+          border: 1px solid rgba(245, 245, 245, 0.10);
+          padding: 26px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
 
-        /* Form styles — used by OptInForm client component */
+        /* ── Form fields — used by OptInForm client component ─────────── */
         .opt-form-header {
           margin: 0 0 20px;
           font-size: 12px;
           font-weight: 500;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          color: rgba(10, 10, 10, 0.42);
+          color: rgba(245, 245, 245, 0.38);
         }
 
         .opt-fields {
@@ -120,17 +168,17 @@ export default function AiPromptsOptInPage() {
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.08em;
-          color: rgba(10, 10, 10, 0.4);
+          color: rgba(245, 245, 245, 0.38);
           text-transform: uppercase;
         }
 
         .opt-input {
           width: 100%;
           padding: 14px 16px;
-          background: #ffffff;
-          border: 1px solid rgba(10, 10, 10, 0.14);
+          background: rgba(255, 255, 255, 0.07);
+          border: 1px solid rgba(245, 245, 245, 0.14);
           border-radius: 10px;
-          color: #0a0a0a;
+          color: #f5f5f5;
           font-size: 15px;
           font-family: inherit;
           outline: none;
@@ -139,18 +187,18 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-input::placeholder {
-          color: rgba(10, 10, 10, 0.28);
+          color: rgba(245, 245, 245, 0.28);
         }
 
         .opt-input:focus {
-          border-color: rgba(10, 10, 10, 0.3);
+          border-color: rgba(245, 245, 245, 0.32);
         }
 
         .opt-submit {
           width: 100%;
           padding: 16px 20px;
-          background: #0a0a0a;
-          color: #f5f5f5;
+          background: #f5f5f5;
+          color: #0a0a0a;
           border: none;
           border-radius: 999px;
           font-size: 11px;
@@ -171,14 +219,14 @@ export default function AiPromptsOptInPage() {
           margin: 14px 0 0;
           font-size: 12px;
           line-height: 1.6;
-          color: rgba(10, 10, 10, 0.32);
+          color: rgba(245, 245, 245, 0.28);
           text-align: center;
         }
 
         .opt-confirmation {
-          padding: 28px 24px;
-          background: rgba(10, 10, 10, 0.04);
-          border: 1px solid rgba(10, 10, 10, 0.1);
+          padding: 24px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(245, 245, 245, 0.12);
           border-radius: 14px;
         }
 
@@ -186,14 +234,14 @@ export default function AiPromptsOptInPage() {
           margin: 0 0 20px;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(10, 10, 10, 0.58);
+          color: rgba(245, 245, 245, 0.62);
         }
 
         .opt-open-btn {
           display: inline-block;
           padding: 14px 24px;
-          background: #0a0a0a;
-          color: #f5f5f5;
+          background: #f5f5f5;
+          color: #0a0a0a;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 600;
@@ -211,18 +259,15 @@ export default function AiPromptsOptInPage() {
           margin: 12px 0 0;
           font-size: 13px;
           line-height: 1.6;
-          color: rgba(180, 60, 60, 0.82);
+          color: rgba(240, 120, 120, 0.9);
           text-align: center;
         }
 
-        .opt-rule {
-          margin: 56px 0;
-          height: 1px;
-          background: rgba(10, 10, 10, 0.08);
-        }
-
+        /* ── Bridge section ──────────────────────────────────────────── */
         .opt-bridge {
-          padding: 0;
+          background: #f5f5f5;
+          color: #0a0a0a;
+          padding: 64px 24px 80px;
         }
 
         .opt-bridge-headline {
@@ -258,8 +303,13 @@ export default function AiPromptsOptInPage() {
           border-color: rgba(10, 10, 10, 0.5);
         }
 
+        /* ── Responsive ──────────────────────────────────────────────── */
         @media (min-width: 640px) {
-          .opt-page {
+          .opt-hero-content {
+            padding: 80px 40px 64px;
+          }
+
+          .opt-bridge {
             padding: 80px 40px 100px;
           }
 
