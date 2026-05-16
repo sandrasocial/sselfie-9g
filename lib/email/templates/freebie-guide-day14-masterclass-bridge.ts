@@ -14,6 +14,7 @@ export function generateFreebieGuideDay14MasterclassBridgeEmail({
   const masterclassUrl = buildRevenueEmailLink(masterclassLandingUrl(), {
     campaign: "freebie_guide_day14_masterclass_bridge",
     content: "see_masterclass",
+    emailType: "freebie-guide-day14-masterclass-bridge",
   })
 
   const bodyHtml = `

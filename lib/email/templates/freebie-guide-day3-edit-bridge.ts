@@ -14,6 +14,7 @@ export function generateFreebieGuideDay3EditBridgeEmail({
   const starterKitUrl = buildRevenueEmailLink(starterKitLandingUrl(), {
     campaign: "freebie_guide_day3_edit_bridge",
     content: "see_starter_kit",
+    emailType: "freebie-guide-day3-edit-bridge",
   })
 
   const bodyHtml = `

@@ -242,6 +242,42 @@ function Btn({
   return <button onClick={onClick} style={base} disabled={disabled}>{children}</button>
 }
 
+const ATTRIBUTION_PARAMS_TO_PRESERVE = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "email_type",
+  "campaign_id",
+  "ref",
+  "source",
+  "guide_cta",
+  "freebie_source",
+  "checkout_source",
+] as const
+
+function usePreservedAttributionHref(href: string) {
+  const [currentSearch, setCurrentSearch] = useState("")
+
+  useEffect(() => {
+    setCurrentSearch(window.location.search)
+  }, [])
+
+  const searchParams = new URLSearchParams(currentSearch)
+  const [path, rawQuery = ""] = href.split("?")
+  const nextParams = new URLSearchParams(rawQuery)
+
+  ATTRIBUTION_PARAMS_TO_PRESERVE.forEach((key) => {
+    const value = searchParams.get(key)
+    if (value && !nextParams.has(key)) {
+      nextParams.set(key, value)
+    }
+  })
+
+  const query = nextParams.toString()
+  return query ? `${path}?${query}` : path
+}
+
 // ─── Shell ────────────────────────────────────────────────────────────────────
 export function PublicPageShell({ children }: { children: ReactNode }) {
   const [showIntro, setShowIntro] = useState(false)
@@ -785,6 +821,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function StarterKitPageContent() {
+  const starterKitCheckoutHref = usePreservedAttributionHref("/checkout/starter-kit")
+
   return (
     <PublicPageShell>
       <PublicNav />
@@ -794,7 +832,7 @@ export function StarterKitPageContent() {
         eyebrow="Starter Kit · $37"
         title={<>Your first better selfie. Your first week of content.</>}
         body={<p>Presets, editing walkthroughs, and 7 days of content from one session.</p>}
-        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
+        primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.after}
       />
@@ -872,7 +910,7 @@ export function StarterKitPageContent() {
       {/* CTA — cream */}
       <CtaClose
         title="Everything you need to turn one selfie into your first brand-ready week."
-        primary={{ href: "/checkout/starter-kit", label: "Get the Starter Kit · $37" }}
+        primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
         dark={false}
       />
@@ -885,6 +923,8 @@ export function StarterKitPageContent() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function MasterclassPageContent() {
+  const masterclassCheckoutHref = usePreservedAttributionHref("/checkout/masterclass")
+
   return (
     <PublicPageShell>
       <PublicNav />
@@ -894,7 +934,7 @@ export function MasterclassPageContent() {
         eyebrow="Masterclass · $147"
         title={<>You showed up. You took the selfie. Now build what comes next.</>}
         body={<p>Strategy, content, offer, and a 30-day plan so your photos have somewhere to lead. Sandra&apos;s full method, one time.</p>}
-        primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
+        primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
       />
@@ -1003,7 +1043,7 @@ export function MasterclassPageContent() {
       {/* CTA — dark */}
       <CtaClose
         title="Do this once. Then you'll know exactly what you're building."
-        primary={{ href: "/checkout/masterclass", label: "Enroll · $147" }}
+        primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
         secondary={{ href: "/join/studio",          label: "See Studio" }}
         dark
       />

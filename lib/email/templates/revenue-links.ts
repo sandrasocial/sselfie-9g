@@ -7,6 +7,7 @@ interface RevenueLinkOptions {
   content?: string
   source?: string
   medium?: string
+  emailType?: string
   campaignId?: string
   referralCode?: string
 }
@@ -21,6 +22,10 @@ export function buildRevenueEmailLink(url: string, options: RevenueLinkOptions):
 
   if (options.content) {
     resolved.searchParams.set("utm_content", options.content)
+  }
+
+  if (options.emailType) {
+    resolved.searchParams.set("email_type", options.emailType)
   }
 
   if (options.campaignId) {

@@ -189,6 +189,7 @@ async function markRevenueEnginePurchase(params: {
   purchaseValueCents?: number | null
   purchaseCurrency?: string | null
   purchasedAt?: Date | string | null
+  emailType?: string | null
   campaignId?: string | null
 }) {
   await markCheckoutAttributionCompleted({
@@ -203,6 +204,14 @@ async function markRevenueEnginePurchase(params: {
     purchaseCurrency: params.purchaseCurrency || null,
     purchasedAt: params.purchasedAt || null,
   })
+
+  if (params.userEmail && params.emailType) {
+    await markEmailLogConversionForCheckout({
+      userEmail: params.userEmail,
+      emailType: params.emailType,
+      allowFallback: false,
+    })
+  }
 
   const campaignId = params.campaignId ? Number.parseInt(params.campaignId, 10) : Number.NaN
   if (!params.userEmail || !Number.isFinite(campaignId) || campaignId <= 0) {
@@ -220,6 +229,79 @@ async function markRevenueEnginePurchase(params: {
     `
   } catch (error) {
     console.error("[v0] Failed to mark email conversion attribution:", error)
+  }
+}
+
+async function markEmailLogConversionForCheckout(params: {
+  userEmail: string
+  emailType?: string | null
+  allowFallback?: boolean
+}) {
+  const emailType = typeof params.emailType === "string" ? params.emailType.trim() : ""
+
+  try {
+    if (emailType) {
+      const convertedByType = await sql`
+        WITH candidate AS (
+          SELECT id
+          FROM email_logs
+          WHERE LOWER(user_email) = LOWER(${params.userEmail})
+            AND email_type = ${emailType}
+            AND converted = false
+            AND sent_at >= NOW() - INTERVAL '30 days'
+          ORDER BY
+            clicked_at DESC NULLS LAST,
+            opened_at DESC NULLS LAST,
+            sent_at DESC NULLS LAST
+          LIMIT 1
+        )
+        UPDATE email_logs
+        SET converted = true, converted_at = NOW()
+        WHERE id IN (SELECT id FROM candidate)
+        RETURNING id
+      `
+
+      if (convertedByType.length > 0) {
+        console.log(
+          `[v0] Marked email_logs ${convertedByType[0].id} as converted via email_type=${emailType}`
+        )
+        return convertedByType[0].id
+      }
+    }
+
+    if (!params.allowFallback) {
+      return null
+    }
+
+    const convertedFallback = await sql`
+      WITH candidate AS (
+        SELECT id
+        FROM email_logs
+        WHERE LOWER(user_email) = LOWER(${params.userEmail})
+          AND converted = false
+          AND sent_at >= NOW() - INTERVAL '7 days'
+        ORDER BY
+          clicked_at DESC NULLS LAST,
+          opened_at DESC NULLS LAST,
+          sent_at DESC NULLS LAST
+        LIMIT 1
+      )
+      UPDATE email_logs
+      SET converted = true, converted_at = NOW()
+      WHERE id IN (SELECT id FROM candidate)
+      RETURNING id
+    `
+
+    if (convertedFallback.length > 0) {
+      console.log(`[v0] Marked email_logs ${convertedFallback[0].id} as converted via fallback`)
+      return convertedFallback[0].id
+    }
+
+    console.warn("[v0] No recent email_logs found to mark converted")
+    return null
+  } catch (error) {
+    console.error("[v0] Failed to mark checkout email conversion:", error)
+    return null
   }
 }
 
@@ -617,33 +699,13 @@ export async function POST(request: NextRequest) {
               AND converted = false
             `
 
-            // Mark only the most relevant email as converted (avoid inflating attribution)
-            const convertedEmail = await sql`
-              WITH candidate AS (
-                SELECT id
-                FROM email_logs
-                WHERE user_email = ${customerEmail}
-                AND converted = false
-                AND sent_at >= NOW() - INTERVAL '7 days'
-                ORDER BY 
-                  clicked_at DESC NULLS LAST,
-                  opened_at DESC NULLS LAST,
-                  sent_at DESC NULLS LAST
-                LIMIT 1
-              )
-              UPDATE email_logs
-              SET converted = true, converted_at = NOW()
-              WHERE id IN (SELECT id FROM candidate)
-              RETURNING id
-            `
-
-            if (convertedEmail.length > 0) {
-              console.log(
-                `[v0] Marked email_logs ${convertedEmail[0].id} as converted for ${customerEmail}`
-              )
-            } else {
-              console.warn(`[v0] No recent email_logs found to mark converted for ${customerEmail}`)
-            }
+            // Prefer exact email_type attribution from checkout metadata. If it is missing
+            // or cannot be matched, keep the existing recent-email fallback.
+            await markEmailLogConversionForCheckout({
+              userEmail: customerEmail,
+              emailType: session.metadata?.email_type || null,
+              allowFallback: true,
+            })
 
             await updateTags(customerEmail, {
               status: "customer",
@@ -3936,6 +3998,7 @@ export async function POST(request: NextRequest) {
               purchaseValueCents: session.amount_total ?? null,
               purchaseCurrency: typeof session.currency === "string" ? session.currency : null,
               purchasedAt: new Date(),
+              emailType: session.metadata?.email_type || null,
               campaignId: session.metadata?.campaign_id || null,
             })
           } catch (attributionError: any) {

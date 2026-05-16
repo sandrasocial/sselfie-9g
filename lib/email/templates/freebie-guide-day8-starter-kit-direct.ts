@@ -14,6 +14,7 @@ export function generateFreebieGuideDay8StarterKitDirectEmail({
   const starterKitUrl = buildRevenueEmailLink(starterKitCheckoutUrl(), {
     campaign: "freebie_guide_day8_starter_kit_direct",
     content: "get_starter_kit",
+    emailType: "freebie-guide-day8-starter-kit-direct",
   })
 
   const bodyHtml = `

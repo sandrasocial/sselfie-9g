@@ -11,7 +11,7 @@ const REPLY_TO_EMAIL = "hello@sselfie.ai"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { token, chapterIndex, challengeDays, completed, challengeComplete } = body
+    const { token, chapterIndex, challengeDays, completed, challengeComplete, ctaClicked } = body
 
     // Validate required fields
     if (typeof token !== "string" || token.trim() === "") {
@@ -94,6 +94,21 @@ export async function POST(request: Request) {
           updated_at = NOW()
         WHERE access_token = ${trimmedToken}
       `
+    }
+
+    if (ctaClicked === true) {
+      try {
+        await sql`
+          UPDATE freebie_subscribers
+          SET
+            cta_clicked = TRUE,
+            cta_clicked_at = COALESCE(cta_clicked_at, NOW()),
+            updated_at = NOW()
+          WHERE access_token = ${trimmedToken}
+        `
+      } catch (ctaError) {
+        console.error("[selfie-guide/progress] cta click tracking failed:", ctaError)
+      }
     }
 
     // Fire-and-forget: send completion email only on first completion event

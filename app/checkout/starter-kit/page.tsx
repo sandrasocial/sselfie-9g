@@ -19,8 +19,12 @@ export default async function StarterKitCheckoutPage({
     utm_medium?: string
     utm_campaign?: string
     utm_content?: string
+    email_type?: string
     campaign_id?: string
     ref?: string
+    guide_cta?: string
+    freebie_source?: string
+    checkout_source?: string
     returnTo?: string
     return_to?: string
   }>

@@ -19,8 +19,12 @@ export type CheckoutAttributionInput = {
   utmMedium?: string | null
   utmCampaign?: string | null
   utmContent?: string | null
+  emailType?: string | null
   campaignId?: number | string | null
   referralCode?: string | null
+  guideCta?: string | null
+  freebieSource?: string | null
+  checkoutSource?: string | null
   ctaKeyword?: string | null
   quizResult?: string | null
   returnTo?: string | null
@@ -36,8 +40,12 @@ export type NormalizedCheckoutAttribution = {
   utmMedium: string | null
   utmCampaign: string | null
   utmContent: string | null
+  emailType: string | null
   campaignId: number | null
   referralCode: string | null
+  guideCta: string | null
+  freebieSource: string | null
+  checkoutSource: string | null
   ctaKeyword: string | null
   quizResult: string | null
   returnTo: string | null
@@ -60,8 +68,12 @@ export type CheckoutAttributionRecord = {
   utmMedium?: string | null
   utmCampaign?: string | null
   utmContent?: string | null
+  emailType?: string | null
   campaignId?: number | null
   referralCode?: string | null
+  guideCta?: string | null
+  freebieSource?: string | null
+  checkoutSource?: string | null
   ctaKeyword?: string | null
   quizResult?: string | null
   returnTo?: string | null
@@ -146,8 +158,12 @@ export function normalizeCheckoutAttribution(
     utmMedium: safeString(input?.utmMedium, 120),
     utmCampaign: safeString(input?.utmCampaign, 160),
     utmContent: safeString(input?.utmContent, 160),
+    emailType: safeString(input?.emailType, 120),
     campaignId: safeCampaignId(input?.campaignId),
     referralCode: safeString(input?.referralCode, 64)?.toUpperCase() || null,
+    guideCta: safeString(input?.guideCta, 80),
+    freebieSource: safeString(input?.freebieSource, 120),
+    checkoutSource: safeString(input?.checkoutSource, 120),
     ctaKeyword: safeString(input?.ctaKeyword, 40)?.toUpperCase() || null,
     quizResult: safeString(input?.quizResult, 80),
     returnTo: safeString(input?.returnTo, 500),
@@ -169,8 +185,12 @@ export function getCheckoutAttributionFromParams(
     utmMedium: params.utm_medium || defaults?.utmMedium || null,
     utmCampaign: params.utm_campaign || defaults?.utmCampaign || null,
     utmContent: params.utm_content || defaults?.utmContent || null,
+    emailType: params.email_type || defaults?.emailType || null,
     campaignId: params.campaign_id || defaults?.campaignId || null,
     referralCode: params.ref || params.referral_code || defaults?.referralCode || null,
+    guideCta: params.guide_cta || defaults?.guideCta || null,
+    freebieSource: params.freebie_source || defaults?.freebieSource || null,
+    checkoutSource: params.checkout_source || defaults?.checkoutSource || null,
     ctaKeyword: params.cta_keyword || defaults?.ctaKeyword || null,
     quizResult: params.quiz_result || defaults?.quizResult || null,
     returnTo: params.returnTo || params.return_to || defaults?.returnTo || null,
@@ -194,8 +214,12 @@ export function buildCheckoutAttributionMetadata(
     ...(normalized.utmMedium ? { utm_medium: normalized.utmMedium } : {}),
     ...(normalized.utmCampaign ? { utm_campaign: normalized.utmCampaign } : {}),
     ...(normalized.utmContent ? { utm_content: normalized.utmContent } : {}),
+    ...(normalized.emailType ? { email_type: normalized.emailType } : {}),
     ...(normalized.campaignId ? { campaign_id: String(normalized.campaignId) } : {}),
-    ...(normalized.referralCode ? { referral_code: normalized.referralCode } : {}),
+    ...(normalized.referralCode ? { referral_code: normalized.referralCode, ref: normalized.referralCode } : {}),
+    ...(normalized.guideCta ? { guide_cta: normalized.guideCta } : {}),
+    ...(normalized.freebieSource ? { freebie_source: normalized.freebieSource } : {}),
+    ...(normalized.checkoutSource ? { checkout_source: normalized.checkoutSource } : {}),
     ...(normalized.ctaKeyword ? { cta_keyword: normalized.ctaKeyword } : {}),
     ...(normalized.quizResult ? { quiz_result: normalized.quizResult } : {}),
     ...(normalized.returnTo ? { return_to: normalized.returnTo } : {}),

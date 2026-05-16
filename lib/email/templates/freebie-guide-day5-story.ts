@@ -14,6 +14,7 @@ export function generateFreebieGuideDay5StoryEmail({
   const starterKitUrl = buildRevenueEmailLink(starterKitLandingUrl(), {
     campaign: "freebie_guide_day5_story",
     content: "get_starter_kit",
+    emailType: "freebie-guide-day5-story",
   })
 
   const bodyHtml = `

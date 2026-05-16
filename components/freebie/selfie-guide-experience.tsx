@@ -32,6 +32,22 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 })
 
+function withGuideStarterKitAttribution(destination: string) {
+  if (destination !== "/starter-kit" && destination !== "/checkout/starter-kit") {
+    return destination
+  }
+
+  const params = new URLSearchParams({
+    utm_source: "free_guide",
+    utm_medium: "guide",
+    utm_campaign: "selfie_guide_to_starter_kit",
+    guide_cta: "starter_kit",
+    source: "selfie_guide_access",
+  })
+
+  return `${destination}?${params.toString()}`
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type GuideImage = {
@@ -884,6 +900,19 @@ export default function SelfieGuideExperience({
         brand_strategy_bump_selected: brandStrategyBumpSelected,
       },
     })
+
+    if (token && product === "starter_kit") {
+      fetch("/api/selfie-guide/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          chapterIndex: activeChapterIndex,
+          challengeDays,
+          ctaClicked: true,
+        }),
+      }).catch(() => {})
+    }
   }
 
   useEffect(() => {
@@ -1004,7 +1033,7 @@ export default function SelfieGuideExperience({
       hr: () => <hr className="prose-hr" />,
       a: ({ href, children }) => (
         <a
-          href={href || "#"}
+          href={withGuideStarterKitAttribution(href || "#")}
           className="prose-link"
           onClick={() => {
             const destination = href || "#"
@@ -1020,7 +1049,15 @@ export default function SelfieGuideExperience({
         </a>
       ),
     }),
-    [checkedChecklistItems, currentChapterComparable, hasBrandStrategyAccess, brandStrategyBumpSelected],
+    [
+      activeChapterIndex,
+      challengeDays,
+      checkedChecklistItems,
+      currentChapterComparable,
+      hasBrandStrategyAccess,
+      brandStrategyBumpSelected,
+      token,
+    ],
   )
 
   // Don't render chapter content until hydrated (avoids SSR/localStorage mismatch)
@@ -1067,7 +1104,7 @@ export default function SelfieGuideExperience({
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
               <Link
-                href="/starter-kit"
+                href={withGuideStarterKitAttribution("/starter-kit")}
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
@@ -1353,7 +1390,7 @@ export default function SelfieGuideExperience({
             <p className="sg-funnel-price">$37 · One time.</p>
             <div className="sg-funnel-ctas">
               <Link
-                href="/starter-kit"
+                href={withGuideStarterKitAttribution("/starter-kit")}
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
