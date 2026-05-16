@@ -18,6 +18,12 @@ const STARTER_KIT_DNG_PRESET_URL =
   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/starter-kit-dng-presets.zip"
 const STARTER_KIT_PRESET_GUIDE_URL =
   "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/presets/ssa-step-by-step-guide-presets.pdf"
+const STARTER_KIT_POSING_GUIDE_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-posing-guide.pdf"
+const STARTER_KIT_CAPTIONS_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-instagram-captions-content-ideas.pdf"
+const STARTER_KIT_STORYTELLING_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/academy/starter-kit/sselfie-selfie-to-ceo-storytelling-captions.pdf"
 
 type StarterKitRecord = {
   name?: string | null
@@ -222,6 +228,26 @@ export default async function StarterKitAccessPage({
                 Desktop XMP files
               </a>
             ) : null}
+          </div>
+        </article>
+
+        <article className="card">
+          <p className="card-label">PDF Guides</p>
+          <h2 className={cormorant.className}>Your kit guides</h2>
+          <p>
+            Three guides to support your photos from setup to caption. Download and keep them for
+            reference.
+          </p>
+          <div className="download-actions">
+            <a href={STARTER_KIT_POSING_GUIDE_URL} className="primary-cta" download>
+              Download Posing Guide
+            </a>
+            <a href={STARTER_KIT_CAPTIONS_URL} className="secondary-cta" download>
+              Download Caption Templates
+            </a>
+            <a href={STARTER_KIT_STORYTELLING_URL} className="secondary-cta" download>
+              Download Storytelling Guide
+            </a>
           </div>
         </article>
 
