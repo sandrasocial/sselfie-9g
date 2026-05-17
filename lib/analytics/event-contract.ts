@@ -69,6 +69,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "private_sprint_application_submitted",
   "studio_from_suite_clicked",
   "ai_prompts_subscribed",
+  "ai_prompts_access_opened",
+  "ai_prompts_prompt_copied",
+  "ai_prompts_selfie_guide_click",
+  "ai_prompts_starter_kit_click",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

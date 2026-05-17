@@ -5,7 +5,9 @@ import Link from "next/link"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
+import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -157,10 +159,12 @@ const WORKFLOW_PROMPTS: PromptCard[] = [
 // Token validation
 // ---------------------------------------------------------------------------
 
-async function validateToken(token: string): Promise<boolean> {
+type TokenResult = { valid: false } | { valid: true; subscriberSource: string | null }
+
+async function validateToken(token: string): Promise<TokenResult> {
   try {
     const rows = await sql`
-      SELECT id
+      SELECT id, utm_source
       FROM freebie_subscribers
       WHERE access_token = ${token}
         AND (
@@ -169,10 +173,14 @@ async function validateToken(token: string): Promise<boolean> {
         )
       LIMIT 1
     `
-    return rows.length > 0
+    if (rows.length === 0) return { valid: false }
+    return {
+      valid: true,
+      subscriberSource: (rows[0].utm_source as string | null) ?? null,
+    }
   } catch (error) {
     console.error("[ai-prompts/access] DB error during token validation:", error)
-    return false
+    return { valid: false }
   }
 }
 
@@ -193,7 +201,7 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
       <div className="pc-prompt-wrap">
         <p className="pc-prompt-text">{card.prompt}</p>
         <div className="pc-copy-row">
-          <CopyButton text={card.prompt} />
+          <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
         </div>
       </div>
     </article>
@@ -211,9 +219,9 @@ export default async function AiPromptsAccessPage({
 }) {
   const { token } = await params
   const hasHeroImage = fs.existsSync(HERO_IMAGE)
-  const isValid = await validateToken(token)
+  const result = await validateToken(token)
 
-  if (!isValid) {
+  if (!result.valid) {
     return (
       <main className={`ap-page ${inter.className}`}>
         <div className="ap-invalid">
@@ -280,6 +288,18 @@ export default async function AiPromptsAccessPage({
       </main>
     )
   }
+
+  // Fire-and-forget: track that a valid token page was opened.
+  // Never awaited — failure must not delay or block the page render.
+  logAnalyticsEvent({
+    eventName: "ai_prompts_access_opened",
+    path: "/ai-prompts/access/[token]",
+    properties: {
+      source: "ai-prompts",
+      token_prefix: token.slice(0, 8),
+      ...(result.subscriberSource ? { subscriber_source: result.subscriberSource } : {}),
+    },
+  }).catch(() => {})
 
   return (
     <main className={`ap-page ${inter.className}`}>
@@ -419,12 +439,14 @@ export default async function AiPromptsAccessPage({
             Selfie Guide shows you the light, angles, and simple setup that make every
             prompt work better. It is free.
           </p>
-          <Link
+          <TrackedLink
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_selfie_guide"
             className="ap-bridge-cta ap-bridge-cta-primary"
+            trackEvent="ai_prompts_selfie_guide_click"
+            trackProperties={{ source: "ai-prompts", destination: "selfie-guide", utm_campaign: "ai_prompts_to_selfie_guide" }}
           >
             Get the Free Selfie Guide
-          </Link>
+          </TrackedLink>
         </div>
       </section>
 
@@ -436,12 +458,14 @@ export default async function AiPromptsAccessPage({
             The Starter Kit includes the Lightroom presets, setup guide, posing guide,
             caption templates, and 7-day content starter.
           </p>
-          <Link
+          <TrackedLink
             href="/starter-kit?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_starter_kit"
             className="ap-bridge-cta ap-bridge-cta-secondary"
+            trackEvent="ai_prompts_starter_kit_click"
+            trackProperties={{ source: "ai-prompts", destination: "starter-kit", utm_campaign: "ai_prompts_to_starter_kit" }}
           >
             See the Starter Kit
-          </Link>
+          </TrackedLink>
         </div>
       </section>
 
