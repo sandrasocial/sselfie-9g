@@ -22,6 +22,14 @@ const IMG = {
   presetBeige: `${BLOB}/Beige%20Aesthetic.png`,
   presetLight: `${BLOB}/Light%20%26%20Minimalistic.png`,
   presetDark:  `${BLOB}/darkandmoody.png`,
+  // Starter Kit local assets
+  skHero:          "/images/starter-kit/hero.png",
+  skMockup:        "/images/starter-kit/mockup-2.png",
+  skPresetColl:    "/images/starter-kit/preset-collection.png",
+  skLifestyle:     "/images/starter-kit/lifestyle.png",
+  skBaLightDreamy: "/images/starter-kit/ba-light-dreamy.png",
+  skBaNordicDeep:  "/images/starter-kit/ba-nordic-deep.png",
+  skBaDarkMoody:   "/images/starter-kit/ba-dark-moody.png",
 }
 
 // ─── Design tokens — SSELFIE workbook system ─────────────────────────────────
@@ -830,24 +838,70 @@ export function StarterKitPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Starter Kit · $37"
-        title={<>Your first better selfie. Your first week of content.</>}
-        body={<p>Presets, editing walkthroughs, and 7 days of content from one session.</p>}
+        title={<>Your presets, setup guide, posing guide, caption templates, and first week of content.</>}
+        body={<p>Everything in one place.</p>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
-        imageSrc={IMG.after}
+        imageSrc={IMG.skHero}
       />
 
-      {/* THE REAL ISSUE — cream */}
-      <Section eyebrow="The real issue" title={<>You do not need more files. You need one finished result.</>} dark={false} narrow>
+      {/* THE SYSTEM — cream */}
+      <Section eyebrow="Why it works" title={<>The preset is not the whole result.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>The photo looks close. But something&apos;s off. The tone, the skin, the overall feel.</p>
-          <p>That&apos;s an editing problem. Not a camera problem. Not a face problem.</p>
-          <p>This kit fixes that, then gives you a tiny content rhythm so the photo does not just sit in your camera roll.</p>
+          <p>The preset changes the look. The system is what turns one session into a week of content.</p>
+          <p>The kit gives you the editing formula, the posing reference, the caption structure, and a content plan so the photo actually gets used.</p>
+          <p>One session. One week of content. No starting from zero.</p>
         </div>
       </Section>
 
-      {/* EDITING MASTERCLASS — dark */}
-      <Section eyebrow="The main event" title="Six editing walkthroughs. My exact formulas." dark>
+      {/* WHAT IS INSIDE — dark, split with mockup */}
+      <Split
+        eyebrow="What is inside"
+        title={<>Six things in one kit.</>}
+        body={
+          <div>
+            {[
+              { label: "Lightroom Preset Collection",  note: "Three styles. Scandinavian Light and Dreamy, Nordic Deep Urban, and Scandinavian Dark and Moody." },
+              { label: "Editing Setup Guide",          note: "Six walkthrough modules. How to use Lightroom Mobile, Hypic, and CapCut, step by step." },
+              { label: "Posing Guide",                 note: "Mirror poses, full body, profile. Never feel awkward in front of the camera again." },
+              { label: "Caption Templates",            note: "30 ready-to-edit captions in Sandra's voice. Hooks, stories, soft CTAs. Copy, adjust, post." },
+              { label: "Storytelling Guide",           note: "Five post types that turn one photo session into a full week of content." },
+              { label: "7-Day Content Starter",        note: "One session. Seven posts. A full week of content planned and ready to go." },
+            ].map((item, i) => (
+              <div key={item.label} style={{
+                borderTop: `1px solid ${C.divDark}`,
+                padding: "13px 0",
+                ...(i === 5 ? { borderBottom: `1px solid ${C.divDark}` } : {}),
+              }}>
+                <p style={{ ...ty("h3", true), fontSize: "15px", marginBottom: "3px" }}>{item.label}</p>
+                <p style={{ ...ty("body", true), fontSize: "13px" }}>{item.note}</p>
+              </div>
+            ))}
+          </div>
+        }
+        imgSrc={IMG.skMockup}
+        imgFirst
+        dark
+        cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Starter Kit · $37</Btn>}
+      />
+
+      {/* BEFORE AND AFTER — cream */}
+      <Section eyebrow="Preset results" title={<>Three styles. See them in use.</>} dark={false}>
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            { img: IMG.skBaLightDreamy, alt: "Scandinavian Light and Dreamy preset before and after" },
+            { img: IMG.skBaNordicDeep,  alt: "Nordic Deep Urban preset before and after" },
+            { img: IMG.skBaDarkMoody,   alt: "Scandinavian Dark and Moody preset before and after" },
+          ].map((s) => (
+            <div key={s.alt} className="mf">
+              <img src={s.img} alt={s.alt} style={{ width: "100%", height: "auto", display: "block" }} />
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* EDITING WALKTHROUGHS — dark */}
+      <Section eyebrow="The editing walkthrough" title={<>Six modules. My exact formulas.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
             { num: "01", title: "Lightroom with presets",   body: "How to import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
@@ -866,53 +920,56 @@ export function StarterKitPageContent() {
         </div>
       </Section>
 
-      {/* BEFORE / AFTER — cream */}
-      <Section eyebrow="Before and after" title="Same photo. Drag to see the difference." dark={false}>
-        <div className="max-w-sm mx-auto">
-          <BeforeAfterSlider before={IMG.before} after={IMG.after} beforeLabel="Original" afterLabel="Preset applied" />
-        </div>
-      </Section>
-
-      {/* PRESET STYLES — dark */}
-      <Section eyebrow="The preset collection" title="Three styles. Pick the one that feels most like you." dark>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: "Scandinavian Light & Dreamy", img: IMG.presetBeige, note: "Soft, golden, editorial" },
-            { label: "Nordic Deep Urban",           img: IMG.presetLight, note: "Clean, airy, Scandinavian" },
-            { label: "Scandinavian Dark & Moody",   img: IMG.presetDark,  note: "Rich, dramatic, confident" },
-          ].map((s) => (
-            <div key={s.label} className="mf" style={{ ...cardSx(true, false), padding: "16px" }}>
-              <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "1/1" }}>
-                <img src={s.img} alt={s.label} className="w-full h-full object-cover" />
-              </div>
-              <p style={{ ...ty("h3", true), fontSize: "16px", marginBottom: "4px" }}>{s.label}</p>
-              <p style={{ ...ty("body", true), fontSize: "13px" }}>{s.note}</p>
+      {/* PRESET COLLECTION — cream, split */}
+      <Split
+        eyebrow="The preset collection"
+        title={<>Three styles. Pick the one that feels most like you.</>}
+        body={
+          <div className="space-y-4">
+            <p>Each preset ships with a step-by-step import guide and a walkthrough showing how to dial the strength for your skin tone and lighting.</p>
+            <p>You get all three. Start with the one that matches the photo, then adjust from there.</p>
+            <div className="grid gap-2 mt-2">
+              {[
+                { name: "Scandinavian Light and Dreamy", desc: "Bright, airy, soft tones. Timeless natural light." },
+                { name: "Nordic Deep Urban",             desc: "Cool, desaturated, cinematic. Urban edge." },
+                { name: "Scandinavian Dark and Moody",   desc: "Deep, warm, dramatic. Moody and timeless." },
+              ].map((p) => (
+                <div key={p.name} style={{ borderBottom: `1px solid ${C.divCream}`, paddingBottom: "10px" }}>
+                  <p style={{ ...ty("h3", false), fontSize: "14px", marginBottom: "2px" }}>{p.name}</p>
+                  <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.desc}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        }
+        imgSrc={IMG.skPresetColl}
+        imgFirst
+        dark={false}
+      />
+
+      {/* ALSO INCLUDED — dark */}
+      <Section eyebrow="Also included" title={<>The rest of the kit.</>} dark>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
+          <FCard dark title="Caption Templates" body="30 ready-to-edit captions written in Sandra's voice. Hooks, stories, soft CTAs. Copy, adjust your detail, post." />
+          <FCard dark title="Storytelling Guide" body="Five post types that turn one photo session into a full content arc. Proof, story, teaching, behind the scenes, and invitation." />
+          <FCard dark title="7-Day Content Starter" body="Turn one session into seven posts. A full week of content from a single afternoon." />
+          <FCard dark title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
+          <FCard dark title="Editing Setup Guide" body="How to download Lightroom Mobile, import the presets, and be editing within five minutes. No prior experience needed." />
         </div>
       </Section>
 
-      {/* ALSO INCLUDED — cream */}
-      <Section eyebrow="Also included" title="The rest of the kit." dark={false}>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark={false} title="Selfie Posing Cheat Sheet" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
-          <FCard dark={false} title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
-          <FCard dark={false} title="7 Posts From One Session" body="Turn a single photo session into a week of content. Proof, story, teaching, behind-the-scenes, and invitation." />
-          <FCard dark={false} title="30 Caption Formulas" body="Ready-to-edit captions written in my voice. Hooks, stories, CTAs. Copy, adjust your detail, post." />
-        </div>
+      {/* FAQ — cream */}
+      <Section eyebrow="FAQ" title={<>A few things people ask.</>} dark={false}>
+        <FaqAccordion items={FAQS.starterKit} dark={false} />
       </Section>
 
-      {/* FAQ — dark */}
-      <Section eyebrow="FAQ" title="A few things people ask." dark>
-        <FaqAccordion items={FAQS.starterKit} dark />
-      </Section>
-
-      {/* CTA — cream */}
+      {/* CTA — dark */}
       <CtaClose
-        title="Everything you need to turn one selfie into your first brand-ready week."
+        title={<>Everything you need to turn one selfie into your first brand-ready week.</>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
-        dark={false}
+        dark
       />
 
       <PublicFooter />
