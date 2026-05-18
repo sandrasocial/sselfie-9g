@@ -4,10 +4,9 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
-import {
-  SELFIE_GUIDE_EMAIL_TOUCHES,
-} from "@/lib/email/selfie-guide-email-sequence"
+import { SELFIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/selfie-guide-email-sequence"
 import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
+import { AI_PROMPTS_EMAIL_TOUCHES } from "@/lib/email/ai-prompts-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
 import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/freebie-guide-day1-light-tip"
@@ -32,6 +31,9 @@ import { generateMasterclassDay2CheckinEmail } from "@/lib/email/templates/maste
 import { generateMasterclassDay5DeepenEmail } from "@/lib/email/templates/masterclass-day5-deepen"
 import { generateMasterclassDay7SoftWorkWithMeEmail } from "@/lib/email/templates/masterclass-day7-soft-work-with-me"
 import { generateMasterclassDay10DirectInviteEmail } from "@/lib/email/templates/masterclass-day10-direct-invite"
+import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
+import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
+import { generateAiPromptsDay7StarterKitOfferEmail } from "@/lib/email/templates/ai-prompts-day7-starter-kit-offer"
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
   .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
@@ -40,6 +42,7 @@ const STARTER_KIT_FALLBACK_URL = `${SITE_URL}/starter-kit`
 const MASTERCLASS_FALLBACK_URL = `${SITE_URL}/masterclass`
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
+const AI_PROMPTS_NURTURE_SAFE_DEFAULT_START_DATE = "2026-05-18"
 
 interface SelfieGuideActivationCandidate {
   email: string
@@ -62,6 +65,13 @@ interface FreebieGuideTouchCandidate {
   created_at: string
 }
 
+interface AiPromptsTouchCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  created_at: string
+}
+
 interface StarterKitCandidate {
   email: string
   name: string | null
@@ -75,7 +85,7 @@ interface MasterclassCandidate {
   subscription_created_at: string
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -88,6 +98,21 @@ function errorMessage(error: unknown): string {
 function selfieGuideAccessUrl(candidate: { access_token: string | null }): string {
   const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/selfie-guide/access/${token}` : `${SITE_URL}/selfie-guide`
+}
+
+function aiPromptsAccessUrl(candidate: { access_token: string | null }): string {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0 ? `${SITE_URL}/ai-prompts/access/${token}` : `${SITE_URL}/ai-prompts`
+}
+
+function aiPromptsNurtureStartDate(): string {
+  const configured = process.env.AI_PROMPTS_NURTURE_START_DATE?.trim()
+
+  if (configured && /^\d{4}-\d{2}-\d{2}$/.test(configured)) {
+    return configured
+  }
+
+  return AI_PROMPTS_NURTURE_SAFE_DEFAULT_START_DATE
 }
 
 async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivationCandidate[]> {
@@ -118,7 +143,10 @@ async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivati
   `) as SelfieGuideActivationCandidate[]
 }
 
-async function getSelfieGuideTouchCandidates(days: number, emailType: string): Promise<SelfieGuideTouchCandidate[]> {
+async function getSelfieGuideTouchCandidates(
+  days: number,
+  emailType: string
+): Promise<SelfieGuideTouchCandidate[]> {
   return (await sql`
     SELECT DISTINCT ON (LOWER(u.email))
       u.email,
@@ -145,7 +173,10 @@ async function getSelfieGuideTouchCandidates(days: number, emailType: string): P
   `) as SelfieGuideTouchCandidate[]
 }
 
-async function getFreebieGuideTouchCandidates(days: number, emailType: string): Promise<FreebieGuideTouchCandidate[]> {
+async function getFreebieGuideTouchCandidates(
+  days: number,
+  emailType: string
+): Promise<FreebieGuideTouchCandidate[]> {
   return (await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
       fs.email,
@@ -168,7 +199,56 @@ async function getFreebieGuideTouchCandidates(days: number, emailType: string): 
   `) as FreebieGuideTouchCandidate[]
 }
 
-async function getStarterKitCandidates(days: number, emailType: string): Promise<StarterKitCandidate[]> {
+async function getAiPromptsTouchCandidates(
+  days: number,
+  emailType: string,
+  startDate: string
+): Promise<AiPromptsTouchCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(fs.email))
+      fs.email,
+      NULLIF(BTRIM(fs.name), '') AS name,
+      fs.access_token,
+      fs.created_at
+    FROM freebie_subscribers fs
+    WHERE fs.created_at <= NOW() - (${`${days} days`}::interval)
+      AND fs.created_at >= ${startDate}::date
+      AND fs.email IS NOT NULL
+      AND fs.email <> ''
+      AND (
+        fs.source = 'ai-prompts'
+        OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+      )
+      AND NOT (
+        'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_starter_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM users u
+        INNER JOIN subscriptions s ON s.user_id = u.id::varchar
+        WHERE LOWER(u.email) = LOWER(fs.email)
+          AND s.product_type IN ('starter_kit', 'masterclass')
+          AND s.status = 'active'
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(fs.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+      )
+    ORDER BY LOWER(fs.email), fs.created_at DESC
+    LIMIT 200
+  `) as AiPromptsTouchCandidate[]
+}
+
+async function getStarterKitCandidates(
+  days: number,
+  emailType: string
+): Promise<StarterKitCandidate[]> {
   return (await sql`
     SELECT DISTINCT ON (LOWER(u.email))
       u.email,
@@ -195,7 +275,10 @@ async function getStarterKitCandidates(days: number, emailType: string): Promise
   `) as StarterKitCandidate[]
 }
 
-async function getMasterclassCandidates(days: number, emailType: string): Promise<MasterclassCandidate[]> {
+async function getMasterclassCandidates(
+  days: number,
+  emailType: string
+): Promise<MasterclassCandidate[]> {
   return (await sql`
     SELECT DISTINCT ON (LOWER(u.email))
       u.email,
@@ -229,7 +312,7 @@ function formatExpiryDate(subscriptionCreatedAt: string, daysAfterPurchase: numb
 async function sendSelfieGuideTouchEmail(
   emailType: string,
   candidate: SelfieGuideTouchCandidate,
-  accessUrl: string,
+  accessUrl: string
 ) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
 
@@ -237,17 +320,34 @@ async function sendSelfieGuideTouchEmail(
 
   switch (emailType) {
     case "selfie-guide-day3-checkin":
-      email = generateSelfieGuideDay3CheckinEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateSelfieGuideDay3CheckinEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "selfie-guide-day7-challenge":
-      email = generateSelfieGuideDay7ChallengeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateSelfieGuideDay7ChallengeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "selfie-guide-day14-maya-bridge":
-      email = generateSelfieGuideDay14MayaBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateSelfieGuideDay14MayaBridgeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "selfie-guide-day21-final": {
       const expiryDate = formatExpiryDate(candidate.subscription_created_at, 28)
-      email = generateSelfieGuideDay21FinalEmail({ firstName, recipientEmail: candidate.email, accessUrl, expiryDate })
+      email = generateSelfieGuideDay21FinalEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+        expiryDate,
+      })
       break
     }
     default:
@@ -270,7 +370,7 @@ async function sendSelfieGuideTouchEmail(
 async function sendFreebieGuideTouchEmail(
   emailType: string,
   candidate: FreebieGuideTouchCandidate,
-  accessUrl: string,
+  accessUrl: string
 ) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
 
@@ -278,19 +378,39 @@ async function sendFreebieGuideTouchEmail(
 
   switch (emailType) {
     case "freebie-guide-day1-light-tip":
-      email = generateFreebieGuideDay1LightTipEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateFreebieGuideDay1LightTipEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "freebie-guide-day3-edit-bridge":
-      email = generateFreebieGuideDay3EditBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateFreebieGuideDay3EditBridgeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "freebie-guide-day5-story":
-      email = generateFreebieGuideDay5StoryEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateFreebieGuideDay5StoryEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "freebie-guide-day8-starter-kit-direct":
-      email = generateFreebieGuideDay8StarterKitDirectEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateFreebieGuideDay8StarterKitDirectEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "freebie-guide-day14-masterclass-bridge":
-      email = generateFreebieGuideDay14MasterclassBridgeEmail({ firstName, recipientEmail: candidate.email, accessUrl })
+      email = generateFreebieGuideDay14MasterclassBridgeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     default:
       throw new Error(`Unknown freebie guide email type: ${emailType}`)
@@ -309,6 +429,42 @@ async function sendFreebieGuideTouchEmail(
   })
 }
 
+async function sendAiPromptsTouchEmail(
+  emailType: string,
+  candidate: AiPromptsTouchCandidate,
+  accessUrl: string
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "ai-prompts-day2-try-first-prompt":
+      email = generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
+      break
+    case "ai-prompts-day5-edit-makes-postable":
+      email = generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
+      break
+    case "ai-prompts-day7-starter-kit-offer":
+      email = generateAiPromptsDay7StarterKitOfferEmail({ firstName })
+      break
+    default:
+      throw new Error(`Unknown AI Prompts email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["ai-prompts", emailType],
+    marketing: true,
+  })
+}
+
 function starterKitAccessUrl(_candidate: StarterKitCandidate): string {
   const token = typeof _candidate.access_token === "string" ? _candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/access/starter-kit/${token}` : STARTER_KIT_FALLBACK_URL
@@ -322,7 +478,7 @@ function masterclassAccessUrl(_candidate: MasterclassCandidate): string {
 async function sendStarterKitTouchEmail(
   emailType: string,
   candidate: StarterKitCandidate,
-  accessUrl: string,
+  accessUrl: string
 ) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
 
@@ -374,7 +530,7 @@ async function sendStarterKitTouchEmail(
 async function sendMasterclassTouchEmail(
   emailType: string,
   candidate: MasterclassCandidate,
-  accessUrl: string,
+  accessUrl: string
 ) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
 
@@ -440,12 +596,18 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
-    const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    const isProduction =
+      process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
-        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+        await cronLogger.error(new Error("Unauthorized"), {
+          reason: "CRON_SECRET not set in production",
+        })
+        return NextResponse.json(
+          { error: "Unauthorized: CRON_SECRET required in production" },
+          { status: 401 }
+        )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
@@ -459,6 +621,9 @@ export async function GET(request: Request) {
       freebieGuideDay5: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay8: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay14: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay2: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay3: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay7: { found: 0, sent: 0, failed: 0 },
@@ -516,6 +681,48 @@ export async function GET(request: Request) {
         }
 
         await sleep(150)
+      }
+    }
+
+    const aiPromptsEnabled = process.env.AI_PROMPTS_NURTURE_ENABLED === "true"
+    const aiPromptsStartDate = aiPromptsNurtureStartDate()
+    const aiPromptsTouchResultKeys = ["aiPromptsDay2", "aiPromptsDay5", "aiPromptsDay7"] as const
+
+    if (aiPromptsEnabled) {
+      for (const [index, touch] of AI_PROMPTS_EMAIL_TOUCHES.entries()) {
+        const resultKey = aiPromptsTouchResultKeys[index]
+        const candidates = await getAiPromptsTouchCandidates(
+          touch.days,
+          touch.emailType,
+          aiPromptsStartDate
+        )
+        results[resultKey].found = candidates.length
+
+        for (const candidate of candidates) {
+          const accessUrl = aiPromptsAccessUrl(candidate)
+          try {
+            const result = await sendAiPromptsTouchEmail(touch.emailType, candidate, accessUrl)
+            if (result.success) {
+              results[resultKey].sent += 1
+            } else {
+              results[resultKey].failed += 1
+              results.errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: result.error || "unknown",
+              })
+            }
+          } catch (error: unknown) {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: errorMessage(error),
+            })
+          }
+
+          await sleep(150)
+        }
       }
     }
 
@@ -677,6 +884,9 @@ export async function GET(request: Request) {
       results.freebieGuideDay5.sent +
       results.freebieGuideDay8.sent +
       results.freebieGuideDay14.sent +
+      results.aiPromptsDay2.sent +
+      results.aiPromptsDay5.sent +
+      results.aiPromptsDay7.sent +
       results.selfieGuideDay0.sent +
       results.selfieGuideDay3.sent +
       results.selfieGuideDay7.sent +
@@ -700,6 +910,9 @@ export async function GET(request: Request) {
       results.freebieGuideDay5.failed +
       results.freebieGuideDay8.failed +
       results.freebieGuideDay14.failed +
+      results.aiPromptsDay2.failed +
+      results.aiPromptsDay5.failed +
+      results.aiPromptsDay7.failed +
       results.selfieGuideDay0.failed +
       results.selfieGuideDay3.failed +
       results.selfieGuideDay7.failed +
@@ -724,6 +937,11 @@ export async function GET(request: Request) {
       freebieGuideDay5: results.freebieGuideDay5,
       freebieGuideDay8: results.freebieGuideDay8,
       freebieGuideDay14: results.freebieGuideDay14,
+      aiPromptsEnabled,
+      aiPromptsStartDate,
+      aiPromptsDay2: results.aiPromptsDay2,
+      aiPromptsDay5: results.aiPromptsDay5,
+      aiPromptsDay7: results.aiPromptsDay7,
       selfieGuideDay0: results.selfieGuideDay0,
       selfieGuideDay3: results.selfieGuideDay3,
       selfieGuideDay7: results.selfieGuideDay7,
@@ -766,7 +984,7 @@ export async function GET(request: Request) {
         error: "Failed to run nurture sequence",
         details: errorMessage(error),
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
