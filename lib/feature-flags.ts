@@ -85,7 +85,16 @@ export function isMayaConversationalActionPillsEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS === 'true'
 }
 
-
+/**
+ * Maya conversational async UX - Phase G
+ * Client-side flag for making async Flux/Nano generation cards feel more like
+ * the same Maya conversation through softer loading copy and continuation pills.
+ * Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX=true to enable.
+ * Default: false.
+ */
+export function isMayaConversationalAsyncUxEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX === 'true'
+}
 
 
 

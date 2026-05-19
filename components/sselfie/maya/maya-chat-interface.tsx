@@ -683,6 +683,7 @@ function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx):
         )
       }}
       onImageGenerated={ctx.onImageGenerated}
+      onToolPromptSelect={ctx.onToolPromptSelect}
       isAdmin={ctx.isAdmin}
       selectedGuideId={ctx.selectedGuideId}
       selectedGuideCategory={ctx.selectedGuideCategory}

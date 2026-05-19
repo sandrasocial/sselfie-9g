@@ -57,6 +57,7 @@ interface MayaConceptCardsProps {
   messages?: any[] // Messages array to get latest concept data
   onPromptUpdate?: (messageId: string, conceptId: string, newFullPrompt: string) => void
   onImageGenerated?: () => void
+  onToolPromptSelect?: (prompt: string) => void
   
   // Admin props
   isAdmin?: boolean
@@ -96,6 +97,7 @@ export default function MayaConceptCards({
   messages = [],
   onPromptUpdate,
   onImageGenerated,
+  onToolPromptSelect,
   isAdmin = false,
   selectedGuideId = null,
   selectedGuideCategory = null,
@@ -259,6 +261,7 @@ export default function MayaConceptCards({
                   }
                 }}
                 onImageGenerated={onImageGenerated}
+                onToolPromptSelect={onToolPromptSelect}
                 onViewPrompt={() => {
                   // View prompt modal is handled by ConceptCardPro component
                   console.log('[Pro Mode] View prompt:', concept.fullPrompt || concept.prompt)
@@ -291,6 +294,7 @@ export default function MayaConceptCards({
               selectedGuideId={selectedGuideId}
               adminUserId={user?.id?.toString()}
               onSaveToGuide={onSaveToGuide}
+              onToolPromptSelect={onToolPromptSelect}
             />
           )
         })}

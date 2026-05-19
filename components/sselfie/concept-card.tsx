@@ -10,6 +10,15 @@ import type { ConceptData } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
 import BuyCreditsModal from "./buy-credits-modal"
 import { MAYA_CLASSIC_GENERATION_CREDIT_COST, MAYA_PRO_GENERATION_CREDIT_COST } from "@/lib/maya/credit-costs"
+import { isMayaConversationalAsyncUxEnabled } from "@/lib/feature-flags"
+
+const MAYA_ASYNC_CONTINUATION_ACTIONS = [
+  { label: "Softer", prompt: "Make this softer and more editorial." },
+  { label: "More Pinterest", prompt: "Make this more Pinterest." },
+  { label: "More editorial", prompt: "Make this feel more editorial." },
+  { label: "Write caption", prompt: "Write a caption for this image." },
+  { label: "Luxury vibe", prompt: "Make a more luxury version of this." },
+] as const
 
 interface ConceptCardProps {
   concept: ConceptData & { id?: string; customSettings?: any }
@@ -30,6 +39,7 @@ interface ConceptCardProps {
   selectedGuideId?: number | null // Selected guide ID for saving
   adminUserId?: string // User ID for saving to guide (admin mode)
   onSaveToGuide?: (concept: ConceptData, imageUrl?: string) => void // Save handler from parent
+  onToolPromptSelect?: (prompt: string) => void
   generationSettings?: {
     styleStrength: number
     promptAccuracy: number
@@ -58,6 +68,7 @@ export default function ConceptCard({
   selectedGuideId = null,
   adminUserId,
   onSaveToGuide,
+  onToolPromptSelect,
   generationSettings,
   enhancedAuthenticity: enhancedAuthenticityOverride,
 }: ConceptCardProps) {
@@ -149,6 +160,11 @@ export default function ConceptCard({
   const [extraLora, setExtraLora] = useState<string | null>(null)
   const [realismStrength, setRealismStrength] = useState<number | null>(null)
   const hasMenuActions = isProMode || (isAdmin && !!selectedGuideId)
+  const conversationalAsyncUxEnabled = isMayaConversationalAsyncUxEnabled()
+  const handleContinuationPrompt = (prompt: string) => {
+    if (!generatedImageUrl) return
+    onToolPromptSelect?.(`${prompt}\n\n[Inspiration Image: ${generatedImageUrl}]`)
+  }
   const categoryLabelMap: Record<string, string> = {
     "Environmental Portrait": "Outdoor scene",
     "Half Body Lifestyle": "Half body",
@@ -2032,7 +2048,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               ></div>
             </div>
             <span className="text-xs font-light text-[color:var(--app-text-muted)] tracking-wide">
-              {isProMode ? 'Maya is creating...' : 'Creating your photo'}
+              {conversationalAsyncUxEnabled
+                ? "Maya is making this. I'll save it to your gallery when it's ready."
+                : isProMode ? 'Maya is creating...' : 'Creating your photo'}
             </span>
           </div>
         )}
@@ -2075,6 +2093,28 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 }
                 studioProMode={isProMode}
               />
+            )}
+
+            {conversationalAsyncUxEnabled && (
+              <div className="rounded-[14px] border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-input-bg)] px-3 py-3 space-y-3">
+                <p className="text-xs leading-relaxed text-[color:var(--app-text-muted)] font-light">
+                  Here it is. I saved it to your gallery. Want to keep shaping it?
+                </p>
+                {onToolPromptSelect && (
+                  <div className="flex flex-wrap gap-2">
+                    {MAYA_ASYNC_CONTINUATION_ACTIONS.map((action) => (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={() => handleContinuationPrompt(action.prompt)}
+                        className="rounded-full border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] px-3 py-1.5 text-[11px] font-light text-[color:var(--color-porcelain)] transition-colors hover:bg-[color:var(--glass-bg-heavy)]"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Pro Photoshoot Panel */}

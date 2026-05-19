@@ -12,6 +12,7 @@ import InstagramPhotoCard from '../instagram-photo-card'
 import ProPhotoshootPanel from '../pro-photoshoot-panel'
 import InstagramCarouselCard from '../instagram-carousel-card'
 import { useToast } from '@/hooks/use-toast'
+import { isMayaConversationalAsyncUxEnabled } from '@/lib/feature-flags'
 
 /**
  * ConceptCardPro Component
@@ -51,6 +52,7 @@ interface ConceptCardProProps {
   isAdmin?: boolean // Admin mode - enables save to guide functionality
   selectedGuideId?: number | null // Selected guide ID for saving
   onSaveToGuide?: (concept: any, imageUrl?: string) => void // Save handler from parent
+  onToolPromptSelect?: (prompt: string) => void
   messageId?: string // Message ID for updating JSONB when image is generated
   chatId?: string | number // Chat ID fallback when messageId is a temp client-side ID
 }
@@ -62,6 +64,13 @@ const PRO_INPUT_BORDER = "rgba(15,13,11,0.18)"
 const PRO_TEXT_PRIMARY = "#0F0D0B"
 const PRO_TEXT_SECONDARY = "#7A6F63"
 const PRO_TEXT_MUTED = "#A89A8A"
+const MAYA_ASYNC_CONTINUATION_ACTIONS = [
+  { label: "Softer", prompt: "Make this softer and more editorial." },
+  { label: "More Pinterest", prompt: "Make this more Pinterest." },
+  { label: "More editorial", prompt: "Make this feel more editorial." },
+  { label: "Write caption", prompt: "Write a caption for this image." },
+  { label: "Luxury vibe", prompt: "Make a more luxury version of this." },
+] as const
 
 export default function ConceptCardPro({
   concept,
@@ -76,6 +85,7 @@ export default function ConceptCardPro({
   onSaveToGuide,
   messageId,
   chatId,
+  onToolPromptSelect,
 }: ConceptCardProProps) {
   const { toast } = useToast()
   const PRO_MODE_GENERATION_CREDITS = 2 // keep in sync with getStudioProCreditCost for 2K
@@ -83,6 +93,11 @@ export default function ConceptCardPro({
   const [isEditingPrompt, setIsEditingPrompt] = useState(false)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const [editedPrompt, setEditedPrompt] = useState(concept.fullPrompt || '')
+  const conversationalAsyncUxEnabled = isMayaConversationalAsyncUxEnabled()
+  const handleContinuationPrompt = (prompt: string) => {
+    if (!generatedImageUrl) return
+    onToolPromptSelect?.(`${prompt}\n\n[Inspiration Image: ${generatedImageUrl}]`)
+  }
 
   // Sync editedPrompt with concept.fullPrompt when concept changes (but not when editing)
   useEffect(() => {
@@ -1387,7 +1402,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               ></div>
             </div>
             <span className="text-xs font-light tracking-wide" style={{ color: PRO_TEXT_SECONDARY }}>
-              Maya is creating...
+              {conversationalAsyncUxEnabled
+                ? "Maya is making this. I'll save it to your gallery when it's ready."
+                : "Maya is creating..."}
             </span>
           </div>
         )}
@@ -1435,6 +1452,28 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               studioProMode={true}
               isCreatingProPhotoshoot={isCreatingProPhotoshoot}
             />
+            {conversationalAsyncUxEnabled && (
+              <div className="mt-3 rounded-[14px] border px-3 py-3 space-y-3" style={{ borderColor: PRO_CARD_BORDER, backgroundColor: PRO_INPUT_BG }}>
+                <p className="text-xs leading-relaxed font-light" style={{ color: PRO_TEXT_SECONDARY }}>
+                  Here it is. I saved it to your gallery. Want to keep shaping it?
+                </p>
+                {onToolPromptSelect && (
+                  <div className="flex flex-wrap gap-2">
+                    {MAYA_ASYNC_CONTINUATION_ACTIONS.map((action) => (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={() => handleContinuationPrompt(action.prompt)}
+                        className="rounded-full border px-3 py-1.5 text-[11px] font-light transition-colors hover:bg-black/5"
+                        style={{ borderColor: PRO_INPUT_BORDER, color: PRO_TEXT_PRIMARY }}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
