@@ -1,6 +1,7 @@
+import { isOpenAIDefaultForUntrainedEnabled } from "@/lib/feature-flags"
 import { getRecommendedSource } from "@/lib/maya/model-choice-policy"
 
-export type MayaUnifiedMode = "pro" | "maya" | "feed-planner"
+export type MayaUnifiedMode = "pro" | "maya" | "feed-planner" | "openai_quick"
 
 const STRUCTURED_CALENDAR_TARGET_REGEX = /\b(content calendar|calendar)\b/i
 const STRUCTURED_CALENDAR_CREATE_REGEX =
@@ -10,6 +11,7 @@ export interface AutoSelectMayaModeParams {
   hasReferenceImage: boolean
   hasTrainedLoraModel: boolean
   isContentPlanning: boolean
+  isImageGeneration?: boolean
   /** When set, used with hasTrainedLoraModel to resolve recommended source via policy (my model vs selfie). */
   canUseSelfies?: boolean
 }
@@ -50,6 +52,7 @@ export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifie
   if (params.isContentPlanning) return "feed-planner"
   if (params.hasReferenceImage) return "pro"
   if (params.hasTrainedLoraModel) return "maya"
+  if (params.isImageGeneration && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
   if (params.canUseSelfies !== undefined) {
     const recommended = getRecommendedSource({
       hasTrainedModel: params.hasTrainedLoraModel,

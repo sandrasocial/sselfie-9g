@@ -17,6 +17,7 @@ import { getOrCreateActiveChat } from "@/lib/data/maya"
 import {
   autoSelectMayaMode,
   isContentPlanningIntent,
+  isMayaImageGenerationIntent,
   isUnifiedMayaUiEnabled,
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
@@ -153,6 +154,93 @@ function createMayaChatErrorResponse(validUIMessages: UIMessage[], error: unknow
         type: "text-delta",
         id: textPartId,
         delta: errorMessage,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+async function createOpenAIQuickImageDispatchResponse(input: {
+  req: Request
+  validUIMessages: UIMessage[]
+  prompt: string
+  chatId?: unknown
+  userId: string
+}): Promise<Response | null> {
+  const prompt = input.prompt.trim()
+  if (!prompt) return null
+
+  const headers = new Headers()
+  headers.set("Content-Type", "application/json")
+  const cookie = input.req.headers.get("cookie")
+  if (cookie) headers.set("cookie", cookie)
+  const authorization = input.req.headers.get("authorization")
+  if (authorization) headers.set("authorization", authorization)
+
+  const origin = new URL(input.req.url).origin
+  const openAIResponse = await fetch(`${origin}/api/maya/generate-image-openai`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      prompt,
+      conceptTitle: "Maya quick photo",
+      chatId: typeof input.chatId === "string" ? input.chatId : undefined,
+    }),
+  })
+
+  if (openAIResponse.status === 403) {
+    return null
+  }
+
+  const payload = await openAIResponse.json().catch(() => null)
+
+  if (!openAIResponse.ok || !payload?.success || !payload?.imageUrl) {
+    const message =
+      typeof payload?.error === "string"
+        ? payload.error
+        : "Maya could not create that photo right now. Please try again in a moment."
+
+    const stream = createUIMessageStream({
+      originalMessages: input.validUIMessages as any,
+      execute: ({ writer }) => {
+        const textPartId = `maya-quick-photo-error-${Date.now().toString(36)}`
+        writer.write({ type: "text-start", id: textPartId })
+        writer.write({
+          type: "text-delta",
+          id: textPartId,
+          delta: message,
+        })
+        writer.write({ type: "text-end", id: textPartId })
+      },
+    })
+
+    return createUIMessageStreamResponse({ stream })
+  }
+
+  void logAnalyticsEvent({
+    eventName: "maya_quick_image_generated",
+    userId: input.userId,
+    path: "/api/maya/chat",
+    properties: {
+      source: "openai_quick",
+      aiImageId: payload.aiImageId || null,
+    },
+  })
+
+  const stream = createUIMessageStream({
+    originalMessages: input.validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `maya-quick-photo-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta:
+          `Done. I created it and saved it to your gallery.\n\n` +
+          `Open it here: ${payload.imageUrl}\n\n` +
+          `Want me to write a caption for this one?`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -382,6 +470,7 @@ export async function POST(req: Request) {
     let chatType = requestedChatType
     let isFeedTab = activeTabHeader === "feed" || isFeedPlannerChatType(requestedChatType)
     let useFeedPlannerContext = isFeedTab
+    let useOpenAIQuickImageDispatch = false
     
     debugLog("[Maya Chat API] Headers normalized", {
       fromBody: chatTypeFromBody,
@@ -440,13 +529,17 @@ export async function POST(req: Request) {
         console.error("[Maya Chat API] Failed checking trained model for unified routing:", modelError)
       }
 
+      const isImageGeneration = isMayaImageGenerationIntent(latestUserText)
       const autoMode = autoSelectMayaMode({
         hasReferenceImage,
         hasTrainedLoraModel,
         isContentPlanning: isContentPlanningIntent(latestUserText),
+        isImageGeneration,
         canUseSelfies,
       })
-      const normalizedAutoMode = normalizeMayaChatType(autoMode)
+      useOpenAIQuickImageDispatch = autoMode === "openai_quick"
+      const normalizedAutoMode =
+        autoMode === "openai_quick" ? requestedChatType : normalizeMayaChatType(autoMode)
 
       if (tabScopedChatEnabled && activeMayaTab === "plan") {
         chatType = requestedChatType
@@ -477,6 +570,8 @@ export async function POST(req: Request) {
         useFeedPlannerContext,
         hasReferenceImage,
         hasTrainedLoraModel,
+        isImageGeneration,
+        useOpenAIQuickImageDispatch,
       })
     }
 
@@ -580,6 +675,26 @@ export async function POST(req: Request) {
       valid: validUIMessages.length,
     })
     const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
+
+    if (
+      useOpenAIQuickImageDispatch &&
+      isMayaImageGenerationIntent(latestUserTextForSkills) &&
+      !isPromptBuilder &&
+      !useFeedPlannerContext &&
+      chatType !== "pro-photoshoot"
+    ) {
+      const openAIQuickImageResponse = await createOpenAIQuickImageDispatchResponse({
+        req,
+        validUIMessages: validUIMessages as UIMessage[],
+        prompt: latestUserTextForSkills,
+        chatId,
+        userId: dbUserId,
+      })
+
+      if (openAIQuickImageResponse) {
+        return openAIQuickImageResponse
+      }
+    }
 
     const tabHandoff =
       tabScopedChatEnabled && activeMayaTab
