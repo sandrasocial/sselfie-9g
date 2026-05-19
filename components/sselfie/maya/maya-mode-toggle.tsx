@@ -29,7 +29,7 @@ export default function MayaModeToggle({
       return (
         <div className={`flex items-center ${className}`}>
           <span className="text-sm font-medium text-[#8a8780]">
-            {isProMode ? "SELFIE" : "MY MODEL"}
+            {isProMode ? "PHOTO" : "MY LOOK"}
           </span>
         </div>
       )
@@ -57,15 +57,15 @@ export default function MayaModeToggle({
           aria-pressed={myModelActive}
           aria-label={
             myModelActive
-              ? "My Model — active. Photos use your trained likeness."
-              : "Switch to My Model — photos use your trained likeness."
+              ? "My Look — active. Photos can keep your look consistent."
+              : "Switch to My Look — photos can keep your look consistent."
           }
-          title="My Model: one trained face across your photos. Best when you have finished training."
+          title="My Look: use your saved photo setup for more consistent results."
           disabled={!isProMode}
         >
           <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
-            <span className="sm:hidden">Model</span>
-            <span className="hidden sm:inline">MY MODEL</span>
+            <span className="sm:hidden">Look</span>
+            <span className="hidden sm:inline">MY LOOK</span>
           </span>
         </button>
         <button
@@ -83,15 +83,15 @@ export default function MayaModeToggle({
           aria-pressed={selfieActive}
           aria-label={
             selfieActive
-              ? "Selfie mode — active. Library, references, and uploads in chat."
-              : "Switch to Selfie mode — library, references, and uploads in chat."
+              ? "Photo mode — active. Use selfies, references, and uploads in chat."
+              : "Switch to Photo mode — use selfies, references, and uploads in chat."
           }
-          title="Selfie: use your image library, reference uploads, and chat-first workflow (no training required)."
+          title="Photo: use selfies, references, and uploads. No setup required."
           disabled={isProMode}
         >
           <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
-            <span className="sm:hidden">Selfie</span>
-            <span className="hidden sm:inline">SELFIE</span>
+            <span className="sm:hidden">Photo</span>
+            <span className="hidden sm:inline">PHOTO</span>
           </span>
         </button>
       </div>
@@ -105,9 +105,9 @@ export default function MayaModeToggle({
       <div className="flex flex-col items-stretch gap-1">
         {control}
         <p className="hidden sm:block text-[9px] leading-snug text-[#8a8780] max-w-[14rem] md:max-w-[16rem]">
-          <span className="font-medium text-[#a8a49c]">My model</span> uses your trained look.
+          <span className="font-medium text-[#a8a49c]">My Look</span> keeps photos consistent.
           <span className="mx-1 text-[#666666]">·</span>
-          <span className="font-medium text-[#a8a49c]">Selfie</span> uses references and uploads.
+          <span className="font-medium text-[#a8a49c]">Photo</span> uses selfies and uploads.
         </p>
       </div>
     )
@@ -121,24 +121,24 @@ export default function MayaModeToggle({
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-[rgba(175,170,162,0.10)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] min-h-[36px]"
         aria-label={
           isClassicMode
-            ? "Switch to Selfie mode — library, references, and uploads in chat"
-            : "Switch to My Model — trained likeness in every photo"
+            ? "Switch to Photo mode — selfies, references, and uploads in chat"
+            : "Switch to My Look — consistent photo setup"
         }
         title={
           isClassicMode
-            ? "Selfie: library images, references, and uploads. No training required."
-            : "My Model: uses your trained likeness once training is complete."
+            ? "Photo: selfies, references, and uploads. No setup required."
+            : "My Look: uses your saved photo setup once it is ready."
         }
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
-          {isClassicMode ? "Switch to Selfie mode" : "Switch to My Model"}
+          {isClassicMode ? "Switch to Photo" : "Switch to My Look"}
         </span>
       </button>
       {showModeHint ? (
         <p className="text-[9px] leading-snug text-[#8a8780] max-w-[17rem]">
           {isClassicMode
-            ? "You are in My Model. Tap to use Selfie (library and uploads)."
-            : "You are in Selfie. Tap to use My Model (trained likeness)."}
+            ? "You are using My Look. Tap to use a selfie or upload instead."
+            : "You are using a photo upload. Tap to use your saved look."}
         </p>
       ) : null}
     </div>

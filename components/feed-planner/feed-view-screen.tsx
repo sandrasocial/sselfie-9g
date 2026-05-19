@@ -401,12 +401,12 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-2xl"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                {access?.isPaidBlueprint ? "Set up in 30 seconds" : "Create Your First Feed"}
+                {access?.isPaidBlueprint ? "Set up your first posts" : "Plan Your First Posts"}
               </h2>
               <p className="text-sm font-light text-[color:var(--app-text-secondary)] sm:text-base">
                 {access?.isPaidBlueprint
-                  ? "Your 60 credits are ready. Create your first 9-post feed and we'll match your style."
-                  : "Create a feed manually or generate one with Maya's AI assistance."}
+                  ? "Your credits are ready. Start with a few posts and Maya will help match your style."
+                  : "Start with one clear post plan, or let Maya help you choose what to make next."}
               </p>
             </div>
 
@@ -418,14 +418,14 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-4 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                {isCreatingManual ? "Creating..." : "NEW FEED ->"}
+                {isCreatingManual ? "Creating..." : "Start my plan ->"}
               </button>
               {!access?.isPaidBlueprint && (
                 <button
                   onClick={handleCreateFeed}
                   className="min-h-[44px] w-full rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-primary)] transition-colors duration-200 hover:bg-[color:var(--app-btn-secondary-hover)] sm:w-auto"
                 >
-                  Create with Maya
+                  Plan with Maya
                 </button>
               )}
             </div>

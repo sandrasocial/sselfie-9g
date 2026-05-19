@@ -609,7 +609,7 @@ export default function FeedHeader({
                 {feedData?.userDisplayName || feedData?.feed?.brand_name || "User"}
               </div>
               <div className="whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
-                {hasBio ? feedData.bio.bio_text : "Your Instagram feed strategy created by Maya"}
+                {hasBio ? feedData.bio.bio_text : "Your next posts planned with Maya"}
               </div>
             </div>
 

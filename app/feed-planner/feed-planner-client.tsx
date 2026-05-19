@@ -177,7 +177,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const productHint = useMemo(() => {
     const purchases = Array.isArray(myProductsData?.purchases) ? myProductsData.purchases : []
     const hasWhatToSay = purchases.some((product: any) => product.id === "what_to_say")
-    return hasWhatToSay ? "What To Say" : null
+    return hasWhatToSay ? "Caption help" : null
   }, [myProductsData?.purchases])
 
   // Determine if wizard is needed
@@ -624,8 +624,8 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
             cta: "Open Maya →",
           }
         : {
-            title: "Keep going with Maya",
-            subtitle: "Maya will guide the next step right inside chat.",
+          title: "Keep going with Maya",
+          subtitle: "Maya will help with the next photo, caption, or post right inside chat.",
             cta: "Continue →",
           }
 

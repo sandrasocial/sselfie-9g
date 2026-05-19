@@ -22,7 +22,7 @@ export default function MayaPhotosHome({
   onOpenPlan,
 }: MayaPhotosHomeProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
-  const sourceLabel = proMode ? "Selfie mode" : hasTrainedModel ? "My Model ready" : "Base photos"
+  const sourceLabel = proMode ? "Use this selfie" : hasTrainedModel ? "Maya knows my look" : "Photo ideas"
   const getPhotoPrompt = (modelPrompt: string, selfiePrompt: string, basePrompt: string) => {
     if (proMode) return selfiePrompt
     if (hasTrainedModel) return modelPrompt
@@ -34,79 +34,93 @@ export default function MayaPhotosHome({
       <MayaInlineCard
         eyebrow="Photos"
         title="Let’s create the image first."
-        subtitle="Use this space for brand photos, concept cards, style directions, and image prompts. When you want strategy, Plan is one tap away."
+        subtitle="Start with a selfie, a look, or a vibe. Maya will help you turn it into a photo you can actually use."
         surface="plain"
         aside={<MayaInlinePill tone="muted">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
         actionsLayout="column"
         actions={
           <>
+            <MayaInlineAction variant="primary" className="w-full" onClick={onOpenUpload}>
+              Upload Your Selfie
+            </MayaInlineAction>
             <MayaInlineAction
-              variant="primary"
+              variant="secondary"
               className="w-full"
               onClick={() =>
                 onSendPrompt(
                   getPhotoPrompt(
-                    "Use my trained model and create three strong photo concepts for my personal brand.",
-                    "Use my selfies and create three strong photo concepts for my personal brand.",
-                    "Create three strong photo concepts for my personal brand.",
+                    "Use my trained model and create one polished photo direction that makes my selfie look expensive.",
+                    "Use my selfie and create one polished photo direction that makes it look expensive.",
+                    "Create one polished photo direction that makes my selfie look expensive.",
                   ),
                 )
               }
             >
-              Create Concept Cards
+              Make This Look Expensive
             </MayaInlineAction>
-            <div className="grid w-full gap-2 sm:grid-cols-2">
-              <MayaInlineAction
-                variant="secondary"
-                className="w-full justify-start text-left"
-                onClick={() => onSendPrompt("Show me my gallery so I can reuse an existing brand photo.")}
-              >
-                Reuse From Gallery
-              </MayaInlineAction>
-              <MayaInlineAction
-                variant="secondary"
-                className="w-full justify-start text-left"
-                onClick={() =>
-                  onSendPrompt(
-                    getPhotoPrompt(
-                      "Use my trained model and create a soft luxury photo for my brand.",
-                      "Use my selfies and create a soft luxury photo for my brand.",
-                      "Create a soft luxury photo direction for my brand.",
-                    ),
-                  )
-                }
-              >
-                Soft Luxury Photo
-              </MayaInlineAction>
-              <MayaInlineAction
-                variant="secondary"
-                className="w-full justify-start text-left"
-                onClick={() =>
-                  onSendPrompt(
-                    getPhotoPrompt(
-                      "Use my trained model and create a natural light lifestyle photo for my brand.",
-                      "Use my selfies and create a natural light lifestyle photo for my brand.",
-                      "Create a natural light lifestyle photo direction for my brand.",
-                    ),
-                  )
-                }
-              >
-                Natural Light Photo
-              </MayaInlineAction>
-              <MayaInlineAction variant="secondary" className="w-full justify-start text-left" onClick={onOpenUpload}>
-                Upload References
-              </MayaInlineAction>
-              <MayaInlineAction variant="secondary" className="w-full justify-start text-left" onClick={onOpenPlan}>
-                Plan The Post
-              </MayaInlineAction>
-              <MayaInlineAction
-                variant="secondary"
-                className="w-full justify-start text-left"
-                onClick={onOpenPlan}
-              >
-                Mixed Feed Plan
-              </MayaInlineAction>
-            </div>
+            <details className="group w-full rounded-[10px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.42)]">
+              <summary className="cursor-pointer list-none px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]">
+                More ways to start
+              </summary>
+              <div className="grid w-full gap-2 border-t border-[color:var(--app-glass-border)] p-2 sm:grid-cols-2">
+                <MayaInlineAction
+                  variant="secondary"
+                  className="w-full justify-start text-left"
+                  onClick={() => onSendPrompt("Show me my gallery so I can reuse an existing brand photo.")}
+                >
+                  Use a Saved Photo
+                </MayaInlineAction>
+                <MayaInlineAction
+                  variant="secondary"
+                  className="w-full justify-start text-left"
+                  onClick={() =>
+                    onSendPrompt(
+                      getPhotoPrompt(
+                        "Use my trained model and create a soft luxury photo for my brand.",
+                        "Use my selfies and create a soft luxury photo for my brand.",
+                        "Create a soft luxury photo direction for my brand.",
+                      ),
+                    )
+                  }
+                >
+                  Soft Luxury Photo
+                </MayaInlineAction>
+                <MayaInlineAction
+                  variant="secondary"
+                  className="w-full justify-start text-left"
+                  onClick={() =>
+                    onSendPrompt(
+                      getPhotoPrompt(
+                        "Use my trained model and create a natural light lifestyle photo for my brand.",
+                        "Use my selfies and create a natural light lifestyle photo for my brand.",
+                        "Create a natural light lifestyle photo direction for my brand.",
+                      ),
+                    )
+                  }
+                >
+                  Natural Light Photo
+                </MayaInlineAction>
+                <MayaInlineAction variant="secondary" className="w-full justify-start text-left" onClick={onOpenPlan}>
+                  Plan My Post
+                </MayaInlineAction>
+                <MayaInlineAction
+                  variant="secondary"
+                  className="w-full justify-start text-left"
+                  onClick={onOpenPlan}
+                >
+                  Plan a Few Posts
+                </MayaInlineAction>
+                {!hasTrainedModel && !proMode ? (
+                  <MayaInlineAction
+                    variant="secondary"
+                    className="w-full justify-start text-left"
+                    onClick={onTrainModel}
+                  >
+                    Set Up My Look
+                  </MayaInlineAction>
+                ) : null}
+              </div>
+            </details>
           </>
         }
       >
@@ -116,27 +130,18 @@ export default function MayaPhotosHome({
               Best for
             </p>
             <p className="mt-3 text-xl font-light leading-snug text-[color:var(--app-text-primary)]">
-              Photos, image prompts, and concept cards.
+              Selfies, photo ideas, and polished content.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
-              Ask for a look, a vibe, a location, or a brand moment. Maya will turn it into a visual direction you can generate or save.
+              Ask for a look, a vibe, a location, or a feeling. Maya will turn it into a photo direction you can make, save, or post.
             </p>
           </div>
           <div className="rounded-[12px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.54)] p-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-              Current source
+              Photo setup
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <MayaInlinePill tone={hasTrainedModel || proMode ? "strong" : "muted"}>{sourceLabel}</MayaInlinePill>
-              {!hasTrainedModel && !proMode ? (
-                <button
-                  type="button"
-                  onClick={onTrainModel}
-                  className="text-[11px] uppercase tracking-[0.14em] text-[color:var(--app-text-primary)] underline-offset-4 hover:underline"
-                >
-                  Train My Model
-                </button>
-              ) : null}
             </div>
           </div>
         </div>

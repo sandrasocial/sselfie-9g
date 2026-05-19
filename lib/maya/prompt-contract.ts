@@ -35,25 +35,25 @@ const PLAN_PROMPTS: MayaQuickPromptItem[] = [
 
 // Style mood chips — mode-specific so there's no cross-mode confusion
 const MODEL_STYLE_PROMPTS: MayaQuickPromptItem[] = [
-  { label: "Dark & Moody", prompt: "Use my trained model and create a dark and moody photo for my brand" },
-  { label: "Soft Luxury", prompt: "Use my trained model and create a soft luxury photo for my brand" },
-  { label: "Street Style", prompt: "Use my trained model and create a street style photo for my brand" },
-  { label: "Natural Light", prompt: "Use my trained model and create a natural light photo for my brand" },
+  { label: "Dark mood", prompt: "Use my trained model and create a dark and moody photo for my brand" },
+  { label: "Soft luxury", prompt: "Use my trained model and create a soft luxury photo for my brand" },
+  { label: "Street style", prompt: "Use my trained model and create a street style photo for my brand" },
+  { label: "Natural light", prompt: "Use my trained model and create a natural light photo for my brand" },
 ]
 
 // Classic style chips when there's no trained model (base model generation)
 const BASE_STYLE_PROMPTS: MayaQuickPromptItem[] = [
-  { label: "Dark & Moody", prompt: "Create a dark and moody photo for my brand" },
-  { label: "Soft Luxury", prompt: "Create a soft luxury photo for my brand" },
-  { label: "Street Style", prompt: "Create a street style photo for my brand" },
-  { label: "Natural Light", prompt: "Create a natural light photo for my brand" },
+  { label: "Dark mood", prompt: "Create a dark and moody photo for my brand" },
+  { label: "Soft luxury", prompt: "Create a soft luxury photo for my brand" },
+  { label: "Street style", prompt: "Create a street style photo for my brand" },
+  { label: "Natural light", prompt: "Create a natural light photo for my brand" },
 ]
 
 const SELFIE_STYLE_PROMPTS: MayaQuickPromptItem[] = [
-  { label: "Dark & Moody", prompt: "Use my selfies and create a dark and moody photo for my brand" },
-  { label: "Soft Luxury", prompt: "Use my selfies and create a soft luxury photo for my brand" },
-  { label: "Natural Light", prompt: "Use my selfies and create a natural light photo for my brand" },
-  { label: "Bold Fashion", prompt: "Use my selfies and create a bold fashion photo for my brand" },
+  { label: "Dark mood", prompt: "Use my selfies and create a dark and moody photo for my brand" },
+  { label: "Soft luxury", prompt: "Use my selfies and create a soft luxury photo for my brand" },
+  { label: "Natural light", prompt: "Use my selfies and create a natural light photo for my brand" },
+  { label: "Bold fashion", prompt: "Use my selfies and create a bold fashion photo for my brand" },
 ]
 
 function dedupePrompts(prompts: MayaQuickPromptItem[]): MayaQuickPromptItem[] {
@@ -85,23 +85,23 @@ export function getMayaSurfaceQuickPrompts(input: {
     return []
   }
 
-  // Photos is creation-first: image prompts, concept cards, styles, and source choice.
+  // Photos is creation-first: selfie/photo starts, styles, and source choice.
   const modeSupportPrompts: MayaQuickPromptItem[] = proMode
     ? [
-        { label: "Use my selfies", prompt: "Use my selfies and create three photo concepts for my brand" },
-        { label: "Upload references", prompt: "I want to upload photos and brand references before creating images" },
-        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
+        { label: "Start with selfie", prompt: "Use my selfies and create one polished photo direction that makes it look expensive" },
+        { label: "Add photos", prompt: "I want to upload selfies or reference photos before creating an image" },
+        { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : hasTrainedModel
     ? [
-        { label: "Use My Model", prompt: "Use my trained model and create three photo concepts for my brand" },
-        { label: "Concept cards", prompt: "Create concept cards for a personal brand photoshoot" },
-        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
+        { label: "Use my look", prompt: "Use my trained model and create one polished photo direction for my brand" },
+        { label: "Photo ideas", prompt: "Create three polished photo ideas for a personal brand photoshoot" },
+        { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : [
-        { label: "Concept cards", prompt: "Create concept cards for a personal brand photoshoot" },
-        { label: "Reuse gallery", prompt: "Show me my gallery so I can reuse an existing brand photo" },
-        { label: "Train My Model", prompt: "I want to train my custom model when I'm ready" },
+        { label: "Photo ideas", prompt: "Create three polished photo ideas for a personal brand photoshoot" },
+        { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
+        { label: "Set up my look", prompt: "I want to set up my look for more consistent photos when I'm ready" },
       ]
 
   const styleChips = proMode

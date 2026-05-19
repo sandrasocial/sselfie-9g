@@ -648,12 +648,12 @@ function renderShowCapabilitiesTool(part: any, partIndex: number, ctx: ToolCtx):
     {
       title: "Create Photos",
       prompt: "I want to create a photo for my new offer",
-      description: "Run Classic, Pro, or trained-model generation in this chat.",
+      description: "Make a polished photo in this chat.",
     },
     {
-      title: "Create Concept Cards",
-      prompt: "Generate concept cards for my next content shoot",
-      description: "Draft post, reel, and carousel concepts right here in the chat.",
+      title: "Choose a Look",
+      prompt: "Give me photo ideas for my next content shoot",
+      description: "Draft photo directions and post ideas right here in the chat.",
     },
     {
       title: "Make a Video",
@@ -978,8 +978,8 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
     ? `Use your ${ctx.linkedSelfieCount} linked selfie${selfiePlural} right now.`
     : "No linked selfies yet. I'll open upload so we can add them first."
   const modelDescription = ctx.userHasTrainedModel
-    ? "Your trained model is ready. I'll keep you in Photos and generate from it."
-    : "No trained model yet. I'll take you to Train first."
+    ? "Your saved look is ready. I'll keep you in Photos and use it."
+    : "Your look is not set up yet. I'll take you there first."
   const sourceSubtitle =
     hasLinkedSelfies || ctx.userHasTrainedModel
       ? "Pick your lane and I'll handle the rest."
@@ -989,13 +989,13 @@ function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): Re
     label: string
     description: string
   }> = [
-    { id: "selfies", label: "Selfie", description: selfieDescription },
+    { id: "selfies", label: "Photo Upload", description: selfieDescription },
     {
       id: "custom_model",
-      label: ctx.userHasTrainedModel ? "My Model" : "Train My Model",
+      label: ctx.userHasTrainedModel ? "My Look" : "Set Up My Look",
       description: modelDescription,
     },
-    { id: "base_model", label: "Base Model", description: "Create with Maya's default photo model." },
+    { id: "base_model", label: "Simple Photo", description: "Create with Maya's default photo setup." },
   ]
 
   const selectedOption = options.find((option) => option.id === selectedSource)

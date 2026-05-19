@@ -69,7 +69,7 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
           onClick={() => onTabChange("strategy")}
           className={tabClass("strategy")}
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Strategy</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Plan</span>
         </button>
       )}
       
@@ -78,7 +78,7 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
         onClick={() => onTabChange("pillars")}
         className={tabClass("pillars")}
       >
-        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Pillars</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Ideas</span>
       </button>
     </div>
   )

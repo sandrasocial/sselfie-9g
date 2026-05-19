@@ -209,7 +209,7 @@ export default function WelcomeWizard({
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Click any empty slot in your grid to generate a photo. Then use the Post tab for captions and the Strategy tab for a full guide.
+            Click any empty slot in your grid to create a photo. Then use the Post tab for captions and the Plan tab for what to make next.
           </p>
           <div className="rounded-xl border border-white/15 bg-white/[0.04] p-4">
             <p className="text-sm font-light text-white/65">

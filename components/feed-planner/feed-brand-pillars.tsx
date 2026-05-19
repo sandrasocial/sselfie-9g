@@ -182,10 +182,10 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
             className="mb-4 text-2xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-3xl md:text-4xl"
           >
-            Your Content Pillars
+            Your Content Ideas
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-sm font-light leading-relaxed text-[color:var(--app-text-secondary)]">
-            Content pillars are the main themes you&apos;ll create content around. They keep your feed organized and make it easy to come up with post ideas.
+            These are the themes Maya can use when you need a post idea, caption, or direction for your next photo.
           </p>
           <Button
             onClick={generateNewPillars}
@@ -198,7 +198,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
                 Maya is thinking...
               </>
             ) : (
-              "Generate my content pillars"
+              "Generate my content ideas"
             )}
           </Button>
         </div>
@@ -215,10 +215,10 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
               className="mb-2 text-2xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-3xl md:text-4xl"
             >
-              Your Content Pillars
+              Your Content Ideas
             </h2>
             <p className="text-xs font-light leading-relaxed text-[color:var(--app-text-secondary)] sm:text-sm">
-              These are the main themes you&apos;ll create content around. Use them to plan your posts and keep your feed organized.
+              Use these themes when you need a post idea, caption, or direction for your next photo.
             </p>
           </div>
           <Button

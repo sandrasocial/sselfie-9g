@@ -10,7 +10,7 @@ describe("maya prompt contract", () => {
       hasTrainedModel: false,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("Train My Model")
+    expect(prompts.map((item) => item.label)).toContain("Set up my look")
     expect(prompts.map((item) => item.label)).not.toContain("Create Calendar")
     expect(prompts.map((item) => item.label)).not.toContain("Plan my week")
   })
@@ -22,12 +22,12 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("Use My Model")
-    expect(prompts.map((item) => item.label)).toContain("Concept cards")
-    expect(prompts.map((item) => item.label)).toContain("Reuse gallery")
+    expect(prompts.map((item) => item.label)).toContain("Use my look")
+    expect(prompts.map((item) => item.label)).toContain("Photo ideas")
+    expect(prompts.map((item) => item.label)).toContain("Use saved photo")
     expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
     expect(prompts.map((item) => item.label)).not.toContain("Write a caption")
-    expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
+    expect(prompts.map((item) => item.label)).not.toContain("Set up my look")
   })
 
   it("gives selfie-specific prompts in selfie mode", () => {
@@ -37,12 +37,12 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("Use my selfies")
-    expect(prompts.map((item) => item.label)).toContain("Upload references")
-    expect(prompts.map((item) => item.label)).toContain("Reuse gallery")
+    expect(prompts.map((item) => item.label)).toContain("Start with selfie")
+    expect(prompts.map((item) => item.label)).toContain("Add photos")
+    expect(prompts.map((item) => item.label)).toContain("Use saved photo")
     expect(prompts.map((item) => item.label)).not.toContain("Plan My Week")
     expect(prompts.map((item) => item.label)).not.toContain("Write a caption")
-    expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
+    expect(prompts.map((item) => item.label)).not.toContain("Set up my look")
   })
 
   it("reuses the dedicated videos prompt contract in Videos", () => {

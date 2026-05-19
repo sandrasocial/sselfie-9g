@@ -57,10 +57,10 @@ const ACTIONS: Array<{ label: string; job: MayaNextBestMoveJob; prompt: string }
       "Make one post for this week. Give me the hook, caption, soft CTA, and the photo direction I should use.",
   },
   {
-    label: "Plan mixed feed",
+    label: "Plan a few posts",
     job: "post",
     prompt:
-      "Create a mixed-source feed plan for me. First use any strong existing gallery images that fit, then mark only the missing slots as new images to generate.",
+      "Plan a few posts for me. First use any strong existing gallery images that fit, then mark only the missing slots as new images to create.",
   },
   {
     label: "Write the caption",
@@ -72,7 +72,7 @@ const ACTIONS: Array<{ label: string; job: MayaNextBestMoveJob; prompt: string }
     label: "Make a photo",
     job: "photo",
     prompt:
-      "Create one photo direction for my next post. Tell me whether to use My Model, Selfie mode, or a simple base photo before generating.",
+      "Create one photo direction for my next post. Keep the setup simple and tell me what photo to use before creating it.",
   },
   {
     label: "Make a video",
@@ -87,10 +87,10 @@ const ACTIONS: Array<{ label: string; job: MayaNextBestMoveJob; prompt: string }
       "Help me decide what to sell this week. Turn it into one clear offer, one sales angle, and the first post I should make.",
   },
   {
-    label: "Train my model",
+    label: "Set up my look",
     job: "train_model",
     prompt:
-      "I want to train my model so Maya can create consistent images of me. Explain what I need and send me to Train My Model.",
+      "I want Maya to recognize my look for more consistent photos. Explain what I need and take me to the setup step.",
   },
 ]
 
@@ -109,6 +109,10 @@ export default function MayaStudioCopilotHome({
 
   const nextMove = data?.nextBestMove || DEFAULT_MOVE
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
+  const quickStartActions = ACTIONS.filter((action) => action.label === "Make a post" || action.job === "caption")
+  const moreStartActions = ACTIONS.filter(
+    (action) => action.job !== "decide" && !quickStartActions.some((quickAction) => quickAction.label === action.label),
+  )
 
   function runAction(job: MayaNextBestMoveJob | undefined, prompt: string) {
     if (job === "train_model") {
@@ -125,9 +129,9 @@ export default function MayaStudioCopilotHome({
   return (
     <div className="w-full max-w-3xl space-y-5">
       <MayaInlineCard
-        eyebrow="Maya Studio Co-Pilot"
+        eyebrow="Maya"
         title="What are we making today?"
-        subtitle="Tell Maya what you want, or let her choose the next move that gets you closer to being seen, trusted, and paid."
+        subtitle="Tell Maya what you want, or let her choose one simple next step for your photo, caption, or post."
         surface="plain"
         aside={<MayaInlinePill tone="muted">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
         actionsLayout="column"
@@ -141,7 +145,7 @@ export default function MayaStudioCopilotHome({
               {nextMove.primaryActionLabel}
             </MayaInlineAction>
             <div className="grid w-full gap-2 sm:grid-cols-2">
-              {ACTIONS.map((action) => (
+              {quickStartActions.map((action) => (
                 <MayaInlineAction
                   key={action.label}
                   variant="secondary"
@@ -152,6 +156,23 @@ export default function MayaStudioCopilotHome({
                 </MayaInlineAction>
               ))}
             </div>
+            <details className="group w-full rounded-[10px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.42)]">
+              <summary className="cursor-pointer list-none px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]">
+                More ways to start
+              </summary>
+              <div className="grid w-full gap-2 border-t border-[color:var(--app-glass-border)] p-2 sm:grid-cols-2">
+                {moreStartActions.map((action) => (
+                  <MayaInlineAction
+                    key={action.label}
+                    variant="secondary"
+                    className="w-full justify-start text-left"
+                    onClick={() => runAction(action.job, action.prompt)}
+                  >
+                    {action.label}
+                  </MayaInlineAction>
+                ))}
+              </div>
+            </details>
           </>
         }
       >
@@ -179,7 +200,7 @@ export default function MayaStudioCopilotHome({
                 </MayaInlinePill>
               ))}
               <MayaInlinePill tone={hasTrainedModel ? "strong" : "muted"}>
-                {hasTrainedModel ? "My Model ready" : "Model not trained"}
+                {hasTrainedModel ? "Maya knows my look" : "Photo setup open"}
               </MayaInlinePill>
             </div>
           </div>

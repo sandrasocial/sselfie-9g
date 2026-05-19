@@ -656,7 +656,7 @@ export default function FeedSinglePlaceholder({
               This is a preview of your feed grid
             </p>
             <p className="text-xs text-white/45 font-light mt-1">
-              Get the full Feed Planner + 30 Photos, Captions & Strategy
+              Get Studio for more photos, captions, and post planning
             </p>
           </div>
           

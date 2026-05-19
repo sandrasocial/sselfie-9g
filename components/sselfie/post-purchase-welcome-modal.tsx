@@ -29,9 +29,9 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
     cta: "Open my bundle",
   },
   brand_strategy_pack: {
-    heading: "Your Brand Strategy is generating.",
-    body: "Maya\u2019s working on it now. You\u2019ll get your full strategy in a few minutes.",
-    cta: "See my strategy",
+    heading: "Your foundation is generating.",
+    body: "Maya\u2019s working on it now. You\u2019ll get your foundation in a few minutes.",
+    cta: "See my foundation",
   },
   one_time_session: {
     heading: "Your credits are loaded.",

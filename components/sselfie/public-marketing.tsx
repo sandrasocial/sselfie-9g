@@ -669,7 +669,7 @@ const FAQS = {
     { question: "Is this a photography course?",
       answer: "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
     { question: "How long does it take?",
-      answer: "Start with Brand Strategy, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
+      answer: "Start with the strategy foundation, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
     { question: "How is this different from Studio?",
       answer: "The Masterclass is the education. You do the work once and it's yours. Studio is the AI layer for when you want the tools to keep running it weekly." },
     { question: "What if I've never posted consistently?",
@@ -778,7 +778,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           {[
             { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day: light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
-            { title: "Masterclass", price: "$147", body: "Strategy, content, offer, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
+            { title: "Masterclass", price: "$147", body: "Clearer content direction, captions, offer clarity, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
             { title: "Studio", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
@@ -990,7 +990,7 @@ export function MasterclassPageContent() {
       <Hero
         eyebrow="Masterclass · $147"
         title={<>You showed up. You took the selfie. Now build what comes next.</>}
-        body={<p>Strategy, content, offer, and a 30-day plan so your photos have somewhere to lead. Sandra&apos;s full method, one time.</p>}
+        body={<p>Content direction, captions, offer clarity, and a 30-day plan so your photos have somewhere to lead. Sandra&apos;s full method, one time.</p>}
         primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
         secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
@@ -1001,15 +1001,15 @@ export function MasterclassPageContent() {
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
           <p>But consistency isn&apos;t the problem. Clarity is.</p>
-          <p>That is why Masterclass now starts with your strategy foundation. Know what you sell, who it helps, and what you want to be known for before you build the content system.</p>
+          <p>That is why Masterclass now starts with your foundation. Know what you sell, who it helps, and what you want to be known for before you build the content rhythm.</p>
         </div>
       </Section>
 
       {/* MODULES — dark */}
-      <Section eyebrow="Inside the course" title="Strategy first. Then content, confidence, and execution." dark>
+      <Section eyebrow="Inside the course" title="Start with clarity. Then content, confidence, and execution." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
-            { title: "Strategy Foundation", body: "Your positioning, audience, pillars, and next content ideas before the lessons begin." },
+            { title: "Your Foundation", body: "Your positioning, audience, core themes, and next content ideas before the lessons begin." },
             { title: "How You Show Up",     body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait." },
             { title: "Your Visual Brand",   body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they even see your name." },
             { title: "Content-To-Cash",     body: "Weekly rhythm, calls to action, DM follow-up, and simple sales conversations without income guarantees." },
@@ -1022,7 +1022,7 @@ export function MasterclassPageContent() {
       <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
-            { num: "01", title: "Start Here: Strategy Foundation"     },
+            { num: "01", title: "Start Here: Your Foundation"         },
             { num: "02", title: "Welcome & What This Changes"         },
             { num: "03", title: "Starting to Show Up"                 },
             { num: "04", title: "Your Energy on Camera"               },
@@ -1082,8 +1082,8 @@ export function MasterclassPageContent() {
       {/* WHAT YOU LEAVE WITH — dark */}
       <Section eyebrow="After the course" title="What you'll have that you don't have now." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark title="Your Strategy Foundation" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
-          <FCard dark title="Your brand pillars"     body="The three topics you always come back to. Every content idea filters through these." />
+          <FCard dark title="Your Foundation" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
+          <FCard dark title="Your core themes"     body="The three topics you always come back to. Every content idea filters through these." />
           <FCard dark title="Your content-to-cash system" body="What you post, where it leads, and how to invite the right people into a simple conversation." />
           <FCard dark title="A 30-day action plan"  body="You won't finish this course with notes. You'll finish it with posts, scripts, and a tracking rhythm." />
         </div>

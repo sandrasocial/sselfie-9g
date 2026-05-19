@@ -725,7 +725,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     variant="outline"
                     className="border-[color:var(--div-dark)] bg-transparent text-stone hover:bg-[color:var(--glass-bg)] hover:text-brand-porcelain font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-6 py-3 rounded-full transition-colors"
                   >
-                    Generate my Brand Strategy
+                    Generate my foundation
                   </Button>
                   <Button
                     onClick={() => handleComplete()}

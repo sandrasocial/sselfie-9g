@@ -835,7 +835,7 @@ export default function MayaHeaderUnified({
                         letterSpacing: "0.12em",
                       }}
                     >
-                      Switch to My Model
+                      Switch to My Look
                     </button>
                   </>
                 )}

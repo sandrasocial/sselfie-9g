@@ -337,7 +337,7 @@ export default async function AcademyPage() {
                     className={`${inter.className} mt-3 max-w-2xl text-[14px] leading-[1.72]`}
                     style={{ color: C.body, fontWeight: 400 }}
                   >
-                      Start here for kits, guides, strategy packs, and downloads.
+                      Start here for kits, guides, courses, and downloads.
                       Your course modules sit below.
                     </p>
                   </div>

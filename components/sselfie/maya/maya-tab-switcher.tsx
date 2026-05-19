@@ -42,7 +42,7 @@ export default function MayaTabSwitcher({
     { id: "photos" as const, label: "Photos" },
     { id: "plan" as const, label: "Plan" },
     { id: "videos" as const, label: "Videos" },
-    { id: "training" as const, label: "Train Model" },
+    { id: "training" as const, label: "My Look" },
   ]
 
   const containerRef = useRef<HTMLDivElement>(null)

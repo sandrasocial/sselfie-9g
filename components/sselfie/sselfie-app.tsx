@@ -98,7 +98,7 @@ const MAYA_SUB_TABS: StudioAppMayaSubTabItem[] = [
   { id: "photos", label: "Photos" },
   { id: "plan", label: "Plan" },
   { id: "videos", label: "Videos" },
-  { id: "training", label: "Train Model" },
+  { id: "training", label: "My Look" },
 ]
 
 function resolveMayaSubTabFromHash(hash: string | null | undefined): MayaSubTab | null {

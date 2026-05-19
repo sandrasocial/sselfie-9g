@@ -146,16 +146,16 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
             <div className="flex flex-col items-center space-y-4 max-w-md text-center">
               <div className="w-8 h-8 border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)] rounded-full animate-spin" />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-[color:var(--app-text-primary)]">I&apos;m crafting your comprehensive strategy...</p>
-                <p className="text-xs text-[color:var(--app-text-secondary)]">This includes posting schedules, reel ideas, hashtags, and growth tactics.</p>
+                <p className="text-sm font-medium text-[color:var(--app-text-primary)]">I&apos;m planning your next posts...</p>
+                <p className="text-xs text-[color:var(--app-text-secondary)]">This includes captions, simple post ideas, and what to make next.</p>
               </div>
             </div>
           ) : (
             <>
               <div className="max-w-md space-y-2 text-center">
-                <h3 className="text-lg font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Create Your Instagram Strategy</h3>
+                <h3 className="text-lg font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Plan Your Next Posts</h3>
                 <p className="text-sm text-[color:var(--app-text-secondary)]">
-                  Get a comprehensive strategy including posting schedules, reel ideas, hashtag strategy, growth tactics, and more.
+                  Get a simple plan for what to post, what to say, and what kind of photo to use next.
                 </p>
               </div>
               <button
@@ -163,7 +163,7 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
                 disabled={isGenerating}
                 className="flex items-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span>Create Strategy</span>
+                <span>Create Plan</span>
               </button>
             </>
           )}

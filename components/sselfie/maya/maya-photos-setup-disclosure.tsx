@@ -55,7 +55,7 @@ export default function MayaPhotosSetupDisclosure({
       <details className="group border border-[rgba(195,190,182,0.18)] bg-[rgba(14,12,10,0.45)] rounded-lg overflow-hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none [&::-webkit-details-marker]:hidden">
           <div className="min-w-0 flex-1 text-left">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Train My Model</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Set Up My Look</span>
             <p className="mt-0.5 text-sm font-light leading-snug text-[#f0ede8]">{digest}</p>
           </div>
           <span
@@ -113,10 +113,10 @@ export default function MayaPhotosSetupDisclosure({
           {showTraining ? (
             <div className="px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-[#f0ede8]">Train your personal model (optional)</p>
+                <p className="text-xs font-medium text-[#f0ede8]">Set up your look (optional)</p>
                 <p className="mt-1 text-xs text-[#8a8780] leading-relaxed">
-                  One training session so My Model mode can match your face without uploading selfies every time.
-                  You can still use Selfie mode without training.
+                  One setup step helps Maya match your face without uploading selfies every time.
+                  You can still use photo uploads without setup.
                 </p>
               </div>
               <button
@@ -124,7 +124,7 @@ export default function MayaPhotosSetupDisclosure({
                 onClick={onGoToTraining}
                 className="shrink-0 self-start text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.08)] border border-[rgba(195,190,182,0.18)] rounded-md px-3 py-1.5 hover:bg-[rgba(175,170,162,0.14)] transition-colors whitespace-nowrap"
               >
-                Open Training
+                Open Setup
               </button>
             </div>
           ) : null}

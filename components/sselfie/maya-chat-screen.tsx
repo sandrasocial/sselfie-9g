@@ -2585,10 +2585,10 @@ export default function MayaChatScreen({
           }
           setMayaTabAndHash("photos")
           toast({
-            title: "My Model is ready",
-            description: "Starting now with your trained model.",
+            title: "Your look is ready",
+            description: "Starting now with your saved photo setup.",
           })
-          queueGenerationPrompt("Use My Model and create one polished brand photo I can post this week.")
+          queueGenerationPrompt("Use my saved look and create one polished brand photo I can post this week.")
           return
         }
 
@@ -3083,8 +3083,8 @@ export default function MayaChatScreen({
     if (!newMode && !hasTrainedModel) {
       setMayaTabAndHash("training")
       toast({
-        title: "Train My Model",
-        description: "Train your model once to use My Model for consistent results. Selfie mode is ready whenever you need it.",
+        title: "Set Up My Look",
+        description: "Set this up once for more consistent photos. You can still use photo uploads whenever you need them.",
       })
       return
     }
@@ -3754,7 +3754,7 @@ export default function MayaChatScreen({
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash || "#maya"}`)
 
     const prompt =
-      "I just created my Maya Visibility Plan. Use it as the strategy and help me execute the first 7 days inside Studio Maya. " +
+      "I just created my Maya content plan. Use it to help me make the next 7 days easier. " +
       "Start with the single best post to make today, then give me the caption, photo direction, and next step." +
       (answerCount ? ` The plan was based on ${answerCount} saved workbook answers.` : "") +
       (planUrl ? ` Plan link: ${planUrl}` : "")
@@ -3884,7 +3884,7 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {activeMayaTab === "photos" && (
+      {activeMayaTab === "photos" && !showAnyEmptyState && (
         <div
           className="shrink-0"
           style={{ marginTop: MAYA_SURFACE_TOP_OFFSET }}
@@ -4078,8 +4078,8 @@ export default function MayaChatScreen({
       {showWhatToSayUpsellCard && (
         <div className="px-4 sm:px-6 py-3">
           <MayaUpsellCard
-            eyebrow="Want This With Captions?"
-            description="What To Say includes 30 caption templates matched to your brand pillars."
+            eyebrow="Want this with captions?"
+            description="Studio gives you caption help, photo direction, and next-step content ideas with Maya."
             onUpgrade={() => void handleOpenStudioCheckout("maya_what_to_say_upsell")}
             onDismiss={() => dismissUpsellCard("what_to_say")}
           />
@@ -4090,7 +4090,7 @@ export default function MayaChatScreen({
         <div className="px-4 sm:px-6 py-3">
           <MayaUpsellCard
             eyebrow="Want a 7-day posting plan?"
-            description="Show Up builds your consistency schedule around your content."
+            description="Studio helps you turn your photos into a simple posting rhythm with Maya."
             onUpgrade={() => void handleOpenStudioCheckout("maya_show_up_upsell")}
             onDismiss={() => dismissUpsellCard("show_up")}
           />

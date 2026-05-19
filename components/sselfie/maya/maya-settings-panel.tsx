@@ -80,8 +80,8 @@ export default function MayaSettingsPanel({
             </h3>
             <p className="text-[11px] text-white/50 mt-1 tracking-wide">
               {studioProMode
-                ? "Aspect ratio applies to Studio Pro (Nano Banana). Sliders below apply only to Classic (My Model)."
-                : "How strongly Maya follows your prompt and trained look"}
+                ? "Choose the photo size here. The extra sliders apply only to your saved look."
+                : "Adjust how closely Maya follows your notes and saved look"}
             </p>
           </div>
           <button
@@ -118,7 +118,7 @@ export default function MayaSettingsPanel({
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs tracking-wider uppercase text-white/65">Prompt Accuracy</label>
+                    <label className="text-xs tracking-wider uppercase text-white/65">Follow My Notes</label>
                     <span className="text-sm font-medium text-white">{promptAccuracy.toFixed(1)}</span>
                   </div>
                   <input
@@ -134,7 +134,7 @@ export default function MayaSettingsPanel({
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs tracking-wider uppercase text-white/65">Realism Boost</label>
+                    <label className="text-xs tracking-wider uppercase text-white/65">Natural Look</label>
                     <span className="text-sm font-medium text-white">{realismStrength.toFixed(2)}</span>
                   </div>
                   <input
@@ -146,7 +146,7 @@ export default function MayaSettingsPanel({
                     onChange={(e) => onRealismStrengthChange(Number.parseFloat(e.target.value))}
                     className="w-full"
                   />
-                  <p className="text-xs text-white/55 mt-1">Higher = more photorealistic, lower = more stylized</p>
+                  <p className="text-xs text-white/55 mt-1">Higher = more natural, lower = more stylized</p>
                 </div>
               </>
             )}
