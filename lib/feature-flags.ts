@@ -53,6 +53,16 @@ export function isMayaInlineChatImagesEnabled(): boolean {
   return process.env.FEATURE_MAYA_INLINE_CHAT_IMAGES === 'true'
 }
 
+/**
+ * Maya conversational image continuation — Phase E
+ * When enabled, Maya can use the most recent inline generated image as context
+ * for simple follow-up refinements such as "make it softer" or "more editorial."
+ * Set FEATURE_MAYA_IMAGE_CONTINUATION=true to enable.
+ * Default: false (follow-ups use existing chat behavior only).
+ */
+export function isMayaImageContinuationEnabled(): boolean {
+  return isMayaInlineChatImagesEnabled() && process.env.FEATURE_MAYA_IMAGE_CONTINUATION === 'true'
+}
 
 
 

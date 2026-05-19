@@ -12,17 +12,26 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
+import OpenAI, { toFile } from "openai"
 import { put } from "@vercel/blob"
 import { getDbClient } from "@/lib/db/client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS, refundCredits } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
-import { isOpenAIImageEnabled } from "@/lib/feature-flags"
+import { isMayaImageContinuationEnabled, isOpenAIImageEnabled } from "@/lib/feature-flags"
 
 export const maxDuration = 60
 
 const sql = getDbClient()
+
+function isAllowedMayaReferenceImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
@@ -63,16 +72,31 @@ export async function POST(request: NextRequest) {
       chatId,
       quality,
       size,
+      referenceImageUrl,
     } = body as {
       prompt: string
       conceptTitle?: string
       chatId?: string
       quality?: "standard" | "hd"
       size?: "1024x1024" | "1792x1024" | "1024x1792"
+      referenceImageUrl?: string
     }
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return NextResponse.json({ error: "prompt is required" }, { status: 400 })
+    }
+
+    const hasReferenceImageUrl = typeof referenceImageUrl === "string" && referenceImageUrl.trim().length > 0
+    const canUseReferenceEdit = hasReferenceImageUrl && isMayaImageContinuationEnabled()
+    if (
+      canUseReferenceEdit &&
+      typeof referenceImageUrl === "string" &&
+      !isAllowedMayaReferenceImageUrl(referenceImageUrl)
+    ) {
+      return NextResponse.json(
+        { error: "This reference image is not available for refinement." },
+        { status: 400 },
+      )
     }
 
     // ── Neon user ─────────────────────────────────────────────────────────
@@ -139,19 +163,57 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: openaiApiKey })
     const refundRef = `openai-fail-${neonUser.id}-${Date.now()}`
 
-    // ── Generate image via DALL-E 3 ────────────────────────────────────────
+    const useReferenceEdit =
+      canUseReferenceEdit &&
+      typeof referenceImageUrl === "string" &&
+      isAllowedMayaReferenceImageUrl(referenceImageUrl)
+
+    // ── Generate or refine image ───────────────────────────────────────────
     let imageBuffer: Buffer
     try {
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt.trim(),
-        n: 1,
-        size: size ?? "1024x1024",
-        quality: quality ?? "standard",
-        response_format: "b64_json",
-      })
+      let b64: string | undefined
 
-      const b64 = response.data?.[0]?.b64_json
+      if (useReferenceEdit) {
+        const referenceResponse = await fetch(referenceImageUrl)
+        if (!referenceResponse.ok) {
+          throw new Error("Could not load reference image for refinement")
+        }
+
+        const referenceContentType = referenceResponse.headers.get("content-type") || "image/png"
+        if (!referenceContentType.startsWith("image/")) {
+          throw new Error("Reference URL did not return an image")
+        }
+
+        const referenceBuffer = Buffer.from(await referenceResponse.arrayBuffer())
+        const referenceFile = await toFile(referenceBuffer, "maya-reference.png", {
+          type: referenceContentType,
+        })
+
+        const response = await openai.images.edit({
+          model: "gpt-image-1",
+          image: referenceFile,
+          prompt: prompt.trim(),
+          n: 1,
+          size: "1024x1536",
+          quality: "medium",
+          input_fidelity: "high",
+          output_format: "png",
+        })
+
+        b64 = response.data?.[0]?.b64_json
+      } else {
+        const response = await openai.images.generate({
+          model: "dall-e-3",
+          prompt: prompt.trim(),
+          n: 1,
+          size: size ?? "1024x1024",
+          quality: quality ?? "standard",
+          response_format: "b64_json",
+        })
+
+        b64 = response.data?.[0]?.b64_json
+      }
+
       if (!b64) {
         throw new Error("No image data returned from OpenAI")
       }

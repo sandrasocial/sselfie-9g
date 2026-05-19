@@ -66,7 +66,7 @@ import {
 import { getWeekPlanSystemAddendum } from "@/lib/maya/week-plan-prompt"
 import { resolveMethodDepth } from "@/lib/maya/method-depth"
 import { hasStudioMembership } from "@/lib/subscription"
-import { isMayaInlineChatImagesEnabled } from "@/lib/feature-flags"
+import { isMayaImageContinuationEnabled, isMayaInlineChatImagesEnabled } from "@/lib/feature-flags"
 
 import { NextResponse } from "next/server"
 
@@ -163,12 +163,156 @@ function createMayaChatErrorResponse(validUIMessages: UIMessage[], error: unknow
   return createUIMessageStreamResponse({ stream })
 }
 
+type MayaLastInlineImageContext = {
+  imageUrl: string
+  prompt: string
+}
+
+function extractTextFromMayaMessage(message: any): string {
+  if (!message) return ""
+
+  if (Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part: any) => part?.type === "text" && typeof part.text === "string")
+      .map((part: any) => part.text)
+      .join("\n")
+  }
+
+  if (typeof message.content === "string") return message.content
+
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((part: any) => part?.type === "text" && typeof part.text === "string")
+      .map((part: any) => part.text)
+      .join("\n")
+  }
+
+  return ""
+}
+
+function extractInlineImageUrl(text: string): string | null {
+  const markdownImageMatch = text.match(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/i)
+  if (markdownImageMatch?.[1]) return markdownImageMatch[1]
+
+  const linkedImageMatch = text.match(/Open it here:\s*(https?:\/\/\S+)/i)
+  if (linkedImageMatch?.[1]) return linkedImageMatch[1].replace(/[).,]+$/, "")
+
+  return null
+}
+
+function findLastInlineImageContext(messages: UIMessage[]): MayaLastInlineImageContext | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index] as any
+    if (message?.role !== "assistant") continue
+
+    const imageUrl = extractInlineImageUrl(extractTextFromMayaMessage(message))
+    if (!imageUrl) continue
+
+    const previousUserMessage = [...messages.slice(0, index)]
+      .reverse()
+      .find((candidate: any) => candidate?.role === "user")
+    const prompt = stripMayaToolMarkers(extractTextFromMayaMessage(previousUserMessage)).trim()
+
+    return { imageUrl, prompt }
+  }
+
+  return null
+}
+
+function isMayaCaptionContinuationIntent(text: string): boolean {
+  return /\b(write|make|create|draft|give me|caption|hook|post copy|instagram caption|caption this)\b[\s\S]{0,80}\b(caption|hook|post copy|instagram)\b/i.test(
+    text,
+  )
+}
+
+function isMayaImageRefinementIntent(text: string): boolean {
+  const normalized = text.toLowerCase().trim()
+  if (!normalized) return false
+  if (isMayaCaptionContinuationIntent(normalized)) return false
+
+  return (
+    /\b(make|change|turn|try|redo|regenerate|adjust|edit|switch|keep|preserve)\b[\s\S]{0,120}\b(this|it|image|photo|face|background|lighting|outfit|version|vibe|style)\b/i.test(
+      normalized,
+    ) ||
+    /\b(more|less)\s+(editorial|pinterest|luxury|expensive|soft|softer|bright|brighter|dark|darker|moody|clean|minimal|glowy|natural|polished|feminine)\b/i.test(
+      normalized,
+    ) ||
+    /\b(car selfie|mirror selfie|hotel lobby|scandinavian|dark and moody|soft light|golden hour|luxury outfit|change the background|change the outfit|keep my face|same face)\b/i.test(
+      normalized,
+    )
+  )
+}
+
+function buildMayaImageContinuationPrompt(input: {
+  followUp: string
+  previousPrompt: string
+}): string {
+  const previousPrompt = input.previousPrompt
+    ? `\nPrevious image direction: ${input.previousPrompt}`
+    : ""
+
+  return [
+    "Refine the provided image based on the user's follow-up.",
+    "Preserve the same person, facial features, identity, and overall realism unless the user explicitly asks otherwise.",
+    "Keep the result aesthetic, polished, feminine, editorial, and suitable for personal branding.",
+    `User follow-up: ${input.followUp}`,
+    previousPrompt,
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+function attachLastInlineImageToLatestUserMessage(input: {
+  messages: UIMessage[]
+  imageContext: MayaLastInlineImageContext
+  latestUserText: string
+}): UIMessage[] {
+  let attached = false
+  let latestUserIndex = -1
+  input.messages.forEach((message: any, index) => {
+    if (message?.role === "user") latestUserIndex = index
+  })
+
+  return input.messages.map((message: any, index) => {
+    if (attached || message?.role !== "user") return message
+
+    const isLatestUserMessage = index === latestUserIndex
+    if (!isLatestUserMessage) return message
+
+    attached = true
+    const parts = Array.isArray(message.parts)
+      ? [...message.parts]
+      : typeof message.content === "string"
+        ? [{ type: "text", text: message.content }]
+        : []
+
+    const hasImagePart = parts.some((part: any) => part?.type === "image")
+    const contextualText =
+      `${input.latestUserText}\n\n` +
+      `[Maya Last Image Context]\n` +
+      `Use the attached previous Maya image as visual context. Previous image prompt: ${input.imageContext.prompt || "not available"}.`
+
+    const nextParts = parts
+      .filter((part: any) => part?.type !== "text")
+      .concat([{ type: "text", text: contextualText }])
+
+    if (!hasImagePart) {
+      nextParts.push({ type: "image", image: input.imageContext.imageUrl })
+    }
+
+    const { content, ...rest } = message
+    return { ...rest, parts: nextParts }
+  })
+}
+
 async function createOpenAIQuickImageDispatchResponse(input: {
   req: Request
   validUIMessages: UIMessage[]
   prompt: string
   chatId?: unknown
   userId: string
+  referenceImageUrl?: string
+  responseKind?: "new" | "refinement"
 }): Promise<Response | null> {
   const prompt = input.prompt.trim()
   if (!prompt) return null
@@ -188,6 +332,7 @@ async function createOpenAIQuickImageDispatchResponse(input: {
       prompt,
       conceptTitle: "Maya quick photo",
       chatId: typeof input.chatId === "string" ? input.chatId : undefined,
+      referenceImageUrl: input.referenceImageUrl,
     }),
   })
 
@@ -227,6 +372,7 @@ async function createOpenAIQuickImageDispatchResponse(input: {
     properties: {
       source: "openai_quick",
       aiImageId: payload.aiImageId || null,
+      responseKind: input.responseKind || "new",
     },
   })
 
@@ -235,10 +381,14 @@ async function createOpenAIQuickImageDispatchResponse(input: {
     execute: ({ writer }) => {
       const textPartId = `maya-quick-photo-${Date.now().toString(36)}`
       const savedLine = payload.aiImageId
-        ? "Done. I created it and saved it to your gallery."
-        : "Done. I created it. The image is ready here."
+        ? input.responseKind === "refinement"
+          ? "Done. I made the change and saved the new version to your gallery."
+          : "Done. I created it and saved it to your gallery."
+        : input.responseKind === "refinement"
+          ? "Done. I made the change. The new version is ready here."
+          : "Done. I created it. The image is ready here."
       const inlineImageText = isMayaInlineChatImagesEnabled()
-        ? `${savedLine}\n\n![Maya generated photo](${payload.imageUrl})\n\nWant me to write a caption for this one?`
+        ? `${savedLine}\n\n![Maya generated photo](${payload.imageUrl})\n\nWant me to write a caption or adjust anything else?`
         : `${savedLine}\n\nOpen it here: ${payload.imageUrl}\n\nWant me to write a caption for this one?`
       writer.write({ type: "text-start", id: textPartId })
       writer.write({
@@ -475,6 +625,7 @@ export async function POST(req: Request) {
     let isFeedTab = activeTabHeader === "feed" || isFeedPlannerChatType(requestedChatType)
     let useFeedPlannerContext = isFeedTab
     let useOpenAIQuickImageDispatch = false
+    let hasTrainedLoraModelForRouting = false
     
     debugLog("[Maya Chat API] Headers normalized", {
       fromBody: chatTypeFromBody,
@@ -503,7 +654,6 @@ export async function POST(req: Request) {
           .join(" ") ||
         (typeof latestUserMessage?.content === "string" ? latestUserMessage.content : "")
 
-      let hasTrainedLoraModel = false
       let canUseSelfies = false
       try {
         const [modelRows, libraryRows] = await Promise.all([
@@ -527,7 +677,7 @@ export async function POST(req: Request) {
             LIMIT 1
           `,
         ])
-        hasTrainedLoraModel = modelRows.length > 0
+        hasTrainedLoraModelForRouting = modelRows.length > 0
         canUseSelfies = libraryRows.length > 0
       } catch (modelError) {
         console.error("[Maya Chat API] Failed checking trained model for unified routing:", modelError)
@@ -536,7 +686,7 @@ export async function POST(req: Request) {
       const isImageGeneration = isMayaImageGenerationIntent(latestUserText)
       const autoMode = autoSelectMayaMode({
         hasReferenceImage,
-        hasTrainedLoraModel,
+        hasTrainedLoraModel: hasTrainedLoraModelForRouting,
         isContentPlanning: isContentPlanningIntent(latestUserText),
         isImageGeneration,
         canUseSelfies,
@@ -573,7 +723,7 @@ export async function POST(req: Request) {
         persistedChatType: chatType,
         useFeedPlannerContext,
         hasReferenceImage,
-        hasTrainedLoraModel,
+        hasTrainedLoraModel: hasTrainedLoraModelForRouting,
         isImageGeneration,
         useOpenAIQuickImageDispatch,
       })
@@ -679,6 +829,42 @@ export async function POST(req: Request) {
       valid: validUIMessages.length,
     })
     const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
+    const imageContinuationEnabled = isMayaImageContinuationEnabled()
+    const lastInlineImageContext = imageContinuationEnabled
+      ? findLastInlineImageContext(validUIMessages as UIMessage[])
+      : null
+    const isImageRefinementContinuation =
+      !!lastInlineImageContext && isMayaImageRefinementIntent(latestUserTextForSkills)
+    const isCaptionContinuation =
+      !!lastInlineImageContext && isMayaCaptionContinuationIntent(latestUserTextForSkills)
+
+    if (
+      imageContinuationEnabled &&
+      unifiedMayaUiEnabled &&
+      lastInlineImageContext &&
+      isImageRefinementContinuation &&
+      !hasTrainedLoraModelForRouting &&
+      !isPromptBuilder &&
+      !useFeedPlannerContext &&
+      chatType !== "pro-photoshoot"
+    ) {
+      const openAIContinuationResponse = await createOpenAIQuickImageDispatchResponse({
+        req,
+        validUIMessages: validUIMessages as UIMessage[],
+        prompt: buildMayaImageContinuationPrompt({
+          followUp: latestUserTextForSkills,
+          previousPrompt: lastInlineImageContext.prompt,
+        }),
+        chatId,
+        userId: dbUserId,
+        referenceImageUrl: lastInlineImageContext.imageUrl,
+        responseKind: "refinement",
+      })
+
+      if (openAIContinuationResponse) {
+        return openAIContinuationResponse
+      }
+    }
 
     if (
       useOpenAIQuickImageDispatch &&
@@ -1596,9 +1782,18 @@ export async function POST(req: Request) {
       }
     }
 
+    const uiMessagesForModel =
+      imageContinuationEnabled && lastInlineImageContext && isCaptionContinuation
+        ? attachLastInlineImageToLatestUserMessage({
+            messages: validUIMessages as UIMessage[],
+            imageContext: lastInlineImageContext,
+            latestUserText: latestUserTextForSkills,
+          })
+        : (validUIMessages as UIMessage[])
+
     // Process UI messages to extract inspiration images from text markers (backward compatibility)
     // AND ensure image parts are properly formatted for AI SDK
-    const messages: UIMessage[] = validUIMessages.map((m: any) => {
+    const messages: UIMessage[] = uiMessagesForModel.map((m: any) => {
       // Check if message has text content with inspiration image marker
       let textContent = ""
       if (m.parts && Array.isArray(m.parts)) {
