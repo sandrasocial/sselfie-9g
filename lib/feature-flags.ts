@@ -42,6 +42,16 @@ export function isOpenAIDefaultForUntrainedEnabled(): boolean {
   return isOpenAIImageEnabled() && process.env.FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED === 'true'
 }
 
+/**
+ * Maya inline chat images — Phase D
+ * When enabled, successful OpenAI quick-image chat dispatch returns the image
+ * inside Maya's assistant message instead of a plain URL-only response.
+ * Set FEATURE_MAYA_INLINE_CHAT_IMAGES=true to enable.
+ * Default: false (chat response remains URL-only).
+ */
+export function isMayaInlineChatImagesEnabled(): boolean {
+  return process.env.FEATURE_MAYA_INLINE_CHAT_IMAGES === 'true'
+}
 
 
 

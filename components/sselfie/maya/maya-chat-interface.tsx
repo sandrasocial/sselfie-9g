@@ -345,6 +345,18 @@ function renderMarkdownText(text: string): React.ReactNode {
             {children}
           </a>
         ),
+        img: ({ src, alt }) =>
+          typeof src === "string" && src.length > 0 ? (
+            <span className="my-4 block overflow-hidden rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.35)] shadow-[0_16px_48px_rgba(10,10,10,0.12)]">
+              <img
+                src={src}
+                alt={alt || "Maya generated photo"}
+                className="block h-auto max-h-[560px] w-full object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+            </span>
+          ) : null,
       }}
     >
       {text}

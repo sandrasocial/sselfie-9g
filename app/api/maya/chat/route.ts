@@ -66,6 +66,7 @@ import {
 import { getWeekPlanSystemAddendum } from "@/lib/maya/week-plan-prompt"
 import { resolveMethodDepth } from "@/lib/maya/method-depth"
 import { hasStudioMembership } from "@/lib/subscription"
+import { isMayaInlineChatImagesEnabled } from "@/lib/feature-flags"
 
 import { NextResponse } from "next/server"
 
@@ -233,14 +234,17 @@ async function createOpenAIQuickImageDispatchResponse(input: {
     originalMessages: input.validUIMessages as any,
     execute: ({ writer }) => {
       const textPartId = `maya-quick-photo-${Date.now().toString(36)}`
+      const savedLine = payload.aiImageId
+        ? "Done. I created it and saved it to your gallery."
+        : "Done. I created it. The image is ready here."
+      const inlineImageText = isMayaInlineChatImagesEnabled()
+        ? `${savedLine}\n\n![Maya generated photo](${payload.imageUrl})\n\nWant me to write a caption for this one?`
+        : `${savedLine}\n\nOpen it here: ${payload.imageUrl}\n\nWant me to write a caption for this one?`
       writer.write({ type: "text-start", id: textPartId })
       writer.write({
         type: "text-delta",
         id: textPartId,
-        delta:
-          `Done. I created it and saved it to your gallery.\n\n` +
-          `Open it here: ${payload.imageUrl}\n\n` +
-          `Want me to write a caption for this one?`,
+        delta: inlineImageText,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
