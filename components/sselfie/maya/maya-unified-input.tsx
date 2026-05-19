@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { SlidersHorizontal } from "lucide-react"
+import { ImagePlus, MoreHorizontal, SlidersHorizontal } from "lucide-react"
 import LoadingSpinner from "../loading-spinner"
 import MayaModeToggle from "./maya-mode-toggle"
 import { Typography, Colors, BorderRadius } from "@/lib/maya/pro/design-system"
@@ -168,7 +168,7 @@ export default function MayaUnifiedInput({
   const canSend = Boolean(inputValue.trim() || uploadedImage) && !isLoading && !isUploadingImage && !disabled
 
   const inputContainerClass =
-    "w-full overflow-hidden rounded-[16px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] shadow-[var(--app-shadow-soft)] p-2.5 sm:p-4"
+    "w-full overflow-visible rounded-[16px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] shadow-[var(--app-shadow-soft)] p-2.5 sm:p-4"
   const inputContainerStyle = {
     borderTop: "1px solid var(--app-border)",
   }
@@ -186,7 +186,9 @@ export default function MayaUnifiedInput({
   }
 
   const secondaryToolbarButtonClass =
-    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 h-9 px-3 rounded-full border border-transparent bg-transparent hover:bg-[color:var(--app-btn-secondary-hover)] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+  const quietToolbarButtonClass =
+    "touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 min-h-[34px] rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
@@ -322,9 +324,9 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* Image, Adjust, mode toggle, New chat — single toolbar row under the composer */}
+        {/* Creation helpers stay reachable, but the first read stays focused on the prompt. */}
         <div
-          className="mt-2 flex w-full min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide border-t border-[color:var(--app-border)] pt-2"
+          className="mt-2 flex w-full min-w-0 items-center gap-1.5 overflow-x-auto scrollbar-hide border-t border-[color:var(--app-border)] pt-2"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -337,7 +339,7 @@ export default function MayaUnifiedInput({
             disabled={isLoading || disabled || isUploadingImage}
             className={secondaryToolbarButtonClass}
             style={imageButtonStyle}
-            title="Upload image"
+            title="Add a selfie or reference photo"
           >
             <input
               ref={fileInputRef}
@@ -354,8 +356,10 @@ export default function MayaUnifiedInput({
                 <div className="w-4 h-4 border-2 border-[color:var(--app-text-muted)] border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <span className="relative text-[10px] uppercase tracking-[0.14em] font-medium">
-                Image
+              <>
+                <ImagePlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="relative text-[10px] uppercase tracking-[0.14em] font-medium">
+                  Add photo
                 {proMode && (
                   imageCount > 0 ? (
                     <span className="absolute -right-4 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--app-btn-primary-bg)] px-1 text-[9px] leading-none text-[color:var(--app-btn-primary-text)]">
@@ -365,7 +369,8 @@ export default function MayaUnifiedInput({
                     <span className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-orange-500" />
                   )
                 )}
-              </span>
+                </span>
+              </>
             )}
           </button>
 
@@ -376,45 +381,49 @@ export default function MayaUnifiedInput({
               disabled={isLoading || disabled}
               className={secondaryToolbarButtonClass}
               style={imageButtonStyle}
-              aria-label="Photo generation: style strength, guidance, aspect ratio, realism"
-              title="Style strength, guidance (Flux), aspect ratio, realism boost"
+              aria-label="Style settings: look, instructions, size, natural result"
+              title="Tune the look, instructions, size, and natural result"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 shrink-0 opacity-90" aria-hidden />
-              <span className="text-[10px] uppercase tracking-[0.12em] font-medium">Adjust</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium">Style</span>
             </button>
           )}
 
-          {/* Push toggle + New to the right without a second banner row */}
           <div className="min-w-[4px] flex-1 shrink basis-0" aria-hidden />
 
-          <div className="flex shrink-0 items-center gap-2 [&_.inline-flex]:max-w-none">
-            {showModeToggle &&
-              (proMode && onSwitchToClassic ? (
-                <MayaModeToggle
-                  currentMode="pro"
-                  onToggle={() => {
-                    void onSwitchToClassic()
-                  }}
-                  variant="compact"
-                  showModeHint={false}
-                  className="shrink-0"
-                />
-              ) : !proMode && onModeSwitch ? (
-                <MayaModeToggle
-                  currentMode="classic"
-                  onToggle={() => {
-                    void onModeSwitch(true)
-                  }}
-                  variant="compact"
-                  showModeHint={false}
-                  className="shrink-0"
-                />
-              ) : null)}
-            {onNewProject && (
+          <details className="relative shrink-0">
+            <summary className={`${quietToolbarButtonClass} list-none cursor-pointer`} title="More creation options">
+              <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+              <span>More</span>
+            </summary>
+            <div className="absolute bottom-full right-0 z-20 mb-2 flex min-w-[220px] flex-col gap-2 rounded-[14px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] p-2 shadow-[var(--app-shadow-soft)]">
+              {showModeToggle &&
+                (proMode && onSwitchToClassic ? (
+                  <MayaModeToggle
+                    currentMode="pro"
+                    onToggle={() => {
+                      void onSwitchToClassic()
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="w-full justify-center"
+                  />
+                ) : !proMode && onModeSwitch ? (
+                  <MayaModeToggle
+                    currentMode="classic"
+                    onToggle={() => {
+                      void onModeSwitch(true)
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="w-full justify-center"
+                  />
+                ) : null)}
+              {onNewProject && (
               <button
                 type="button"
                 onClick={onNewProject}
-                className="touch-manipulation active:scale-95 shrink-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] px-2.5 py-1.5 min-h-[32px] sm:min-h-[34px] sm:px-3 hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors"
+                className="touch-manipulation active:scale-95 shrink-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors"
                 style={{
                   fontFamily: "var(--font-body, Inter)",
                   fontSize: "9px",
@@ -425,11 +434,11 @@ export default function MayaUnifiedInput({
                 }}
                 aria-label="Start a new chat"
               >
-                <span className="sm:hidden">New</span>
-                <span className="hidden sm:inline">New chat</span>
+                Start fresh
               </button>
-            )}
-          </div>
+              )}
+            </div>
+          </details>
         </div>
 
         {/* History remains in header ··· / ≡ menu */}

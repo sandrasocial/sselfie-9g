@@ -46,12 +46,15 @@ export default function MayaQuickPrompts({
 
   // **NEW: Quick Chips variant** — rendered above input in Chat Focus mode
   if (variant === "quick-chips") {
+    const INITIAL_VISIBLE_CHIPS = 3
+    const visiblePrompts = expanded ? prompts : prompts.slice(0, INITIAL_VISIBLE_CHIPS)
+    const hiddenCount = Math.max(0, prompts.length - INITIAL_VISIBLE_CHIPS)
     const chipClass =
-      "shrink-0 rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] active:bg-[color:var(--app-btn-secondary-hover)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+      "shrink-0 rounded-full border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.46)] px-3.5 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] active:bg-[color:var(--app-btn-secondary-hover)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
     return (
       <div className="relative w-full">
-        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
-          {prompts.map((item, index) => (
+        <div className="flex overflow-x-auto scrollbar-hide gap-1.5 px-4 py-2 w-full">
+          {visiblePrompts.map((item, index) => (
             <button
               key={`quick-chip-${index}`}
               onClick={() => onSelect(item.prompt)}
@@ -61,6 +64,16 @@ export default function MayaQuickPrompts({
               {item.label}
             </button>
           ))}
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((value) => !value)}
+              disabled={disabled}
+              className="shrink-0 rounded-full border border-transparent bg-transparent px-3.5 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-muted)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {expanded ? "Fewer ideas" : "More ideas"}
+            </button>
+          ) : null}
         </div>
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[color-mix(in_srgb,var(--color-porcelain)_95%,transparent)] to-transparent" />
       </div>

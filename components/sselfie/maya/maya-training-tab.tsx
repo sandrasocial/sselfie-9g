@@ -142,16 +142,16 @@ export default function MayaTrainingTab({
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-[color:var(--color-porcelain)] mb-3">
-            Train My Model
+            Set Up My Look
           </h2>
           <p className="text-sm sm:text-base text-[color:var(--color-whisper)] max-w-2xl">
-            This trains your own Flux model so Maya can create images that keep your likeness consistent. It costs 20 credits and is only needed if you want to use My Model.
+            This helps Maya keep your look consistent in future photos. It costs 20 credits and is optional.
           </p>
         </div>
 
         {needsTrainingCredits && (
           <div className="bg-[color:var(--app-overlay-soft)] border border-[color:var(--glass-border-subtle)] rounded-[20px] p-5 mb-6 sm:mb-8">
-            <p className="text-sm font-medium tracking-wide uppercase text-[color:var(--color-porcelain)] mb-2">Training costs 20 credits</p>
+            <p className="text-sm font-medium tracking-wide uppercase text-[color:var(--color-porcelain)] mb-2">Setup costs 20 credits</p>
             <p className="text-sm text-[color:var(--color-whisper)] mb-4">
               You currently have {Math.round(creditBalance)} credits.
             </p>
@@ -188,7 +188,7 @@ export default function MayaTrainingTab({
                 Training in Progress
               </h3>
               <p className="text-sm text-[color:var(--color-whisper)] mb-6">
-                Maya is training your own Flux model. This usually takes about 5 minutes.
+                Maya is setting up your look. This usually takes about 5 minutes.
               </p>
               
               {/* Progress Bar */}
@@ -217,7 +217,7 @@ export default function MayaTrainingTab({
                 Training Complete
               </h3>
               <p className="text-sm text-[color:var(--color-whisper)] mb-6">
-                Your model is ready. You can now use My Model for consistent personalized images.
+                Your look is ready. Maya can now keep your photos more consistent.
               </p>
               {model?.created_at && (
                 <p className="text-xs text-[color:var(--color-smoke)] mb-6">
@@ -237,7 +237,7 @@ export default function MayaTrainingTab({
                   }}
                   className="px-6 py-3 bg-[color:var(--glass-bg-mid)] text-[color:var(--color-porcelain)] rounded-lg hover:bg-[color:var(--glass-bg-heavy)] transition-colors text-sm font-medium tracking-wide uppercase border border-[color:var(--glass-border-subtle)]"
                 >
-                  Retrain My Model
+                  Refresh My Look
                 </button>
                 <button
                   onClick={handleManageTraining}
@@ -270,14 +270,14 @@ export default function MayaTrainingTab({
                 Get Started
               </h3>
               <p className="text-sm text-[color:var(--color-whisper)] mb-6">
-                Upload 5+ selfies to train your personal AI model. Training costs 20 credits.
+                Upload 5+ selfies so Maya can learn your look. Setup costs 20 credits.
               </p>
               <button
                 onClick={handleStartTraining}
                 type="button"
                 className="px-6 py-3 bg-[color:var(--glass-bg-mid)] text-[color:var(--color-porcelain)] rounded-lg hover:bg-[color:var(--glass-bg-heavy)] transition-colors text-sm font-medium tracking-wide uppercase mx-auto border border-[color:var(--glass-border-subtle)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {needsTrainingCredits ? "Get credits to train" : "Start Training"}
+                {needsTrainingCredits ? "Get credits for setup" : "Start Setup"}
               </button>
             </div>
           )}
@@ -288,7 +288,7 @@ export default function MayaTrainingTab({
           <div className="bg-[color:var(--glass-bg)] border border-[color:var(--glass-border-subtle)] rounded-[24px] p-6 sm:p-8 backdrop-blur-[20px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-[color:var(--color-porcelain)]">
-                Training Images
+                Setup Photos
               </h3>
               <span className="text-xs text-[color:var(--color-smoke)]">
                 {trainingImages.length} image{trainingImages.length !== 1 ? 's' : ''}
