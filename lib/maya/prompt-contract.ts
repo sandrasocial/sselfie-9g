@@ -35,25 +35,25 @@ const PLAN_PROMPTS: MayaQuickPromptItem[] = [
 
 // Style mood chips — mode-specific so there's no cross-mode confusion
 const MODEL_STYLE_PROMPTS: MayaQuickPromptItem[] = [
+  { label: "Make it expensive", prompt: "Use my trained model and create one polished photo that makes my selfie look expensive" },
   { label: "Dark mood", prompt: "Use my trained model and create a dark and moody photo for my brand" },
   { label: "Soft luxury", prompt: "Use my trained model and create a soft luxury photo for my brand" },
-  { label: "Street style", prompt: "Use my trained model and create a street style photo for my brand" },
   { label: "Natural light", prompt: "Use my trained model and create a natural light photo for my brand" },
 ]
 
 // Classic style chips when there's no trained model (base model generation)
 const BASE_STYLE_PROMPTS: MayaQuickPromptItem[] = [
+  { label: "Make it expensive", prompt: "Create one polished photo that makes my selfie look expensive" },
   { label: "Dark mood", prompt: "Create a dark and moody photo for my brand" },
   { label: "Soft luxury", prompt: "Create a soft luxury photo for my brand" },
-  { label: "Street style", prompt: "Create a street style photo for my brand" },
   { label: "Natural light", prompt: "Create a natural light photo for my brand" },
 ]
 
 const SELFIE_STYLE_PROMPTS: MayaQuickPromptItem[] = [
+  { label: "Make it expensive", prompt: "Use my selfies and create one polished photo that makes it look expensive" },
   { label: "Dark mood", prompt: "Use my selfies and create a dark and moody photo for my brand" },
   { label: "Soft luxury", prompt: "Use my selfies and create a soft luxury photo for my brand" },
   { label: "Natural light", prompt: "Use my selfies and create a natural light photo for my brand" },
-  { label: "Bold fashion", prompt: "Use my selfies and create a bold fashion photo for my brand" },
 ]
 
 function dedupePrompts(prompts: MayaQuickPromptItem[]): MayaQuickPromptItem[] {
@@ -88,20 +88,17 @@ export function getMayaSurfaceQuickPrompts(input: {
   // Photos is creation-first: selfie/photo starts, styles, and source choice.
   const modeSupportPrompts: MayaQuickPromptItem[] = proMode
     ? [
-        { label: "Start with selfie", prompt: "Use my selfies and create one polished photo direction that makes it look expensive" },
-        { label: "Add photos", prompt: "I want to upload selfies or reference photos before creating an image" },
+        { label: "Upload selfie", prompt: "I want to upload a selfie and make it look expensive" },
         { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : hasTrainedModel
     ? [
         { label: "Use my look", prompt: "Use my trained model and create one polished photo direction for my brand" },
-        { label: "Photo ideas", prompt: "Create three polished photo ideas for a personal brand photoshoot" },
         { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
       ]
     : [
-        { label: "Photo ideas", prompt: "Create three polished photo ideas for a personal brand photoshoot" },
+        { label: "Photo ideas", prompt: "Create three polished photo ideas for my personal brand" },
         { label: "Use saved photo", prompt: "Show me my gallery so I can reuse an existing brand photo" },
-        { label: "Set up my look", prompt: "I want to set up my look for more consistent photos when I'm ready" },
       ]
 
   const styleChips = proMode
@@ -110,7 +107,7 @@ export function getMayaSurfaceQuickPrompts(input: {
     ? MODEL_STYLE_PROMPTS
     : BASE_STYLE_PROMPTS
 
-  return dedupePrompts([...modeSupportPrompts, ...styleChips]).slice(0, 7)
+  return dedupePrompts([...modeSupportPrompts, ...styleChips]).slice(0, 5)
 }
 
 /**
@@ -120,9 +117,9 @@ export function getMayaSurfaceQuickPrompts(input: {
 export function getMayaInputPlaceholder(activeTab: MayaSurfaceTab): string {
   switch (activeTab) {
     case "photos":
-      return "What photo should we create?"
+      return "Tell Maya what you want to make..."
     case "plan":
-      return "What are you selling, sharing, or planning?"
+      return "What should Maya help you say?"
     case "videos":
       return "Pick a photo below to make a video"
     case "training":

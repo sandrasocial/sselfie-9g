@@ -1387,7 +1387,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               ></div>
             </div>
             <span className="text-xs font-light tracking-wide" style={{ color: PRO_TEXT_SECONDARY }}>
-              Creating with Studio Pro...
+              Maya is creating...
             </span>
           </div>
         )}

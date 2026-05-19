@@ -688,7 +688,7 @@ export default function ConceptCard({
       // CLASSIC MODE SAFETY: Use isProMode (normalized boolean)
       if (isProMode || shouldUseSelfieFallback) {
         // ============================================
-        // CONCEPT CARD FLOW (Studio Pro Mode):
+        // CONCEPT CARD FLOW (advanced image mode):
         // 1. Maya generates concept with detailed prompt (concept.prompt)
         // 2. User adds reference images via upload/gallery
         // 3. Generate using Maya's prompt + user's images
@@ -702,12 +702,12 @@ export default function ConceptCard({
 
         // Check if we have at least selfies (required)
         if (finalSelfies.length === 0) {
-          setError("Please select at least one image (upload or from gallery) in Studio Pro mode, or use Classic mode")
+          setError("Please select at least one image from your gallery or upload a new photo.")
           setIsGenerating(false)
           return
         }
 
-        console.log("[CONCEPT-CARD] Using Studio Pro (Nano Banana Pro) with:", {
+        console.log("[CONCEPT-CARD] Using advanced image generation with:", {
           selfies: finalSelfies.length,
           products: finalProducts.length,
           styleRefs: finalStyleRefs.length,
@@ -719,8 +719,8 @@ export default function ConceptCard({
         // Mode "brand-scene" ensures proper prompt building with brand context
         const userRequest = editedPrompt || concept.prompt || `${concept.title}: ${concept.description}`
         
-        // 🔴 CRITICAL: Log the prompt being sent to Studio Pro for debugging
-        console.log('[CONCEPT-CARD] Sending prompt to Studio Pro:', {
+        // 🔴 CRITICAL: Log the prompt being sent to the advanced generation route for debugging
+        console.log('[CONCEPT-CARD] Sending prompt to advanced generation route:', {
           hasEditedPrompt: !!editedPrompt,
           hasConceptPrompt: !!concept.prompt,
           promptLength: userRequest.length,
@@ -1828,7 +1828,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-[color:var(--color-porcelain)]">SSELFIE</span>
               {isProMode && (
                 <span className="text-[9px] font-light tracking-[0.2em] uppercase text-[color:var(--app-text-muted)] px-2 py-0.5 border border-[color:var(--glass-border)] rounded">
-                  Studio Pro
+                  Maya
                 </span>
               )}
             </div>
@@ -1923,7 +1923,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               <div className="space-y-3 border-t border-[color:var(--glass-border-subtle)] pt-4">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-[10px] tracking-[0.15em] uppercase text-[color:var(--color-smoke)] font-light">
-                    Reference Images
+                    Photos Maya will use
                   </span>
                   <span className="text-[10px] text-[color:var(--color-smoke)] font-light">
                     {baseImages.length} image{baseImages.length !== 1 ? "s" : ""}
@@ -1946,7 +1946,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   ))}
                 </div>
                 <p className="text-[10px] text-[color:var(--color-smoke)] leading-relaxed px-1 font-light">
-                  Images analyzed and incorporated into prompts
+                  Maya will use these for the look and direction.
                 </p>
               </div>
             )}
@@ -1972,10 +1972,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       : "Creating your photo"
                     : isProMode
                     ? baseImages.length > 0
-                      ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
+                      ? `Create with Maya • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
                       : selectedImages.filter((img) => img !== null).length === 0
                       ? "Add Images to Continue"
-                      : `Generate with Studio Pro • ${
+                      : `Create with Maya • ${
                           selectedImages.filter((img) => img !== null).length
                         } Image${
                           selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
@@ -2008,11 +2008,11 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               <p className="text-[10px] text-[color:var(--color-smoke)] leading-relaxed font-light">
                 {isProMode
                   ? baseImages.length > 0
-                    ? `Professional quality • ${MAYA_PRO_GENERATION_CREDIT_COST} credits per generation`
+                    ? `Polished finish • ${MAYA_PRO_GENERATION_CREDIT_COST} credits`
                     : selectedImages.filter((img) => img !== null).length === 0
                     ? "Select at least one reference image from your gallery or upload new photos"
-                    : `Professional quality • ${MAYA_PRO_GENERATION_CREDIT_COST} credits per generation`
-                  : "AI-generated photos may vary in quality and accuracy"}
+                    : `Polished finish • ${MAYA_PRO_GENERATION_CREDIT_COST} credits`
+                  : "Maya will create one photo from this direction."}
               </p>
             </div>
           </div>
@@ -2032,7 +2032,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               ></div>
             </div>
             <span className="text-xs font-light text-[color:var(--app-text-muted)] tracking-wide">
-              {isProMode ? 'Creating with Studio Pro...' : 'Creating your photo'}
+              {isProMode ? 'Maya is creating...' : 'Creating your photo'}
             </span>
           </div>
         )}

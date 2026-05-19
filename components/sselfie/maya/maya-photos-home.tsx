@@ -22,7 +22,7 @@ export default function MayaPhotosHome({
   onOpenPlan,
 }: MayaPhotosHomeProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
-  const sourceLabel = proMode ? "Use this selfie" : hasTrainedModel ? "Maya knows my look" : "Photo ideas"
+  const sourceLabel = proMode ? "Start with a selfie" : hasTrainedModel ? "Use my look" : "Start with a vibe"
   const getPhotoPrompt = (modelPrompt: string, selfiePrompt: string, basePrompt: string) => {
     if (proMode) return selfiePrompt
     if (hasTrainedModel) return modelPrompt
@@ -33,15 +33,15 @@ export default function MayaPhotosHome({
     <div className="w-full max-w-3xl space-y-5">
       <MayaInlineCard
         eyebrow="Photos"
-        title="Let’s create the image first."
-        subtitle="Start with a selfie, a look, or a vibe. Maya will help you turn it into a photo you can actually use."
+        title="What should Maya make?"
+        subtitle="Upload a selfie or describe the look. Maya will keep it simple and help you make something you can post."
         surface="plain"
-        aside={<MayaInlinePill tone="muted">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
+        aside={normalizedCredits <= 0 ? <MayaInlinePill tone="muted">Add credits</MayaInlinePill> : undefined}
         actionsLayout="column"
         actions={
           <>
             <MayaInlineAction variant="primary" className="w-full" onClick={onOpenUpload}>
-              Upload Your Selfie
+              Upload a selfie
             </MayaInlineAction>
             <MayaInlineAction
               variant="secondary"
@@ -56,11 +56,11 @@ export default function MayaPhotosHome({
                 )
               }
             >
-              Make This Look Expensive
+              Make it look expensive
             </MayaInlineAction>
             <details className="group w-full rounded-[10px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.42)]">
               <summary className="cursor-pointer list-none px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]">
-                More ways to start
+                More ideas
               </summary>
               <div className="grid w-full gap-2 border-t border-[color:var(--app-glass-border)] p-2 sm:grid-cols-2">
                 <MayaInlineAction
@@ -101,14 +101,7 @@ export default function MayaPhotosHome({
                   Natural Light Photo
                 </MayaInlineAction>
                 <MayaInlineAction variant="secondary" className="w-full justify-start text-left" onClick={onOpenPlan}>
-                  Plan My Post
-                </MayaInlineAction>
-                <MayaInlineAction
-                  variant="secondary"
-                  className="w-full justify-start text-left"
-                  onClick={onOpenPlan}
-                >
-                  Plan a Few Posts
+                  Write the caption
                 </MayaInlineAction>
                 {!hasTrainedModel && !proMode ? (
                   <MayaInlineAction
@@ -116,7 +109,7 @@ export default function MayaPhotosHome({
                     className="w-full justify-start text-left"
                     onClick={onTrainModel}
                   >
-                    Set Up My Look
+                    Teach Maya my look
                   </MayaInlineAction>
                 ) : null}
               </div>
@@ -130,15 +123,15 @@ export default function MayaPhotosHome({
               Best for
             </p>
             <p className="mt-3 text-xl font-light leading-snug text-[color:var(--app-text-primary)]">
-              Selfies, photo ideas, and polished content.
+              Selfies, captions, and polished content.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
-              Ask for a look, a vibe, a location, or a feeling. Maya will turn it into a photo direction you can make, save, or post.
+              Ask for a look, a vibe, a location, or a feeling. Maya will turn it into one clear next step.
             </p>
           </div>
           <div className="rounded-[12px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.54)] p-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-              Photo setup
+              Ready mode
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <MayaInlinePill tone={hasTrainedModel || proMode ? "strong" : "muted"}>{sourceLabel}</MayaInlinePill>

@@ -20,7 +20,7 @@ const fetcher = (url: string) =>
 
 const DEFAULT_MOVE: MayaNextBestMove = {
   job: "decide",
-  eyebrow: "Next best move",
+  eyebrow: "Maya suggests",
   headline: "Let Maya choose the first thing to make.",
   why: "Start with one clear action. Maya will help you decide, then turn it into something you can use.",
   primaryActionLabel: "Help me decide",
@@ -133,7 +133,7 @@ export default function MayaStudioCopilotHome({
         title="What are we making today?"
         subtitle="Tell Maya what you want, or let her choose one simple next step for your photo, caption, or post."
         surface="plain"
-        aside={<MayaInlinePill tone="muted">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
+        aside={normalizedCredits <= 0 ? <MayaInlinePill tone="muted">Add credits</MayaInlinePill> : undefined}
         actionsLayout="column"
         actions={
           <>
@@ -158,7 +158,7 @@ export default function MayaStudioCopilotHome({
             </div>
             <details className="group w-full rounded-[10px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.42)]">
               <summary className="cursor-pointer list-none px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]">
-                More ways to start
+                More ideas
               </summary>
               <div className="grid w-full gap-2 border-t border-[color:var(--app-glass-border)] p-2 sm:grid-cols-2">
                 {moreStartActions.map((action) => (
@@ -191,39 +191,20 @@ export default function MayaStudioCopilotHome({
 
           <div className="rounded-[12px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.54)] p-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-              Maya knows
+              Maya can help with
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {(nextMove.signals.length ? nextMove.signals : ["Ready to start"]).slice(0, 4).map((signal) => (
+              {(nextMove.signals.length ? nextMove.signals : ["Ready to start"]).slice(0, 2).map((signal) => (
                 <MayaInlinePill key={signal} tone="muted">
                   {signal}
                 </MayaInlinePill>
               ))}
               <MayaInlinePill tone={hasTrainedModel ? "strong" : "muted"}>
-                {hasTrainedModel ? "Maya knows my look" : "Photo setup open"}
+                {hasTrainedModel ? "Your look" : "Photo ideas"}
               </MayaInlinePill>
             </div>
           </div>
         </div>
-
-        {nextMove.secondaryActions.length > 0 ? (
-          <div className="mt-6 border-t border-[color:var(--app-glass-border)] pt-4">
-            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-              Other good starts
-            </p>
-            <div className="flex flex-col">
-              {nextMove.secondaryActions.slice(0, 3).map((action) => (
-                <MayaInlineAction
-                  key={action.label}
-                  variant="ghost"
-                  onClick={() => runAction(action.job, action.prompt)}
-                >
-                  {action.label}
-                </MayaInlineAction>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </MayaInlineCard>
     </div>
   )
