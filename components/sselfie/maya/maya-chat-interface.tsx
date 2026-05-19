@@ -24,6 +24,7 @@ import {
 import { MAYA_CHAT_SCROLL_TOP_OFFSET } from "@/lib/maya/layout-contract"
 import type { MayaSurfaceTab } from "@/lib/maya/tab-scope"
 import { MayaEnergyCheckIn } from "./maya-energy-check-in"
+import { isMayaConversationalActionPillsEnabled } from "@/lib/feature-flags"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
@@ -431,6 +432,44 @@ function renderMessageContent(text: string, isUser: boolean): React.ReactNode {
   return (
     <div className="text-[16px] leading-[1.8] font-light text-(--text-primary)">
       {renderMarkdownText(cleanedText)}
+    </div>
+  )
+}
+
+const MAYA_INLINE_IMAGE_REGEX = /!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/i
+
+const MAYA_CREATIVE_ACTION_PILLS = [
+  { label: "Softer", prompt: "Make this softer." },
+  { label: "More Pinterest", prompt: "Make this more Pinterest." },
+  { label: "More editorial", prompt: "Make this more editorial." },
+  { label: "Write caption", prompt: "Write the caption for this image." },
+  { label: "Carousel ideas", prompt: "Give me 3 carousel post ideas for this image." },
+  { label: "Luxury vibe", prompt: "Make a more luxury version." },
+] as const
+
+function hasMayaInlineImage(text: string): boolean {
+  return MAYA_INLINE_IMAGE_REGEX.test(text)
+}
+
+function MayaCreativeActionPills({
+  onSelect,
+}: {
+  onSelect?: (prompt: string) => void
+}) {
+  if (!onSelect) return null
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2" aria-label="Creative next steps">
+      {MAYA_CREATIVE_ACTION_PILLS.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          onClick={() => onSelect(action.prompt)}
+          className="inline-flex min-h-9 items-center rounded-full border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.42)] px-3.5 py-2 text-[12px] font-light leading-none text-[color:var(--app-text-primary)] shadow-[0_10px_24px_rgba(10,10,10,0.05)] transition-colors duration-200 hover:bg-[rgba(255,255,255,0.7)]"
+        >
+          {action.label}
+        </button>
+      ))}
     </div>
   )
 }
@@ -1850,10 +1889,17 @@ function MayaTextPart(props: Readonly<MayaTextPartProps>): React.ReactNode {
     ? []
     : parsedPromptSuggestions.filter((s) => !s.label.includes("Slide"))
   const showNonCarousel = msg.role === "assistant" && nonCarouselSuggestions.length > 0
+  const showCreativeActionPills =
+    msg.role === "assistant" &&
+    isLastMessage &&
+    isMayaConversationalActionPillsEnabled() &&
+    hasMayaInlineImage(displayText)
 
   return (
     <div key={idx}>
       {renderMessageContent(displayText, msg.role === "user")}
+
+      {showCreativeActionPills && <MayaCreativeActionPills onSelect={onToolPromptSelect} />}
 
       {showApiSuggestions && (
         <div className="mt-4 space-y-3">

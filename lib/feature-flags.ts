@@ -64,6 +64,26 @@ export function isMayaImageContinuationEnabled(): boolean {
   return isMayaInlineChatImagesEnabled() && process.env.FEATURE_MAYA_IMAGE_CONTINUATION === 'true'
 }
 
+/**
+ * Maya proactive creative assistance — Phase F
+ * When enabled, successful inline image responses include light, assistant-led
+ * creative next steps instead of ending at a passive result.
+ * Set FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE=true to enable.
+ * Default: false.
+ */
+export function isMayaProactiveCreativeAssistanceEnabled(): boolean {
+  return isMayaImageContinuationEnabled() && process.env.FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE === 'true'
+}
+
+/**
+ * Maya conversational action pills — Phase F
+ * Client-side flag for lightweight buttons below inline generated images.
+ * Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS=true to enable.
+ * Default: false.
+ */
+export function isMayaConversationalActionPillsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS === 'true'
+}
 
 
 

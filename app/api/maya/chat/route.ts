@@ -66,7 +66,11 @@ import {
 import { getWeekPlanSystemAddendum } from "@/lib/maya/week-plan-prompt"
 import { resolveMethodDepth } from "@/lib/maya/method-depth"
 import { hasStudioMembership } from "@/lib/subscription"
-import { isMayaImageContinuationEnabled, isMayaInlineChatImagesEnabled } from "@/lib/feature-flags"
+import {
+  isMayaImageContinuationEnabled,
+  isMayaInlineChatImagesEnabled,
+  isMayaProactiveCreativeAssistanceEnabled,
+} from "@/lib/feature-flags"
 
 import { NextResponse } from "next/server"
 
@@ -225,10 +229,19 @@ function isMayaCaptionContinuationIntent(text: string): boolean {
   )
 }
 
+function isMayaCreativeTextContinuationIntent(text: string): boolean {
+  const normalized = text.toLowerCase().trim()
+  if (isMayaCaptionContinuationIntent(normalized)) return true
+
+  return /\b(carousel|post ideas?|caption ideas?|content ideas?|hooks?|write|copy|plan|turn this into)\b/i.test(
+    normalized,
+  )
+}
+
 function isMayaImageRefinementIntent(text: string): boolean {
   const normalized = text.toLowerCase().trim()
   if (!normalized) return false
-  if (isMayaCaptionContinuationIntent(normalized)) return false
+  if (isMayaCreativeTextContinuationIntent(normalized)) return false
 
   return (
     /\b(make|change|turn|try|redo|regenerate|adjust|edit|switch|keep|preserve)\b[\s\S]{0,120}\b(this|it|image|photo|face|background|lighting|outfit|version|vibe|style)\b/i.test(
@@ -303,6 +316,18 @@ function attachLastInlineImageToLatestUserMessage(input: {
     const { content, ...rest } = message
     return { ...rest, parts: nextParts }
   })
+}
+
+function buildMayaProactiveImagePrompt(responseKind?: "new" | "refinement"): string {
+  if (!isMayaProactiveCreativeAssistanceEnabled()) {
+    return "Want me to write a caption or adjust anything else?"
+  }
+
+  if (responseKind === "refinement") {
+    return "This is a good direction. Want a softer version, a more Pinterest version, or a caption for this one?"
+  }
+
+  return "A few easy next moves: I can make it softer, more Pinterest, more editorial, or write the caption."
 }
 
 async function createOpenAIQuickImageDispatchResponse(input: {
@@ -388,7 +413,7 @@ async function createOpenAIQuickImageDispatchResponse(input: {
           ? "Done. I made the change. The new version is ready here."
           : "Done. I created it. The image is ready here."
       const inlineImageText = isMayaInlineChatImagesEnabled()
-        ? `${savedLine}\n\n![Maya generated photo](${payload.imageUrl})\n\nWant me to write a caption or adjust anything else?`
+        ? `${savedLine}\n\n![Maya generated photo](${payload.imageUrl})\n\n${buildMayaProactiveImagePrompt(input.responseKind)}`
         : `${savedLine}\n\nOpen it here: ${payload.imageUrl}\n\nWant me to write a caption for this one?`
       writer.write({ type: "text-start", id: textPartId })
       writer.write({
@@ -835,8 +860,8 @@ export async function POST(req: Request) {
       : null
     const isImageRefinementContinuation =
       !!lastInlineImageContext && isMayaImageRefinementIntent(latestUserTextForSkills)
-    const isCaptionContinuation =
-      !!lastInlineImageContext && isMayaCaptionContinuationIntent(latestUserTextForSkills)
+    const isCreativeTextContinuation =
+      !!lastInlineImageContext && isMayaCreativeTextContinuationIntent(latestUserTextForSkills)
 
     if (
       imageContinuationEnabled &&
@@ -1783,7 +1808,7 @@ export async function POST(req: Request) {
     }
 
     const uiMessagesForModel =
-      imageContinuationEnabled && lastInlineImageContext && isCaptionContinuation
+      imageContinuationEnabled && lastInlineImageContext && isCreativeTextContinuation
         ? attachLastInlineImageToLatestUserMessage({
             messages: validUIMessages as UIMessage[],
             imageContext: lastInlineImageContext,
