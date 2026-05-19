@@ -14,12 +14,32 @@
 export function isWorkbenchModeEnabled(): boolean {
   // Check both server and client env vars
   // Client-side: Next.js exposes NEXT_PUBLIC_ vars in the browser
-  const envValue = typeof window !== 'undefined' 
-    ? (window as any).__NEXT_DATA__?.env?.NEXT_PUBLIC_ENABLE_WORKBENCH_MODE 
+  const envValue = typeof window !== 'undefined'
+    ? (window as any).__NEXT_DATA__?.env?.NEXT_PUBLIC_ENABLE_WORKBENCH_MODE
       || process.env.NEXT_PUBLIC_ENABLE_WORKBENCH_MODE
     : process.env.NEXT_PUBLIC_ENABLE_WORKBENCH_MODE
-  
+
   return envValue === 'true'
+}
+
+/**
+ * OpenAI image generation — Phase 1
+ * Gates the /api/maya/generate-image-openai route.
+ * Set FEATURE_OPENAI_IMAGE_ENABLED=true in Vercel env to enable.
+ * Default: false (disabled).
+ */
+export function isOpenAIImageEnabled(): boolean {
+  return process.env.FEATURE_OPENAI_IMAGE_ENABLED === 'true'
+}
+
+/**
+ * When true, untrained users (no Flux LoRA model) are auto-routed to OpenAI
+ * instead of NanoBanana Pro. Only takes effect when isOpenAIImageEnabled() is also true.
+ * Set FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED=true to enable.
+ * Default: false (untrained users stay on NanoBanana Pro path).
+ */
+export function isOpenAIDefaultForUntrainedEnabled(): boolean {
+  return isOpenAIImageEnabled() && process.env.FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED === 'true'
 }
 
 
