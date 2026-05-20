@@ -449,6 +449,7 @@ export default function SselfieApp({
   }
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const lastScrollY = useRef(0)
+  const appShellRef = useRef<HTMLDivElement | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const hasRedirectedToAcademyRef = useRef(false)
   const [creditsFetchFailed, setCreditsFetchFailed] = useState(false)
@@ -471,6 +472,33 @@ export default function SselfieApp({
     if (!tabFromSearchParams) return
     setActiveTab((currentTab) => (currentTab === tabFromSearchParams ? currentTab : tabFromSearchParams))
   }, [tabFromSearchParams])
+
+  useEffect(() => {
+    if (activeTab !== "maya") return
+    const shell = appShellRef.current
+    if (!shell) return
+
+    const keepMayaShellPinned = () => {
+      shell.scrollTop = 0
+    }
+
+    keepMayaShellPinned()
+    const firstFrame = window.requestAnimationFrame(() => {
+      keepMayaShellPinned()
+      window.requestAnimationFrame(keepMayaShellPinned)
+    })
+    const timeoutId = window.setTimeout(keepMayaShellPinned, 250)
+
+    shell.addEventListener("scroll", keepMayaShellPinned, { passive: true })
+    window.addEventListener("resize", keepMayaShellPinned)
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      window.clearTimeout(timeoutId)
+      shell.removeEventListener("scroll", keepMayaShellPinned)
+      window.removeEventListener("resize", keepMayaShellPinned)
+    }
+  }, [activeTab])
 
   useEffect(() => {
     let cancelScheduledTabSync: (() => void) | null = null
@@ -1017,10 +1045,12 @@ export default function SselfieApp({
 
   return (
     <div
+        ref={appShellRef}
         className="sselfie-app-shell stone-stage h-screen relative overflow-x-hidden"
         style={{
           fontFamily: "var(--font-body)",
           paddingTop: "env(safe-area-inset-top)",
+          overflow: activeTab === "maya" ? "clip" : undefined,
         }}
       >
         <ServiceWorkerProvider />
