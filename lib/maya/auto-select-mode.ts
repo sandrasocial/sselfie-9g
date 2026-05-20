@@ -12,6 +12,7 @@ export interface AutoSelectMayaModeParams {
   hasTrainedLoraModel: boolean
   isContentPlanning: boolean
   isImageGeneration?: boolean
+  prefersTrainedModel?: boolean
   /** When set, used with hasTrainedLoraModel to resolve recommended source via policy (my model vs selfie). */
   canUseSelfies?: boolean
 }
@@ -48,10 +49,25 @@ export function isMayaImageGenerationIntent(text: string): boolean {
   )
 }
 
+export function isExplicitTrainedModelIntent(text: string): boolean {
+  const n = text.toLowerCase().trim()
+  if (!n) return false
+
+  return (
+    /\b(use|with|using|generate|create|make|switch to|try)\b[\s\S]{0,80}\b(my\s+)?(trained model|custom model|saved model|trained look|custom look|my model)\b/i.test(
+      n,
+    ) ||
+    /\b(my model|trained model|custom model|trained look|custom look)\b[\s\S]{0,80}\b(use|please|now|instead)\b/i.test(
+      n,
+    )
+  )
+}
+
 export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifiedMode {
   if (params.isContentPlanning) return "feed-planner"
-  // Only route untrained users to the quick image path — trained users keep their trained look path.
-  if (params.isImageGeneration && !params.hasTrainedLoraModel && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
+  if (params.isImageGeneration && params.hasTrainedLoraModel && params.prefersTrainedModel) return "maya"
+  // OpenAI is the default visible Maya image path. Trained looks stay available only when requested.
+  if (params.isImageGeneration && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
   if (params.hasTrainedLoraModel) return "maya"
   if (params.hasReferenceImage) return "pro"
   if (params.canUseSelfies !== undefined) {

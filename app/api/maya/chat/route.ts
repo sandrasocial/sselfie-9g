@@ -16,6 +16,7 @@ import { detectStudioProIntent, getStudioProSystemPrompt } from "@/lib/maya/stud
 import { getOrCreateActiveChat } from "@/lib/data/maya"
 import {
   autoSelectMayaMode,
+  isExplicitTrainedModelIntent,
   isContentPlanningIntent,
   isMayaImageGenerationIntent,
   isUnifiedMayaUiEnabled,
@@ -815,11 +816,13 @@ export async function POST(req: Request) {
       }
 
       const isImageGeneration = isMayaImageGenerationIntent(latestUserText)
+      const prefersTrainedModel = isExplicitTrainedModelIntent(latestUserText)
       const autoMode = autoSelectMayaMode({
         hasReferenceImage,
         hasTrainedLoraModel: hasTrainedLoraModelForRouting,
         isContentPlanning: isContentPlanningIntent(latestUserText),
         isImageGeneration,
+        prefersTrainedModel,
         canUseSelfies,
       })
       useOpenAIQuickImageDispatch = autoMode === "openai_quick"
@@ -860,6 +863,7 @@ export async function POST(req: Request) {
         hasReferenceImage,
         hasSavedSelfieReference: !hasReferenceImage && !!latestReferenceImageUrlForRouting,
         hasTrainedLoraModel: hasTrainedLoraModelForRouting,
+        prefersTrainedModel,
         isImageGeneration,
         useOpenAIQuickImageDispatch,
       })
