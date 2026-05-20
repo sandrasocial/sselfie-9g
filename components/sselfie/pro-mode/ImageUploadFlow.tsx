@@ -214,16 +214,29 @@ export default function ImageUploadFlow({
     focusPrimaryCta()
   }
 
-  const handleUploadNew = () => {
-    // Create file input element
+  const openUploadPicker = (onFilesSelected: (files: FileList) => void) => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
     input.multiple = true
-    input.onchange = async (e) => {
+    input.style.position = 'fixed'
+    input.style.left = '-9999px'
+    input.style.top = '0'
+    input.style.opacity = '0'
+    input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files
-      if (!files || files.length === 0) return
+      if (files && files.length > 0) {
+        onFilesSelected(files)
+      }
+      input.remove()
+    }
+    input.oncancel = () => input.remove()
+    document.body.appendChild(input)
+    input.click()
+  }
 
+  const handleUploadNew = () => {
+    openUploadPicker(async (files) => {
       setIsUploading(true)
       setUploadError(null)
 
@@ -268,8 +281,7 @@ export default function ImageUploadFlow({
       } finally {
         setIsUploading(false)
       }
-    }
-    input.click()
+    })
   }
 
   const handleContinueFromStep2 = () => {
@@ -292,15 +304,7 @@ export default function ImageUploadFlow({
   }
 
   const handleUploadNewForCategory = (category: 'products' | 'people' | 'vibes') => {
-    // Create file input element
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = (e.target as HTMLInputElement).files
-      if (!files || files.length === 0) return
-
+    openUploadPicker(async (files) => {
       setIsUploading(true)
       setUploadError(null)
 
@@ -340,8 +344,7 @@ export default function ImageUploadFlow({
       } finally {
         setIsUploading(false)
       }
-    }
-    input.click()
+    })
   }
 
   const handleContinueFromStep3 = () => {
