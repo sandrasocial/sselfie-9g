@@ -330,6 +330,77 @@ function buildMayaProactiveImagePrompt(responseKind?: "new" | "refinement"): str
   return "A few easy next moves: I can make it softer, more Pinterest, more editorial, or write the caption."
 }
 
+function extractLibraryImageUrl(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim().length > 0) return value.trim()
+  if (!value || typeof value !== "object") return undefined
+
+  const record = value as Record<string, unknown>
+  const directFields = [
+    "url",
+    "imageUrl",
+    "image_url",
+    "src",
+    "publicUrl",
+    "public_url",
+    "blobUrl",
+    "blob_url",
+  ]
+
+  for (const field of directFields) {
+    const candidate = record[field]
+    if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim()
+  }
+
+  return undefined
+}
+
+function isMayaReferenceUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}
+
+function pickSavedSelfieReferenceUrl(selfies: unknown): string | undefined {
+  if (!Array.isArray(selfies)) return undefined
+
+  for (const item of [...selfies].reverse()) {
+    const url = extractLibraryImageUrl(item)
+    if (url && isMayaReferenceUrl(url)) return url
+  }
+
+  return undefined
+}
+
+async function getSavedSelfieReferenceUrl(userId: string): Promise<string | undefined> {
+  try {
+    const rows = await sql`
+      SELECT selfies
+      FROM user_image_libraries
+      WHERE user_id::text = ${userId}
+      LIMIT 1
+    `
+    return pickSavedSelfieReferenceUrl(rows[0]?.selfies)
+  } catch (error) {
+    console.warn("[Maya Chat API] Could not load saved selfie reference for OpenAI routing:", error)
+    return undefined
+  }
+}
+
+function buildOpenAIQuickPrompt(prompt: string, hasReferenceImage: boolean): string {
+  if (!hasReferenceImage) return prompt
+
+  return [
+    "Use the attached selfie/reference image as the identity source.",
+    "Preserve the person's face, facial structure, skin tone, hair, age, and recognizable identity.",
+    "Create the requested aesthetic image without turning them into a different person.",
+    "",
+    prompt,
+  ].join("\n")
+}
+
 async function createOpenAIQuickImageDispatchResponse(input: {
   req: Request
   validUIMessages: UIMessage[]
@@ -341,6 +412,7 @@ async function createOpenAIQuickImageDispatchResponse(input: {
 }): Promise<Response | null> {
   const prompt = input.prompt.trim()
   if (!prompt) return null
+  const hasReferenceImage = typeof input.referenceImageUrl === "string" && input.referenceImageUrl.trim().length > 0
 
   const headers = new Headers()
   headers.set("Content-Type", "application/json")
@@ -354,9 +426,12 @@ async function createOpenAIQuickImageDispatchResponse(input: {
     method: "POST",
     headers,
     body: JSON.stringify({
-      prompt,
+      prompt: buildOpenAIQuickPrompt(prompt, hasReferenceImage),
       conceptTitle: "Maya quick photo",
-      chatId: typeof input.chatId === "string" ? input.chatId : undefined,
+      chatId:
+        typeof input.chatId === "string" || typeof input.chatId === "number"
+          ? String(input.chatId)
+          : undefined,
       referenceImageUrl: input.referenceImageUrl,
     }),
   })
@@ -744,12 +819,17 @@ export async function POST(req: Request) {
         useFeedPlannerContext = isFeedTab
       }
 
+      if (useOpenAIQuickImageDispatch && !latestReferenceImageUrlForRouting) {
+        latestReferenceImageUrlForRouting = await getSavedSelfieReferenceUrl(dbUserId)
+      }
+
       debugLog("[Maya Chat API] Unified routing applied", {
         requestedChatType,
         selectedChatType: normalizedAutoMode,
         persistedChatType: chatType,
         useFeedPlannerContext,
         hasReferenceImage,
+        hasSavedSelfieReference: !hasReferenceImage && !!latestReferenceImageUrlForRouting,
         hasTrainedLoraModel: hasTrainedLoraModelForRouting,
         isImageGeneration,
         useOpenAIQuickImageDispatch,
