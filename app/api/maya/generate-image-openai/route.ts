@@ -24,7 +24,7 @@ import { isMayaImageContinuationEnabled, isOpenAIImageEnabled } from "@/lib/feat
 export const maxDuration = 60
 
 const sql = getDbClient()
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 
 function resolveOpenAIImageSize(
   requestedSize?: "1024x1024" | "1792x1024" | "1024x1792",
@@ -247,16 +247,21 @@ export async function POST(request: NextRequest) {
           type: "image/png",
         })
 
-        const response = await openai.images.edit({
+        const editInput: Record<string, unknown> = {
           model: OPENAI_IMAGE_MODEL as any,
           image: referenceFile,
           prompt: prompt.trim(),
           n: 1,
           size: "1024x1536",
           quality: "medium",
-          input_fidelity: "high",
           output_format: "png",
-        })
+        }
+
+        if (OPENAI_IMAGE_MODEL !== "gpt-image-2") {
+          editInput.input_fidelity = "high"
+        }
+
+        const response = await openai.images.edit(editInput as any)
 
         b64 = response.data?.[0]?.b64_json
       } else {
