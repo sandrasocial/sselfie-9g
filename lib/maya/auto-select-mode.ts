@@ -50,7 +50,8 @@ export function isMayaImageGenerationIntent(text: string): boolean {
 
 export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifiedMode {
   if (params.isContentPlanning) return "feed-planner"
-  if (params.isImageGeneration && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
+  // Only route untrained users to the quick image path — trained users keep their trained look path.
+  if (params.isImageGeneration && !params.hasTrainedLoraModel && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
   if (params.hasTrainedLoraModel) return "maya"
   if (params.hasReferenceImage) return "pro"
   if (params.canUseSelfies !== undefined) {

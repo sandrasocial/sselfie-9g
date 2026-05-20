@@ -124,7 +124,7 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
         delta:
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing page drafts are retired right now while we rebuild this feature. ` +
-          `I can still help you with photo ideas, concept cards, videos, and training guidance in Maya.`,
+          `I can still help you with photo ideas, videos, and training guidance in Maya.`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -159,6 +159,24 @@ function createMayaChatErrorResponse(validUIMessages: UIMessage[], error: unknow
         type: "text-delta",
         id: textPartId,
         delta: errorMessage,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+function createMayaPlainTextResponse(validUIMessages: UIMessage[], text: string) {
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `maya-plain-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta: text,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -256,6 +274,18 @@ function isMayaImageRefinementIntent(text: string): boolean {
   )
 }
 
+function isMayaContextualImageFollowUpIntent(text: string): boolean {
+  const normalized = text.toLowerCase().trim()
+  if (!normalized) return false
+
+  return (
+    /\b(this|it|that|same\s+one|same\s+photo|same\s+image|version)\b/i.test(normalized) ||
+    /^(softer|more\s+pinterest|more\s+editorial|more\s+luxury|luxury\s+vibe|carousel\s+ideas?)\b/i.test(
+      normalized,
+    )
+  )
+}
+
 function buildMayaImageContinuationPrompt(input: {
   followUp: string
   previousPrompt: string
@@ -266,8 +296,7 @@ function buildMayaImageContinuationPrompt(input: {
 
   return [
     "Refine the provided image based on the user's follow-up.",
-    "Preserve the same person, facial features, identity, and overall realism unless the user explicitly asks otherwise.",
-    "Keep the result aesthetic, polished, feminine, editorial, and suitable for personal branding.",
+    "Preserve the same person, facial features, identity, skin tone, hair, and overall likeness unless the user explicitly asks for a change.",
     `User follow-up: ${input.followUp}`,
     previousPrompt,
   ]
@@ -604,7 +633,7 @@ const PROMPT_BUILDER_SYSTEM = `You are Maya in Prompt Builder Mode, helping Sand
 ## Your Role:
 
 You're helping Sandra build a library of high-quality prompts that her users will copy and use. These prompts need to be:
-- Professional and detailed (50-80 words for Nano Banana Pro)
+- Professional and detailed (50-80 words for Maya's image generator)
 - Structured with specific sections (outfit, pose, lighting, camera specs, etc.)
 - Using real brand names (Chanel, ALO, Nike, not generic descriptions)
 - Varied and diverse (no repetition across concepts)
@@ -940,8 +969,9 @@ export async function POST(req: Request) {
     const lastInlineImageContext = imageContinuationEnabled
       ? findLastInlineImageContext(validUIMessages as UIMessage[])
       : null
+    const hasImageRefinementIntent = isMayaImageRefinementIntent(latestUserTextForSkills)
     const isImageRefinementContinuation =
-      !!lastInlineImageContext && isMayaImageRefinementIntent(latestUserTextForSkills)
+      !!lastInlineImageContext && hasImageRefinementIntent
     const isCreativeTextContinuation =
       !!lastInlineImageContext && isMayaCreativeTextContinuationIntent(latestUserTextForSkills)
 
@@ -950,7 +980,6 @@ export async function POST(req: Request) {
       unifiedMayaUiEnabled &&
       lastInlineImageContext &&
       isImageRefinementContinuation &&
-      !hasTrainedLoraModelForRouting &&
       !isPromptBuilder &&
       !useFeedPlannerContext &&
       chatType !== "pro-photoshoot"
@@ -971,6 +1000,27 @@ export async function POST(req: Request) {
       if (openAIContinuationResponse) {
         return openAIContinuationResponse
       }
+
+      return createMayaPlainTextResponse(
+        validUIMessages as UIMessage[],
+        "I can’t adjust that photo right now. Try again in a moment, or upload the photo again and I’ll keep going from there.",
+      )
+    }
+
+    if (
+      imageContinuationEnabled &&
+      unifiedMayaUiEnabled &&
+      hasImageRefinementIntent &&
+      isMayaContextualImageFollowUpIntent(latestUserTextForSkills) &&
+      !lastInlineImageContext &&
+      !isPromptBuilder &&
+      !useFeedPlannerContext &&
+      chatType !== "pro-photoshoot"
+    ) {
+      return createMayaPlainTextResponse(
+        validUIMessages as UIMessage[],
+        "Send me the photo you want me to adjust, then tell me the change. I’ll keep it simple.",
+      )
     }
 
     if (
@@ -2556,16 +2606,16 @@ ${finalUserContext}
 
       if (isStudioProMode) {
         systemPrompt += `\n\n## CURRENT GENERATION MODE: SELFIE
-The user is in **Selfie mode** — photos are generated using their linked reference selfies (NanoBanana Pro).
+The user is in **Selfie mode** — photos are generated using their linked reference selfies.
 - When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with selfie-optimised prompts.
 - Trained model available: ${modelAvailability.hasTrainedModel ? "yes" : "no"}.
 - Selfie/reference uploads available: ${modelAvailability.canUseSelfies ? "yes" : "no"}.
-- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation AND they have a trained model, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the mode toggle to switch, then I'll generate with your trained model."
+- If they ask to "use my trained model", "use my custom model", or want their trained look AND they have a trained model, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the mode toggle to switch, then I'll generate with your trained model."
 - If they ask for a trained/custom model but no trained model is available, do not tell them to tap MY MODEL. Keep momentum: either create with Selfie mode if references are available, or guide them to Train once.
 - Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
       } else {
         systemPrompt += `\n\n## CURRENT GENERATION MODE: MY MODEL
-The user is in **My Model mode** — photos are generated using their trained custom model (LoRA).
+The user is in **My Model mode** — photos are generated using their trained custom look.
 - When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with model-based prompts.
 - If they ask to "use my selfies", "use my uploaded photos", or want selfie/reference-based generation, don't try to do it in this mode. Say warmly: "You're in My Model mode right now. Tap **SELFIE** in the mode toggle to switch, then I'll use your reference photos."
 - If they don't have a trained model yet and ask for model-based generation, guide them: "You haven't trained a model yet. Head to the Train tab to set one up, or tap SELFIE to use your uploaded photos instead."
@@ -2585,8 +2635,8 @@ The user is inside the Photos tab.
         systemPrompt += `\n\n## CURRENT MAYA SURFACE: PLAN
 The user is inside the Plan tab.
 - Your job here is planning: next best move, weekly content, captions, offers, post order, photo direction, and what to do next.
-- You may give photo directions, but do not generate new images or concept cards in Plan.
-- If the user asks to actually create/generate/make a photo or concept cards, use the tab handoff to Photos.
+- You may give photo directions, but do not generate new images in Plan.
+- If the user asks to actually create/generate/make a photo, use the tab handoff to Photos.
 - Never tell the user to go to Plan while they are already in Plan.`
       } else if (activeMayaTab === "videos") {
         systemPrompt += `\n\n## CURRENT MAYA SURFACE: VIDEOS
@@ -2682,7 +2732,7 @@ Maya: "YES! 😍 Love this energy! I'm seeing you in powerful, elegant looks tha
     // In Studio Pro mode, concept cards are the primary way to create content
     systemPrompt += `\n\n## 🔴🔴🔴 CRITICAL - CHAT RESPONSE RULES (NOT PROMPT GENERATION) 🔴🔴🔴
 
-**IMPORTANT: These rules ONLY apply to your CHAT RESPONSES to users. You have FULL CREATIVITY in the PROMPTS you generate for Replicate.**
+**IMPORTANT: These rules ONLY apply to your CHAT RESPONSES to users. You have FULL CREATIVITY in the image generation PROMPTS you write.**
 
 **IN YOUR CHAT RESPONSES:**
 - Use simple, everyday language - talk like you're texting a friend
@@ -2690,8 +2740,8 @@ Maya: "YES! 😍 Love this energy! I'm seeing you in powerful, elegant looks tha
 - Don't add generic aesthetic phrases they didn't say
 - Be warm, friendly, and use emojis
 
-**IN YOUR PROMPTS (sent to Replicate):**
-- Use your FULL creativity! 
+**IN YOUR IMAGE GENERATION PROMPTS:**
+- Use your FULL creativity!
 - Use phrases like "Scandinavian minimalism", "Nordic aesthetic", "clean lines", "neutral tones", "soft textures" - whatever creates the best image
 - Be creative and descriptive - these prompts are for image generation, not chat
 - NO restrictions on creative language in prompts - use whatever creates amazing images
@@ -2805,7 +2855,7 @@ ${genderSpecificExamples}
 - ✅ Use their exact words in your chat response
 - ✅ Use simple, everyday language in your chat response
 
-**PROMPT GENERATION RULES (FOR PROMPTS SENT TO REPLICATE):**
+**PROMPT GENERATION RULES (FOR IMAGE GENERATION PROMPTS):**
 - ✅ Use FULL creativity! "Scandinavian minimalism", "Nordic aesthetic", "clean lines", "neutral tones", "soft textures" - all allowed!
 - ✅ Be creative and descriptive - use whatever creates amazing images
 - ✅ NO restrictions on creative language in prompts
@@ -2845,7 +2895,7 @@ ${isStudioProMode ? `\n\n## 🎨 STUDIO PRO MODE - CONCEPT CARDS (MANDATORY)
 **Concept cards in Studio Pro mode:**
 - Users can add their own reference images directly to each concept card
 - Users can view and edit the prompts Maya generates
-- Each concept card generates using Nano Banana Pro (professional quality)
+- Each concept card uses Maya's high-quality image path
 - Concept cards are the primary way to create content in Studio Pro mode
 
 **When user asks for content (photos, concepts, ideas, carousels, reel covers, etc.):**

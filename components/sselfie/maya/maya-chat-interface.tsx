@@ -1,8 +1,9 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import ReactMarkdown from "react-markdown"
+import FullscreenImageModal from "@/components/sselfie/fullscreen-image-modal"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "../prompt-suggestion-card"
@@ -295,6 +296,45 @@ function removeEmojis(text: string): string {
     .trim()
 }
 
+/**
+ * Self-contained inline image renderer for Maya-generated photos.
+ * Carries its own modal state so each image independently opens fullscreen on tap.
+ */
+function MayaInlineImageRenderer({ src, alt }: { src: string; alt?: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <>
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="View photo fullscreen"
+        className="my-4 block cursor-pointer overflow-hidden rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.35)] shadow-[0_16px_48px_rgba(10,10,10,0.12)] transition-opacity duration-200 hover:opacity-90 active:opacity-80"
+        onClick={() => setIsOpen(true)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIsOpen(true) }}
+      >
+        <img
+          src={src}
+          alt={alt || "Maya generated photo"}
+          className="block h-auto max-h-[560px] w-full object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+      </span>
+
+      {isOpen && (
+        <FullscreenImageModal
+          imageUrl={src}
+          imageId="maya-inline"
+          title="Maya generated photo"
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
 function renderMarkdownText(text: string): React.ReactNode {
   if (!text.trim()) return null
 
@@ -347,15 +387,7 @@ function renderMarkdownText(text: string): React.ReactNode {
         ),
         img: ({ src, alt }) =>
           typeof src === "string" && src.length > 0 ? (
-            <span className="my-4 block overflow-hidden rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.35)] shadow-[0_16px_48px_rgba(10,10,10,0.12)]">
-              <img
-                src={src}
-                alt={alt || "Maya generated photo"}
-                className="block h-auto max-h-[560px] w-full object-contain"
-                loading="lazy"
-                decoding="async"
-              />
-            </span>
+            <MayaInlineImageRenderer src={src} alt={alt} />
           ) : null,
       }}
     >
