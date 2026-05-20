@@ -22,24 +22,44 @@ export function isWorkbenchModeEnabled(): boolean {
   return envValue === 'true'
 }
 
+function isExplicitlyDisabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'false' || normalized === '0' || normalized === 'off'
+}
+
 /**
- * OpenAI image generation — Phase 1
+ * Maya consolidation — Phase H
+ * Makes the chat-first Maya experience the default while preserving instant rollback.
+ * Set FEATURE_MAYA_CONSOLIDATED_EXPERIENCE=false or
+ * NEXT_PUBLIC_FEATURE_MAYA_CONSOLIDATED_EXPERIENCE=false to restore the previous
+ * more workflow-heavy defaults.
+ */
+export function isMayaConsolidatedExperienceEnabled(): boolean {
+  const value =
+    typeof window !== 'undefined'
+      ? process.env.NEXT_PUBLIC_FEATURE_MAYA_CONSOLIDATED_EXPERIENCE
+      : process.env.FEATURE_MAYA_CONSOLIDATED_EXPERIENCE
+
+  return !isExplicitlyDisabled(value)
+}
+
+/**
+ * OpenAI image generation — default Maya image path
  * Gates the /api/maya/generate-image-openai route.
- * Set FEATURE_OPENAI_IMAGE_ENABLED=true in Vercel env to enable.
- * Default: false (disabled).
+ * Default: true for Phase H. Set FEATURE_OPENAI_IMAGE_ENABLED=false to rollback.
  */
 export function isOpenAIImageEnabled(): boolean {
-  return process.env.FEATURE_OPENAI_IMAGE_ENABLED === 'true'
+  return !isExplicitlyDisabled(process.env.FEATURE_OPENAI_IMAGE_ENABLED)
 }
 
 /**
  * When true, untrained users (no Flux LoRA model) are auto-routed to OpenAI
- * instead of NanoBanana Pro. Only takes effect when isOpenAIImageEnabled() is also true.
- * Set FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED=true to enable.
- * Default: false (untrained users stay on NanoBanana Pro path).
+ * instead of legacy provider flows. Only takes effect when OpenAI image generation is enabled.
+ * Default: true for Phase H. Set FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED=false to rollback.
  */
 export function isOpenAIDefaultForUntrainedEnabled(): boolean {
-  return isOpenAIImageEnabled() && process.env.FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED === 'true'
+  return isOpenAIImageEnabled() && !isExplicitlyDisabled(process.env.FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED)
 }
 
 /**
@@ -47,10 +67,10 @@ export function isOpenAIDefaultForUntrainedEnabled(): boolean {
  * When enabled, successful OpenAI quick-image chat dispatch returns the image
  * inside Maya's assistant message instead of a plain URL-only response.
  * Set FEATURE_MAYA_INLINE_CHAT_IMAGES=true to enable.
- * Default: false (chat response remains URL-only).
+ * Default: true for Phase H. Set FEATURE_MAYA_INLINE_CHAT_IMAGES=false to rollback.
  */
 export function isMayaInlineChatImagesEnabled(): boolean {
-  return process.env.FEATURE_MAYA_INLINE_CHAT_IMAGES === 'true'
+  return !isExplicitlyDisabled(process.env.FEATURE_MAYA_INLINE_CHAT_IMAGES)
 }
 
 /**
@@ -58,10 +78,10 @@ export function isMayaInlineChatImagesEnabled(): boolean {
  * When enabled, Maya can use the most recent inline generated image as context
  * for simple follow-up refinements such as "make it softer" or "more editorial."
  * Set FEATURE_MAYA_IMAGE_CONTINUATION=true to enable.
- * Default: false (follow-ups use existing chat behavior only).
+ * Default: true for Phase H. Set FEATURE_MAYA_IMAGE_CONTINUATION=false to rollback.
  */
 export function isMayaImageContinuationEnabled(): boolean {
-  return isMayaInlineChatImagesEnabled() && process.env.FEATURE_MAYA_IMAGE_CONTINUATION === 'true'
+  return isMayaInlineChatImagesEnabled() && !isExplicitlyDisabled(process.env.FEATURE_MAYA_IMAGE_CONTINUATION)
 }
 
 /**
@@ -69,20 +89,23 @@ export function isMayaImageContinuationEnabled(): boolean {
  * When enabled, successful inline image responses include light, assistant-led
  * creative next steps instead of ending at a passive result.
  * Set FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE=true to enable.
- * Default: false.
+ * Default: true for Phase H. Set FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE=false to rollback.
  */
 export function isMayaProactiveCreativeAssistanceEnabled(): boolean {
-  return isMayaImageContinuationEnabled() && process.env.FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE === 'true'
+  return (
+    isMayaImageContinuationEnabled() &&
+    !isExplicitlyDisabled(process.env.FEATURE_MAYA_PROACTIVE_CREATIVE_ASSISTANCE)
+  )
 }
 
 /**
  * Maya conversational action pills — Phase F
  * Client-side flag for lightweight buttons below inline generated images.
  * Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS=true to enable.
- * Default: false.
+ * Default: true for Phase H. Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS=false to rollback.
  */
 export function isMayaConversationalActionPillsEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS === 'true'
+  return !isExplicitlyDisabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ACTION_PILLS)
 }
 
 /**
@@ -90,12 +113,11 @@ export function isMayaConversationalActionPillsEnabled(): boolean {
  * Client-side flag for making async Flux/Nano generation cards feel more like
  * the same Maya conversation through softer loading copy and continuation pills.
  * Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX=true to enable.
- * Default: false.
+ * Default: true for Phase H. Set NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX=false to rollback.
  */
 export function isMayaConversationalAsyncUxEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX === 'true'
+  return !isExplicitlyDisabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_CONVERSATIONAL_ASYNC_UX)
 }
-
 
 
 

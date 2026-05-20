@@ -1,11 +1,11 @@
 /**
  * OpenAI Quick Photo — Phase 1
  *
- * Synchronous image generation via DALL-E 3. No Replicate, no polling,
+ * Synchronous image generation via OpenAI's GPT image model. No Replicate, no polling,
  * no reconciliation cron. Images appear in gallery immediately.
  *
- * Gated by FEATURE_OPENAI_IMAGE_ENABLED=true.
- * Use for untrained users who would otherwise hit 409 from /generate-image.
+ * Default Maya image path in Phase H. Set FEATURE_OPENAI_IMAGE_ENABLED=false
+ * for instant rollback to the older provider paths.
  *
  * Protected systems (DO NOT TOUCH): auth, Stripe, Gallery persistence,
  * credits schema, Feed Planner, existing Replicate routes.
@@ -24,13 +24,64 @@ export const maxDuration = 60
 
 const sql = getDbClient()
 
+function resolveOpenAIImageSize(
+  requestedSize?: "1024x1024" | "1792x1024" | "1024x1792",
+): "1024x1024" | "1536x1024" | "1024x1536" {
+  if (requestedSize === "1792x1024") return "1536x1024"
+  if (requestedSize === "1024x1024") return "1024x1024"
+  return "1024x1536"
+}
+
+function resolveOpenAIImageQuality(
+  requestedQuality?: "standard" | "hd",
+): "medium" | "high" {
+  return requestedQuality === "hd" ? "high" : "medium"
+}
+
 function isAllowedMayaReferenceImageUrl(value: string): boolean {
+  if (/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(value)) {
+    return true
+  }
+
   try {
     const url = new URL(value)
     return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
   } catch {
     return false
   }
+}
+
+function resolveReferenceImageFileName(contentType: string): string {
+  if (contentType.includes("jpeg") || contentType.includes("jpg")) return "maya-reference.jpg"
+  if (contentType.includes("webp")) return "maya-reference.webp"
+  return "maya-reference.png"
+}
+
+async function readReferenceImage(value: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const dataUrlMatch = value.match(/^data:(image\/(?:png|jpeg|jpg|webp));base64,(.+)$/i)
+  if (dataUrlMatch?.[1] && dataUrlMatch?.[2]) {
+    const buffer = Buffer.from(dataUrlMatch[2], "base64")
+    if (buffer.byteLength > 10 * 1024 * 1024) {
+      throw new Error("Reference image is too large")
+    }
+    return {
+      buffer,
+      contentType: dataUrlMatch[1].replace("image/jpg", "image/jpeg"),
+    }
+  }
+
+  const referenceResponse = await fetch(value)
+  if (!referenceResponse.ok) {
+    throw new Error("Could not load reference image for refinement")
+  }
+
+  const contentType = referenceResponse.headers.get("content-type") || "image/png"
+  if (!contentType.startsWith("image/")) {
+    throw new Error("Reference URL did not return an image")
+  }
+
+  const buffer = Buffer.from(await referenceResponse.arrayBuffer())
+  return { buffer, contentType }
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
@@ -174,18 +225,8 @@ export async function POST(request: NextRequest) {
       let b64: string | undefined
 
       if (useReferenceEdit) {
-        const referenceResponse = await fetch(referenceImageUrl)
-        if (!referenceResponse.ok) {
-          throw new Error("Could not load reference image for refinement")
-        }
-
-        const referenceContentType = referenceResponse.headers.get("content-type") || "image/png"
-        if (!referenceContentType.startsWith("image/")) {
-          throw new Error("Reference URL did not return an image")
-        }
-
-        const referenceBuffer = Buffer.from(await referenceResponse.arrayBuffer())
-        const referenceFile = await toFile(referenceBuffer, "maya-reference.png", {
+        const { buffer: referenceBuffer, contentType: referenceContentType } = await readReferenceImage(referenceImageUrl)
+        const referenceFile = await toFile(referenceBuffer, resolveReferenceImageFileName(referenceContentType), {
           type: referenceContentType,
         })
 
@@ -203,12 +244,12 @@ export async function POST(request: NextRequest) {
         b64 = response.data?.[0]?.b64_json
       } else {
         const response = await openai.images.generate({
-          model: "dall-e-3",
+          model: "gpt-image-1",
           prompt: prompt.trim(),
           n: 1,
-          size: size ?? "1024x1024",
-          quality: quality ?? "standard",
-          response_format: "b64_json",
+          size: resolveOpenAIImageSize(size),
+          quality: resolveOpenAIImageQuality(quality),
+          output_format: "png",
         })
 
         b64 = response.data?.[0]?.b64_json

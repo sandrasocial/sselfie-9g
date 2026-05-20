@@ -5,6 +5,7 @@ import {
   MAYA_CHAT_TYPE_PRO,
   MAYA_CHAT_TYPE_VIDEOS,
 } from "@/lib/maya/chat-type"
+import { isMayaConsolidatedExperienceEnabled } from "@/lib/feature-flags"
 
 export type MayaSurfaceTab = "photos" | "plan" | "videos" | "training" | "prompts" | "feed"
 export type MayaTabHandoffTarget = "photos" | "plan" | "videos" | "training"
@@ -70,6 +71,10 @@ export function resolveMayaChatTypeForTab(input: {
 
   if (input.enabled && activeTab === "videos") {
     return MAYA_CHAT_TYPE_VIDEOS
+  }
+
+  if (activeTab === "photos" && isMayaConsolidatedExperienceEnabled()) {
+    return MAYA_CHAT_TYPE_DEFAULT
   }
 
   return input.proMode ? MAYA_CHAT_TYPE_PRO : MAYA_CHAT_TYPE_DEFAULT

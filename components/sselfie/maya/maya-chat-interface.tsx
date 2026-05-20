@@ -2078,7 +2078,7 @@ export default function MayaChatInterface({
         style={{
           paddingTop: MAYA_CHAT_SCROLL_TOP_OFFSET,
           paddingBottom:
-            "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))",
+            "calc(var(--input-bar-height, 168px) + max(96px, env(safe-area-inset-bottom, 0px)))",
         }}
         role="log"
         aria-live="polite"

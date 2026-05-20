@@ -114,27 +114,26 @@ export default function MayaConceptCards({
     return null
   }
 
-  const visibleConcepts = showAllDirections ? concepts : concepts.slice(0, 3)
-  const hiddenDirectionCount = Math.max(0, concepts.length - visibleConcepts.length)
+  const visibleConcepts = showAllDirections ? concepts : concepts.slice(0, 2)
 
   return (
-    <div className="mt-3 space-y-3 rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.28)] p-3">
+    <div className="mt-3 space-y-3 rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.18)] p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div>
           <p className="text-[10px] tracking-[0.18em] uppercase font-light text-[color:var(--app-text-secondary)]">
             Creative directions
           </p>
           <p className="mt-1 text-xs font-light text-[color:var(--app-text-muted)]">
-            Optional starting points. You can also keep chatting with Maya.
+            Optional ideas if you want a starting point. Chat is the main path.
           </p>
         </div>
-        {concepts.length > 3 ? (
+        {concepts.length > 2 ? (
           <button
             type="button"
             onClick={() => setShowAllDirections((value) => !value)}
             className="rounded-full border border-[color:var(--app-glass-border)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)]"
           >
-            {showAllDirections ? "Show fewer" : `Show ${hiddenDirectionCount} more`}
+            {showAllDirections ? "Show fewer" : `More ideas`}
           </button>
         ) : null}
       </div>

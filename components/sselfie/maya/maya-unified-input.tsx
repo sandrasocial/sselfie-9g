@@ -96,6 +96,7 @@ export default function MayaUnifiedInput({
   imageCount = 0,
 }: MayaUnifiedInputProps) {
   const [inputValue, setInputValue] = useState('')
+  const [showMoreTools, setShowMoreTools] = useState(false)
   const internalFileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = externalFileInputRef || internalFileInputRef
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -324,6 +325,56 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
+        {showMoreTools ? (
+          <div className="mt-2 rounded-[14px] border border-[color:var(--app-border)] bg-[rgba(255,255,255,0.58)] p-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              {showModeToggle &&
+                (proMode && onSwitchToClassic ? (
+                  <MayaModeToggle
+                    currentMode="pro"
+                    onToggle={() => {
+                      void onSwitchToClassic()
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="w-full justify-center sm:w-auto"
+                  />
+                ) : !proMode && onModeSwitch ? (
+                  <MayaModeToggle
+                    currentMode="classic"
+                    onToggle={() => {
+                      void onModeSwitch(true)
+                    }}
+                    variant="compact"
+                    showModeHint={false}
+                    className="w-full justify-center sm:w-auto"
+                  />
+                ) : null)}
+              {onNewProject && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreTools(false)
+                    onNewProject()
+                  }}
+                  className="touch-manipulation active:scale-95 shrink-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors"
+                  style={{
+                    fontFamily: "var(--font-body, Inter)",
+                    fontSize: "9px",
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.14em",
+                    color: "var(--app-text-primary)",
+                  }}
+                  aria-label="Start a new chat"
+                >
+                  Start fresh
+                </button>
+              )}
+            </div>
+          </div>
+        ) : null}
+
         {/* Creation helpers stay reachable, but the first read stays focused on the prompt. */}
         <div
           className="mt-2 flex w-full min-w-0 items-center gap-1.5 overflow-x-auto scrollbar-hide border-t border-[color:var(--app-border)] pt-2"
@@ -391,54 +442,16 @@ export default function MayaUnifiedInput({
 
           <div className="min-w-[4px] flex-1 shrink basis-0" aria-hidden />
 
-          <details className="relative shrink-0">
-            <summary className={`${quietToolbarButtonClass} list-none cursor-pointer`} title="More creation options">
-              <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
-              <span>More</span>
-            </summary>
-            <div className="absolute bottom-full right-0 z-20 mb-2 flex min-w-[220px] flex-col gap-2 rounded-[14px] border border-[color:var(--app-border)] bg-[color:var(--app-elevated)] p-2 shadow-[var(--app-shadow-soft)]">
-              {showModeToggle &&
-                (proMode && onSwitchToClassic ? (
-                  <MayaModeToggle
-                    currentMode="pro"
-                    onToggle={() => {
-                      void onSwitchToClassic()
-                    }}
-                    variant="compact"
-                    showModeHint={false}
-                    className="w-full justify-center"
-                  />
-                ) : !proMode && onModeSwitch ? (
-                  <MayaModeToggle
-                    currentMode="classic"
-                    onToggle={() => {
-                      void onModeSwitch(true)
-                    }}
-                    variant="compact"
-                    showModeHint={false}
-                    className="w-full justify-center"
-                  />
-                ) : null)}
-              {onNewProject && (
-              <button
-                type="button"
-                onClick={onNewProject}
-                className="touch-manipulation active:scale-95 shrink-0 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-btn-secondary-bg)] px-3 py-2 hover:bg-[color:var(--app-btn-secondary-hover)] transition-colors"
-                style={{
-                  fontFamily: "var(--font-body, Inter)",
-                  fontSize: "9px",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  color: "var(--app-text-primary)",
-                }}
-                aria-label="Start a new chat"
-              >
-                Start fresh
-              </button>
-              )}
-            </div>
-          </details>
+          <button
+            type="button"
+            onClick={() => setShowMoreTools((value) => !value)}
+            className={quietToolbarButtonClass}
+            title="More creation options"
+            aria-expanded={showMoreTools}
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+            <span>More</span>
+          </button>
         </div>
 
         {/* History remains in header ··· / ≡ menu */}

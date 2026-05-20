@@ -53,6 +53,7 @@ import {
   MAYA_MODE_TOUCHED_STORAGE_KEY,
   readMayaProModePreference,
 } from "@/lib/maya/mode-storage"
+import { isMayaConsolidatedExperienceEnabled } from "@/lib/feature-flags"
 import {
   isStudioTab,
   readStudioTabFromHash,
@@ -889,12 +890,12 @@ export default function SselfieApp({
   type AppTab = { id: StudioTab; label: string; locked?: boolean; lockMessage?: string }
 
   const BASE_TABS: AppTab[] = [
-    { id: "academy",      label: "Academy" },
     { id: "maya",         label: "Maya" },
-    { id: "studio",       label: "Studio" },
     { id: "gallery",      label: "Gallery" },
-    { id: "feed-planner", label: "Feed" },
+    { id: "academy",      label: "Learn" },
     { id: "account",      label: "Account" },
+    { id: "feed-planner", label: "Planner" },
+    { id: "studio",       label: "Studio" },
   ]
 
   const lockedTabIds: StudioTab[] = (() => {
@@ -910,6 +911,11 @@ export default function SselfieApp({
       ? { ...tab, locked: true, lockMessage: STUDIO_LOCK_MSG }
       : tab,
   )
+  const isMayaConsolidated = isMayaConsolidatedExperienceEnabled()
+  const primaryTabs = isMayaConsolidated
+    ? tabs.filter((tab) => tab.id === "maya" || tab.id === "gallery" || tab.id === "academy" || tab.id === "account")
+    : tabs
+  const secondaryTabs = tabs.filter((tab) => !primaryTabs.some((primaryTab) => primaryTab.id === tab.id))
 
   const user: UserType = {
     // Ensure id is a non-empty string for useMayaChat hook (convert number to string if needed)
@@ -1119,12 +1125,12 @@ export default function SselfieApp({
 
       <StudioAppTopBar
         ref={appHeaderRef}
-        tabs={tabs}
+        tabs={primaryTabs}
         activeTab={activeTab}
         onTabChange={(id) => handleTabChange(id as StudioTab)}
-        mayaSubTabs={MAYA_SUB_TABS}
-        activeMayaSubTab={activeMayaSubTab}
-        onMayaSubTabChange={handleMayaSubTabChange}
+        mayaSubTabs={isMayaConsolidated ? [] : MAYA_SUB_TABS}
+        activeMayaSubTab={isMayaConsolidated ? undefined : activeMayaSubTab}
+        onMayaSubTabChange={isMayaConsolidated ? undefined : handleMayaSubTabChange}
         trailing={
           <>
             {activeTab === "feed-planner" && (
@@ -1232,10 +1238,52 @@ export default function SselfieApp({
                   </div>
                 </div>
                 <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                {activeTab === "maya" && isMayaConsolidated ? (
+                  <>
+                    <div className="px-3 py-2">
+                      <div className={`${DesignClasses.typography.label.uppercase} mb-1 text-[color:var(--app-text-secondary)]`}>Maya</div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {MAYA_SUB_TABS.map((tab) => {
+                          const isSubActive = activeMayaSubTab === tab.id
+                          const label =
+                            tab.id === "photos"
+                              ? "Create"
+                              : tab.id === "plan"
+                                ? "Captions"
+                                : tab.id === "training"
+                                  ? "My Look"
+                                  : tab.label
+
+                          return (
+                            <button
+                              key={`maya-menu-${tab.id}`}
+                              type="button"
+                              onClick={() => {
+                                handleMayaSubTabChange(tab.id)
+                                setIsMenuOpen(false)
+                              }}
+                              className={`flex items-center justify-between ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} text-left transition-colors ${
+                                isSubActive
+                                  ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                                  : "text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                              }`}
+                            >
+                              <span className="text-xs font-medium">{label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                  </>
+                ) : null}
+
                 <div className="px-3 py-2">
-                  <div className={`${DesignClasses.typography.label.uppercase} mb-1 text-[color:var(--app-text-secondary)]`}>Navigate</div>
+                  <div className={`${DesignClasses.typography.label.uppercase} mb-1 text-[color:var(--app-text-secondary)]`}>
+                    {isMayaConsolidated ? "App" : "Navigate"}
+                  </div>
                   <div className="grid grid-cols-2 gap-1">
-                    {tabs.map((tab) => {
+                    {primaryTabs.map((tab) => {
                       const isMenuTabActive = activeTab === tab.id
                       const isMenuTabLocked = !!tab.locked
 
@@ -1266,6 +1314,45 @@ export default function SselfieApp({
                     })}
                   </div>
                 </div>
+                {isMayaConsolidated && secondaryTabs.length > 0 ? (
+                  <>
+                    <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
+                    <div className="px-3 py-2">
+                      <div className={`${DesignClasses.typography.label.uppercase} mb-1 text-[color:var(--app-text-secondary)]`}>More tools</div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {secondaryTabs.map((tab) => {
+                          const isMenuTabActive = activeTab === tab.id
+                          const isMenuTabLocked = !!tab.locked
+
+                          return (
+                            <button
+                              key={`secondary-menu-${tab.id}`}
+                              onClick={() => {
+                                handleTabChange(tab.id as StudioTab)
+                                if (!isMenuTabLocked) setIsMenuOpen(false)
+                              }}
+                              className={`flex items-center justify-between ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} text-left transition-colors ${
+                                isMenuTabActive && !isMenuTabLocked
+                                  ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                                  : isMenuTabLocked
+                                    ? "text-[color:var(--app-text-secondary)] opacity-50 cursor-default"
+                                    : "text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                              }`}
+                            >
+                              <span className="text-xs font-medium">{tab.label}</span>
+                              {isMenuTabLocked && (
+                                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" aria-hidden className="shrink-0 opacity-60">
+                                  <rect x="1" y="4" width="6" height="5" rx="0.5" fill="currentColor" />
+                                  <path d="M2.5 4V3a1.5 1.5 0 0 1 3 0v1" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+                                </svg>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
                 <DropdownMenuSeparator className="bg-[color:var(--app-glass-border)]" />
                 <DropdownMenuItem
                   onClick={() => {

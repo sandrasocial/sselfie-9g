@@ -651,6 +651,7 @@ export async function POST(req: Request) {
     let useFeedPlannerContext = isFeedTab
     let useOpenAIQuickImageDispatch = false
     let hasTrainedLoraModelForRouting = false
+    let latestReferenceImageUrlForRouting: string | undefined
     
     debugLog("[Maya Chat API] Headers normalized", {
       fromBody: chatTypeFromBody,
@@ -672,6 +673,7 @@ export async function POST(req: Request) {
       const latestUserMessage = [...uiMessages].reverse().find((m: any) => m?.role === "user")
       const parts = Array.isArray(latestUserMessage?.parts) ? latestUserMessage.parts : []
       const hasReferenceImage = parts.some((part: any) => part?.type === "image" && !!part?.image)
+      latestReferenceImageUrlForRouting = parts.find((part: any) => part?.type === "image" && typeof part?.image === "string")?.image
       const latestUserText =
         parts
           .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
@@ -904,6 +906,7 @@ export async function POST(req: Request) {
         prompt: latestUserTextForSkills,
         chatId,
         userId: dbUserId,
+        referenceImageUrl: latestReferenceImageUrlForRouting,
       })
 
       if (openAIQuickImageResponse) {

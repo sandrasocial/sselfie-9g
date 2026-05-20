@@ -60,6 +60,7 @@ import {
   isMayaTabScopedChatEnabled,
   resolveMayaChatTypeForTab,
 } from "@/lib/maya/tab-scope"
+import { isMayaConsolidatedExperienceEnabled } from "@/lib/feature-flags"
 import {
   MAYA_SURFACE_TOP_OFFSET,
 } from "@/lib/maya/layout-contract"
@@ -177,6 +178,7 @@ export default function MayaChatScreen({
   const isTabScopedChatEnabled = isMayaTabScopedChatEnabled(
     process.env.NEXT_PUBLIC_FEATURE_MAYA_TAB_SCOPED_CHAT,
   )
+  const isMayaConsolidated = isMayaConsolidatedExperienceEnabled()
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
   const [internalNavMenuOpen, setInternalNavMenuOpen] = useState(false)
@@ -4315,7 +4317,7 @@ export default function MayaChatScreen({
               isLoading={isTyping || isGeneratingConcepts}
               disabled={isTyping || isGeneratingConcepts}
               placeholder={getMayaInputPlaceholder(activeMayaTab as any)}
-              showSettingsButton={activeMayaTab === "photos"}
+              showSettingsButton={activeMayaTab === "photos" && !isMayaConsolidated}
               onSettingsClick={() => {
                 setShowSettings(true)
               }}
@@ -4323,7 +4325,7 @@ export default function MayaChatScreen({
               onManageLibrary={undefined} // Removed - image icon handles library access
               onNewProject={handleNewChat}
               onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-              showModeToggle={activeMayaTab === "photos"}
+              showModeToggle={activeMayaTab === "photos" && !isMayaConsolidated}
               onModeSwitch={handleModeSwitch}
               onSwitchToClassic={() => handleModeSwitch(false)}
               proMode={proMode}

@@ -17,9 +17,9 @@ export interface AutoSelectMayaModeParams {
 }
 
 export function isUnifiedMayaUiEnabled(envValue?: string | null): boolean {
-  if (!envValue) return false
+  if (!envValue) return true
   const normalized = envValue.trim().toLowerCase()
-  return normalized === "true" || normalized === "1"
+  return normalized !== "false" && normalized !== "0" && normalized !== "off"
 }
 
 /**
@@ -50,9 +50,9 @@ export function isMayaImageGenerationIntent(text: string): boolean {
 
 export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifiedMode {
   if (params.isContentPlanning) return "feed-planner"
-  if (params.hasReferenceImage) return "pro"
   if (params.hasTrainedLoraModel) return "maya"
   if (params.isImageGeneration && isOpenAIDefaultForUntrainedEnabled()) return "openai_quick"
+  if (params.hasReferenceImage) return "pro"
   if (params.canUseSelfies !== undefined) {
     const recommended = getRecommendedSource({
       hasTrainedModel: params.hasTrainedLoraModel,
