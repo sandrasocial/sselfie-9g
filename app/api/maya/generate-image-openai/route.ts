@@ -13,6 +13,7 @@
 
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI, { toFile } from "openai"
+import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { getDbClient } from "@/lib/db/client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS, refundCredits } from "@/lib/credits"
@@ -55,6 +56,20 @@ function resolveReferenceImageFileName(contentType: string): string {
   if (contentType.includes("jpeg") || contentType.includes("jpg")) return "maya-reference.jpg"
   if (contentType.includes("webp")) return "maya-reference.webp"
   return "maya-reference.png"
+}
+
+async function normalizeReferenceImageForOpenAI(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer, { animated: false })
+    .rotate()
+    .resize({
+      width: 1536,
+      height: 1536,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .flatten({ background: "#ffffff" })
+    .png()
+    .toBuffer()
 }
 
 async function readReferenceImage(value: string): Promise<{ buffer: Buffer; contentType: string }> {
@@ -225,9 +240,10 @@ export async function POST(request: NextRequest) {
       let b64: string | undefined
 
       if (useReferenceEdit) {
-        const { buffer: referenceBuffer, contentType: referenceContentType } = await readReferenceImage(referenceImageUrl)
-        const referenceFile = await toFile(referenceBuffer, resolveReferenceImageFileName(referenceContentType), {
-          type: referenceContentType,
+        const { buffer: referenceBuffer } = await readReferenceImage(referenceImageUrl)
+        const normalizedReferenceBuffer = await normalizeReferenceImageForOpenAI(referenceBuffer)
+        const referenceFile = await toFile(normalizedReferenceBuffer, resolveReferenceImageFileName("image/png"), {
+          type: "image/png",
         })
 
         const response = await openai.images.edit({
