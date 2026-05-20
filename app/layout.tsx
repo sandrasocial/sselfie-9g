@@ -121,6 +121,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SSELFIE" />
+        <meta name="p:domain_verify" content="2df53c71e4cbd55c3f1b54c34f6661e8" />
         {/* SoftwareApplication schema — accurate pricing in USD, no fabricated ratings */}
         <script
           type="application/ld+json"
