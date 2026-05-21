@@ -14,6 +14,7 @@ import {
   BONUS_LOOKS,
   WORKFLOW_PROMPTS,
   MARBLE_CAFE_SERIES,
+  DENIM_STREET_SERIES,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 
@@ -263,10 +264,29 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 4. Newest — Marble Café Wine Editorial */}
+      {/* 4. Newest — Denim Street Editorial */}
       <section className="ap-section">
         <div className="ap-section-inner">
-          <p className="ap-eyebrow ap-eyebrow-new">NEW · MARBLE CAFÉ EDITORIAL SERIES</p>
+          <p className="ap-eyebrow ap-eyebrow-new">NEW · DENIM STREET EDITORIAL SERIES</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            14 shots. One outfit. A full day-in-my-life set.
+          </h2>
+          <p className="ap-workflow-note">
+            Run all prompts in one session with the same reference selfie. You get a complete
+            street editorial series — hero shots, walking moments, detail slides, and a reel cover.
+          </p>
+          <div className="ap-cards">
+            {DENIM_STREET_SERIES.map((card) => (
+              <PromptCardEl key={card.id} card={card} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Marble Café Wine Editorial */}
+      <section className="ap-section">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">MARBLE CAFÉ EDITORIAL SERIES</p>
           <h2 className={`ap-section-title ${cormorant.className}`}>
             A full 6-shot editorial set. One scene, six angles.
           </h2>
@@ -282,7 +302,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 5. The main looks */}
+      {/* 6. The main looks */}
       <section className="ap-section">
         <div className="ap-section-inner">
           <p className="ap-eyebrow">THE LOOKS</p>
@@ -297,7 +317,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 6. Bonus looks */}
+      {/* 7. Bonus looks */}
       <section className="ap-section">
         <div className="ap-section-inner">
           <p className="ap-eyebrow">BONUS LOOKS</p>
@@ -312,7 +332,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 7. Workflow prompts */}
+      {/* 8. Workflow prompts */}
       <section className="ap-section ap-workflow-section">
         <div className="ap-section-inner">
           <p className="ap-eyebrow">SSELFIE WORKFLOW</p>
@@ -331,7 +351,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 8. Bridge to Free Selfie Guide */}
+      {/* 9. Bridge to Free Selfie Guide */}
       <section className="ap-section ap-bridge">
         <div className="ap-section-inner ap-bridge-inner">
           <h2 className={`ap-bridge-title ${cormorant.className}`}>
@@ -353,7 +373,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 9. Soft product bridge */}
+      {/* 10. Soft product bridge */}
       <section className="ap-section ap-kit-bridge">
         <div className="ap-section-inner">
           <p className="ap-kit-question">Want the edit to look good before AI touches it?</p>

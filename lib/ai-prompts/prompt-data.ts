@@ -3,7 +3,7 @@
 // Each section maps to a section on the access page.
 //
 // ORDERING RULE: newest collection goes at the TOP of this file.
-// Add new COLLECTION arrays above MARBLE_CAFE_SERIES, then add the section
+// Add new COLLECTION arrays above DENIM_STREET_SERIES, then add the section
 // to the page in app/ai-prompts/access/[token]/page.tsx (same top order).
 // ---------------------------------------------------------------------------
 
@@ -16,6 +16,152 @@ export type PromptCard = {
   prompt: string
   exampleImage?: string
 }
+
+// ---------------------------------------------------------------------------
+// NEWEST — Soft Blazer + Light Denim Street Editorial (14 shots)
+// ---------------------------------------------------------------------------
+
+export const DENIM_STREET_SERIES: PromptCard[] = [
+  {
+    number: "19",
+    id: "denim-street-shot-1",
+    title: "Denim Street · Full Outfit Hero",
+    whenToUse: "Your hero shot for the series. Full-body against a dark wall. Use as your single-image post or carousel cover.",
+    mood: "quiet luxury · street style · full body · dark wall · editorial",
+    exampleImage: "/images/ai-prompts/denim-street-shot-1.jpg",
+    prompt:
+      "Create image 1 of a 6-part editorial day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: a modern city sidewalk with a dark charcoal wall or black building facade behind the person. The location should feel minimal, expensive, and editorial, with gray stone pavement and clean architectural lines.\n\nOutfit: oversized soft taupe or warm gray blazer with structured shoulders, fitted white crop top or white bralette-style top underneath, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels or white pointed slingback heels. Add slim black Celine-style sunglasses.\n\nHair: natural hair color from the uploaded reference photos, worn loose with soft movement or slightly wind-swept around the shoulders. Keep it polished but not too perfect.\n\nAccessory: one minimal leather shoulder bag only if it fits naturally, Bottega Veneta-style or The Row-style, held low in one hand. Do not add extra props.\n\nPose: standing full-body, one hand placed at the waist or lightly inside the blazer, the other hand holding the bag. Body angled slightly, head turned to the side as if looking down the street. Calm confident expression, not smiling too much.\n\nComposition: full-body vertical editorial street-style shot. Show the whole outfit clearly from head to heels, including blazer shape, white top, wide-leg jeans, and pointed shoes.\n\nMood: quiet luxury street style, confident, feminine, polished but effortless, Pinterest outfit inspiration.\n\nColor grading: muted cool city tones, dark charcoal background, soft taupe blazer, pale blue denim, creamy white highlights, gentle shadows, slightly desaturated Pinterest editorial edit, subtle film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp blazer structure, detailed denim texture, clear shoe shape, no blur, no compression haze.\n\nAvoid: cluttered background, extra props, distorted hands, extra fingers, warped shoes, unrealistic denim folds, plastic skin, CGI, overly staged stock-photo look.",
+  },
+  {
+    number: "20",
+    id: "denim-street-shot-2",
+    title: "Denim Street · Walking Moment",
+    whenToUse: "The in-motion shot. Works perfectly as slide 2 of a carousel or a standalone day-in-my-life post.",
+    mood: "walking · city · candid · movement · effortless",
+    exampleImage: "/images/ai-prompts/denim-street-shot-2.jpg",
+    prompt:
+      "Create image 2 of the same soft blazer and light denim street editorial photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: quiet modern city street with dark building walls, gray stone pavement, and soft daylight. The background should be minimal and slightly blurred.\n\nOutfit: oversized taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black Celine-style sunglasses.\n\nHair: natural hair color from the reference photos, loose and softly moving as if caught by a little wind.\n\nAccessory: phone only, held naturally in one hand as if checking where to go next. Do not add coffee, laptop, headphones, or extra props.\n\nPose: walking slowly across the frame, one foot forward, one hand near the blazer or waist, phone relaxed in the other hand. Head turned slightly to the side. Expression calm, focused, and confident.\n\nComposition: vertical three-quarter or full-body street-style shot, showing movement, outfit silhouette, wide-leg denim, and blazer shape.\n\nMood: day-in-my-life, walking into the city, elevated errands, modern woman energy, effortless Pinterest street-style.\n\nColor grading: dark charcoal background, muted stone gray, soft taupe, faded light denim, creamy skin tones, gentle contrast, subtle grain, clean editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp outfit silhouette, sharp face, realistic movement, no blur on the main subject.\n\nAvoid: awkward walking pose, distorted legs, extra fingers, warped phone, overly dramatic wind, plastic skin, CGI, generic fashion stock-photo look.",
+  },
+  {
+    number: "21",
+    id: "denim-street-shot-3",
+    title: "Denim Street · City Steps",
+    whenToUse: "The seated pause shot. Good for quotes, captions about slowing down, or mid-carousel variety.",
+    mood: "seated · city steps · calm · quiet confidence · architectural",
+    exampleImage: "/images/ai-prompts/denim-street-shot-3.jpg",
+    prompt:
+      "Create image 3 of the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: seated on clean gray stone steps outside a modern building or old city entrance. The background should feel calm, architectural, and minimal.\n\nOutfit: oversized taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the uploaded reference photos, worn loose with soft movement around the face and shoulders.\n\nAccessory: phone only, resting naturally in one hand or beside the person on the step. Optional minimal leather bag placed beside her if it fits the composition.\n\nPose: seated casually on the steps with one knee bent and one leg extended slightly, one hand resting near the blazer, the other hand holding the phone. Head turned to the side, calm confident expression.\n\nComposition: vertical editorial seated shot. Show the blazer shape, white top, denim texture, pointed shoes, and stone steps.\n\nMood: quiet confidence, city break, soft power outfit, casual but expensive, Pinterest editorial.\n\nColor grading: muted gray stone, soft taupe blazer, pale denim blue, creamy white top, natural skin tones, soft shadows, slight film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp denim, realistic stone texture, no blur, no low-resolution softness.\n\nAvoid: distorted legs, awkward seated pose, extra fingers, warped phone, messy background, plastic skin, CGI, overly posed catalog look.",
+  },
+  {
+    number: "22",
+    id: "denim-street-shot-4",
+    title: "Denim Street · Mirror Selfie",
+    whenToUse: "The 'about to leave' moment. Pairs well with outfit captions, morning routine content, or an honest personal brand post.",
+    mood: "mirror selfie · outfit check · morning · real · personal brand",
+    exampleImage: "/images/ai-prompts/denim-street-shot-4.jpg",
+    prompt:
+      "Create image 4 of the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: minimal bedroom or hallway mirror selfie before leaving for the day. Clean neutral wall, soft daylight, simple full-length mirror, minimal background.\n\nOutfit: oversized taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses either worn or held.\n\nHair: natural hair color from the reference photos, loose and softly styled, slightly undone.\n\nAccessory: Apple iPhone Pro Max only, held naturally for the mirror selfie. No coffee, laptop, headphones, or extra props.\n\nPose: standing in front of the mirror, phone covering part of the face, one hand lightly adjusting the blazer or waistband. Body angled slightly to show the blazer, waist, jeans, and shoes.\n\nComposition: full-body vertical mirror selfie, realistic iPhone feel, clean frame, not over-staged.\n\nMood: outfit check before leaving, simple but elevated, personal brand day-in-my-life, Pinterest mirror selfie.\n\nColor grading: soft neutral indoor light, muted beige and gray tones, pale denim, creamy white highlights, gentle shadows, subtle film grain, realistic mirror texture.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp mirror reflection, clear outfit details, sharp phone edge, no blur, no compression softness.\n\nAvoid: distorted phone, warped mirror, extra fingers, messy room, fake-looking mirror reflection, plastic skin, CGI, overly polished showroom look.",
+  },
+  {
+    number: "23",
+    id: "denim-street-shot-5",
+    title: "Denim Street · Detail Shot",
+    whenToUse: "The carousel detail slide. No full face. Pairs well with outfit breakdown captions or accessory-focused posts.",
+    mood: "detail · tactile · accessories · no face · quiet luxury",
+    exampleImage: "/images/ai-prompts/denim-street-shot-5.jpg",
+    prompt:
+      "Create image 5 as the detail shot of this soft blazer and light denim editorial photoshoot.\n\nNo full face needed.\n\nScene: close-up detail either on gray stone pavement, city steps, or a minimal indoor mirror area. Keep it connected to the same day-in-my-life outfit story.\n\nOutfit details: oversized taupe blazer sleeve, fitted white crop top edge, light-wash wide-leg denim with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nAccessory: Apple iPhone Pro Max only. Optional minimal leather shoulder bag if it fits naturally in the corner of the frame.\n\nComposition: close-up crop from above or waist-level. Show one hand holding the phone, blazer sleeve texture, denim texture, sunglasses, pointed shoe detail, and clean pavement or mirror-floor background.\n\nMood: Pinterest outfit detail, quiet luxury, minimal, tactile, real lifestyle b-roll, not a product ad.\n\nColor grading: muted charcoal and stone gray, soft taupe, pale denim blue, creamy white, natural shadows, subtle film grain, clean editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp phone edge, crisp denim texture, clear blazer fabric, realistic shoe detail, no blur, no low-resolution softness.\n\nAvoid: distorted fingers, extra hands, warped phone, warped shoes, fake-looking logos, cluttered props, plastic textures, overly staged product-photo look.",
+  },
+  {
+    number: "24",
+    id: "denim-street-shot-6",
+    title: "Denim Street · Reel Cover",
+    whenToUse: "Your reel cover or strongest single image from the set. Clean space at the top for text overlay.",
+    mood: "reel cover · strong silhouette · dark wall · text space · editorial",
+    exampleImage: "/images/ai-prompts/denim-street-shot-6.jpg",
+    prompt:
+      "Create image 6 as the strongest reel-cover image from this soft blazer and light denim photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, body proportions, age, and natural texture from the reference photos.\n\nScene: modern city sidewalk with a dark charcoal wall or black building facade behind the person. Clean stone pavement, minimal architecture, soft daylight.\n\nOutfit: oversized soft taupe or warm gray blazer with strong shoulders, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black Celine-style sunglasses.\n\nHair: natural hair color from the uploaded reference photos, loose with soft wind movement.\n\nAccessory: phone only or one minimal leather shoulder bag if it fits naturally. Keep the styling clean and not over-accessorized.\n\nPose: standing or walking slightly toward the camera, one hand at the waist under the blazer, the other relaxed by the side. Head turned to the side, hair moving softly, calm confident expression behind sunglasses.\n\nComposition: vertical 9:16 reel-cover crop with clean space at the top or side for text overlay. Strong outfit silhouette, clear face, dark wall background, and enough negative space for overlay text.\n\nMood: soft power, elevated everyday outfit, Pinterest street-style, living my best life, calm confidence, modern feminine energy.\n\nColor grading: dark charcoal backdrop, muted taupe blazer, pale denim blue, creamy white highlights, soft natural skin tones, gentle shadows, subtle film grain, slightly desaturated Pinterest editorial edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, sharp face, clear blazer silhouette, detailed denim texture, no blur, no compression softness.\n\nAvoid: extra props, distorted hands, extra fingers, warped shoes, unrealistic body proportions, plastic skin, CGI, generic influencer face, overly staged stock-photo look.",
+  },
+  {
+    number: "25",
+    id: "denim-street-shot-7",
+    title: "Denim Street · Overhead Shot",
+    whenToUse: "The unexpected angle. Stops the scroll. Use for a single post or as a carousel surprise slide.",
+    mood: "overhead · bird's-eye · pavement · graphic · unexpected",
+    exampleImage: "/images/ai-prompts/denim-street-shot-7.jpg",
+    prompt:
+      "Create image 7 of the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: clean gray stone pavement outside a modern city building with a dark charcoal wall nearby. The setting should feel minimal, expensive, and urban.\n\nOutfit: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the uploaded reference photos, loose with soft natural movement.\n\nAccessory: Apple iPhone Pro Max only, held casually in one hand. Optional minimal leather shoulder bag if it fits naturally.\n\nPose: overhead shot taken from above, as if someone is standing on a step or balcony looking down. The person is walking across the pavement, one hand lightly holding the phone, the other hand adjusting the blazer. Face slightly turned down or to the side, not looking directly at the camera.\n\nComposition: high-angle vertical 9:16 editorial shot. Show the full outfit from above, wide-leg denim shape, pointed heels, blazer silhouette, and clean pavement lines.\n\nMood: candid city outfit moment, Pinterest street-style, calm confidence, soft power, not overly posed.\n\nColor grading: muted charcoal gray pavement, soft taupe blazer, pale denim blue, creamy white highlights, natural skin tones, subtle film grain, slightly desaturated Pinterest editorial edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp outfit silhouette, crisp denim texture, clean pavement detail, no blur, no compression haze.\n\nAvoid: distorted legs, warped shoes, extra fingers, unrealistic overhead angle, cluttered background, plastic skin, CGI, stock-photo look.",
+  },
+  {
+    number: "26",
+    id: "denim-street-shot-8",
+    title: "Denim Street · Low-Angle Walk",
+    whenToUse: "Makes the outfit feel powerful and fashion-forward. Works well for outfit caption posts or when you want a strong editorial feel.",
+    mood: "low angle · fashion · strong · denim · dynamic",
+    exampleImage: "/images/ai-prompts/denim-street-shot-8.jpg",
+    prompt:
+      "Create image 8 of the same soft blazer and light denim street editorial photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: modern city sidewalk with a dark charcoal or black building facade behind the person. Clean stone pavement, minimal architecture, soft daylight.\n\nOutfit: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the reference photos, loose and moving slightly in the wind.\n\nAccessory: phone only, held naturally in one hand.\n\nPose: low-angle walking shot from slightly below waist level, as if the camera is held lower while the person walks past. One leg forward, blazer moving slightly, phone in hand, head turned to the side. The pose should feel candid and in motion.\n\nComposition: vertical 9:16 low-angle editorial street-style frame. Make the wide-leg jeans and pointed shoes feel strong and fashion-forward without distorting the body.\n\nMood: confident, cool, modern, elevated everyday outfit, Pinterest editorial street style.\n\nColor grading: dark charcoal background, muted taupe blazer, faded light denim, creamy white top, soft shadows, gentle contrast, subtle film grain, slightly desaturated fashion edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp blazer shape, detailed denim, clean shoe detail, no blur on the main subject.\n\nAvoid: distorted legs, overly long feet, warped shoes, extra fingers, awkward walking pose, plastic skin, CGI, overly staged campaign look.",
+  },
+  {
+    number: "27",
+    id: "denim-street-shot-9",
+    title: "Denim Street · Phone Check",
+    whenToUse: "The realistic pause moment. Good for founder content, productivity posts, or any caption about being in the city.",
+    mood: "seated · phone · city ledge · candid · real",
+    exampleImage: "/images/ai-prompts/denim-street-shot-9.jpg",
+    prompt:
+      "Create image 9 of the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: seated on a low stone ledge or city bench outside a modern building. Dark wall or clean stone architecture in the background.\n\nOutfit: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the uploaded reference photos, loose and softly styled, slightly undone.\n\nAccessory: Apple iPhone Pro Max only. Optional minimal leather bag beside the person if it fits naturally.\n\nPose: seated sideways on the ledge, one leg bent slightly and the other extended forward, phone held in both hands or one hand as if checking a message. Head slightly lowered toward the phone, sunglasses on, calm focused expression.\n\nComposition: side-angle vertical editorial shot. Show the blazer, waistline, denim shape, pointed shoes, phone, and clean city background. Make it feel like a real pause in the day.\n\nMood: quiet city moment, outfit check meets day-in-my-life, soft power, relaxed confidence, Pinterest street-style.\n\nColor grading: muted gray stone, dark charcoal background, soft taupe blazer, pale denim blue, creamy highlights, natural shadows, subtle grain, clean editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp phone edge, clear denim texture, realistic stone detail, no blur, no low-resolution softness.\n\nAvoid: awkward seated pose, distorted legs, extra fingers, warped phone, cluttered props, plastic skin, CGI, generic influencer stock-photo look.",
+  },
+  {
+    number: "28",
+    id: "denim-street-shot-10",
+    title: "Denim Street · Glass Reflection",
+    whenToUse: "The editorial statement shot. Stops the scroll and makes the whole set feel more like a campaign. Use as a single post or reel cover alternative.",
+    mood: "reflection · glass · editorial · moody · campaign",
+    exampleImage: "/images/ai-prompts/denim-street-shot-10.jpg",
+    prompt:
+      "Create image 10 of the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: modern city street with a dark glass storefront or reflective building window. The person is visible both directly and as a soft reflection in the glass.\n\nOutfit: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the uploaded reference photos, loose with soft movement, slightly wind-swept but polished.\n\nAccessory: Apple iPhone Pro Max only, held casually in one hand. Do not add extra props.\n\nPose: standing close to the reflective glass, body angled slightly away from the camera, head turned to the side. One hand lightly touches the blazer or rests at the waist, the other hand holds the phone. The reflection should show a second soft version of the outfit, creating an editorial layered effect.\n\nComposition: vertical 9:16 editorial street-style shot. The direct view and glass reflection should both be visible, with the dark window creating a moody fashion backdrop.\n\nMood: quiet luxury, reflective city moment, soft power, Pinterest street-style, calm confident energy.\n\nColor grading: dark charcoal reflection, muted taupe blazer, pale denim blue, creamy white top, soft natural skin tones, faded highlights, gentle shadows, subtle film grain, slightly desaturated editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp blazer texture, detailed denim, realistic glass reflection, no blur, no compression haze.\n\nAvoid: distorted reflection, doubled face errors, warped phone, extra fingers, unrealistic glass, cluttered background, plastic skin, CGI, overly staged stock-photo look.",
+  },
+  {
+    number: "29",
+    id: "denim-street-shot-11",
+    title: "Denim Street · Shadow Detail",
+    whenToUse: "The creative b-roll detail. No face. Pairs well with a quote or a short caption about presence.",
+    mood: "shadow · artistic · shoes · pavement · cinematic",
+    exampleImage: "/images/ai-prompts/denim-street-shot-11.jpg",
+    prompt:
+      "Create image 11 as a creative detail shot from the same soft blazer and light denim photoshoot.\n\nNo full face needed.\n\nScene: clean gray stone pavement beside a dark charcoal wall, with soft daylight creating a long natural shadow.\n\nOutfit details: light-wash wide-leg denim, pointed white heels, hem of the oversized taupe blazer, fitted white crop top edge slightly visible if natural.\n\nAccessory: Apple iPhone Pro Max only, held low in one hand so the phone and hand appear partly in frame. No extra props.\n\nComposition: artistic low-angle or top-down crop showing the pointed white heels, denim hem, blazer edge, phone in hand, and the person's shadow stretching across the pavement. The shadow should make the image feel cinematic and intentional.\n\nMood: minimal, editorial, quiet luxury, creative Pinterest detail, day-in-my-life b-roll.\n\nColor grading: muted stone gray, soft taupe, pale denim, creamy whites, strong but natural shadows, slightly desaturated Pinterest editorial edit, subtle film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp shoe detail, sharp denim texture, clean shadow shape, realistic pavement texture, no blur, no low-resolution softness.\n\nAvoid: distorted feet, warped shoes, extra fingers, warped phone, fake-looking shadows, cluttered props, plastic textures, CGI.",
+  },
+  {
+    number: "30",
+    id: "denim-street-shot-12",
+    title: "Denim Street · Windy Side Profile",
+    whenToUse: "A reel cover alternative. The movement and hair create energy without needing a direct-camera pose.",
+    mood: "side profile · wind · movement · cinematic · reel cover",
+    exampleImage: "/images/ai-prompts/denim-street-shot-12.jpg",
+    prompt:
+      "Create image 12 of the same soft blazer and light denim street editorial photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: quiet modern city sidewalk with a dark charcoal wall, clean gray pavement, and soft daylight.\n\nOutfit: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, pointed white heels, slim black sunglasses.\n\nHair: natural hair color from the uploaded reference photos, worn loose with stronger natural wind movement. The hair should move across the shoulder and slightly away from the face, polished but real.\n\nAccessory: phone only, held loosely at the side.\n\nPose: walking in side profile, head turned slightly away from the camera, one hand near the blazer waist, the other holding the phone. The blazer and hair should have subtle motion, like the person was caught mid-walk.\n\nComposition: vertical 9:16 cinematic side-profile walking shot. Keep clean negative space around the person for text overlay.\n\nMood: soft power, living my best life, calm confidence, elevated everyday outfit, Pinterest editorial street-style.\n\nColor grading: dark charcoal backdrop, muted taupe, pale denim blue, creamy white highlights, natural skin tones, gentle contrast, subtle film grain, slightly desaturated fashion edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face profile, crisp blazer shape, detailed denim, realistic hair movement, no blur on the main subject.\n\nAvoid: overly dramatic wind, distorted legs, warped shoes, extra fingers, warped phone, plastic skin, CGI, stock-photo pose.",
+  },
+  {
+    number: "31",
+    id: "denim-street-shot-13",
+    title: "Denim Street · Waist Close-Up",
+    whenToUse: "Fashion detail without showing the face. Great for outfit breakdown posts or pairing with a style caption.",
+    mood: "waist · blazer · denim · fashion detail · close-up",
+    exampleImage: "/images/ai-prompts/denim-street-shot-13.jpg",
+    prompt:
+      "Create image 13 as a close-up fashion detail shot from the same soft blazer and light denim photoshoot.\n\nNo full face needed.\n\nScene: clean gray stone pavement or dark charcoal wall background, modern city setting.\n\nOutfit details: oversized soft taupe or warm gray blazer, fitted white crop top, high-waisted light-wash wide-leg jeans with subtle knee distressing, slim black sunglasses partly visible in hand or tucked naturally into the blazer.\n\nAccessory: Apple iPhone Pro Max only if it fits naturally in one hand. No extra props.\n\nPose: close crop from shoulders to hips. One hand lightly holds the blazer open or rests at the waistband. The other hand can hold the phone casually at the side. Focus on the outfit shape: blazer structure, white top, waistline, denim texture.\n\nComposition: vertical fashion detail crop, showing the contrast between the soft blazer, white top, and light denim.\n\nMood: effortless outfit detail, quiet luxury, Pinterest fashion close-up, minimal and expensive.\n\nColor grading: muted taupe, pale denim blue, creamy white highlights, charcoal shadows, natural skin tones, subtle film grain, clean editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp blazer texture, sharp denim detail, clean waistline, realistic fabric folds, no blur, no low-resolution softness.\n\nAvoid: distorted hands, extra fingers, warped phone, unrealistic waist proportions, plastic fabric texture, cluttered props, CGI, overly staged product-photo look.",
+  },
+  {
+    number: "32",
+    id: "denim-street-shot-14",
+    title: "Denim Street · Phone Close-Up",
+    whenToUse: "Candid founder-on-the-go detail. Works as a b-roll slide in a carousel or paired with a caption about being present in the city.",
+    mood: "phone · candid · close-up · lifestyle · founder",
+    prompt:
+      "Create image 14 as a candid close-up from the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's identity if any part of the face appears. Preserve the person's natural look from the reference photos.\n\nScene: modern city sidewalk with dark charcoal wall, clean gray pavement, and soft daylight.\n\nOutfit details: oversized soft taupe or warm gray blazer sleeve, fitted white crop top edge, light-wash denim, slim black sunglasses either worn or partly visible.\n\nAccessory: Apple iPhone Pro Max only, held naturally in one hand.\n\nPose: close-up crop of the person holding the phone while walking or pausing near the dark wall. Show the hand, phone, blazer sleeve, part of the denim, and a soft partial face or sunglasses crop if natural.\n\nComposition: candid editorial close-up, like a real day-in-my-life b-roll frame. The phone should feel natural, not like a product ad.\n\nMood: modern, casual, quiet luxury, founder-on-the-go, Pinterest lifestyle detail.\n\nColor grading: muted charcoal gray, soft taupe, pale denim, creamy skin tones, gentle contrast, subtle film grain, slightly desaturated editorial edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp phone edge, crisp hand detail, realistic blazer texture, no blur, no compression haze.\n\nAvoid: distorted fingers, extra hands, warped phone, fake-looking Apple logo, cluttered props, plastic skin, CGI, stock-photo pose.",
+  },
+]
 
 export const REUSABLE_STARTER =
   "Use my uploaded selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face, smooth my skin unnaturally, or create a more idealised version of me. You may change the styling, outfit, background, lighting, crop, camera angle, pose energy, and mood. The face stays the same. Everything else can transform. The result should look like a photograph, not AI art."
