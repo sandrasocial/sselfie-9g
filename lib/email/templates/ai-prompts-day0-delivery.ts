@@ -1,3 +1,4 @@
+import { getEmailHeroImage } from "../email-image-assets"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay0DeliveryParams {
@@ -13,6 +14,7 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
   const { firstName, accessUrl } = params
 
   const subject = "your chatgpt selfie prompts are here"
+  const heroImage = getEmailHeroImage("prompt_pack_hero")
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
@@ -27,6 +29,7 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
     eyebrow: "SSELFIE",
     subtitle: "12 prompts. Upload your selfie. Choose the look.",
     bodyHtml,
+    ...heroImage,
     footerLead: "Reply if you need me. I read every message.",
     footerSignoff: "Sandra x",
   })

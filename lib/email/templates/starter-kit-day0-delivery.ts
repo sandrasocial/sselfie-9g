@@ -1,3 +1,4 @@
+import { getEmailHeroImage } from "../email-image-assets"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { starterKitLandingUrl } from "./selfie-education-links"
 
@@ -15,6 +16,7 @@ export function generateStarterKitDay0DeliveryEmail({
   presetDownloadUrl?: string
 }) {
   const resolvedFallbackUrl = fallbackUrl || starterKitLandingUrl()
+  const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
   const kitButton = passwordSetupUrl
     ? `<div style="margin:20px 0 10px;">${renderStoneButton("Set Your Password", passwordSetupUrl)}</div>
@@ -25,6 +27,7 @@ export function generateStarterKitDay0DeliveryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Starter Kit is ready.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with the presets and the setup guide. That is the fastest win.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">This is your AI-ready selfie foundation: better phone photos, cleaner edits, easier poses, and captions so the photos actually become content.</p>
     <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your kit:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
       <li>Lightroom presets</li>
@@ -49,11 +52,12 @@ export function generateStarterKitDay0DeliveryEmail({
     html: renderStoneShell({
       eyebrow: "Starter Kit",
       title: "Your kit is ready.",
-      subtitle: "Presets, guides, masterclass, and 7-day content starter are all inside.",
+      subtitle: "Your phone-first foundation for cleaner selfies and better AI visual results.",
       bodyHtml,
+      ...heroImage,
       footerLead: "One photo. Good light. Keep it simple.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Starter Kit is ready.\n\nStart with the presets and the setup guide. That is the fastest win.\n\nInside your kit:\n- Lightroom presets\n- SSELFIE Preset Setup Guide\n- Posing Guide\n- Caption Templates\n- Storytelling Guide\n- Editing Masterclass\n- 7-Day Content Starter\n\n${textKitLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hi ${firstName},\n\nYour Starter Kit is ready.\n\nStart with the presets and the setup guide. That is the fastest win.\n\nThis is your AI-ready selfie foundation: better phone photos, cleaner edits, easier poses, and captions so the photos actually become content.\n\nInside your kit:\n- Lightroom presets\n- SSELFIE Preset Setup Guide\n- Posing Guide\n- Caption Templates\n- Storytelling Guide\n- Editing Masterclass\n- 7-Day Content Starter\n\n${textKitLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }
