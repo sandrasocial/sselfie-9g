@@ -655,13 +655,15 @@ const FAQS = {
     { question: "Do I need Lightroom already?",
       answer: "No. The editing walkthrough takes you through downloading it and importing the presets step by step. Takes about five minutes." },
     { question: "Will this work on my iPhone?",
-      answer: "Yes. Every tutorial in the editing walkthrough uses a phone. No camera, no desktop software." },
+      answer: "Yes. The kit is built for phone photos. No camera, no desktop software, no complicated setup." },
+    { question: "Will this help my AI photos look less fake?",
+      answer: "Yes. Better AI results start with a better original selfie. The kit helps you get cleaner light, stronger angles, better edits, and a more usable photo before you ask any AI tool to transform it." },
     { question: "What apps do I need?",
       answer: "Lightroom Mobile, Hypic, and CapCut. All free. The walkthrough shows you exactly how to use each one." },
     { question: "Is this just presets?",
-      answer: "No. The presets are included, but the main thing is the editing walkthrough. Six video modules showing you exactly how I edit, step by step." },
+      answer: "No. The presets are included, but the kit also gives you the selfie setup, posing guidance, editing walkthrough, caption templates, and a 7-day content starter." },
     { question: "What if I'm a complete beginner?",
-      answer: "Good. There's also a posing cheat sheet, a camera settings guide, and 30 caption formulas ready to copy. You don't need to know anything going in." },
+      answer: "Good. Start with the selfie guide, then use the posing cheat sheet, camera settings guide, and caption formulas. You do not need to know anything going in." },
   ],
   masterclass: [
     { question: "Do I need the Starter Kit first?",
@@ -838,35 +840,35 @@ export function StarterKitPageContent() {
       {/* HERO — dark */}
       <Hero
         eyebrow="Starter Kit · $37"
-        title={<>Your presets, setup guide, posing guide, caption templates, and first week of content.</>}
-        body={<p>Everything in one place.</p>}
+        title={<>AI-ready selfies, clean edits, captions, and your first week of content.</>}
+        body={<p>Before you ask ChatGPT, Gemini, or any AI tool to transform your photo, you need a strong original image. This is where the Starter Kit helps.</p>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.skHero}
       />
 
       {/* THE SYSTEM — cream */}
-      <Section eyebrow="Why it works" title={<>The preset is not the whole result.</>} dark={false} narrow>
+      <Section eyebrow="Why it works" title={<>Your AI photo is only as good as the selfie you start with.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>The preset changes the look. The system is what turns one session into a week of content.</p>
-          <p>The kit gives you the editing formula, the posing reference, the caption structure, and a content plan so the photo actually gets used.</p>
-          <p>One session. One week of content. No starting from zero.</p>
+          <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually looks random too.</p>
+          <p>The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your visuals stop looking fake, flat, or disconnected from you.</p>
+          <p>One better photo. One cleaner edit. One week of content. No starting from zero.</p>
         </div>
       </Section>
 
       {/* WHAT IS INSIDE — dark, split with mockup */}
       <Split
         eyebrow="What is inside"
-        title={<>Six things in one kit.</>}
+        title={<>The first step into cinematic personal branding.</>}
         body={
           <div>
             {[
-              { label: "Lightroom Preset Collection",  note: "Three styles. Scandinavian Light and Dreamy, Nordic Deep Urban, and Scandinavian Dark and Moody." },
-              { label: "Editing Setup Guide",          note: "Six walkthrough modules. How to use Lightroom Mobile, Hypic, and CapCut, step by step." },
-              { label: "Posing Guide",                 note: "Mirror poses, full body, profile. Never feel awkward in front of the camera again." },
-              { label: "Caption Templates",            note: "30 ready-to-edit captions in Sandra's voice. Hooks, stories, soft CTAs. Copy, adjust, post." },
-              { label: "Storytelling Guide",           note: "Five post types that turn one photo session into a full week of content." },
-              { label: "7-Day Content Starter",        note: "One session. Seven posts. A full week of content planned and ready to go." },
+              { label: "16 Lightroom Presets",         note: "A clean starting point for selfies, AI input photos, and everyday brand visuals." },
+              { label: "Selfie Guide",                 note: "Light, angles, phone setup, and simple rules for photos that look stronger before editing." },
+              { label: "Posing And Editing Guidance",  note: "Mirror poses, full body, profile, phone edits, Hypic, CapCut, and Lightroom Mobile." },
+              { label: "Caption Templates",            note: "30 ready-to-edit captions for women who have the photo but do not know what to say." },
+              { label: "Storytelling Guide",           note: "Five post types that turn one photo session into content people can understand." },
+              { label: "7-Day Content Starter",        note: "One session. Seven posts. A full week of content planned and ready to use." },
             ].map((item, i) => (
               <div key={item.label} style={{
                 borderTop: `1px solid ${C.divDark}`,
@@ -901,15 +903,15 @@ export function StarterKitPageContent() {
       </Section>
 
       {/* EDITING WALKTHROUGHS — dark */}
-      <Section eyebrow="The editing walkthrough" title={<>Six modules. My exact formulas.</>} dark>
+      <Section eyebrow="The editing walkthrough" title={<>Make the original photo stronger first.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
-            { num: "01", title: "Lightroom with presets",   body: "How to import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
-            { num: "02", title: "iPhone native editing",    body: "My exact formula: exposure, brilliance, highlights, shadows, vignette. Copy and paste to every photo in seconds." },
-            { num: "03", title: "Hypic for portraits",      body: "The app nobody's talking about. How I get that clean, glowing skin tone without looking over-edited." },
-            { num: "04", title: "CapCut for video",         body: "My exact settings: contrast, sharpen, clarity, vignette. How I export at 4K every time." },
-            { num: "05", title: "Save a custom preset",     body: "Build your own preset from a photo you love, so every future edit starts from the right place." },
-            { num: "06", title: "Apply edits in bulk",      body: "Copy one edit and paste it to every photo in your session. Your whole camera roll, done in 30 seconds." },
+            { num: "01", title: "Lightroom with presets",   body: "Import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
+            { num: "02", title: "iPhone native editing",    body: "Exposure, brilliance, highlights, shadows, and vignette. Clean up the photo before you use it anywhere." },
+            { num: "03", title: "Hypic for portraits",      body: "Get a polished portrait feel without smoothing your face into someone else." },
+            { num: "04", title: "CapCut for video",         body: "Use the same clean visual direction on simple video clips and reels." },
+            { num: "05", title: "Save a custom preset",     body: "Create your own repeatable edit so future selfies start from the right look." },
+            { num: "06", title: "Apply edits in bulk",      body: "Copy one edit and paste it to every photo in your session. Your camera roll gets cleaner fast." },
           ].map((m) => (
             <article key={m.num} className="mf" style={{ ...cardSx(true), padding: "22px 26px" }}>
               <p style={{ ...ty("eyebrow", true), marginBottom: "12px" }}>{m.num}</p>
@@ -923,11 +925,11 @@ export function StarterKitPageContent() {
       {/* PRESET COLLECTION — cream, split */}
       <Split
         eyebrow="The preset collection"
-        title={<>Three styles. Pick the one that feels most like you.</>}
+        title={<>Sixteen presets for cleaner phone photos and better AI inputs.</>}
         body={
           <div className="space-y-4">
-            <p>Each preset ships with a step-by-step import guide and a walkthrough showing how to dial the strength for your skin tone and lighting.</p>
-            <p>You get all three. Start with the one that matches the photo, then adjust from there.</p>
+            <p>Presets do not replace a good photo. They help you make the photo cleaner, more consistent, and easier to use as personal brand content.</p>
+            <p>Use them before posting, before building a carousel, or before sending the image into an AI tool for a transformation.</p>
             <div className="grid gap-2 mt-2">
               {[
                 { name: "Scandinavian Light and Dreamy", desc: "Bright, airy, soft tones. Timeless natural light." },
@@ -950,12 +952,12 @@ export function StarterKitPageContent() {
       {/* ALSO INCLUDED — dark */}
       <Section eyebrow="Also included" title={<>The rest of the kit.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile. Never feel awkward in front of the camera again. Includes voice control setup." />
-          <FCard dark title="Caption Templates" body="30 ready-to-edit captions written in Sandra's voice. Hooks, stories, soft CTAs. Copy, adjust your detail, post." />
-          <FCard dark title="Storytelling Guide" body="Five post types that turn one photo session into a full content arc. Proof, story, teaching, behind the scenes, and invitation." />
+          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile, and simple direction so your input photo looks intentional before AI touches it." />
+          <FCard dark title="Caption Templates" body="30 ready-to-edit captions for the moment when the photo is ready but your brain goes blank." />
+          <FCard dark title="Storytelling Guide" body="Five post types that turn one photo session into a full content arc: proof, story, teaching, behind the scenes, and invitation." />
           <FCard dark title="7-Day Content Starter" body="Turn one session into seven posts. A full week of content from a single afternoon." />
           <FCard dark title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
-          <FCard dark title="Editing Setup Guide" body="How to download Lightroom Mobile, import the presets, and be editing within five minutes. No prior experience needed." />
+          <FCard dark title="Instant Access" body="Start right after checkout with the presets, guides, caption templates, and your 7-day starter." />
         </div>
       </Section>
 
@@ -966,7 +968,7 @@ export function StarterKitPageContent() {
 
       {/* CTA — dark */}
       <CtaClose
-        title={<>Everything you need to turn one selfie into your first brand-ready week.</>}
+        title={<>Everything you need to turn one AI-ready selfie into your first brand-ready week.</>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
         dark
