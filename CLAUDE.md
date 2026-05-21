@@ -278,8 +278,8 @@ Target: €197/month minimum. Not €97. Not €27.
 
 → Skills in Cowork: `sselfie-voice`, `scandinavian-design`, `instagram-strategy`, `tiktok-strategy`
 
-### Design System — Single Contract (updated 2026-05-12)
-*Single visual + product UI source of truth: `docs/brand/DESIGN_SYSTEM.md`. If anything here differs from that file, `DESIGN_SYSTEM.md` wins immediately.*
+### Design System — Single Contract (updated 2026-05-21)
+*Single visual + product UI source of truth: `docs/SSELFIE_DESIGN_SYSTEM.md`. If anything here differs from that file, `docs/SSELFIE_DESIGN_SYSTEM.md` wins immediately.*
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -292,12 +292,12 @@ Target: €197/month minimum. Not €97. Not €27.
 | `stoneDark` | `#2C2B29` | Dark gray text/panels when pure black is too strong |
 | `stoneSoft` | `#D4D1CC` | Soft gray borders and quiet fills |
 
-**Fonts:** Cormorant Garamond (display/headings, 300-500) + Inter (body/UI, 400-600).
+**Fonts:** Cormorant Garamond or approved editorial serif for display/headings. Neue Einstellung or approved clean sans for body/UI. Inter remains acceptable in existing app UI until a planned typography pass replaces it safely.
 
-**Rules that never bend (mirrors `DESIGN_SYSTEM.md`):**
+**Rules that never bend (mirrors `docs/SSELFIE_DESIGN_SYSTEM.md`):**
 - Rounded product UI stays. Do not apply zero-radius globally.
-- Letterpress is required on major headings/surface labels and should not be applied to body copy.
-- Avoid glassmorphism and random translucent card effects.
+- Light luxury editorial is the current direction. Do not default to dark-first templates.
+- Avoid glassmorphism, random translucent card effects, and generic SaaS UI.
 - No gradients on buttons and no gradient text.
 - Gold accent `#c9a96e` is retired and must not be reintroduced.
-- No new colors, fonts, or token systems without Sandra approval.
+- No new colors, fonts, icons, emojis, or token systems without Sandra approval.
