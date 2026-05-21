@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import ReactMarkdown from "react-markdown"
 import FullscreenImageModal from "@/components/sselfie/fullscreen-image-modal"
@@ -302,6 +302,51 @@ function removeEmojis(text: string): string {
  */
 function MayaInlineImageRenderer({ src, alt }: { src: string; alt?: string }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [imageId, setImageId] = useState<string | null>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadImageMeta() {
+      try {
+        const response = await fetch(`/api/images/lookup?url=${encodeURIComponent(src)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        if (cancelled || !data?.image?.id) return
+
+        setImageId(data.image.id)
+        setIsFavorite(Boolean(data.image.isFavorite))
+      } catch (error) {
+        console.warn("[MayaInlineImageRenderer] Could not load gallery image metadata:", error)
+      }
+    }
+
+    loadImageMeta()
+
+    return () => {
+      cancelled = true
+    }
+  }, [src])
+
+  const toggleFavorite = async () => {
+    if (!imageId) return
+    const nextFavorite = !isFavorite
+    setIsFavorite(nextFavorite)
+
+    try {
+      const response = await fetch("/api/images/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId, isFavorite: nextFavorite }),
+      })
+
+      if (!response.ok) throw new Error("Failed to update favorite")
+    } catch (error) {
+      setIsFavorite(!nextFavorite)
+      console.error("[MayaInlineImageRenderer] Could not update favorite:", error)
+    }
+  }
 
   return (
     <>
@@ -309,14 +354,14 @@ function MayaInlineImageRenderer({ src, alt }: { src: string; alt?: string }) {
         role="button"
         tabIndex={0}
         aria-label="View photo fullscreen"
-        className="my-4 block cursor-pointer overflow-hidden rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.35)] shadow-[0_16px_48px_rgba(10,10,10,0.12)] transition-opacity duration-200 hover:opacity-90 active:opacity-80"
+        className="my-4 block w-fit max-w-full cursor-pointer overflow-hidden rounded-[14px] border border-[color:var(--app-glass-border)] bg-[rgba(13,12,11,0.06)] shadow-[0_16px_48px_rgba(10,10,10,0.12)] transition-opacity duration-200 hover:opacity-90 active:opacity-80"
         onClick={() => setIsOpen(true)}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIsOpen(true) }}
       >
         <img
           src={src}
           alt={alt || "Maya generated photo"}
-          className="block h-auto max-h-[560px] w-full object-contain"
+          className="block h-auto max-h-[640px] max-w-full object-contain"
           loading="lazy"
           decoding="async"
         />
@@ -325,10 +370,12 @@ function MayaInlineImageRenderer({ src, alt }: { src: string; alt?: string }) {
       {isOpen && (
         <FullscreenImageModal
           imageUrl={src}
-          imageId="maya-inline"
+          imageId={imageId || "maya-inline"}
           title="Maya generated photo"
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
+          isFavorite={isFavorite}
+          onFavoriteToggle={imageId ? toggleFavorite : undefined}
         />
       )}
     </>

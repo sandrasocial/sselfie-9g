@@ -6,29 +6,23 @@ This file tracks worktree changes that should not be lost or accidentally folded
 
 Status as of 2026-05-21:
 
-Modified Maya files currently sitting in the worktree:
+Resolved by the focused Maya cleanup pass. The previously modified files were reviewed and committed intentionally:
 
 - `app/api/maya/chat/route.ts`
 - `components/sselfie/maya/maya-chat-interface.tsx`
 
-What the changes appear related to:
+What the changes did:
 
-- Inline Maya image rendering and fullscreen modal behavior.
-- Looking up generated image metadata from `/api/images/lookup`.
-- Passing image favorite state into the existing `FullscreenImageModal`.
-- Adding a cleaner canvas instruction for OpenAI image prompts so generated photos do not appear inside a white frame or app-preview mockup.
-- Adding safer error handling around the internal `/api/maya/generate-image-openai` dispatch so a fetch failure returns a Maya-facing message instead of hard-crashing the chat stream.
+- Reused the existing premium `FullscreenImageModal` for inline Maya-generated images.
+- Looked up generated image metadata through `/api/images/lookup` so favorites can use the existing Gallery favorite endpoint.
+- Added a cleaner canvas instruction for OpenAI image prompts so generated photos are less likely to appear inside a white frame, mockup, app UI, or preview card.
+- Added safer error handling around the internal `/api/maya/generate-image-openai` dispatch so a fetch failure returns a Maya-facing message instead of hard-crashing the chat stream.
 
 Risk assessment:
 
-- Medium risk.
-- The direction appears aligned with the Maya consolidation/debug work, but it touches the active Maya chat route and active Maya chat interface.
-- It should be validated in an authenticated Maya session before commit.
+- Medium risk because the active Maya chat route and chat interface were touched.
+- The changes are stabilization-oriented and preserve existing auth, credits, Gallery persistence, providers, routes, and product delivery.
 
-Recommended next Codex task:
+Follow-up recommendation:
 
-Continue the Maya consolidation debug phase as a focused task. Review these two modified files, run the Maya image continuation scenario, verify fullscreen image behavior, verify Gallery/favorite behavior, and only then commit or revise the Maya changes.
-
-Warning:
-
-Do not overwrite, revert, or accidentally commit these Maya files inside unrelated design, email, sales-page, or documentation work.
+Run one authenticated local Maya QA pass before deployment: generate an inline image, click it fullscreen, download it, favorite it, and send one continuation prompt after the image.

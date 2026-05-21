@@ -420,15 +420,39 @@ async function getSavedSelfieReferenceUrl(userId: string): Promise<string | unde
 }
 
 function buildOpenAIQuickPrompt(prompt: string, hasReferenceImage: boolean): string {
-  if (!hasReferenceImage) return prompt
+  const cleanCanvasDirection =
+    "Fill the image canvas edge to edge with the final photo. Do not place the photo inside a white frame, mat, border, mockup, phone screen, app UI, or preview card."
+
+  if (!hasReferenceImage) {
+    return [cleanCanvasDirection, "", prompt].join("\n")
+  }
 
   return [
     "Use the attached selfie/reference image as the identity source.",
     "Preserve the person's face, facial structure, skin tone, hair, age, and recognizable identity.",
     "Create the requested aesthetic image without turning them into a different person.",
+    cleanCanvasDirection,
     "",
     prompt,
   ].join("\n")
+}
+
+function createMayaQuickImageErrorResponse(validUIMessages: UIMessage[], message: string): Response {
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `maya-quick-photo-error-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta: message,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
 }
 
 async function createOpenAIQuickImageDispatchResponse(input: {
@@ -452,19 +476,28 @@ async function createOpenAIQuickImageDispatchResponse(input: {
   if (authorization) headers.set("authorization", authorization)
 
   const origin = new URL(input.req.url).origin
-  const openAIResponse = await fetch(`${origin}/api/maya/generate-image-openai`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      prompt: buildOpenAIQuickPrompt(prompt, hasReferenceImage),
-      conceptTitle: "Maya quick photo",
-      chatId:
-        typeof input.chatId === "string" || typeof input.chatId === "number"
-          ? String(input.chatId)
-          : undefined,
-      referenceImageUrl: input.referenceImageUrl,
-    }),
-  })
+  let openAIResponse: Response
+  try {
+    openAIResponse = await fetch(`${origin}/api/maya/generate-image-openai`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        prompt: buildOpenAIQuickPrompt(prompt, hasReferenceImage),
+        conceptTitle: "Maya quick photo",
+        chatId:
+          typeof input.chatId === "string" || typeof input.chatId === "number"
+            ? String(input.chatId)
+            : undefined,
+        referenceImageUrl: input.referenceImageUrl,
+      }),
+    })
+  } catch (error) {
+    console.error("[Maya Chat API] OpenAI quick image dispatch failed:", error)
+    return createMayaQuickImageErrorResponse(
+      input.validUIMessages as UIMessage[],
+      "Maya couldn’t keep editing that photo right now. Try again in a moment, or upload the photo again and I’ll continue from there.",
+    )
+  }
 
   if (openAIResponse.status === 403) {
     return null
@@ -478,21 +511,7 @@ async function createOpenAIQuickImageDispatchResponse(input: {
         ? payload.error
         : "Maya could not create that photo right now. Please try again in a moment."
 
-    const stream = createUIMessageStream({
-      originalMessages: input.validUIMessages as any,
-      execute: ({ writer }) => {
-        const textPartId = `maya-quick-photo-error-${Date.now().toString(36)}`
-        writer.write({ type: "text-start", id: textPartId })
-        writer.write({
-          type: "text-delta",
-          id: textPartId,
-          delta: message,
-        })
-        writer.write({ type: "text-end", id: textPartId })
-      },
-    })
-
-    return createUIMessageStreamResponse({ stream })
+    return createMayaQuickImageErrorResponse(input.validUIMessages as UIMessage[], message)
   }
 
   void logAnalyticsEvent({
