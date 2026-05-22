@@ -323,7 +323,6 @@ export async function GET(request: NextRequest) {
           SELECT 1
           FROM webhook_events_needs_review
           WHERE stripe_event_id = ${stuckEvent.event_id}
-            AND resolved = FALSE
         )
         RETURNING id
       `

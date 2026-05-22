@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "id required" }, { status: 400 })
   }
 
-  await sql`
+  const resolvedRows = await sql`
     UPDATE webhook_events_needs_review
     SET
       resolved = TRUE,
@@ -82,7 +82,23 @@ export async function PATCH(req: NextRequest) {
         notes: notes ?? null,
       })}::jsonb
     WHERE id = ${id}
+    RETURNING stripe_event_id
   `
+
+  const stripeEventId = resolvedRows[0]?.stripe_event_id
+  if (stripeEventId) {
+    await sql`
+      UPDATE webhook_events
+      SET status = 'processed',
+          metadata = COALESCE(metadata, '{}'::jsonb) || ${JSON.stringify({
+            manually_resolved_from_webhook_review: true,
+          })}::jsonb,
+          updated_at = NOW()
+      WHERE provider = 'stripe'
+        AND event_id = ${stripeEventId}
+        AND status = 'claimed'
+    `
+  }
 
   return NextResponse.json({ ok: true })
 }
