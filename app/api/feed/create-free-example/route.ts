@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db/client"
 import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
 import { withAuth } from "@/lib/auth/with-auth"
+import { rateLimit } from "@/lib/rate-limit-api"
 import {
   getDefaultVariationId,
   getFeedStyleV2ByName,
@@ -405,4 +406,42 @@ async function handleCreateFreeExample({
   }
 }
 
-export const POST = withAuth(handleCreateFreeExample, { authMode: "retry" })
+const authenticatedPost = withAuth(handleCreateFreeExample, { authMode: "retry" })
+
+function hasLikelySupabaseSession(request: NextRequest): boolean {
+  const authorization = request.headers.get("authorization")
+  if (authorization?.toLowerCase().startsWith("bearer ")) {
+    return true
+  }
+
+  return request.cookies.getAll().some(({ name }) => {
+    const normalized = name.toLowerCase()
+    return normalized.startsWith("sb-") || normalized.includes("supabase")
+  })
+}
+
+function getRouteScopedRateLimitRequest(request: NextRequest): NextRequest {
+  const identifier =
+    request.headers.get("x-forwarded-for") ||
+    request.headers.get("x-real-ip") ||
+    "anonymous"
+  const headers = new Headers()
+  headers.set("x-forwarded-for", `feed-create-free-example:${identifier}`)
+
+  return new Request(request.url, { headers }) as NextRequest
+}
+
+export async function POST(request: NextRequest) {
+  if (!hasLikelySupabaseSession(request)) {
+    const rateLimitResult = await rateLimit(getRouteScopedRateLimitRequest(request), {
+      maxRequests: 20,
+      windowMs: 60_000,
+    })
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json({}, { status: 429 })
+    }
+  }
+
+  return authenticatedPost(request)
+}
