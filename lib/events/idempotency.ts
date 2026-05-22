@@ -81,6 +81,31 @@ export async function claimEvent(input: ClaimEventInput): Promise<EventClaim> {
       RETURNING id
     `) as Array<{ id: number }>
 
+    if (claimed.length === 0) {
+      const reclaimed = (await sql`
+        UPDATE webhook_events
+        SET
+          status = 'claimed',
+          metadata = COALESCE(metadata, '{}'::jsonb) || ${JSON.stringify(input.metadata || {})}::jsonb,
+          processed_at = NOW(),
+          updated_at = NOW()
+        WHERE provider = ${provider}
+          AND event_id = ${eventId}
+          AND status = 'failed'
+        RETURNING id
+      `) as Array<{ id: number }>
+
+      if (reclaimed.length > 0) {
+        return {
+          claimed: true,
+          duplicate: false,
+          provider,
+          eventId,
+          storage: "provider-event",
+        }
+      }
+    }
+
     return {
       claimed: claimed.length > 0,
       duplicate: claimed.length === 0,

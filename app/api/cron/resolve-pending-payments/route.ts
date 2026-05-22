@@ -45,6 +45,58 @@ export async function GET(request: NextRequest) {
 
     console.log("[v0] [CRON] Starting pending payment resolution...")
 
+    const stuckCheckoutEvents = await sql`
+      SELECT event_id, object_id, event_type, metadata, first_seen_at
+      FROM webhook_events
+      WHERE provider = 'stripe'
+        AND event_type = 'checkout.session.completed'
+        AND status = 'claimed'
+        AND first_seen_at < NOW() - INTERVAL '10 minutes'
+      ORDER BY first_seen_at ASC
+      LIMIT 25
+    `
+
+    let flaggedStuckCheckouts = 0
+    for (const stuckEvent of stuckCheckoutEvents) {
+      const inserted = await sql`
+        INSERT INTO webhook_events_needs_review (
+          stripe_event_id,
+          customer_email,
+          product_type,
+          amount_cents,
+          flag_reason,
+          raw_metadata,
+          created_at
+        )
+        SELECT
+          ${stuckEvent.event_id},
+          NULL,
+          NULL,
+          NULL,
+          'processing_error',
+          ${JSON.stringify({
+            event_type: stuckEvent.event_type,
+            session_id: stuckEvent.object_id,
+            notes: "Stripe checkout webhook remained claimed for more than 10 minutes. Fulfillment may not have completed.",
+            source: "resolve-pending-payments",
+            first_seen_at: stuckEvent.first_seen_at,
+            webhook_metadata: stuckEvent.metadata || {},
+          })}::jsonb,
+          NOW()
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM webhook_events_needs_review
+          WHERE stripe_event_id = ${stuckEvent.event_id}
+            AND resolved = FALSE
+        )
+        RETURNING id
+      `
+
+      if (inserted.length > 0) {
+        flaggedStuckCheckouts++
+      }
+    }
+
     // Query pending payments (limit 50 per run to avoid timeout)
     const pendingPayments = await sql`
       SELECT 
@@ -67,11 +119,12 @@ export async function GET(request: NextRequest) {
         resolved: 0,
         failed: 0,
         skipped: 0,
+        flaggedStuckCheckouts,
         status: "ok",
       }
       console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
-      await cronLogger.success({ processed: 0, resolved: 0, failed: 0, skipped: 0 })
-      return NextResponse.json({ success: true, processed: 0 })
+      await cronLogger.success({ processed: 0, resolved: 0, failed: 0, skipped: 0, flaggedStuckCheckouts })
+      return NextResponse.json({ success: true, processed: 0, flaggedStuckCheckouts })
     }
 
     console.log(`[v0] [CRON] Found ${pendingPayments.length} pending payments to process`)
@@ -271,11 +324,12 @@ export async function GET(request: NextRequest) {
       resolved,
       failed,
       skipped,
+      flaggedStuckCheckouts,
       status: "ok",
     }
     console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
 
-    await cronLogger.success({ processed: pendingPayments.length, resolved, failed, skipped })
+    await cronLogger.success({ processed: pendingPayments.length, resolved, failed, skipped, flaggedStuckCheckouts })
 
     return NextResponse.json({
       success: true,
@@ -283,6 +337,7 @@ export async function GET(request: NextRequest) {
       resolved,
       failed,
       skipped,
+      flaggedStuckCheckouts,
     })
   } catch (error: any) {
     console.error("[v0] [CRON] Error in resolve-pending-payments cron:", error)

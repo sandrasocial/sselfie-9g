@@ -42,7 +42,12 @@ export async function GET(req: NextRequest) {
   const [userRows, entitlements, payments, emailLogs, feedbackRows, freebieSubs] =
     await Promise.all([
       sql`
-        SELECT id, email, full_name, created_at, stripe_customer_id
+        SELECT
+          id,
+          email,
+          COALESCE(display_name, NULLIF(CONCAT_WS(' ', first_name, last_name), '')) AS full_name,
+          created_at,
+          stripe_customer_id
         FROM users
         WHERE LOWER(email) = ${email}
         LIMIT 1
@@ -139,7 +144,10 @@ export async function POST(req: NextRequest) {
         LIMIT 1
       `,
       sql`
-        SELECT full_name FROM users WHERE LOWER(email) = ${normalizedEmail} LIMIT 1
+        SELECT COALESCE(display_name, NULLIF(CONCAT_WS(' ', first_name, last_name), '')) AS full_name
+        FROM users
+        WHERE LOWER(email) = ${normalizedEmail}
+        LIMIT 1
       `,
     ])
 

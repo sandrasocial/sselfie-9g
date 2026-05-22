@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
           ue.product_id as product_type,
           ue.created_at,
           u.email,
-          u.full_name as name,
+          COALESCE(u.display_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), '')) as name,
           fs.access_token
         FROM user_entitlements ue
         INNER JOIN users u ON u.id = ue.user_id

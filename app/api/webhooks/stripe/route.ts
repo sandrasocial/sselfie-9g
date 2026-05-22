@@ -128,15 +128,24 @@ async function flagForReview(params: {
   try {
     await sql`
       INSERT INTO webhook_events_needs_review
-        (stripe_event_id, event_type, session_id, customer_email, product_type,
-         amount_cents, currency, reason, raw_metadata, notes, created_at)
-      VALUES
-        (${params.stripeEventId}, ${params.eventType}, ${params.sessionId ?? null},
-         ${params.customerEmail ?? null}, ${params.productType ?? null},
-         ${params.amountCents ?? null}, ${params.currency ?? null},
-         ${params.reason}, ${JSON.stringify(params.rawMetadata ?? {})},
-         ${params.notes ?? null}, NOW())
-      ON CONFLICT DO NOTHING
+        (stripe_event_id, customer_email, product_type, amount_cents,
+         flag_reason, raw_metadata, created_at)
+      SELECT
+        ${params.stripeEventId}, ${params.customerEmail ?? null},
+        ${params.productType ?? null}, ${params.amountCents ?? null},
+        ${params.reason}, ${JSON.stringify({
+           ...(params.rawMetadata ?? {}),
+           event_type: params.eventType,
+           session_id: params.sessionId ?? null,
+           currency: params.currency ?? null,
+           notes: params.notes ?? null,
+         })}::jsonb, NOW()
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM webhook_events_needs_review
+        WHERE stripe_event_id = ${params.stripeEventId}
+          AND resolved = FALSE
+      )
     `
     console.error(
       `[v0] 🚨 NEEDS REVIEW: ${params.reason} — event=${params.stripeEventId} session=${params.sessionId ?? "?"} email=${params.customerEmail ?? "MISSING"} product=${params.productType ?? "MISSING"}`
@@ -1367,6 +1376,9 @@ export async function POST(request: NextRequest) {
                 console.error(`[v0] Error message: ${error.message}`)
                 console.error(`[v0] Error stack:`, error.stack)
                 console.error(`[v0] Full error object:`, JSON.stringify(error, null, 2))
+                await markEventFailed("stripe", event.id, error).catch((statusError) => {
+                  console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+                })
 
                 return NextResponse.json(
                   {
@@ -1380,6 +1392,9 @@ export async function POST(request: NextRequest) {
               console.error(
                 `[v0] No user found for email ${customerEmail} and not from landing page - cannot process payment`
               )
+              await markEventFailed("stripe", event.id, new Error("User not found for payment")).catch((statusError) => {
+                console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+              })
               return NextResponse.json(
                 {
                   error: "User not found for payment",
@@ -1566,6 +1581,9 @@ export async function POST(request: NextRequest) {
 
           if (!userId) {
             console.error("[v0] No user_id found for payment - skipping")
+            await markEventFailed("stripe", event.id, new Error("Missing user_id for payment")).catch((statusError) => {
+              console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+            })
             return NextResponse.json(
               {
                 error: "Missing user_id for payment",
@@ -1850,7 +1868,9 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              if (customerId) {
+              const transformCustomerIdForStorage = customerId || session.id
+
+              if (transformCustomerIdForStorage) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -1871,7 +1891,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForTransform},
-                      ${customerId},
+                      ${transformCustomerIdForStorage},
                       ${userId},
                       ${paymentAmountCents},
                       'usd',
@@ -1909,6 +1929,9 @@ export async function POST(request: NextRequest) {
 
               if (!creditResult.success) {
                 console.error(`[v0] ❌ Failed to grant Transform credits: ${creditResult.error}`)
+                await markEventFailed("stripe", event.id, new Error(`Failed to grant Transform credits: ${creditResult.error}`)).catch((statusError) => {
+                  console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+                })
                 return NextResponse.json(
                   { error: "Failed to grant Transform credits", details: creditResult.error },
                   { status: 500 }
@@ -2144,7 +2167,9 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              if (customerId) {
+              const customerIdForStorage = customerId || session.id
+
+              if (customerIdForStorage) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -2165,7 +2190,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForStorage},
-                      ${customerId},
+                      ${customerIdForStorage},
                       ${userId},
                       ${paymentAmountCents},
                       'usd',
@@ -2402,7 +2427,9 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              if (customerId) {
+              const guideCustomerIdForStorage = customerId || session.id
+
+              if (guideCustomerIdForStorage) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -2423,7 +2450,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForStorage},
-                      ${customerId},
+                      ${guideCustomerIdForStorage},
                       ${userId},
                       ${paymentAmountCents},
                       'usd',
@@ -2519,7 +2546,9 @@ export async function POST(request: NextRequest) {
                       ? brandStrategyBumpAmountCents
                       : 0
 
-                  if (customerId) {
+                  const brandStrategyCustomerIdForStorage = customerId || session.id
+
+                  if (brandStrategyCustomerIdForStorage) {
                     await sql`
                       INSERT INTO stripe_payments (
                         stripe_payment_id,
@@ -2539,7 +2568,7 @@ export async function POST(request: NextRequest) {
                       )
                       VALUES (
                         ${brandStrategyPaymentId},
-                        ${customerId},
+                        ${brandStrategyCustomerIdForStorage},
                         ${userId},
                         ${brandStrategyStoredAmountCents},
                         'usd',
@@ -2828,7 +2857,9 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              if (customerId) {
+              const starterKitCustomerIdForStorage = customerId || session.id
+
+              if (starterKitCustomerIdForStorage) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -2849,7 +2880,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForStorage},
-                      ${customerId},
+                      ${starterKitCustomerIdForStorage},
                       ${userId},
                       ${paymentAmountCents},
                       'usd',
@@ -3041,7 +3072,9 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              if (customerId) {
+              const masterclassCustomerIdForStorage = customerId || session.id
+
+              if (masterclassCustomerIdForStorage) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -3062,7 +3095,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForStorage},
-                      ${customerId},
+                      ${masterclassCustomerIdForStorage},
                       ${userId},
                       ${paymentAmountCents},
                       'usd',
@@ -3423,6 +3456,9 @@ export async function POST(request: NextRequest) {
                 }
 
                 // Return 200 OK (Stripe requirement) but do NOT continue processing
+                await markEventProcessed("stripe", event.id).catch((statusError) => {
+                  console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
+                })
                 return NextResponse.json(
                   {
                     received: true,

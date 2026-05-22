@@ -31,10 +31,21 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT
-      id, stripe_event_id, event_type, session_id,
-      customer_email, product_type, amount_cents, currency,
-      reason, raw_metadata, resolved, resolved_at, resolved_by,
-      notes, created_at
+      id,
+      stripe_event_id,
+      raw_metadata->>'event_type' AS event_type,
+      raw_metadata->>'session_id' AS session_id,
+      customer_email,
+      product_type,
+      amount_cents,
+      raw_metadata->>'currency' AS currency,
+      flag_reason AS reason,
+      raw_metadata,
+      resolved,
+      resolved_at,
+      resolved_by,
+      raw_metadata->>'notes' AS notes,
+      created_at
     FROM webhook_events_needs_review
     WHERE resolved = ${showResolved}
     ORDER BY created_at DESC
@@ -66,7 +77,10 @@ export async function PATCH(req: NextRequest) {
       resolved = TRUE,
       resolved_at = NOW(),
       resolved_by = ${user?.email ?? "admin"},
-      notes = CASE WHEN ${notes ?? null} IS NOT NULL THEN ${notes} ELSE notes END
+      raw_metadata = COALESCE(raw_metadata, '{}'::jsonb) || ${JSON.stringify({
+        resolved_by: user?.email ?? "admin",
+        notes: notes ?? null,
+      })}::jsonb
     WHERE id = ${id}
   `
 
