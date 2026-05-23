@@ -15,6 +15,7 @@ import {
   WORKFLOW_PROMPTS,
   MARBLE_CAFE_SERIES,
   DENIM_STREET_SERIES,
+  COZY_LEATHER_SERIES,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 
@@ -264,10 +265,30 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 4. Newest — Denim Street Editorial */}
+      {/* 4. Newest — Cozy Leather + Oversized Knit */}
       <section className="ap-section">
         <div className="ap-section-inner">
-          <p className="ap-eyebrow ap-eyebrow-new">NEW · DENIM STREET EDITORIAL SERIES</p>
+          <p className="ap-eyebrow ap-eyebrow-new">NEW · COZY LEATHER + OVERSIZED KNIT</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            13 shots. Mirror selfies, texture details, and a reel cover.
+          </h2>
+          <p className="ap-workflow-note">
+            Run all prompts in one session with the same reference selfie. You get a full
+            fall/winter editorial series — mirror selfies, getting-ready moments, detail slides,
+            and cinematic portraits.
+          </p>
+          <div className="ap-cards">
+            {COZY_LEATHER_SERIES.map((card) => (
+              <PromptCardEl key={card.id} card={card} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Denim Street Editorial */}
+      <section className="ap-section">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">DENIM STREET EDITORIAL SERIES</p>
           <h2 className={`ap-section-title ${cormorant.className}`}>
             14 shots. One outfit. A full day-in-my-life set.
           </h2>

@@ -3,7 +3,7 @@
 // Each section maps to a section on the access page.
 //
 // ORDERING RULE: newest collection goes at the TOP of this file.
-// Add new COLLECTION arrays above DENIM_STREET_SERIES, then add the section
+// Add new COLLECTION arrays above COZY_LEATHER_SERIES, then add the section
 // to the page in app/ai-prompts/access/[token]/page.tsx (same top order).
 // ---------------------------------------------------------------------------
 
@@ -18,7 +18,140 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
-// NEWEST — Soft Blazer + Light Denim Street Editorial (14 shots)
+// NEWEST — Cozy Leather + Oversized Knit Mirror Editorial (13 shots)
+// ---------------------------------------------------------------------------
+
+export const COZY_LEATHER_SERIES: PromptCard[] = [
+  {
+    number: "33",
+    id: "cozy-leather-shot-1",
+    title: "Cozy Leather · Full Mirror Check",
+    whenToUse: "Hero shot for the set. Full-body mirror selfie showing the complete look. Use as your single post or carousel cover.",
+    mood: "cozy luxury · mirror selfie · full body · fall/winter · editorial",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-1.png",
+    prompt:
+      "Create image 1 of a 6-part cozy luxury mirror selfie photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: warm minimal bedroom or dressing room with beige built-in wardrobes, light wood floor, soft indoor lighting, and a clean full-length mirror. The room should feel calm, expensive, and lived-in, not showroom-perfect.\n\nOutfit: oversized charcoal gray chunky knit sweater worn as a sweater dress, oversized black leather biker jacket draped over the shoulders, sheer black tights or bare legs depending on what looks natural, black pointed ankle boots. The outfit should feel cozy, sexy, and expensive without being too polished.\n\nHair: sleek low bun or clean slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held naturally in front of part of the face for a mirror selfie. Optional simple gold rings or bracelets only if they feel natural. Do not over-accessorize.\n\nPose: standing in front of the mirror, phone covering part of the face, one hand lightly holding the sweater hem or resting near the thigh, leather jacket sitting loosely on the shoulders. Legs relaxed, body slightly angled.\n\nComposition: full-body vertical mirror selfie showing the oversized knit shape, leather jacket, legs, boots, and warm room background.\n\nMood: cozy luxury, fall/winter outfit check, soft confidence, Pinterest mirror selfie, effortless but styled.\n\nColor grading: warm beige indoor tones, charcoal gray knit, deep black leather, soft golden shadows, creamy skin tones, muted contrast, subtle grain, cozy editorial Pinterest edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp mirror reflection, sharp knit texture, detailed leather texture, clear boot shape, no blur, no compression haze.\n\nAvoid: distorted legs, extra fingers, warped phone, messy mirror reflection, plastic skin, fake-looking leather, cluttered room, CGI, overly staged showroom look.",
+  },
+  {
+    number: "34",
+    id: "cozy-leather-shot-2",
+    title: "Cozy Leather · Closer Mirror Selfie",
+    whenToUse: "Tighter crop focusing on the sweater texture and jacket. Good as slide 2 of a carousel or a standalone texture post.",
+    mood: "close crop · texture · sweater · leather · intimate",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-2.png",
+    prompt:
+      "Create image 2 of the same cozy leather and oversized knit mirror photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: warm minimal dressing room or bedroom mirror with beige wardrobes and soft indoor lighting.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, black leather biker jacket draped loosely over the shoulders, black ankle boots partly visible, minimal gold jewelry if natural.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held close to the face in the mirror selfie.\n\nPose: closer mirror selfie crop from head to mid-thigh. The phone covers part of the face. One hand is lightly pulling the oversized sweater hem or resting near the side of the sweater. The leather jacket collar and sleeve should feel relaxed and oversized.\n\nComposition: vertical mirror crop focused on upper body, sweater texture, leather jacket shape, phone, hand, and warm wardrobe background.\n\nMood: cozy but elevated, intimate outfit check, quiet luxury, fall dressing, Pinterest mirror selfie.\n\nColor grading: warm muted beige, dark charcoal knit, glossy black leather, soft golden indoor highlights, gentle shadows, subtle film grain, realistic iPhone mirror edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp phone edge, crisp knit texture, detailed leather folds, clear mirror reflection, no blur.\n\nAvoid: distorted fingers, extra hands, warped phone, unrealistic sweater texture, plastic-looking jacket, heavy glam, cluttered room, CGI.",
+  },
+  {
+    number: "35",
+    id: "cozy-leather-shot-3",
+    title: "Cozy Leather · Getting Ready",
+    whenToUse: "The seated morning moment. Pairs well with captions about routine, slowing down, or getting dressed with intention.",
+    mood: "seated · bed · getting ready · morning · day-in-my-life",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-3.png",
+    prompt:
+      "Create image 3 of the same cozy leather and oversized knit day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: minimal bedroom with light bedding, beige wardrobe or soft neutral wall, warm indoor light, calm fall/winter atmosphere.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, black leather biker jacket resting beside the person or draped over the shoulders, black pointed ankle boots on or placed nearby.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: phone only, held naturally in one hand or resting beside the person on the bed.\n\nPose: seated on the edge of the bed, one leg slightly crossed or bent, adjusting the ankle boot or sweater sleeve. Expression calm and focused, like a real getting-ready moment before leaving.\n\nComposition: vertical editorial lifestyle shot, showing the cozy knit, leather jacket, boots, bed edge, and warm room tones.\n\nMood: getting ready, cozy luxury, quiet morning, soft confidence, day-in-my-life editorial.\n\nColor grading: warm beige and cream interior tones, charcoal gray knit, black leather contrast, soft golden highlights, gentle shadows, subtle grain, muted Pinterest lifestyle edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, detailed knit texture, realistic boot detail, no blur, no low-resolution softness.\n\nAvoid: awkward seated pose, distorted legs, extra fingers, warped phone, messy bed, cluttered props, plastic skin, CGI.",
+  },
+  {
+    number: "36",
+    id: "cozy-leather-shot-4",
+    title: "Cozy Leather · Hallway Walk",
+    whenToUse: "The leaving-the-house shot. Works for any caption about showing up, going out, or moving through the day with intention.",
+    mood: "walking · hallway · leaving · movement · fall/winter",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-4.png",
+    prompt:
+      "Create image 4 of the same cozy leather and oversized knit day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.\n\nScene: warm apartment hallway or dressing room exit with beige walls, wood floor, soft indoor lighting, and clean minimal background. The person is leaving the room.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket worn over the shoulders or fully on, black pointed ankle boots.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held casually in one hand. No coffee, laptop, headphones, or extra props.\n\nPose: walking out of the room or down the hallway, one hand holding the phone, the other hand lightly adjusting the leather jacket. Body turned slightly, one foot forward, calm confident expression.\n\nComposition: vertical full-body or three-quarter editorial shot showing movement, outfit silhouette, boots, warm interior, and clean hallway lines.\n\nMood: leaving for the day, cozy but powerful, quiet luxury, fall/winter outfit in motion, Pinterest editorial.\n\nColor grading: warm beige interior, light wood floor, charcoal knit, black leather, creamy skin tones, soft shadows, slight film grain, muted cozy editorial edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp jacket texture, detailed sweater knit, clear boot shape, no blur.\n\nAvoid: distorted walking pose, warped shoes, extra fingers, cluttered background, plastic skin, CGI, overly staged fashion campaign look.",
+  },
+  {
+    number: "37",
+    id: "cozy-leather-shot-5",
+    title: "Cozy Leather · Texture Detail",
+    whenToUse: "The carousel detail slide. No full face. Pairs with outfit breakdown captions or texture-focused posts.",
+    mood: "detail · texture · knit · leather · boots · no face",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-5.png",
+    prompt:
+      "Create image 5 as the detail shot of this cozy leather and oversized knit photoshoot.\n\nNo full face needed.\n\nScene: warm bedroom or dressing room with light wood floor, beige wardrobe, or soft neutral interior background.\n\nOutfit details: oversized charcoal gray chunky knit sweater sleeve, black leather biker jacket sleeve or collar, black pointed ankle boots, bare legs or sheer tights depending on what fits naturally.\n\nAccessory: Apple iPhone Pro Max only. Optional simple gold rings or bracelet if they appear naturally with the hand.\n\nComposition: close-up crop from above or waist-level. Show the phone in hand, chunky knit texture, black leather jacket texture, boot detail, and warm wood floor. Keep the frame minimal and tactile.\n\nMood: cozy outfit detail, Pinterest carousel slide, quiet luxury, fall/winter texture story, not a product ad.\n\nColor grading: warm beige, charcoal gray, deep black leather, creamy highlights, natural shadows, subtle grain, soft editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit fibers, sharp leather texture, clean phone edge, realistic boot detail, no blur, no compression softness.\n\nAvoid: distorted fingers, extra hands, warped phone, fake-looking leather, messy floor, cluttered props, plastic textures, CGI.",
+  },
+  {
+    number: "38",
+    id: "cozy-leather-shot-6",
+    title: "Cozy Leather · Reel Cover",
+    whenToUse: "Your reel cover or strongest single image from the set. Clean space at the top for text.",
+    mood: "reel cover · mirror · strong · text space · cozy luxury",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-6.png",
+    prompt:
+      "Create image 6 as the strongest reel-cover image from this cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, body proportions, age, and natural texture from the reference photos.\n\nScene: warm minimal bedroom or dressing room with beige wardrobes, light wood floor, soft indoor light, and a full-length mirror.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket draped over the shoulders, black pointed ankle boots, slim minimal styling.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held naturally for a mirror selfie.\n\nPose: standing in front of the mirror, phone covering part of the face, one hand lightly holding the sweater hem, leather jacket draped dramatically but naturally over the shoulders. Legs slightly angled, confident relaxed posture.\n\nComposition: vertical 9:16 reel-cover crop with clean space at the top or side for text overlay. Strong outfit silhouette, mirror reflection, warm room background, and clear textures.\n\nMood: cozy luxury, fall/winter outfit check, soft power, expensive but effortless, Pinterest mirror selfie.\n\nColor grading: warm beige indoor tones, charcoal gray knit, deep black leather, creamy highlights, soft shadows, slight film grain, muted cozy editorial color edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp mirror reflection, sharp outfit texture, clear leather shine, realistic boots, no blur, no compression haze.\n\nAvoid: distorted hands, extra fingers, warped phone, warped mirror, unrealistic legs, plastic skin, fake-looking leather, cluttered background, CGI, generic influencer mirror selfie.",
+  },
+  {
+    number: "39",
+    id: "cozy-leather-shot-7",
+    title: "Cozy Leather · Overhead Texture",
+    whenToUse: "The graphic overhead angle. No face needed. Use as a carousel insert or standalone texture post.",
+    mood: "overhead · texture · floor · graphic · no face",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-7.png",
+    prompt:
+      "Create image 7 as an overhead creative outfit detail from the same cozy leather and knit photoshoot.\n\nNo full face needed.\n\nScene: warm light wood floor or soft neutral bedroom setting.\n\nOutfit details: charcoal gray chunky knit sweater dress, black leather biker jacket spread naturally over one shoulder or beside the person, black pointed ankle boots, bare legs or sheer tights if natural.\n\nAccessory: Apple iPhone Pro Max only, held low or resting naturally near the outfit.\n\nPose: overhead angle from above, showing the person seated on the floor or edge of the bed, one leg bent, one boot visible, hand resting on the knit sweater. Focus on outfit textures and body lines, not the face.\n\nMood: cozy, intimate, editorial, tactile, Pinterest detail shot.\n\nColor grading: warm beige floor, charcoal knit, glossy black leather, soft shadows, creamy highlights, subtle film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit texture, sharp leather folds, realistic boot shape, no blur.\n\nAvoid: distorted legs, extra fingers, warped phone, fake leather, clutter, CGI.",
+  },
+  {
+    number: "40",
+    id: "cozy-leather-shot-8",
+    title: "Cozy Leather · Beauty Portrait",
+    whenToUse: "Close-up face shot with the leather collar framing everything. Use for a profile photo, a beauty post, or any caption where the face is the focus.",
+    mood: "beauty · close-up · leather collar · fall · quiet luxury",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-8.png",
+    prompt:
+      "Create image 8 as a close-up beauty portrait from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, and natural texture from the reference photos.\n\nScene: warm neutral interior with beige wardrobe or soft wall blurred in the background.\n\nOutfit: oversized black leather biker jacket collar visible over chunky charcoal knit sweater neckline.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the reference photos.\n\nAccessory: no extra accessories except minimal earrings if natural. No phone in this shot unless needed for a mirror crop.\n\nPose: close-up portrait from shoulders up, face turned slightly to the side, calm confident expression, soft lips, natural makeup, leather collar framing the face.\n\nComposition: tight editorial portrait, shallow depth of field, warm interior background, focus on face, skin texture, leather collar, and knit neckline.\n\nMood: cozy but powerful, quiet luxury, fall beauty, soft confidence.\n\nColor grading: warm beige background, deep black leather, charcoal knit, creamy skin tones, gentle shadows, subtle grain, realistic editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, realistic skin texture, crisp hairline, detailed leather collar, no blur.\n\nAvoid: plastic skin, heavy glam makeup, distorted earrings, fake-looking leather, CGI, overly smoothed beauty filter.",
+  },
+  {
+    number: "41",
+    id: "cozy-leather-shot-9",
+    title: "Cozy Leather · Floor-Level Walk",
+    whenToUse: "Cinematic low-angle b-roll. Works well for reels, a carousel surprise slide, or any caption about moving through the day.",
+    mood: "low angle · boots · hallway · cinematic · movement",
+    exampleImage: "/images/ai-prompts/cozy-leather-shot-9.png",
+    prompt:
+      "Create image 9 as a creative cinematic detail shot from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's identity if the face appears. Preserve the person's natural look, hair color, body proportions, and skin tone from the reference photos.\n\nScene: warm apartment hallway or bedroom doorway with light wood floor, beige walls, and soft indoor light.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket, black pointed ankle boots.\n\nHair: sleek low bun or slicked-back bun if visible. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held casually at the side or partly visible. No coffee, laptop, headphones, handbag, or extra props.\n\nPose: low floor-level angle showing the person walking past the camera. One boot steps forward, the leather jacket moves slightly, and the hem of the oversized knit sweater is visible. The upper body can be partly cropped, with the face only softly visible or not visible at all.\n\nComposition: vertical 9:16 cinematic low-angle crop, focused on movement, boots, knit texture, leather jacket, and warm hallway lines.\n\nMood: leaving the room, cozy luxury, quiet power, candid day-in-my-life b-roll, editorial but real.\n\nColor grading: warm beige interior tones, light wood floor, charcoal knit, deep black leather, creamy highlights, soft shadows, subtle film grain, muted cozy Pinterest edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp boot shape, crisp knit texture, detailed leather folds, realistic floor texture, no blur on the main subject.\n\nAvoid: distorted feet, warped boots, unrealistic walking pose, extra fingers, warped phone, cluttered hallway, plastic textures, CGI, overly staged fashion campaign look.",
+  },
+  {
+    number: "42",
+    id: "cozy-leather-shot-10",
+    title: "Cozy Leather · Doorframe Portrait",
+    whenToUse: "The editorial statement shot. Strong silhouette, cinematic mood. Use as a reel cover alternative or a single high-impact post.",
+    mood: "doorframe · cinematic · editorial · silhouette · warm light",
+    prompt:
+      "Create image 10 as a creative portrait from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, age, hair color, body proportions, and natural texture from the reference photos.\n\nScene: warm bedroom doorway or hallway with beige walls, soft indoor light, and a clean minimal background. Natural light from a nearby window creates a soft shadow across the wall or doorway.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket worn loosely over the shoulders, black pointed ankle boots.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held low in one hand. The phone should not cover the face.\n\nPose: standing in the doorway, body slightly turned, one shoulder leaning gently against the frame, one hand adjusting the leather jacket collar. Face visible, calm confident expression, eyes looking slightly away from camera.\n\nComposition: vertical 9:16 editorial portrait with the doorway framing the body. Include soft wall shadows, negative space, and a cinematic silhouette.\n\nMood: quiet luxury, soft power, cozy but strong, leaving-the-house energy, Pinterest editorial portrait.\n\nColor grading: warm beige wall tones, deep black leather, charcoal knit, creamy skin tones, soft golden highlights, gentle shadows, subtle film grain, muted cozy editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp leather texture, detailed knit, clean doorway lines, no blur, no compression softness.\n\nAvoid: mirror selfie composition, phone covering face, cluttered background, distorted hands, extra fingers, fake-looking leather, plastic skin, CGI, generic influencer pose.",
+  },
+  {
+    number: "43",
+    id: "cozy-leather-shot-11",
+    title: "Cozy Leather · Overhead Bed Moment",
+    whenToUse: "Cozy lifestyle overhead. No face needed. Works for a carousel detail slide or a quiet lifestyle post.",
+    mood: "overhead · bed · cozy · lifestyle · intimate · no face",
+    prompt:
+      "Create image 11 as an overhead creative lifestyle shot from the same cozy leather and oversized knit photoshoot.\n\nNo full face needed.\n\nScene: minimal bedroom with white or cream bedding, beige wall, warm indoor light, and soft cozy atmosphere.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket placed naturally beside the person or partly draped over the body, black pointed ankle boots either worn or placed near the bed.\n\nHair: if visible, sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, resting naturally on the bed or held loosely in one hand. No coffee, laptop, headphones, handbag, or extra props.\n\nPose: overhead angle from above, showing the person seated or reclining on the bed while adjusting the knit sweater sleeve or leather jacket. One leg bent naturally, boots partly visible, phone nearby. The focus is on texture, shape, and mood.\n\nComposition: vertical 9:16 overhead editorial crop. Show chunky knit texture, black leather jacket, soft bedding, phone, boots, and warm neutral interior tones.\n\nMood: cozy getting-ready moment, intimate day-in-my-life b-roll, quiet luxury, soft fall/winter aesthetic, Pinterest lifestyle detail.\n\nColor grading: warm cream bedding, beige shadows, charcoal gray knit, glossy black leather, soft natural skin tones, gentle highlights, subtle film grain, cozy editorial color edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit fibers, sharp leather folds, realistic bedding texture, clean phone edge, no blur, no low-resolution softness.\n\nAvoid: distorted legs, extra fingers, warped phone, messy bed, cluttered props, fake-looking leather, plastic textures, CGI, overly staged product-photo look.",
+  },
+  {
+    number: "44",
+    id: "cozy-leather-shot-12",
+    title: "Cozy Leather · Overhead Texture (Alt)",
+    whenToUse: "A second overhead angle variant. Swap in for the carousel if you want a different crop or floor background.",
+    mood: "overhead · floor · texture · alternative · no face",
+    prompt:
+      "Create image 12 as an overhead creative outfit detail from the same cozy leather and knit photoshoot.\n\nNo full face needed.\n\nScene: warm light wood floor or soft neutral bedroom setting.\n\nOutfit details: charcoal gray chunky knit sweater dress, black leather biker jacket spread naturally over one shoulder or beside the person, black pointed ankle boots, bare legs or sheer tights if natural.\n\nAccessory: Apple iPhone Pro Max only, held low or resting naturally near the outfit.\n\nPose: overhead angle from above, showing the person seated on the floor or edge of the bed, one leg bent, one boot visible, hand resting on the knit sweater. Focus on outfit textures and body lines, not the face.\n\nMood: cozy, intimate, editorial, tactile, Pinterest detail shot.\n\nColor grading: warm beige floor, charcoal knit, glossy black leather, soft shadows, creamy highlights, subtle film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit texture, sharp leather folds, realistic boot shape, no blur.\n\nAvoid: distorted legs, extra fingers, warped phone, fake leather, clutter, CGI.",
+  },
+  {
+    number: "45",
+    id: "cozy-leather-shot-13",
+    title: "Cozy Leather · Beauty Portrait (Alt)",
+    whenToUse: "A second beauty portrait variant. Slightly different crop or lighting mood — run both and pick the stronger result.",
+    mood: "beauty · leather collar · face · alternative · close-up",
+    prompt:
+      "Create image 13 as a close-up beauty portrait from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, and natural texture from the reference photos.\n\nScene: warm neutral interior with beige wardrobe or soft wall blurred in the background.\n\nOutfit: oversized black leather biker jacket collar visible over chunky charcoal knit sweater neckline.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the reference photos.\n\nAccessory: no extra accessories except minimal earrings if natural. No phone in this shot unless needed for a mirror crop.\n\nPose: close-up portrait from shoulders up, face turned slightly to the side, calm confident expression, soft lips, natural makeup, leather collar framing the face.\n\nComposition: tight editorial portrait, shallow depth of field, warm interior background, focus on face, skin texture, leather collar, and knit neckline.\n\nMood: cozy but powerful, quiet luxury, fall beauty, soft confidence.\n\nColor grading: warm beige background, deep black leather, charcoal knit, creamy skin tones, gentle shadows, subtle grain, realistic editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, realistic skin texture, crisp hairline, detailed leather collar, no blur.\n\nAvoid: plastic skin, heavy glam makeup, distorted earrings, fake-looking leather, CGI, overly smoothed beauty filter.",
+  },
+]
+
+// ---------------------------------------------------------------------------
+// Soft Blazer + Light Denim Street Editorial (14 shots)
 // ---------------------------------------------------------------------------
 
 export const DENIM_STREET_SERIES: PromptCard[] = [
