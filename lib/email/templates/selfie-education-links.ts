@@ -33,3 +33,11 @@ export function studioLandingUrl() {
 export function workWithMeUrl() {
   return `${SITE_URL}/work-with-me`
 }
+
+export function promptVaultLandingUrl() {
+  return `${SITE_URL}/prompt-vault`
+}
+
+export function promptVaultCheckoutUrl() {
+  return `${SITE_URL}/checkout/prompt-vault`
+}

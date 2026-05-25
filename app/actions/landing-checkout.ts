@@ -73,6 +73,7 @@ export async function createLandingCheckoutSession(
     visibility_suite: "STRIPE_PRICE_VISIBILITY_SUITE_LAUNCH",
     sselfie_studio_membership_annual: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
     sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+    prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
   }
   const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
@@ -97,6 +98,8 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   } else if (product.type === "visibility_suite") {
     stripePriceId = product.stripePriceId
+  } else if (product.type === "prompt_vault") {
+    stripePriceId = process.env.STRIPE_PRICE_PROMPT_VAULT
   }
   stripePriceId = stripePriceId?.trim()
 

@@ -26,6 +26,7 @@ export type PricingProductId =
   | "masterclass"
   | "visibility_suite"
   | "academy_mini_product"
+  | "prompt_vault"
 
 export type ProductLifecycleStatus = "live" | "archived"
 
@@ -48,6 +49,7 @@ export interface PricingProduct {
     | "masterclass"
     | "visibility_suite"
     | "academy_mini_product"
+    | "prompt_vault"
   lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
   credits?: number
@@ -227,6 +229,24 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "Meet Maya - your weekly content stylist inside Studio",
     ],
   },
+  {
+    id: "prompt_vault",
+    name: "The AI Photo Prompt Vault",
+    displayName: "The AI Photo Prompt Vault",
+    description:
+      "33 editorial AI photo prompts across 3 themed shoot collections. Copy, paste into ChatGPT, get a brand photo.",
+    priceInCents: 2700, // $27 one-time
+    type: "prompt_vault",
+    tag: "bought_prompt_vault",
+    features: [
+      "33 copy-paste ChatGPT prompts",
+      "Marble Café Wine Editorial (6 shots)",
+      "Denim Street Editorial (14 shots)",
+      "Cozy Leather + Oversized Knit Mirror Editorial (13 shots)",
+      "Example photos for every shot",
+      "Instant access, no account required",
+    ],
+  },
 ]
 
 export const ARCHIVED_PRICING_PRODUCTS: PricingProduct[] = [
@@ -378,6 +398,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:academy_mini_product",
     successNextAction: "/academy/access/[visibility-mini-product]",
     lifecycleEmailEntryPoint: "academy_purchase_confirmation",
+  },
+  prompt_vault: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/prompt-vault",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:prompt_vault",
+    successNextAction: "/access/prompt-vault/[token]",
+    lifecycleEmailEntryPoint: "prompt_vault_delivery",
   },
 }
 
