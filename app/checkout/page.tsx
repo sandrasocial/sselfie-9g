@@ -40,6 +40,13 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying the Selfie Masterclass with encrypted Stripe checkout.",
     footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
   },
+  prompt_vault: {
+    heroTitle: "Complete your Prompt Vault order",
+    heroBody: "Your editorial AI photo prompts are ready after payment.",
+    heading: "Secure checkout",
+    blurb: "You are buying The AI Photo Prompt Vault with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your vault access link is delivered right after payment.",
+  },
 }
 
 function CheckoutContent() {

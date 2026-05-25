@@ -87,6 +87,51 @@ export default function PromptVaultPage() {
         <svg aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.05, mixBlendMode: "screen", zIndex: 1 }}>
           <rect width="100%" height="100%" filter="url(#pv-noise)" />
         </svg>
+        <nav
+          aria-label="Prompt Vault navigation"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "22px clamp(18px, 4vw, 40px)",
+          }}
+        >
+          <Link
+            href="/"
+            aria-label="SSELFIE home"
+            className={cormorant.className}
+            style={{
+              color: "rgba(245,245,245,0.82)",
+              fontSize: "15px",
+              fontWeight: 300,
+              letterSpacing: "0.34em",
+              textDecoration: "none",
+              textTransform: "uppercase",
+              textShadow: LP,
+            }}
+          >
+            SSELFIE
+          </Link>
+          <Link
+            href="/starter-kit"
+            style={{
+              color: "rgba(245,245,245,0.56)",
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.24em",
+              textDecoration: "none",
+              textTransform: "uppercase",
+              textShadow: LP,
+            }}
+          >
+            Starter Kit
+          </Link>
+        </nav>
 
         {/* Text at bottom — same as homepage */}
         <div

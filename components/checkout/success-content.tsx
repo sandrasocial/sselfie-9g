@@ -50,6 +50,8 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Guide + Strategy Bundle"
     case "starter_kit":
       return "Selfie Starter Kit"
+    case "prompt_vault":
+      return "The AI Photo Prompt Vault"
     case "masterclass":
       return "Selfie Masterclass"
     case "visibility_suite":
@@ -93,6 +95,12 @@ const STARTER_KIT_INCLUDES = [
   "Quick-start checklist",
   "7-day content starter",
 ]
+const PROMPT_VAULT_INCLUDES = [
+  "Marble Café Wine Editorial",
+  "Soft Blazer + Light Denim Street Editorial",
+  "Cozy Leather + Oversized Knit Mirror Editorial",
+  "Copy-paste prompts with example photos",
+]
 
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
@@ -125,6 +133,17 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
         "Your Masterclass access is ready. Start with the lessons, then use Academy to keep moving through the material.",
       secondaryHref: "/academy",
       secondaryLabel: "Open Masterclass Library",
+    }
+  }
+
+  if (productType === "prompt_vault") {
+    return {
+      href: "/prompt-vault",
+      label: "Check your email for access",
+      helper:
+        "Your Prompt Vault is ready. If this page does not open it automatically, use the access link in your inbox.",
+      secondaryHref: "mailto:support@sselfie.ai?subject=Prompt%20Vault%20access",
+      secondaryLabel: "Need help? Email support",
     }
   }
 
@@ -231,6 +250,7 @@ export function SuccessContent({
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
+  const isPromptVaultPurchase = purchaseType === "prompt_vault"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/studio")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -311,8 +331,17 @@ export function SuccessContent({
   const [selfieGuideRecoveryMessage, setSelfieGuideRecoveryMessage] = useState(
     "Your payment went through. Your guide access is still syncing.",
   )
+  const [isPollingPromptVaultAccess, setIsPollingPromptVaultAccess] = useState(Boolean(isPromptVaultPurchase && sessionId))
+  const [promptVaultPollAttempts, setPromptVaultPollAttempts] = useState(0)
+  const [promptVaultStatus, setPromptVaultStatus] = useState("Preparing your Prompt Vault. This can take up to 2 minutes.")
+  const [showPromptVaultTimeout, setShowPromptVaultTimeout] = useState(false)
+  const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
+    "Your payment went through. Your Prompt Vault access is still syncing.",
+  )
   const selfieGuideResolutionTrackedRef = useRef(false)
   const selfieGuideFailureTrackedRef = useRef(false)
+  const promptVaultResolutionTrackedRef = useRef(false)
+  const promptVaultFailureTrackedRef = useRef(false)
   // purchaseType (from URL ?type=) is the authoritative source — it reflects what was just
   // purchased. userInfo.productType comes from the subscriptions table (last subscription on
   // the account) and can be a different product entirely for returning users.
@@ -350,6 +379,13 @@ export function SuccessContent({
         return
       }
 
+      if (isPromptVaultPurchase && sessionId) {
+        setIsPollingPromptVaultAccess(true)
+        setPromptVaultPollAttempts(0)
+        setShowPromptVaultTimeout(false)
+        return
+      }
+
       // For paid blueprint, poll access status until webhook completes
       if (user && purchaseType === "paid_blueprint") {
         setIsPollingAccess(true)
@@ -357,7 +393,111 @@ export function SuccessContent({
       }
     }
     checkAuth()
-  }, [isSelfieGuidePurchase, purchaseType, router, sessionId])
+  }, [isPromptVaultPurchase, isSelfieGuidePurchase, purchaseType, router, sessionId])
+
+  useEffect(() => {
+    if (!isPollingPromptVaultAccess || !isPromptVaultPurchase || !sessionId) {
+      return
+    }
+
+    const pollPromptVaultAccess = async () => {
+      try {
+        const response = await fetch(
+          `/api/prompt-vault/access-token?session_id=${encodeURIComponent(sessionId)}`,
+          { cache: "no-store" },
+        )
+        const data = await response.json()
+
+        if (response.ok && data.accessToken) {
+          setIsPollingPromptVaultAccess(false)
+          setPromptVaultStatus("Prompt Vault ready. Opening now...")
+
+          if (!promptVaultResolutionTrackedRef.current) {
+            promptVaultResolutionTrackedRef.current = true
+            trackClientEvent("prompt_vault_access_resolved", {
+              purchase_type: purchaseType || "prompt_vault",
+              session_id: sessionId,
+            })
+          }
+
+          setTimeout(() => {
+            router.push(`/access/prompt-vault/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+          }, 400)
+          return
+        }
+
+        if (response.status >= 400 && response.status < 500 && response.status !== 409) {
+          setIsPollingPromptVaultAccess(false)
+          setShowPromptVaultTimeout(true)
+          setPromptVaultRecoveryMessage(data.error || "We couldn't verify your Prompt Vault access yet.")
+
+          if (!promptVaultFailureTrackedRef.current) {
+            promptVaultFailureTrackedRef.current = true
+            trackClientEvent("prompt_vault_access_failed", {
+              purchase_type: purchaseType || "prompt_vault",
+              session_id: sessionId,
+              reason: data.error || "client_error",
+            })
+          }
+          return
+        }
+
+        setPromptVaultPollAttempts((prev) => {
+          const next = prev + 1
+
+          if (next < 20) {
+            setPromptVaultStatus("Preparing your Prompt Vault. This can take up to 2 minutes.")
+          } else if (next < 40) {
+            setPromptVaultStatus("Payment confirmed. Finalizing your vault access...")
+          } else {
+            setPromptVaultStatus("Almost there. Your vault link is still syncing.")
+          }
+
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingPromptVaultAccess(false)
+            setShowPromptVaultTimeout(true)
+            setPromptVaultRecoveryMessage("Your payment is confirmed. Your Prompt Vault access is taking longer than expected.")
+
+            if (!promptVaultFailureTrackedRef.current) {
+              promptVaultFailureTrackedRef.current = true
+              trackClientEvent("prompt_vault_access_failed", {
+                purchase_type: purchaseType || "prompt_vault",
+                session_id: sessionId,
+                reason: "timeout",
+              })
+            }
+          }
+
+          return next
+        })
+      } catch (error) {
+        console.error("[SUCCESS PAGE] Prompt Vault polling error:", error)
+        setPromptVaultPollAttempts((prev) => {
+          const next = prev + 1
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingPromptVaultAccess(false)
+            setShowPromptVaultTimeout(true)
+            setPromptVaultRecoveryMessage("Your payment is confirmed. Your Prompt Vault access is taking longer than expected.")
+
+            if (!promptVaultFailureTrackedRef.current) {
+              promptVaultFailureTrackedRef.current = true
+              trackClientEvent("prompt_vault_access_failed", {
+                purchase_type: purchaseType || "prompt_vault",
+                session_id: sessionId,
+                reason: "network_error",
+              })
+            }
+          }
+          return next
+        })
+      }
+    }
+
+    const interval = setInterval(pollPromptVaultAccess, 2000)
+    pollPromptVaultAccess()
+
+    return () => clearInterval(interval)
+  }, [isPollingPromptVaultAccess, isPromptVaultPurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
     if (!isPollingSelfieGuideAccess || !isSelfieGuidePurchase || (!sessionId && !isAuthenticated)) {
@@ -493,6 +633,7 @@ export function SuccessContent({
       selfie_guide: 17,
       selfie_guide_bundle: 27,
       starter_kit: 37,
+      prompt_vault: 27,
       masterclass: 147,
       visibility_suite: 97,
       what_to_say: 47,
@@ -662,6 +803,61 @@ export function SuccessContent({
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">Email Support</a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isPollingPromptVaultAccess && isPromptVaultPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-brand-porcelain">{promptVaultStatus}</p>
+        <p className="text-sm text-brand-pearl">
+          Estimated time remaining: {Math.max(0, 120 - (promptVaultPollAttempts * 2))}s
+        </p>
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
+          <div
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(promptVaultPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (showPromptVaultTimeout && isPromptVaultPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
+            Your vault is still syncing
+          </h2>
+          <p className="text-brand-pearl max-w-md">{promptVaultRecoveryMessage}</p>
+          <p className="text-sm text-brand-pearl">
+            Your access link is also sent by email after payment.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => {
+              setShowPromptVaultTimeout(false)
+              setPromptVaultPollAttempts(0)
+              setPromptVaultStatus("Preparing your Prompt Vault. This can take up to 2 minutes.")
+              setIsPollingPromptVaultAccess(true)
+            }}
+            variant="default"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
+          >
+            Try Again
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
+          >
+            <a href="mailto:support@sselfie.ai?subject=Prompt%20Vault%20access%20help">Email Support</a>
           </Button>
         </div>
       </div>
@@ -1183,6 +1379,16 @@ export function SuccessContent({
                     <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
                     <div className="text-right space-y-1">
                       {STARTER_KIT_INCLUDES.map(item => (
+                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {resolvedProductType === "prompt_vault" && (
+                  <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <div className="text-right space-y-1">
+                      {PROMPT_VAULT_INCLUDES.map(item => (
                         <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
                       ))}
                     </div>
