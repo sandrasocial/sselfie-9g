@@ -74,6 +74,10 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
     subText: "What To Say, Show Up, and Get Paid — your full visibility path.",
     ctaLabel: "Open suite",
   },
+  prompt_vault: {
+    subText: "Your copy-paste editorial AI photoshoot prompts.",
+    ctaLabel: "Open vault",
+  },
   selfie_guide: {
     subText: "Your full selfie training and challenge flow.",
     ctaLabel: "Open guide",
@@ -88,6 +92,7 @@ const COURSE_PRODUCT_IDS = new Set(["branded_by_sselfie", "editing_masterclass"]
 const FEATURED_PRODUCT_IDS = [
   "masterclass",
   "starter_kit",
+  "prompt_vault",
   "selfie_guide_bundle",
   "selfie_guide",
   "brand_strategy_pack",
@@ -107,6 +112,11 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
     image: "/academy/sselfie-minimalism/academy-starter-kit.jpg",
     label: "Product home",
     href: "/academy/access/starter-kit",
+  },
+  prompt_vault: {
+    image: "/images/ai-prompts/marble-wine-shot-1.jpg",
+    label: "Prompt vault",
+    href: "/academy/access/prompt-vault",
   },
   selfie_guide_bundle: {
     image: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",

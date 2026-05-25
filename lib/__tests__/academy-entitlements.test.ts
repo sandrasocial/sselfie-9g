@@ -66,4 +66,40 @@ describe("academy entitlements", () => {
       purchaseUrl: "/selfie-guide",
     })
   })
+
+  it("recovers Prompt Vault access from successful Stripe payments", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+
+      if (query.includes("FROM academy_products")) return []
+      if (query.includes("FROM academy_product_overrides")) return []
+      if (query.includes("FROM user_entitlements")) {
+        throw new Error("simulate legacy entitlement table miss")
+      }
+      if (query.includes("FROM stripe_payments")) {
+        return [
+          {
+            product_id: "prompt_vault",
+            valid_from: "2026-05-25T00:00:00.000Z",
+            source: "migration_backfill",
+          },
+        ]
+      }
+      if (query.includes("FROM subscriptions") && query.includes("product_type = ANY")) return []
+
+      return []
+    })
+
+    const { getAcademyEntitlementState } = await import("@/lib/academy-entitlements")
+    const state = await getAcademyEntitlementState("user_1")
+    const promptVault = state.catalog.find(product => product.id === "prompt_vault")
+
+    expect(state.accessibleProductIds).toContain("prompt_vault")
+    expect(promptVault).toMatchObject({
+      hasAccess: true,
+      accessSource: "purchase",
+      accessUrl: "/academy/access/prompt-vault",
+      purchaseUrl: "/prompt-vault",
+    })
+  })
 })

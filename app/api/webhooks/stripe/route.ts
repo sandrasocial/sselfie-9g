@@ -3412,6 +3412,16 @@ export async function POST(request: NextRequest) {
                   )
                   ON CONFLICT (user_id, tag) DO NOTHING
                 `
+
+                await upsertPurchaseEntitlement({
+                  userId: String(userId),
+                  productId: "prompt_vault",
+                  sourceRef: paymentIdForStorage,
+                  metadata: {
+                    source: "stripe_webhook:prompt_vault",
+                    stripe_session_id: session.id,
+                  },
+                })
               }
 
               try {

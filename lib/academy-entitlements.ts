@@ -14,6 +14,7 @@ const DIRECT_ONE_TIME_ACADEMY_TYPES = [
   "brand_strategy_pack",
   "starter_kit",
   "masterclass",
+  "prompt_vault",
 ] as const
 
 export type AcademyProductType = "course" | "pack" | "template" | "resource" | "bundle"
@@ -182,6 +183,19 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       accessTarget: "masterclass",
     },
     {
+      id: "prompt_vault",
+      slug: "prompt-vault",
+      title: "AI Photo Prompt Vault",
+      type: "pack",
+      membershipIncluded: false,
+      purchasable: true,
+      stripePriceId: process.env.STRIPE_PRICE_PROMPT_VAULT?.trim() || null,
+      active: true,
+      sortOrder: 67,
+      deliveryKind: "direct_private",
+      accessTarget: "prompt-vault",
+    },
+    {
       id: "selfie_guide",
       slug: "selfie-guide",
       title: "Selfie Guide",
@@ -294,6 +308,10 @@ function resolveAcademyProductPurchaseUrl(
 
   if (product.id === "masterclass") {
     return "/masterclass"
+  }
+
+  if (product.id === "prompt_vault") {
+    return "/prompt-vault"
   }
 
   if (product.id === "visibility_suite") {
@@ -460,12 +478,21 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
 async function getExplicitEntitlements(userId: string): Promise<ExplicitEntitlementRow[]> {
   try {
     const rows = (await sql`
-      SELECT product_id, valid_from, source
-      FROM user_entitlements
-      WHERE user_id = ${userId}
-        AND status = 'active'
-        AND valid_from <= NOW()
-        AND (valid_until IS NULL OR valid_until > NOW())
+      SELECT DISTINCT product_id, valid_from, source
+      FROM (
+        SELECT product_id, valid_from, source
+        FROM user_entitlements
+        WHERE user_id = ${userId}
+          AND status = 'active'
+          AND valid_from <= NOW()
+          AND (valid_until IS NULL OR valid_until > NOW())
+        UNION
+        SELECT product_type AS product_id, payment_date AS valid_from, 'migration_backfill' AS source
+        FROM stripe_payments
+        WHERE user_id = ${userId}
+          AND status = 'succeeded'
+          AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
+      ) combined
     `) as ExplicitEntitlementRow[]
 
     return rows
@@ -482,6 +509,12 @@ async function getExplicitEntitlements(userId: string): Promise<ExplicitEntitlem
         FROM subscriptions
         WHERE user_id = ${userId}
           AND status = 'active'
+          AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
+        UNION
+        SELECT product_type AS product_id, payment_date AS valid_from, 'migration_backfill' AS source
+        FROM stripe_payments
+        WHERE user_id = ${userId}
+          AND status = 'succeeded'
           AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
       ) combined
     `

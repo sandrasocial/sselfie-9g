@@ -40,6 +40,8 @@ const PRODUCT_LABEL: Record<string, string> = {
   get_paid: "Get Paid",
   sselfie_studio_membership: "SSELFIE Studio",
   paid_blueprint: "Legacy Feed Planner Access",
+  prompt_vault: "AI Photo Prompt Vault",
+  "prompt-vault-paid": "AI Photo Prompt Vault",
 }
 
 const PRODUCT_ACCESS_URL: Record<string, string> = {
@@ -54,6 +56,8 @@ const PRODUCT_ACCESS_URL: Record<string, string> = {
   get_paid: "/academy/access/get-paid",
   sselfie_studio_membership: "/studio",
   paid_blueprint: "/feed-planner",
+  prompt_vault: "/academy/access/prompt-vault",
+  "prompt-vault-paid": "/prompt-vault",
 }
 
 export async function POST(req: NextRequest) {
@@ -108,7 +112,7 @@ export async function POST(req: NextRequest) {
           created_at
         FROM freebie_subscribers
         WHERE LOWER(email) = ${email}
-          AND source IN ('starter-kit-paid', 'selfie-guide-paid', 'selfie_guide_paid')
+          AND source IN ('starter-kit-paid', 'selfie-guide-paid', 'selfie_guide_paid', 'prompt-vault-paid')
         LIMIT 5
       `,
     ])
@@ -135,6 +139,8 @@ export async function POST(req: NextRequest) {
           accessUrl = `${productionUrl}/access/starter-kit/${encodeURIComponent(p.access_token)}`
         } else if ((p.product_type === "selfie_guide" || p.product_type.includes("selfie-guide")) && p.access_token) {
           accessUrl = `${productionUrl}/selfie-guide/access/${encodeURIComponent(p.access_token)}`
+        } else if ((p.product_type === "prompt_vault" || p.product_type.includes("prompt-vault")) && p.access_token) {
+          accessUrl = `${productionUrl}/access/prompt-vault/${encodeURIComponent(p.access_token)}`
         }
 
         return { label, accessUrl }

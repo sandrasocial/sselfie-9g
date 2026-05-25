@@ -16,6 +16,7 @@ import {
   generateVisibilitySuiteDeliveryEmail,
 } from "@/lib/email/templates/academy-product-delivery"
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
+import { generatePromptVaultDeliveryEmail } from "@/lib/email/templates/prompt-vault-delivery"
 
 export const dynamic = "force-dynamic"
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -104,6 +105,11 @@ export async function GET(req: NextRequest) {
           product: "Selfie Guide (token)",
           url: `${SITE_URL}/selfie-guide/access/${sub.access_token}`,
         })
+      } else if (sub.source?.includes("prompt-vault")) {
+        accessLinks.push({
+          product: "Prompt Vault (token)",
+          url: `${SITE_URL}/access/prompt-vault/${sub.access_token}`,
+        })
       }
     }
   }
@@ -175,6 +181,24 @@ export async function POST(req: NextRequest) {
         text: email.text,
         emailType: "starter_kit_delivery_resend",
         tags: ["admin-resend", "starter-kit"],
+      })
+      emailSent = result.success
+      emailError = result.success ? null : (result.error as string)
+    } else if (productId === "prompt_vault" || sub?.source?.includes("prompt-vault")) {
+      const accessUrl = accessToken
+        ? `${SITE_URL}/access/prompt-vault/${encodeURIComponent(accessToken)}`
+        : `${SITE_URL}/prompt-vault`
+      const email = generatePromptVaultDeliveryEmail({
+        firstName,
+        accessUrl,
+      })
+      const result = await sendEmail({
+        to: normalizedEmail,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        emailType: "prompt_vault_delivery_resend",
+        tags: ["admin-resend", "prompt-vault"],
       })
       emailSent = result.success
       emailError = result.success ? null : (result.error as string)
