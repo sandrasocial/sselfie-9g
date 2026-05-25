@@ -5,6 +5,11 @@
 // ORDERING RULE: newest collection goes at the TOP of this file.
 // Add new COLLECTION arrays above COZY_LEATHER_SERIES, then add the section
 // to the page in app/ai-prompts/access/[token]/page.tsx (same top order).
+//
+// FREEBIE RULE: When adding a new collection:
+//   1. Add the full collection as [NAME]_SERIES above COZY_LEATHER_SERIES (newest at top)
+//   2. Add [NAME]_SERIES[0] to FREEBIE_COLLECTION_PREVIEWS at the BOTTOM of this file
+//   Only shot 1 goes to the freebie. The full series goes to the vault.
 // ---------------------------------------------------------------------------
 
 export type PromptCard = {
@@ -477,4 +482,26 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     prompt:
       "Create image 6 as the strongest reel-cover image from this marble café wine editorial photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's real facial structure, skin tone, hair color, body proportions, age, and natural texture from the reference photos.\n\nScene: elegant marble café terrace with gray-white marble walls, dark wooden window frames, a round white marble table, and refined city atmosphere.\n\nOutfit: oversized black structured blazer with strong shoulders, fitted white crew-neck top, black sheer floral lace skirt or lace trousers, slim black oval sunglasses, small hoop earrings, rings, dark manicured nails.\n\nBrand-coded styling: Celine Triomphe-style black oval sunglasses, Bottega Veneta Intrecciato-style black woven leather handbag, Cartier-style rings, Riedel-style red wine glass.\n\nHair: sleek low bun or low ponytail with a clean center part, polished but slightly natural. Keep the person's natural hair color from the uploaded reference photos.\n\nPose: seated with one knee raised into frame, leaning slightly back with confident posture, holding a red wine glass near the face, head turned slightly to the side. The black blazer should create a strong silhouette, and the lace detail should be visible but elegant.\n\nComposition: vertical 9:16 reel-cover crop with clean space at the top or side for text overlay. Make it look like a Pinterest fashion reel cover.\n\nMood: cool, quiet luxury, expensive, calm, confident, feminine, not overly glam, not too polished, not AI-looking.\n\nLighting: soft natural daylight, muted marble tones, realistic shadows, subtle film grain, sharp but natural iPhone editorial feel.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, sharp face, clear outfit silhouette, sharp lace texture, sharp wine glass, clean text space, no blur, no compression softness.\n\nAvoid: distorted hands, extra fingers, warped wine glass, fake-looking logos, plastic skin, overly generic influencer face, stock-photo pose, CGI.",
   },
+]
+
+
+// ---------------------------------------------------------------------------
+// FREEBIE COLLECTION PREVIEWS
+//
+// One shot per paid collection — shown in the freebie access page with an
+// upgrade CTA to the full Prompt Vault.
+//
+// HOW TO UPDATE WHEN ADDING A NEW COLLECTION:
+//   Add the new series's first card here at the TOP of this array:
+//   FREEBIE_COLLECTION_PREVIEWS.unshift(NEW_SERIES[0])
+//   (or manually add it above the existing entries below)
+//
+// Rule: newest collection preview at the top, oldest at the bottom.
+// ---------------------------------------------------------------------------
+
+export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
+  // Newest collection preview at top — add new ones above this line
+  ...(COZY_LEATHER_SERIES.length > 0  ? [COZY_LEATHER_SERIES[0]]  : []),
+  ...(DENIM_STREET_SERIES.length > 0  ? [DENIM_STREET_SERIES[0]]  : []),
+  ...(MARBLE_CAFE_SERIES.length > 0   ? [MARBLE_CAFE_SERIES[0]]   : []),
 ]
