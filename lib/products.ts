@@ -234,13 +234,12 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     name: "The AI Photo Prompt Vault",
     displayName: "The AI Photo Prompt Vault",
     description:
-      "Copy-paste ChatGPT prompts for editorial brand photos. New photoshoot styles added every day. One-time access.",
+      "Copy-paste ChatGPT prompts for editorial brand photos. Growing collection of photoshoot styles. One-time access.",
     priceInCents: 2700, // $27 one-time
     type: "prompt_vault",
     tag: "bought_prompt_vault",
     features: [
       "Growing collection of editorial shoot prompts",
-      "New photoshoot styles added every day",
       "Marble Café Wine Editorial",
       "Soft Blazer + Light Denim Street Editorial",
       "Cozy Leather + Oversized Knit Mirror Editorial",

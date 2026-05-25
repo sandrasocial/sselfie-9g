@@ -181,8 +181,7 @@ export default async function PromptVaultAccessPage({
         </h1>
         <p className="pv-subhead">
           Copy-paste prompts across themed shoot collections. Open any prompt, paste it into
-          ChatGPT with your selfie, and get a polished brand photo in under a minute. New styles
-          added every day.
+          ChatGPT with your selfie, and get a polished brand photo in under a minute.
         </p>
         <div className="pv-how-to">
           <p className="pv-how-label">HOW TO USE</p>

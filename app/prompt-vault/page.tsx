@@ -9,11 +9,11 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "The AI Photo Prompt Vault · SSELFIE",
   description:
-    "Copy-paste ChatGPT prompts for editorial brand photos. New photoshoot styles added every day. $27.",
+    "Copy-paste ChatGPT prompts for editorial brand photos. Growing collection of photoshoot styles. $27.",
   openGraph: {
     title: "The AI Photo Prompt Vault · SSELFIE",
     description:
-      "Copy-paste ChatGPT prompts for editorial brand photos. New photoshoot styles added every day.",
+      "Copy-paste ChatGPT prompts for editorial brand photos. Growing collection of photoshoot styles.",
     images: ["/images/ai-prompts/denim-street-shot-1.jpg"],
   },
 }
@@ -66,7 +66,7 @@ export default function PromptVaultPage() {
           </h1>
           <p className="vault-subhead">
             Copy-paste ChatGPT prompts for editorial brand photos. Every prompt was designed and
-            tested by Sandra. New photoshoot styles added every day.
+            tested by Sandra. The collection grows with every new shoot.
           </p>
           <div className="vault-hero-cta-wrap">
             <Link href={CHECKOUT_URL} className="vault-cta-primary">
@@ -95,8 +95,7 @@ export default function PromptVaultPage() {
             Growing collection of editorial shoot styles.
           </h2>
           <p className="vault-inside-note">
-            New photoshoot collections are added every day. Buy once, get every new style as it
-            drops.
+            Buy once and get access to every new collection as it drops.
           </p>
           <div className="vault-collections">
             {COLLECTIONS.map((col) => (
@@ -158,13 +157,13 @@ export default function PromptVaultPage() {
         <div className="vault-buy-inner">
           <p className="vault-buy-eyebrow">THE AI PHOTO PROMPT VAULT</p>
           <h2 className={`vault-buy-headline ${cormorant.className}`}>
-            New photoshoot styles every day. $27 once.
+            Growing collection. $27 once.
           </h2>
           <ul className="vault-buy-list">
             <li>Marble Café Wine Editorial</li>
             <li>Soft Blazer + Light Denim Street Editorial</li>
             <li>Cozy Leather + Oversized Knit Mirror Editorial</li>
-            <li>New collections added daily</li>
+            <li>Growing collection — new styles as they drop</li>
             <li>Example photo for every prompt</li>
             <li>Instant access, no account required</li>
           </ul>
