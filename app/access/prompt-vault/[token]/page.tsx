@@ -6,6 +6,7 @@ import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import {
+  COASTAL_WHITE_SERIES,
   MARBLE_CAFE_SERIES,
   DENIM_STREET_SERIES,
   COZY_LEATHER_SERIES,
@@ -191,6 +192,24 @@ export default async function PromptVaultAccessPage({
             <li>Paste the prompt, then attach your selfie.</li>
             <li>Hit send. Your brand photo is ready in seconds.</li>
           </ol>
+        </div>
+      </section>
+
+      {/* Coastal White */}
+      <section className="pv-section">
+        <div className="pv-section-inner">
+          <p className="pv-series-eyebrow">COLLECTION 04 · COASTAL WHITE DRESS SUNSET EDITORIAL</p>
+          <h2 className={`pv-series-title ${cormorant.className}`}>
+            Coastal White Dress Sunset Editorial
+          </h2>
+          <p className="pv-series-note">
+            Mediterranean terrace, white maxi dress, ocean cliffs at golden hour. Every angle from hero full-body to close-up beauty portrait.
+          </p>
+          <div className="pv-cards">
+            {COASTAL_WHITE_SERIES.map((card) => (
+              <PromptCardEl key={card.id} card={card} />
+            ))}
+          </div>
         </div>
       </section>
 

@@ -340,6 +340,43 @@ export default function PromptVaultPage() {
         </div>
       </section>
 
+      {/* ── COLLECTION 04 — Coastal White ── */}
+      <section style={{ borderTop: "1px solid rgba(245,245,245,0.07)" }}>
+        <div className="pv-section-inner">
+          <div className="pv-col-04-grid">
+            {/* Hero portrait */}
+            <div className="pv-col-04-hero">
+              <Image
+                src="/images/ai-prompts/coastal-white-shot-1.jpg"
+                alt="Coastal White Dress Sunset Editorial"
+                fill
+                style={{ objectFit: "cover", objectPosition: "center top" }}
+              />
+            </div>
+            {/* Text + portrait stack */}
+            <div className="pv-col-04-side">
+              <div style={{ padding: "0 0 32px" }}>
+                <p className="pv-eyebrow">COLLECTION 04</p>
+                <h2 className={`${cormorant.className} pv-collection-title`}>
+                  Coastal White Dress Sunset Editorial
+                </h2>
+                <p className="pv-collection-feeling">
+                  For the version of you who belongs somewhere beautiful, in white, at golden hour.
+                </p>
+              </div>
+              <div className="pv-col-04-stack">
+                <div className="pv-col-04-stack-item">
+                  <Image src="/images/ai-prompts/coastal-white-shot-3.jpg" alt="" fill style={{ objectFit: "cover" }} aria-hidden />
+                </div>
+                <div className="pv-col-04-stack-item">
+                  <Image src="/images/ai-prompts/coastal-white-shot-8.jpg" alt="" fill style={{ objectFit: "cover", objectPosition: "center top" }} aria-hidden />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS — casual, no cards ── */}
       <section style={{
         borderTop: "1px solid rgba(245,245,245,0.07)",
@@ -436,11 +473,12 @@ export default function PromptVaultPage() {
             No photographer. No studio. No perfect circumstances. One selfie is all you need.
           </p>
           <p style={{ margin: "0 0 40px", fontSize: "15px", lineHeight: 1.8, color: "rgba(245,245,245,0.44)" }}>
-            Three editorial collections. Growing as new shoots drop. Buy once, keep forever.
+            Four editorial collections. Growing as new shoots drop. Buy once, keep forever.
           </p>
 
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: "7px" }}>
             {[
+              "Coastal White Dress Sunset Editorial",
               "Marble Café Wine Editorial",
               "Soft Blazer + Light Denim Street Editorial",
               "Cozy Leather + Oversized Knit Mirror Editorial",
@@ -581,6 +619,33 @@ export default function PromptVaultPage() {
           overflow: hidden;
         }
 
+        /* Collection 04 — portrait hero + side text/stack */
+        .pv-col-04-grid {
+          display: grid;
+          grid-template-columns: 2fr 3fr;
+          gap: 16px;
+          align-items: start;
+        }
+        .pv-col-04-hero {
+          position: relative;
+          aspect-ratio: 2/3;
+          overflow: hidden;
+        }
+        .pv-col-04-side {
+          display: flex;
+          flex-direction: column;
+        }
+        .pv-col-04-stack {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .pv-col-04-stack-item {
+          position: relative;
+          aspect-ratio: 2/3;
+          overflow: hidden;
+        }
+
         /* How it works steps */
         .pv-steps-grid {
           display: grid;
@@ -628,6 +693,12 @@ export default function PromptVaultPage() {
           .pv-col-02-hero { order: 2; }
           .pv-col-03-hero {
             aspect-ratio: 4/3;
+          }
+          .pv-col-04-grid {
+            grid-template-columns: 1fr;
+          }
+          .pv-col-04-stack {
+            grid-template-columns: 1fr 1fr;
           }
           .pv-steps-grid {
             grid-template-columns: 1fr;

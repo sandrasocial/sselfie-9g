@@ -23,6 +23,7 @@ export function generatePromptVaultDeliveryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Copy-paste prompts across editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it.</p>
     <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your vault:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
+      <li>Coastal White Dress Sunset Editorial</li>
       <li>Marble Café Wine Editorial</li>
       <li>Soft Blazer + Light Denim Street Editorial</li>
       <li>Cozy Leather + Oversized Knit Mirror Editorial</li>
@@ -47,6 +48,6 @@ export function generatePromptVaultDeliveryEmail({
       footerLead: "One selfie. One prompt. One brand photo.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Prompt Vault is ready.\n\nCopy-paste prompts across editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it.\n\nInside your vault:\n- Marble Café Wine Editorial\n- Soft Blazer + Light Denim Street Editorial\n- Cozy Leather + Oversized Knit Mirror Editorial\n\nEach prompt includes an example photo so you can see what it produces.\n\n${textVaultLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hi ${firstName},\n\nYour Prompt Vault is ready.\n\nCopy-paste prompts across editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it.\n\nInside your vault:\n- Coastal White Dress Sunset Editorial\n- Marble Café Wine Editorial\n- Soft Blazer + Light Denim Street Editorial\n- Cozy Leather + Oversized Knit Mirror Editorial\n\nEach prompt includes an example photo so you can see what it produces.\n\n${textVaultLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }

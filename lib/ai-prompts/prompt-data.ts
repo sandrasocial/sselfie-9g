@@ -23,6 +23,285 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
+// NEWEST — Coastal White Dress Sunset Editorial (9 shots)
+// ---------------------------------------------------------------------------
+
+export const COASTAL_WHITE_SERIES: PromptCard[] = [
+  {
+    number: "46",
+    id: "coastal-white-shot-1",
+    title: "Coastal White · Cliffside Hero",
+    whenToUse: "Your hero shot for the series. Full-body at the terrace wall with ocean and cliffs behind. Use as your single-image post or carousel cover.",
+    mood: "quiet luxury · coastal · full body · sunset · editorial",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-1.jpg",
+    prompt: `Create image 1 of a 6-part coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: a luxury coastal terrace overlooking calm ocean water and pale rocky cliffs. The background should show soft cliff textures, quiet water, and a clean minimal terrace wall. The setting should feel like a private Mediterranean villa at sunset.
+
+Outfit: elegant white long-sleeve maxi dress with a clean fitted silhouette, soft draping, and a slightly fluid hem that reaches the floor. The dress should feel minimal, expensive, and feminine, not bridal. Soft open-back or subtle back detail can be included if natural, but keep the front hero shot elegant and covered.
+
+Hair: sleek low bun or soft low chignon. Keep the person's natural hair color from the uploaded reference photos. Hair should feel polished, clean, and resort-luxury.
+
+Accessory: no extra accessories except minimal small earrings if natural. No phone in this shot.
+
+Pose: standing by the terrace wall, one hand resting lightly on the ledge, the other hand near the face or collarbone. Body angled softly, head turned slightly toward the ocean, calm confident expression.
+
+Composition: vertical full-body or three-quarter editorial shot. Show the full dress silhouette, white terrace wall, ocean, and rocky cliffs behind. Keep the background cinematic but not too busy.
+
+Mood: quiet luxury, coastal elegance, soft feminine power, private villa, sunset calm, living my best life in a very refined way.
+
+Color grading: cool blue-gray ocean tones, pale stone cliffs, soft champagne sunset highlights, creamy white dress, muted contrast, gentle shadows, slightly desaturated luxury editorial finish, subtle film grain. The image should feel soft, expensive, and cinematic, not overly warm or orange.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp dress texture, realistic cliff detail, clean water texture, no blur, no compression haze.
+
+Avoid: bridal styling, wedding dress look, heavy glam makeup, cluttered resort props, distorted hands, extra fingers, warped dress hem, plastic skin, CGI, fantasy lighting, overexposed white dress.`,
+  },
+  {
+    number: "47",
+    id: "coastal-white-shot-2",
+    title: "Coastal White · Backless Ocean View",
+    whenToUse: "The intimate back-view shot. Reveals the open-back dress detail with the ocean as backdrop. Strong as slide 2 of a carousel or a standalone mood post.",
+    mood: "backless · ocean view · intimate · from behind · sunset",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-2.jpg",
+    prompt: `Create image 2 of the same coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's identity. Preserve the person's skin tone, hair color, body proportions, age, and natural texture from the reference photos.
+
+Scene: luxury coastal terrace with an infinity pool or dark reflective water in the foreground, ocean and rocky cliffs in the distance, soft sunset sky.
+
+Outfit: elegant white long-sleeve maxi dress with a dramatic open-back design and soft draping. The back should be low and elegant, with the fabric crossing or falling softly around the shoulders. The silhouette should feel refined and expensive, not bridal.
+
+Hair: sleek low bun or soft chignon, showing the neckline and open back. Keep the person's natural hair color from the uploaded reference photos.
+
+Accessory: no extra accessories except minimal earrings if natural. No phone.
+
+Pose: photographed from behind or three-quarter back view, seated or standing near the terrace edge, looking out over the ocean. Shoulders relaxed, posture elegant, arms resting softly near the body or on the ledge.
+
+Composition: vertical editorial crop from behind, focusing on the open back, dress drape, sleek bun, ocean, and cliffs. The body should feel calm and natural, not overly posed.
+
+Mood: quiet luxury, reflective, intimate, soft coastal evening, peaceful main-character energy.
+
+Color grading: soft pastel sunset sky, muted blue-gray ocean, pale beige cliffs, creamy white fabric, warm peach highlights, cool shadows, matte luxury editorial finish, subtle grain. Keep the colors soft and cinematic, like a faded luxury travel campaign.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp dress draping, realistic skin texture, crisp water and cliff details, no blur, no low-resolution softness.
+
+Avoid: bridal look, veil, wedding styling, overexposed white fabric, distorted back anatomy, awkward shoulders, plastic skin, CGI, fantasy resort look.`,
+  },
+  {
+    number: "48",
+    id: "coastal-white-shot-3",
+    title: "Coastal White · Terrace Wall With Wine",
+    whenToUse: "The seated evening moment. Pairs well with captions about slowing down, a slow evening, or living with intention.",
+    mood: "seated · wine glass · terrace · soft evening · feminine",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-3.jpg",
+    prompt: `Create image 3 of the same coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: white coastal terrace wall overlooking calm ocean water and pale rocky cliffs. Soft evening light, minimal architecture, quiet luxury atmosphere.
+
+Outfit: elegant white long-sleeve maxi dress with soft draping and a fitted silhouette. The dress should pool naturally around the body when seated.
+
+Hair: sleek low bun or soft low chignon. Keep the person's natural hair color from the uploaded reference photos.
+
+Accessory: one delicate wine glass only if it feels natural, held lightly near the face or resting near the terrace ledge. No phone, no bag, no extra props.
+
+Pose: seated gracefully on or beside the terrace wall, one hand resting on the ledge, the other holding a wine glass near the lips or collarbone. Body angled slightly, face turned toward the cliffs or ocean, calm relaxed expression.
+
+Composition: vertical seated editorial shot with the dress draping, terrace wall, ocean, and rocky cliffs visible. Keep the pose elegant and natural.
+
+Mood: slow evening, soft luxury, feminine confidence, vacation but refined, quiet rich energy.
+
+Color grading: pale blue-gray ocean, soft lavender-gray cliffs, creamy white dress, muted sunset warmth, gentle peach highlights, low contrast, subtle film grain, editorial matte finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, clear wine glass, detailed dress folds, realistic water texture, no blur.
+
+Avoid: too many props, bridal styling, distorted fingers, warped wine glass, plastic skin, overly staged resort ad, CGI.`,
+  },
+  {
+    number: "49",
+    id: "coastal-white-shot-4",
+    title: "Coastal White · Walking The Terrace",
+    whenToUse: "The movement shot. Shows the dress in motion and creates a day-in-my-life coastal feeling. Great for carousel slide 3 or a standalone reel cover.",
+    mood: "walking · movement · terrace · coastal · main character",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-4.jpg",
+    prompt: `Create image 4 of the same coastal white dress day-in-my-life editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: minimalist white terrace path beside the ocean, with rocky cliffs and soft sunset sky in the background. The environment should feel serene, open, and expensive.
+
+Outfit: elegant white long-sleeve maxi dress with a fluid hem that moves slightly while walking. The dress should be modern and minimal, not bridal.
+
+Hair: sleek low bun or soft chignon. Keep the person's natural hair color from the uploaded reference photos.
+
+Accessory: no extra accessories. No phone. Keep the image clean.
+
+Pose: walking slowly along the terrace, one hand lightly lifting the dress hem or resting near the waist, head turned slightly toward the ocean. The dress should move naturally with the step.
+
+Composition: vertical full-body walking shot. Show the long dress silhouette, terrace lines, ocean, and cliffs. Keep lots of clean negative space for a luxury editorial feel.
+
+Mood: coastal main-character moment, calm confidence, soft evening walk, feminine and free.
+
+Color grading: muted cool ocean blues, pale stone cliffs, creamy whites, soft peach-pink sunset highlights, gentle contrast, subtle grain, slightly desaturated cinematic travel editorial look.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp dress movement, realistic fabric folds, clean cliff and water details, no blur.
+
+Avoid: awkward walking pose, distorted legs, warped dress hem, bridal train, plastic skin, CGI, overexposed whites.`,
+  },
+  {
+    number: "50",
+    id: "coastal-white-shot-5",
+    title: "Coastal White · Detail Shot",
+    whenToUse: "The carousel detail slide. No face needed. Pairs with captions about the dress, the moment, or the feeling of being somewhere beautiful.",
+    mood: "detail · no face · hand · terrace · tactile · quiet luxury",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-5.jpg",
+    prompt: `Create image 5 as the detail shot of this coastal white dress sunset editorial photoshoot.
+
+No full face needed.
+
+Scene: close-up near a white terrace ledge overlooking blue-gray ocean water and pale cliffs. Soft evening light.
+
+Outfit details: white long-sleeve dress fabric, soft draped sleeve, hand resting on the terrace ledge, natural skin texture, subtle fabric folds. The dress should look creamy and tactile, not overexposed.
+
+Accessory: no extra accessories, or one simple wine glass resting near the ledge only if it feels natural. No phone.
+
+Composition: close-up crop showing the hand, sleeve, dress draping, white terrace edge, and blurred ocean/cliff background. The image should feel like a Pinterest carousel detail slide, soft and minimal.
+
+Mood: quiet luxury detail, calm evening, feminine, tactile, coastal softness.
+
+Color grading: creamy white fabric, muted blue-gray ocean, pale cliff tones, soft peach sunset highlights, gentle shadows, matte editorial finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp fabric texture, sharp hand detail, realistic terrace texture, no blur, no low-resolution softness.
+
+Avoid: distorted fingers, extra hands, overexposed fabric, fake-looking dress texture, cluttered props, CGI, product-ad feeling.`,
+  },
+  {
+    number: "51",
+    id: "coastal-white-shot-6",
+    title: "Coastal White · Reel Cover Hero",
+    whenToUse: "Your reel cover or the strongest single image from the series. Strong silhouette, clean text space at the top.",
+    mood: "reel cover · hero · sunset · iconic · clean text space",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-6.jpg",
+    prompt: `Create image 6 as the strongest reel-cover image from this coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, body proportions, age, and natural texture from the reference photos.
+
+Scene: luxury coastal terrace at sunset with ocean water, pale rocky cliffs, and a soft pastel sky in the background.
+
+Outfit: elegant white long-sleeve maxi dress with a minimal fitted silhouette and soft fluid hem. The dress should feel modern, refined, and quiet luxury, not bridal.
+
+Hair: sleek low bun or soft chignon. Keep the person's natural hair color from the uploaded reference photos.
+
+Accessory: no extra accessories. Keep the shot clean and iconic.
+
+Pose: standing at the terrace edge with the ocean behind, body angled slightly, one hand resting on the ledge and the other relaxed near the dress. Face turned softly toward the camera or toward the sunset. Calm confident expression.
+
+Composition: vertical 9:16 reel-cover crop with clean space at the top or side for text overlay. Strong white dress silhouette, ocean and cliffs visible, face clear, elegant negative space.
+
+Mood: living my best life, soft luxury, coastal freedom, feminine main-character energy, serene and expensive.
+
+Color grading: soft pastel sunset tones, muted blue-gray water, pale beige cliffs, creamy white dress, warm peach highlights, cool shadows, low contrast, subtle grain, cinematic luxury editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, clean dress silhouette, realistic water and cliff detail, no blur, no compression haze.
+
+Avoid: bridal styling, wedding mood, veil, overexposed dress, fantasy sunset, distorted hands, warped body proportions, plastic skin, CGI, generic resort ad.`,
+  },
+  {
+    number: "52",
+    id: "coastal-white-shot-7",
+    title: "Coastal White · Overhead Pool Detail",
+    whenToUse: "Creative bonus shot. Overhead angle looking down at the dress hem and ocean water. Artistic carousel slide or standalone detail post.",
+    mood: "overhead · creative · abstract · pool · fabric detail",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-7.jpg",
+    prompt: `Create image 7 as a creative overhead detail shot from the same coastal white dress editorial photoshoot.
+
+No full face needed.
+
+Scene: white terrace or infinity pool edge overlooking dark blue-gray ocean water.
+
+Outfit details: flowing white dress hem, long sleeve, hand resting near the ledge, soft fabric folds.
+
+Accessory: no extra accessories.
+
+Pose: overhead angle from above, showing the dress fabric flowing near the terrace edge, one hand resting softly, and ocean water below or beyond.
+
+Composition: vertical 9:16 overhead editorial crop focused on fabric, ledge lines, water texture, and negative space.
+
+Mood: minimal, soft, quiet luxury, artistic, coastal detail.
+
+Color grading: creamy whites, muted blue-gray water, pale stone, soft sunset highlights, subtle film grain, matte editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp fabric texture, realistic water detail, no blur.
+
+Avoid: distorted hands, overexposed fabric, messy water, cluttered props, CGI.`,
+  },
+  {
+    number: "53",
+    id: "coastal-white-shot-8",
+    title: "Coastal White · Close-Up Beauty Portrait",
+    whenToUse: "Tight face shot with ocean behind. Strong for beauty-focused posts, profile photo updates, or pairing with a personal caption.",
+    mood: "beauty · close up · face · ocean blur · soft · feminine",
+    exampleImage: "/images/ai-prompts/coastal-white-shot-8.jpg",
+    prompt: `Create image 8 as a close-up beauty portrait from the same coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, age, hair color, and natural texture from the reference photos.
+
+Scene: coastal terrace with ocean and pale cliffs softly blurred in the background.
+
+Outfit: white long-sleeve dress neckline visible, soft elegant fabric near the shoulders.
+
+Hair: sleek low bun or soft chignon. Keep the person's natural hair color from the uploaded reference photos.
+
+Accessory: no extra accessories except minimal earrings if natural.
+
+Pose: close-up from shoulders up, face turned slightly toward the ocean light, calm soft expression, one hand lightly near the neckline or jaw if natural.
+
+Composition: tight editorial portrait, shallow depth of field, ocean and cliffs blurred behind.
+
+Mood: soft coastal beauty, calm, feminine, elegant, quiet luxury.
+
+Color grading: creamy skin highlights, muted blue-gray background, soft peach sunset glow, gentle shadows, subtle grain, natural editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, realistic skin texture, crisp hairline, no blur on face.
+
+Avoid: heavy glam makeup, plastic skin, bridal beauty styling, overexposed highlights, distorted hand near face, CGI.`,
+  },
+  {
+    number: "54",
+    id: "coastal-white-shot-9",
+    title: "Coastal White · Back View Sunset Reflection",
+    whenToUse: "Cinematic back-view with pool reflection and pastel sky. Use as a final carousel slide or a standalone reflective/mood post.",
+    mood: "back view · pool reflection · sunset sky · cinematic · peaceful",
+    prompt: `Create image 9 as a creative back-view shot from the same coastal white dress sunset editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's identity where visible. Preserve the person's skin tone, hair color, body proportions, and natural texture from the reference photos.
+
+Scene: infinity pool or glass railing overlooking ocean and cliffs at sunset. The water surface softly reflects the sky.
+
+Outfit: white open-back or softly draped-back long-sleeve maxi dress, elegant and minimal.
+
+Hair: sleek low bun or soft chignon.
+
+Accessory: no extra accessories.
+
+Pose: photographed from behind, seated or standing near the pool edge, looking out at the ocean. Shoulders relaxed, back line elegant, posture calm.
+
+Composition: vertical cinematic crop showing the back of the dress, ocean view, pool reflection, and pastel sky.
+
+Mood: reflective, quiet, expensive, peaceful, living my best life privately.
+
+Color grading: muted blue-gray ocean, soft peach-pink sky, creamy white dress, cool shadows, warm highlights, subtle grain, cinematic matte finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp dress drape, realistic water reflection, clean silhouette, no blur.
+
+Avoid: bridal styling, distorted back anatomy, fake reflection, overexposed dress, CGI, fantasy sunset.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
 // NEWEST — Cozy Leather + Oversized Knit Mirror Editorial (13 shots)
 // ---------------------------------------------------------------------------
 
@@ -501,7 +780,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
-  ...(COZY_LEATHER_SERIES.length > 0  ? [COZY_LEATHER_SERIES[0]]  : []),
-  ...(DENIM_STREET_SERIES.length > 0  ? [DENIM_STREET_SERIES[0]]  : []),
-  ...(MARBLE_CAFE_SERIES.length > 0   ? [MARBLE_CAFE_SERIES[0]]   : []),
+  ...(COASTAL_WHITE_SERIES.length > 0  ? [COASTAL_WHITE_SERIES[0]]  : []),
+  ...(COZY_LEATHER_SERIES.length > 0   ? [COZY_LEATHER_SERIES[0]]   : []),
+  ...(DENIM_STREET_SERIES.length > 0   ? [DENIM_STREET_SERIES[0]]   : []),
+  ...(MARBLE_CAFE_SERIES.length > 0    ? [MARBLE_CAFE_SERIES[0]]    : []),
 ]
