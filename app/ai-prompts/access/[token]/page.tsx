@@ -269,11 +269,11 @@ export default async function AiPromptsAccessPage({
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
             <h2 className={`ap-section-title ${cormorant.className}`}>
-              A taste of what is inside the Prompt Vault.
+              A taste of the full photoshoot vault.
             </h2>
             <p className="ap-workflow-note">
-              These are the opening shots from the paid editorial collections. The full vault gives
-              you every shoot, every angle, and every copy-paste prompt.
+              These are the opening shots from the paid editorial collections. The full Prompt Vault
+              gives you the complete shoot series, every angle, and every copy-paste prompt.
             </p>
             <div className="ap-cards">
               {FREEBIE_COLLECTION_PREVIEWS.map((card) => (
@@ -291,7 +291,7 @@ export default async function AiPromptsAccessPage({
                   utm_campaign: "ai_prompts_to_prompt_vault",
                 }}
               >
-                Get the Full Prompt Vault
+                Get the Full Photoshoot Vault · $27
               </TrackedLink>
             </div>
           </div>
@@ -369,13 +369,13 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 10. Soft product bridge */}
+      {/* 10. Optional separate next step — not the primary Prompt Vault upgrade */}
       <section className="ap-section ap-kit-bridge">
         <div className="ap-section-inner">
-          <p className="ap-kit-question">Want the edit to look good before AI touches it?</p>
+          <p className="ap-kit-question">Need better original selfies first?</p>
           <p className="ap-kit-body">
-            The Starter Kit includes the Lightroom presets, setup guide, posing guide,
-            caption templates, and 7-day content starter.
+            The Starter Kit is separate from the Prompt Vault. Use it if you want the presets,
+            posing guide, setup guide, captions, and 7-day content starter before you create more AI photos.
           </p>
           <TrackedLink
             href="/starter-kit?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_starter_kit"

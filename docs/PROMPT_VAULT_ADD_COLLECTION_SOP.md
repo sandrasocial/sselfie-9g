@@ -17,6 +17,12 @@ Every new photoshoot collection follows this split:
 
 The freebie always has a taste. The vault has everything. This is the upgrade hook.
 
+**Important:** The freebie must never import or render full paid series arrays directly. It should only render `FREEBIE_COLLECTION_PREVIEWS`, which contains one preview card per paid collection.
+
+**Primary upgrade from the prompt freebie:** the full Prompt Vault / photoshoot vault.
+
+**Starter Kit is not the main upgrade from this freebie.** It may remain as a secondary, separate next step only when the copy clearly explains that it helps the original selfie become stronger before AI. Do not position Starter Kit as the paid unlock for the Prompt Vault.
+
 ---
 
 ## File Map
@@ -103,23 +109,22 @@ Check the current highest number in the file and continue from there.
 
 In the same `prompt-data.ts` file, find the `FREEBIE_COLLECTION_PREVIEWS` export.
 
-Add the first card from the new series to the TOP of the array:
+Add the first card from the new series to the TOP of the array by referencing the series, not by copying the whole card object.
+
+Preferred pattern:
 
 ```typescript
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
-  // ← Add new collection preview here (shot 1 only)
-  {
-    number: "[same number as shot 1 above]",
-    id: "[collection-slug]-shot-1",
-    title: "[Collection Name] · [Shot Title]",
-    whenToUse: "[Sandra's description]",
-    mood: "[mood tags]",
-    prompt: `[full prompt text]`,
-    exampleImage: "/images/ai-prompts/[collection-slug]-shot-1.jpg",
-  },
-  // existing previews below...
+  ...(PINK_CASHMERE_SERIES.length > 0 ? [PINK_CASHMERE_SERIES[0]] : []),
+  ...(COZY_LEATHER_SERIES.length > 0 ? [COZY_LEATHER_SERIES[0]] : []),
+  ...(DENIM_STREET_SERIES.length > 0 ? [DENIM_STREET_SERIES[0]] : []),
+  ...(MARBLE_CAFE_SERIES.length > 0 ? [MARBLE_CAFE_SERIES[0]] : []),
 ]
 ```
+
+Replace `PINK_CASHMERE_SERIES` with the new collection export name.
+
+This prevents drift. If shot 1 is edited in the full collection, the freebie preview updates with it.
 
 **If `FREEBIE_COLLECTION_PREVIEWS` doesn't exist yet**, create it in `prompt-data.ts` and add the import to the freebie access page (Step 6 below).
 
@@ -176,6 +181,7 @@ import {
   REUSABLE_STARTER,
   MAIN_LOOKS,
   BONUS_LOOKS,
+  WORKFLOW_PROMPTS,
   FREEBIE_COLLECTION_PREVIEWS,   // ← add this
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
@@ -183,35 +189,48 @@ import {
 
 **2. Add a "Vault Preview" section** at the bottom of the prompt cards (before the footer), if it doesn't exist yet. If it does exist, the `FREEBIE_COLLECTION_PREVIEWS` data already feeds it — no JSX change needed.
 
-The vault preview section should include an upgrade CTA:
+The vault preview section must include a clear upgrade CTA to the full Prompt Vault / photoshoot vault:
 
 ```tsx
 {/* Vault preview — first shot from each paid collection */}
 {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
-  <section className="pv-section">
-    <div className="pv-section-inner">
-      <p className="pv-series-eyebrow">VAULT PREVIEW</p>
-      <h2 className={`pv-series-title ${cormorant.className}`}>
-        A taste of what's in the Vault.
+  <section className="ap-section ap-vault-preview">
+    <div className="ap-section-inner">
+      <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
+      <h2 className={`ap-section-title ${cormorant.className}`}>
+        A taste of the full photoshoot vault.
       </h2>
-      <p className="pv-series-note">
-        These are the opening shots from each editorial collection inside the Prompt Vault.
-        Get the full collection — every shoot, every angle.
+      <p className="ap-workflow-note">
+        These are the opening shots from the paid editorial collections. The full Prompt Vault
+        gives you the complete shoot series, every angle, and every copy-paste prompt.
       </p>
-      <div className="pv-cards">
+      <div className="ap-cards">
         {FREEBIE_COLLECTION_PREVIEWS.map((card) => (
           <PromptCardEl key={card.id} card={card} />
         ))}
       </div>
-      <div style={{ marginTop: "32px" }}>
-        <a href="/prompt-vault" style={{ /* vault CTA button styles */ }}>
-          Get the Full Vault — $27
-        </a>
+      <div className="ap-vault-cta-row">
+        <TrackedLink
+          href="/prompt-vault?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault"
+          className="ap-bridge-cta ap-bridge-cta-primary"
+          trackEvent="ai_prompts_prompt_vault_click"
+          trackProperties={{
+            source: "ai-prompts",
+            destination: "prompt-vault",
+            utm_campaign: "ai_prompts_to_prompt_vault",
+          }}
+        >
+          Get the Full Photoshoot Vault · $27
+        </TrackedLink>
       </div>
     </div>
   </section>
 )}
 ```
+
+Do not add full collection sections to the freebie page. Do not map `COZY_LEATHER_SERIES`, `DENIM_STREET_SERIES`, `MARBLE_CAFE_SERIES`, or any future paid series directly on `/ai-prompts/access/[token]`.
+
+Starter Kit may appear only as a secondary "need better original selfies first?" link after the freebie content. It should not be styled or worded as the main upgrade from the prompt freebie.
 
 ---
 
@@ -287,6 +306,7 @@ git push origin HEAD:main
 | `lib/email/templates/prompt-vault-delivery.ts` | Only update the collection list, nothing else |
 | `freebie_subscribers` DB table | No schema changes needed |
 | Any Maya, Feed Planner, or Academy files | Unrelated — do not touch |
+| Full paid series imports on `app/ai-prompts/access/[token]/page.tsx` | Freebie must only use `FREEBIE_COLLECTION_PREVIEWS`, never full paid collections |
 
 ---
 
@@ -294,9 +314,12 @@ git push origin HEAD:main
 
 - [ ] Images placed in `/public/images/ai-prompts/` with correct naming
 - [ ] Full series added to `prompt-data.ts` (top of file, numbers continuous)
-- [ ] Shot 1 added to `FREEBIE_COLLECTION_PREVIEWS` in `prompt-data.ts`
+- [ ] Shot 1 referenced in `FREEBIE_COLLECTION_PREVIEWS` using `[NEW_SERIES][0]`
 - [ ] New series imported + section added in vault access page
-- [ ] Freebie access page imports `FREEBIE_COLLECTION_PREVIEWS` and shows vault preview section
+- [ ] Freebie access page imports only `FREEBIE_COLLECTION_PREVIEWS` for paid collection previews
+- [ ] Freebie access page does not map full paid series arrays
+- [ ] Freebie has clear CTA: `Get the Full Photoshoot Vault · $27`
+- [ ] Starter Kit, if present, is secondary and framed as help for stronger original selfies
 - [ ] Vault landing page updated (new section + bullet list)
 - [ ] Delivery email updated (collection name in list)
 - [ ] Only the correct files staged and pushed
