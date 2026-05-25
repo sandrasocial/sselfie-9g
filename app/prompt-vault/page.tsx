@@ -22,7 +22,6 @@ const CHECKOUT_URL = "/checkout/prompt-vault"
 
 const LP  = "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 const HERO_GRAD = "linear-gradient(to bottom, rgba(10,10,10,0.28) 0%, rgba(10,10,10,0.08) 40%, rgba(10,10,10,0.88) 100%)"
-const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
 
 function BuyButton({ label = "Get the Vault · $27" }: { label?: string }) {
   return (
@@ -77,11 +76,12 @@ export default function PromptVaultPage() {
         }}
       >
         <Image
-          src="/academy/visibility-suite/sandra-hero.png"
-          alt="Sandra — SSELFIE founder"
+          src="/images/ai-prompts/ai-prompts-hero.jpg"
+          alt=""
           fill
           priority
-          style={{ objectFit: "cover", objectPosition: "center 12%" }}
+          aria-hidden
+          style={{ objectFit: "cover", objectPosition: "center 15%" }}
         />
         <div style={{ position: "absolute", inset: 0, background: HERO_GRAD }} />
         <svg aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.05, mixBlendMode: "screen", zIndex: 1 }}>
@@ -354,10 +354,11 @@ export default function PromptVaultPage() {
       {/* ── FINAL CTA — Sandra portrait, full-bleed ── */}
       <section className="pv-cta-section">
         <Image
-          src={`${BLOB}/sandra-portrait-after.jpg`}
-          alt="Sandra"
+          src="/images/ai-prompts/marble-wine-shot-1.jpg"
+          alt=""
           fill
-          style={{ objectFit: "cover", objectPosition: "center 18%" }}
+          aria-hidden
+          style={{ objectFit: "cover", objectPosition: "center 30%" }}
         />
         <div style={{
           position:   "absolute",
