@@ -9,11 +9,11 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "The AI Photo Prompt Vault · SSELFIE",
   description:
-    "33 editorial AI photo prompts across 3 themed shoot collections. Copy, paste into ChatGPT, get a brand photo. $27.",
+    "Copy-paste ChatGPT prompts for editorial brand photos. New photoshoot styles added every day. $27.",
   openGraph: {
     title: "The AI Photo Prompt Vault · SSELFIE",
     description:
-      "33 copy-paste ChatGPT prompts. Marble Café, Denim Street, Cozy Leather. One selfie. One paste. One brand photo.",
+      "Copy-paste ChatGPT prompts for editorial brand photos. New photoshoot styles added every day.",
     images: ["/images/ai-prompts/denim-street-shot-1.jpg"],
   },
 }
@@ -24,8 +24,7 @@ const COLLECTIONS = [
   {
     label: "COLLECTION 01",
     name: "Marble Café Wine Editorial",
-    shots: 6,
-    desc: "Café table, wine glass, marble surface. Six shots from casual sip to close editorial detail.",
+    desc: "Café table, wine glass, marble surface. From casual sip to close editorial detail.",
     images: [
       "/images/ai-prompts/marble-wine-shot-1.jpg",
       "/images/ai-prompts/marble-wine-shot-3.jpg",
@@ -35,8 +34,7 @@ const COLLECTIONS = [
   {
     label: "COLLECTION 02",
     name: "Soft Blazer + Light Denim Street Editorial",
-    shots: 14,
-    desc: "Fourteen shots covering every angle of an outdoor editorial. Wide establishing frames to tight detail.",
+    desc: "Outdoor editorial covering every angle. Wide establishing frames to tight close-up detail.",
     images: [
       "/images/ai-prompts/denim-street-shot-1.jpg",
       "/images/ai-prompts/denim-street-shot-5.jpg",
@@ -46,8 +44,7 @@ const COLLECTIONS = [
   {
     label: "COLLECTION 03",
     name: "Cozy Leather + Oversized Knit Mirror Editorial",
-    shots: 13,
-    desc: "Indoor mirror light, leather jacket, oversized knit. Thirteen shots from soft natural light to high-contrast moody.",
+    desc: "Indoor mirror light, leather jacket, oversized knit. Soft natural light to high-contrast moody.",
     images: [
       "/images/ai-prompts/cozy-leather-shot-1.png",
       "/images/ai-prompts/cozy-leather-shot-4.png",
@@ -68,9 +65,8 @@ export default function PromptVaultPage() {
             Turn one selfie into a brand photo.
           </h1>
           <p className="vault-subhead">
-            33 copy-paste ChatGPT prompts across three themed editorial shoot collections. Each
-            prompt was designed and tested by Sandra. Copy it, paste it into ChatGPT, upload your
-            selfie. Done.
+            Copy-paste ChatGPT prompts for editorial brand photos. Every prompt was designed and
+            tested by Sandra. New photoshoot styles added every day.
           </p>
           <div className="vault-hero-cta-wrap">
             <Link href={CHECKOUT_URL} className="vault-cta-primary">
@@ -94,10 +90,14 @@ export default function PromptVaultPage() {
       {/* What's inside */}
       <section className="vault-inside">
         <div className="vault-inside-inner">
-          <p className="vault-section-eyebrow">WHAT'S INSIDE</p>
+          <p className="vault-section-eyebrow">INSIDE THE VAULT</p>
           <h2 className={`vault-section-title ${cormorant.className}`}>
-            Three complete editorial shoot collections.
+            Growing collection of editorial shoot styles.
           </h2>
+          <p className="vault-inside-note">
+            New photoshoot collections are added every day. Buy once, get every new style as it
+            drops.
+          </p>
           <div className="vault-collections">
             {COLLECTIONS.map((col) => (
               <div key={col.label} className="vault-collection">
@@ -109,7 +109,7 @@ export default function PromptVaultPage() {
                   ))}
                 </div>
                 <div className="vault-col-copy">
-                  <p className="vault-col-label">{col.label} · {col.shots} PROMPTS</p>
+                  <p className="vault-col-label">{col.label}</p>
                   <h3 className={`vault-col-name ${cormorant.className}`}>{col.name}</h3>
                   <p className="vault-col-desc">{col.desc}</p>
                 </div>
@@ -158,14 +158,15 @@ export default function PromptVaultPage() {
         <div className="vault-buy-inner">
           <p className="vault-buy-eyebrow">THE AI PHOTO PROMPT VAULT</p>
           <h2 className={`vault-buy-headline ${cormorant.className}`}>
-            33 prompts. Three collections. $27.
+            New photoshoot styles every day. $27 once.
           </h2>
           <ul className="vault-buy-list">
-            <li>Marble Café Wine Editorial — 6 shots</li>
-            <li>Soft Blazer + Light Denim Street — 14 shots</li>
-            <li>Cozy Leather + Oversized Knit Mirror — 13 shots</li>
+            <li>Marble Café Wine Editorial</li>
+            <li>Soft Blazer + Light Denim Street Editorial</li>
+            <li>Cozy Leather + Oversized Knit Mirror Editorial</li>
+            <li>New collections added daily</li>
             <li>Example photo for every prompt</li>
-            <li>Instant access by email, no account required</li>
+            <li>Instant access, no account required</li>
           </ul>
           <Link href={CHECKOUT_URL} className="vault-cta-primary">
             Get the Vault — $27
@@ -290,11 +291,18 @@ export default function PromptVaultPage() {
           color: rgba(245, 245, 245, 0.34);
         }
         .vault-section-title {
-          margin: 0 0 52px;
+          margin: 0 0 16px;
           font-size: clamp(2rem, 4vw, 3.2rem);
           font-weight: 300;
           line-height: 1.08;
           color: #f5f5f5;
+        }
+        .vault-inside-note {
+          max-width: 520px;
+          margin: 0 0 52px;
+          font-size: 15px;
+          line-height: 1.8;
+          color: rgba(245, 245, 245, 0.46);
         }
         .vault-collections {
           display: flex;

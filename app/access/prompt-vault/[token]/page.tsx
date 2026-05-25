@@ -17,7 +17,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 
 export const metadata: Metadata = {
   title: "AI Photo Prompt Vault · SSELFIE",
-  description: "Your 33 editorial AI photo prompts — copy, paste into ChatGPT, get a brand photo.",
+  description: "Your editorial AI photo prompts — copy, paste into ChatGPT, get a brand photo.",
   robots: { index: false, follow: false },
 }
 
@@ -180,8 +180,9 @@ export default async function PromptVaultAccessPage({
           YOUR EDITORIAL PROMPTS
         </h1>
         <p className="pv-subhead">
-          33 copy-paste prompts across three themed shoot collections. Open any prompt, paste it
-          into ChatGPT with your selfie, and get a polished brand photo in under a minute.
+          Copy-paste prompts across themed shoot collections. Open any prompt, paste it into
+          ChatGPT with your selfie, and get a polished brand photo in under a minute. New styles
+          added every day.
         </p>
         <div className="pv-how-to">
           <p className="pv-how-label">HOW TO USE</p>
@@ -202,7 +203,7 @@ export default async function PromptVaultAccessPage({
             Marble Café Wine Editorial
           </h2>
           <p className="pv-series-note">
-            Café table, wine glass, marble surfaces. Six shots from casual sip to close editorial.
+            Café table, wine glass, marble surfaces. From casual sip to close editorial detail.
           </p>
           <div className="pv-cards">
             {MARBLE_CAFE_SERIES.map((card) => (
@@ -220,8 +221,7 @@ export default async function PromptVaultAccessPage({
             Soft Blazer + Light Denim Street Editorial
           </h2>
           <p className="pv-series-note">
-            Fourteen shots covering every angle of an outdoor street editorial. Day to dusk, wide to
-            tight.
+            Outdoor editorial covering every angle. Wide establishing frames to tight close-up detail.
           </p>
           <div className="pv-cards">
             {DENIM_STREET_SERIES.map((card) => (
@@ -239,8 +239,7 @@ export default async function PromptVaultAccessPage({
             Cozy Leather + Oversized Knit Mirror Editorial
           </h2>
           <p className="pv-series-note">
-            Indoor mirror light, leather jacket, oversized knit. Thirteen editorial shots from soft
-            natural to high-contrast moody.
+            Indoor mirror light, leather jacket, oversized knit. Soft natural light to high-contrast moody.
           </p>
           <div className="pv-cards">
             {COZY_LEATHER_SERIES.map((card) => (

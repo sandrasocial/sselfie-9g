@@ -20,12 +20,12 @@ export function generatePromptVaultDeliveryEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Prompt Vault is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">33 copy-paste prompts across three editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it.</p>
-    <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your vault:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Copy-paste prompts across editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it. New photoshoot styles are added every day.</p>
+    <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your vault right now:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
-      <li>Marble Café Wine Editorial — 6 shots</li>
-      <li>Denim Street Editorial — 14 shots</li>
-      <li>Cozy Leather + Oversized Knit Mirror Editorial — 13 shots</li>
+      <li>Marble Café Wine Editorial</li>
+      <li>Soft Blazer + Light Denim Street Editorial</li>
+      <li>Cozy Leather + Oversized Knit Mirror Editorial</li>
     </ul>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Each prompt includes an example photo so you can see exactly what it produces before you try it.</p>
     ${vaultButton}
@@ -42,11 +42,11 @@ export function generatePromptVaultDeliveryEmail({
     html: renderStoneShell({
       eyebrow: "AI Photo Prompt Vault",
       title: "Your vault is ready.",
-      subtitle: "33 editorial prompts. Copy, paste into ChatGPT, get a brand photo.",
+      subtitle: "Copy, paste into ChatGPT, get a brand photo. New styles added every day.",
       bodyHtml,
       footerLead: "One selfie. One prompt. One brand photo.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Prompt Vault is ready.\n\n33 copy-paste prompts across three editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it.\n\nInside your vault:\n- Marble Café Wine Editorial (6 shots)\n- Denim Street Editorial (14 shots)\n- Cozy Leather + Oversized Knit Mirror Editorial (13 shots)\n\nEach prompt includes an example photo so you can see what it produces.\n\n${textVaultLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hi ${firstName},\n\nYour Prompt Vault is ready.\n\nCopy-paste prompts across editorial shoot collections. Open one, paste it into ChatGPT, upload your selfie. That's it. New photoshoot styles are added every day.\n\nInside your vault right now:\n- Marble Café Wine Editorial\n- Soft Blazer + Light Denim Street Editorial\n- Cozy Leather + Oversized Knit Mirror Editorial\n\nEach prompt includes an example photo so you can see what it produces.\n\n${textVaultLine}\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }
