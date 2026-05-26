@@ -74,6 +74,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "ai_prompts_selfie_guide_click",
   "ai_prompts_prompt_vault_click",
   "ai_prompts_starter_kit_click",
+  "prompt_vault_landing_view",
   "prompt_vault_checkout_success",
   "prompt_vault_access_resolved",
   "prompt_vault_access_failed",

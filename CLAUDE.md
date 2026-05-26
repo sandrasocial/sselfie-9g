@@ -59,6 +59,8 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 - Academy/library access: `/academy/access/prompt-vault`.
 - Delivery email: `lib/email/templates/prompt-vault-delivery.ts`.
 - Buyer-success nurture drafts: `lib/email/templates/prompt-vault-buyer-sequence.ts`, scheduled by `app/api/cron/nurture-sequence/route.ts` only when `PROMPT_VAULT_NURTURE_ENABLED=true`.
+- Launch monitor: `/admin/prompt-vault` tracks Prompt Vault visits, free-to-vault clicks, checkout starts, purchases, access opens, and prompt copies.
+- Launch broadcast draft: `docs/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md` — Sandra must approve before any send.
 - SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
 - Starter Kit is no longer the primary next step from AI prompts. It may remain as a secondary support product only when clearly framed as "make the original selfie stronger before AI."
 

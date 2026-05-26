@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
+import { PromptVaultAnalytics } from "@/components/prompt-vault/prompt-vault-analytics"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -53,6 +54,7 @@ function BuyButton({ label = "Get the Vault · $27" }: { label?: string }) {
 export default function PromptVaultPage() {
   return (
     <main className={inter.className} style={{ background: "#0a0a0a", color: "#f5f5f5" }}>
+      <PromptVaultAnalytics />
 
       {/* SVG noise defs — referenced throughout */}
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
