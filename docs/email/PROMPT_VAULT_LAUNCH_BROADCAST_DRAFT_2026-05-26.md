@@ -1,85 +1,103 @@
-# Prompt Vault Launch Broadcast Draft
+# Prompt Vault Launch Broadcast
 
-Date: 2026-05-26
-Status: Draft only. Sandra approval required before any send.
+Date: 2026-05-26 (revised copy 2026-05-26)
+Status: Draft. Sandra approval required before any send.
 Audience: Main Resend Audience `3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd`
 Primary link: `https://www.sselfie.ai/prompt-vault`
+Template: `lib/email/templates/prompt-vault-launch-broadcast.ts`
+Preview: `/admin/email-preview/prompt-vault-launch`
 
-## Goal
+## Design
 
-Announce that the full AI Photo Prompt Vault is ready and drive AI Prompts subscribers/list traffic to the $27 Prompt Vault.
-
-This email should not sell Starter Kit, Masterclass, Studio, Maya, or Feed Planner.
+Editorial email shell (`lib/email/editorial-email.ts`):
+- Cream background `#F5EFE6`, white card, Georgia serif headlines
+- Big display headline (52px, uppercase)
+- Full-bleed hero photo (Sandra)
+- 3×3 editorial photo grid from vault collections
+- Two-column feature section (bullet list + description)
+- Wide landscape image break
+- Italic "Sandra x" signature
 
 ## Subject Lines
 
-Option A: `the full prompt vault is ready`
+Option A: `the vault is live`
 
-Option B: `you asked for the prompts`
+Option B: `you asked for the prompts — the full vault is ready`
 
 ## Preview Text
 
-The free pack was the first taste. The full AI photoshoot vault is open now.
+There is a version of you in the photos you have been saving. This is how you get there.
 
-## Body
+## Body Copy
 
+```
 Hi {{firstName}},
 
-You asked for the prompts.
+There is a version of you living somewhere in the photos you have been saving for months.
 
-Not another app.
-Not a long course.
-Not a complicated setup.
+Not a fantasy version. Not someone else entirely. Just you — photographed in a way that finally matches how you actually see yourself in your best moments.
 
-The actual prompts.
+The problem is not that those photos are impossible. The problem is that nobody ever showed you how to get them.
 
-So I made the full AI Photo Prompt Vault.
+I have spent the past year testing AI photoshoot prompts on myself. What I kept finding is this: the gap between a beautiful result and a generic one has nothing to do with the AI. It has everything to do with the direction you give it.
 
-The free pack was the first taste. The vault gives you the full editorial collections, so you can copy a prompt, open ChatGPT, upload your selfie, and create a complete AI photoshoot direction.
+Most people open ChatGPT, type something vague, and get something forgettable. That is not an AI problem. That is a prompt problem.
 
-Inside right now:
+The vault is the direction.
 
-- Coastal White Dress Sunset Editorial
-- Marble Cafe Wine Editorial
-- Soft Blazer + Light Denim Street Editorial
-- Cozy Leather + Oversized Knit Mirror Editorial
+[CTA: Get the Vault · $27]
 
-Each collection has the full shoot sequence, not just one random image.
+---
 
-You can use it when you need photos for your profile, your content, your next offer, or just that feeling of finally having visuals that look like the business you are building.
+[PHOTO GRID — 9 images from the 4 collections]
 
-It is $27.
+Four collections are in the vault right now:
 
-Get the Prompt Vault here:
-https://www.sselfie.ai/prompt-vault
+· Coastal White Dress Sunset Editorial
+· Marble Café Wine Editorial
+· Soft Blazer + Light Denim Street Editorial
+· Cozy Leather + Oversized Knit Mirror Editorial
 
-Start with one selfie. Copy one prompt. See what happens.
+New collections drop as I test them. You pay once and keep everything that comes after.
+
+---
+
+You open ChatGPT. You upload one selfie. You paste the prompt. That is the whole process.
+
+The AI handles the transformation. The vault handles the direction. You just have to start with one photo and one prompt.
+
+That is enough.
+
+[CTA: Get the Vault]
+$27 · Instant access · Grows with every new collection
 
 Sandra x
+```
 
 ## CTA
 
-Button label: `Get the Prompt Vault`
+Button label: `GET THE VAULT`
 
-URL: `https://www.sselfie.ai/prompt-vault?utm_source=resend&utm_medium=broadcast&utm_campaign=prompt_vault_launch`
+URL (with UTM): `https://www.sselfie.ai/prompt-vault?utm_source=resend&utm_medium=broadcast&utm_campaign=prompt_vault_launch`
 
-## Suggested Send Timing
+## Send Timing
 
-Send after the strongest prompt reel or DM push is live, ideally same day while the Instagram prompt demand is warm.
+Send after a prompt reel is live on Instagram so email and social hit the same day. The demand is warmest in the 24 hours after a reel picks up views.
 
 ## Pre-Send Voice Check
 
-- [x] No banned words used.
-- [x] Reads like Sandra texting a real person, not a brand newsletter.
-- [x] Exactly one CTA.
-- [x] No image needed.
-- [x] Does not duplicate or contradict previous broadcasts listed in the Resend broadcast skill.
+- [x] No banned words (leverage, transform, game-changer, skyrocket, unlock your potential).
+- [x] No em-dashes — replaced with sentence breaks throughout.
+- [x] Reads like Sandra texting, not a brand newsletter.
+- [x] Exactly one message arc (identity → AI gap → direction → vault).
+- [x] Exactly two CTAs — first mid-email, second at the bottom.
+- [x] Does not mention Starter Kit, Masterclass, Studio, Maya, or Feed Planner.
+- [x] "Marble Café" spelled correctly with accent.
 - [ ] Sandra approval required before any send action.
 
 ## Notes
 
-Do not send automatically from Codex.
-
-If Sandra wants a shorter version, remove the collection list and keep the core message:
-
-> You asked for the prompts. The full Prompt Vault is ready. It is $27. Copy one prompt, upload your selfie to ChatGPT, and start with one result.
+- Do NOT send from Codex or Claude without Sandra's explicit approval.
+- Preview the email at `/admin/email-preview/prompt-vault-launch` before sending.
+- If Sandra wants it shorter, cut the closing paragraph and keep only: "You open ChatGPT. You upload one selfie. You paste the prompt. That is enough."
+- Send to Main Audience, not a segment. This is a full-list launch announce.
