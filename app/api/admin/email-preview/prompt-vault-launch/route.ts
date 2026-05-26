@@ -14,7 +14,9 @@ export async function GET(request: Request) {
     }
   }
 
-  const { html } = generatePromptVaultLaunchBroadcast({ firstName: "Sandra" })
+  const { searchParams: sp } = new URL(request.url)
+  const firstName = sp.get("firstName") || "Sandra"
+  const { html } = generatePromptVaultLaunchBroadcast({ firstName })
 
   return new NextResponse(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },

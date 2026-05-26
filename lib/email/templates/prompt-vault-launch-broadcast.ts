@@ -41,15 +41,15 @@ export function generatePromptVaultLaunchBroadcast({
   const ctaUrl2 = vaultUrl("prompt_vault_launch", "bottom_cta")
 
   const gridImages: [GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage] = [
-    { path: "/images/ai-prompts/marble-wine-shot-1.jpg",    alt: "Marble café editorial — wine glass, dark blazer, cinematic light" },
-    { path: "/images/ai-prompts/coastal-white-shot-1.jpg",  alt: "Coastal editorial — white dress, golden hour, sunset by the water" },
-    { path: "/images/ai-prompts/denim-street-shot-5.jpg",   alt: "Street editorial — soft blazer, light denim, morning light" },
-    { path: "/images/ai-prompts/cozy-leather-shot-4.png",   alt: "Mirror editorial — cozy leather jacket, oversized knit, warm tones" },
-    { path: "/images/ai-prompts/marble-wine-shot-5.jpg",    alt: "Marble café editorial — candlelit, intimate table setting" },
-    { path: "/images/ai-prompts/denim-street-shot-1.jpg",   alt: "Street editorial — denim and blazer, urban backdrop" },
-    { path: "/images/ai-prompts/cozy-leather-shot-1.png",   alt: "Mirror editorial — leather and knit, full-length self-portrait" },
-    { path: "/images/ai-prompts/coastal-white-shot-3.jpg",  alt: "Coastal editorial — white dress, natural light, ocean backdrop" },
-    { path: "/images/ai-prompts/denim-street-shot-9.jpg",   alt: "Street editorial — confident pose, soft denim, city light" },
+    { path: "/images/ai-prompts/marble-wine-shot-1.jpg",    alt: "Marble café editorial. Wine glass, dark blazer, cinematic light." },
+    { path: "/images/ai-prompts/coastal-white-shot-1.jpg",  alt: "Coastal editorial. White dress, golden hour, sunset by the water." },
+    { path: "/images/ai-prompts/denim-street-shot-5.jpg",   alt: "Street editorial. Soft blazer, light denim, morning light." },
+    { path: "/images/ai-prompts/cozy-leather-shot-4.png",   alt: "Mirror editorial. Cozy leather jacket, oversized knit, warm tones." },
+    { path: "/images/ai-prompts/marble-wine-shot-5.jpg",    alt: "Marble café editorial. Candlelit, intimate table setting." },
+    { path: "/images/ai-prompts/denim-street-shot-1.jpg",   alt: "Street editorial. Denim and blazer, urban backdrop." },
+    { path: "/images/ai-prompts/cozy-leather-shot-1.png",   alt: "Mirror editorial. Leather and knit, full-length self-portrait." },
+    { path: "/images/ai-prompts/coastal-white-shot-3.jpg",  alt: "Coastal editorial. White dress, natural light, ocean backdrop." },
+    { path: "/images/ai-prompts/denim-street-shot-9.jpg",   alt: "Street editorial. Confident pose, soft denim, city light." },
   ]
 
   // ── Collections list (inline HTML — no helper needed) ──────────────────────
@@ -75,7 +75,7 @@ export function generatePromptVaultLaunchBroadcast({
     editorialStoryRow([
       `Hi ${firstName},`,
       "There is a version of you living somewhere in the photos you have been saving for months.",
-      "Not a fantasy version. Not someone else entirely. Just you — photographed in a way that finally matches how you actually see yourself in your best moments.",
+      "Not a fantasy version. Not someone else entirely. Just you. Photographed in a way that finally matches how you actually see yourself in your best moments.",
       "The problem is not that those photos are impossible. The problem is that nobody ever showed you how to get them.",
       "I have spent the past year testing AI photoshoot prompts on myself. What I kept finding is this: the gap between a beautiful result and a generic one has nothing to do with the AI. It has everything to do with the direction you give it.",
       "Most people open ChatGPT, type something vague, and get something forgettable. That is not an AI problem. That is a prompt problem.",
@@ -98,12 +98,12 @@ export function generatePromptVaultLaunchBroadcast({
         "Growing collection",
       ],
       "Not just random prompts.",
-      "Four full editorial photoshoot directions — the mood, the styling, the setting, and every shot in the series. Each prompt has an example image so you know exactly what you are creating before you copy it.",
+      "Four full editorial photoshoot directions: the mood, the styling, the setting, and every shot in the series. Each prompt has an example image so you know exactly what you are creating before you copy it.",
     ),
 
     collectionsRow,
 
-    editorialImageBreakRow("/images/ai-prompts/marble-wine-shot-4.jpg", "Marble café editorial — wide cinematic shot"),
+    editorialImageBreakRow("/images/ai-prompts/marble-wine-shot-4.jpg", "Marble café editorial. Wide cinematic shot."),
 
     editorialClosingRow([
       "You open ChatGPT. You upload one selfie. You paste the prompt. That is the whole process.",
@@ -131,7 +131,7 @@ Hi ${firstName},
 
 There is a version of you living somewhere in the photos you have been saving for months.
 
-Not a fantasy version. Not someone else entirely. Just you — photographed in a way that finally matches how you actually see yourself in your best moments.
+Not a fantasy version. Not someone else entirely. Just you. Photographed in a way that finally matches how you actually see yourself in your best moments.
 
 The problem is not that those photos are impossible. The problem is that nobody ever showed you how to get them.
 
