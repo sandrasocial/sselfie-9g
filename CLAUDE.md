@@ -53,6 +53,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 **Do not drift back to the old Starter Kit-first funnel.** Starter Kit has been tested for weeks and has sold weakly (7 total reported by Sandra; live Neon shows 6 active Starter Kit records and Stripe payment tracking is incomplete). The audience is asking for AI photo prompts. The front-end offer should follow that demand.
 
 - New low-ticket offer: **AI Photo Prompt Vault** (`prompt_vault`) — $27.
+- New funnel/product ladder source of truth: `docs/funnel/AI_PROMPT_FUNNEL_RESEARCH_AND_LADDER_2026-05-26.md`.
 - Free lead magnet: `/ai-prompts` and token access at `/ai-prompts/access/[token]`.
 - Primary upgrade from the free AI prompts product: `/prompt-vault` -> `/checkout/prompt-vault` -> `/access/prompt-vault/[token]`.
 - Academy/library access: `/academy/access/prompt-vault`.
