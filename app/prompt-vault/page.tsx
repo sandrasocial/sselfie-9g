@@ -342,6 +342,38 @@ export default function PromptVaultPage() {
         </div>
       </section>
 
+      {/* ── COLLECTION 05 — Dark Balcony ── */}
+      <section style={{ borderTop: "1px solid rgba(245,245,245,0.07)" }}>
+        <div className="pv-section-inner">
+          <p className="pv-eyebrow">COLLECTION 05</p>
+          <h2 className={`${cormorant.className} pv-collection-title`}>
+            Dark Balcony Luxury City Editorial
+          </h2>
+          <p className="pv-collection-feeling">
+            For the version of you who steps onto a balcony in all black and lets the city watch.
+          </p>
+
+          <div className="pv-col-05-grid">
+            <div className="pv-col-05-hero">
+              <Image
+                src="/images/ai-prompts/dark-balcony-shot-1.png"
+                alt="Dark Balcony Luxury City Editorial"
+                fill
+                style={{ objectFit: "cover", objectPosition: "center top" }}
+              />
+            </div>
+            <div className="pv-col-05-stack">
+              <div className="pv-col-05-stack-item">
+                <Image src="/images/ai-prompts/dark-balcony-shot-6.png" alt="" fill style={{ objectFit: "cover", objectPosition: "center top" }} aria-hidden />
+              </div>
+              <div className="pv-col-05-stack-item">
+                <Image src="/images/ai-prompts/dark-balcony-shot-8.png" alt="" fill style={{ objectFit: "cover" }} aria-hidden />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── COLLECTION 04 — Coastal White ── */}
       <section style={{ borderTop: "1px solid rgba(245,245,245,0.07)" }}>
         <div className="pv-section-inner">
@@ -475,11 +507,12 @@ export default function PromptVaultPage() {
             No photographer. No studio. No perfect circumstances. One selfie is all you need.
           </p>
           <p style={{ margin: "0 0 40px", fontSize: "15px", lineHeight: 1.8, color: "rgba(245,245,245,0.44)" }}>
-            Four editorial collections. Growing as new shoots drop. Buy once, keep forever.
+            Five editorial collections. Growing as new shoots drop. Buy once, keep forever.
           </p>
 
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: "7px" }}>
             {[
+              "Dark Balcony Luxury City Editorial",
               "Coastal White Dress Sunset Editorial",
               "Marble Café Wine Editorial",
               "Soft Blazer + Light Denim Street Editorial",
@@ -621,6 +654,29 @@ export default function PromptVaultPage() {
           overflow: hidden;
         }
 
+        /* Collection 05 — dominant hero + stacked two portraits */
+        .pv-col-05-grid {
+          display: grid;
+          grid-template-columns: 3fr 2fr;
+          gap: 16px;
+          align-items: start;
+        }
+        .pv-col-05-hero {
+          position: relative;
+          aspect-ratio: 2/3;
+          overflow: hidden;
+        }
+        .pv-col-05-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .pv-col-05-stack-item {
+          position: relative;
+          aspect-ratio: 2/3;
+          overflow: hidden;
+        }
+
         /* Collection 04 — portrait hero + side text/stack */
         .pv-col-04-grid {
           display: grid;
@@ -695,6 +751,15 @@ export default function PromptVaultPage() {
           .pv-col-02-hero { order: 2; }
           .pv-col-03-hero {
             aspect-ratio: 4/3;
+          }
+          .pv-col-05-grid {
+            grid-template-columns: 1fr;
+          }
+          .pv-col-05-stack {
+            flex-direction: row;
+          }
+          .pv-col-05-stack-item {
+            flex: 1;
           }
           .pv-col-04-grid {
             grid-template-columns: 1fr;

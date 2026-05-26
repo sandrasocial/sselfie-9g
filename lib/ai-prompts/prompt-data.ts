@@ -23,6 +23,285 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
+// NEWEST — Dark Balcony Luxury City Editorial (9 shots)
+// ---------------------------------------------------------------------------
+
+export const DARK_BALCONY_SERIES: PromptCard[] = [
+  {
+    number: "55",
+    id: "dark-balcony-shot-1",
+    title: "Dark Balcony · Balcony Kiss Hero",
+    whenToUse: "Your hero shot for the series. Full editorial statement — black outfit, oversized sunglasses, blowing a kiss from the balcony. Use as your single-image post or carousel cover.",
+    mood: "quiet luxury · city editorial · moody · balcony · hero",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-1.png",
+    prompt: `Create image 1 of a 6-part dark balcony luxury city editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: an elegant European-style apartment balcony or tall window overlooking a blurred city street below. Cream stone building facade, black balcony railing, soft evening light, and a moody luxury atmosphere.
+
+Outfit: minimal black fitted off-shoulder top or black strapless bodysuit, elegant and simple. Keep the styling sleek, feminine, and expensive.
+
+Hair: natural hair color from the uploaded reference photos, worn loose with big soft volume and slightly undone movement around the face. Polished but not perfect.
+
+Accessory: oversized black sunglasses only. No phone, no bag, no extra props.
+
+Pose: leaning out from the balcony or tall window, one arm resting on the railing, the other hand lifted near the lips as if blowing a kiss toward the city. Face angled slightly downward or toward the camera, lips softly pursed, calm playful expression.
+
+Composition: vertical editorial crop from waist or chest up, balcony railing visible, city street softly blurred below, face and sunglasses as the focal point.
+
+Mood: private luxury, playful but expensive, feminine confidence, Paris apartment energy, living my best life quietly.
+
+Color grading: dark warm cinematic tones, deep shadows, muted cream walls, soft golden highlights on skin and hair, blurred city lights, low contrast matte finish, subtle film grain. Keep it moody and slightly underexposed like the inspiration, not bright or clean.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp sunglasses, realistic hair texture, clean balcony detail, no blur on the subject.
+
+Avoid: bright daylight, colorful outfit, extra props, distorted hands, extra fingers, warped sunglasses, fake city background, plastic skin, over-smoothed beauty filter, CGI, overly staged influencer pose.`,
+  },
+  {
+    number: "56",
+    id: "dark-balcony-shot-2",
+    title: "Dark Balcony · Window Lean Side Profile",
+    whenToUse: "Side profile shot at the balcony — strong editorial line, moody city depth. Use mid-carousel or as a standalone story-style post.",
+    mood: "side profile · city romance · moody · urban · editorial",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-2.png",
+    prompt: `Create image 2 of the same dark balcony luxury city editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: leaning from a tall apartment window or narrow balcony with cream stone walls and a blurred city street below. The background should feel romantic, moody, and urban.
+
+Outfit: fitted black off-shoulder top or black bodysuit, simple and sleek.
+
+Hair: natural hair color from the uploaded reference photos, loose with soft volume, side-swept movement, and natural texture.
+
+Accessory: oversized black sunglasses only.
+
+Pose: side profile or three-quarter profile, leaning one shoulder toward the balcony railing, one hand resting on the railing, the other hand lightly touching the hair or collarbone. Lips relaxed, expression calm and confident.
+
+Composition: vertical portrait crop showing the upper body, balcony/window frame, cream wall, and blurred street below. Keep the person close to the frame with a cinematic city depth behind.
+
+Mood: quiet luxury, city romance, moody feminine confidence, soft glam without being too polished.
+
+Color grading: warm dark beige shadows, deep black outfit, muted cream architecture, soft skin highlights, dark city blur, subtle film grain, cinematic matte finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face profile, crisp sunglasses, realistic hair detail, no low-resolution softness.
+
+Avoid: overly bright exposure, cluttered city details, distorted hand near face, extra fingers, warped railing, plastic skin, CGI, generic fashion ad look.`,
+  },
+  {
+    number: "57",
+    id: "dark-balcony-shot-3",
+    title: "Dark Balcony · Hair Movement Portrait",
+    whenToUse: "Cinematic movement shot — hair in motion, balcony railing, city blur. Strong mid-carousel energy or reel thumbnail.",
+    mood: "movement · cinematic · hair · balcony · moody",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-3.png",
+    prompt: `Create image 3 of the same dark balcony luxury city photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: elegant apartment balcony with black railing, cream stone walls, and blurred city street below.
+
+Outfit: minimal black fitted off-shoulder top or black bodysuit. Keep the outfit clean and understated.
+
+Hair: natural hair color from the uploaded reference photos, worn loose with soft wind movement. Hair should feel voluminous and cinematic, partly moving across one side of the face, but still realistic.
+
+Accessory: oversized black sunglasses only.
+
+Pose: leaning slightly over the balcony railing, one hand holding the railing, the other hand lifting or touching the hair. Head turned slightly away from camera, lips relaxed, calm confident expression.
+
+Composition: medium close-up portrait, focus on hair movement, sunglasses, black outfit, railing, and soft city blur.
+
+Mood: cinematic, private, expensive, feminine, effortless, moody city balcony moment.
+
+Color grading: dark warm shadows, muted cream wall, deep black outfit, soft golden highlights in the hair, slightly desaturated city tones, subtle film grain, low-light editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, realistic hair movement, crisp sunglasses, no blur on the main subject.
+
+Avoid: overly dramatic wind, messy fake hair, distorted hands, extra fingers, warped sunglasses, bright clean influencer lighting, plastic skin, CGI.`,
+  },
+  {
+    number: "58",
+    id: "dark-balcony-shot-4",
+    title: "Dark Balcony · From Inside Looking Out",
+    whenToUse: "Interior-to-balcony cinematic frame — moody doorway, cream curtains, city light. Use for 'day in my life' or quiet lifestyle content.",
+    mood: "interior · cinematic · mysterious · night-before energy · main character",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-4.png",
+    prompt: `Create image 4 of the same dark balcony luxury day-in-my-life photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Scene: inside a dim elegant apartment, looking toward an open balcony door or tall window. Cream curtains, dark interior shadows, city light outside, balcony railing visible.
+
+Outfit: fitted black off-shoulder top or black bodysuit, simple and elegant.
+
+Hair: natural hair color from the uploaded reference photos, loose and softly voluminous.
+
+Accessory: phone only if it fits naturally, held low in one hand. No extra props.
+
+Pose: standing near the open balcony door, one hand holding the curtain or resting on the doorframe, body angled toward the city. Face turned back slightly toward the camera, calm mysterious expression.
+
+Composition: vertical cinematic shot from inside the room toward the balcony, with the person framed by the doorway and soft city light outside. Keep clean negative space and moody shadows.
+
+Mood: private apartment moment, quiet luxury, night-before-going-out energy, soft main-character confidence.
+
+Color grading: dark warm interior shadows, muted cream curtains, deep black outfit, soft golden city highlights, matte cinematic finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp doorway lines, realistic fabric texture, no blur.
+
+Avoid: cluttered room, bright daylight, distorted hands, extra fingers, warped curtains, plastic skin, CGI, hotel-ad look.`,
+  },
+  {
+    number: "59",
+    id: "dark-balcony-shot-5",
+    title: "Dark Balcony · Detail Shot",
+    whenToUse: "B-roll detail card — hand on railing, sunglasses edge, black outfit, city blur. Use as a filler slide in a carousel or story frame.",
+    mood: "detail · b-roll · tactile · luxury · close-up",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-5.png",
+    prompt: `Create image 5 as the detail shot of this dark balcony luxury city editorial photoshoot.
+
+No full face needed.
+
+Scene: close-up at an apartment balcony with black railing, cream stone wall, and blurred city street below.
+
+Outfit details: black fitted off-shoulder top or black sleeve edge, hand resting on the balcony railing, soft hair falling into frame, oversized black sunglasses partly visible.
+
+Accessory: no extra accessories. Optional simple rings only if natural.
+
+Composition: close-up crop showing the hand on the railing, sunglasses edge, black outfit texture, soft hair, and blurred city below. Keep it intimate and minimal.
+
+Mood: quiet luxury detail, private balcony moment, moody feminine b-roll, cinematic and tactile.
+
+Color grading: dark warm shadows, matte black outfit, muted cream wall, soft golden highlights, blurred city lights, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp hand detail, crisp sunglasses edge, realistic railing texture, no blur on the main detail.
+
+Avoid: distorted fingers, extra hands, cluttered props, warped railing, fake jewelry, plastic textures, CGI, staged product-photo look.`,
+  },
+  {
+    number: "60",
+    id: "dark-balcony-shot-6",
+    title: "Dark Balcony · Reel Cover Hero",
+    whenToUse: "Your strongest reel cover — clean composition, negative space for text, full main-character energy. Use as a Reel thumbnail or grid anchor.",
+    mood: "reel cover · main character · luxury city · moody · confident",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-6.png",
+    prompt: `Create image 6 as the strongest reel-cover image from this dark balcony luxury city editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, body proportions, age, and natural texture from the reference photos.
+
+Scene: elegant apartment balcony or tall window overlooking a blurred city street at golden hour or early evening. Cream stone building facade, black railing, moody urban depth.
+
+Outfit: fitted black off-shoulder top or black bodysuit, sleek and minimal.
+
+Hair: natural hair color from the uploaded reference photos, loose with soft volume and movement.
+
+Accessory: oversized black sunglasses only.
+
+Pose: leaning out from the balcony with one arm resting on the railing, body angled, head turned slightly toward the camera, lips soft, calm confident expression. Not blowing a kiss in this shot, so it feels different from Shot 1.
+
+Composition: vertical 9:16 reel-cover crop with clean negative space at the top or side for text overlay. Strong silhouette, sunglasses, black outfit, balcony railing, and blurred city depth.
+
+Mood: luxury city woman, private main-character moment, moody, expensive, soft glam, confident but not loud.
+
+Color grading: dark warm cinematic edit, deep shadows, muted cream architecture, soft golden skin highlights, dark city blur, matte finish, subtle film grain. Keep it intentionally moody and slightly underexposed.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp face, sharp sunglasses, realistic hair texture, clean railing detail, no blur, no compression haze.
+
+Avoid: repeating the exact blowing-kiss pose from Shot 1, bright clean daylight, extra props, distorted hands, warped sunglasses, fake city background, plastic skin, CGI, generic influencer face.`,
+  },
+  {
+    number: "61",
+    id: "dark-balcony-shot-7",
+    title: "Dark Balcony · Overhead Balcony Street View",
+    whenToUse: "Creative overhead angle looking down at the city. Artistic and unexpected — use as a carousel ender or standalone art-direction post.",
+    mood: "overhead · creative · high-rise · depth · cinematic",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-7.png",
+    prompt: `Create image 7 as a creative overhead shot from the same dark balcony luxury city photoshoot.
+
+No full face needed.
+
+Scene: looking down from an apartment balcony toward a blurred city street below, with the black balcony railing and cream stone edge visible.
+
+Outfit details: black fitted outfit, hand resting on railing, soft hair falling into frame if natural.
+
+Accessory: no extra accessories.
+
+Pose: overhead angle from above, showing the hand on the railing, part of the shoulder or hair, and the city street far below.
+
+Composition: vertical 9:16 artistic crop, using depth, railing lines, and city blur to create a cinematic view.
+
+Mood: private city moment, high-rise luxury, quiet, cinematic, reflective.
+
+Color grading: dark warm tones, muted city blur, cream stone, deep black outfit, soft grain, matte finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp railing and hand, realistic city blur, no low-resolution softness.
+
+Avoid: distorted fingers, fake city depth, cluttered props, CGI.`,
+  },
+  {
+    number: "62",
+    id: "dark-balcony-shot-8",
+    title: "Dark Balcony · Close-Up Sunglasses + Lips",
+    whenToUse: "Tight beauty close-up — sunglasses, lips, moody light. Use as a beauty slide mid-carousel or a standalone close-up post.",
+    mood: "beauty · close-up · sunglasses · soft glam · editorial",
+    exampleImage: "/images/ai-prompts/dark-balcony-shot-8.png",
+    prompt: `Create image 8 as a close-up beauty portrait from the same dark balcony luxury city editorial shoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, age, hair color, and natural texture from the reference photos.
+
+Scene: apartment balcony or cream stone wall softly blurred behind.
+
+Outfit: black off-shoulder top or black bodysuit visible at the neckline.
+
+Hair: natural hair color from the uploaded reference photos, loose and softly voluminous around the face.
+
+Accessory: oversized black sunglasses only.
+
+Pose: close-up from shoulders up, face angled slightly downward or to the side, lips softly pursed or relaxed, calm confident expression. One hand may lightly touch the sunglasses if natural.
+
+Composition: tight editorial crop focusing on sunglasses, lips, hair movement, cheekbone, and dark moody light.
+
+Mood: soft glam, private luxury, moody beauty, cinematic city woman.
+
+Color grading: dark warm shadows, golden skin highlights, deep black sunglasses, muted cream background, subtle film grain, matte editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp sunglasses, realistic skin texture, no blur.
+
+Avoid: heavy glam makeup, overfilled lips, plastic skin, warped sunglasses, distorted hand near face, CGI.`,
+  },
+  {
+    number: "63",
+    id: "dark-balcony-shot-9",
+    title: "Dark Balcony · Shadow Silhouette",
+    whenToUse: "Creative shadow silhouette — partially hidden in warm low evening light. Use as an artistic series closer or a moody atmospheric post.",
+    mood: "silhouette · shadow · mysterious · cinematic · low light",
+    prompt: `Create image 9 as a creative shadow silhouette shot from the same dark balcony luxury photoshoot.
+
+Use the uploaded reference photos as the only source for identity if the face is visible.
+
+Scene: balcony or tall window with warm low evening light creating shadows on a cream wall or curtain.
+
+Outfit: fitted black off-shoulder top or black bodysuit.
+
+Hair: loose soft volume, natural hair color from the uploaded reference photos.
+
+Accessory: oversized black sunglasses only if visible.
+
+Pose: standing near the window or balcony door, body in partial shadow, one hand touching the railing or wall, head turned slightly to the side. The face can be partly hidden by shadow.
+
+Composition: vertical artistic crop using silhouette, shadow, curtain/wall lines, and a soft city glow.
+
+Mood: mysterious, cinematic, luxury apartment, quiet confidence, private main-character moment.
+
+Color grading: deep warm shadows, muted cream wall, black silhouette, soft amber highlights, subtle film grain, low-light editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp silhouette, realistic shadow texture, no blur.
+
+Avoid: muddy underexposure, fake shadows, distorted body, cluttered room, CGI.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
 // NEWEST — Coastal White Dress Sunset Editorial (9 shots)
 // ---------------------------------------------------------------------------
 
@@ -780,6 +1059,7 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
+  ...(DARK_BALCONY_SERIES.length > 0   ? [DARK_BALCONY_SERIES[0]]   : []),
   ...(COASTAL_WHITE_SERIES.length > 0  ? [COASTAL_WHITE_SERIES[0]]  : []),
   ...(COZY_LEATHER_SERIES.length > 0   ? [COZY_LEATHER_SERIES[0]]   : []),
   ...(DENIM_STREET_SERIES.length > 0   ? [DENIM_STREET_SERIES[0]]   : []),

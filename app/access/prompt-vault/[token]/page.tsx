@@ -6,6 +6,7 @@ import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import {
+  DARK_BALCONY_SERIES,
   COASTAL_WHITE_SERIES,
   MARBLE_CAFE_SERIES,
   DENIM_STREET_SERIES,
@@ -198,6 +199,24 @@ export default async function PromptVaultAccessPage({
             <li>Paste the prompt, then attach your selfie.</li>
             <li>Hit send. Your brand photo is ready in seconds.</li>
           </ol>
+        </div>
+      </section>
+
+      {/* Dark Balcony */}
+      <section className="pv-section">
+        <div className="pv-section-inner">
+          <p className="pv-series-eyebrow">COLLECTION 05 · DARK BALCONY LUXURY CITY EDITORIAL</p>
+          <h2 className={`pv-series-title ${cormorant.className}`}>
+            Dark Balcony Luxury City Editorial
+          </h2>
+          <p className="pv-series-note">
+            European apartment balcony, black outfit, oversized sunglasses, blurred city below. Every angle from hero kiss to shadow silhouette.
+          </p>
+          <div className="pv-cards">
+            {DARK_BALCONY_SERIES.map((card) => (
+              <PromptCardEl key={card.id} card={card} />
+            ))}
+          </div>
         </div>
       </section>
 
