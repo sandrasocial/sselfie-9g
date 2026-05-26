@@ -2,7 +2,7 @@ import { getEmailHeroImage } from "../email-image-assets"
 import { buildRevenueEmailLink } from "./revenue-links"
 import {
   masterclassLandingUrl,
-  starterKitLandingUrl,
+  promptVaultLandingUrl,
   studioLandingUrl,
 } from "./selfie-education-links"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
@@ -16,9 +16,9 @@ export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromp
   text: string
   subject: string
 } {
-  const starterKitUrl = buildRevenueEmailLink(starterKitLandingUrl(), {
+  const promptVaultUrl = buildRevenueEmailLink(promptVaultLandingUrl(), {
     campaign: "ai_prompts_day7",
-    content: "starter_kit_offer",
+    content: "prompt_vault_offer",
     medium: "nurture",
     emailType: "ai-prompts-day7-starter-kit-offer",
   })
@@ -33,32 +33,32 @@ export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromp
     emailType: "ai-prompts-day7-starter-kit-offer",
   })
 
-  const subject = "Want my full selfie edit system?"
+  const subject = "Want the full prompt vault?"
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If the prompts helped, this is the next step.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your AI photos are only as good as the selfie you start with.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is why the Starter Kit starts before the prompt. It helps you take, edit, pose, and use cleaner phone photos so your AI visuals stop looking random, fake, or unfinished.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompts were the first taste. The Prompt Vault gives you the full editorial collections.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You copy the prompt, open ChatGPT, attach your selfie, and create the kind of brand photos you have been saving for months.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#2c2924;">SSELFIE Starter Kit - $37</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">16 presets, selfie guide, posing and editing help, caption templates, and a 7-day content starter.</p>`,
+      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#2c2924;">AI Photo Prompt Vault - $27</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Full copy-paste photoshoot collections for ChatGPT: coastal white dress, marble cafe, denim street, cozy leather, and every angle inside each shoot.</p>`,
       "The next step"
     )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is the first layer of cinematic personal brand content. Better input photos. Better edits. Better prompts. Better posts.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Get KIT", starterKitUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is for the woman who does not want one random AI photo. She wants a full shoot direction she can actually use.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault", promptVaultUrl)}</div>
     <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#7c766d;">If you want the full method later, the Masterclass is here: <a href="${masterclassUrl}" style="color:#2c2924;text-decoration:underline;">see the Masterclass</a>.</p>
     <p style="margin:0;font-size:14px;line-height:1.7;color:#7c766d;">If you want the AI studio too, start here: <a href="${studioUrl}" style="color:#2c2924;text-decoration:underline;">see SSELFIE Studio</a>.</p>
   `
 
   const html = renderStoneShell({
-    title: "Want the photo to look better first?",
-    eyebrow: "KIT",
-    subtitle: "The prompt helps. The starting selfie matters more than most people think.",
+    title: "Want the full photoshoot vault?",
+    eyebrow: "Prompt Vault",
+    subtitle: "The free prompts were the taste. The vault is the full shoot.",
     bodyHtml,
     ...heroImage,
-    footerLead: "Start small. One clean selfie can carry a lot of content.",
+    footerLead: "One selfie can become a whole visual direction.",
     footerSignoff: "Sandra x",
   })
 
@@ -66,18 +66,18 @@ export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromp
 
 If the prompts helped, this is the next step.
 
-Your AI photos are only as good as the selfie you start with.
+The free prompts were the first taste. The Prompt Vault gives you the full editorial collections.
 
-That is why the Starter Kit starts before the prompt. It helps you take, edit, pose, and use cleaner phone photos so your AI visuals stop looking random, fake, or unfinished.
+You copy the prompt, open ChatGPT, attach your selfie, and create the kind of brand photos you have been saving for months.
 
-SSELFIE Starter Kit - $37
+AI Photo Prompt Vault - $27
 
-16 presets, selfie guide, posing and editing help, caption templates, and a 7-day content starter.
+Full copy-paste photoshoot collections for ChatGPT: coastal white dress, marble cafe, denim street, cozy leather, and every angle inside each shoot.
 
-It is the first layer of cinematic personal brand content. Better input photos. Better edits. Better prompts. Better posts.
+It is for the woman who does not want one random AI photo. She wants a full shoot direction she can actually use.
 
-Get KIT:
-${starterKitUrl}
+Get the Vault:
+${promptVaultUrl}
 
 If you want the full method later, the Masterclass is here:
 ${masterclassUrl}

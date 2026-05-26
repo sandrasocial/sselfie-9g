@@ -2,6 +2,8 @@
 
 Date: 2026-05-21
 
+Update: 2026-05-26 — AI Prompts now bridge primarily to Prompt Vault, not Starter Kit.
+
 Source of truth: `docs/SSELFIE_DESIGN_SYSTEM.md`
 
 ## Email System Map
@@ -109,19 +111,20 @@ Files:
 - `ai-prompts-day2-try-first-prompt.ts`
 - `ai-prompts-day5-edit-makes-postable.ts`
 - `ai-prompts-day7-starter-kit-offer.ts`
+- `prompt-vault-delivery.ts`
 
 Current role:
 
 - Prompt reel audience.
 - Free prompt pack delivery and nurture.
-- Bridges to Starter Kit.
+- Bridges to Prompt Vault as the primary paid upgrade.
 
 Status:
 
 - Strongest current revenue lane.
-- Copy aligns with prompt audience and already explains that AI needs a better starting photo.
-- Needs a future light copy polish only, not an urgent rewrite.
-- Day 7 currently mentions Masterclass and Studio as soft links. Review later if Sandra wants Starter Kit to be the only next step.
+- Copy aligns with prompt audience.
+- Day 7 must no longer be treated as a Starter Kit-first bridge. Rename or rewrite it to sell Prompt Vault.
+- Starter Kit can remain a secondary support link only when framed as improving the source selfie before AI.
 
 Visual opportunity:
 
@@ -129,7 +132,7 @@ Visual opportunity:
 
 Revenue risk if unchanged:
 
-- Low to medium. Message is relevant, but the old dark shell was off-brand.
+- High. The audience asked for AI photoshoot prompts; sending the primary CTA to Starter Kit repeats the underperforming funnel.
 
 ### Free Selfie Guide
 
@@ -145,7 +148,8 @@ Files:
 Current role:
 
 - Free guide delivery and nurture.
-- Bridges to Starter Kit first, then Masterclass.
+- Bridges to Starter Kit first, then Masterclass for the selfie-education path only.
+- This is not the current AI Prompts front-door path.
 
 Status:
 
@@ -219,7 +223,7 @@ Visual opportunity:
 
 Revenue risk if unchanged:
 
-- Low for current prompt-to-Kit funnel.
+- Low for current Prompt Vault funnel.
 
 ### Studio, Onboarding, Win-Back, Legacy
 
@@ -241,12 +245,12 @@ Status:
 
 - Mixed age and mixed positioning.
 - Some copy reflects older Studio/workflow language.
-- Not the first revenue-critical prompt lane, but should be reviewed after the prompt-to-Kit email path is stable.
+- Not the first revenue-critical prompt lane, but should be reviewed after the Prompt Vault email path is stable.
 
 Revenue risk if unchanged:
 
 - Medium for Studio retention and win-back clarity.
-- Low for immediate Starter Kit tripwire.
+- Low for immediate Prompt Vault launch.
 
 ## Implementation Decision
 
@@ -272,7 +276,6 @@ Not changed:
 ## Follow-Up Tasks
 
 1. Host 2 to 4 production-safe email images.
-2. Add one visual proof image to the AI Prompts Day 7 or Starter Kit bridge email.
-3. Polish AI Prompts Day 7 so Starter Kit is the clear primary next step.
+2. Add one visual proof image to the AI Prompts Day 7 or Prompt Vault bridge email.
+3. Rename `ai-prompts-day7-starter-kit-offer.ts` when convenient so the file name matches its new Prompt Vault role.
 4. Later: review Studio onboarding and win-back copy for old workflow language.
-

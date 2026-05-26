@@ -1,6 +1,6 @@
 # SSELFIE Voice Bible
 
-Last updated: 2026-05-21
+Last updated: 2026-05-26
 
 For visual design decisions, follow `docs/SSELFIE_DESIGN_SYSTEM.md`. For outward-facing copy, follow this Voice Bible.
 
@@ -30,11 +30,13 @@ SSELFIE does not sell random prompts, generic AI tools, or vague confidence. It 
 
 ## Product Ecosystem
 
-1. **Starter Kit** is the first paid step. It connects selfies, editing, posing, captions, and AI-ready visuals.
-2. **Selfie education** is the foundation. Better input photos create better AI results.
-3. **AI-ready selfies** are the bridge between phone photos and cinematic AI visuals.
-4. **Email nurture and DM copy** are revenue-critical. They should feel clear, personal, and action-focused.
-5. **Studio** is the future ongoing workspace and execution layer. It is not a pile of random AI features.
+1. **AI Prompts** are the current front-door lead magnet. They meet the live audience demand for ChatGPT AI photoshoot prompts.
+2. **Prompt Vault** is the first paid step from AI prompt demand. It sells full editorial prompt collections, not a generic prompt bundle.
+3. **Starter Kit** is a secondary support offer. It helps the original selfie become stronger before AI, but it is not the primary paid unlock from AI Prompts.
+4. **Selfie education** remains the foundation. Better input photos create better AI results.
+5. **AI-ready selfies** are the bridge between phone photos and cinematic AI visuals.
+6. **Email nurture and DM copy** are revenue-critical. They should feel clear, personal, and action-focused.
+7. **Studio** is the future ongoing workspace and execution layer. It is not a pile of random AI features.
 
 ## Voice Identity
 
@@ -117,10 +119,12 @@ Avoid:
 ## Funnel Copy Rules
 
 1. PROMPT content should create curiosity and action.
-2. Starter Kit copy should connect selfies, editing, posing, captions, and AI-ready visuals.
-3. Email copy should feel like a short editorial note from Sandra, not a corporate newsletter.
-4. Sales copy should sell the visual outcome, not just the tool.
-5. Studio copy should position the app as the ongoing execution layer, not as random AI features.
+2. AI Prompts should bridge first to Prompt Vault.
+3. Prompt Vault copy should sell the visual outcome: one selfie becoming a complete editorial photoshoot collection.
+4. Starter Kit copy should connect selfies, editing, posing, captions, and AI-ready visuals only when the customer wants better original selfies before AI.
+5. Email copy should feel like a short editorial note from Sandra, not a corporate newsletter.
+6. Sales copy should sell the visual outcome, not just the tool.
+7. Studio copy should position the app as the ongoing execution layer, not as random AI features.
 
 ## Core Messaging Truths
 

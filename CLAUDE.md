@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-04-09 — Read this at the start of every session*
+*Last updated: 2026-05-26 — Read this at the start of every session*
 
 ---
 
@@ -46,10 +46,25 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 | `tasks/ACADEMY-01-foundation.md` | Academy foundation | Planned |
 | `tasks/ACADEMY-02-CODEX-SPEC.md` | Academy Codex spec | Planned |
 
-### Selfie Education Reposition (April 23, 2026)
+### Prompt Vault Pivot (May 26, 2026)
+
+**Current growth signal:** Instagram and email behavior show people want AI photoshoot prompts for ChatGPT, not another selfie education starter product.
+
+**Do not drift back to the old Starter Kit-first funnel.** Starter Kit has been tested for weeks and has sold weakly (7 total reported by Sandra; live Neon shows 6 active Starter Kit records and Stripe payment tracking is incomplete). The audience is asking for AI photo prompts. The front-end offer should follow that demand.
+
+- New low-ticket offer: **AI Photo Prompt Vault** (`prompt_vault`) — $27.
+- Free lead magnet: `/ai-prompts` and token access at `/ai-prompts/access/[token]`.
+- Primary upgrade from the free AI prompts product: `/prompt-vault` -> `/checkout/prompt-vault` -> `/access/prompt-vault/[token]`.
+- Academy/library access: `/academy/access/prompt-vault`.
+- Delivery email: `lib/email/templates/prompt-vault-delivery.ts`.
+- SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
+- Starter Kit is no longer the primary next step from AI prompts. It may remain as a secondary support product only when clearly framed as "make the original selfie stronger before AI."
+
+### Selfie Education Reposition (April 23, 2026 — Superseded For Front-Door Growth)
 
 - Approved direction: `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
-- New public ladder: Free Selfie Guide -> Starter Kit ($37) -> Masterclass ($147) -> Studio (€97/mo) -> 1:1
+- Old public ladder: Free Selfie Guide -> Starter Kit ($37) -> Masterclass ($147) -> Studio (€97/mo) -> 1:1
+- Status: keep routes and fulfillment working for existing buyers, but do not treat this as the active front-door growth funnel.
 - Lifecycle owner: `app/api/cron/nurture-sequence/route.ts`
 - Delivery model:
   - Free Guide -> `freebie_subscribers` token -> `/selfie-guide/access/[token]`
@@ -200,6 +215,12 @@ Target: €197/month minimum. Not €97. Not €27.
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
 | Selfie Guide checkout URL | `https://sselfie.ai/checkout/selfie-guide` |
 | Selfie Guide access URL | `https://sselfie.ai/selfie-guide/access/[token]` |
+| AI Prompts free opt-in URL | `https://sselfie.ai/ai-prompts` |
+| AI Prompts free access URL | `https://sselfie.ai/ai-prompts/access/[token]` |
+| Prompt Vault landing URL | `https://sselfie.ai/prompt-vault` |
+| Prompt Vault checkout URL | `https://sselfie.ai/checkout/prompt-vault` |
+| Prompt Vault access URL | `https://sselfie.ai/access/prompt-vault/[token]` |
+| Prompt Vault Academy access URL | `https://sselfie.ai/academy/access/prompt-vault` |
 | Starter Kit landing URL | `https://sselfie.ai/starter-kit` |
 | Starter Kit checkout URL | `https://sselfie.ai/checkout/starter-kit` |
 | Starter Kit access URL | `https://sselfie.ai/access/starter-kit/[token]` |
@@ -237,8 +258,10 @@ Target: €197/month minimum. Not €97. Not €27.
 
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
+| AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
+| AI Photo Prompt Vault | $27 | ✅ Active low-ticket offer, launch next | Primary paid upgrade from AI Prompts. ChatGPT-ready editorial photoshoot prompts. |
 | Free Selfie Guide | Free | 🚧 Reposition in progress | Lead magnet + email capture front door |
-| Starter Kit | $37 | 🚧 Reposition in progress | One-time. Tokenized delivery path planned |
+| Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | 🚧 Reposition in progress | One-time. Academy-style fulfillment planned |
 | Studio membership | €97/mo | ✅ Active | Cancel anytime |
 | Selfie Guide | €17 | ✅ Active | Interactive course, token access flow |
@@ -265,6 +288,7 @@ Target: €197/month minimum. Not €97. Not €27.
 - Mar 02, 2026: SEQ-01 Nurture sequence approved (5 emails, Day 2/5/9/14/20 for Selfie Guide buyers) — templates renamed `nurture-strategy-n*.ts`
 - Mar 09, 2026: Legacy manual/scheduled campaign stack removed from repo. Only live email paths remain.
 - Apr 23, 2026: Selfie education ladder approved. `nurture-sequence` now owns draft lifecycle for Free Guide -> Starter Kit -> Masterclass plus the legacy Brand Strategy follow-up until checkout/webhook migration completes.
+- May 26, 2026: Growth pivot documented. Prompt Vault is the primary paid bridge from AI prompt demand. Do not promote Starter Kit as the main AI prompts upgrade unless Sandra explicitly reverses this decision.
 
 ---
 

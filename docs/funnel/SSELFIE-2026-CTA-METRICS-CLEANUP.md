@@ -1,8 +1,18 @@
 # SSELFIE 2026 CTA, Metrics, And Cleanup Map
 
-Last updated: 2026-04-25
+Last updated: 2026-05-26
 
 This document turns the funnel decision into an implementation checklist for CTAs, measurement, and cleanup.
+
+## 2026-05-26 Prompt Vault Pivot
+
+The primary front-door funnel is now:
+
+```
+Instagram prompt reels -> /ai-prompts -> /prompt-vault -> Masterclass / Studio / 1:1
+```
+
+Starter Kit is not the main upgrade from AI Prompts. It remains a secondary support offer only when the customer needs better source selfies, presets, and editing help.
 
 ## CTA Principles
 
@@ -18,6 +28,11 @@ Avoid competing CTAs on the same surface. Secondary CTAs can exist, but the prim
 
 | Surface | Primary CTA | Secondary CTA | Notes |
 | --- | --- | --- | --- |
+| Prompt reels / Instagram bio during prompt pushes | Get free AI prompts | Prompt Vault | Match the active demand signal. |
+| `/ai-prompts` | Get the free AI prompts | Prompt Vault | Free taste; capture email before paid vault. |
+| `/ai-prompts/access/[token]` | Get the full Prompt Vault | Starter Kit | Starter Kit is secondary only, not the paid prompt unlock. |
+| `/prompt-vault` | Get the Vault | Masterclass / Studio later | Primary low-ticket offer for ChatGPT prompt demand. |
+| Prompt Vault buyer home/access | Copy first prompt | Masterclass / Studio later | First action is use a prompt, not browse the ecosystem. |
 | Instagram bio / `/bio` | Get the free Selfie Guide | Brand Strategy Pack | Keep the entry simple; do not list every product. |
 | Home / main landing | Get the Selfie Guide | See Studio | Sell the transformation, not the whole ecosystem. |
 | `/selfie-guide` | Get free access or start guide | Starter Kit | Match current free route behavior unless pricing strategy changes. |
@@ -37,6 +52,10 @@ Avoid competing CTAs on the same surface. Secondary CTAs can exist, but the prim
 
 | Email Type | Primary CTA | Rule |
 | --- | --- | --- |
+| AI Prompts delivery | Open free prompts | No immediate hard sell before first value. |
+| AI Prompts day 2/5 | Use/copy prompt | Keep momentum around the thing they asked for. |
+| AI Prompts day 7 | Prompt Vault | This replaces the old Starter Kit-first bridge. |
+| Prompt Vault delivery | Open Prompt Vault | List collections and get buyer to copy one prompt. |
 | Selfie Guide delivery | Open guide | No immediate hard sell before first value. |
 | Selfie Guide day 3/7 | Complete photo challenge | Reinforce the same outcome as the guide. |
 | Selfie Guide day 14 | Starter Kit | Only if Starter Kit includes a real next-step workflow. |
@@ -55,6 +74,11 @@ Avoid competing CTAs on the same surface. Secondary CTAs can exist, but the prim
 ### Acquisition
 
 - Instagram link clicks
+- `/ai-prompts` visits
+- AI Prompts opt-ins
+- AI Prompts access opens
+- AI Prompts prompt copies
+- AI Prompts -> Prompt Vault clicks
 - `/bio` clicks by CTA
 - `/selfie-guide` visits
 - `/brand-strategy` visits
@@ -76,6 +100,8 @@ Avoid competing CTAs on the same surface. Secondary CTAs can exist, but the prim
 
 - checkout started by product
 - checkout completed by product
+- Prompt Vault checkout success
+- Prompt Vault access opened
 - bundle purchased
 - upsell click after deliverable
 - first Studio subscription

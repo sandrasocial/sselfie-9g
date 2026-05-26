@@ -1,5 +1,8 @@
 /**
- * Revenue ladder email sequence — Free Selfie Guide -> Starter Kit -> Studio
+ * Selfie Guide lifecycle sequence.
+ *
+ * Note: this is the selfie-education path, not the active AI Prompts front-door
+ * funnel. AI Prompts should bridge to Prompt Vault first.
  *
  * Timed sequence (queued on purchase/opt-in, processed by /api/cron/nurture-sequence):
  *   Day 0  — selfie-guide-activation-day0    Delivery + quick-start nudge

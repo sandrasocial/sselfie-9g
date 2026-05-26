@@ -2,7 +2,15 @@
 
 Created: 2026-04-23
 Owner: Codex
-Status: Approved for implementation
+Status: Superseded for front-door growth on 2026-05-26
+
+## 2026-05-26 Update — Prompt Vault Pivot
+
+This plan remains useful for the Selfie Guide, Starter Kit, Masterclass, Studio, and buyer-fulfillment infrastructure, but it is no longer the active front-door growth strategy.
+
+Sandra reviewed the live audience data and decided to follow the stronger demand signal: people want AI photoshoot prompts for ChatGPT. The new low-ticket offer is the **AI Photo Prompt Vault** (`/prompt-vault`, `/checkout/prompt-vault`, `/access/prompt-vault/[token]`).
+
+Do not use this document to justify pushing the Starter Kit as the primary upgrade from AI Prompts. Starter Kit can remain as a secondary support product for people who want better source selfies, presets, and editing help. The primary AI prompts upgrade is Prompt Vault.
 
 ## Executive Summary
 

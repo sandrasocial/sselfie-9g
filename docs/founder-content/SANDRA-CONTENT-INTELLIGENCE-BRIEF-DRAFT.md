@@ -289,10 +289,13 @@ Use this to decide which CTA fits which content topic.
 Previous funnel was:
 Free 2-credit signup -> Strategy Pack -> credit top-ups -> Studio at $97/month
 
-New funnel is:
+April selfie-education funnel was:
 Free Selfie Guide -> Starter Kit ($37) -> Brand Strategy Pack ($19) -> Masterclass ($147) -> Studio (97 euros/month) -> 1:1 with Sandra (from $2,000)
 
-Key change: selfie education and Sandra's method lead the funnel. Maya and AI are positioned as the advanced layer inside Studio, not the front door.
+May 26 Prompt Vault front-door funnel is:
+AI prompt reels -> AI Prompts free opt-in -> Prompt Vault ($27) -> Masterclass / Studio -> 1:1 with Sandra (from $2,000)
+
+Key change: prompt demand now leads the funnel. Starter Kit remains a secondary support offer for better source selfies, not the main upgrade from AI Prompts.
 
 ### Income Language Rules
 

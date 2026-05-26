@@ -1,6 +1,6 @@
 # Product Marketing Context — SSELFIE Studio
 
-*Last updated: 2026-03-16*
+*Last updated: 2026-05-26*
 
 ---
 
@@ -15,16 +15,33 @@
 **Product type:** SaaS, subscription + one-time products
 
 **Business model:**
+- AI Prompts: free lead magnet for ChatGPT AI photoshoot demand
+- AI Photo Prompt Vault: $27 one-time low-ticket offer
 - Studio membership: €97/month (200 credits, full Maya access, model training)
 - Selfie Guide: €17 one-time (interactive course + AI access)
 - Selfie Guide Bundle: €27 one-time
+- Starter Kit: $37 one-time, secondary/support product only after Prompt Vault pivot
 - Brand Strategy Pack: $19 one-time (AI-generated brand strategy)
 - Feed Planner (Blueprint): ~$47 one-time (9-post grid + captions)
 - Credit top-ups: available for free-tier users
 
-**Current MRR:** ~€1,509 (15 Studio × €97)
+**Current MRR:** Pull live from Stripe before quoting. On 2026-05-26 Stripe showed 7 active subscriptions / $393 MRR after beta discounts.
 **Target MRR:** €10,000
-**Gap:** ~72 additional Studio subscribers needed (or equivalent mix)
+**Gap:** Recalculate from live Stripe. Do not trust older March counts.
+
+## Current Growth Pivot — May 26, 2026
+
+The active audience signal is AI photoshoot prompts for ChatGPT.
+
+Sandra created the **AI Photo Prompt Vault** as the new low-ticket offer because the data showed people are not primarily asking for the Selfie Starter Kit. They are asking for prompts that turn one selfie into editorial AI photos inside ChatGPT.
+
+**Do not optimize the old Starter Kit-first funnel as the main path.** It has been tested for weeks and has sold weakly. The new path is:
+
+```
+Instagram prompt reels -> /ai-prompts free opt-in -> /prompt-vault $27 -> Masterclass / Studio / 1:1
+```
+
+Starter Kit can still exist as a secondary support offer for people who want better original selfies, presets, and editing help. It should not be positioned as the paid unlock for AI prompts.
 
 ---
 
@@ -40,6 +57,8 @@
 3. "I want to look consistent and polished on social media even though I work alone"
 
 **Specific use cases:**
+- ChatGPT AI photoshoot prompts from one selfie
+- Editorial prompt collections for Instagram brand photos
 - Launch photo for new offer/program
 - Profile photo refresh
 - Email header / website hero image
@@ -135,6 +154,8 @@
 - Can't keep up with content demands manually
 
 **Pull (attraction to SSELFIE):**
+- "I want the exact prompts Sandra is using"
+- "I want ChatGPT to turn my selfie into editorial photos"
 - Sandra's own before/after results as proof
 - "Unlimited brand photos" framing
 - Maya as a relationship, not just a tool
@@ -174,6 +195,8 @@
 | My Model | User's custom-trained LoRA model (their face) |
 | Selfie mode | Generation using uploaded selfies without full model training |
 | Studio | Paid membership (€97/month) |
+| AI Prompts | Free ChatGPT prompt lead magnet at `/ai-prompts` |
+| Prompt Vault | $27 paid AI photoshoot prompt vault at `/prompt-vault` |
 | Blueprint | Feed Planner one-time purchase |
 | Credits | Usage currency (1 per image, 20 per training run) |
 | Feed Planner | 9-post Instagram grid planning tool |
@@ -214,18 +237,17 @@
 **Business goal:** Reach €10,000 MRR from €1,509 (need ~72 more Studio subscribers or equivalent product mix)
 
 **Key conversion actions (in priority order):**
-1. Free signup → Studio membership (€97/month) — highest LTV
-2. Free signup → Selfie Guide (€17) → Studio upsell
-3. Existing free user → any paid product
-4. New Instagram follower → email signup → paid
+1. Instagram prompt viewer → AI Prompts free opt-in → Prompt Vault ($27)
+2. Prompt Vault buyer → Masterclass / Studio when they want the full system
+3. Existing free user → Prompt Vault or relevant paid product
+4. Studio membership (€97/month) for buyers who want the app/workflow, not as the cold first ask
 
-**Current funnel state (March 2026):**
-- 727 users in DB, 28 paying (3.9% paid conversion — very low)
-- 544 users stuck at welcome credit tier (never upgraded)
-- 71 users with 0 credits (burned through free tier, no upgrade)
-- 23 new signups/3 days but 0 new paid conversions in 3 days
-- Email open rates: unknown (no sends to new signups until now)
-- Funnel events: NOT being tracked (blind funnel)
+**Current funnel state (May 26, 2026):**
+- AI Prompts has 1,330 subscribers since May 16.
+- AI Prompts access has been opened 3,373 times.
+- Prompts have been copied 3,728 times.
+- Starter Kit has sold weakly after weeks of testing; do not keep forcing it as the primary bridge.
+- Prompt Vault is production-ready but not launched yet; live DB showed 0 Prompt Vault sales before launch.
 
 **Channels:**
 - Instagram organic: 180K followers, Sandra's main channel
