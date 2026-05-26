@@ -76,7 +76,7 @@ export default function PromptVaultPage() {
         }}
       >
         <Image
-          src="/images/ai-prompts/ai-prompts-hero.jpg"
+          src="/images/ai-prompts/coastal-white-shot-1.jpg"
           alt=""
           fill
           priority

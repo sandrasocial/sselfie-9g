@@ -7,6 +7,7 @@ import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { SELFIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/selfie-guide-email-sequence"
 import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
 import { AI_PROMPTS_EMAIL_TOUCHES } from "@/lib/email/ai-prompts-email-sequence"
+import { PROMPT_VAULT_EMAIL_TOUCHES } from "@/lib/email/prompt-vault-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
 import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/freebie-guide-day1-light-tip"
@@ -33,13 +34,17 @@ import { generateMasterclassDay7SoftWorkWithMeEmail } from "@/lib/email/template
 import { generateMasterclassDay10DirectInviteEmail } from "@/lib/email/templates/masterclass-day10-direct-invite"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
-import { generateAiPromptsDay7StarterKitOfferEmail } from "@/lib/email/templates/ai-prompts-day7-starter-kit-offer"
+import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
+import {
+  generatePromptVaultDay10NextShootEmail,
+  generatePromptVaultDay2FirstResultEmail,
+  generatePromptVaultDay5FixBadResultEmail,
+} from "@/lib/email/templates/prompt-vault-buyer-sequence"
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
   .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
   .replace(/\/+$/, "")
 const STARTER_KIT_FALLBACK_URL = `${SITE_URL}/starter-kit`
-const MASTERCLASS_FALLBACK_URL = `${SITE_URL}/masterclass`
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const AI_PROMPTS_NURTURE_SAFE_DEFAULT_START_DATE = "2026-05-18"
@@ -69,6 +74,14 @@ interface AiPromptsTouchCandidate {
   email: string
   name: string | null
   access_token: string | null
+  created_at: string
+}
+
+interface PromptVaultTouchCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  converted_at: string | null
   created_at: string
 }
 
@@ -103,6 +116,11 @@ function selfieGuideAccessUrl(candidate: { access_token: string | null }): strin
 function aiPromptsAccessUrl(candidate: { access_token: string | null }): string {
   const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/ai-prompts/access/${token}` : `${SITE_URL}/ai-prompts`
+}
+
+function promptVaultAccessUrl(candidate: { access_token: string | null }): string {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0 ? `${SITE_URL}/access/prompt-vault/${token}` : `${SITE_URL}/prompt-vault`
 }
 
 function aiPromptsNurtureStartDate(): string {
@@ -202,8 +220,11 @@ async function getFreebieGuideTouchCandidates(
 async function getAiPromptsTouchCandidates(
   days: number,
   emailType: string,
-  startDate: string
+  startDate: string,
+  suppressIfSentTypes: string[] = []
 ): Promise<AiPromptsTouchCandidate[]> {
+  const sentEmailTypes = [emailType, ...suppressIfSentTypes]
+
   return (await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
       fs.email,
@@ -237,12 +258,43 @@ async function getAiPromptsTouchCandidates(
         SELECT 1
         FROM email_logs el
         WHERE LOWER(el.user_email) = LOWER(fs.email)
-          AND el.email_type = ${emailType}
+          AND el.email_type = ANY(${sentEmailTypes}::text[])
           AND el.status IN ('sent', 'delivered', 'suppressed')
       )
     ORDER BY LOWER(fs.email), fs.created_at DESC
     LIMIT 200
   `) as AiPromptsTouchCandidate[]
+}
+
+async function getPromptVaultTouchCandidates(
+  days: number,
+  emailType: string
+): Promise<PromptVaultTouchCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(fs.email))
+      fs.email,
+      NULLIF(BTRIM(fs.name), '') AS name,
+      fs.access_token,
+      fs.converted_at,
+      fs.created_at
+    FROM freebie_subscribers fs
+    WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${days} days`}::interval)
+      AND fs.email IS NOT NULL
+      AND fs.email <> ''
+      AND (
+        fs.source = 'prompt-vault-paid'
+        OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(fs.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+      )
+    ORDER BY LOWER(fs.email), COALESCE(fs.converted_at, fs.updated_at, fs.created_at) DESC
+    LIMIT 200
+  `) as PromptVaultTouchCandidate[]
 }
 
 async function getStarterKitCandidates(
@@ -445,8 +497,8 @@ async function sendAiPromptsTouchEmail(
     case "ai-prompts-day5-edit-makes-postable":
       email = generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
       break
-    case "ai-prompts-day7-starter-kit-offer":
-      email = generateAiPromptsDay7StarterKitOfferEmail({ firstName })
+    case "ai-prompts-day7-prompt-vault-offer":
+      email = generateAiPromptsDay7PromptVaultOfferEmail({ firstName })
       break
     default:
       throw new Error(`Unknown AI Prompts email type: ${emailType}`)
@@ -461,6 +513,42 @@ async function sendAiPromptsTouchEmail(
     text: email.text,
     emailType,
     tags: ["ai-prompts", emailType],
+    marketing: true,
+  })
+}
+
+async function sendPromptVaultTouchEmail(
+  emailType: string,
+  candidate: PromptVaultTouchCandidate,
+  accessUrl: string
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "prompt-vault-day2-first-result":
+      email = generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
+      break
+    case "prompt-vault-day5-fix-bad-result":
+      email = generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
+      break
+    case "prompt-vault-day10-next-shoot":
+      email = generatePromptVaultDay10NextShootEmail({ firstName, accessUrl })
+      break
+    default:
+      throw new Error(`Unknown Prompt Vault email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["prompt-vault", emailType],
     marketing: true,
   })
 }
@@ -624,6 +712,9 @@ export async function GET(request: Request) {
       aiPromptsDay2: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
+      promptVaultDay2: { found: 0, sent: 0, failed: 0 },
+      promptVaultDay5: { found: 0, sent: 0, failed: 0 },
+      promptVaultDay10: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay3: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay7: { found: 0, sent: 0, failed: 0 },
@@ -694,7 +785,8 @@ export async function GET(request: Request) {
         const candidates = await getAiPromptsTouchCandidates(
           touch.days,
           touch.emailType,
-          aiPromptsStartDate
+          aiPromptsStartDate,
+          touch.suppressIfSentTypes
         )
         results[resultKey].found = candidates.length
 
@@ -702,6 +794,47 @@ export async function GET(request: Request) {
           const accessUrl = aiPromptsAccessUrl(candidate)
           try {
             const result = await sendAiPromptsTouchEmail(touch.emailType, candidate, accessUrl)
+            if (result.success) {
+              results[resultKey].sent += 1
+            } else {
+              results[resultKey].failed += 1
+              results.errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: result.error || "unknown",
+              })
+            }
+          } catch (error: unknown) {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: errorMessage(error),
+            })
+          }
+
+          await sleep(150)
+        }
+      }
+    }
+
+    const promptVaultNurtureEnabled = process.env.PROMPT_VAULT_NURTURE_ENABLED === "true"
+    const promptVaultTouchResultKeys = [
+      "promptVaultDay2",
+      "promptVaultDay5",
+      "promptVaultDay10",
+    ] as const
+
+    if (promptVaultNurtureEnabled) {
+      for (const [index, touch] of PROMPT_VAULT_EMAIL_TOUCHES.entries()) {
+        const resultKey = promptVaultTouchResultKeys[index]
+        const candidates = await getPromptVaultTouchCandidates(touch.days, touch.emailType)
+        results[resultKey].found = candidates.length
+
+        for (const candidate of candidates) {
+          const accessUrl = promptVaultAccessUrl(candidate)
+          try {
+            const result = await sendPromptVaultTouchEmail(touch.emailType, candidate, accessUrl)
             if (result.success) {
               results[resultKey].sent += 1
             } else {
@@ -887,6 +1020,9 @@ export async function GET(request: Request) {
       results.aiPromptsDay2.sent +
       results.aiPromptsDay5.sent +
       results.aiPromptsDay7.sent +
+      results.promptVaultDay2.sent +
+      results.promptVaultDay5.sent +
+      results.promptVaultDay10.sent +
       results.selfieGuideDay0.sent +
       results.selfieGuideDay3.sent +
       results.selfieGuideDay7.sent +
@@ -913,6 +1049,9 @@ export async function GET(request: Request) {
       results.aiPromptsDay2.failed +
       results.aiPromptsDay5.failed +
       results.aiPromptsDay7.failed +
+      results.promptVaultDay2.failed +
+      results.promptVaultDay5.failed +
+      results.promptVaultDay10.failed +
       results.selfieGuideDay0.failed +
       results.selfieGuideDay3.failed +
       results.selfieGuideDay7.failed +
@@ -942,6 +1081,10 @@ export async function GET(request: Request) {
       aiPromptsDay2: results.aiPromptsDay2,
       aiPromptsDay5: results.aiPromptsDay5,
       aiPromptsDay7: results.aiPromptsDay7,
+      promptVaultNurtureEnabled,
+      promptVaultDay2: results.promptVaultDay2,
+      promptVaultDay5: results.promptVaultDay5,
+      promptVaultDay10: results.promptVaultDay10,
       selfieGuideDay0: results.selfieGuideDay0,
       selfieGuideDay3: results.selfieGuideDay3,
       selfieGuideDay7: results.selfieGuideDay7,

@@ -293,9 +293,10 @@ April selfie-education funnel was:
 Free Selfie Guide -> Starter Kit ($37) -> Brand Strategy Pack ($19) -> Masterclass ($147) -> Studio (97 euros/month) -> 1:1 with Sandra (from $2,000)
 
 May 26 Prompt Vault front-door funnel is:
-AI prompt reels -> AI Prompts free opt-in -> Prompt Vault ($27) -> Masterclass / Studio -> 1:1 with Sandra (from $2,000)
+AI prompt reels -> AI Prompts free opt-in -> Prompt Vault ($27) -> buyer-success emails -> next product hypothesis from buyer behavior
 
 Key change: prompt demand now leads the funnel. Starter Kit remains a secondary support offer for better source selfies, not the main upgrade from AI Prompts.
+Do not force cold prompt traffic into Masterclass, Studio, Maya, or Feed Planner as the next step unless Prompt Vault buyer behavior proves that is what they want.
 
 ### Income Language Rules
 

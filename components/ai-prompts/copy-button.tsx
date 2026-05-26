@@ -7,19 +7,23 @@ export function CopyButton({
   text,
   promptTitle,
   promptNumber,
+  trackEvent = "ai_prompts_prompt_copied",
+  trackSource = "ai-prompts",
 }: {
   text: string
   promptTitle?: string
   promptNumber?: string
+  trackEvent?: "ai_prompts_prompt_copied" | "prompt_vault_prompt_copied"
+  trackSource?: "ai-prompts" | "prompt-vault"
 }) {
   const [copied, setCopied] = useState(false)
 
   function fireTrack() {
     try {
       trackAnalyticsEvent({
-        event: "ai_prompts_prompt_copied",
+        event: trackEvent,
         properties: {
-          source: "ai-prompts",
+          source: trackSource,
           ...(promptTitle ? { prompt_title: promptTitle } : {}),
           ...(promptNumber ? { prompt_number: promptNumber } : {}),
         },

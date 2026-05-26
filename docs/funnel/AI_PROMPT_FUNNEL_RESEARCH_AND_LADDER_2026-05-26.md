@@ -29,7 +29,7 @@ Live SSELFIE data reviewed on 2026-05-26:
 - Starter Kit: weak sales after weeks of testing.
 - Prompt Vault: production-ready but not launched yet, so no purchase proof yet.
 
-Conclusion: prompt demand is proven. Prompt Vault sales are not proven yet. Launch it, measure it, then build the next rung from buyer behavior.
+Conclusion: prompt demand is proven. Prompt Vault sales are not proven yet. Launch it, measure it, then build the next rung from buyer behavior. The rungs above the $27 Prompt Vault are hypotheses until buyer behavior proves which one should be built.
 
 ## Market Research Summary
 
@@ -133,6 +133,8 @@ Primary metric:
 
 ### 2. Prompt Vault Pro / Seasonal Vault — $47-$67
 
+Status: hypothesis. Do not build until Prompt Vault sales and usage data show which collections buyers want more of.
+
 Role: immediate order bump or next offer.
 
 Promise: "More collections, launch-ready looks, and prompt formulas."
@@ -153,6 +155,8 @@ The buyer has already said yes to prompts. The next thing she wants is more styl
 
 ### 3. Prompt-To-Post System — $97-$147
 
+Status: hypothesis. Validate through buyer replies, prompt copy data, and support questions before building.
+
 Role: replace the old Masterclass/Starter Kit bridge with a ChatGPT-native content system.
 
 Promise: "Turn AI photos into actual content for your brand."
@@ -170,6 +174,8 @@ Includes:
 This can reuse pieces of Selfie Guide, Starter Kit, Masterclass, and Feed Planner, but it must be renamed and framed around the ChatGPT prompt buyer.
 
 ### 4. Prompt Vault Club — $19-$29/month
+
+Status: hypothesis. Only build if buyers ask for ongoing drops or repeat collections.
 
 Role: recurring revenue replacement for cold Studio subscriptions.
 
@@ -189,6 +195,8 @@ Why this replaces Studio:
 It gives recurring value without asking buyers to leave ChatGPT or pay for an app they do not need.
 
 ### 5. AI Brand Photoshoot Sprint — $297-$497
+
+Status: hypothesis. Validate with buyer replies and DMs before packaging.
 
 Role: premium implementation offer.
 
@@ -324,7 +332,7 @@ Events that matter:
 - `ai_prompts_prompt_vault_click`
 - `prompt_vault_checkout_success`
 - `prompt_vault_access_opened`
-- `prompt_vault_prompt_copied` (add if not present)
+- `prompt_vault_prompt_copied`
 - `prompt_vault_pro_click`
 - `prompt_to_post_click`
 

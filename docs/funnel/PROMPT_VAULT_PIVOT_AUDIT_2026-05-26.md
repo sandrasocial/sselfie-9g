@@ -81,7 +81,7 @@ Product plumbing:
 - `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
 - `docs/funnel/SSELFIE-2026-CTA-METRICS-CLEANUP.md`
 - `docs/email/LIGHT_EDITORIAL_EMAIL_AUDIT_2026-05-21.md`
-- `lib/email/templates/ai-prompts-day7-starter-kit-offer.ts`
+- `lib/email/templates/ai-prompts-day7-prompt-vault-offer.ts`
 - `lib/analytics/event-contract.ts`
 
 ## Non-Drift Rules
@@ -91,4 +91,3 @@ Product plumbing:
 3. Do not send prompt-reel traffic directly to Studio as the first ask.
 4. Do measure Prompt Vault with checkout success, access opened, prompt copied, and downstream buyer movement.
 5. Do keep Starter Kit available only as a secondary "better original selfie before AI" support offer.
-

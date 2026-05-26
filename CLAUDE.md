@@ -58,6 +58,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 - Primary upgrade from the free AI prompts product: `/prompt-vault` -> `/checkout/prompt-vault` -> `/access/prompt-vault/[token]`.
 - Academy/library access: `/academy/access/prompt-vault`.
 - Delivery email: `lib/email/templates/prompt-vault-delivery.ts`.
+- Buyer-success nurture drafts: `lib/email/templates/prompt-vault-buyer-sequence.ts`, scheduled by `app/api/cron/nurture-sequence/route.ts` only when `PROMPT_VAULT_NURTURE_ENABLED=true`.
 - SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
 - Starter Kit is no longer the primary next step from AI prompts. It may remain as a secondary support product only when clearly framed as "make the original selfie stronger before AI."
 

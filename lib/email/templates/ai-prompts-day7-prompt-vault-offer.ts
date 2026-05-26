@@ -1,17 +1,15 @@
 import { getEmailHeroImage } from "../email-image-assets"
 import { buildRevenueEmailLink } from "./revenue-links"
-import {
-  masterclassLandingUrl,
-  promptVaultLandingUrl,
-  studioLandingUrl,
-} from "./selfie-education-links"
+import { promptVaultLandingUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay7Params {
   firstName: string
 }
 
-export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromptsDay7Params): {
+const EMAIL_TYPE = "ai-prompts-day7-prompt-vault-offer"
+
+export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName }: AiPromptsDay7Params): {
   html: string
   text: string
   subject: string
@@ -20,19 +18,8 @@ export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromp
     campaign: "ai_prompts_day7",
     content: "prompt_vault_offer",
     medium: "nurture",
-    emailType: "ai-prompts-day7-starter-kit-offer",
+    emailType: EMAIL_TYPE,
   })
-  const masterclassUrl = buildRevenueEmailLink(masterclassLandingUrl(), {
-    campaign: "ai_prompts_day7",
-    content: "masterclass_soft_bridge",
-    emailType: "ai-prompts-day7-starter-kit-offer",
-  })
-  const studioUrl = buildRevenueEmailLink(studioLandingUrl(), {
-    campaign: "ai_prompts_day7",
-    content: "studio_soft_bridge",
-    emailType: "ai-prompts-day7-starter-kit-offer",
-  })
-
   const subject = "Want the full prompt vault?"
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
@@ -48,8 +35,7 @@ export function generateAiPromptsDay7StarterKitOfferEmail({ firstName }: AiPromp
     )}
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is for the woman who does not want one random AI photo. She wants a full shoot direction she can actually use.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault", promptVaultUrl)}</div>
-    <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#7c766d;">If you want the full method later, the Masterclass is here: <a href="${masterclassUrl}" style="color:#2c2924;text-decoration:underline;">see the Masterclass</a>.</p>
-    <p style="margin:0;font-size:14px;line-height:1.7;color:#7c766d;">If you want the AI studio too, start here: <a href="${studioUrl}" style="color:#2c2924;text-decoration:underline;">see SSELFIE Studio</a>.</p>
+    <p style="margin:0;font-size:14px;line-height:1.7;color:#7c766d;">Start there. Use one collection. Then tell me which look you want more of.</p>
   `
 
   const html = renderStoneShell({
@@ -79,11 +65,7 @@ It is for the woman who does not want one random AI photo. She wants a full shoo
 Get the Vault:
 ${promptVaultUrl}
 
-If you want the full method later, the Masterclass is here:
-${masterclassUrl}
-
-If you want the AI studio too, start here:
-${studioUrl}
+Start there. Use one collection. Then tell me which look you want more of.
 
 Sandra x`
 

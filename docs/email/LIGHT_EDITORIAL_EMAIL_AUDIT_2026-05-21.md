@@ -110,7 +110,7 @@ Files:
 - `ai-prompts-day0-delivery.ts`
 - `ai-prompts-day2-try-first-prompt.ts`
 - `ai-prompts-day5-edit-makes-postable.ts`
-- `ai-prompts-day7-starter-kit-offer.ts`
+- `ai-prompts-day7-prompt-vault-offer.ts`
 - `prompt-vault-delivery.ts`
 
 Current role:
@@ -277,5 +277,5 @@ Not changed:
 
 1. Host 2 to 4 production-safe email images.
 2. Add one visual proof image to the AI Prompts Day 7 or Prompt Vault bridge email.
-3. Rename `ai-prompts-day7-starter-kit-offer.ts` when convenient so the file name matches its new Prompt Vault role.
+3. Done 2026-05-26: `ai-prompts-day7-starter-kit-offer.ts` was renamed to `ai-prompts-day7-prompt-vault-offer.ts`. The cron suppresses the legacy email type so previous sends are not duplicated.
 4. Later: review Studio onboarding and win-back copy for old workflow language.

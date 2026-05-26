@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "The ChatGPT Selfie Prompt Pack · SSELFIE",
   description:
-    "12 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, and content-ready visuals.",
+    "17 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, and content-ready visuals.",
 }
 
 export default function AiPromptsOptInPage() {
@@ -33,7 +33,7 @@ export default function AiPromptsOptInPage() {
               The ChatGPT Selfie Prompt Pack.
             </h1>
             <p className="opt-sub">
-              12 copy-paste prompts. Upload your selfie. Choose the look.
+              17 copy-paste prompts. Upload your selfie. Choose the look.
             </p>
 
             <div className="opt-form-card">

@@ -72,7 +72,7 @@ export default function BioPage() {
               The ChatGPT Selfie Prompt Pack.
             </span>
             <span className="bio-card-body">
-              12 copy-paste prompts. Upload your selfie. Choose the look.
+              17 copy-paste prompts. Upload your selfie. Choose the look.
             </span>
             <span className="bio-card-cta">Get the prompts</span>
           </Link>

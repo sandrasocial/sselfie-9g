@@ -79,7 +79,13 @@ function PromptCardEl({ card }: { card: PromptCard }) {
         <div className="pv-prompt-wrap">
           <p className="pv-prompt-text">{card.prompt}</p>
           <div className="pv-copy-row">
-            <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
+            <CopyButton
+              text={card.prompt}
+              promptTitle={card.title}
+              promptNumber={card.number}
+              trackEvent="prompt_vault_prompt_copied"
+              trackSource="prompt-vault"
+            />
           </div>
         </div>
       </div>

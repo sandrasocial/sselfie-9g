@@ -1,5 +1,4 @@
 import { buildRevenueEmailLink } from "./revenue-links"
-import { starterKitLandingUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay5Params {
@@ -16,47 +15,37 @@ export function generateAiPromptsDay5EditMakesPostableEmail({
     content: "open_prompt_pack",
     emailType: "ai-prompts-day5-edit-makes-postable",
   })
-  const starterKitUrl = buildRevenueEmailLink(starterKitLandingUrl(), {
-    campaign: "ai_prompts_day5_edit_bridge",
-    content: "kit_bridge",
-    emailType: "ai-prompts-day5-edit-makes-postable",
-  })
-
-  const subject = "AI gets you close. The edit makes it postable."
+  const subject = "If the AI result looked strange"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The prompt can get you close.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">But the edit is what makes the photo feel like you would actually post it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is usually the missing step. Not more prompts. A cleaner starting photo, softer edits, and a simple way to know when to stop.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want that next piece, the SSELFIE Starter Kit is the practical version.</p>
-    <div style="margin:26px 0 16px;">${renderStoneButton("See KIT", starterKitUrl)}</div>
-    <p style="margin:0;font-size:14px;line-height:1.7;text-align:center;"><a href="${promptPackUrl}" style="color:#a8a49c;text-decoration:underline;">Open the prompt pack again</a></p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If the AI result looked strange, do not throw the prompt away yet.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Most weird results come from the original photo: blurry light, heavy shadow, sunglasses, or an angle where ChatGPT cannot read your face clearly.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try one clean selfie in soft window light. Paste the anchor line first, then paste the look you want.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Run it once. If the face still drifts, reply and tell me what changed.</p>
+    <div style="margin:26px 0 16px;">${renderStoneButton("Open the Prompt Pack", promptPackUrl)}</div>
   `
 
   const html = renderStoneShell({
-    title: "The edit matters.",
+    title: "Fix the weird result.",
     eyebrow: "AI Prompts",
-    subtitle: "AI gets you close. The edit makes it postable.",
+    subtitle: "Try a cleaner source photo before you change the prompt.",
     bodyHtml,
-    footerLead: "Keep it simple. The goal is one photo you can actually use.",
+    footerLead: "The goal is one photo that still feels like you.",
     footerSignoff: "Sandra x",
   })
 
   const text = `Hi ${firstName},
 
-The prompt can get you close.
+If the AI result looked strange, do not throw the prompt away yet.
 
-But the edit is what makes the photo feel like you would actually post it.
+Most weird results come from the original photo: blurry light, heavy shadow, sunglasses, or an angle where ChatGPT cannot read your face clearly.
 
-That is usually the missing step. Not more prompts. A cleaner starting photo, softer edits, and a simple way to know when to stop.
+Try one clean selfie in soft window light. Paste the anchor line first, then paste the look you want.
 
-If you want that next piece, the SSELFIE Starter Kit is the practical version.
+Run it once. If the face still drifts, reply and tell me what changed.
 
-See KIT:
-${starterKitUrl}
-
-Open the prompt pack again:
+Open the Prompt Pack:
 ${promptPackUrl}
 
 Sandra x`

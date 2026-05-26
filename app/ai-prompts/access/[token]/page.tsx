@@ -24,7 +24,7 @@ const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "a
 
 export const metadata: Metadata = {
   title: "Your ChatGPT Selfie Prompts · SSELFIE",
-  description: "18 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, café, and content-ready visuals.",
+  description: "17 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, café, and content-ready visuals.",
   robots: { index: false, follow: false },
 }
 
@@ -207,7 +207,7 @@ export default async function AiPromptsAccessPage({
             The ChatGPT Selfie Prompt Pack.
           </h1>
           <p className="ap-hero-sub">
-            12 copy-paste prompts for turning one selfie into editorial, beauty, mirror,
+            17 copy-paste prompts for turning one selfie into editorial, beauty, mirror,
             car, and content-ready visuals.
           </p>
           <div className="ap-hero-actions">
