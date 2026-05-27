@@ -18,23 +18,23 @@ export function generatePromptVaultCheckoutRecoveryEmail({
   })
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You were close to turning one selfie into a whole set of editorial photos.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If the page froze, Instagram closed, or life pulled you away, your vault is still here.</p>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.8;color:#69645e;">Start with the Dark Balcony transformation. It is the strongest signal right now: moody city light, black outfit, expensive balcony energy, and a reel-cover image that looks like a real shoot.</p>
-    <div style="margin:22px 0 4px;">${renderStoneButton("Finish Your Vault Order", checkoutUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hey ${firstName},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You were so close to unlocking the Vault.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Inside are the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style transformations I have been obsessing over lately.</p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.8;color:#69645e;">And honestly, I keep adding more because I cannot stop making them.</p>
+    <div style="margin:22px 0 4px;">${renderStoneButton("Unlock the Vault", checkoutUrl)}</div>
   `
 
   return {
-    subject: "still want the selfie transformations?",
+    subject: "your transformation is waiting",
     html: renderStoneShell({
       eyebrow: "SSELFIE",
-      title: "Your photoshoot is still here.",
-      subtitle: "One selfie can become the whole visual identity.",
+      title: "Your transformation is waiting.",
+      subtitle: "One selfie can become the whole photoshoot.",
       bodyHtml,
       footerLead: "Reply if checkout gave you any trouble.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYou were close to turning one selfie into a whole set of editorial photos.\n\nIf the page froze, Instagram closed, or life pulled you away, your vault is still here.\n\nStart with the Dark Balcony transformation. It is the strongest signal right now: moody city light, black outfit, expensive balcony energy, and a reel-cover image that looks like a real shoot.\n\nFinish your vault order: ${checkoutUrl}\n\nSandra x`,
+    text: `Hey ${firstName},\n\nYou were so close to unlocking the Vault.\n\nInside are the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style transformations I have been obsessing over lately.\n\nAnd honestly, I keep adding more because I cannot stop making them.\n\nUnlock the Vault: ${checkoutUrl}\n\nSandra x`,
   }
 }
