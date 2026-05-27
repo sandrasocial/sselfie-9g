@@ -27,7 +27,7 @@ const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "a
 
 export const metadata: Metadata = {
   title: "Your ChatGPT Selfie Prompts · SSELFIE",
-  description: "17 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, café, and content-ready visuals.",
+  description: "Your updated AI photoshoot preview: one selfie, cinematic transformations, and first shots from the SSELFIE Vault.",
   robots: { index: false, follow: false },
 }
 
@@ -93,6 +93,37 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
       <p className="pc-mood">{card.mood}</p>
       <div className="pc-prompt-wrap">
         <p className="pc-prompt-text">{card.prompt}</p>
+        <div className="pc-copy-row">
+          <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function PreviewCardEl({ card }: { card: PromptCard }) {
+  return (
+    <article id={card.id} className="ap-preview-card">
+      {card.exampleImage && (
+        <div className="ap-preview-image-wrap">
+          <Image
+            src={card.exampleImage}
+            alt={`Preview result for ${card.title}`}
+            width={600}
+            height={900}
+            className="ap-preview-image"
+          />
+        </div>
+      )}
+      <div className="ap-preview-body">
+        <span className="ap-preview-number">{card.number}</span>
+        <h3 className={`ap-preview-title ${cormorant.className}`}>{card.title}</h3>
+        <p className="ap-preview-when">{card.whenToUse}</p>
+        <p className="ap-preview-mood">{card.mood}</p>
+        <details className="ap-preview-prompt">
+          <summary>Read prompt</summary>
+          <p>{card.prompt}</p>
+        </details>
         <div className="pc-copy-row">
           <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
         </div>
@@ -214,15 +245,15 @@ export default async function AiPromptsAccessPage({
         <div className="ap-hero-content">
           <p className="ap-hero-eyebrow">SSELFIE · CHATGPT SELFIE PROMPT PACK</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
-            The ChatGPT Selfie Prompt Pack.
+            Your Updated Photoshoot Preview.
           </h1>
           <p className="ap-hero-sub">
-            17 copy-paste prompts for turning one selfie into editorial, beauty, mirror,
-            car, and content-ready visuals.
+            Shot 1 from every Vault collection is here. Pick a visual identity, copy the
+            prompt, upload one selfie, and see which version of you feels the most alive.
           </p>
           <div className="ap-hero-actions">
-            <a href="#bw-supermodel" className="ap-hero-cta">
-              Start with the 90s Supermodel prompt
+            <a href="#vault-preview" className="ap-hero-cta">
+              Open the Preview
             </a>
           </div>
           <p className="ap-hero-safety">
@@ -232,117 +263,24 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 2. Before you start */}
-      <section className="ap-section ap-before">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">BEFORE YOU START</p>
-          <ul className="ap-before-list">
-            <li>Use your own photo or a photo you have permission to edit.</li>
-            <li>
-              Choose a clear selfie with your face visible. Sunglasses and heavy shadows
-              give AI less to work with.
-            </li>
-            <li>
-              Better light in the original means a better result. A blurry photo produces
-              a blurry AI version.
-            </li>
-            <li>Copy one prompt at a time. Run it. Check the result before posting.</li>
-            <li>
-              If the AI changes your face too much, start your next attempt with the
-              Reusable Starter Line below.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* 3. Reusable starter line */}
-      <section className="ap-section ap-starter">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">PASTE THIS FIRST</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>Your anchor prompt.</h2>
-          <p className="ap-starter-note">
-            Add this before any other prompt if the AI is drifting too far from your face.
-            You can also use it on its own.
-          </p>
-          <div className="ap-starter-card">
-            <p className="ap-starter-text">{REUSABLE_STARTER}</p>
-            <div className="pc-copy-row">
-              <CopyButton text={REUSABLE_STARTER} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4→7. Vault preview moved — now appears after free content below */}
-
-      {/* 5. The main looks */}
-      <section className="ap-section">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">THE LOOKS</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>
-            Five prompts. Five transformations.
-          </h2>
-          <div className="ap-cards ap-main-grid">
-            {MAIN_LOOKS.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Bonus looks */}
-      <section className="ap-section">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">BONUS LOOKS</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>
-            Three more. For specific moments.
-          </h2>
-          <div className="ap-cards">
-            {BONUS_LOOKS.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. Workflow prompts */}
-      <section className="ap-section ap-workflow-section">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">SSELFIE WORKFLOW</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>
-            Use these when you want the photo to become content, not just a pretty image.
-          </h2>
-          <p className="ap-workflow-note">
-            These prompts do not change how you look. They help you understand your photo,
-            edit it, caption it, and turn it into a content plan.
-          </p>
-          <div className="ap-cards">
-            {WORKFLOW_PROMPTS.map((card) => (
-              <PromptCardEl key={card.id} card={card} isWorkflow />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Vault preview — after free content, with thumbnail strips */}
+      {/* 2. Updated Vault preview — the core experience */}
       {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
-        <section className="ap-section ap-vault-preview">
+        <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
-            <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
+            <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
             <h2 className={`ap-section-title ${cormorant.className}`}>
-              You&apos;ve tried the free looks.<br />Here&apos;s what a full photoshoot looks like.
+              Shot 1 from every photoshoot collection.
             </h2>
             <p className="ap-workflow-note">
-              Each collection below is a complete shoot — 6 to 14 prompts covering every
-              angle, from hero full-body to close-up beauty detail. You have shot 1 of each.
-              The rest are in the Vault.
+              These are the opening shots from the full Vault. Each one gives you a different
+              visual identity from one selfie. The complete shoot directions are inside the Vault.
             </p>
             <div className="ap-vault-grid">
               {FREEBIE_COLLECTION_PREVIEWS.map((card) => {
                 const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
                 return (
                   <div key={card.id} className="ap-vault-item">
-                    <PromptCardEl card={card} />
+                    <PreviewCardEl card={card} />
                     {meta && (
                       <div className="ap-thumb-wrap">
                         <div className="ap-thumb-row">
@@ -389,6 +327,108 @@ export default async function AiPromptsAccessPage({
           </div>
         </section>
       )}
+
+      {/* 2. Before you start */}
+      <section className="ap-section ap-before">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">BEFORE YOU START</p>
+          <ul className="ap-before-list">
+            <li>Use your own photo or a photo you have permission to edit.</li>
+            <li>
+              Choose a clear selfie with your face visible. Sunglasses and heavy shadows
+              give AI less to work with.
+            </li>
+            <li>
+              Better light in the original means a better result. A blurry photo produces
+              a blurry AI version.
+            </li>
+            <li>Copy one prompt at a time. Run it. Check the result before posting.</li>
+            <li>
+              If the AI changes your face too much, start your next attempt with the
+              Reusable Starter Line below.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 3. Reusable starter line */}
+      <section className="ap-section ap-starter">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">PASTE THIS FIRST</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>Your anchor prompt.</h2>
+          <p className="ap-starter-note">
+            Add this before any other prompt if the AI is drifting too far from your face.
+            You can also use it on its own.
+          </p>
+          <div className="ap-starter-card">
+            <p className="ap-starter-text">{REUSABLE_STARTER}</p>
+            <div className="pc-copy-row">
+              <CopyButton text={REUSABLE_STARTER} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4→7. Vault preview moved — now appears after free content below */}
+
+      <section className="ap-section ap-bonus-section">
+        <div className="ap-section-inner">
+          <details className="ap-bonus-library">
+            <summary>
+              <span className="ap-eyebrow">BONUS PROMPT LIBRARY</span>
+              <span className={`ap-section-title ap-summary-title ${cormorant.className}`}>
+                Extra prompts for experimenting.
+              </span>
+              <span className="ap-workflow-note ap-summary-note">
+                These are support prompts from the original free pack. Start with the visual
+                photoshoot previews above; open this library when you want more variations.
+              </span>
+            </summary>
+
+            <div className="ap-bonus-content">
+              <div className="ap-bonus-group">
+                <p className="ap-eyebrow">EXTRA LOOKS</p>
+                <h2 className={`ap-section-title ${cormorant.className}`}>
+                  More transformations to test.
+                </h2>
+                <div className="ap-cards ap-main-grid">
+                  {MAIN_LOOKS.map((card) => (
+                    <PromptCardEl key={card.id} card={card} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="ap-bonus-group">
+                <p className="ap-eyebrow">BONUS LOOKS</p>
+                <h2 className={`ap-section-title ${cormorant.className}`}>
+                  Specific moments and quick variations.
+                </h2>
+                <div className="ap-cards">
+                  {BONUS_LOOKS.map((card) => (
+                    <PromptCardEl key={card.id} card={card} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="ap-bonus-group">
+                <p className="ap-eyebrow">SSELFIE WORKFLOW</p>
+                <h2 className={`ap-section-title ${cormorant.className}`}>
+                  Make the photo useful for content.
+                </h2>
+                <p className="ap-workflow-note">
+                  These do not change how you look. They help you understand your photo,
+                  edit it, caption it, and turn it into a content plan.
+                </p>
+                <div className="ap-cards">
+                  {WORKFLOW_PROMPTS.map((card) => (
+                    <PromptCardEl key={card.id} card={card} isWorkflow />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
 
       {/* 9. Bridge to Free Selfie Guide */}
       <section className="ap-section ap-bridge">
@@ -935,6 +975,210 @@ export default async function AiPromptsAccessPage({
           .ap-cards.ap-main-grid > .pc:last-child {
             grid-column: 1 / -1;
           }
+        }
+
+        /* Editorial light refresh: the access page should feel like the email
+           and the product itself, not a dark prompt database. */
+        .ap-page {
+          background: #f5f1eb;
+          color: #0d0c0b;
+        }
+        .ap-hero {
+          background: #0d0c0b;
+        }
+        .ap-hero-title {
+          letter-spacing: 0;
+        }
+        .ap-section,
+        .ap-bridge,
+        .ap-kit-bridge {
+          border-top-color: rgba(13, 12, 11, 0.08);
+        }
+        .ap-section {
+          background: #f5f1eb;
+        }
+        .ap-vault-preview,
+        .ap-bonus-section {
+          background: #fffaf4;
+        }
+        .ap-before,
+        .ap-starter,
+        .ap-kit-bridge {
+          background: #f0ede8;
+        }
+        .ap-eyebrow,
+        .pc-number,
+        .pc-when-label {
+          color: rgba(13, 12, 11, 0.42);
+        }
+        .ap-section-title,
+        .pc-title,
+        .ap-bridge-title {
+          color: #0d0c0b;
+          letter-spacing: 0;
+        }
+        .ap-workflow-note,
+        .ap-starter-note,
+        .ap-before-list li,
+        .ap-bridge-body,
+        .ap-kit-body,
+        .pc-when {
+          color: rgba(13, 12, 11, 0.64);
+        }
+        .pc,
+        .ap-starter-card {
+          background: rgba(255, 250, 244, 0.82);
+          border-color: rgba(13, 12, 11, 0.1);
+          border-radius: 8px;
+        }
+        .pc-example-image-wrap {
+          border-radius: 8px 8px 0 0;
+        }
+        .ap-vault-item > .pc {
+          border-radius: 8px 8px 0 0;
+        }
+        .pc-prompt-wrap {
+          background: rgba(240, 237, 232, 0.72);
+          border-color: rgba(13, 12, 11, 0.08);
+        }
+        .pc-prompt-text,
+        .ap-starter-text {
+          color: rgba(13, 12, 11, 0.74);
+        }
+        .pc-mood,
+        .ap-thumb-note,
+        .ap-kit-question {
+          color: rgba(13, 12, 11, 0.48);
+        }
+        .ap-thumb-wrap {
+          background: rgba(255, 250, 244, 0.82);
+          border-color: rgba(13, 12, 11, 0.1);
+          border-radius: 0 0 8px 8px;
+        }
+        .ap-thumb-item-yours {
+          outline-color: rgba(13, 12, 11, 0.42);
+        }
+        .ap-thumb-yours-label {
+          color: rgba(13, 12, 11, 0.7);
+        }
+        .copy-btn {
+          color: #0d0c0b;
+          border-color: rgba(13, 12, 11, 0.18);
+          background: transparent;
+        }
+        .copy-btn:hover {
+          color: #0d0c0b;
+          border-color: rgba(13, 12, 11, 0.42);
+        }
+        .ap-bridge-cta,
+        .ap-bridge-cta-primary,
+        .ap-bridge-cta-secondary {
+          background: #0d0c0b;
+          color: #f5f1eb;
+          border-color: #0d0c0b;
+          border-radius: 0;
+        }
+        .ap-bridge {
+          background: #fffaf4;
+        }
+        .ap-bonus-library {
+          border: 1px solid rgba(13, 12, 11, 0.1);
+          background: rgba(255, 250, 244, 0.84);
+          border-radius: 8px;
+          padding: 24px;
+        }
+        .ap-bonus-library summary {
+          cursor: pointer;
+          list-style: none;
+        }
+        .ap-bonus-library summary::-webkit-details-marker {
+          display: none;
+        }
+        .ap-summary-title {
+          display: block;
+          margin-bottom: 16px;
+        }
+        .ap-summary-note {
+          display: block;
+          margin: 0;
+        }
+        .ap-bonus-content {
+          margin-top: 40px;
+          padding-top: 40px;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+        }
+        .ap-bonus-group + .ap-bonus-group {
+          margin-top: 56px;
+        }
+        .ap-preview-card {
+          background: rgba(255, 250, 244, 0.86);
+          border: 1px solid rgba(13, 12, 11, 0.1);
+          border-radius: 8px 8px 0 0;
+          overflow: hidden;
+        }
+        .ap-preview-image-wrap {
+          background: #f0ede8;
+        }
+        .ap-preview-image {
+          display: block;
+          width: 100%;
+          height: auto;
+          max-height: 520px;
+          object-fit: cover;
+          object-position: center top;
+        }
+        .ap-preview-body {
+          padding: 24px 22px 22px;
+        }
+        .ap-preview-number,
+        .ap-preview-mood,
+        .ap-preview-prompt summary {
+          color: rgba(13, 12, 11, 0.42);
+        }
+        .ap-preview-number,
+        .ap-preview-prompt summary {
+          display: block;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+        }
+        .ap-preview-title {
+          margin: 10px 0 12px;
+          color: #0d0c0b;
+          font-size: clamp(1.6rem, 6vw, 2.3rem);
+          font-weight: 300;
+          line-height: 1.04;
+          letter-spacing: 0;
+        }
+        .ap-preview-when {
+          margin: 0 0 14px;
+          color: rgba(13, 12, 11, 0.64);
+          font-size: 14px;
+          line-height: 1.7;
+        }
+        .ap-preview-mood {
+          margin: 0 0 18px;
+          font-size: 11px;
+          line-height: 1.6;
+        }
+        .ap-preview-prompt {
+          margin: 0 0 18px;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+          padding-top: 16px;
+        }
+        .ap-preview-prompt summary {
+          cursor: pointer;
+          list-style: none;
+        }
+        .ap-preview-prompt summary::-webkit-details-marker {
+          display: none;
+        }
+        .ap-preview-prompt p {
+          margin: 14px 0 0;
+          color: rgba(13, 12, 11, 0.7);
+          font-size: 13px;
+          line-height: 1.75;
         }
       `}</style>
     </main>

@@ -21,6 +21,102 @@ import {
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
+const COLLECTION_OVERVIEW = [
+  {
+    eyebrow: "COLLECTION 06",
+    title: "Dark Feminine Café",
+    note: "Black blazer. Coffee in hand. Moving through the city like you own it.",
+    image: DARK_FEMININE_CAFE_SERIES[0]?.exampleImage,
+    href: "#dark-feminine-cafe",
+  },
+  {
+    eyebrow: "COLLECTION 05",
+    title: "Dark Balcony",
+    note: "City lights below. Evening silk. Luxury.",
+    image: DARK_BALCONY_SERIES[0]?.exampleImage,
+    href: "#dark-balcony",
+  },
+  {
+    eyebrow: "COLLECTION 04",
+    title: "Coastal White",
+    note: "White linen. Salt air. Golden light on water.",
+    image: COASTAL_WHITE_SERIES[0]?.exampleImage,
+    href: "#coastal-white",
+  },
+  {
+    eyebrow: "COLLECTION 01",
+    title: "Marble Café",
+    note: "Candlelit. Marble. Wine at dusk.",
+    image: MARBLE_CAFE_SERIES[0]?.exampleImage,
+    href: "#marble-cafe",
+  },
+  {
+    eyebrow: "COLLECTION 02",
+    title: "Denim Street",
+    note: "Golden hour. City light. Effortless.",
+    image: DENIM_STREET_SERIES[0]?.exampleImage,
+    href: "#denim-street",
+  },
+  {
+    eyebrow: "COLLECTION 03",
+    title: "Cozy Leather",
+    note: "Warm tones. Mirror light. Sunday morning.",
+    image: COZY_LEATHER_SERIES[0]?.exampleImage,
+    href: "#cozy-leather",
+  },
+]
+
+const VAULT_COLLECTIONS: Array<{
+  id: string
+  eyebrow: string
+  title: string
+  note: string
+  cards: PromptCard[]
+}> = [
+  {
+    id: "dark-feminine-cafe",
+    eyebrow: "COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL",
+    title: "Dark Feminine Café Coffee-Run Editorial",
+    note: "City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit — every shot in one coffee-run story.",
+    cards: DARK_FEMININE_CAFE_SERIES,
+  },
+  {
+    id: "dark-balcony",
+    eyebrow: "COLLECTION 05 · DARK BALCONY LUXURY CITY EDITORIAL",
+    title: "Dark Balcony Luxury City Editorial",
+    note: "European apartment balcony, black outfit, oversized sunglasses, blurred city below. Every angle from hero kiss to shadow silhouette.",
+    cards: DARK_BALCONY_SERIES,
+  },
+  {
+    id: "coastal-white",
+    eyebrow: "COLLECTION 04 · COASTAL WHITE DRESS SUNSET EDITORIAL",
+    title: "Coastal White Dress Sunset Editorial",
+    note: "Mediterranean terrace, white maxi dress, ocean cliffs at golden hour. Every angle from hero full-body to close-up beauty portrait.",
+    cards: COASTAL_WHITE_SERIES,
+  },
+  {
+    id: "marble-cafe",
+    eyebrow: "COLLECTION 01 · MARBLE CAFÉ WINE EDITORIAL",
+    title: "Marble Café Wine Editorial",
+    note: "Café table, wine glass, marble surfaces. From casual sip to close editorial detail.",
+    cards: MARBLE_CAFE_SERIES,
+  },
+  {
+    id: "denim-street",
+    eyebrow: "COLLECTION 02 · DENIM STREET EDITORIAL",
+    title: "Soft Blazer + Light Denim Street Editorial",
+    note: "Outdoor editorial covering every angle. Wide establishing frames to tight close-up detail.",
+    cards: DENIM_STREET_SERIES,
+  },
+  {
+    id: "cozy-leather",
+    eyebrow: "COLLECTION 03 · COZY LEATHER + MIRROR EDITORIAL",
+    title: "Cozy Leather + Oversized Knit Mirror Editorial",
+    note: "Indoor mirror light, leather jacket, oversized knit. Soft natural light to high-contrast moody.",
+    cards: COZY_LEATHER_SERIES,
+  },
+]
+
 export const metadata: Metadata = {
   title: "AI Photo Prompt Vault · SSELFIE",
   description: "Turn one selfie into unlimited editorial photoshoots.",
@@ -205,11 +301,11 @@ export default async function PromptVaultAccessPage({
       <section className="pv-hero">
         <p className="pv-eyebrow">AI Photo Prompt Vault</p>
         <h1 className={`pv-headline ${cormorant.className}`}>
-          YOUR SELFIE TRANSFORMATIONS
+          Your Selfie Photoshoot Vault
         </h1>
         <p className="pv-subhead">
-          Turn one selfie into unlimited editorial photoshoots. Pick a transformation,
-          paste it into ChatGPT with your selfie, and get the visual identity you want in under a minute.
+          Turn one selfie into cinematic editorial photoshoots. Start by choosing the
+          visual world you want to step into, then open the full prompt cards when you are ready.
         </p>
         <div className="pv-how-to">
           <p className="pv-how-label">HOW TO USE</p>
@@ -223,109 +319,62 @@ export default async function PromptVaultAccessPage({
         </div>
       </section>
 
-      {/* Dark Feminine Café */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Dark Feminine Café Coffee-Run Editorial
+      <section className="pv-overview">
+        <div className="pv-overview-inner">
+          <p className="pv-series-eyebrow">INSIDE THE VAULT</p>
+          <h2 className={`pv-overview-title ${cormorant.className}`}>
+            Six complete photoshoot collections.
           </h2>
-          <p className="pv-series-note">
-            City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit — every shot in one coffee-run story.
+          <p className="pv-overview-note">
+            Each collection gives you the full shoot direction, every scene, and the
+            copy-paste prompt for each image. Scroll the moodboard first, then open the prompts.
           </p>
-          <div className="pv-cards">
-            {DARK_FEMININE_CAFE_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
+          <div className="pv-overview-grid">
+            {COLLECTION_OVERVIEW.map((collection) => (
+              <a key={collection.href} href={collection.href} className="pv-overview-card">
+                {collection.image && (
+                  <Image
+                    src={collection.image}
+                    alt={`${collection.title} preview`}
+                    width={600}
+                    height={900}
+                    className="pv-overview-image"
+                  />
+                )}
+                <span className="pv-overview-eyebrow">{collection.eyebrow}</span>
+                <h3 className={`pv-overview-card-title ${cormorant.className}`}>{collection.title}</h3>
+                <p className="pv-overview-card-note">{collection.note}</p>
+              </a>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dark Balcony */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 05 · DARK BALCONY LUXURY CITY EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Dark Balcony Luxury City Editorial
+      <section className="pv-library">
+        <div className="pv-library-inner">
+          <p className="pv-series-eyebrow">FULL PROMPT LIBRARY</p>
+          <h2 className={`pv-library-title ${cormorant.className}`}>
+            Open the shoot you want to create.
           </h2>
-          <p className="pv-series-note">
-            European apartment balcony, black outfit, oversized sunglasses, blurred city below. Every angle from hero kiss to shadow silhouette.
-          </p>
-          <div className="pv-cards">
-            {DARK_BALCONY_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Coastal White */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 04 · COASTAL WHITE DRESS SUNSET EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Coastal White Dress Sunset Editorial
-          </h2>
-          <p className="pv-series-note">
-            Mediterranean terrace, white maxi dress, ocean cliffs at golden hour. Every angle from hero full-body to close-up beauty portrait.
-          </p>
-          <div className="pv-cards">
-            {COASTAL_WHITE_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Marble Café */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 01 · MARBLE CAFÉ WINE EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Marble Café Wine Editorial
-          </h2>
-          <p className="pv-series-note">
-            Café table, wine glass, marble surfaces. From casual sip to close editorial detail.
-          </p>
-          <div className="pv-cards">
-            {MARBLE_CAFE_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Denim Street */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 02 · DENIM STREET EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Soft Blazer + Light Denim Street Editorial
-          </h2>
-          <p className="pv-series-note">
-            Outdoor editorial covering every angle. Wide establishing frames to tight close-up detail.
-          </p>
-          <div className="pv-cards">
-            {DENIM_STREET_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Cozy Leather */}
-      <section className="pv-section">
-        <div className="pv-section-inner">
-          <p className="pv-series-eyebrow">COLLECTION 03 · COZY LEATHER + MIRROR EDITORIAL</p>
-          <h2 className={`pv-series-title ${cormorant.className}`}>
-            Cozy Leather + Oversized Knit Mirror Editorial
-          </h2>
-          <p className="pv-series-note">
-            Indoor mirror light, leather jacket, oversized knit. Soft natural light to high-contrast moody.
-          </p>
-          <div className="pv-cards">
-            {COZY_LEATHER_SERIES.map((card) => (
-              <PromptCardEl key={card.id} card={card} />
+          <div className="pv-collection-list">
+            {VAULT_COLLECTIONS.map((collection) => (
+              <details key={collection.id} id={collection.id} className="pv-collection-details">
+                <summary className="pv-collection-summary">
+                  <span className="pv-collection-summary-text">
+                    <span className="pv-series-eyebrow">{collection.eyebrow}</span>
+                    <span className={`pv-series-title ${cormorant.className}`}>
+                      {collection.title}
+                    </span>
+                    <span className="pv-series-note">{collection.note}</span>
+                  </span>
+                  <span className="pv-open-label">Open prompts</span>
+                </summary>
+                <div className="pv-cards">
+                  {collection.cards.map((card) => (
+                    <PromptCardEl key={card.id} card={card} />
+                  ))}
+                </div>
+              </details>
             ))}
           </div>
         </div>
@@ -409,6 +458,72 @@ export default async function PromptVaultAccessPage({
         .pv-section {
           border-top: 1px solid rgba(245, 245, 245, 0.07);
           padding: 56px 0;
+        }
+        .pv-library {
+          border-top: 1px solid rgba(245, 245, 245, 0.07);
+          padding: 56px 0;
+        }
+        .pv-library-inner {
+          max-width: 1140px;
+          margin: 0 auto;
+          padding: 0 24px;
+        }
+        .pv-library-title {
+          margin: 0 0 28px;
+          font-size: clamp(1.9rem, 5vw, 3.2rem);
+          font-weight: 300;
+          line-height: 1.02;
+          color: #f5f5f5;
+        }
+        .pv-collection-list {
+          display: grid;
+          gap: 14px;
+        }
+        .pv-collection-details {
+          border: 1px solid rgba(245, 245, 245, 0.09);
+          border-radius: 14px;
+          background: rgba(245, 245, 245, 0.035);
+          overflow: hidden;
+        }
+        .pv-collection-summary {
+          list-style: none;
+          cursor: pointer;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 18px;
+          padding: 24px;
+        }
+        .pv-collection-summary::-webkit-details-marker {
+          display: none;
+        }
+        .pv-collection-summary-text {
+          display: grid;
+          gap: 8px;
+        }
+        .pv-collection-summary .pv-series-title,
+        .pv-collection-summary .pv-series-note,
+        .pv-collection-summary .pv-series-eyebrow {
+          display: block;
+          margin: 0;
+        }
+        .pv-open-label {
+          justify-self: start;
+          align-self: center;
+          border: 1px solid rgba(245, 245, 245, 0.16);
+          border-radius: 999px;
+          padding: 11px 16px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(245, 245, 245, 0.74);
+        }
+        .pv-collection-details[open] .pv-open-label {
+          background: rgba(245, 245, 245, 0.9);
+          color: #0a0a0a;
+        }
+        .pv-collection-details .pv-cards {
+          padding: 0 24px 24px;
         }
         .pv-section-inner {
           max-width: 1140px;
@@ -549,6 +664,187 @@ export default async function PromptVaultAccessPage({
           font-weight: 600;
           letter-spacing: 0.46em;
           color: rgba(245, 245, 245, 0.22);
+        }
+
+        /* Editorial light refresh: the Vault is a visual product, so the
+           interface opens like a collection moodboard before the prompt cards. */
+        .pv-page {
+          background: #f5f1eb;
+          color: #0d0c0b;
+        }
+        .pv-hero {
+          max-width: 1120px;
+          padding: 72px 24px 44px;
+        }
+        .pv-eyebrow,
+        .pv-series-eyebrow,
+        .pv-how-label,
+        .pv-card-number,
+        .pv-when-label,
+        .pv-overview-eyebrow {
+          color: rgba(13, 12, 11, 0.42);
+        }
+        .pv-headline,
+        .pv-series-title,
+        .pv-card-title,
+        .pv-overview-title,
+        .pv-overview-card-title {
+          color: #0d0c0b;
+          letter-spacing: 0;
+        }
+        .pv-subhead,
+        .pv-series-note,
+        .pv-how-steps,
+        .pv-when,
+        .pv-prompt-text,
+        .pv-overview-note,
+        .pv-overview-card-note {
+          color: rgba(13, 12, 11, 0.64);
+        }
+        .pv-how-steps strong {
+          color: #0d0c0b;
+        }
+        .pv-how-to,
+        .pv-card {
+          background: rgba(255, 250, 244, 0.82);
+          border-color: rgba(13, 12, 11, 0.1);
+          border-radius: 8px;
+        }
+        .pv-section,
+        .pv-footer {
+          border-top-color: rgba(13, 12, 11, 0.08);
+        }
+        .pv-overview {
+          padding: 32px 24px 72px;
+          background: #fffaf4;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+          border-bottom: 1px solid rgba(13, 12, 11, 0.08);
+        }
+        .pv-overview-inner {
+          max-width: 1120px;
+          margin: 0 auto;
+        }
+        .pv-overview-title {
+          margin: 0 0 12px;
+          font-size: clamp(2rem, 6vw, 4rem);
+          font-weight: 300;
+          line-height: 1.02;
+        }
+        .pv-overview-note {
+          max-width: 620px;
+          margin: 0 0 36px;
+          font-size: 15px;
+          line-height: 1.8;
+        }
+        .pv-overview-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+        .pv-overview-card {
+          display: block;
+          color: inherit;
+          text-decoration: none;
+          background: #f5f1eb;
+          border: 1px solid rgba(13, 12, 11, 0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .pv-overview-image {
+          display: block;
+          width: 100%;
+          height: auto;
+          aspect-ratio: 4 / 5;
+          object-fit: cover;
+          object-position: center top;
+        }
+        .pv-overview-eyebrow {
+          display: block;
+          padding: 20px 20px 8px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.32em;
+          text-transform: uppercase;
+        }
+        .pv-overview-card-title {
+          margin: 0;
+          padding: 0 20px;
+          font-size: 1.75rem;
+          font-weight: 300;
+          line-height: 1.08;
+        }
+        .pv-overview-card-note {
+          margin: 0;
+          padding: 10px 20px 24px;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+        .pv-library {
+          background: #f5f1eb;
+          border-top-color: rgba(13, 12, 11, 0.08);
+        }
+        .pv-library-title {
+          color: #0d0c0b;
+          letter-spacing: 0;
+        }
+        .pv-collection-details {
+          background: #fffaf4;
+          border-color: rgba(13, 12, 11, 0.1);
+          border-radius: 8px;
+        }
+        .pv-collection-summary {
+          padding: 22px;
+        }
+        .pv-open-label {
+          border-color: rgba(13, 12, 11, 0.16);
+          color: rgba(13, 12, 11, 0.68);
+        }
+        .pv-collection-details[open] .pv-open-label {
+          background: #0d0c0b;
+          color: #fffaf4;
+        }
+        .pv-collection-details .pv-cards {
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+          padding-top: 22px;
+        }
+        .pv-card-image-wrap {
+          background: #f0ede8;
+        }
+        .pv-card-body {
+          background: rgba(255, 250, 244, 0.86);
+        }
+        .pv-mood,
+        .pv-footer-text,
+        .pv-footer-link {
+          color: rgba(13, 12, 11, 0.48);
+        }
+        .pv-prompt-wrap {
+          border-top-color: rgba(13, 12, 11, 0.08);
+        }
+        .copy-btn {
+          color: #0d0c0b;
+          border-color: rgba(13, 12, 11, 0.18);
+          background: transparent;
+        }
+        .copy-btn:hover {
+          color: #0d0c0b;
+          border-color: rgba(13, 12, 11, 0.42);
+        }
+        .pv-footer-brand {
+          color: rgba(13, 12, 11, 0.28);
+        }
+        @media (min-width: 760px) {
+          .pv-overview-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          .pv-collection-summary {
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 28px 30px;
+          }
+          .pv-collection-details .pv-cards {
+            padding: 28px 30px 30px;
+          }
         }
       `}</style>
     </main>
