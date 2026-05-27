@@ -14,6 +14,7 @@ import {
   BONUS_LOOKS,
   WORKFLOW_PROMPTS,
   FREEBIE_COLLECTION_PREVIEWS,
+  VAULT_COLLECTION_META,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 
@@ -263,40 +264,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 4. Vault preview — one shot from each paid collection */}
-      {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
-        <section className="ap-section ap-vault-preview">
-          <div className="ap-section-inner">
-            <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
-            <h2 className={`ap-section-title ${cormorant.className}`}>
-              A taste of the full transformation vault.
-            </h2>
-            <p className="ap-workflow-note">
-              These are the opening shots from the paid editorial collections. The full Prompt Vault
-              turns one selfie into complete shoot series: every angle, every aesthetic, every image direction.
-            </p>
-            <div className="ap-cards">
-              {FREEBIE_COLLECTION_PREVIEWS.map((card) => (
-                <PromptCardEl key={card.id} card={card} />
-              ))}
-            </div>
-            <div className="ap-vault-cta-row">
-              <TrackedLink
-                href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=vault_preview&checkout_source=free_prompts_bridge&buyer_stage=lead"
-                className="ap-bridge-cta ap-bridge-cta-primary"
-                trackEvent="ai_prompts_prompt_vault_click"
-                trackProperties={{
-                  source: "ai-prompts",
-                  destination: "prompt-vault",
-                  utm_campaign: "ai_prompts_to_prompt_vault",
-                }}
-              >
-                Get the Full Photoshoot Vault · $27
-              </TrackedLink>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* 4→7. Vault preview moved — now appears after free content below */}
 
       {/* 5. The main looks */}
       <section className="ap-section">
@@ -346,6 +314,72 @@ export default async function AiPromptsAccessPage({
           </div>
         </div>
       </section>
+
+      {/* 7. Vault preview — after free content, with thumbnail strips */}
+      {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
+        <section className="ap-section ap-vault-preview">
+          <div className="ap-section-inner">
+            <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
+            <h2 className={`ap-section-title ${cormorant.className}`}>
+              You&apos;ve tried the free looks.<br />Here&apos;s what a full photoshoot looks like.
+            </h2>
+            <p className="ap-workflow-note">
+              Each collection below is a complete shoot — 6 to 14 prompts covering every
+              angle, from hero full-body to close-up beauty detail. You have shot 1 of each.
+              The rest are in the Vault.
+            </p>
+            <div className="ap-vault-grid">
+              {FREEBIE_COLLECTION_PREVIEWS.map((card) => {
+                const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
+                return (
+                  <div key={card.id} className="ap-vault-item">
+                    <PromptCardEl card={card} />
+                    {meta && (
+                      <div className="ap-thumb-wrap">
+                        <div className="ap-thumb-row">
+                          {meta.thumbnails.map((src, i) => (
+                            <div
+                              key={i}
+                              className={`ap-thumb-item ${i === 0 ? "ap-thumb-item-yours" : "ap-thumb-item-locked"}`}
+                            >
+                              <Image
+                                src={src}
+                                alt=""
+                                fill
+                                sizes="64px"
+                                style={{ objectFit: "cover", objectPosition: "center top" }}
+                                aria-hidden
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <p className="ap-thumb-note">
+                          <span className="ap-thumb-yours-label">Shot 1 of {meta.shotCount} is yours.</span>
+                          {" "}{meta.shotCount - 1} more shots in the Vault.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="ap-vault-cta-row">
+              <TrackedLink
+                href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=vault_preview&checkout_source=free_prompts_bridge&buyer_stage=lead"
+                className="ap-bridge-cta ap-bridge-cta-primary"
+                trackEvent="ai_prompts_prompt_vault_click"
+                trackProperties={{
+                  source: "ai-prompts",
+                  destination: "prompt-vault",
+                  utm_campaign: "ai_prompts_to_prompt_vault",
+                }}
+              >
+                Get the Full Photoshoot Vault · $27
+              </TrackedLink>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 9. Bridge to Free Selfie Guide */}
       <section className="ap-section ap-bridge">
@@ -575,6 +609,13 @@ export default async function AiPromptsAccessPage({
           overflow: hidden;
         }
 
+        /* Inside the vault item, the card's bottom corners are flat so the
+           thumbnail strip connects seamlessly below it */
+        .ap-vault-item > .pc {
+          border-radius: 18px 18px 0 0;
+          border-bottom: none;
+        }
+
         .pc-example-image-wrap {
           margin: -32px -28px 24px;
           overflow: hidden;
@@ -750,6 +791,80 @@ export default async function AiPromptsAccessPage({
 
         .ap-kit-bridge {
           border-top: 1px solid rgba(245, 245, 245, 0.05);
+        }
+
+        /* Vault grid — same responsive behaviour as ap-cards but without last-child span */
+        .ap-vault-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 28px;
+        }
+
+        /* Each vault item = prompt card + thumbnail strip stacked */
+        .ap-vault-item {
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* Thumbnail strip */
+        .ap-thumb-wrap {
+          margin-top: 0;
+          padding: 18px 28px 22px;
+          background: rgba(245, 245, 245, 0.025);
+          border: 1px solid rgba(245, 245, 245, 0.09);
+          border-top: none;
+          border-radius: 0 0 18px 18px;
+        }
+
+        .ap-thumb-row {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+        .ap-thumb-row::-webkit-scrollbar { display: none; }
+
+        .ap-thumb-item {
+          position: relative;
+          width: 54px;
+          min-width: 54px;
+          aspect-ratio: 2 / 3;
+          overflow: hidden;
+          border-radius: 5px;
+          flex-shrink: 0;
+        }
+
+        .ap-thumb-item-yours {
+          opacity: 1;
+          outline: 1.5px solid rgba(245, 245, 245, 0.48);
+          outline-offset: 2px;
+        }
+
+        .ap-thumb-item-locked {
+          opacity: 0.28;
+        }
+
+        .ap-thumb-note {
+          margin: 12px 0 0;
+          font-size: 11px;
+          line-height: 1.65;
+          color: rgba(245, 245, 245, 0.36);
+          letter-spacing: 0.02em;
+        }
+
+        .ap-thumb-yours-label {
+          color: rgba(245, 245, 245, 0.56);
+          font-weight: 500;
+        }
+
+        @media (min-width: 900px) {
+          .ap-vault-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+          }
         }
 
         .ap-kit-question {

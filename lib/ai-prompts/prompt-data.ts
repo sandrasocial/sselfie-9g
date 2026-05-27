@@ -1044,6 +1044,109 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
 
 
 // ---------------------------------------------------------------------------
+// VAULT COLLECTION METADATA
+//
+// Thumbnail image paths + shot counts for each paid collection.
+// Used by the freebie page to render the thumbnail strip below each preview
+// card — without importing full paid series arrays (respects SOP).
+//
+// Keep in the same order as FREEBIE_COLLECTION_PREVIEWS (newest at top).
+// When adding a new collection: add a new entry at the TOP of this array.
+// ---------------------------------------------------------------------------
+
+export type VaultCollectionMeta = {
+  /** Matches the `id` field of the corresponding FREEBIE_COLLECTION_PREVIEWS card */
+  previewCardId: string
+  name: string
+  /** Total number of prompts (shots) in the full collection */
+  shotCount: number
+  /** Image paths that exist — may be fewer than shotCount */
+  thumbnails: string[]
+}
+
+export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
+  {
+    previewCardId: "dark-balcony-shot-1",
+    name: "Dark Balcony Luxury City Editorial",
+    shotCount: 9,
+    thumbnails: [
+      "/images/ai-prompts/dark-balcony-shot-1.png",
+      "/images/ai-prompts/dark-balcony-shot-2.png",
+      "/images/ai-prompts/dark-balcony-shot-3.png",
+      "/images/ai-prompts/dark-balcony-shot-4.png",
+      "/images/ai-prompts/dark-balcony-shot-5.png",
+      "/images/ai-prompts/dark-balcony-shot-6.png",
+      "/images/ai-prompts/dark-balcony-shot-7.png",
+      "/images/ai-prompts/dark-balcony-shot-8.png",
+    ],
+  },
+  {
+    previewCardId: "coastal-white-shot-1",
+    name: "Coastal White Dress Sunset Editorial",
+    shotCount: 9,
+    thumbnails: [
+      "/images/ai-prompts/coastal-white-shot-1.jpg",
+      "/images/ai-prompts/coastal-white-shot-2.jpg",
+      "/images/ai-prompts/coastal-white-shot-3.jpg",
+      "/images/ai-prompts/coastal-white-shot-4.jpg",
+      "/images/ai-prompts/coastal-white-shot-5.jpg",
+      "/images/ai-prompts/coastal-white-shot-6.jpg",
+      "/images/ai-prompts/coastal-white-shot-7.jpg",
+      "/images/ai-prompts/coastal-white-shot-8.jpg",
+    ],
+  },
+  {
+    previewCardId: "cozy-leather-shot-1",
+    name: "Cozy Leather + Oversized Knit Mirror Editorial",
+    shotCount: 13,
+    thumbnails: [
+      "/images/ai-prompts/cozy-leather-shot-1.png",
+      "/images/ai-prompts/cozy-leather-shot-2.png",
+      "/images/ai-prompts/cozy-leather-shot-3.png",
+      "/images/ai-prompts/cozy-leather-shot-4.png",
+      "/images/ai-prompts/cozy-leather-shot-5.png",
+      "/images/ai-prompts/cozy-leather-shot-6.png",
+      "/images/ai-prompts/cozy-leather-shot-7.png",
+      "/images/ai-prompts/cozy-leather-shot-8.png",
+      "/images/ai-prompts/cozy-leather-shot-9.png",
+    ],
+  },
+  {
+    previewCardId: "denim-street-shot-1",
+    name: "Soft Blazer + Light Denim Street Editorial",
+    shotCount: 14,
+    thumbnails: [
+      "/images/ai-prompts/denim-street-shot-1.jpg",
+      "/images/ai-prompts/denim-street-shot-2.jpg",
+      "/images/ai-prompts/denim-street-shot-3.jpg",
+      "/images/ai-prompts/denim-street-shot-4.jpg",
+      "/images/ai-prompts/denim-street-shot-5.jpg",
+      "/images/ai-prompts/denim-street-shot-6.jpg",
+      "/images/ai-prompts/denim-street-shot-7.jpg",
+      "/images/ai-prompts/denim-street-shot-8.jpg",
+      "/images/ai-prompts/denim-street-shot-9.jpg",
+      "/images/ai-prompts/denim-street-shot-10.jpg",
+      "/images/ai-prompts/denim-street-shot-11.jpg",
+      "/images/ai-prompts/denim-street-shot-12.jpg",
+      "/images/ai-prompts/denim-street-shot-13.jpg",
+    ],
+  },
+  {
+    previewCardId: "marble-wine-shot-1",
+    name: "Marble Café Wine Editorial",
+    shotCount: 6,
+    thumbnails: [
+      "/images/ai-prompts/marble-wine-shot-1.jpg",
+      "/images/ai-prompts/marble-wine-shot-2.jpg",
+      "/images/ai-prompts/marble-wine-shot-3.jpg",
+      "/images/ai-prompts/marble-wine-shot-4.jpg",
+      "/images/ai-prompts/marble-wine-shot-5.jpg",
+      "/images/ai-prompts/marble-wine-shot-6.jpg",
+    ],
+  },
+]
+
+// ---------------------------------------------------------------------------
 // FREEBIE COLLECTION PREVIEWS
 //
 // One shot per paid collection — shown in the freebie access page with an
