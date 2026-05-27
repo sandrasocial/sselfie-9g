@@ -299,94 +299,35 @@ git push origin HEAD:main
 
 ### Step 10 — Email drop (after every 2nd new collection)
 
-The email drop is triggered manually, not automatically. Run it only when you have added exactly 2 new collections since the last drop.
+The email drop is a **batched, idempotent, manually triggered** process.
+It cannot send in a single request — it is designed for ~1,500 recipients.
+Follow every sub-step in order. Do not skip.
 
-#### 10a — Update the drop log
+---
 
-Open `lib/vault/drop-log.ts`.
+#### Prerequisites before running any drop
 
-For each new collection you just added, confirm it has `includedInEmailDrop: false`.
-
-Then set the two config flags to arm the system:
-
-```typescript
-export const VAULT_EMAIL_CONFIG = {
-  automationApproved: true,   // ← set to true
-  dryRun: true,               // ← leave true for dry-run first
-  dropLabel: "Two New Shoots Just Dropped",
-}
-```
-
-Commit this change alongside the collection files (or as a separate commit).
-
-#### 10b — Dry-run test
-
-Call the API route from your terminal or Insomnia with your `VAULT_EMAIL_DROP_SECRET`:
+**The migration must be applied first (one-time setup):**
 
 ```bash
-curl -X POST https://sselfie.ai/api/vault/email-drop \
-  -H "Authorization: Bearer YOUR_SECRET_HERE"
+# Apply in Neon console or via psql — one time only
+\i migrations/20260527_vault_drop_runs.sql
 ```
 
-The response shows:
-- How many non-buyers will receive the upsell email
-- How many buyers will receive the update email
-- Sample recipients (first 5 of each)
-- Subject line previews
+**`VAULT_EMAIL_DROP_SECRET` must be set in Vercel:**
 
-Review the numbers. If everything looks right, move to 10c.
+1. Go to Vercel → Project Settings → Environment Variables
+2. Add `VAULT_EMAIL_DROP_SECRET` with a strong random value (e.g. from `openssl rand -hex 32`)
+3. Set for Production, Preview, Development
+4. Redeploy the project
 
-#### 10c — Live send
+**You cannot run any drop commands until both the migration and env var exist.**
 
-In `lib/vault/drop-log.ts`, change `dryRun` to `false`:
+---
 
-```typescript
-export const VAULT_EMAIL_CONFIG = {
-  automationApproved: true,
-  dryRun: false,   // ← flip to false
-  dropLabel: "Two New Shoots Just Dropped",
-}
-```
+#### 10a — Add the new collections to the drop log
 
-Call the route again:
-
-```bash
-curl -X POST https://sselfie.ai/api/vault/email-drop \
-  -H "Authorization: Bearer YOUR_SECRET_HERE"
-```
-
-The route sends both emails and returns a results summary:
-```json
-{
-  "nonBuyers": { "sent": 42, "failed": 0 },
-  "buyers":    { "sent": 8,  "failed": 0, "skipped": 0 }
-}
-```
-
-#### 10d — Mark collections as sent
-
-After a successful live send, update `lib/vault/drop-log.ts`:
-
-1. For each collection that was included in this drop, set:
-   ```typescript
-   includedInEmailDrop: true,
-   droppedAt: "YYYY-MM-DD",   // today's date
-   ```
-
-2. Reset the config flags to safe defaults:
-   ```typescript
-   automationApproved: false,
-   dryRun: true,
-   ```
-
-Commit with:
-```
-Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
-```
-
-#### 10e — Add the new collection entry to the drop log for future drops
-
-When you add the NEXT new collection in a future sprint, also add it to `VAULT_COLLECTIONS` in `lib/vault/drop-log.ts`:
+When you add a new collection, open `lib/vault/drop-log.ts` and add an entry:
 
 ```typescript
 {
@@ -399,13 +340,223 @@ When you add the NEXT new collection in a future sprint, also add it to `VAULT_C
 },
 ```
 
+Leave `includedInEmailDrop: false` until the drop completes successfully.
+
+---
+
+#### 10b — Arm the system for dry run
+
+Open `lib/vault/drop-log.ts`. Set:
+
+```typescript
+export const VAULT_EMAIL_CONFIG = {
+  automationApproved: true,   // ← arm the system
+  dryRun: true,               // ← stay on dry run first
+  dropLabel: "Two New Shoots Just Dropped",
+}
+```
+
+Commit and push this change before calling any endpoints.
+
+---
+
+#### 10c — Run the dry run
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  -H "Content-Type: application/json"
+```
+
+The response shows:
+- `segments.nonBuyers.count` — how many non-buyers will receive the upsell
+- `segments.buyers.count` — how many vault owners will receive the update
+- `segments.nonBuyers.sampleRecipients` — first 5 email addresses
+- `segments.nonBuyers.subjectPreview` — exact subject line
+- `idempotencyKeys` — the email_type keys used for duplicate protection
+
+Review the counts. A healthy response looks like ~1,500 non-buyers, ~5–10 buyers.
+**Sandra must approve the counts before you proceed.**
+
+No run is created. No emails are sent. Nothing is logged to email_logs.
+
+---
+
+#### 10d — Create a live run
+
+After Sandra approves the dry-run counts, set `dryRun: false` in `lib/vault/drop-log.ts`:
+
+```typescript
+export const VAULT_EMAIL_CONFIG = {
+  automationApproved: true,
+  dryRun: false,   // ← flip after Sandra approval
+  dropLabel: "Two New Shoots Just Dropped",
+}
+```
+
+Commit and push. Then call the start endpoint:
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  -H "Content-Type: application/json"
+```
+
+The response returns a `runId`. **Save this.** You need it for all batch calls.
+
+Example response:
+```json
+{
+  "dryRun": false,
+  "runId": "abc123-...",
+  "segments": {
+    "nonBuyers": { "totalPending": 1507 },
+    "buyers":    { "totalPending": 8 }
+  }
+}
+```
+
+---
+
+#### 10e — Send batches (repeat until done)
+
+Call `/process` repeatedly with the runId. Each call sends 25 emails per segment.
+~1,507 non-buyers takes ~61 calls.
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop/process \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"runId": "abc123-...", "audienceType": "all"}'
+```
+
+The response shows progress:
+```json
+{
+  "done": { "nonBuyer": false, "buyer": true },
+  "progress": {
+    "nonBuyer": { "sent": 25, "total": 1507, "pct": 2 },
+    "buyer":    { "sent": 8,  "total": 8,    "pct": 100 }
+  }
+}
+```
+
+Keep calling until `done.all === true`.
+
+**Idempotency is active.** If you call /process twice before the first batch finishes, the second call will skip already-sent addresses. It is safe to repeat calls.
+
+**If some fail:** Re-run the same /process call. Only addresses without a 'sent' record are retried. Already-sent addresses are skipped automatically.
+
+**To process segments separately:**
+
+```bash
+# Only non-buyers
+curl ... -d '{"runId": "abc123-...", "audienceType": "non_buyer"}'
+
+# Only buyers
+curl ... -d '{"runId": "abc123-...", "audienceType": "buyer"}'
+```
+
+---
+
+#### 10f — Check status at any time
+
+```bash
+curl -G "https://sselfie.ai/api/vault/email-drop/status" \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  --data-urlencode "runId=abc123-..."
+```
+
+Or get the most recent run:
+
+```bash
+curl -G "https://sselfie.ai/api/vault/email-drop/status" \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  --data-urlencode "latest=true"
+```
+
+Run statuses:
+- `pending` — created, no batches sent yet
+- `processing` — batches in progress
+- `completed` — all recipients processed, 0 failures
+- `partially_completed` — all processed, some failures (check `failed` counts)
+- `failed` — run could not start
+
+---
+
+#### 10g — Test with a single address (development)
+
+To verify emails look right before sending to the full list:
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop/process \
+  -H "Authorization: Bearer YOUR_SECRET_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"runId": "abc123-...", "audienceType": "all", "testRecipientEmail": "your@email.com"}'
+```
+
+Only the specified address is targeted. Real recipients are untouched.
+
+---
+
+#### 10h — Mark collections as sent (after run completes)
+
+Only do this **after** `runStatus` is `completed` or `partially_completed` and you've reviewed the result.
+
+1. Open `lib/vault/drop-log.ts`
+2. For each collection in the drop:
+   ```typescript
+   includedInEmailDrop: true,
+   droppedAt: "YYYY-MM-DD",   // today's date
+   ```
+3. Reset config flags:
+   ```typescript
+   automationApproved: false,
+   dryRun: true,
+   ```
+
+Commit with:
+```
+Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
+```
+
+---
+
+#### How idempotency works
+
+Each drop generates a deterministic `email_type` from the collection slugs:
+```
+vault_drop_coastal-white+dark-balcony_nonbuyer
+vault_drop_coastal-white+dark-balcony_buyer
+```
+
+Before sending to any address, the route checks `email_logs` for a record with this `email_type` and `status IN ('sent', 'delivered', 'suppressed')`. If found → skip.
+
+This means:
+- Calling `/process` twice is safe — second call skips already-sent addresses
+- Calling `/start` twice for the same collections creates two runs, but `/process` deduplicates at the email level
+- Only 'failed' records are eligible for retry (no 'sent' record blocks retries)
+
+---
+
 #### Drop rules (never change these)
 
 - Never send a drop for fewer than 2 new collections
-- Never send without a dry-run review first
-- Sandra must approve the dry-run recipient counts before the live send
-- `automationApproved` must be set back to `false` after every send — it is never left armed
-- Do NOT change `dryRun: false` without Sandra's explicit approval
+- Never skip the dry-run step — always review counts first
+- Sandra must approve dry-run counts before `dryRun: false`
+- `automationApproved` is always reset to `false` after a completed drop
+- Never mark collections `includedInEmailDrop: true` until the run status is `completed` or `partially_completed`
+- Do NOT call `/process` repeatedly in a tight loop without pausing — Resend has rate limits
+- Do NOT call `/start` repeatedly — each call creates a new run record
+
+---
+
+#### What NOT to do
+
+- Do not call the live `/start` endpoint more than once per collection set — it creates duplicate run records
+- Do not mark collections as dropped before all sends finish
+- Do not try to send all 1,500 recipients in one request — that was the old unsafe approach
+- Do not change `dryRun: false` before Sandra approves the dry-run counts
 
 ---
 
@@ -440,12 +591,17 @@ When you add the NEXT new collection in a future sprint, also add it to `VAULT_C
 - [ ] Verified on sselfie.ai/access/prompt-vault/[test-token] after deploy
 
 ### After every 2nd new collection (Step 10 — email drop)
-- [ ] `VAULT_EMAIL_CONFIG.automationApproved` set to `true`
-- [ ] `VAULT_EMAIL_CONFIG.dryRun` left as `true` for dry run
-- [ ] Dry-run POST to `/api/vault/email-drop` reviewed — recipient counts look right
-- [ ] Sandra approved the dry-run counts before live send
-- [ ] `dryRun` flipped to `false`, live send triggered
-- [ ] Results JSON reviewed — 0 failures
-- [ ] Sent collections marked `includedInEmailDrop: true` + `droppedAt` in drop log
-- [ ] `automationApproved` reset to `false`, `dryRun` reset to `true`
-- [ ] Drop log changes committed
+- [ ] Migration `20260527_vault_drop_runs.sql` applied (one-time only)
+- [ ] `VAULT_EMAIL_DROP_SECRET` set in Vercel env (one-time only)
+- [ ] New collection entries added to `VAULT_COLLECTIONS` in `drop-log.ts`
+- [ ] `automationApproved: true` + `dryRun: true` set, committed, deployed
+- [ ] Dry-run: `POST /api/vault/email-drop` — reviewed counts (~1,500 non-buyers)
+- [ ] Sandra approved the dry-run counts
+- [ ] `dryRun: false` set, committed, deployed
+- [ ] Live run created: `POST /api/vault/email-drop` — `runId` saved
+- [ ] Batches sent: `POST /api/vault/email-drop/process` repeated until `done.all === true`
+- [ ] Status checked: `GET /api/vault/email-drop/status?runId=...` — `completed` or `partially_completed`
+- [ ] Failed count reviewed — if > 0, retried via `/process` (idempotent)
+- [ ] Collections marked `includedInEmailDrop: true` + `droppedAt` in drop log
+- [ ] `automationApproved: false`, `dryRun: true` reset in drop log
+- [ ] Final drop log commit pushed

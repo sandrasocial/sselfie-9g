@@ -1,24 +1,33 @@
 // Vault email drop log — version-controlled source of truth.
 //
 // HOW IT WORKS:
-//   After adding 2 new collections to the vault (per the SOP), Sandra sets
-//   `automationApproved: true` and `dryRun: false` here and calls
-//   POST /api/vault/email-drop to trigger the send.
-//
-//   After a successful send, update each included collection's
-//   `includedInEmailDrop` to `true` and set `automationApproved` back to
-//   `false` so the system is safe at rest.
+//   1. Add ≥2 collections with includedInEmailDrop: false
+//   2. Set automationApproved: true and dryRun: true
+//   3. Call POST /api/vault/email-drop to see dry-run preview
+//   4. Approve counts, set dryRun: false
+//   5. Call POST /api/vault/email-drop to create a live run (returns runId)
+//   6. Call POST /api/vault/email-drop/process?runId=... repeatedly (batches of 25)
+//   7. Check GET /api/vault/email-drop/status?runId=... to see progress
+//   8. After all batches complete, update each sent collection's
+//      includedInEmailDrop: true + droppedAt, reset automationApproved: false
 //
 // SAFETY DEFAULTS:
-//   automationApproved = false → the API route refuses to send anything
-//   dryRun             = true  → logs recipients + preview, no actual emails sent
+//   automationApproved = false → start endpoint refuses to create a run
+//   dryRun             = true  → start endpoint returns preview only, no run created
 
 export const VAULT_EMAIL_CONFIG = {
-  /** Must be set to true before /api/vault/email-drop will send anything. */
+  /** Must be set to true before /api/vault/email-drop will do anything real. */
   automationApproved: false,
 
-  /** When true: log recipients + preview HTML, never call sendEmail(). */
+  /**
+   * When true: returns preview (counts, sample recipients, subject lines).
+   * Does NOT create a run, does NOT send anything.
+   * Set to false only after reviewing the dry-run and getting Sandra's approval.
+   */
   dryRun: true,
+
+  /** Max recipients per /process batch call. Keep ≤50 for Vercel timeout safety. */
+  maxBatchSize: 25,
 
   /** Displayed in the non-buyer upsell subject line and email header. */
   dropLabel: "Two New Shoots Just Dropped",
@@ -27,11 +36,11 @@ export const VAULT_EMAIL_CONFIG = {
 // ── Collection registry ────────────────────────────────────────────────────
 //
 // One entry per collection in chronological add order.
-// `includedInEmailDrop: false` = not yet included in any email drop.
-// `includedInEmailDrop: true`  = already emailed to the list.
+// `includedInEmailDrop: false` = not yet emailed.
+// `includedInEmailDrop: true`  = already included in a completed drop.
 //
-// Do NOT change `id` values — they are used to match VAULT_COLLECTION_META
-// entries in prompt-data.ts.
+// Do NOT change `id` values — they are referenced by VAULT_COLLECTION_META
+// in prompt-data.ts and form part of the idempotency key in email_logs.
 
 export type VaultDropCollection = {
   id: string
@@ -40,9 +49,9 @@ export type VaultDropCollection = {
   heroImage: string
   /** Short mood line shown under the collection name in email. */
   moodLine: string
-  /** Has this collection been included in an email drop? */
+  /** Has this collection been included in a completed email drop? */
   includedInEmailDrop: boolean
-  /** ISO date string of when the drop email was sent. Null if not yet sent. */
+  /** ISO date string (YYYY-MM-DD) of when the drop email was sent. Null if not yet sent. */
   droppedAt: string | null
 }
 
@@ -99,4 +108,32 @@ export function getPendingCollections(): VaultDropCollection[] {
 /** Whether there are enough new collections to justify an email drop (2+). */
 export function isEmailDropReady(): boolean {
   return getPendingCollections().length >= 2
+}
+
+/**
+ * Deterministic drop key from a set of collection IDs.
+ * Sorted alphabetically and joined with '+'.
+ * Used as part of the email_type idempotency key in email_logs.
+ *
+ * Example: ['dark-balcony', 'coastal-white'] → 'coastal-white+dark-balcony'
+ */
+export function buildDropKey(collections: VaultDropCollection[]): string {
+  return [...collections.map((c) => c.id)]
+    .sort()
+    .join("+")
+}
+
+/**
+ * email_type written to email_logs for each drop send.
+ * Format: vault_drop_{drop_key}_{audience}
+ * Example: vault_drop_coastal-white+dark-balcony_nonbuyer
+ *
+ * This is the idempotency key — a recipient is skipped if email_logs
+ * already has a 'sent', 'delivered', or 'suppressed' record for this type.
+ */
+export function buildDropEmailType(
+  dropKey: string,
+  audience: "nonbuyer" | "buyer",
+): string {
+  return `vault_drop_${dropKey}_${audience}`
 }

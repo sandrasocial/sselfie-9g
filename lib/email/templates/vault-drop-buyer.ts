@@ -48,7 +48,6 @@ export function generateVaultDropBuyerEmail({
   text: string
 } {
   const subject = `your vault just got bigger`
-  const ctaUrl = vaultAccessUrl(accessToken, "main_cta")
   const ctaUrl2 = vaultAccessUrl(accessToken, "bottom_cta")
 
   // Hero and break images from the new collections
