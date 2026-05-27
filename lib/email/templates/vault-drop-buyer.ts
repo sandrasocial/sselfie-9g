@@ -11,7 +11,6 @@ import {
   editorialClosingRow,
   editorialFinalCTARow,
   editorialHeroRow,
-  editorialImageBreakRow,
   editorialPullquoteRow,
   editorialSectionTitleRow,
   editorialStoryRow,
@@ -42,6 +41,57 @@ function countWordCaps(n: number): string {
   return w.charAt(0).toUpperCase() + w.slice(1)
 }
 
+function esc(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+function imgSrc(path: string): string {
+  return path.startsWith("http") ? path : `https://www.sselfie.ai${path}`
+}
+
+function pickHeroImage(collections: VaultDropCollection[]): string {
+  return (
+    collections.find((c) => c.id === "dark-balcony")?.heroImage ??
+    collections[0]?.heroImage ??
+    "/images/ai-prompts/dark-balcony-shot-1.png"
+  )
+}
+
+function collectionCardsRow(collections: VaultDropCollection[]): string {
+  const rows = collections
+    .map(
+      (collection) => `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;border-bottom:1px solid #E5DDD4;">
+        <tr>
+          <td style="padding:0 0 18px;line-height:0;font-size:0;">
+            <img src="${esc(imgSrc(collection.heroImage))}" alt="${esc(collection.name)}" width="560" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 26px;">
+            <p style="margin:0 0 7px;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.38em;text-transform:uppercase;color:#9B9189;">NEW IN YOUR VAULT</p>
+            <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.22;color:#0A0A0A;">${esc(collection.name)}</p>
+            <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.75;font-style:italic;color:#9B9189;">${esc(collection.moodLine)}</p>
+            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.8;color:#3A3632;">New collection added to your Vault.</p>
+          </td>
+        </tr>
+      </table>`,
+    )
+    .join("\n")
+
+  return `
+  <tr>
+    <td style="padding:36px 40px 8px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
+      <p style="margin:0 0 26px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">These are already waiting inside your Vault:</p>
+      ${rows}
+    </td>
+  </tr>`
+}
+
 export interface VaultDropBuyerParams {
   firstName: string
   accessToken: string
@@ -56,6 +106,10 @@ export function generateVaultDropBuyerEmail({
   subject: string
   html: string
   text: string
+  meta: {
+    buyerCtaUrl: string
+    collectionImageCount: number
+  }
 } {
   const n = newCollections.length
   const cwCaps = countWordCaps(n) // "Three"
@@ -63,32 +117,7 @@ export function generateVaultDropBuyerEmail({
   const subject = `your vault just got bigger`
   const ctaUrl2 = vaultAccessUrl(accessToken, "bottom_cta")
 
-  // Hero: first new collection. Break image: third (or second if only 2).
-  const heroImage = newCollections[0]?.heroImage ?? "/images/ai-prompts/dark-balcony-shot-1.png"
-  const breakImage =
-    newCollections[2]?.heroImage ??
-    newCollections[1]?.heroImage ??
-    newCollections[0]?.heroImage ??
-    "/images/ai-prompts/coastal-white-shot-1.jpg"
-
-  // New collections list
-  const collectionRows = newCollections
-    .map(
-      (c) =>
-        `<tr><td style="padding:7px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#3A3632;"><span style="color:#9B9189;margin-right:12px;">&middot;</span>${c.name}</td></tr>`,
-    )
-    .join("\n        ")
-
-  const newShootsRow = `
-  <tr>
-    <td style="padding:36px 40px 16px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
-      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">${cwCaps} new shoots are waiting for you:</p>
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-        ${collectionRows}
-      </table>
-      <p style="margin:22px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.85;font-style:italic;color:#9B9189;">Open your vault. Pick the mood that feels right today. Upload a selfie. That is all it takes.</p>
-    </td>
-  </tr>`
+  const heroImage = pickHeroImage(newCollections)
 
   const bodyRows = [
     editorialHeroRow(heroImage, `${cwCaps} new shoots added to your vault`),
@@ -102,11 +131,9 @@ export function generateVaultDropBuyerEmail({
 
     editorialPullquoteRow("You already own this. It just grew."),
 
-    editorialSectionTitleRow("New in", "YOUR VAULT"),
+    editorialSectionTitleRow("New inside", "YOUR VAULT"),
 
-    newShootsRow,
-
-    editorialImageBreakRow(breakImage, "New shoot preview"),
+    collectionCardsRow(newCollections),
 
     editorialClosingRow([
       "When you are ready, open your vault below.",
@@ -162,5 +189,13 @@ Your personal link · All shoots included
 
 Sandra x`
 
-  return { subject, html, text }
+  return {
+    subject,
+    html,
+    text,
+    meta: {
+      buyerCtaUrl: ctaUrl2,
+      collectionImageCount: newCollections.length,
+    },
+  }
 }

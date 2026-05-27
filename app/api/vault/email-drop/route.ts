@@ -181,19 +181,20 @@ export async function POST(request: Request) {
   const sampleNonBuyer = nonBuyerResult.sample[0]
   const sampleBuyer = buyerResult.sample[0]
 
-  const nonbuyerSubject = sampleNonBuyer
+  const nonbuyerPreview = sampleNonBuyer
     ? generateVaultDropNonbuyerEmail({
         firstName: sampleNonBuyer.name?.split(" ")[0] || "friend",
         newCollections,
-      }).subject
+        accessToken: "PREVIEW_TOKEN",
+      })
     : null
 
-  const buyerSubject = sampleBuyer
+  const buyerPreview = sampleBuyer
     ? generateVaultDropBuyerEmail({
         firstName: sampleBuyer.name?.split(" ")[0] || "friend",
         accessToken: "PREVIEW_TOKEN",
         newCollections,
-      }).subject
+      })
     : null
 
   // ── Dry run response ─────────────────────────────────────────────────────
@@ -215,14 +216,19 @@ export async function POST(request: Request) {
         nonBuyers: {
           count: nonBuyerResult.count,
           sampleRecipients: nonBuyerResult.sample,
-          subjectPreview: nonbuyerSubject,
+          subjectPreview: nonbuyerPreview?.subject ?? null,
+          primaryCtaUrl: nonbuyerPreview?.meta.primaryCtaUrl ?? null,
+          secondaryVaultCtaUrl: nonbuyerPreview?.meta.secondaryCtaUrl ?? null,
+          collectionImageCount: nonbuyerPreview?.meta.collectionImageCount ?? newCollections.length,
           segmentRule:
             "source='ai-prompts' OR tag 'ai-prompts-subscriber' OR tag 'ai-photoshoot-audience', excluding prompt-vault-paid",
         },
         buyers: {
           count: buyerResult.count,
           sampleRecipients: buyerResult.sample,
-          subjectPreview: buyerSubject,
+          subjectPreview: buyerPreview?.subject ?? null,
+          buyerCtaUrl: buyerPreview?.meta.buyerCtaUrl ?? null,
+          collectionImageCount: buyerPreview?.meta.collectionImageCount ?? newCollections.length,
           segmentRule: "source='prompt-vault-paid' OR tag 'prompt-vault-paid', with valid access_token",
         },
       },
@@ -283,8 +289,17 @@ export async function POST(request: Request) {
     },
     newCollections: newCollections.map((c) => ({ id: c.id, name: c.name })),
     segments: {
-      nonBuyers: { totalPending: nonBuyerResult.count },
-      buyers: { totalPending: buyerResult.count },
+      nonBuyers: {
+        totalPending: nonBuyerResult.count,
+        primaryCtaUrl: nonbuyerPreview?.meta.primaryCtaUrl ?? null,
+        secondaryVaultCtaUrl: nonbuyerPreview?.meta.secondaryCtaUrl ?? null,
+        collectionImageCount: nonbuyerPreview?.meta.collectionImageCount ?? newCollections.length,
+      },
+      buyers: {
+        totalPending: buyerResult.count,
+        buyerCtaUrl: buyerPreview?.meta.buyerCtaUrl ?? null,
+        collectionImageCount: buyerPreview?.meta.collectionImageCount ?? newCollections.length,
+      },
     },
     totalRecipients: nonBuyerResult.count + buyerResult.count,
     nextSteps: [

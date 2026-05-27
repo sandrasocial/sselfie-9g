@@ -322,6 +322,7 @@ async function processBatch(
       emailPayload = generateVaultDropNonbuyerEmail({
         firstName,
         newCollections: pendingCollections,
+        accessToken: subscriber.access_token,
       })
     } else {
       if (!subscriber.access_token) {

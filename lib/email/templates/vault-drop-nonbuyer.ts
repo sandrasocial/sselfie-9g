@@ -10,25 +10,40 @@ import {
   editorialClosingRow,
   editorialFinalCTARow,
   editorialHeroRow,
-  editorialImageBreakRow,
   editorialPriceCTARow,
   editorialPullquoteRow,
   editorialSectionTitleRow,
   editorialStoryRow,
   renderEditorialShell,
 } from "../editorial-email"
-import { buildRevenueEmailLink } from "./revenue-links"
 import type { VaultDropCollection } from "../../vault/drop-log"
 
 const VAULT_LANDING = "https://www.sselfie.ai/prompt-vault"
+const FREE_PROMPTS_BASE = "https://www.sselfie.ai/ai-prompts"
+const FREE_PROMPTS_ACCESS_BASE = "https://www.sselfie.ai/ai-prompts/access"
 
-function vaultUrl(content: string): string {
-  return buildRevenueEmailLink(VAULT_LANDING, {
-    campaign: "vault_drop",
-    content,
-    medium: "email-drop",
-    emailType: "vault-drop-nonbuyer",
-  })
+function vaultUrl(): string {
+  const url = new URL(VAULT_LANDING)
+  url.searchParams.set("utm_source", "resend")
+  url.searchParams.set("utm_medium", "email")
+  url.searchParams.set("utm_campaign", "vault_collection_drop")
+  url.searchParams.set("utm_content", "non_buyer")
+  return url.toString()
+}
+
+function previewUrl(accessToken: string | null | undefined, content: string): string {
+  const base = accessToken
+    ? `${FREE_PROMPTS_ACCESS_BASE}/${encodeURIComponent(accessToken)}`
+    : FREE_PROMPTS_BASE
+
+  const url = new URL(base)
+  url.searchParams.set("source", "resend")
+  url.searchParams.set("utm_source", "resend")
+  url.searchParams.set("utm_medium", "email")
+  url.searchParams.set("utm_campaign", "vault_collection_drop")
+  url.searchParams.set("utm_content", content)
+  url.searchParams.set("email_type", "vault-drop-nonbuyer")
+  return url.toString()
 }
 
 // Returns "two", "three", "four", or the digit for larger counts.
@@ -41,82 +56,112 @@ function countWordCaps(n: number): string {
   return w.charAt(0).toUpperCase() + w.slice(1)
 }
 
+function esc(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+function imgSrc(path: string): string {
+  return path.startsWith("http") ? path : `https://www.sselfie.ai${path}`
+}
+
+function pickHeroImage(collections: VaultDropCollection[]): string {
+  return (
+    collections.find((c) => c.id === "dark-balcony")?.heroImage ??
+    collections[0]?.heroImage ??
+    "/images/ai-prompts/dark-balcony-shot-1.png"
+  )
+}
+
+function collectionCardsRow(collections: VaultDropCollection[]): string {
+  const rows = collections
+    .map(
+      (collection) => `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;border-bottom:1px solid #E5DDD4;">
+        <tr>
+          <td style="padding:0 0 18px;line-height:0;font-size:0;">
+            <img src="${esc(imgSrc(collection.heroImage))}" alt="${esc(collection.name)}" width="560" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 26px;">
+            <p style="margin:0 0 7px;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.38em;text-transform:uppercase;color:#9B9189;">NEW SHOOT</p>
+            <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.22;color:#0A0A0A;">${esc(collection.name)}</p>
+            <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.75;font-style:italic;color:#9B9189;">${esc(collection.moodLine)}</p>
+            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.8;color:#3A3632;">Shot 1 is yours. The full shoot is inside the Vault.</p>
+          </td>
+        </tr>
+      </table>`,
+    )
+    .join("\n")
+
+  return `
+  <tr>
+    <td style="padding:36px 40px 8px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
+      <p style="margin:0 0 26px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">Your preview now has one image from each new shoot:</p>
+      ${rows}
+    </td>
+  </tr>`
+}
+
 export interface VaultDropNonbuyerParams {
   firstName: string
   newCollections: VaultDropCollection[]
+  accessToken?: string | null
 }
 
 export function generateVaultDropNonbuyerEmail({
   firstName,
   newCollections,
+  accessToken,
 }: VaultDropNonbuyerParams): {
   subject: string
   html: string
   text: string
+  meta: {
+    primaryCtaUrl: string
+    secondaryCtaUrl: string
+    collectionImageCount: number
+  }
 } {
   const n = newCollections.length
   const cw = countWord(n)         // "three"
   const cwCaps = countWordCaps(n) // "Three"
 
   const subject = `${cw} new shoots just dropped`
-  const ctaUrl = vaultUrl("main_cta")
-  const ctaUrl2 = vaultUrl("bottom_cta")
+  const primaryCtaUrl = previewUrl(accessToken, "updated_preview")
+  const secondaryCtaUrl = vaultUrl()
 
-  // Hero: first new collection. Break image: third (or second if only 2).
-  const heroImage = newCollections[0]?.heroImage ?? "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg"
-  const breakImage =
-    newCollections[2]?.heroImage ??
-    newCollections[1]?.heroImage ??
-    newCollections[0]?.heroImage ??
-    "/images/ai-prompts/coastal-white-shot-1.jpg"
-
-  // Collections list
-  const collectionRows = newCollections
-    .map(
-      (c) =>
-        `<tr><td style="padding:7px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#3A3632;"><span style="color:#9B9189;margin-right:12px;">&middot;</span>${c.name}</td></tr>`,
-    )
-    .join("\n        ")
-
-  const newShootsRow = `
-  <tr>
-    <td style="padding:36px 40px 16px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
-      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">${cwCaps} new shoots just landed in the vault:</p>
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-        ${collectionRows}
-      </table>
-      <p style="margin:22px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.85;font-style:italic;color:#9B9189;">Inside each one: the full shoot direction, every scene, the styling, the mood. Everything you need to walk into ChatGPT and come out with photos you actually want to post.</p>
-    </td>
-  </tr>`
+  const heroImage = pickHeroImage(newCollections)
 
   const bodyRows = [
     editorialHeroRow(heroImage, `${cwCaps} new editorial shoots in the vault`),
 
     editorialStoryRow([
       `Hi ${firstName},`,
-      `${cwCaps} new shoots just dropped in the vault.`,
+      `${cwCaps} new shoots just dropped, and your free preview has been updated.`,
       "I have been testing these for weeks. Not just once or twice but until I knew exactly how to describe the light, the framing, the styling, the mood. Until the result felt like a real photoshoot, not a filter.",
-      "That work is done. Now it is yours.",
+      "Shot 1 from each new shoot is yours now.",
     ]),
 
     editorialPullquoteRow("She is not out of reach. She is one shoot away."),
 
-    editorialPriceCTARow("Get the Vault", ctaUrl, "One payment · $27 · Keeps growing"),
+    editorialPriceCTARow("Open Your Updated Preview", primaryCtaUrl, "Shot 1 from each new shoot is yours"),
 
-    editorialSectionTitleRow("What just", "DROPPED"),
+    editorialSectionTitleRow("Inside your", "UPDATED PREVIEW"),
 
-    newShootsRow,
-
-    editorialImageBreakRow(breakImage, "New shoot preview"),
+    collectionCardsRow(newCollections),
 
     editorialClosingRow([
-      "You already have the free shoot.",
-      "You have seen what one prompt can do with a single selfie.",
-      "The vault is the same thing, but for every version of you you have been wanting to photograph.",
+      "The preview gives you the first image from each new shoot.",
+      "The full Vault gives you the full shoot direction, every scene, the styling, the mood, and every copy-paste prompt.",
       "Open it once. Pick a shoot. Upload a selfie. That is the whole process.",
     ]),
 
-    editorialFinalCTARow("Open the Vault", ctaUrl2, "$27 · Instant access · Every shoot included"),
+    editorialFinalCTARow("Get the Vault for $27", secondaryCtaUrl, "$27 · Instant access · Every full shoot included"),
   ].join("\n")
 
   const html = renderEditorialShell({
@@ -143,31 +188,36 @@ That work is done. Now it is yours.
 
 She is not out of reach. She is one shoot away.
 
-GET THE VAULT — $27:
-${ctaUrl}
+OPEN YOUR UPDATED PREVIEW:
+${primaryCtaUrl}
 
---- What Just Dropped ---
+--- Inside Your Updated Preview ---
 
-${cwCaps} new shoots just landed in the vault:
+Your preview now has one image from each new shoot:
 
 ${collectionsTextList}
 
-Inside each one: the full shoot direction, every scene, the styling, the mood. Everything you need to walk into ChatGPT and come out with photos you actually want to post.
+Shot 1 is yours. The full shoots are inside the Vault.
 
-You already have the free shoot.
+The preview gives you the first image from each new shoot.
 
-You've seen what one prompt can do with a single selfie.
+The full Vault gives you the full shoot direction, every scene, the styling, the mood, and every copy-paste prompt.
 
-The vault is the same thing, but for every version of you you've been wanting to photograph.
-
-Open it once. Pick a shoot. Upload a selfie. That is the whole process.
-
-OPEN THE VAULT:
-${ctaUrl2}
+GET THE VAULT FOR $27:
+${secondaryCtaUrl}
 
 $27 · Instant access · Every shoot included
 
 Sandra x`
 
-  return { subject, html, text }
+  return {
+    subject,
+    html,
+    text,
+    meta: {
+      primaryCtaUrl,
+      secondaryCtaUrl,
+      collectionImageCount: newCollections.length,
+    },
+  }
 }
