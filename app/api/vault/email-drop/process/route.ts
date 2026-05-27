@@ -81,6 +81,8 @@ type SubscriberRow = {
   access_token: string | null
 }
 
+type RecipientClaimStatus = "processing" | "sent" | "suppressed" | "skipped" | "failed"
+
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 function isAuthorized(request: Request): boolean {
@@ -88,6 +90,76 @@ function isAuthorized(request: Request): boolean {
   if (!secret) return false
   const auth = request.headers.get("Authorization") ?? ""
   return auth === `Bearer ${secret}`
+}
+
+function testDropEmailType(dropEmailType: string): string {
+  return `${dropEmailType}_test`
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+async function claimRecipient(
+  runId: string,
+  audience: "nonbuyer" | "buyer",
+  dropEmailType: string,
+  email: string,
+): Promise<boolean> {
+  const normalizedEmail = normalizeEmail(email)
+  const rows = await sql`
+    INSERT INTO vault_drop_recipient_claims (
+      drop_email_type,
+      user_email,
+      run_id,
+      audience,
+      status,
+      claimed_at,
+      updated_at,
+      error_message
+    ) VALUES (
+      ${dropEmailType},
+      ${normalizedEmail},
+      ${runId},
+      ${audience},
+      'processing',
+      NOW(),
+      NOW(),
+      NULL
+    )
+    ON CONFLICT (drop_email_type, user_email) DO UPDATE
+    SET
+      run_id = EXCLUDED.run_id,
+      audience = EXCLUDED.audience,
+      status = 'processing',
+      claimed_at = NOW(),
+      updated_at = NOW(),
+      error_message = NULL
+    WHERE vault_drop_recipient_claims.status = 'failed'
+       OR vault_drop_recipient_claims.claimed_at < NOW() - INTERVAL '30 minutes'
+    RETURNING user_email
+  `
+
+  return rows.length > 0
+}
+
+async function updateRecipientClaim(
+  runId: string,
+  dropEmailType: string,
+  email: string,
+  status: RecipientClaimStatus,
+  errorMessage?: string,
+): Promise<void> {
+  await sql`
+    UPDATE vault_drop_recipient_claims
+    SET
+      status = ${status},
+      updated_at = NOW(),
+      error_message = ${errorMessage || null}
+    WHERE run_id = ${runId}
+      AND drop_email_type = ${dropEmailType}
+      AND user_email = ${normalizeEmail(email)}
+  `
 }
 
 // ── Segment queries — only pending (not yet sent) recipients ───────────────
@@ -101,11 +173,23 @@ async function fetchPendingNonBuyers(
     // In test mode: only target the specified email, skip all real recipients
     const rows = await sql`
       SELECT DISTINCT ON (LOWER(fs.email))
-        fs.email,
+        LOWER(BTRIM(fs.email)) AS email,
         NULLIF(BTRIM(fs.name), '') AS name,
         fs.access_token
       FROM freebie_subscribers fs
       WHERE LOWER(fs.email) = LOWER(${testEmail})
+        AND fs.email IS NOT NULL
+        AND fs.email <> ''
+        AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
+        AND (
+          fs.source = 'ai-prompts'
+          OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+          OR 'ai-photoshoot-audience' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        )
+        AND NOT (
+          fs.source = 'prompt-vault-paid'
+          OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        )
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
           WHERE LOWER(el.user_email) = LOWER(fs.email)
@@ -119,12 +203,13 @@ async function fetchPendingNonBuyers(
 
   const rows = await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
-      fs.email,
+      LOWER(BTRIM(fs.email)) AS email,
       NULLIF(BTRIM(fs.name), '') AS name,
       fs.access_token
     FROM freebie_subscribers fs
     WHERE fs.email IS NOT NULL
       AND fs.email <> ''
+      AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
       AND (
         fs.source = 'ai-prompts'
         OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -154,11 +239,18 @@ async function fetchPendingBuyers(
   if (testEmail) {
     const rows = await sql`
       SELECT DISTINCT ON (LOWER(fs.email))
-        fs.email,
+        LOWER(BTRIM(fs.email)) AS email,
         NULLIF(BTRIM(fs.name), '') AS name,
         fs.access_token
       FROM freebie_subscribers fs
       WHERE LOWER(fs.email) = LOWER(${testEmail})
+        AND fs.email IS NOT NULL
+        AND fs.email <> ''
+        AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
+        AND (
+          fs.source = 'prompt-vault-paid'
+          OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        )
         AND fs.access_token IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
@@ -173,12 +265,13 @@ async function fetchPendingBuyers(
 
   const rows = await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
-      fs.email,
+      LOWER(BTRIM(fs.email)) AS email,
       NULLIF(BTRIM(fs.name), '') AS name,
       fs.access_token
     FROM freebie_subscribers fs
     WHERE fs.email IS NOT NULL
       AND fs.email <> ''
+      AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
       AND (
         fs.source = 'prompt-vault-paid'
         OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -212,6 +305,12 @@ async function processBatch(
   const dropLabel = VAULT_EMAIL_CONFIG.dropLabel
 
   for (const subscriber of subscribers) {
+    const claimed = await claimRecipient(run.id, audience, dropEmailType, subscriber.email)
+    if (!claimed) {
+      result.skipped++
+      continue
+    }
+
     const firstName = subscriber.name?.split(" ")[0]?.trim() || "friend"
 
     let emailPayload: { subject: string; html: string; text: string }
@@ -228,6 +327,7 @@ async function processBatch(
           `[vault/process] buyer ${subscriber.email} has no access_token — skipping`,
         )
         result.skipped++
+        await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "skipped", "Missing access token")
         continue
       }
       emailPayload = generateVaultDropBuyerEmail({
@@ -251,6 +351,7 @@ async function processBatch(
 
       if (sendResult.success) {
         result.sent++
+        await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "sent")
       } else if (
         sendResult.error?.includes("Suppressed") ||
         sendResult.error?.includes("suppressed") ||
@@ -260,14 +361,23 @@ async function processBatch(
       ) {
         // Suppressed by marketing rules — counts as intentionally skipped
         result.skipped++
+        await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "suppressed", sendResult.error)
       } else {
         result.failed++
+        await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "failed", sendResult.error)
         console.warn(
           `[vault/process] send failed for ${subscriber.email}: ${sendResult.error}`,
         )
       }
     } catch (err) {
       result.failed++
+      await updateRecipientClaim(
+        run.id,
+        dropEmailType,
+        subscriber.email,
+        "failed",
+        err instanceof Error ? err.message : String(err),
+      )
       console.error(`[vault/process] unexpected error for ${subscriber.email}:`, err)
     }
   }
@@ -275,36 +385,34 @@ async function processBatch(
   return result
 }
 
-// ── Update run counters ────────────────────────────────────────────────────
+// ── Recompute run counters from recipient claims ───────────────────────────
 
-async function updateRunCounters(
-  runId: string,
-  audience: "nonbuyer" | "buyer",
-  delta: BatchResult,
-): Promise<void> {
-  if (audience === "nonbuyer") {
-    await sql`
-      UPDATE vault_drop_runs
-      SET
-        non_buyer_sent    = non_buyer_sent    + ${delta.sent},
-        non_buyer_failed  = non_buyer_failed  + ${delta.failed},
-        non_buyer_skipped = non_buyer_skipped + ${delta.skipped},
-        status            = 'processing',
-        started_at        = COALESCE(started_at, NOW())
-      WHERE id = ${runId}
-    `
-  } else {
-    await sql`
-      UPDATE vault_drop_runs
-      SET
-        buyer_sent    = buyer_sent    + ${delta.sent},
-        buyer_failed  = buyer_failed  + ${delta.failed},
-        buyer_skipped = buyer_skipped + ${delta.skipped},
-        status        = 'processing',
-        started_at    = COALESCE(started_at, NOW())
-      WHERE id = ${runId}
-    `
-  }
+async function recomputeRunCounters(runId: string): Promise<void> {
+  await sql`
+    WITH counts AS (
+      SELECT
+        COUNT(*) FILTER (WHERE audience = 'nonbuyer' AND status = 'sent')::int AS non_buyer_sent,
+        COUNT(*) FILTER (WHERE audience = 'nonbuyer' AND status = 'failed')::int AS non_buyer_failed,
+        COUNT(*) FILTER (WHERE audience = 'nonbuyer' AND status IN ('suppressed', 'skipped'))::int AS non_buyer_skipped,
+        COUNT(*) FILTER (WHERE audience = 'buyer' AND status = 'sent')::int AS buyer_sent,
+        COUNT(*) FILTER (WHERE audience = 'buyer' AND status = 'failed')::int AS buyer_failed,
+        COUNT(*) FILTER (WHERE audience = 'buyer' AND status IN ('suppressed', 'skipped'))::int AS buyer_skipped
+      FROM vault_drop_recipient_claims
+      WHERE run_id = ${runId}
+    )
+    UPDATE vault_drop_runs
+    SET
+      non_buyer_sent    = counts.non_buyer_sent,
+      non_buyer_failed  = counts.non_buyer_failed,
+      non_buyer_skipped = counts.non_buyer_skipped,
+      buyer_sent        = counts.buyer_sent,
+      buyer_failed      = counts.buyer_failed,
+      buyer_skipped     = counts.buyer_skipped,
+      status            = 'processing',
+      started_at        = COALESCE(started_at, NOW())
+    FROM counts
+    WHERE id = ${runId}
+  `
 }
 
 // ── Finalize run if both segments complete ─────────────────────────────────
@@ -410,8 +518,11 @@ export async function POST(request: Request) {
   }
 
   // 4. Derive email types from drop_key stored in the run
-  const nonbuyerEmailType = buildDropEmailType(run.drop_key, "nonbuyer")
-  const buyerEmailType = buildDropEmailType(run.drop_key, "buyer")
+  const isTestMode = Boolean(testRecipientEmail)
+  const baseNonbuyerEmailType = buildDropEmailType(run.drop_key, "nonbuyer")
+  const baseBuyerEmailType = buildDropEmailType(run.drop_key, "buyer")
+  const nonbuyerEmailType = isTestMode ? testDropEmailType(baseNonbuyerEmailType) : baseNonbuyerEmailType
+  const buyerEmailType = isTestMode ? testDropEmailType(baseBuyerEmailType) : baseBuyerEmailType
 
   // Verify drop-log still matches (safety check)
   const pendingCollections = getPendingCollections()
@@ -446,7 +557,9 @@ export async function POST(request: Request) {
       batchFailed.nonBuyer = result.failed
       batchSkipped.nonBuyer = result.skipped
 
-      await updateRunCounters(runId, "nonbuyer", result)
+      if (!isTestMode) {
+        await recomputeRunCounters(runId)
+      }
 
       console.log(`[vault/process] non-buyer batch: sent=${result.sent} failed=${result.failed} skipped=${result.skipped}`)
     }
@@ -466,7 +579,9 @@ export async function POST(request: Request) {
       batchFailed.buyer = result.failed
       batchSkipped.buyer = result.skipped
 
-      await updateRunCounters(runId, "buyer", result)
+      if (!isTestMode) {
+        await recomputeRunCounters(runId)
+      }
 
       console.log(`[vault/process] buyer batch: sent=${result.sent} failed=${result.failed} skipped=${result.skipped}`)
     }
@@ -483,7 +598,7 @@ export async function POST(request: Request) {
 
   // 8. Finalise run if both segments done
   let finalStatus: string | null = null
-  if (nonBuyerDone && buyerDone) {
+  if (!isTestMode && nonBuyerDone && buyerDone) {
     finalStatus = await maybeCompleteRun(runId, run, nonBuyerDone, buyerDone)
   }
 
@@ -493,6 +608,11 @@ export async function POST(request: Request) {
   return NextResponse.json({
     runId,
     dropKey: run.drop_key,
+    testMode: isTestMode,
+    emailTypes: {
+      nonBuyer: nonbuyerEmailType,
+      buyer: buyerEmailType,
+    },
     batchSent,
     batchFailed,
     batchSkipped,

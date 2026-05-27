@@ -56,11 +56,12 @@ async function countAndPreviewNonBuyers(
 ): Promise<{ count: number; sample: SubscriberPreview[] }> {
   const rows = await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
-      fs.email,
+      LOWER(BTRIM(fs.email)) AS email,
       NULLIF(BTRIM(fs.name), '') AS name
     FROM freebie_subscribers fs
     WHERE fs.email IS NOT NULL
       AND fs.email <> ''
+      AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
       AND (
         fs.source = 'ai-prompts'
         OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -91,11 +92,12 @@ async function countAndPreviewBuyers(
 ): Promise<{ count: number; sample: SubscriberPreview[] }> {
   const rows = await sql`
     SELECT DISTINCT ON (LOWER(fs.email))
-      fs.email,
+      LOWER(BTRIM(fs.email)) AS email,
       NULLIF(BTRIM(fs.name), '') AS name
     FROM freebie_subscribers fs
     WHERE fs.email IS NOT NULL
       AND fs.email <> ''
+      AND LOWER(BTRIM(fs.email)) ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
       AND (
         fs.source = 'prompt-vault-paid'
         OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))

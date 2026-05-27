@@ -33,3 +33,22 @@ CREATE TABLE IF NOT EXISTS vault_drop_runs (
 CREATE INDEX IF NOT EXISTS vault_drop_runs_drop_key_idx ON vault_drop_runs(drop_key);
 CREATE INDEX IF NOT EXISTS vault_drop_runs_status_idx   ON vault_drop_runs(status);
 CREATE INDEX IF NOT EXISTS vault_drop_runs_created_at_idx ON vault_drop_runs(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS vault_drop_recipient_claims (
+  drop_email_type      TEXT        NOT NULL,
+  user_email           TEXT        NOT NULL,
+  run_id               TEXT        NOT NULL REFERENCES vault_drop_runs(id) ON DELETE CASCADE,
+  audience             TEXT        NOT NULL,
+  status               TEXT        NOT NULL DEFAULT 'processing',
+    -- processing | sent | suppressed | skipped | failed
+  claimed_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  error_message        TEXT,
+
+  PRIMARY KEY (drop_email_type, user_email)
+);
+
+CREATE INDEX IF NOT EXISTS vault_drop_recipient_claims_run_id_idx
+  ON vault_drop_recipient_claims(run_id);
+CREATE INDEX IF NOT EXISTS vault_drop_recipient_claims_status_idx
+  ON vault_drop_recipient_claims(status);
