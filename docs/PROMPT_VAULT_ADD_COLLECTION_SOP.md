@@ -297,6 +297,118 @@ git push origin HEAD:main
 
 ---
 
+### Step 10 — Email drop (after every 2nd new collection)
+
+The email drop is triggered manually, not automatically. Run it only when you have added exactly 2 new collections since the last drop.
+
+#### 10a — Update the drop log
+
+Open `lib/vault/drop-log.ts`.
+
+For each new collection you just added, confirm it has `includedInEmailDrop: false`.
+
+Then set the two config flags to arm the system:
+
+```typescript
+export const VAULT_EMAIL_CONFIG = {
+  automationApproved: true,   // ← set to true
+  dryRun: true,               // ← leave true for dry-run first
+  dropLabel: "Two New Shoots Just Dropped",
+}
+```
+
+Commit this change alongside the collection files (or as a separate commit).
+
+#### 10b — Dry-run test
+
+Call the API route from your terminal or Insomnia with your `VAULT_EMAIL_DROP_SECRET`:
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop \
+  -H "Authorization: Bearer YOUR_SECRET_HERE"
+```
+
+The response shows:
+- How many non-buyers will receive the upsell email
+- How many buyers will receive the update email
+- Sample recipients (first 5 of each)
+- Subject line previews
+
+Review the numbers. If everything looks right, move to 10c.
+
+#### 10c — Live send
+
+In `lib/vault/drop-log.ts`, change `dryRun` to `false`:
+
+```typescript
+export const VAULT_EMAIL_CONFIG = {
+  automationApproved: true,
+  dryRun: false,   // ← flip to false
+  dropLabel: "Two New Shoots Just Dropped",
+}
+```
+
+Call the route again:
+
+```bash
+curl -X POST https://sselfie.ai/api/vault/email-drop \
+  -H "Authorization: Bearer YOUR_SECRET_HERE"
+```
+
+The route sends both emails and returns a results summary:
+```json
+{
+  "nonBuyers": { "sent": 42, "failed": 0 },
+  "buyers":    { "sent": 8,  "failed": 0, "skipped": 0 }
+}
+```
+
+#### 10d — Mark collections as sent
+
+After a successful live send, update `lib/vault/drop-log.ts`:
+
+1. For each collection that was included in this drop, set:
+   ```typescript
+   includedInEmailDrop: true,
+   droppedAt: "YYYY-MM-DD",   // today's date
+   ```
+
+2. Reset the config flags to safe defaults:
+   ```typescript
+   automationApproved: false,
+   dryRun: true,
+   ```
+
+Commit with:
+```
+Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
+```
+
+#### 10e — Add the new collection entry to the drop log for future drops
+
+When you add the NEXT new collection in a future sprint, also add it to `VAULT_COLLECTIONS` in `lib/vault/drop-log.ts`:
+
+```typescript
+{
+  id: "[collection-slug]",
+  name: "[Collection Full Name]",
+  heroImage: "/images/ai-prompts/[collection-slug]-shot-1.jpg",
+  moodLine: "[One short mood line for the email]",
+  includedInEmailDrop: false,
+  droppedAt: null,
+},
+```
+
+#### Drop rules (never change these)
+
+- Never send a drop for fewer than 2 new collections
+- Never send without a dry-run review first
+- Sandra must approve the dry-run recipient counts before the live send
+- `automationApproved` must be set back to `false` after every send — it is never left armed
+- Do NOT change `dryRun: false` without Sandra's explicit approval
+
+---
+
 ## What NOT to Touch
 
 | File | Reason |
@@ -312,9 +424,11 @@ git push origin HEAD:main
 
 ## Quick Checklist
 
+### Every new collection (Steps 1–9)
 - [ ] Images placed in `/public/images/ai-prompts/` with correct naming
 - [ ] Full series added to `prompt-data.ts` (top of file, numbers continuous)
 - [ ] Shot 1 referenced in `FREEBIE_COLLECTION_PREVIEWS` using `[NEW_SERIES][0]`
+- [ ] New collection entry added to `VAULT_COLLECTIONS` in `lib/vault/drop-log.ts`
 - [ ] New series imported + section added in vault access page
 - [ ] Freebie access page imports only `FREEBIE_COLLECTION_PREVIEWS` for paid collection previews
 - [ ] Freebie access page does not map full paid series arrays
@@ -324,3 +438,14 @@ git push origin HEAD:main
 - [ ] Delivery email updated (collection name in list)
 - [ ] Only the correct files staged and pushed
 - [ ] Verified on sselfie.ai/access/prompt-vault/[test-token] after deploy
+
+### After every 2nd new collection (Step 10 — email drop)
+- [ ] `VAULT_EMAIL_CONFIG.automationApproved` set to `true`
+- [ ] `VAULT_EMAIL_CONFIG.dryRun` left as `true` for dry run
+- [ ] Dry-run POST to `/api/vault/email-drop` reviewed — recipient counts look right
+- [ ] Sandra approved the dry-run counts before live send
+- [ ] `dryRun` flipped to `false`, live send triggered
+- [ ] Results JSON reviewed — 0 failures
+- [ ] Sent collections marked `includedInEmailDrop: true` + `droppedAt` in drop log
+- [ ] `automationApproved` reset to `false`, `dryRun` reset to `true`
+- [ ] Drop log changes committed
