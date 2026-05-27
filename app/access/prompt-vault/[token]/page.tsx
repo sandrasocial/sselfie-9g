@@ -5,6 +5,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
+import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
   DARK_BALCONY_SERIES,
   COASTAL_WHITE_SERIES,
@@ -19,7 +20,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 
 export const metadata: Metadata = {
   title: "AI Photo Prompt Vault · SSELFIE",
-  description: "Your editorial AI photo prompts — copy, paste into ChatGPT, get a brand photo.",
+  description: "Turn one selfie into unlimited editorial photoshoots.",
   robots: { index: false, follow: false },
 }
 
@@ -58,6 +59,12 @@ async function validateToken(token: string): Promise<TokenResult> {
 function PromptCardEl({ card }: { card: PromptCard }) {
   return (
     <article id={card.id} className="pv-card">
+      <PromptViewTracker
+        promptId={card.id}
+        promptTitle={card.title}
+        promptNumber={card.number}
+        mood={card.mood}
+      />
       {card.exampleImage && (
         <div className="pv-card-image-wrap">
           <Image
@@ -185,19 +192,20 @@ export default async function PromptVaultAccessPage({
       <section className="pv-hero">
         <p className="pv-eyebrow">AI Photo Prompt Vault</p>
         <h1 className={`pv-headline ${cormorant.className}`}>
-          YOUR EDITORIAL PROMPTS
+          YOUR SELFIE TRANSFORMATIONS
         </h1>
         <p className="pv-subhead">
-          Copy-paste prompts across themed shoot collections. Open any prompt, paste it into
-          ChatGPT with your selfie, and get a polished brand photo in under a minute.
+          Turn one selfie into unlimited editorial photoshoots. Pick a transformation,
+          paste it into ChatGPT with your selfie, and get the visual identity you want in under a minute.
         </p>
         <div className="pv-how-to">
           <p className="pv-how-label">HOW TO USE</p>
           <ol className="pv-how-steps">
-            <li>Click <strong>Copy prompt</strong> on any card below.</li>
+            <li>Choose the aesthetic you want to become today.</li>
+            <li>Click <strong>Copy prompt</strong> on that card.</li>
             <li>Open <strong>ChatGPT</strong> and start a new conversation.</li>
             <li>Paste the prompt, then attach your selfie.</li>
-            <li>Hit send. Your brand photo is ready in seconds.</li>
+            <li>Hit send. Your photoshoot is ready in seconds.</li>
           </ol>
         </div>
       </section>

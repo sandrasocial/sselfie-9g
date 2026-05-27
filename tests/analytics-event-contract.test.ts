@@ -46,6 +46,9 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("upsell_accepted")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("studio_entry_from_suite")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("post_keyword_attributed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_reel_click")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_prompt_viewed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_checkout_recovery_sent")
   })
 
   it("rejects unknown event names", () => {
@@ -69,5 +72,8 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("selfie_guide_access_resolved")).toBe(true)
     expect(isAllowedAnalyticsEventName("quiz_result_served")).toBe(true)
     expect(isAllowedAnalyticsEventName("post_keyword_attributed")).toBe(true)
+    expect(isAllowedAnalyticsEventName("prompt_vault_reel_click")).toBe(true)
+    expect(isAllowedAnalyticsEventName("prompt_vault_prompt_viewed")).toBe(true)
+    expect(isAllowedAnalyticsEventName("prompt_vault_checkout_recovery_sent")).toBe(true)
   })
 })

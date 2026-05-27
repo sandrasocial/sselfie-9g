@@ -9,6 +9,37 @@ import { trackCheckoutStart } from "@/lib/analytics"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
+const ATTRIBUTION_KEYS = [
+  "source",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "email_type",
+  "campaign_id",
+  "ref",
+  "referral_code",
+  "checkout_source",
+  "freebie_source",
+  "guide_cta",
+  "cta_keyword",
+  "quiz_result",
+  "return_to",
+  "entry_path",
+  "entry_post_slug",
+  "buyer_stage",
+] as const
+
+function checkoutAttributionProperties(searchParams: URLSearchParams) {
+  return ATTRIBUTION_KEYS.reduce<Record<string, string>>((properties, key) => {
+    const value = searchParams.get(key)
+    if (value) {
+      properties[key] = value
+    }
+    return properties
+  }, {})
+}
+
 const CHECKOUT_COPY: Record<
   string,
   {
@@ -42,9 +73,9 @@ const CHECKOUT_COPY: Record<
   },
   prompt_vault: {
     heroTitle: "Complete your Prompt Vault order",
-    heroBody: "Your editorial AI photo prompts are ready after payment.",
+    heroBody: "Turn one selfie into unlimited editorial photoshoots.",
     heading: "Secure checkout",
-    blurb: "You are buying The AI Photo Prompt Vault with encrypted Stripe checkout.",
+    blurb: "You are buying instant AI photoshoot transformations with encrypted Stripe checkout.",
     footer: "Digital purchase. Your vault access link is delivered right after payment.",
   },
 }
@@ -76,7 +107,10 @@ function CheckoutContent() {
     }
 
     // Track checkout page view (checkout started)
-    trackCheckoutStart(productType)
+    trackCheckoutStart(productType, undefined, {
+      ...checkoutAttributionProperties(searchParams),
+      checkout_session_id: secret.split("_secret_")[0] || null,
+    })
 
     console.log("[v0] Checkout page - Setting client secret")
     setClientSecret(secret)

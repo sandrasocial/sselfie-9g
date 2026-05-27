@@ -200,6 +200,47 @@ export function getCheckoutAttributionFromParams(
   }
 }
 
+const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
+  "source",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "email_type",
+  "campaign_id",
+  "ref",
+  "referral_code",
+  "checkout_source",
+  "freebie_source",
+  "guide_cta",
+  "cta_keyword",
+  "quiz_result",
+  "return_to",
+  "entry_path",
+  "entry_post_slug",
+  "buyer_stage",
+] as const
+
+export function buildCheckoutRedirectUrl(
+  clientSecret: string,
+  productType: string,
+  params: Record<string, string | undefined | null>,
+): string {
+  const search = new URLSearchParams({
+    client_secret: clientSecret,
+    product_type: productType,
+  })
+
+  for (const key of CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS) {
+    const value = safeString(params[key], 500)
+    if (value) {
+      search.set(key, value)
+    }
+  }
+
+  return `/checkout?${search.toString()}`
+}
+
 export function buildCheckoutAttributionMetadata(
   productId: string,
   input?: CheckoutAttributionInput | null,
@@ -280,10 +321,15 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS quiz_result TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS buyer_stage TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovery_email_sent_at TIMESTAMPTZ;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovery_email_type TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovery_email_message_id TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovered_at TIMESTAMPTZ;`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_cta_keyword_idx ON checkout_attribution (cta_keyword, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_quiz_result_idx ON checkout_attribution (quiz_result, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_entry_post_slug_idx ON checkout_attribution (entry_post_slug, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_buyer_stage_idx ON checkout_attribution (buyer_stage, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_recovery_idx ON checkout_attribution (product_type, status, recovery_email_sent_at, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_purchase_idx ON checkout_attribution (purchased_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_user_idx ON checkout_attribution (user_id, created_at DESC);`
 }
@@ -392,6 +438,10 @@ export async function markCheckoutAttributionCompleted(update: CompletedCheckout
         purchase_value_cents = COALESCE(${update.purchaseValueCents || null}, purchase_value_cents),
         purchase_currency = COALESCE(${safeString(update.purchaseCurrency || null, 16) || null}, purchase_currency),
         purchased_at = COALESCE(${purchasedAt.toISOString()}, purchased_at),
+        recovered_at = CASE
+          WHEN recovery_email_sent_at IS NOT NULL THEN COALESCE(recovered_at, ${purchasedAt.toISOString()})
+          ELSE recovered_at
+        END,
         updated_at = NOW()
       WHERE session_id = ${update.sessionId}
     `
@@ -412,6 +462,10 @@ export async function markCheckoutAttributionCompleted(update: CompletedCheckout
         purchase_value_cents = COALESCE(${update.purchaseValueCents || null}, purchase_value_cents),
         purchase_currency = COALESCE(${safeString(update.purchaseCurrency || null, 16) || null}, purchase_currency),
         purchased_at = COALESCE(${purchasedAt.toISOString()}, purchased_at),
+        recovered_at = CASE
+          WHEN recovery_email_sent_at IS NOT NULL THEN COALESCE(recovered_at, ${purchasedAt.toISOString()})
+          ELSE recovered_at
+        END,
         updated_at = NOW()
       WHERE stripe_subscription_id = ${update.stripeSubscriptionId}
          OR (stripe_subscription_id IS NULL AND user_id = ${update.userId || ""} AND funnel_stage = 'studio_membership')

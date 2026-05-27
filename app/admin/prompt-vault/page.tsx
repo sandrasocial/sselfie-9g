@@ -1,18 +1,22 @@
 import Link from "next/link"
-import { BarChart3, Copy, DollarSign, Mail, MousePointerClick, ShoppingCart, Users } from "lucide-react"
+import { BarChart3, Copy, DollarSign, Eye, Mail, MousePointerClick, ShoppingCart, Users } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AdminMetricCard } from "@/components/admin/shared"
 import { sql } from "@/lib/db/client"
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
+import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 
 export const dynamic = "force-dynamic"
 
 type EventCounts = {
   landing_views: number
+  reel_clicks: number
   free_to_vault_clicks: number
   checkout_starts: number
+  recovery_sends: number
   checkout_successes: number
   access_opens: number
+  prompt_views: number
   prompt_copies: number
 }
 
@@ -34,7 +38,19 @@ type BuyerCounts = {
 type TopPromptRow = {
   prompt_title: string | null
   prompt_number: string | null
-  copies: number
+  views?: number
+  copies?: number
+}
+
+type AttributionRow = {
+  source: string | null
+  utm_source: string | null
+  utm_campaign: string | null
+  entry_post_slug: string | null
+  cta_keyword: string | null
+  checkout_starts: number
+  purchases: number
+  recovery_sends: number
 }
 
 type RecentPurchaseRow = {
@@ -59,17 +75,21 @@ function pct(numerator: number, denominator: number): string {
 
 async function getPromptVaultMetrics(windowDays: number) {
   await ensureAnalyticsSchema()
+  await ensureRevenueEngineSchema()
 
   const [eventCountsRow] = await sql`
     SELECT
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_landing_view')::int AS landing_views,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_reel_click')::int AS reel_clicks,
       COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
       COUNT(*) FILTER (
         WHERE event_name = 'checkout_start'
           AND properties->>'product_type' = 'prompt_vault'
       )::int AS checkout_starts,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS access_opens,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS prompt_views,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_copied')::int AS prompt_copies
     FROM analytics_events
     WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
@@ -125,6 +145,37 @@ async function getPromptVaultMetrics(windowDays: number) {
     LIMIT 10
   `) as TopPromptRow[]
 
+  const topViewedPrompts = (await sql`
+    SELECT
+      NULLIF(properties->>'prompt_title', '') AS prompt_title,
+      NULLIF(properties->>'prompt_number', '') AS prompt_number,
+      COUNT(*)::int AS views
+    FROM analytics_events
+    WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
+      AND event_name = 'prompt_vault_prompt_viewed'
+    GROUP BY 1, 2
+    ORDER BY views DESC, prompt_number ASC
+    LIMIT 10
+  `) as TopPromptRow[]
+
+  const attributionRows = (await sql`
+    SELECT
+      NULLIF(source, '') AS source,
+      NULLIF(utm_source, '') AS utm_source,
+      NULLIF(utm_campaign, '') AS utm_campaign,
+      NULLIF(entry_post_slug, '') AS entry_post_slug,
+      NULLIF(cta_keyword, '') AS cta_keyword,
+      COUNT(*)::int AS checkout_starts,
+      COUNT(*) FILTER (WHERE status = 'completed')::int AS purchases,
+      COUNT(*) FILTER (WHERE recovery_email_sent_at IS NOT NULL)::int AS recovery_sends
+    FROM checkout_attribution
+    WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
+      AND product_type = 'prompt_vault'
+    GROUP BY 1, 2, 3, 4, 5
+    ORDER BY checkout_starts DESC, purchases DESC
+    LIMIT 10
+  `) as AttributionRow[]
+
   const recentPurchases = (await sql`
     SELECT
       payment_date::text AS payment_date,
@@ -142,10 +193,13 @@ async function getPromptVaultMetrics(windowDays: number) {
 
   const eventCounts: EventCounts = {
     landing_views: toInt(eventCountsRow?.landing_views),
+    reel_clicks: toInt(eventCountsRow?.reel_clicks),
     free_to_vault_clicks: toInt(eventCountsRow?.free_to_vault_clicks),
     checkout_starts: toInt(eventCountsRow?.checkout_starts),
+    recovery_sends: toInt(eventCountsRow?.recovery_sends),
     checkout_successes: toInt(eventCountsRow?.checkout_successes),
     access_opens: toInt(eventCountsRow?.access_opens),
+    prompt_views: toInt(eventCountsRow?.prompt_views),
     prompt_copies: toInt(eventCountsRow?.prompt_copies),
   }
 
@@ -164,7 +218,7 @@ async function getPromptVaultMetrics(windowDays: number) {
     day10_sent: toInt(buyerEmailCountsRow?.day10_sent),
   }
 
-  return { eventCounts, paymentCounts, buyerCounts, topPrompts, recentPurchases }
+  return { eventCounts, paymentCounts, buyerCounts, topPrompts, topViewedPrompts, attributionRows, recentPurchases }
 }
 
 export default async function PromptVaultAdminPage({
@@ -175,7 +229,7 @@ export default async function PromptVaultAdminPage({
   const params = await searchParams
   const requestedDays = Number(params.days || 14)
   const windowDays = [7, 14, 30].includes(requestedDays) ? requestedDays : 14
-  const { eventCounts, paymentCounts, buyerCounts, topPrompts, recentPurchases } =
+  const { eventCounts, paymentCounts, buyerCounts, topPrompts, topViewedPrompts, attributionRows, recentPurchases } =
     await getPromptVaultMetrics(windowDays)
 
   return (
@@ -218,7 +272,7 @@ export default async function PromptVaultAdminPage({
             label="Vault Visits"
             value={eventCounts.landing_views}
             icon={<BarChart3 className="w-5 h-5" />}
-            subtitle={`${eventCounts.free_to_vault_clicks} clicks from free prompts`}
+            subtitle={`${eventCounts.reel_clicks} reel clicks · ${eventCounts.free_to_vault_clicks} free prompt clicks`}
           />
           <AdminMetricCard
             label="Checkout Starts"
@@ -245,10 +299,22 @@ export default async function PromptVaultAdminPage({
             subtitle={`${buyerCounts.delivery_sent} delivery emails marked sent`}
           />
           <AdminMetricCard
+            label="Recovery Sends"
+            value={eventCounts.recovery_sends}
+            icon={<Mail className="w-5 h-5" />}
+            subtitle="Abandoned checkout follow-up"
+          />
+          <AdminMetricCard
             label="Access Opens"
             value={eventCounts.access_opens}
             icon={<MousePointerClick className="w-5 h-5" />}
             subtitle={`${pct(eventCounts.access_opens, buyerCounts.buyers)} of buyer records`}
+          />
+          <AdminMetricCard
+            label="Prompt Views"
+            value={eventCounts.prompt_views}
+            icon={<Eye className="w-5 h-5" />}
+            subtitle="Post-purchase demand signal"
           />
           <AdminMetricCard
             label="Prompt Copies"
@@ -265,6 +331,34 @@ export default async function PromptVaultAdminPage({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="bg-white border border-stone-200 p-6 rounded-none">
+            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              TOP VIEWED TRANSFORMATIONS
+            </h2>
+            {topViewedPrompts.length > 0 ? (
+              <div className="divide-y divide-stone-100">
+                {topViewedPrompts.map((prompt) => (
+                  <div key={`${prompt.prompt_number}-${prompt.prompt_title}`} className="py-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-stone-950">
+                        {prompt.prompt_number ? `${prompt.prompt_number}. ` : ""}
+                        {prompt.prompt_title || "Untitled prompt"}
+                      </p>
+                      <p className="text-[10px] tracking-[0.16em] uppercase text-stone-400 mt-1">
+                        Visual demand signal
+                      </p>
+                    </div>
+                    <p className="font-['Times_New_Roman'] text-2xl text-stone-950">{prompt.views}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-stone-500 leading-relaxed">
+                No paid-vault prompt views in this window yet. Views start tracking after the next deploy.
+              </p>
+            )}
+          </section>
+
           <section className="bg-white border border-stone-200 p-6 rounded-none">
             <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               TOP COPIED PROMPTS
@@ -289,6 +383,46 @@ export default async function PromptVaultAdminPage({
             ) : (
               <p className="text-sm text-stone-500 leading-relaxed">
                 No paid-vault prompt copies in this window yet. This is the main product-fit signal to watch after launch traffic starts.
+              </p>
+            )}
+          </section>
+
+          <section className="bg-white border border-stone-200 p-6 rounded-none lg:col-span-2">
+            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              REEL + SOURCE ATTRIBUTION
+            </h2>
+            {attributionRows.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-[10px] tracking-[0.18em] uppercase text-stone-400">
+                    <tr className="border-b border-stone-100">
+                      <th className="py-3 pr-4 font-medium">Source</th>
+                      <th className="py-3 pr-4 font-medium">Campaign</th>
+                      <th className="py-3 pr-4 font-medium">Reel</th>
+                      <th className="py-3 pr-4 font-medium">Keyword</th>
+                      <th className="py-3 pr-4 font-medium text-right">Starts</th>
+                      <th className="py-3 pr-4 font-medium text-right">Sales</th>
+                      <th className="py-3 font-medium text-right">Recovery</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {attributionRows.map((row) => (
+                      <tr key={`${row.source}-${row.utm_campaign}-${row.entry_post_slug}-${row.cta_keyword}`}>
+                        <td className="py-3 pr-4 text-stone-950">{row.source || row.utm_source || "direct"}</td>
+                        <td className="py-3 pr-4 text-stone-500">{row.utm_campaign || "-"}</td>
+                        <td className="py-3 pr-4 text-stone-500">{row.entry_post_slug || "-"}</td>
+                        <td className="py-3 pr-4 text-stone-500">{row.cta_keyword || "-"}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.purchases}</td>
+                        <td className="py-3 text-right text-stone-950">{row.recovery_sends}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-stone-500 leading-relaxed">
+                No Prompt Vault checkout attribution rows in this window yet.
               </p>
             )}
           </section>

@@ -3,7 +3,10 @@ import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { createServerClient } from "@/lib/supabase/server"
-import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
+import {
+  buildCheckoutRedirectUrl,
+  getCheckoutAttributionFromParams,
+} from "@/lib/revenue-engine/checkout-attribution"
 
 export const metadata: Metadata = {
   title: "Checkout | AI Photo Prompt Vault",
@@ -23,6 +26,13 @@ export default async function PromptVaultCheckoutPage({
     campaign_id?: string
     ref?: string
     checkout_source?: string
+    freebie_source?: string
+    guide_cta?: string
+    cta_keyword?: string
+    quiz_result?: string
+    entry_path?: string
+    entry_post_slug?: string
+    buyer_stage?: string
     returnTo?: string
     return_to?: string
   }>
@@ -45,7 +55,7 @@ export default async function PromptVaultCheckoutPage({
     )
 
     if (clientSecret) {
-      redirect(`/checkout?client_secret=${clientSecret}&product_type=prompt_vault`)
+      redirect(buildCheckoutRedirectUrl(clientSecret, "prompt_vault", params))
     }
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) {

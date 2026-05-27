@@ -46,20 +46,24 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 | `tasks/ACADEMY-01-foundation.md` | Academy foundation | Planned |
 | `tasks/ACADEMY-02-CODEX-SPEC.md` | Academy Codex spec | Planned |
 
-### Prompt Vault Pivot (May 26, 2026)
+### Prompt Vault Pivot (May 26-27, 2026)
 
-**Current growth signal:** Instagram and email behavior show people want AI photoshoot prompts for ChatGPT, not another selfie education starter product.
+**Current growth signal:** Instagram and email behavior show people want instant AI photoshoot transformations from one selfie, not another selfie education starter product and not a generic "prompt collection."
 
 **Do not drift back to the old Starter Kit-first funnel.** Starter Kit has been tested for weeks and has sold weakly (7 total reported by Sandra; live Neon shows 6 active Starter Kit records and Stripe payment tracking is incomplete). The audience is asking for AI photo prompts. The front-end offer should follow that demand.
 
 - New low-ticket offer: **AI Photo Prompt Vault** (`prompt_vault`) — $27.
+- Positioning: **"turn one selfie into unlimited photoshoots."** Avoid positioning it as "learn prompts" or a static prompt pack.
 - New funnel/product ladder source of truth: `docs/funnel/AI_PROMPT_FUNNEL_RESEARCH_AND_LADDER_2026-05-26.md`.
 - Free lead magnet: `/ai-prompts` and token access at `/ai-prompts/access/[token]`.
 - Primary upgrade from the free AI prompts product: `/prompt-vault` -> `/checkout/prompt-vault` -> `/access/prompt-vault/[token]`.
 - Academy/library access: `/academy/access/prompt-vault`.
 - Delivery email: `lib/email/templates/prompt-vault-delivery.ts`.
 - Buyer-success nurture drafts: `lib/email/templates/prompt-vault-buyer-sequence.ts`, scheduled by `app/api/cron/nurture-sequence/route.ts` only when `PROMPT_VAULT_NURTURE_ENABLED=true`.
-- Launch monitor: `/admin/prompt-vault` tracks Prompt Vault visits, free-to-vault clicks, checkout starts, purchases, access opens, and prompt copies.
+- Launch monitor: `/admin/prompt-vault` tracks Prompt Vault visits, free-to-vault clicks, checkout starts, purchases, access opens, prompt views, and prompt copies.
+- Attribution priority: preserve `source`, UTM params, `entry_post_slug`, `cta_keyword`, and `buyer_stage` from reels, ManyChat, email, and free prompt bridges into `/checkout/prompt-vault`.
+- Buyer behavior priority: use prompt view/copy frequency as the demand signal for the next "PROMPT MY SELFIE" reel. Current strongest aesthetic signal is Dark Balcony / Reel Cover Hero.
+- Checkout recovery: abandoned Prompt Vault checkouts are handled by `/api/cron/prompt-vault-checkout-recovery`, gated by `PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED=true`.
 - Launch broadcast draft: `docs/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md` — Sandra must approve before any send.
 - SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
 - Starter Kit is no longer the primary next step from AI prompts. It may remain as a secondary support product only when clearly framed as "make the original selfie stronger before AI."

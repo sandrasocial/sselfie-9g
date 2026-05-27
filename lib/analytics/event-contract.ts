@@ -75,11 +75,14 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "ai_prompts_prompt_vault_click",
   "ai_prompts_starter_kit_click",
   "prompt_vault_landing_view",
+  "prompt_vault_reel_click",
   "prompt_vault_checkout_success",
   "prompt_vault_access_resolved",
   "prompt_vault_access_failed",
   "prompt_vault_access_opened",
+  "prompt_vault_prompt_viewed",
   "prompt_vault_prompt_copied",
+  "prompt_vault_checkout_recovery_sent",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

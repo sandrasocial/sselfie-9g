@@ -269,11 +269,11 @@ export default async function AiPromptsAccessPage({
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
             <h2 className={`ap-section-title ${cormorant.className}`}>
-              A taste of the full photoshoot vault.
+              A taste of the full transformation vault.
             </h2>
             <p className="ap-workflow-note">
               These are the opening shots from the paid editorial collections. The full Prompt Vault
-              gives you the complete shoot series, every angle, and every copy-paste prompt.
+              turns one selfie into complete shoot series: every angle, every aesthetic, every image direction.
             </p>
             <div className="ap-cards">
               {FREEBIE_COLLECTION_PREVIEWS.map((card) => (
@@ -282,7 +282,7 @@ export default async function AiPromptsAccessPage({
             </div>
             <div className="ap-vault-cta-row">
               <TrackedLink
-                href="/prompt-vault?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault"
+                href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=vault_preview&checkout_source=free_prompts_bridge&buyer_stage=lead"
                 className="ap-bridge-cta ap-bridge-cta-primary"
                 trackEvent="ai_prompts_prompt_vault_click"
                 trackProperties={{
@@ -372,18 +372,23 @@ export default async function AiPromptsAccessPage({
       {/* 10. Optional separate next step — not the primary Prompt Vault upgrade */}
       <section className="ap-section ap-kit-bridge">
         <div className="ap-section-inner">
-          <p className="ap-kit-question">Need better original selfies first?</p>
+          <p className="ap-kit-question">Want the whole shoot, not just the sample?</p>
           <p className="ap-kit-body">
-            The Starter Kit is separate from the Prompt Vault. Use it if you want the presets,
-            posing guide, setup guide, captions, and 7-day content starter before you create more AI photos.
+            The free prompts are the taste. The Vault gives you the full transformation system:
+            Dark Balcony, Coastal White, Marble Café, Denim Street, and Cozy Mirror with complete image directions.
           </p>
           <TrackedLink
-            href="/starter-kit?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_starter_kit"
+            href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_bridge&buyer_stage=lead"
             className="ap-bridge-cta ap-bridge-cta-secondary"
-            trackEvent="ai_prompts_starter_kit_click"
-            trackProperties={{ source: "ai-prompts", destination: "starter-kit", utm_campaign: "ai_prompts_to_starter_kit" }}
+            trackEvent="ai_prompts_prompt_vault_click"
+            trackProperties={{
+              source: "ai-prompts",
+              destination: "prompt-vault",
+              utm_campaign: "ai_prompts_to_prompt_vault",
+              utm_content: "bottom_bridge",
+            }}
           >
-            See the Starter Kit
+            Open the Full Vault
           </TrackedLink>
         </div>
       </section>

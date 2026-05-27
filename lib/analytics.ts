@@ -107,11 +107,16 @@ export const trackPricingView = () => {
 /**
  * Track checkout start
  */
-export const trackCheckoutStart = (productType: string, value?: number) => {
+export const trackCheckoutStart = (
+  productType: string,
+  value?: number,
+  extraProperties?: Record<string, string | number | boolean | null | undefined>,
+) => {
   trackEvent("checkout_start", {
     product_type: productType,
     value: value,
     currency: "USD",
+    ...extraProperties,
   })
   trackFacebookEvent("InitiateCheckout", {
     content_name: productType,
@@ -120,7 +125,14 @@ export const trackCheckoutStart = (productType: string, value?: number) => {
   })
   import("./analytics/client")
     .then(({ trackAnalyticsEvent }) =>
-      trackAnalyticsEvent({ event: "checkout_start", properties: { product_type: productType, value: value ?? null } }),
+      trackAnalyticsEvent({
+        event: "checkout_start",
+        properties: {
+          product_type: productType,
+          value: value ?? null,
+          ...extraProperties,
+        },
+      }),
     )
     .catch(() => {})
 }

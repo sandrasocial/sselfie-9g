@@ -1,8 +1,10 @@
 import Image from "next/image"
 import Link from "next/link"
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { PromptVaultAnalytics } from "@/components/prompt-vault/prompt-vault-analytics"
+import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -19,42 +21,42 @@ export const metadata: Metadata = {
   },
 }
 
-const CHECKOUT_URL = "/checkout/prompt-vault"
-
 const LP  = "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)"
 const HERO_GRAD = "linear-gradient(to bottom, rgba(10,10,10,0.28) 0%, rgba(10,10,10,0.08) 40%, rgba(10,10,10,0.88) 100%)"
 
+const BUY_BUTTON_STYLE = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "13px 32px",
+  minHeight: "46px",
+  background: "#f5f5f5",
+  color: "#0a0a0a",
+  fontSize: "10px",
+  fontWeight: 600,
+  letterSpacing: "0.22em",
+  textTransform: "uppercase",
+  textDecoration: "none",
+  border: "1px solid transparent",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+  whiteSpace: "nowrap",
+} as const
+
 function BuyButton({ label = "Get the Vault · $27" }: { label?: string }) {
   return (
-    <Link
-      href={CHECKOUT_URL}
-      style={{
-        display:         "inline-flex",
-        alignItems:      "center",
-        justifyContent:  "center",
-        padding:         "13px 32px",
-        minHeight:       "46px",
-        background:      "#f5f5f5",
-        color:           "#0a0a0a",
-        fontSize:        "10px",
-        fontWeight:      600,
-        letterSpacing:   "0.22em",
-        textTransform:   "uppercase",
-        textDecoration:  "none",
-        border:          "1px solid transparent",
-        boxShadow:       "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
-        whiteSpace:      "nowrap",
-      }}
-    >
-      {label}
-    </Link>
+    <Suspense fallback={<Link href="/checkout/prompt-vault" style={BUY_BUTTON_STYLE}>{label}</Link>}>
+      <PromptVaultCheckoutLink label={label} />
+    </Suspense>
   )
 }
 
 export default function PromptVaultPage() {
   return (
     <main className={inter.className} style={{ background: "#0a0a0a", color: "#f5f5f5" }}>
-      <PromptVaultAnalytics />
+      <Suspense fallback={null}>
+        <PromptVaultAnalytics />
+      </Suspense>
 
       {/* SVG noise defs — referenced throughout */}
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
@@ -120,7 +122,7 @@ export default function PromptVaultPage() {
             SSELFIE
           </Link>
           <Link
-            href="/starter-kit"
+            href="/ai-prompts"
             style={{
               color: "rgba(245,245,245,0.56)",
               fontSize: "10px",
@@ -131,7 +133,7 @@ export default function PromptVaultPage() {
               textShadow: LP,
             }}
           >
-            Starter Kit
+            Free Prompts
           </Link>
         </nav>
 
