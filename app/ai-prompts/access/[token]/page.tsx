@@ -6,6 +6,8 @@ import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 import {
@@ -43,7 +45,8 @@ async function validateToken(token: string): Promise<TokenResult> {
       WHERE access_token = ${token}
         AND (
           source = 'ai-prompts'
-          OR 'ai-prompts-subscriber' = ANY(email_tags)
+          OR 'ai-prompts-subscriber' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          OR 'ai-photoshoot-audience' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
         )
       LIMIT 1
     `
@@ -56,6 +59,11 @@ async function validateToken(token: string): Promise<TokenResult> {
     console.error("[ai-prompts/access] DB error during token validation:", error)
     return { valid: false }
   }
+}
+
+async function isCurrentUserAdmin(): Promise<boolean> {
+  const { user } = await getAuthenticatedUser()
+  return isAdminEmail(user?.email)
 }
 
 // ---------------------------------------------------------------------------
@@ -105,8 +113,9 @@ export default async function AiPromptsAccessPage({
   const { token } = await params
   const hasHeroImage = fs.existsSync(HERO_IMAGE)
   const result = await validateToken(token)
+  const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
 
-  if (!result.valid) {
+  if (!result.valid && !adminOverride) {
     return (
       <main className={`ap-page ${inter.className}`}>
         <div className="ap-invalid">
@@ -182,7 +191,7 @@ export default async function AiPromptsAccessPage({
     properties: {
       source: "ai-prompts",
       token_prefix: token.slice(0, 8),
-      ...(result.subscriberSource ? { subscriber_source: result.subscriberSource } : {}),
+      subscriber_source: result.valid ? result.subscriberSource : "admin_override",
     },
   }).catch(() => {})
 

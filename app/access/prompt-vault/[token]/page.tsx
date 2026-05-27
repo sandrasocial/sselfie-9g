@@ -4,6 +4,8 @@ import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
@@ -51,6 +53,11 @@ async function validateToken(token: string): Promise<TokenResult> {
     console.error("[prompt-vault/access] DB error during token validation:", error)
     return { valid: false }
   }
+}
+
+async function isCurrentUserAdmin(): Promise<boolean> {
+  const { user } = await getAuthenticatedUser()
+  return isAdminEmail(user?.email)
 }
 
 // ---------------------------------------------------------------------------
@@ -113,8 +120,9 @@ export default async function PromptVaultAccessPage({
 }) {
   const { token } = await params
   const result = await validateToken(token)
+  const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
 
-  if (!result.valid) {
+  if (!result.valid && !adminOverride) {
     return (
       <main className={`pv-page ${inter.className}`}>
         <div className="pv-invalid">
@@ -184,7 +192,10 @@ export default async function PromptVaultAccessPage({
   logAnalyticsEvent({
     eventName: "prompt_vault_access_opened",
     path: "/access/prompt-vault/[token]",
-    properties: { token_prefix: token.slice(0, 8) },
+    properties: {
+      token_prefix: token.slice(0, 8),
+      access_mode: result.valid ? "token" : "admin_override",
+    },
   }).catch(() => {})
 
   return (
