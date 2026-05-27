@@ -7,9 +7,9 @@
 // Before sending to any address, this route checks email_logs for a record
 // with matching (user_email, email_type, status IN ('sent','delivered','suppressed')).
 // If found: skip (do not send again).
-// The email_type is derived from the run's drop_key:
-//   vault_drop_{dropKey}_nonbuyer  (non-buyers)
-//   vault_drop_{dropKey}_buyer     (buyers)
+// The email_type is a short deterministic key derived from the run's drop_key:
+//   vault_drop_{short_hash}_nonbuyer  (non-buyers)
+//   vault_drop_{short_hash}_buyer     (buyers)
 //
 // This means:
 //   - Calling /process twice with the same runId is safe — duplicates are skipped
@@ -98,6 +98,10 @@ function testDropEmailType(dropEmailType: string): string {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
+}
+
+function resendSafeTag(value: string): string {
+  return value.replace(/[^A-Za-z0-9_-]/g, "-")
 }
 
 async function claimRecipient(
@@ -344,7 +348,7 @@ async function processBatch(
         from: EMAIL_CONFIG.marketing.from,
         emailType: dropEmailType,
         marketing: true,
-        tags: [`vault-drop-${run.drop_key}`, `vault-${audience}`],
+        tags: [`vault-drop-${resendSafeTag(run.drop_key)}`, `vault-${audience}`],
       })
 
       if (sendResult.success) {

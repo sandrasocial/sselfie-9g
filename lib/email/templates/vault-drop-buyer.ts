@@ -58,7 +58,6 @@ export function generateVaultDropBuyerEmail({
   text: string
 } {
   const n = newCollections.length
-  const cw = countWord(n)         // "three"
   const cwCaps = countWordCaps(n) // "Three"
 
   const subject = `your vault just got bigger`

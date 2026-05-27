@@ -524,11 +524,14 @@ Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
 
 #### How idempotency works
 
-Each drop generates a deterministic `email_type` from the collection slugs:
+Each drop generates a deterministic short `email_type` from the collection slugs:
 ```
-vault_drop_coastal-white+dark-balcony_nonbuyer
-vault_drop_coastal-white+dark-balcony_buyer
+vault_drop_1g9j3xf_nonbuyer
+vault_drop_1g9j3xf_buyer
 ```
+
+The full human-readable slug key still lives in `vault_drop_runs.drop_key`. The short
+`email_type` is intentional because `email_logs.email_type` is limited to 50 characters.
 
 Before sending to any address, the route checks `email_logs` for a record with this `email_type` and `status IN ('sent', 'delivered', 'suppressed')`. If found → skip.
 

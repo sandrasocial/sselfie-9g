@@ -130,15 +130,26 @@ export function buildDropKey(collections: VaultDropCollection[]): string {
 
 /**
  * email_type written to email_logs for each drop send.
- * Format: vault_drop_{drop_key}_{audience}
- * Example: vault_drop_coastal-white+dark-balcony_nonbuyer
+ * Format: vault_drop_{short_hash}_{audience}
+ * Example: vault_drop_1g9j3xf_nonbuyer
  *
- * This is the idempotency key — a recipient is skipped if email_logs
- * already has a 'sent', 'delivered', or 'suppressed' record for this type.
+ * This is the idempotency key. Keep it under 50 chars because email_logs.email_type
+ * is varchar(50). The full human-readable drop key is still stored in vault_drop_runs.
  */
+function hashDropKey(dropKey: string): string {
+  let hash = 2166136261
+
+  for (let i = 0; i < dropKey.length; i++) {
+    hash ^= dropKey.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return (hash >>> 0).toString(36)
+}
+
 export function buildDropEmailType(
   dropKey: string,
   audience: "nonbuyer" | "buyer",
 ): string {
-  return `vault_drop_${dropKey}_${audience}`
+  return `vault_drop_${hashDropKey(dropKey)}_${audience}`
 }
