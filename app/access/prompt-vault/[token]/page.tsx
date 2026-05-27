@@ -15,11 +15,14 @@ import {
   MARBLE_CAFE_SERIES,
   DENIM_STREET_SERIES,
   COZY_LEATHER_SERIES,
+  VAULT_COLLECTION_META,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
+
+// ── Collection data ─────────────────────────────────────────────────────────
 
 const COLLECTION_OVERVIEW = [
   {
@@ -123,9 +126,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-// ---------------------------------------------------------------------------
-// Token validation
-// ---------------------------------------------------------------------------
+// ── Token validation ─────────────────────────────────────────────────────────
 
 type TokenResult =
   | { valid: false }
@@ -157,13 +158,11 @@ async function isCurrentUserAdmin(): Promise<boolean> {
   return isAdminEmail(user?.email)
 }
 
-// ---------------------------------------------------------------------------
-// Prompt card component
-// ---------------------------------------------------------------------------
+// ── Prompt card component ────────────────────────────────────────────────────
 
 function PromptCardEl({ card }: { card: PromptCard }) {
   return (
-    <article id={card.id} className="pv-card">
+    <article id={card.id} className="pva-card">
       <PromptViewTracker
         promptId={card.id}
         promptTitle={card.title}
@@ -171,27 +170,33 @@ function PromptCardEl({ card }: { card: PromptCard }) {
         mood={card.mood}
       />
       {card.exampleImage && (
-        <div className="pv-card-image-wrap">
+        <div className="pva-card-image-wrap">
           <Image
             src={card.exampleImage}
             alt={`Example result for ${card.title}`}
             width={600}
             height={900}
-            className="pv-card-image"
+            className="pva-card-image"
           />
         </div>
       )}
-      <div className="pv-card-body">
-        <div className="pv-card-header">
-          <span className="pv-card-number">{card.number}</span>
-          <h3 className={`pv-card-title ${cormorant.className}`}>{card.title}</h3>
+      <div className="pva-card-body">
+        <div className="pva-card-header">
+          <span className="pva-card-number">{card.number}</span>
+          <h3 className={`pva-card-title ${cormorant.className}`}>
+            {card.title}
+          </h3>
         </div>
-        <p className="pv-when-label">When to use it</p>
-        <p className="pv-when">{card.whenToUse}</p>
-        <p className="pv-mood">{card.mood}</p>
-        <div className="pv-prompt-wrap">
-          <p className="pv-prompt-text">{card.prompt}</p>
-          <div className="pv-copy-row">
+        {card.whenToUse && (
+          <>
+            <p className="pva-when-label">When to use it</p>
+            <p className="pva-when">{card.whenToUse}</p>
+          </>
+        )}
+        <p className="pva-mood">{card.mood}</p>
+        <div className="pva-prompt-wrap">
+          <p className="pva-prompt-text">{card.prompt}</p>
+          <div className="pva-copy-row">
             <CopyButton
               text={card.prompt}
               promptTitle={card.title}
@@ -206,9 +211,7 @@ function PromptCardEl({ card }: { card: PromptCard }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function PromptVaultAccessPage({
   params,
@@ -221,67 +224,72 @@ export default async function PromptVaultAccessPage({
 
   if (!result.valid && !adminOverride) {
     return (
-      <main className={`pv-page ${inter.className}`}>
-        <div className="pv-invalid">
-          <p className="pv-invalid-eyebrow">SSELFIE</p>
-          <h1 className={`pv-invalid-headline ${cormorant.className}`}>
+      <main
+        className={inter.className}
+        style={{
+          background: "#F5EFE6",
+          color: "#0A0A0A",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 24px",
+        }}
+      >
+        <div style={{ maxWidth: "480px", textAlign: "center" }}>
+          <p
+            className={cormorant.className}
+            style={{
+              margin: "0 0 28px",
+              fontSize: "14px",
+              fontWeight: 300,
+              letterSpacing: "0.42em",
+              textTransform: "uppercase",
+              color: "#9B9189",
+            }}
+          >
+            SSELFIE
+          </p>
+          <h1
+            className={cormorant.className}
+            style={{
+              margin: "0 0 16px",
+              fontSize: "clamp(2rem, 7vw, 3rem)",
+              fontWeight: 300,
+              lineHeight: 1.1,
+              color: "#0A0A0A",
+            }}
+          >
             This link doesn&apos;t look right.
           </h1>
-          <p className="pv-invalid-body">
-            This access link is not valid. Use the link from your purchase confirmation email or
-            contact hello@sselfie.ai if you need help.
+          <p
+            style={{
+              margin: "0 0 36px",
+              fontSize: "15px",
+              lineHeight: 1.8,
+              color: "#3A3632",
+            }}
+          >
+            This access link is not valid. Use the link from your purchase
+            confirmation email or contact hello@sselfie.ai if you need help.
           </p>
-          <Link href="/prompt-vault" className="pv-invalid-cta">
+          <Link
+            href="/prompt-vault"
+            style={{
+              display: "inline-block",
+              padding: "13px 28px",
+              background: "#0A0A0A",
+              color: "#FFFFFF",
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
             Get the Prompt Vault
           </Link>
         </div>
-        <style>{`
-          .pv-page {
-            background: #0a0a0a;
-            color: #f5f5f5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 48px 24px;
-          }
-          .pv-invalid {
-            max-width: 480px;
-            text-align: center;
-          }
-          .pv-invalid-eyebrow {
-            margin: 0 0 24px;
-            font-size: 9px;
-            font-weight: 600;
-            letter-spacing: 0.42em;
-            color: rgba(245, 245, 245, 0.32);
-          }
-          .pv-invalid-headline {
-            margin: 0 0 16px;
-            font-size: clamp(2rem, 7vw, 3rem);
-            font-weight: 300;
-            line-height: 1.1;
-            color: #f5f5f5;
-          }
-          .pv-invalid-body {
-            margin: 0 0 36px;
-            font-size: 15px;
-            line-height: 1.8;
-            color: rgba(245, 245, 245, 0.54);
-          }
-          .pv-invalid-cta {
-            display: inline-block;
-            padding: 14px 28px;
-            background: #f5f5f5;
-            color: #0a0a0a;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.24em;
-            text-transform: uppercase;
-            text-decoration: none;
-          }
-        `}</style>
       </main>
     )
   }
@@ -295,555 +303,687 @@ export default async function PromptVaultAccessPage({
     },
   }).catch(() => {})
 
+  const firstName =
+    (result.valid && result.name) ? result.name.split(" ")[0] : null
+
   return (
-    <main className={`pv-page ${inter.className}`}>
-      {/* Hero */}
-      <section className="pv-hero">
-        <p className="pv-eyebrow">AI Photo Prompt Vault</p>
-        <h1 className={`pv-headline ${cormorant.className}`}>
-          Your Selfie Photoshoot Vault
-        </h1>
-        <p className="pv-subhead">
-          Turn one selfie into cinematic editorial photoshoots. Start by choosing the
-          visual world you want to step into, then open the full prompt cards when you are ready.
-        </p>
-        <div className="pv-how-to">
-          <p className="pv-how-label">HOW TO USE</p>
-          <ol className="pv-how-steps">
-            <li>Choose the aesthetic you want to become today.</li>
-            <li>Click <strong>Copy prompt</strong> on that card.</li>
-            <li>Open <strong>ChatGPT</strong> and start a new conversation.</li>
-            <li>Paste the prompt, then attach your selfie.</li>
-            <li>Hit send. Your photoshoot is ready in seconds.</li>
+    <main className={`pva-page ${inter.className}`}>
+
+      {/* ── NAV ── */}
+      <nav className="pva-nav">
+        <Link href="/" className={`pva-nav-logo ${cormorant.className}`}>
+          SSELFIE
+        </Link>
+        <span className="pva-nav-label">The Vault</span>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="pva-hero">
+        <div className="pva-hero-inner">
+          <p className="pva-eyebrow">SSELFIE · THE VAULT</p>
+          <h1 className={`pva-headline ${cormorant.className}`}>
+            {firstName ? `${firstName}'s` : "Your"} AI<br />Photoshoot Vault
+          </h1>
+          <p className="pva-subhead">
+            A growing library of editorial AI photoshoot collections, creative
+            direction, styling notes, and shot sequences — all from one selfie.
+          </p>
+          <a href="#vault-overview" className="pva-scroll-link">
+            Explore the collections ↓
+          </a>
+        </div>
+
+        {/* Hero image strip — 3 shots from different collections */}
+        <div className="pva-hero-strip">
+          {[
+            "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
+            "/images/ai-prompts/coastal-white-shot-1.jpg",
+            "/images/ai-prompts/dark-balcony-shot-1.png",
+          ].map((src, i) => (
+            <div key={i} className="pva-hero-strip-img">
+              <Image
+                src={src}
+                alt=""
+                fill
+                aria-hidden
+                priority={i === 0}
+                style={{ objectFit: "cover", objectPosition: "center top" }}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW TO USE ── */}
+      <section className="pva-how-section">
+        <div className="pva-how-inner">
+          <p className="pva-how-label">HOW TO USE</p>
+          <ol className="pva-how-steps">
+            <li>Choose the aesthetic that calls to you from the collections below.</li>
+            <li>Open that collection and find the shot you want to recreate.</li>
+            <li>Tap <strong>Copy prompt</strong> on that card.</li>
+            <li>Open <strong>ChatGPT</strong>, start a new conversation, paste the prompt, attach your selfie.</li>
+            <li>Hit send. Your photo is ready in seconds.</li>
           </ol>
         </div>
       </section>
 
-      <section className="pv-overview">
-        <div className="pv-overview-inner">
-          <p className="pv-series-eyebrow">INSIDE THE VAULT</p>
-          <h2 className={`pv-overview-title ${cormorant.className}`}>
-            Six complete photoshoot collections.
+      {/* ── COLLECTION OVERVIEW ── */}
+      <section id="vault-overview" className="pva-overview">
+        <div className="pva-overview-inner">
+          <p className="pva-eyebrow">INSIDE THE VAULT</p>
+          <h2 className={`pva-overview-title ${cormorant.className}`}>
+            Six complete collections.
           </h2>
-          <p className="pv-overview-note">
-            Each collection gives you the full shoot direction, every scene, and the
-            copy-paste prompt for each image. Scroll the moodboard first, then open the prompts.
+          <p className="pva-overview-note">
+            Scroll the moodboard to pick the version of you you want to
+            photograph today. Then open the collection for the full prompts.
           </p>
-          <div className="pv-overview-grid">
-            {COLLECTION_OVERVIEW.map((collection) => (
-              <a key={collection.href} href={collection.href} className="pv-overview-card">
-                {collection.image && (
-                  <Image
-                    src={collection.image}
-                    alt={`${collection.title} preview`}
-                    width={600}
-                    height={900}
-                    className="pv-overview-image"
-                  />
+          <div className="pva-overview-grid">
+            {COLLECTION_OVERVIEW.map((c) => (
+              <a key={c.href} href={c.href} className="pva-overview-card">
+                {c.image && (
+                  <div className="pva-overview-image-wrap">
+                    <Image
+                      src={c.image}
+                      alt={`${c.title} preview`}
+                      width={600}
+                      height={750}
+                      className="pva-overview-image"
+                    />
+                  </div>
                 )}
-                <span className="pv-overview-eyebrow">{collection.eyebrow}</span>
-                <h3 className={`pv-overview-card-title ${cormorant.className}`}>{collection.title}</h3>
-                <p className="pv-overview-card-note">{collection.note}</p>
+                <div className="pva-overview-card-body">
+                  <span className="pva-overview-eyebrow">{c.eyebrow}</span>
+                  <h3
+                    className={`pva-overview-card-title ${cormorant.className}`}
+                  >
+                    {c.title}
+                  </h3>
+                  <p className="pva-overview-card-note">{c.note}</p>
+                  <span className="pva-overview-open-hint">
+                    Open collection →
+                  </span>
+                </div>
               </a>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="pv-library">
-        <div className="pv-library-inner">
-          <p className="pv-series-eyebrow">FULL PROMPT LIBRARY</p>
-          <h2 className={`pv-library-title ${cormorant.className}`}>
+      {/* ── FULL PROMPT LIBRARY ── */}
+      <section className="pva-library">
+        <div className="pva-library-inner">
+          <p className="pva-eyebrow">FULL PROMPT LIBRARY</p>
+          <h2 className={`pva-library-title ${cormorant.className}`}>
             Open the shoot you want to create.
           </h2>
-          <div className="pv-collection-list">
-            {VAULT_COLLECTIONS.map((collection) => (
-              <details key={collection.id} id={collection.id} className="pv-collection-details">
-                <summary className="pv-collection-summary">
-                  <span className="pv-collection-summary-text">
-                    <span className="pv-series-eyebrow">{collection.eyebrow}</span>
-                    <span className={`pv-series-title ${cormorant.className}`}>
-                      {collection.title}
-                    </span>
-                    <span className="pv-series-note">{collection.note}</span>
-                  </span>
-                  <span className="pv-open-label">Open prompts</span>
-                </summary>
-                <div className="pv-cards">
-                  {collection.cards.map((card) => (
-                    <PromptCardEl key={card.id} card={card} />
-                  ))}
-                </div>
-              </details>
-            ))}
+          <p
+            style={{
+              margin: "0 0 40px",
+              fontSize: "15px",
+              lineHeight: 1.8,
+              color: "#3A3632",
+              maxWidth: "560px",
+            }}
+          >
+            Each collection gives you the full shoot direction. The image
+            leads. The prompt supports it.
+          </p>
+
+          <div className="pva-collection-list">
+            {VAULT_COLLECTIONS.map((collection) => {
+              const meta = VAULT_COLLECTION_META.find(
+                (m) => m.name === collection.title,
+              )
+              const thumbs = meta?.thumbnails.slice(0, 6) ?? []
+
+              return (
+                <details
+                  key={collection.id}
+                  id={collection.id}
+                  className="pva-details"
+                >
+                  <summary className="pva-summary">
+                    <div className="pva-summary-text">
+                      <span className="pva-series-eyebrow">
+                        {collection.eyebrow}
+                      </span>
+                      <span
+                        className={`pva-series-title ${cormorant.className}`}
+                      >
+                        {collection.title}
+                      </span>
+                      <span className="pva-series-note">{collection.note}</span>
+                    </div>
+                    <span className="pva-open-label">Open prompts</span>
+                  </summary>
+
+                  <div className="pva-details-content">
+                    {/* Thumbnail strip */}
+                    {thumbs.length > 0 && (
+                      <div className="pva-thumb-strip">
+                        {thumbs.map((src, i) => (
+                          <div key={i} className="pva-thumb-item">
+                            <Image
+                              src={src}
+                              alt=""
+                              fill
+                              aria-hidden
+                              style={{
+                                objectFit: "cover",
+                                objectPosition: "center top",
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Prompt cards */}
+                    <div className="pva-cards">
+                      {collection.cards.map((card) => (
+                        <PromptCardEl key={card.id} card={card} />
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="pv-footer">
-        <p className="pv-footer-text">
+      {/* ── FOOTER ── */}
+      <footer className="pva-footer">
+        <p className="pva-footer-text">
           Questions? Email{" "}
-          <a href="mailto:support@sselfie.ai" className="pv-footer-link">
+          <a href="mailto:support@sselfie.ai" className="pva-footer-link">
             support@sselfie.ai
           </a>
         </p>
-        <p className="pv-footer-brand">SSELFIE</p>
+        <p className={`pva-footer-brand ${cormorant.className}`}>SSELFIE</p>
       </footer>
 
       <style>{`
-        .pv-page {
-          background: #0a0a0a;
-          color: #f5f5f5;
+        /* Base */
+        .pva-page {
+          background: #F5EFE6;
+          color: #0A0A0A;
           min-height: 100vh;
-          padding: 0 0 80px;
         }
 
-        /* Hero */
-        .pv-hero {
-          max-width: 860px;
-          margin: 0 auto;
-          padding: 64px 24px 48px;
+        /* NAV */
+        .pva-nav {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: #F5EFE6;
+          border-bottom: 1px solid #E5DDD4;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 15px clamp(18px, 4vw, 40px);
         }
-        .pv-eyebrow {
-          margin: 0 0 20px;
-          font-size: 9px;
+        .pva-nav-logo {
+          color: #0A0A0A;
+          font-size: 16px;
+          font-weight: 300;
+          letter-spacing: 0.34em;
+          text-decoration: none;
+          text-transform: uppercase;
+        }
+        .pva-nav-label {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.3em;
+          text-transform: uppercase;
+          color: #9B9189;
+        }
+
+        /* Shared helpers */
+        .pva-eyebrow {
+          margin: 0 0 16px;
+          font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.42em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.38);
+          color: #9B9189;
         }
-        .pv-headline {
-          margin: 0 0 18px;
-          font-size: clamp(2.6rem, 8vw, 5.2rem);
+
+        /* HERO */
+        .pva-hero {
+          border-bottom: 1px solid #E5DDD4;
+          overflow: hidden;
+        }
+        .pva-hero-inner {
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: clamp(56px, 7vw, 96px) clamp(20px, 4vw, 48px) clamp(40px, 5vw, 64px);
+        }
+        .pva-headline {
+          margin: 0 0 20px;
+          font-size: clamp(3rem, 7vw, 6rem);
           font-weight: 300;
-          line-height: 0.95;
-          letter-spacing: -0.02em;
-          color: #f5f5f5;
+          line-height: 0.97;
+          letter-spacing: -0.025em;
+          color: #0A0A0A;
         }
-        .pv-subhead {
-          max-width: 620px;
-          margin: 0 0 32px;
+        .pva-subhead {
+          margin: 0 0 28px;
           font-size: 16px;
           line-height: 1.85;
-          color: rgba(245, 245, 245, 0.64);
-        }
-        .pv-how-to {
-          border: 1px solid rgba(245, 245, 245, 0.1);
-          background: rgba(245, 245, 245, 0.04);
-          border-radius: 14px;
-          padding: 20px 24px 22px;
+          color: #3A3632;
           max-width: 520px;
         }
-        .pv-how-label {
+        .pva-scroll-link {
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.08em;
+          color: #9B9189;
+          text-decoration: none;
+        }
+        .pva-scroll-link:hover { color: #0A0A0A; }
+
+        /* Hero image strip */
+        .pva-hero-strip {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin: 0;
+          height: clamp(200px, 35vw, 480px);
+        }
+        .pva-hero-strip-img {
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* How to use */
+        .pva-how-section {
+          border-bottom: 1px solid #E5DDD4;
+          background: #FAF8F4;
+          padding: clamp(32px, 4vw, 48px) clamp(20px, 4vw, 48px);
+        }
+        .pva-how-inner {
+          max-width: 680px;
+          margin: 0 auto;
+        }
+        .pva-how-label {
           margin: 0 0 10px;
           font-size: 9px;
           font-weight: 600;
-          letter-spacing: 0.36em;
-          color: rgba(245, 245, 245, 0.36);
+          letter-spacing: 0.4em;
+          text-transform: uppercase;
+          color: #9B9189;
         }
-        .pv-how-steps {
+        .pva-how-steps {
           margin: 0;
-          padding-left: 18px;
-          color: rgba(245, 245, 245, 0.68);
+          padding-left: 20px;
+          color: #3A3632;
           font-size: 14px;
-          line-height: 1.9;
+          line-height: 2;
         }
-        .pv-how-steps strong {
-          color: rgba(245, 245, 245, 0.9);
+        .pva-how-steps strong {
+          color: #0A0A0A;
           font-weight: 500;
         }
 
-        /* Sections */
-        .pv-section {
-          border-top: 1px solid rgba(245, 245, 245, 0.07);
-          padding: 56px 0;
+        /* Overview */
+        .pva-overview {
+          border-bottom: 1px solid #E5DDD4;
+          background: #FFFFFF;
         }
-        .pv-library {
-          border-top: 1px solid rgba(245, 245, 245, 0.07);
-          padding: 56px 0;
-        }
-        .pv-library-inner {
-          max-width: 1140px;
+        .pva-overview-inner {
+          max-width: 1120px;
           margin: 0 auto;
-          padding: 0 24px;
+          padding: clamp(56px, 7vw, 88px) clamp(20px, 4vw, 48px);
         }
-        .pv-library-title {
-          margin: 0 0 28px;
-          font-size: clamp(1.9rem, 5vw, 3.2rem);
+        .pva-overview-title {
+          margin: 0 0 12px;
+          font-size: clamp(2.2rem, 5.5vw, 4.5rem);
           font-weight: 300;
           line-height: 1.02;
-          color: #f5f5f5;
+          color: #0A0A0A;
         }
-        .pv-collection-list {
+        .pva-overview-note {
+          margin: 0 0 40px;
+          font-size: 15px;
+          line-height: 1.8;
+          color: #3A3632;
+          max-width: 580px;
+        }
+        .pva-overview-grid {
           display: grid;
-          gap: 14px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
         }
-        .pv-collection-details {
-          border: 1px solid rgba(245, 245, 245, 0.09);
-          border-radius: 14px;
-          background: rgba(245, 245, 245, 0.035);
+        .pva-overview-card {
+          display: block;
+          color: inherit;
+          text-decoration: none;
+          background: #F5EFE6;
+          border: 1px solid #E5DDD4;
+          overflow: hidden;
+          transition: border-color 0.2s;
+        }
+        .pva-overview-card:hover {
+          border-color: #9B9189;
+        }
+        .pva-overview-image-wrap {
+          position: relative;
+          aspect-ratio: 4/5;
+          overflow: hidden;
+          background: #EDE8E1;
+        }
+        .pva-overview-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center top;
+          display: block;
+          transition: transform 0.4s ease;
+        }
+        .pva-overview-card:hover .pva-overview-image {
+          transform: scale(1.03);
+        }
+        .pva-overview-card-body {
+          padding: 20px 18px 22px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .pva-overview-eyebrow {
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.34em;
+          text-transform: uppercase;
+          color: #9B9189;
+        }
+        .pva-overview-card-title {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 300;
+          line-height: 1.1;
+          color: #0A0A0A;
+        }
+        .pva-overview-card-note {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.65;
+          color: #3A3632;
+          font-style: italic;
+        }
+        .pva-overview-open-hint {
+          margin-top: 4px;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.1em;
+          color: #9B9189;
+        }
+
+        /* Library */
+        .pva-library {
+          border-bottom: 1px solid #E5DDD4;
+          background: #F5EFE6;
+        }
+        .pva-library-inner {
+          max-width: 1140px;
+          margin: 0 auto;
+          padding: clamp(56px, 7vw, 88px) clamp(20px, 4vw, 48px);
+        }
+        .pva-library-title {
+          margin: 0 0 10px;
+          font-size: clamp(2rem, 5vw, 3.6rem);
+          font-weight: 300;
+          line-height: 1.04;
+          color: #0A0A0A;
+        }
+        .pva-collection-list {
+          display: grid;
+          gap: 12px;
+        }
+
+        /* Accordion */
+        .pva-details {
+          border: 1px solid #E5DDD4;
+          background: #FFFFFF;
           overflow: hidden;
         }
-        .pv-collection-summary {
+        .pva-summary {
           list-style: none;
           cursor: pointer;
           display: grid;
-          grid-template-columns: 1fr;
-          gap: 18px;
-          padding: 24px;
+          grid-template-columns: 1fr auto;
+          gap: 16px;
+          align-items: center;
+          padding: 24px 28px;
         }
-        .pv-collection-summary::-webkit-details-marker {
-          display: none;
-        }
-        .pv-collection-summary-text {
+        .pva-summary::-webkit-details-marker { display: none; }
+        .pva-summary-text {
           display: grid;
-          gap: 8px;
+          gap: 6px;
         }
-        .pv-collection-summary .pv-series-title,
-        .pv-collection-summary .pv-series-note,
-        .pv-collection-summary .pv-series-eyebrow {
-          display: block;
-          margin: 0;
-        }
-        .pv-open-label {
-          justify-self: start;
-          align-self: center;
-          border: 1px solid rgba(245, 245, 245, 0.16);
-          border-radius: 999px;
-          padding: 11px 16px;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.74);
-        }
-        .pv-collection-details[open] .pv-open-label {
-          background: rgba(245, 245, 245, 0.9);
-          color: #0a0a0a;
-        }
-        .pv-collection-details .pv-cards {
-          padding: 0 24px 24px;
-        }
-        .pv-section-inner {
-          max-width: 1140px;
-          margin: 0 auto;
-          padding: 0 24px;
-        }
-        .pv-series-eyebrow {
-          margin: 0 0 10px;
+        .pva-series-eyebrow {
           font-size: 9px;
           font-weight: 600;
-          letter-spacing: 0.38em;
+          letter-spacing: 0.36em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.38);
+          color: #9B9189;
         }
-        .pv-series-title {
-          margin: 0 0 10px;
-          font-size: clamp(1.8rem, 4vw, 2.8rem);
+        .pva-series-title {
+          font-size: clamp(1.4rem, 3vw, 2rem);
           font-weight: 300;
-          line-height: 1.05;
-          color: #f5f5f5;
+          line-height: 1.08;
+          color: #0A0A0A;
         }
-        .pv-series-note {
-          max-width: 560px;
-          margin: 0 0 36px;
-          font-size: 15px;
-          line-height: 1.8;
-          color: rgba(245, 245, 245, 0.52);
+        .pva-series-note {
+          font-size: 14px;
+          line-height: 1.7;
+          color: #3A3632;
+          max-width: 540px;
+          font-style: italic;
+        }
+        .pva-open-label {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(10,10,10,0.18);
+          padding: 10px 16px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(10,10,10,0.7);
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .pva-details[open] .pva-open-label {
+          background: #0A0A0A;
+          color: #FFFFFF;
+          border-color: #0A0A0A;
+        }
+
+        /* Accordion content */
+        .pva-details-content {
+          border-top: 1px solid #E5DDD4;
+        }
+
+        /* Thumbnail strip */
+        .pva-thumb-strip {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 4px;
+          padding: 20px 28px 0;
+        }
+        .pva-thumb-item {
+          position: relative;
+          aspect-ratio: 3/4;
+          overflow: hidden;
+          background: #EDE8E1;
         }
 
         /* Cards grid */
-        .pv-cards {
+        .pva-cards {
           display: grid;
-          gap: 20px;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          padding: 20px 28px 28px;
         }
 
         /* Card */
-        .pv-card {
-          background: rgba(245, 245, 245, 0.04);
-          border: 1px solid rgba(245, 245, 245, 0.09);
-          border-radius: 20px;
+        .pva-card {
+          background: #FAF8F4;
+          border: 1px solid #E5DDD4;
           overflow: hidden;
           display: flex;
           flex-direction: column;
         }
-        .pv-card-image-wrap {
+        .pva-card-image-wrap {
           width: 100%;
-          aspect-ratio: 2 / 3;
+          aspect-ratio: 2/3;
           overflow: hidden;
+          background: #EDE8E1;
         }
-        .pv-card-image {
+        .pva-card-image {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          object-position: center top;
           display: block;
         }
-        .pv-card-body {
-          padding: 24px 22px 22px;
+        .pva-card-body {
+          padding: 22px 20px 20px;
           flex: 1;
           display: flex;
           flex-direction: column;
           gap: 0;
+          background: #FFFFFF;
         }
-        .pv-card-header {
+        .pva-card-header {
           display: flex;
           align-items: baseline;
           gap: 10px;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
-        .pv-card-number {
+        .pva-card-number {
           font-size: 10px;
           font-weight: 500;
           letter-spacing: 0.2em;
-          color: rgba(245, 245, 245, 0.34);
+          color: #9B9189;
           flex-shrink: 0;
         }
-        .pv-card-title {
+        .pva-card-title {
           margin: 0;
-          font-size: 1.32rem;
+          font-size: 1.25rem;
           font-weight: 300;
           line-height: 1.15;
-          color: #f5f5f5;
+          color: #0A0A0A;
         }
-        .pv-when-label {
+        .pva-when-label {
           margin: 0 0 4px;
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.3);
+          color: #9B9189;
         }
-        .pv-when {
-          margin: 0 0 12px;
+        .pva-when {
+          margin: 0 0 10px;
           font-size: 13px;
           line-height: 1.7;
-          color: rgba(245, 245, 245, 0.58);
+          color: #3A3632;
         }
-        .pv-mood {
-          margin: 0 0 16px;
+        .pva-mood {
+          margin: 0 0 14px;
           font-size: 11px;
           letter-spacing: 0.04em;
-          color: rgba(245, 245, 245, 0.34);
+          color: #9B9189;
+          font-style: italic;
         }
-        .pv-prompt-wrap {
+        .pva-prompt-wrap {
           margin-top: auto;
-          border-top: 1px solid rgba(245, 245, 245, 0.07);
-          padding-top: 16px;
+          border-top: 1px solid #E5DDD4;
+          padding-top: 14px;
         }
-        .pv-prompt-text {
-          margin: 0 0 14px;
+        .pva-prompt-text {
+          margin: 0 0 12px;
           font-size: 13px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.72);
+          color: #3A3632;
           white-space: pre-wrap;
         }
-        .pv-copy-row {
-          display: flex;
+        .pva-copy-row { display: flex; }
+
+        /* CopyButton override */
+        .copy-btn {
+          color: #0A0A0A !important;
+          border-color: rgba(10,10,10,0.18) !important;
+          background: transparent !important;
+        }
+        .copy-btn:hover {
+          color: #0A0A0A !important;
+          border-color: rgba(10,10,10,0.5) !important;
+          background: transparent !important;
         }
 
         /* Footer */
-        .pv-footer {
-          border-top: 1px solid rgba(245, 245, 245, 0.07);
-          margin-top: 64px;
-          padding: 32px 24px;
+        .pva-footer {
+          border-top: 1px solid #E5DDD4;
+          padding: 36px 24px;
           text-align: center;
+          background: #F5EFE6;
         }
-        .pv-footer-text {
+        .pva-footer-text {
           margin: 0 0 8px;
           font-size: 13px;
-          color: rgba(245, 245, 245, 0.38);
+          color: #9B9189;
         }
-        .pv-footer-link {
-          color: rgba(245, 245, 245, 0.52);
+        .pva-footer-link {
+          color: #3A3632;
+          text-decoration: none;
         }
-        .pv-footer-brand {
+        .pva-footer-brand {
           margin: 0;
-          font-size: 9px;
-          font-weight: 600;
+          font-size: 10px;
+          font-weight: 300;
           letter-spacing: 0.46em;
-          color: rgba(245, 245, 245, 0.22);
+          text-transform: uppercase;
+          color: #9B9189;
         }
 
-        /* Editorial light refresh: the Vault is a visual product, so the
-           interface opens like a collection moodboard before the prompt cards. */
-        .pv-page {
-          background: #f5f1eb;
-          color: #0d0c0b;
+        /* Tablet */
+        @media (max-width: 960px) {
+          .pva-overview-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .pva-thumb-strip {
+            grid-template-columns: repeat(4, 1fr);
+          }
         }
-        .pv-hero {
-          max-width: 1120px;
-          padding: 72px 24px 44px;
-        }
-        .pv-eyebrow,
-        .pv-series-eyebrow,
-        .pv-how-label,
-        .pv-card-number,
-        .pv-when-label,
-        .pv-overview-eyebrow {
-          color: rgba(13, 12, 11, 0.42);
-        }
-        .pv-headline,
-        .pv-series-title,
-        .pv-card-title,
-        .pv-overview-title,
-        .pv-overview-card-title {
-          color: #0d0c0b;
-          letter-spacing: 0;
-        }
-        .pv-subhead,
-        .pv-series-note,
-        .pv-how-steps,
-        .pv-when,
-        .pv-prompt-text,
-        .pv-overview-note,
-        .pv-overview-card-note {
-          color: rgba(13, 12, 11, 0.64);
-        }
-        .pv-how-steps strong {
-          color: #0d0c0b;
-        }
-        .pv-how-to,
-        .pv-card {
-          background: rgba(255, 250, 244, 0.82);
-          border-color: rgba(13, 12, 11, 0.1);
-          border-radius: 8px;
-        }
-        .pv-section,
-        .pv-footer {
-          border-top-color: rgba(13, 12, 11, 0.08);
-        }
-        .pv-overview {
-          padding: 32px 24px 72px;
-          background: #fffaf4;
-          border-top: 1px solid rgba(13, 12, 11, 0.08);
-          border-bottom: 1px solid rgba(13, 12, 11, 0.08);
-        }
-        .pv-overview-inner {
-          max-width: 1120px;
-          margin: 0 auto;
-        }
-        .pv-overview-title {
-          margin: 0 0 12px;
-          font-size: clamp(2rem, 6vw, 4rem);
-          font-weight: 300;
-          line-height: 1.02;
-        }
-        .pv-overview-note {
-          max-width: 620px;
-          margin: 0 0 36px;
-          font-size: 15px;
-          line-height: 1.8;
-        }
-        .pv-overview-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 18px;
-        }
-        .pv-overview-card {
-          display: block;
-          color: inherit;
-          text-decoration: none;
-          background: #f5f1eb;
-          border: 1px solid rgba(13, 12, 11, 0.1);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        .pv-overview-image {
-          display: block;
-          width: 100%;
-          height: auto;
-          aspect-ratio: 4 / 5;
-          object-fit: cover;
-          object-position: center top;
-        }
-        .pv-overview-eyebrow {
-          display: block;
-          padding: 20px 20px 8px;
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 0.32em;
-          text-transform: uppercase;
-        }
-        .pv-overview-card-title {
-          margin: 0;
-          padding: 0 20px;
-          font-size: 1.75rem;
-          font-weight: 300;
-          line-height: 1.08;
-        }
-        .pv-overview-card-note {
-          margin: 0;
-          padding: 10px 20px 24px;
-          font-size: 14px;
-          line-height: 1.7;
-        }
-        .pv-library {
-          background: #f5f1eb;
-          border-top-color: rgba(13, 12, 11, 0.08);
-        }
-        .pv-library-title {
-          color: #0d0c0b;
-          letter-spacing: 0;
-        }
-        .pv-collection-details {
-          background: #fffaf4;
-          border-color: rgba(13, 12, 11, 0.1);
-          border-radius: 8px;
-        }
-        .pv-collection-summary {
-          padding: 22px;
-        }
-        .pv-open-label {
-          border-color: rgba(13, 12, 11, 0.16);
-          color: rgba(13, 12, 11, 0.68);
-        }
-        .pv-collection-details[open] .pv-open-label {
-          background: #0d0c0b;
-          color: #fffaf4;
-        }
-        .pv-collection-details .pv-cards {
-          border-top: 1px solid rgba(13, 12, 11, 0.08);
-          padding-top: 22px;
-        }
-        .pv-card-image-wrap {
-          background: #f0ede8;
-        }
-        .pv-card-body {
-          background: rgba(255, 250, 244, 0.86);
-        }
-        .pv-mood,
-        .pv-footer-text,
-        .pv-footer-link {
-          color: rgba(13, 12, 11, 0.48);
-        }
-        .pv-prompt-wrap {
-          border-top-color: rgba(13, 12, 11, 0.08);
-        }
-        .copy-btn {
-          color: #0d0c0b;
-          border-color: rgba(13, 12, 11, 0.18);
-          background: transparent;
-        }
-        .copy-btn:hover {
-          color: #0d0c0b;
-          border-color: rgba(13, 12, 11, 0.42);
-        }
-        .pv-footer-brand {
-          color: rgba(13, 12, 11, 0.28);
-        }
-        @media (min-width: 760px) {
-          .pv-overview-grid {
+
+        /* Mobile */
+        @media (max-width: 640px) {
+          .pva-hero-strip {
+            height: clamp(160px, 50vw, 280px);
+          }
+          .pva-overview-grid {
+            grid-template-columns: 1fr;
+          }
+          .pva-thumb-strip {
             grid-template-columns: repeat(3, 1fr);
+            padding: 16px 16px 0;
           }
-          .pv-collection-summary {
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            padding: 28px 30px;
+          .pva-summary {
+            grid-template-columns: 1fr;
+            gap: 14px;
+            padding: 20px 18px;
           }
-          .pv-collection-details .pv-cards {
-            padding: 28px 30px 30px;
+          .pva-open-label {
+            justify-self: start;
+          }
+          .pva-cards {
+            grid-template-columns: 1fr;
+            padding: 16px 16px 20px;
           }
         }
       `}</style>
