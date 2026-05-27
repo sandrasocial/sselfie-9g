@@ -44,6 +44,7 @@ async function validateToken(token: string): Promise<TokenResult> {
         AND (
           source = 'prompt-vault-paid'
           OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          OR 'prompt-vault-admin-access' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
         )
       LIMIT 1
     `
