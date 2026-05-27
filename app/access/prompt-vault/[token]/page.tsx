@@ -7,6 +7,7 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
+  DARK_FEMININE_CAFE_SERIES,
   DARK_BALCONY_SERIES,
   COASTAL_WHITE_SERIES,
   MARBLE_CAFE_SERIES,
@@ -207,6 +208,24 @@ export default async function PromptVaultAccessPage({
             <li>Paste the prompt, then attach your selfie.</li>
             <li>Hit send. Your photoshoot is ready in seconds.</li>
           </ol>
+        </div>
+      </section>
+
+      {/* Dark Feminine Café */}
+      <section className="pv-section">
+        <div className="pv-section-inner">
+          <p className="pv-series-eyebrow">COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL</p>
+          <h2 className={`pv-series-title ${cormorant.className}`}>
+            Dark Feminine Café Coffee-Run Editorial
+          </h2>
+          <p className="pv-series-note">
+            City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit — every shot in one coffee-run story.
+          </p>
+          <div className="pv-cards">
+            {DARK_FEMININE_CAFE_SERIES.map((card) => (
+              <PromptCardEl key={card.id} card={card} />
+            ))}
+          </div>
         </div>
       </section>
 

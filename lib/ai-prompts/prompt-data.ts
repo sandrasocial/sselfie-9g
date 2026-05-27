@@ -23,7 +23,248 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
-// NEWEST — Dark Balcony Luxury City Editorial (9 shots)
+// NEWEST — Dark Feminine Café Coffee-Run Editorial (6 shots)
+// ---------------------------------------------------------------------------
+
+export const DARK_FEMININE_CAFE_SERIES: PromptCard[] = [
+  {
+    number: "64",
+    id: "dark-feminine-cafe-shot-1",
+    title: "Dark Feminine Café · Street Arrival",
+    whenToUse: "Your opener. Full-body street style, mid-step toward the café. Use for reel covers, carousel openers, or any content that captures confident city movement.",
+    mood: "dark feminine · city street · arriving · full body · editorial opener",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
+    prompt: `Create image 1 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: chic city street outside a stylish café, dark stone sidewalk, glass café windows in the background, marble café tables and woven chairs visible behind the window, soft urban reflections, muted city architecture, late morning street light.
+
+Outfit: oversized black structured blazer with strong shoulders, long relaxed sleeves, and a slightly masculine fit. Underneath, a fitted black square-neck mini dress with a sleek body-skimming silhouette. Black knee-high lace-up leather boots with a polished glossy finish. Black rectangular sunglasses with a sharp modern frame. Minimal gold rings.
+
+Hair: long hair worn down with smooth roots, a soft middle part, airy face-framing layers, natural movement through the lengths, and relaxed undone ends. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin finish, softly sculpted cheeks, natural brows, subtle brown eye definition, and a muted nude-rose satin lip. Makeup should feel polished, modern, and editorial, not heavy glam.
+
+Accessories/props: black rectangular sunglasses and minimal gold rings only. No phone, no coffee yet, no extra props.
+
+Pose: walking across the street toward the café, one foot mid-step, blazer moving slightly with the motion, head turned softly toward the café, chin relaxed, confident calm expression.
+
+Camera + lens: shot on Canon EOS R5 with a 35mm lens from a proper distance, full-body lifestyle framing, realistic proportions, no wide-angle distortion.
+
+Camera angle: waist-height street-style angle, pulled back enough to keep the full body natural and balanced.
+
+Composition: vertical 9:16 full-body movement shot, subject slightly off-center, café visible behind her, street lines and sidewalk leading toward the café entrance.
+
+Body proportion lock: keep full-body anatomy realistic. Natural head size, natural leg length, normal boot size, balanced torso, realistic hips and shoulders, natural walking posture. Avoid stretched legs, tiny head, warped feet, exaggerated runway proportions, or wide-angle body distortion.
+
+Mood: arriving at the café, cool city-girl energy, dark feminine street style, confident and effortless.
+
+Color grading: deep black outfit tones, muted gray pavement, cool glass reflections, soft beige café details, natural skin tones, low-saturation urban edit, subtle film grain, polished Pinterest editorial contrast.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, coffee in hand, distorted hands, extra fingers, warped boots, stretched legs, tiny head, elongated torso, warped waist, unrealistic hips, plastic skin, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, blur, low-resolution softness, compression haze, cluttered street background.`,
+  },
+  {
+    number: "65",
+    id: "dark-feminine-cafe-shot-2",
+    title: "Dark Feminine Café · Counter Order",
+    whenToUse: "The ordering moment. Three-quarter body at the counter, relaxed and confident. Ideal for lifestyle content and any caption about moving through the world with ease.",
+    mood: "dark feminine · café counter · ordering · side profile · lifestyle editorial",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-2.jpg",
+    prompt: `Create image 2 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: inside a stylish café or at an outdoor ordering window, dark marble counter, soft café menu board in the background, warm barista lighting, glass reflections, espresso machine details blurred behind the counter.
+
+Outfit: oversized black structured blazer with strong shoulders, fitted black square-neck mini dress, black knee-high lace-up leather boots, black rectangular sunglasses, minimal gold rings.
+
+Hair: long hair worn down with smooth roots, soft middle part, loose face-framing pieces, and natural movement over the shoulders. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, subtle brown eye definition, natural brows, muted nude-rose satin lips, polished daytime editorial finish.
+
+Accessories/props: black rectangular sunglasses and minimal gold rings. A small structured black handbag can rest against her side or hang from one shoulder if it stays minimal. No phone.
+
+Pose: standing at the café counter in a side-profile or three-quarter angle, one hand lightly resting near the counter as if ordering, shoulders relaxed, face turned slightly toward the barista or menu, calm unbothered expression.
+
+Camera + lens: shot on Canon EOS R5 with a 50mm portrait lens, natural compression, realistic body proportions, no wide-angle distortion.
+
+Camera angle: eye-level counter angle, slightly pulled back to show the outfit, counter, and café context without stretching the body.
+
+Composition: vertical 9:16 medium-full editorial shot, counter on one side, café menu and warm lights softly blurred behind, subject framed slightly off-center.
+
+Body proportion lock: preserve realistic full-body and standing proportions. Natural head size, natural arm length, balanced shoulders, waist, hips, torso, hands, and feet. Avoid stretched legs, oversized hands, warped waist, tiny head, or exaggerated model proportions.
+
+Mood: ordering coffee, chic everyday luxury, calm confidence, fashion-forward café story moment.
+
+Color grading: deep black outfit, dark marble counter, warm café lighting, muted beige interior tones, creamy highlights, natural skin tones, subtle film grain, soft editorial contrast.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, cluttered counter, distorted hands, extra fingers, warped sunglasses, warped boots, stretched legs, tiny head, plastic skin, heavy glam makeup, cartoonish AI style, CGI, messy anatomy, blur, compression haze, random logos.`,
+  },
+  {
+    number: "66",
+    id: "dark-feminine-cafe-shot-3",
+    title: "Dark Feminine Café · Seated Hero",
+    whenToUse: "The main hero shot of the series. Seated at the marble bistro table, one leg crossed, face turned away from camera. The pinnacle fashion image. Perfect for single posts or the centrepiece of a carousel.",
+    mood: "dark feminine · seated hero · marble table · crossed legs · fashion editorial",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
+    prompt: `Create image 3 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: chic outdoor city café with round marble bistro table, woven beige-and-black café chairs, dark patterned stone flooring, tall glass windows behind, soft building reflections, and moody urban atmosphere.
+
+Outfit: oversized black structured blazer with strong shoulders, long relaxed sleeves, and a slightly masculine fit. Underneath, a fitted black square-neck mini dress with a clean neckline and sleek body-skimming silhouette. Black knee-high lace-up leather boots with glossy leather texture. Black rectangular sunglasses. Minimal gold rings.
+
+Hair: long hair worn down with smooth roots, soft middle part, airy face-framing layers, natural movement through the lengths, and relaxed undone ends. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin finish, softly sculpted cheeks, natural brows, subtle brown eye definition, and muted nude-rose satin lip.
+
+Accessories/props: black rectangular sunglasses, minimal gold rings, small structured black handbag placed on the café table or nearby chair, and one white coffee cup with saucer on the marble table. No phone.
+
+Pose: seated on a woven café chair with one leg crossed over the other, torso leaning slightly forward, hands resting naturally near the knee or boot, chin slightly lifted, face turned away from the camera as if watching the street.
+
+Camera + lens: shot on Canon EOS R5 with a 50mm portrait lens, natural compression, realistic human proportions, no wide-angle distortion.
+
+Camera angle: eye-level seated angle, slightly pulled back to keep the body proportions natural and balanced.
+
+Composition: vertical 9:16 medium-full seated editorial shot, café table and window reflections visible, subject placed slightly off-center, boots included but not exaggerated.
+
+Body proportion lock: keep seated anatomy realistic. Natural head size, natural leg length, realistic knee bend, balanced shoulders, waist, hips, torso, hands, and feet. Avoid stretched legs, tiny head, elongated torso, oversized hands, warped waist, or exaggerated fashion-model anatomy.
+
+Mood: main fashion hero moment, cool city-girl café energy, confident, mysterious, expensive, effortless Pinterest street editorial.
+
+Color grading: deep black outfit tones, muted gray stone flooring, soft beige café chair texture, cool glass reflections, creamy marble highlights, slightly desaturated urban palette, natural skin tones, soft contrast, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, random extra props, distorted hands, extra fingers, warped boots, stretched legs, tiny head, elongated torso, warped waist, unrealistic hips, wide-angle body distortion, plastic skin, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, messy anatomy, blur, low-resolution softness, cluttered table, random logos.`,
+  },
+  {
+    number: "67",
+    id: "dark-feminine-cafe-shot-4",
+    title: "Dark Feminine Café · Lipstick Moment",
+    whenToUse: "A close-up candid while waiting for coffee. Lipstick in hand, sunglasses, completely in her own world. Works beautifully for beauty, self-care, or any caption about having a moment for yourself.",
+    mood: "dark feminine · beauty close-up · lipstick · candid · personal moment",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-4.jpg",
+    prompt: `Create image 4 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: seated near the café window or standing beside the café's glass exterior while waiting for coffee, soft reflections in the glass, marble table edge nearby, warm café lights and muted city movement behind.
+
+Outfit: oversized black structured blazer, fitted black square-neck mini dress, black rectangular sunglasses either worn or slightly lowered, minimal gold rings. Boots may be partially visible depending on crop.
+
+Hair: long hair worn down with smooth roots, soft middle part, face-framing layers, and natural movement around the face and shoulders. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, subtle brown eye definition, natural brows, muted nude-rose satin lips. The lip color should match the lipstick moment.
+
+Accessories/props: black rectangular sunglasses, minimal gold rings, and a slim nude-rose lipstick or lip liner in one hand. No phone. No extra props.
+
+Pose: candid beauty moment while waiting for coffee, one hand lightly applying or holding nude-rose lipstick near the lips, other hand adjusting the sunglasses or resting near the blazer lapel, relaxed mouth, calm confident expression.
+
+Camera + lens: shot on Sony A7R V with an 85mm portrait lens, shallow depth of field, sharp face detail, realistic facial proportions, soft background compression.
+
+Camera angle: eye-level close portrait angle, clean and straight, no face distortion.
+
+Composition: vertical 9:16 close-up to waist-up crop, face, sunglasses, lipstick, and blazer sharp, café glass reflection softly blurred behind, clean side space for text overlay.
+
+Body proportion lock: keep facial structure, neck length, shoulder width, hand size, and finger length realistic. Avoid changed face, stretched neck, oversized fingers, warped sunglasses, or distorted lips.
+
+Mood: candid personal moment, polished, feminine, dark café editorial, caught between moments energy.
+
+Color grading: deep black blazer and sunglasses, soft natural skin tones, muted nude-rose lip color, cool gray glass reflections, warm café bokeh, gentle contrast, subtle film grain, luxury editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, warped lipstick, distorted fingers, extra fingers, changed face, warped sunglasses, plastic skin, over-smoothed beauty filter, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, blur, compression haze.`,
+  },
+  {
+    number: "68",
+    id: "dark-feminine-cafe-shot-5",
+    title: "Dark Feminine Café · Detail Cutaway",
+    whenToUse: "The atmospheric detail shot — coffee, rings, blazer sleeve, leather boots. No full face needed. Use as a carousel filler or as a standalone mood image that grounds the whole editorial.",
+    mood: "dark feminine · detail shot · coffee · rings · leather · cutaway",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-5.jpg",
+    prompt: `Create image 5 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos only as identity reference if any part of the person is visible. Preserve natural skin tone, realistic hand shape, and natural texture from the reference photos.
+
+Scene: close-up detail at the outdoor café, round marble table with white coffee cup and saucer, dark patterned stone floor below, woven café chair edge, small structured black handbag nearby, soft café window reflection blurred in the background.
+
+Outfit: oversized black blazer sleeve draping naturally, fitted black mini dress edge, black knee-high lace-up leather boots with glossy texture, minimal gold rings.
+
+Hair: no full face needed.
+
+Makeup: no full face needed.
+
+Accessories/props: white coffee cup and saucer, small structured black handbag, minimal gold rings, black boot laces. No phone.
+
+Pose: no full face needed. One hand with minimal gold rings resting near the marble table or near the knee, blazer sleeve draped naturally, boot laces and leather texture visible in the lower frame.
+
+Camera + lens: shot on Sony A7R V with a 70mm macro-style lens, shallow depth of field, crisp texture detail, realistic hands, fabric, leather, rings, coffee cup, and marble.
+
+Camera angle: close-up detail angle from slightly above table or knee height, natural perspective, no hand, cup, or boot distortion.
+
+Composition: vertical 9:16 detail shot, hand, rings, blazer sleeve, coffee cup, marble, and boot texture sharp, background softly blurred.
+
+Body proportion lock: keep hand, wrist, knee, and boot scale realistic. Normal finger length, natural knuckles, no extra fingers, no warped wrist, no oversized boot, no plastic skin.
+
+Mood: luxury street-style detail, café cutaway, polished Pinterest carousel image.
+
+Color grading: creamy marble, white coffee cup highlight, deep black blazer and leather boots, muted gold rings, gray stone texture, cool glass reflections, soft low-saturation editorial finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, distorted hands, extra fingers, warped coffee cup, fake saucer shape, oversized handbag, warped boot laces, melted leather, random logos, fake brand marks, plastic skin, blur, low-resolution softness, compression haze, cluttered table.`,
+  },
+  {
+    number: "69",
+    id: "dark-feminine-cafe-shot-6",
+    title: "Dark Feminine Café · Reel Cover Exit",
+    whenToUse: "The exit shot. Full body, walking away with coffee, head turned back over the shoulder. The perfect reel cover. Use it as a standalone post, a reel thumbnail, or the closing image of your carousel.",
+    mood: "dark feminine · reel cover · leaving · movement · head turn · full body exit",
+    exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-6.jpg",
+    prompt: `Create image 6 of a 6-part dark feminine café coffee-run editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: sidewalk outside the café after picking up coffee, glass windows and café chairs behind, dark stone floor, quiet urban street atmosphere, soft reflections on the café window.
+
+Outfit: oversized black structured blazer with strong shoulders and relaxed long sleeves, fitted black square-neck mini dress, black knee-high lace-up leather boots with glossy leather finish, black rectangular sunglasses, minimal gold rings.
+
+Hair: long loose hair moving naturally as she turns, smooth at the roots with relaxed face-framing layers. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: polished natural editorial makeup with blurred skin, softly sculpted cheeks, subtle brown eye definition, and muted nude-rose satin lips.
+
+Accessories/props: black rectangular sunglasses, minimal gold rings, and one simple takeaway coffee cup held naturally in one hand. Optional small structured black handbag carried low at the side only if minimal. No phone.
+
+Pose: walking away from the café, body angled three-quarters away, head turned back over the shoulder toward the camera, blazer moving slightly, coffee cup held naturally, confident relaxed expression.
+
+Camera + lens: shot on Canon EOS R5 with a 35mm lens from a proper distance, full-body lifestyle framing, natural proportions, no wide-angle distortion.
+
+Camera angle: waist-height angle, pulled back enough to keep the body balanced and realistic.
+
+Composition: vertical 9:16 full-body reel-cover shot with clean space at the top or side for text overlay, café chairs and glass windows behind, movement visible in the blazer and hair.
+
+Body proportion lock: preserve natural full-body proportions from the uploaded reference photos. Normal leg length, natural boot size, balanced torso, normal head size, realistic hips and shoulders. Avoid stretched legs, tiny head, warped feet, oversized hands, or exaggerated runway body.
+
+Mood: leaving-the-café candid, cool, mysterious, effortless street-style editorial, strong Pinterest reel cover energy.
+
+Color grading: deep black outfit, muted gray pavement, beige chair accents, cool glass reflections, warm coffee-cup highlight, soft city shadows, slightly desaturated Pinterest editorial finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, stiff walking pose, distorted feet, extra toes, unrealistic body proportions, stretched legs, tiny head, oversized coffee cup, warped cup lid, plastic skin, over-smoothed beauty filter, cartoonish AI style, CGI, messy anatomy, blur, low-resolution softness, compression haze, cluttered props.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
+// COLLECTION 05 — Dark Balcony Luxury City Editorial (9 shots)
 // ---------------------------------------------------------------------------
 
 export const DARK_BALCONY_SERIES: PromptCard[] = [
@@ -1066,6 +1307,21 @@ export type VaultCollectionMeta = {
 
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
+    previewCardId: "dark-feminine-cafe-shot-1",
+    name: "Dark Feminine Café Coffee-Run Editorial",
+    shotCount: 6,
+    thumbnails: [
+      "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-2.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-4.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-5.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-6.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-7.jpg",
+      "/images/ai-prompts/dark-feminine-cafe-shot-8.jpg",
+    ],
+  },
+  {
     previewCardId: "dark-balcony-shot-1",
     name: "Dark Balcony Luxury City Editorial",
     shotCount: 9,
@@ -1162,6 +1418,7 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
+  ...(DARK_FEMININE_CAFE_SERIES.length > 0 ? [DARK_FEMININE_CAFE_SERIES[0]] : []),
   ...(DARK_BALCONY_SERIES.length > 0   ? [DARK_BALCONY_SERIES[0]]   : []),
   ...(COASTAL_WHITE_SERIES.length > 0  ? [COASTAL_WHITE_SERIES[0]]  : []),
   ...(COZY_LEATHER_SERIES.length > 0   ? [COZY_LEATHER_SERIES[0]]   : []),

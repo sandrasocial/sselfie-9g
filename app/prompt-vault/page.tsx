@@ -344,6 +344,38 @@ export default function PromptVaultPage() {
         </div>
       </section>
 
+      {/* ── COLLECTION 06 — Dark Feminine Café ── */}
+      <section style={{ borderTop: "1px solid rgba(245,245,245,0.07)" }}>
+        <div className="pv-section-inner">
+          <p className="pv-eyebrow">COLLECTION 06</p>
+          <h2 className={`${cormorant.className} pv-collection-title`}>
+            Dark Feminine Café Coffee-Run Editorial
+          </h2>
+          <p className="pv-collection-feeling">
+            For the version of you who moves through the city with intention. Black blazer, coffee in hand, looking like you just came from somewhere important.
+          </p>
+
+          <div className="pv-col-05-grid">
+            <div className="pv-col-05-hero">
+              <Image
+                src="/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
+                alt="Dark Feminine Café Coffee-Run Editorial"
+                fill
+                style={{ objectFit: "cover", objectPosition: "center top" }}
+              />
+            </div>
+            <div className="pv-col-05-stack">
+              <div className="pv-col-05-stack-item">
+                <Image src="/images/ai-prompts/dark-feminine-cafe-shot-1.jpg" alt="" fill style={{ objectFit: "cover", objectPosition: "center top" }} aria-hidden />
+              </div>
+              <div className="pv-col-05-stack-item">
+                <Image src="/images/ai-prompts/dark-feminine-cafe-shot-6.jpg" alt="" fill style={{ objectFit: "cover", objectPosition: "center top" }} aria-hidden />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── COLLECTION 05 — Dark Balcony ── */}
       <section style={{ borderTop: "1px solid rgba(245,245,245,0.07)" }}>
         <div className="pv-section-inner">
@@ -509,11 +541,12 @@ export default function PromptVaultPage() {
             No photographer. No studio. No perfect circumstances. One selfie is all you need.
           </p>
           <p style={{ margin: "0 0 40px", fontSize: "15px", lineHeight: 1.8, color: "rgba(245,245,245,0.44)" }}>
-            Five editorial collections. Growing as new shoots drop. Buy once, keep forever.
+            Six editorial collections. Growing as new shoots drop. Buy once, keep forever.
           </p>
 
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: "7px" }}>
             {[
+              "Dark Feminine Café Coffee-Run Editorial",
               "Dark Balcony Luxury City Editorial",
               "Coastal White Dress Sunset Editorial",
               "Marble Café Wine Editorial",

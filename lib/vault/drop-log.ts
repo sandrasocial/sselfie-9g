@@ -81,6 +81,14 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
     droppedAt: "2026-05-01",
   },
   {
+    id: "dark-feminine-cafe",
+    name: "Dark Feminine Café Coffee-Run Editorial",
+    heroImage: "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
+    moodLine: "Black blazer. Coffee in hand. Moving through the city like you own it.",
+    includedInEmailDrop: false,
+    droppedAt: null,
+  },
+  {
     id: "coastal-white",
     name: "Coastal White Dress Sunset Editorial",
     heroImage: "/images/ai-prompts/coastal-white-shot-1.jpg",
