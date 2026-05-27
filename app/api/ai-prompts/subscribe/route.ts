@@ -1,11 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
+import { addContactToSegment, addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateAiPromptsDay0DeliveryEmail } from "@/lib/email/templates/ai-prompts-day0-delivery"
 import { sendEmail } from "@/lib/email/send-email"
 import { normalizeFreebieEmail, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import {
+  AI_PHOTOSHOOT_AUDIENCE,
+  buildAiPhotoshootEmailTags,
+  buildAiPhotoshootResendTags,
+} from "@/lib/audience/ai-photoshoot-segment"
 
 const DELIVERY_RESEND_COOLDOWN_MINUTES = 15
 const SOURCE = "ai-prompts"
@@ -25,7 +30,7 @@ function firstNameFrom(stored: string | null | undefined, fallback: string): str
 }
 
 function buildEmailTags(existingTags: string[] | null, utmSource: string | null | undefined): string[] {
-  const set = new Set<string>((existingTags || []).filter(Boolean))
+  const set = new Set<string>(buildAiPhotoshootEmailTags(existingTags, ["curious"]))
   set.add("ai-prompts-subscriber")
   set.add("freebie-subscriber")
   const utm = typeof utmSource === "string" ? utmSource.trim() : ""
@@ -35,6 +40,15 @@ function buildEmailTags(existingTags: string[] | null, utmSource: string | null 
     set.add("ai-prompts-source-direct")
   }
   return Array.from(set)
+}
+
+async function addToAiPhotoshootSegment(email: string) {
+  const segmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
+  if (!segmentId) return
+
+  await addContactToSegment(email, segmentId).catch((error) => {
+    console.error("[ai-prompts] Failed to add contact to AI Photoshoot segment:", error)
+  })
 }
 
 async function recentlySentDeliveryEmail(email: string): Promise<boolean> {
@@ -136,13 +150,15 @@ export async function POST(request: NextRequest) {
 
       if (hasResendApiKey()) {
         await addOrUpdateResendContact(normalizedEmail, firstNameFrom(subscriber.name, trimmedFirstName), {
-          source: "freebie-selfie-guide",
+          source: "ai-prompts",
           status: "lead",
           product: "ai-prompts",
           journey: "nurture",
-          segment: "freebie-subscriber",
+          segment: "ai-photoshoot-audience",
+          ...buildAiPhotoshootResendTags("curious"),
           signup_date: new Date().toISOString().split("T")[0],
         })
+        await addToAiPhotoshootSegment(normalizedEmail)
       }
 
       const accessUrl = aiPromptsAccessUrl(accessToken)
@@ -218,13 +234,15 @@ export async function POST(request: NextRequest) {
 
     // Sync to Resend audience
     const resendResult = await addOrUpdateResendContact(normalizedEmail, resolvedFirstName, {
-      source: "freebie-selfie-guide",
+      source: "ai-prompts",
       status: "lead",
       product: "ai-prompts",
       journey: "nurture",
-      segment: "freebie-subscriber",
+      segment: "ai-photoshoot-audience",
+      ...buildAiPhotoshootResendTags("curious"),
       signup_date: new Date().toISOString().split("T")[0],
     })
+    await addToAiPhotoshootSegment(normalizedEmail)
 
     if (resendResult.success && resendResult.contactId) {
       await sql`

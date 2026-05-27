@@ -27,10 +27,10 @@ This should replace the cold-traffic role that Studio used to play. Studio/Maya 
 - Composio integration: done enough for current ops.
 - Intelligence automations: Product Health, Revenue Intelligence, and Growth Intelligence are restored and active.
 - Purchase attribution: implemented for Prompt Vault source, UTM, reel slug, CTA keyword, buyer stage, checkout recovery, prompt views, and prompt copies.
+- Segment AI audience: canonical rule created as AI Photoshoot Audience. Source of truth: `docs/funnel/AI_PHOTOSHOOT_AUDIENCE_SEGMENT_RULE_2026-05-27.md`.
 
 ### Partially Done
 
-- Segment AI audience: technically separable through AI Prompts and Prompt Vault sources/tags, but a clean named business segment still needs an explicit Resend/DB operating rule.
 - Identify top-performing aesthetics: tracking is now live, but this is an ongoing intelligence loop. It becomes reliable after more buyer behavior flows through the new tracking.
 
 ### Not Yet
@@ -386,7 +386,7 @@ This makes Studio less about Maya and more about an ongoing creative system.
 - Confirm recovery email sends without errors.
 - Pull daily Prompt Vault dashboard.
 - Identify top viewed/copied prompts.
-- Create the AI Photoshoot Audience segment rule.
+- Maintain the AI Photoshoot Audience segment rule.
 - Post 2 more Dark Balcony/Reel Cover Hero variations.
 
 ### Week 2: Prove Repeat Demand

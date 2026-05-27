@@ -64,6 +64,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 - Attribution priority: preserve `source`, UTM params, `entry_post_slug`, `cta_keyword`, and `buyer_stage` from reels, ManyChat, email, and free prompt bridges into `/checkout/prompt-vault`.
 - Buyer behavior priority: use prompt view/copy frequency as the demand signal for the next "PROMPT MY SELFIE" reel. Current strongest aesthetic signal is Dark Balcony / Reel Cover Hero.
 - Checkout recovery: abandoned Prompt Vault checkouts are handled by `/api/cron/prompt-vault-checkout-recovery`, gated by `PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED=true`.
+- AI audience segmentation: use **AI Photoshoot Audience** as the clean business segment for AI prompt opt-ins, Prompt Vault buyers, checkout abandoners, access openers, prompt copiers, and ManyChat prompt-reel leads. Canonical rule: `docs/funnel/AI_PHOTOSHOOT_AUDIENCE_SEGMENT_RULE_2026-05-27.md`; code source: `lib/audience/ai-photoshoot-segment.ts`; Resend env: `RESEND_SEGMENT_AI_PHOTOSHOOT_AUDIENCE`.
 - Launch broadcast draft: `docs/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md` — Sandra must approve before any send.
 - SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
 - Membership reposition plan: `docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md`. Working direction is SSELFIE Vault Club: weekly AI photoshoot transformation drops, seasonal collections, creator challenges, and referral/community loop. Do not build the subscription until validation gates in that doc are met.

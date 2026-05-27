@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server"
 
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import {
+  AI_PHOTOSHOOT_AUDIENCE,
+  buildAiPhotoshootEmailTags,
+  buildAiPhotoshootResendTags,
+} from "@/lib/audience/ai-photoshoot-segment"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
+import { addContactToSegment, updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generatePromptVaultCheckoutRecoveryEmail,
   PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
@@ -104,6 +110,36 @@ async function markRecoverySent(candidate: RecoveryCandidate, messageId?: string
   })
 }
 
+async function tagRecoveryCandidate(candidate: RecoveryCandidate) {
+  await sql`
+    UPDATE freebie_subscribers
+    SET
+      email_tags = (
+        SELECT ARRAY(
+          SELECT DISTINCT tag
+          FROM UNNEST(COALESCE(email_tags, ARRAY[]::text[]) || ${buildAiPhotoshootEmailTags([], ["abandoned"])}::text[]) AS tag
+          WHERE tag IS NOT NULL AND tag <> ''
+        )
+      ),
+      updated_at = NOW()
+    WHERE LOWER(BTRIM(email)) = LOWER(BTRIM(${candidate.user_email}))
+  `
+
+  await updateContactTags(candidate.user_email, {
+    ...buildAiPhotoshootResendTags("abandoned"),
+    prompt_vault_checkout_abandoned: "true",
+  }).catch((error) => {
+    console.error("[prompt-vault-recovery] Failed to tag Resend contact:", error)
+  })
+
+  const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
+  if (aiPhotoshootSegmentId) {
+    await addContactToSegment(candidate.user_email, aiPhotoshootSegmentId).catch((error) => {
+      console.error("[prompt-vault-recovery] Failed to add contact to AI Photoshoot segment:", error)
+    })
+  }
+}
+
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("prompt-vault-checkout-recovery")
   await cronLogger.start()
@@ -160,6 +196,7 @@ export async function GET(request: Request) {
       if (sent.success) {
         results.sent += 1
         await markRecoverySent(candidate, sent.messageId)
+        await tagRecoveryCandidate(candidate)
       } else {
         results.failed += 1
       }

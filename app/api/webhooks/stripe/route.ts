@@ -54,6 +54,11 @@ import {
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
+import {
+  AI_PHOTOSHOOT_AUDIENCE,
+  buildAiPhotoshootEmailTags,
+  buildAiPhotoshootResendTags,
+} from "@/lib/audience/ai-photoshoot-segment"
 
 function isTransformProductType(productType: unknown): productType is "transform_starter" | "transform_topup" {
   return productType === "transform_starter" || productType === "transform_topup"
@@ -397,7 +402,7 @@ async function upsertPromptVaultSubscriber(email: string, name?: string | null) 
   tags.add("purchased")
   tags.add("customer")
   tags.add("prompt-vault-paid")
-  const normalizedTags = Array.from(tags)
+  const normalizedTags = buildAiPhotoshootEmailTags(Array.from(tags), ["buyer"])
 
   if (existing) {
     await sql`
@@ -3479,9 +3484,17 @@ export async function POST(request: NextRequest) {
                 product: "prompt-vault",
                 journey: "prompt_vault",
                 bought_prompt_vault: "true",
+                ...buildAiPhotoshootResendTags("buyer"),
               }).catch((tagError) => {
                 console.error("[v0] Failed to update Prompt Vault tags:", tagError)
               })
+
+              const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
+              if (aiPhotoshootSegmentId) {
+                await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch((segmentError) => {
+                  console.error("[v0] Failed to add Prompt Vault buyer to AI Photoshoot segment:", segmentError)
+                })
+              }
 
               try {
                 await logAnalyticsEvent({
