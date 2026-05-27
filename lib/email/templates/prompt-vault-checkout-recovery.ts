@@ -1,11 +1,10 @@
-import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
 import { promptVaultCheckoutUrl } from "./selfie-education-links"
 
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE = "prompt-vault-checkout-recovery"
 
 export function generatePromptVaultCheckoutRecoveryEmail({
-  firstName,
+  firstName: _firstName,
 }: {
   firstName: string
 }) {
@@ -17,24 +16,42 @@ export function generatePromptVaultCheckoutRecoveryEmail({
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
   })
 
-  const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You were so close to unlocking the Vault.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Inside are the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style transformations I have been obsessing over lately.</p>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.8;color:#69645e;">And honestly, I keep adding more because I cannot stop making them.</p>
-    <div style="margin:22px 0 4px;">${renderStoneButton("Unlock the Vault", checkoutUrl)}</div>
-  `
+  const bodyHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111111;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 22px;font-size:16px;line-height:1.75;">
+    Hey babe 🫶🏼<br><br>
+    You were SO close to unlocking VAULT 😭✨<br><br>
+    Inside are all the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style prompts I’ve been obsessing over lately…<br><br>
+    And honestly? I keep adding more because I literally can’t stop making them 😂💋<br><br>
+    If you still want in, here’s your link:<br><br>
+    <a href="${checkoutUrl}" style="color:#111111;text-decoration:underline;">${checkoutUrl}</a><br><br>
+    🤍<br>
+    Sandra
+  </div>
+</body>
+</html>`
 
   return {
     subject: "your transformation is waiting",
-    html: renderStoneShell({
-      eyebrow: "SSELFIE",
-      title: "Your transformation is waiting.",
-      subtitle: "One selfie can become the whole photoshoot.",
-      bodyHtml,
-      footerLead: "Reply if checkout gave you any trouble.",
-      footerSignoff: "Sandra x",
-    }),
-    text: `Hey ${firstName},\n\nYou were so close to unlocking the Vault.\n\nInside are the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style transformations I have been obsessing over lately.\n\nAnd honestly, I keep adding more because I cannot stop making them.\n\nUnlock the Vault: ${checkoutUrl}\n\nSandra x`,
+    html: bodyHtml,
+    text: `Hey babe 🫶🏼
+
+You were SO close to unlocking VAULT 😭✨
+
+Inside are all the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style prompts I’ve been obsessing over lately…
+
+And honestly? I keep adding more because I literally can’t stop making them 😂💋
+
+If you still want in, here’s your link:
+
+${checkoutUrl}
+
+🤍
+Sandra`,
   }
 }
