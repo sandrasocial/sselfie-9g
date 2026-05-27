@@ -1,8 +1,7 @@
 // Vault email drop — non-buyer upsell.
 //
-// Sent to freebie subscribers (source = 'ai-prompts') who have NOT yet
-// purchased the vault. Emotional, cinematic. Announces new shoots have
-// dropped. CTA goes to /prompt-vault landing page.
+// Sent to freebie subscribers who have NOT yet purchased the vault.
+// Copy scales automatically to the number of new collections (2, 3, or more).
 //
 // Tone: intimate, feminine, warm. "I want to become this version of myself."
 // Language: shoots / collections / editorials — NEVER "prompts / bundle / product update"
@@ -32,31 +31,46 @@ function vaultUrl(content: string): string {
   })
 }
 
+// Returns "two", "three", "four", or the digit for larger counts.
+function countWord(n: number): string {
+  const words: Record<number, string> = { 2: "two", 3: "three", 4: "four", 5: "five" }
+  return words[n] ?? String(n)
+}
+function countWordCaps(n: number): string {
+  const w = countWord(n)
+  return w.charAt(0).toUpperCase() + w.slice(1)
+}
+
 export interface VaultDropNonbuyerParams {
   firstName: string
   newCollections: VaultDropCollection[]
-  dropLabel: string
 }
 
 export function generateVaultDropNonbuyerEmail({
   firstName,
   newCollections,
-  dropLabel,
 }: VaultDropNonbuyerParams): {
   subject: string
   html: string
   text: string
 } {
-  const subject = `new shoots just dropped inside the vault`
+  const n = newCollections.length
+  const cw = countWord(n)         // "three"
+  const cwCaps = countWordCaps(n) // "Three"
+
+  const subject = `${cw} new shoots just dropped`
   const ctaUrl = vaultUrl("main_cta")
   const ctaUrl2 = vaultUrl("bottom_cta")
 
-  // Hero image: first new collection's hero
-  const heroImage = newCollections[0]?.heroImage ?? "/images/ai-prompts/dark-balcony-shot-1.png"
-  // Break image: second new collection's hero (fallback to same if only one)
-  const breakImage = newCollections[1]?.heroImage ?? newCollections[0]?.heroImage ?? "/images/ai-prompts/coastal-white-shot-1.jpg"
+  // Hero: first new collection. Break image: third (or second if only 2).
+  const heroImage = newCollections[0]?.heroImage ?? "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg"
+  const breakImage =
+    newCollections[2]?.heroImage ??
+    newCollections[1]?.heroImage ??
+    newCollections[0]?.heroImage ??
+    "/images/ai-prompts/coastal-white-shot-1.jpg"
 
-  // New collections list — inline HTML so we control exactly what gets shown
+  // Collections list
   const collectionRows = newCollections
     .map(
       (c) =>
@@ -67,7 +81,7 @@ export function generateVaultDropNonbuyerEmail({
   const newShootsRow = `
   <tr>
     <td style="padding:36px 40px 16px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
-      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">Two new shoots just landed in the vault:</p>
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">${cwCaps} new shoots just landed in the vault:</p>
       <table role="presentation" cellspacing="0" cellpadding="0" border="0">
         ${collectionRows}
       </table>
@@ -76,11 +90,11 @@ export function generateVaultDropNonbuyerEmail({
   </tr>`
 
   const bodyRows = [
-    editorialHeroRow(heroImage, "New editorial shoots in the vault"),
+    editorialHeroRow(heroImage, `${cwCaps} new editorial shoots in the vault`),
 
     editorialStoryRow([
       `Hi ${firstName},`,
-      "Two new shoots just dropped in the vault.",
+      `${cwCaps} new shoots just dropped in the vault.`,
       "I have been testing these for weeks. Not just once or twice but until I knew exactly how to describe the light, the framing, the styling, the mood. Until the result felt like a real photoshoot, not a filter.",
       "That work is done. Now it is yours.",
     ]),
@@ -106,10 +120,10 @@ export function generateVaultDropNonbuyerEmail({
   ].join("\n")
 
   const html = renderEditorialShell({
-    title: `${dropLabel} · SSELFIE Vault`,
+    title: `${cwCaps} New Shoots Just Dropped · SSELFIE Vault`,
     eyebrow: "SSELFIE VAULT",
-    headline: "Two New Shoots\nJust Dropped",
-    subline: "Your AI photoshoot collection just got bigger",
+    headline: `${cwCaps} New Shoots\nJust Dropped`,
+    subline: "Shot 1 from each is yours. The full shoots are inside the Vault.",
     bodyRows,
   })
 
@@ -117,11 +131,11 @@ export function generateVaultDropNonbuyerEmail({
 
   const text = `SSELFIE VAULT
 
-TWO NEW SHOOTS JUST DROPPED
+${cwCaps.toUpperCase()} NEW SHOOTS JUST DROPPED
 
 Hi ${firstName},
 
-Two new shoots just dropped in the vault.
+${cwCaps} new shoots just dropped in the vault.
 
 I've been testing these for weeks. Not just once or twice but until I knew exactly how to describe the light, the framing, the styling, the mood. Until the result felt like a real photoshoot, not a filter.
 
@@ -134,7 +148,7 @@ ${ctaUrl}
 
 --- What Just Dropped ---
 
-Two new shoots just landed in the vault:
+${cwCaps} new shoots just landed in the vault:
 
 ${collectionsTextList}
 

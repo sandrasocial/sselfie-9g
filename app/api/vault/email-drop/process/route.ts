@@ -302,7 +302,6 @@ async function processBatch(
   const result: BatchResult = { sent: 0, failed: 0, skipped: 0 }
 
   const pendingCollections = getPendingCollections()
-  const dropLabel = VAULT_EMAIL_CONFIG.dropLabel
 
   for (const subscriber of subscribers) {
     const claimed = await claimRecipient(run.id, audience, dropEmailType, subscriber.email)
@@ -319,7 +318,6 @@ async function processBatch(
       emailPayload = generateVaultDropNonbuyerEmail({
         firstName,
         newCollections: pendingCollections,
-        dropLabel,
       })
     } else {
       if (!subscriber.access_token) {

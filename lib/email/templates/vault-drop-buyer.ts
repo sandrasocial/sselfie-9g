@@ -32,6 +32,16 @@ function vaultAccessUrl(token: string, content: string): string {
   })
 }
 
+// Returns "two", "three", "four", or the digit for larger counts.
+function countWord(n: number): string {
+  const words: Record<number, string> = { 2: "two", 3: "three", 4: "four", 5: "five" }
+  return words[n] ?? String(n)
+}
+function countWordCaps(n: number): string {
+  const w = countWord(n)
+  return w.charAt(0).toUpperCase() + w.slice(1)
+}
+
 export interface VaultDropBuyerParams {
   firstName: string
   accessToken: string
@@ -47,12 +57,20 @@ export function generateVaultDropBuyerEmail({
   html: string
   text: string
 } {
+  const n = newCollections.length
+  const cw = countWord(n)         // "three"
+  const cwCaps = countWordCaps(n) // "Three"
+
   const subject = `your vault just got bigger`
   const ctaUrl2 = vaultAccessUrl(accessToken, "bottom_cta")
 
-  // Hero and break images from the new collections
+  // Hero: first new collection. Break image: third (or second if only 2).
   const heroImage = newCollections[0]?.heroImage ?? "/images/ai-prompts/dark-balcony-shot-1.png"
-  const breakImage = newCollections[1]?.heroImage ?? newCollections[0]?.heroImage ?? "/images/ai-prompts/coastal-white-shot-1.jpg"
+  const breakImage =
+    newCollections[2]?.heroImage ??
+    newCollections[1]?.heroImage ??
+    newCollections[0]?.heroImage ??
+    "/images/ai-prompts/coastal-white-shot-1.jpg"
 
   // New collections list
   const collectionRows = newCollections
@@ -65,7 +83,7 @@ export function generateVaultDropBuyerEmail({
   const newShootsRow = `
   <tr>
     <td style="padding:36px 40px 16px;background:#FFFFFF;border-top:1px solid #E5DDD4;">
-      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">Two new shoots are waiting for you:</p>
+      <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:#0A0A0A;">${cwCaps} new shoots are waiting for you:</p>
       <table role="presentation" cellspacing="0" cellpadding="0" border="0">
         ${collectionRows}
       </table>
@@ -74,12 +92,12 @@ export function generateVaultDropBuyerEmail({
   </tr>`
 
   const bodyRows = [
-    editorialHeroRow(heroImage, "New shoots added to your vault"),
+    editorialHeroRow(heroImage, `${cwCaps} new shoots added to your vault`),
 
     editorialStoryRow([
       `Hi ${firstName},`,
       "Your vault just got bigger.",
-      "Two new shoots are live and they are already in your collection. No extra steps. No new link to find. They are just there, waiting for you.",
+      `${cwCaps} new shoots are live and they are already in your collection. No extra steps. No new link to find. They are just there, waiting for you.`,
       "I tested each of these until I was happy with every single shot direction. The light, the framing, the way you stand. All of it.",
     ]),
 
@@ -101,10 +119,10 @@ export function generateVaultDropBuyerEmail({
   ].join("\n")
 
   const html = renderEditorialShell({
-    title: "Your Vault Just Got Bigger · SSELFIE",
+    title: `${cwCaps} New Collections Added · SSELFIE Vault`,
     eyebrow: "SSELFIE VAULT",
-    headline: "Your Vault\nJust Got Bigger",
-    subline: "Two new shoots are waiting for you",
+    headline: `${cwCaps} New Collections\nAdded`,
+    subline: "You already have access.",
     bodyRows,
   })
 
@@ -112,13 +130,13 @@ export function generateVaultDropBuyerEmail({
 
   const text = `SSELFIE VAULT
 
-YOUR VAULT JUST GOT BIGGER
+${cwCaps.toUpperCase()} NEW COLLECTIONS ADDED
 
 Hi ${firstName},
 
 Your vault just got bigger.
 
-Two new shoots are live and they're already in your collection. No extra steps. No new link to find. They're just there, waiting for you.
+${cwCaps} new shoots are live and they're already in your collection. No extra steps. No new link to find. They're just there, waiting for you.
 
 I tested each of these until I was happy with every single shot direction. The light, the framing, the way you stand. All of it.
 
@@ -126,7 +144,7 @@ You already own this. It just grew.
 
 --- New In Your Vault ---
 
-Two new shoots are waiting for you:
+${cwCaps} new shoots are waiting for you:
 
 ${collectionsTextList}
 

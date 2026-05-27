@@ -28,9 +28,6 @@ export const VAULT_EMAIL_CONFIG = {
 
   /** Max recipients per /process batch call. Keep ≤50 for Vercel timeout safety. */
   maxBatchSize: 25,
-
-  /** Displayed in the non-buyer upsell subject line and email header. */
-  dropLabel: "Two New Shoots Just Dropped",
 } as const
 
 // ── Collection registry ────────────────────────────────────────────────────

@@ -162,7 +162,6 @@ export async function POST(request: Request) {
   const nonbuyerEmailType = buildDropEmailType(dropKey, "nonbuyer")
   const buyerEmailType = buildDropEmailType(dropKey, "buyer")
   const isDryRun = VAULT_EMAIL_CONFIG.dryRun
-  const dropLabel = VAULT_EMAIL_CONFIG.dropLabel
 
   // 4. Count segments
   let nonBuyerResult: Awaited<ReturnType<typeof countAndPreviewNonBuyers>>
@@ -186,7 +185,6 @@ export async function POST(request: Request) {
     ? generateVaultDropNonbuyerEmail({
         firstName: sampleNonBuyer.name?.split(" ")[0] || "friend",
         newCollections,
-        dropLabel,
       }).subject
     : null
 
