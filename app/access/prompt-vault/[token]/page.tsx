@@ -74,6 +74,7 @@ const VAULT_COLLECTIONS: Array<{
   eyebrow: string
   title: string
   note: string
+  heroImage?: string
   cards: PromptCard[]
 }> = [
   {
@@ -81,6 +82,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL",
     title: "Dark Feminine Café Coffee-Run Editorial",
     note: "City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit — every shot in one coffee-run story.",
+    heroImage: DARK_FEMININE_CAFE_SERIES[0]?.exampleImage,
     cards: DARK_FEMININE_CAFE_SERIES,
   },
   {
@@ -88,6 +90,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 05 · DARK BALCONY LUXURY CITY EDITORIAL",
     title: "Dark Balcony Luxury City Editorial",
     note: "European apartment balcony, black outfit, oversized sunglasses, blurred city below. Every angle from hero kiss to shadow silhouette.",
+    heroImage: DARK_BALCONY_SERIES[0]?.exampleImage,
     cards: DARK_BALCONY_SERIES,
   },
   {
@@ -95,6 +98,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 04 · COASTAL WHITE DRESS SUNSET EDITORIAL",
     title: "Coastal White Dress Sunset Editorial",
     note: "Mediterranean terrace, white maxi dress, ocean cliffs at golden hour. Every angle from hero full-body to close-up beauty portrait.",
+    heroImage: COASTAL_WHITE_SERIES[0]?.exampleImage,
     cards: COASTAL_WHITE_SERIES,
   },
   {
@@ -102,6 +106,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 01 · MARBLE CAFÉ WINE EDITORIAL",
     title: "Marble Café Wine Editorial",
     note: "Café table, wine glass, marble surfaces. From casual sip to close editorial detail.",
+    heroImage: MARBLE_CAFE_SERIES[0]?.exampleImage,
     cards: MARBLE_CAFE_SERIES,
   },
   {
@@ -109,6 +114,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 02 · DENIM STREET EDITORIAL",
     title: "Soft Blazer + Light Denim Street Editorial",
     note: "Outdoor editorial covering every angle. Wide establishing frames to tight close-up detail.",
+    heroImage: DENIM_STREET_SERIES[0]?.exampleImage,
     cards: DENIM_STREET_SERIES,
   },
   {
@@ -116,6 +122,7 @@ const VAULT_COLLECTIONS: Array<{
     eyebrow: "COLLECTION 03 · COZY LEATHER + MIRROR EDITORIAL",
     title: "Cozy Leather + Oversized Knit Mirror Editorial",
     note: "Indoor mirror light, leather jacket, oversized knit. Soft natural light to high-contrast moody.",
+    heroImage: COZY_LEATHER_SERIES[0]?.exampleImage,
     cards: COZY_LEATHER_SERIES,
   },
 ]
@@ -387,9 +394,9 @@ export default async function PromptVaultAccessPage({
                     <Image
                       src={c.image}
                       alt={`${c.title} preview`}
-                      width={600}
-                      height={750}
+                      fill
                       className="pva-overview-image"
+                      style={{ objectFit: "cover", objectPosition: "center top" }}
                     />
                   </div>
                 )}
@@ -445,6 +452,17 @@ export default async function PromptVaultAccessPage({
                   className="pva-details"
                 >
                   <summary className="pva-summary">
+                    {collection.heroImage && (
+                      <div className="pva-summary-thumb">
+                        <Image
+                          src={collection.heroImage}
+                          alt=""
+                          fill
+                          aria-hidden
+                          style={{ objectFit: "cover", objectPosition: "center top" }}
+                        />
+                      </div>
+                    )}
                     <div className="pva-summary-text">
                       <span className="pva-series-eyebrow">
                         {collection.eyebrow}
@@ -676,15 +694,10 @@ export default async function PromptVaultAccessPage({
           background: #EDE8E1;
         }
         .pva-overview-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center top;
-          display: block;
-          transition: transform 0.4s ease;
+          transition: transform 0.4s ease !important;
         }
         .pva-overview-card:hover .pva-overview-image {
-          transform: scale(1.03);
+          transform: scale(1.03) !important;
         }
         .pva-overview-card-body {
           padding: 20px 18px 22px;
@@ -753,12 +766,20 @@ export default async function PromptVaultAccessPage({
           list-style: none;
           cursor: pointer;
           display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 16px;
+          grid-template-columns: auto 1fr auto;
+          gap: 20px;
           align-items: center;
-          padding: 24px 28px;
+          padding: 20px 28px;
         }
         .pva-summary::-webkit-details-marker { display: none; }
+        .pva-summary-thumb {
+          position: relative;
+          width: 64px;
+          aspect-ratio: 2/3;
+          flex-shrink: 0;
+          overflow: hidden;
+          background: #EDE8E1;
+        }
         .pva-summary-text {
           display: grid;
           gap: 6px;
@@ -974,11 +995,12 @@ export default async function PromptVaultAccessPage({
             padding: 16px 16px 0;
           }
           .pva-summary {
-            grid-template-columns: 1fr;
+            grid-template-columns: auto 1fr;
             gap: 14px;
             padding: 20px 18px;
           }
           .pva-open-label {
+            grid-column: 1 / -1;
             justify-self: start;
           }
           .pva-cards {
