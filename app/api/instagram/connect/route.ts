@@ -21,10 +21,7 @@ export async function GET(request: NextRequest) {
     const scope = [
       'pages_show_list',
       'pages_read_engagement',
-      'instagram_manage_insights',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
-      'pages_messaging',
+      'instagram_basic',
     ].join(',')
 
     // Build URL with proper Instagram API Onboarding channel
