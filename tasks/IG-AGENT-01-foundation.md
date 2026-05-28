@@ -133,6 +133,15 @@ Handles Meta webhook verification (GET) and events (POST).
 // Returns: hub.challenge as plain text
 
 // POST — receives events
+// SECURITY (P1): Validate X-Hub-Signature-256 header BEFORE processing anything
+//   const signature = request.headers.get('x-hub-signature-256')
+//   const body = await request.text()  // read raw body ONCE, reuse for both check and parse
+//   const expected = 'sha256=' + createHmac('sha256', process.env.INSTAGRAM_APP_SECRET!).update(body).digest('hex')
+//   if (!timingSafeEqual(Buffer.from(signature ?? ''), Buffer.from(expected))) {
+//     return new Response('Forbidden', { status: 403 })
+//   }
+//   const payload = JSON.parse(body)  // parse after verification
+//
 // Event types to handle:
 //   messages         → new DM
 //   messaging_seen   → Sandra's DM was seen
@@ -145,25 +154,36 @@ Handles Meta webhook verification (GET) and events (POST).
 //   3. Store in ig_messages
 //   4. Call lib/ig-agent/triage.ts to classify
 //   5. If auto-respond: call lib/ig-agent/responder.ts → send DM
-//   6. If flag: update ig_conversations.status = 'flagged' with reason
+//   6. If flag: update ig_conversations.status = 'flagged', then trigger notifications
 //
 // Return 200 immediately, process async (use waitUntil or background fetch)
 // IMPORTANT: Meta requires 200 within 5s or it retries
 ```
 
 Add env var: `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` (generate a random secret, add to Vercel)
+Note: `INSTAGRAM_APP_SECRET` is already set — reuse it for the HMAC check.
 
 ### `app/api/ig-agent/send-dm/route.ts`
 
-POST — sends a DM via Instagram Graph API.
+POST — sends a DM via Instagram Graph API. **Internal only — never publicly callable.**
 
 ```typescript
+// SECURITY (P1): This route must NOT be a public API endpoint.
+// Two options (pick one):
+//   A) Make it an internal lib function only (lib/ig-agent/send-dm.ts), never a route
+//   B) If it must be a route, require valid Supabase admin session OR internal CRON_SECRET header
+//      Check: request.headers.get('x-internal-secret') === process.env.CRON_SECRET
+//      Return 401 if not present
+//
 // Body: { igUserId: string, message: string, conversationId: number }
 // Uses access token from instagram_connections WHERE instagram_username = 'sandra.social' AND is_active = TRUE
 // Endpoint: POST https://graph.facebook.com/v21.0/me/messages
 //   { recipient: { id: igUserId }, message: { text: message } }
 // On success: insert ig_messages (from_type: 'agent', ai_generated: true)
 // On fail: log error, set conversation flagged
+//
+// PREFERRED: implement as lib/ig-agent/send-dm.ts (pure function, no HTTP route)
+// Call it directly from the webhook handler and the admin reply route
 ```
 
 ### `app/api/ig-agent/respond/route.ts`
@@ -448,7 +468,111 @@ Sandra's calm DM management interface. Design requirements:
 
 ---
 
-## 5. Meta Webhook Registration
+## 5. Sandra's Notification Layer — Reach Her Where She Already Is
+
+Sandra should never have to open the admin to know something needs her. The agent reaches her through her existing daily tools.
+
+### 5a. Flagged DM Email (Resend)
+
+When a conversation is flagged, send Sandra an email immediately via Resend.
+
+**From:** `agent@sselfie.ai` (or `hello@sselfie.ai`)
+**To:** `ssa@ssasocial.com`
+**Subject:** `🚩 @{username} needs you` or `🇮🇸 Icelandic contact: @{username}`
+
+Email body (use `lib/email/` template pattern, keep it simple and warm):
+```
+[Profile photo if available]
+
+@username said:
+"{their message}"
+
+[Flag reason — e.g. "Icelandic name detected" or "Personal/emotional tone" or "Low confidence"]
+
+──────
+[View conversation →]  [Mark handled →]  [Snooze 24h →]
+──────
+
+What the agent suggested (if confidence was low):
+"{draft response}"
+
+──────
+Reply directly to this email to send as Sandra ← NICE TO HAVE, phase 2
+```
+
+Quick-action links point to `/admin/ig-inbox?conversation={id}&action={mark_handled|snooze}` — one click from email.
+
+Template file: `lib/email/templates/ig-flag-notification.ts`
+Send trigger: inside the webhook handler after setting status = 'flagged'
+
+### 5b. Morning Briefing Email (Daily, 8am)
+
+A calm daily summary sent to Sandra every morning. Build as a cron job.
+
+Route: `app/api/cron/ig-morning-briefing/route.ts`
+Schedule: daily at 08:00 (add to vercel.json cron config)
+
+Email contains:
+- 🚩 **Flagged** — X items waiting for you (with previews)
+- ✓ **Handled yesterday** — X DMs the agent took care of
+- 👀 **Trending this week** — what your audience is asking about most
+- 💡 **One content signal** — "7 people asked how to start with no followers this week"
+
+If 0 flagged: subject line is "All caught up 🤍 — here's what your audience is saying"
+If flagged: subject line is "🚩 {N} DMs need you today + your audience insights"
+
+Template: `lib/email/templates/ig-morning-briefing.ts`
+
+### 5c. Apple Notes — Daily IG Briefing Note
+
+Sandra gets a daily Apple Note called "IG Inbox — {date}" written by Claude Desktop.
+
+This is NOT built inside the SSELFIE app. It's handled by a scheduled Claude Desktop task that:
+1. Calls `GET /api/admin/ig-inbox?status=flagged` (with admin auth)
+2. Writes a formatted note to Apple Notes via the Notes MCP
+3. Adds a Reminder for any Icelandic contacts or high-priority flags
+
+**Codex does NOT build this.** Sandra sets this up with Claude Desktop after the app layer is live.
+Note format:
+```
+IG Inbox — May 28
+
+🚩 NEEDS YOUR ATTENTION (2)
+• @ingaborsdottir — "Hey Sandra!! It's Inga..." [Icelandic contact]
+  → View: sselfie.ai/admin/ig-inbox?id=123
+• @customer_jane — refund question [low confidence]
+  → View: sselfie.ai/admin/ig-inbox?id=124
+
+✓ AGENT HANDLED (14)
+• 8 PROMPT keyword flows sent
+• 4 FAQ responses
+• 2 fan appreciation replies
+
+💡 YOUR AUDIENCE THIS WEEK
+Most asked: "how do I start with no followers"
+Trending: questions about the Vault + Studio upgrade path
+```
+
+### 5d. `/my-inbox` — Mobile Home Screen Shortcut
+
+A lightweight, mobile-optimised page Sandra can save to her iPhone home screen.
+
+Route: `app/my-inbox/page.tsx`
+Auth: requires Supabase session (same as /admin)
+
+This is NOT the full admin inbox — it's a stripped-down view optimised for a quick scan on her phone:
+- Shows only flagged + pending items
+- Big tap targets, minimal UI
+- One-tap "handled" button per conversation
+- Tap to expand and read the message + agent draft
+- Reply box (sends DM as Sandra)
+
+Design: full-bleed mobile, obsidian background, large readable text, porcelain on dark.
+Think: what you'd want to see at 8am before coffee. Nothing more.
+
+---
+
+## 6. Meta Webhook Registration
 
 After deploying, Sandra needs to register the webhook URL in Meta Developer Console:
 
@@ -470,20 +594,25 @@ ANTHROPIC_API_KEY=<already exists — confirm it's set>
 
 ---
 
-## 7. Success Criteria
+## 8. Success Criteria
 
+- [ ] Webhook validates Meta HMAC signature — rejects unsigned requests with 403
 - [ ] Webhook receives a test DM and stores it in `ig_messages`
-- [ ] Icelandic name (e.g. Sigurjónsdóttir) auto-flags conversation
+- [ ] Icelandic name (e.g. Sigurjónsdóttir) auto-flags conversation + sends Sandra an email
 - [ ] "PROMPT" keyword triggers auto DM with correct link
 - [ ] AI responds to a FAQ in Sandra's voice with confidence ≥ 0.80
-- [ ] Low-confidence response (< 0.80) gets flagged, not sent
-- [ ] Admin inbox shows flagged conversations first
+- [ ] Low-confidence response (< 0.80) gets flagged + Sandra gets email notification
+- [ ] send-dm is NOT publicly accessible (internal lib function or protected route)
+- [ ] Admin inbox at `/admin/ig-inbox` shows flagged conversations first
+- [ ] `/my-inbox` is mobile-optimised and works as a home screen shortcut
+- [ ] Flagged item email arrives within 60 seconds of the DM being received
+- [ ] Morning briefing email sends at 8am with correct counts
 - [ ] Sandra can tag a contact as "friend" and future messages always flag
-- [ ] Sandra can manually reply from the admin inbox
+- [ ] Sandra can manually reply from both `/admin/ig-inbox` and `/my-inbox`
 
 ---
 
-## 8. What NOT to Build in This Sprint
+## 9. What NOT to Build in This Sprint
 
 - Story reply handling (phase 2)
 - Weekly audience intelligence summary (phase 2)
@@ -497,16 +626,20 @@ ANTHROPIC_API_KEY=<already exists — confirm it's set>
 
 ```
 NEW FILES:
-app/api/webhooks/instagram/route.ts
-app/api/ig-agent/send-dm/route.ts
-app/api/ig-agent/respond/route.ts
-app/api/admin/ig-inbox/route.ts
+app/api/webhooks/instagram/route.ts          ← HMAC-validated Meta webhook
+app/api/ig-agent/respond/route.ts            ← generates AI response
+app/api/admin/ig-inbox/route.ts              ← paginated inbox API
 app/api/admin/ig-inbox/[conversationId]/reply/route.ts
-app/admin/ig-inbox/page.tsx
-lib/ig-agent/voice-prompt.ts
+app/api/cron/ig-morning-briefing/route.ts    ← daily 8am email
+app/admin/ig-inbox/page.tsx                  ← full admin inbox
+app/my-inbox/page.tsx                        ← mobile home screen shortcut
+lib/ig-agent/send-dm.ts                      ← internal function (NOT a route)
+lib/ig-agent/voice-prompt.ts                 ← Sandra's voice system prompt
 lib/ig-agent/icelandic-detector.ts
 lib/ig-agent/triage.ts
 lib/ig-agent/contact-profiler.ts
+lib/email/templates/ig-flag-notification.ts  ← immediate flag email
+lib/email/templates/ig-morning-briefing.ts   ← daily briefing email
 
 DB MIGRATION:
 migrations/add-ig-agent-tables.sql (or via db-migration skill)
