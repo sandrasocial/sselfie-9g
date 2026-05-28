@@ -75,6 +75,48 @@ interface CronJob {
   } | null
 }
 
+function InstagramConnect({ userId }: { userId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleConnect() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/instagram/connect?userId=${userId}`)
+      const data = await res.json()
+      if (data.authUrl) {
+        window.location.href = data.authUrl
+      } else {
+        setError(data.error || 'Failed to generate auth URL')
+        setLoading(false)
+      }
+    } catch {
+      setError('Network error — try again')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white border border-stone-200 p-4 sm:p-6">
+      <p className="text-xs text-stone-500 mb-1 tracking-[0.15em] uppercase">Connect Account</p>
+      <p className="text-sm text-stone-600 mb-4">
+        Link your Instagram Business account via Facebook OAuth to enable Graph API access.
+      </p>
+      {error && (
+        <p className="text-xs text-red-600 mb-3">{error}</p>
+      )}
+      <button
+        onClick={handleConnect}
+        disabled={loading}
+        className="text-xs tracking-[0.15em] uppercase bg-stone-950 text-white px-6 py-3 hover:bg-stone-700 transition-colors disabled:opacity-50"
+      >
+        {loading ? 'Redirecting...' : 'Connect Instagram'}
+      </button>
+    </div>
+  )
+}
+
 export function AdminDashboard({ userId, userName }: { userId: string; userName: string }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [adminErrors, setAdminErrors] = useState<AdminError[]>([])
@@ -421,6 +463,13 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             {/* removed in CLEANUP-01: /admin/feed-styles-v2 and /admin/project-tracker */}
           </div>
+        </div>
+
+        <div className="border-t border-stone-200 pt-8 sm:pt-12">
+          <h2 className="font-['Times_New_Roman'] text-lg sm:text-xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-6 sm:mb-8">
+            Instagram
+          </h2>
+          <InstagramConnect userId={userId} />
         </div>
 
       </div>
