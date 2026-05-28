@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       'pages_show_list',
       'pages_read_engagement',
       'instagram_basic',
+      'business_management',
     ].join(',')
 
     // Build URL with proper Instagram API Onboarding channel

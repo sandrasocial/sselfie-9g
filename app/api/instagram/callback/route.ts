@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
     const pagesResponse = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${accessToken}`)
     const pagesData = await pagesResponse.json()
 
+    console.log("[Instagram Callback] Pages raw response:", JSON.stringify(pagesData))
+
     if (pagesData.error) {
       console.error("[Instagram Callback] Pages fetch failed:", JSON.stringify(pagesData.error))
       return NextResponse.redirect(`${baseUrl}/admin?ig_error=pages_fetch_failed&detail=${encodeURIComponent(pagesData.error.message || "unknown")}`)
