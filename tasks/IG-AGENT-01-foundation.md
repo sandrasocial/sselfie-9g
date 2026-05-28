@@ -1,0 +1,520 @@
+# IG-AGENT-01 — Instagram DM Agent: Foundation
+
+*Created: 2026-05-28 | Status: Ready for Codex*
+
+---
+
+## The Goal
+
+Build a custom AI-powered Instagram DM and comment agent that:
+
+- Handles ALL incoming DMs and comment replies for @sandra.social
+- Sounds exactly like Sandra typed it herself from her phone
+- Knows every product, price, funnel step, and customer's history
+- Automatically triages: respond vs. flag for Sandra's personal attention
+- Detects Icelandic names (family/community) and always escalates those
+- Gives Sandra a calm, organised admin inbox so Instagram stops being overwhelming
+- Over time: learns what the audience needs, what to post, what's converting
+
+Meta permissions already approved: `instagram_manage_messages`, `instagram_manage_comments`, `pages_messaging`
+Instagram account connected: @sandra.social (token stored in `instagram_connections`)
+
+---
+
+## Phase 1 — This Sprint
+
+Build the complete foundation: webhook receiver, DM sender, AI agent brain, triage engine, DB tables, and admin inbox.
+
+---
+
+## 1. Database Migration
+
+Create migration `add-ig-agent-tables`.
+
+```sql
+-- Every person who has ever messaged or commented
+CREATE TABLE ig_contacts (
+  id                  SERIAL PRIMARY KEY,
+  ig_user_id          TEXT NOT NULL UNIQUE,
+  username            TEXT,
+  full_name           TEXT,
+  profile_pic_url     TEXT,
+  is_icelandic        BOOLEAN DEFAULT FALSE,   -- auto-detected from -dottir/-son surname
+  is_verified_friend  BOOLEAN DEFAULT FALSE,   -- manually set by Sandra
+  follower_count      INTEGER,
+  bio_snippet         TEXT,
+  linked_neon_user_id INTEGER REFERENCES users(id),  -- if we can match to a buyer
+  tags                TEXT[] DEFAULT '{}',      -- buyer, studio_member, vip, friend, family, blocked
+  notes               TEXT,                     -- Sandra's private notes on this person
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Conversation threads (DM thread or comment chain)
+CREATE TABLE ig_conversations (
+  id                  SERIAL PRIMARY KEY,
+  ig_user_id          TEXT NOT NULL REFERENCES ig_contacts(ig_user_id),
+  ig_thread_id        TEXT UNIQUE,              -- Meta thread ID
+  channel             TEXT NOT NULL,             -- 'dm' | 'comment' | 'story_reply'
+  status              TEXT NOT NULL DEFAULT 'pending',
+  -- pending: new, not yet processed
+  -- auto_handled: agent responded, no Sandra needed
+  -- flagged: Sandra must see this
+  -- sandra_replied: Sandra herself responded
+  -- snoozed: Sandra acknowledged, deal with later
+  -- closed: resolved
+  flag_reason         TEXT,                      -- why it was flagged
+  agent_confidence    NUMERIC(4,3),              -- 0-1, last response confidence
+  first_message_at    TIMESTAMPTZ,
+  last_message_at     TIMESTAMPTZ,
+  last_seen_by_sandra TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Every individual message
+CREATE TABLE ig_messages (
+  id                  SERIAL PRIMARY KEY,
+  conversation_id     INTEGER NOT NULL REFERENCES ig_conversations(id),
+  ig_message_id       TEXT UNIQUE,              -- Meta message ID (dedup)
+  from_type           TEXT NOT NULL,             -- 'contact' | 'agent' | 'sandra'
+  content             TEXT NOT NULL,
+  ai_generated        BOOLEAN DEFAULT FALSE,
+  ai_confidence       NUMERIC(4,3),              -- 0-1
+  ai_intent           TEXT,                      -- detected intent
+  sent_at             TIMESTAMPTZ DEFAULT NOW(),
+  delivered           BOOLEAN DEFAULT FALSE,
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Running memory / notes per contact (persists across conversations)
+CREATE TABLE ig_contact_memory (
+  id                  SERIAL PRIMARY KEY,
+  ig_user_id          TEXT NOT NULL REFERENCES ig_contacts(ig_user_id),
+  memory_type         TEXT NOT NULL,             -- 'purchase', 'question', 'preference', 'flag', 'note'
+  content             TEXT NOT NULL,             -- what we know
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Audience intelligence (weekly summaries)
+CREATE TABLE ig_audience_insights (
+  id                  SERIAL PRIMARY KEY,
+  week_of             DATE NOT NULL,
+  total_dms           INTEGER DEFAULT 0,
+  auto_handled        INTEGER DEFAULT 0,
+  flagged             INTEGER DEFAULT 0,
+  top_questions       TEXT[],
+  top_intents         JSONB,
+  sentiment_summary   TEXT,
+  content_signals     TEXT,                      -- what they're asking for that we should post
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX ON ig_contacts (ig_user_id);
+CREATE INDEX ON ig_contacts (is_icelandic) WHERE is_icelandic = TRUE;
+CREATE INDEX ON ig_conversations (ig_user_id);
+CREATE INDEX ON ig_conversations (status);
+CREATE INDEX ON ig_conversations (last_message_at DESC);
+CREATE INDEX ON ig_messages (conversation_id);
+CREATE INDEX ON ig_messages (ig_message_id);
+```
+
+---
+
+## 2. New Routes
+
+### `app/api/webhooks/instagram/route.ts`
+
+Handles Meta webhook verification (GET) and events (POST).
+
+```typescript
+// GET — Meta webhook verification
+// Verifies: hub.mode === 'subscribe' && hub.verify_token === process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN
+// Returns: hub.challenge as plain text
+
+// POST — receives events
+// Event types to handle:
+//   messages         → new DM
+//   messaging_seen   → Sandra's DM was seen
+//   comments         → new comment on a post
+//   mention          → someone mentioned @sandra.social
+// 
+// For each message event:
+//   1. Upsert ig_contacts (create if new)
+//   2. Detect Icelandic name (call lib/ig-agent/icelandic-detector.ts)
+//   3. Store in ig_messages
+//   4. Call lib/ig-agent/triage.ts to classify
+//   5. If auto-respond: call lib/ig-agent/responder.ts → send DM
+//   6. If flag: update ig_conversations.status = 'flagged' with reason
+//
+// Return 200 immediately, process async (use waitUntil or background fetch)
+// IMPORTANT: Meta requires 200 within 5s or it retries
+```
+
+Add env var: `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` (generate a random secret, add to Vercel)
+
+### `app/api/ig-agent/send-dm/route.ts`
+
+POST — sends a DM via Instagram Graph API.
+
+```typescript
+// Body: { igUserId: string, message: string, conversationId: number }
+// Uses access token from instagram_connections WHERE instagram_username = 'sandra.social' AND is_active = TRUE
+// Endpoint: POST https://graph.facebook.com/v21.0/me/messages
+//   { recipient: { id: igUserId }, message: { text: message } }
+// On success: insert ig_messages (from_type: 'agent', ai_generated: true)
+// On fail: log error, set conversation flagged
+```
+
+### `app/api/ig-agent/respond/route.ts`
+
+POST — generates an AI response in Sandra's voice.
+
+```typescript
+// Body: { conversationId: number }
+// 1. Load conversation + last 10 messages
+// 2. Load contact profile (ig_contacts + ig_contact_memory)
+// 3. Cross-reference with Neon: is this person a buyer? studio member? subscriber?
+// 4. Build context object:
+//    { contact, purchaseHistory, conversationHistory, latestMessage }
+// 5. Call Claude API (lib/ig-agent/voice-prompt.ts as system prompt)
+// 6. Return { response: string, confidence: number, shouldSend: boolean }
+//    shouldSend = false if confidence < 0.80
+```
+
+### `app/api/admin/ig-inbox/route.ts`
+
+GET — paginated inbox for the admin panel.
+
+```typescript
+// Query params: status (flagged|pending|auto_handled|all), page, limit
+// Returns: conversations with latest message + contact info + flag reason
+// Ordered by: flagged first, then by last_message_at DESC
+```
+
+### `app/api/admin/ig-inbox/[conversationId]/reply/route.ts`
+
+POST — Sandra sends a manual reply, logs it correctly.
+
+---
+
+## 3. New Lib Files
+
+### `lib/ig-agent/voice-prompt.ts`
+
+**The most important file in the entire build.**
+
+```typescript
+export function buildSandraSystemPrompt(context: {
+  contact: {
+    username: string
+    fullName: string | null
+    isIcelandic: boolean
+    tags: string[]
+    linkedBuyerHistory: string | null  // "bought Prompt Vault on May 12"
+    previousConversationSummary: string | null
+  }
+  businessContext: string  // injected from BUSINESS_CONTEXT below
+}): string {
+  return `
+You are Sandra's Instagram DM agent for @sandra.social.
+
+Your job: respond to this message exactly as Sandra herself would type it — from her phone, warm, slightly chaotic, emotionally real. Nobody should ever suspect this wasn't Sandra.
+
+${BUSINESS_CONTEXT}
+
+---
+
+ABOUT THE PERSON YOU'RE TALKING TO:
+Username: @${context.contact.username}
+Name: ${context.contact.fullName || 'unknown'}
+Tags: ${context.contact.tags.join(', ') || 'new contact'}
+Purchase history: ${context.contact.linkedBuyerHistory || 'no purchases found'}
+Previous conversation: ${context.contact.previousConversationSummary || 'first time messaging'}
+
+---
+
+SANDRA'S WRITING STYLE — follow this exactly:
+
+Sandra writes like a best friend who types quickly from her phone.
+
+She uses:
+- "babe", "omg", "honestly", "wait", "stoppp"
+- Emoji combos (not random — she uses specific ones): 😭🫶🏼  😂✨  👀  💋  🤍  🫠
+- Short sentences. Line breaks between thoughts. Never long paragraphs.
+- Contractions always: "it's", "you're", "I'm", "don't"
+- Slightly chaotic warmth — feels like she typed fast and hit send
+
+She does NOT:
+- Write formally or professionally
+- Sound like customer support
+- Sound like an AI
+- Use bullet points in casual conversation
+- Hard sell anything
+- Use corporate language ("leverage", "maximize", "transform")
+- Use m-dashes
+
+RESPONSE STRUCTURE (loose, not rigid):
+1. Emotional acknowledgment — make them feel instantly seen
+2. Casual human explanation or answer
+3. Warm/playful observation or empathy
+4. Soft landing — encouragement, curiosity, or next step
+
+SALES PSYCHOLOGY — Sandra never pushes, she creates desire:
+BAD: "Buy the Vault now"
+GOOD: "honestly it's become my little obsession lately 😭✨"
+
+BAD: "Learn AI prompts with our course"
+GOOD: "turning one selfie into completely different versions of yourself 👀"
+
+---
+
+EXAMPLES OF SANDRA'S ACTUAL DM RESPONSES:
+
+Community response:
+"Awww 😭🫶🏼 that genuinely means so much babe.
+And honestly I feel like we're all kinda figuring this out together right now 😂✨
+I think that's why this whole thing became so addictive to me… it's not even really about "perfect" photos anymore. It's more about creativity, confidence, storytelling, and building visuals that actually feel like YOU 👀🤍"
+
+Customer support (access issue):
+"Omg 😭 they should be there babe!!
+Sometimes Instagram hides the link preview weirdly or people miss where to tap 😂🫶🏼
+Here's the direct link again 👀✨
+[LINK]
+Once you open it you should see the free prompt pack right away 🤍"
+
+AI help:
+"A couple things that help SO much 👀✨
+• use a really clear well-lit selfie first
+• avoid super filtered photos
+• tell ChatGPT to keep your facial features accurate
+• and honestly sometimes you need to rerun the same prompt 2-3 times because the results can change SO much 😂💋
+The fun part is honestly experimenting because tiny little changes completely change the vibe 😭"
+
+Warm sales:
+"Ahhh I'm excited for you to see it 😭🫶🏼
+Honestly VAULT is becoming my little creative obsession lately lol 👀✨"
+
+Educational:
+"No babe 🫶🏼 you don't need to undo anything 😂✨
+I usually start a NEW chat/thread for each photoshoot idea 👀
+Then I only upload my selfie with the FIRST prompt/photo in the shoot — after that I just paste each new prompt one by one 😭💋"
+
+---
+
+WHAT EVERY RESPONSE SHOULD MAKE THE PERSON FEEL:
+- seen
+- excited
+- emotionally safe
+- creatively inspired
+- curious for more
+
+Never: pressured, like they're talking to a bot, like they got a template
+
+---
+
+CONFIDENCE SCORE RULES:
+Return a confidence score 0-1 with your response.
+Set confidence BELOW 0.80 (do not auto-send, flag for Sandra) if:
+- The message is emotional, personal, or about mental health
+- You're unsure what they need
+- It's a complaint or refund request
+- The message feels like they know Sandra personally
+- Anything involving payment issues or access problems you can't resolve with a link
+- Any question you're not certain about the answer to
+
+Set confidence HIGH (0.85+) if:
+- It's a clear FAQ (pricing, access, how to use prompts)
+- It's a fan/community message you can warmly acknowledge
+- It's a keyword trigger (PROMPT, VAULT, SELFIE) with a known response
+`
+}
+
+const BUSINESS_CONTEXT = `
+SANDRA'S BUSINESS — SSELFIE Studio (sselfie.ai):
+
+Sandra is the founder of SSELFIE Studio. She's a single mother based in Iceland/Norway. She has 180K+ followers and a community of paying members. She teaches AI-powered personal branding — specifically how to create professional editorial photoshoots from just one selfie using AI tools.
+
+Her audience: women who want to level up their personal brand, Instagram presence, and visual identity without expensive photoshoots.
+
+PRODUCTS (always use these exact prices and links):
+- Free AI Prompts → sselfie.ai/ai-prompts — free, instant access, the lead magnet
+- AI Photo Prompt Vault → sselfie.ai/prompt-vault → checkout: sselfie.ai/checkout/prompt-vault — $27 one-time, 70+ editorial AI photoshoot prompts, "turn one selfie into unlimited photoshoots"
+- Selfie Guide → sselfie.ai/selfie-guide — €17 interactive course
+- Masterclass → sselfie.ai/masterclass — $147
+- Studio membership → sselfie.ai/join/studio — €97/month, ongoing community + Maya AI
+- Brand Strategy Pack → sselfie.ai/brand-strategy — $19
+
+FUNNEL (how people move through):
+Free AI Prompts → AI Photo Prompt Vault ($27) → Studio membership (€97/mo)
+
+KEYWORD TRIGGERS — respond with matching flow:
+- "PROMPT" or "PROMPTS" → send free AI prompts link: sselfie.ai/ai-prompts
+- "VAULT" → send Prompt Vault info + link: sselfie.ai/prompt-vault
+- "SELFIE" → send Selfie Guide info + link: sselfie.ai/selfie-guide
+- "LINK" → ask which product they're asking about, then send the right one
+`
+```
+
+### `lib/ig-agent/icelandic-detector.ts`
+
+```typescript
+// Detects likely Icelandic contacts based on patronymic surname patterns
+// Icelandic surnames end in: -dóttir, -dottir, -son
+// Also check display name (full_name field from Meta)
+//
+// Examples: Sigurjónsdóttir, Magnússon, Bjarnardóttir, Guðmundsson
+// Normalise: strip accents before matching too (sigurjonsdottir, magnusson)
+//
+// function isLikelyIcelandic(username: string, fullName: string | null): boolean
+// Returns true if either field matches the pattern
+// When true: set ig_contacts.is_icelandic = TRUE
+//            add tag 'icelandic'
+//            conversation auto-flagged with reason 'icelandic_contact'
+```
+
+### `lib/ig-agent/triage.ts`
+
+```typescript
+// Classifies incoming messages and decides: auto_respond | flag | ignore
+//
+// FLAG immediately (do not auto-respond) if:
+//   - contact.is_icelandic === true
+//   - contact.is_verified_friend === true
+//   - contact.tags includes 'family' or 'friend'
+//   - message contains: "Sandra" (first name used directly)
+//   - message contains distress signals: "struggling", "anxious", "depressed", "help me"
+//   - message contains refund/complaint signals
+//   - contact.tags includes 'blocked'  → ignore entirely
+//
+// AUTO_RESPOND if:
+//   - keyword trigger (PROMPT, VAULT, SELFIE, LINK, FREE)
+//   - clear FAQ (pricing, access, how it works)
+//   - fan appreciation message
+//   - question clearly answerable from BUSINESS_CONTEXT
+//
+// Returns: { action: 'auto_respond' | 'flag' | 'ignore', reason: string, flagReason?: string }
+```
+
+### `lib/ig-agent/contact-profiler.ts`
+
+```typescript
+// Builds a full contact context object for the AI responder
+// 
+// 1. Load ig_contacts record
+// 2. Load last 5 ig_messages for this contact
+// 3. Load ig_contact_memory for this contact
+// 4. Try to match to Neon users table by username similarity or linked_neon_user_id
+// 5. If matched: get purchase history from subscriptions/purchases tables
+// 6. Return ContactContext object used by voice-prompt.ts
+```
+
+---
+
+## 4. Admin Inbox UI
+
+**`app/admin/ig-inbox/page.tsx`**
+
+Sandra's calm DM management interface. Design requirements:
+
+- **Three-column layout** on desktop:
+  - Left: conversation list with status filters (Flagged · Pending · Handled · All)
+  - Center: active conversation thread
+  - Right: contact profile card (photo, username, tags, purchase history, notes)
+
+- **Conversation list item shows:**
+  - Profile photo + username
+  - First line of latest message (truncated)
+  - Time since last message
+  - Status chip: `🚩 Flagged` (red) · `⏳ Pending` · `✓ Handled` (muted)
+  - `🇮🇸` indicator for Icelandic contacts
+
+- **Conversation thread shows:**
+  - All messages (theirs + agent's AI responses labelled "Agent" · Sandra's replies labelled "You")
+  - AI confidence score on agent messages (small muted badge)
+  - Reply box at the bottom for Sandra to manually respond
+  - Quick action buttons: `Mark handled` · `Snooze` · `Tag contact`
+
+- **Contact profile card shows:**
+  - IG profile photo + username + full name
+  - Tags (editable — Sandra can add friend/family/vip/blocked)
+  - Linked buyer record (if matched) — what they've purchased
+  - Previous conversation count
+  - Sandra's notes field (free text, saves on blur)
+
+- **Flagged queue is shown first, always.** If there are 0 flagged items, show a "You're all caught up 🤍" message. Protect Sandra's energy.
+
+- **Design:** use existing admin design system (obsidian/porcelain/pearl/stone tokens). Clean, calm, minimal. No clutter.
+
+---
+
+## 5. Meta Webhook Registration
+
+After deploying, Sandra needs to register the webhook URL in Meta Developer Console:
+
+1. Go to: https://developers.facebook.com/apps/1210263417166165/webhooks/
+2. Add webhook URL: `https://sselfie.ai/api/webhooks/instagram`
+3. Verify token: value of `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` env var
+4. Subscribe to: `messages`, `messaging_seen`, `comments`, `mention`
+
+---
+
+## 6. New Env Vars Required
+
+Add to Vercel production environment:
+
+```
+INSTAGRAM_WEBHOOK_VERIFY_TOKEN=<generate a random 32-char string>
+ANTHROPIC_API_KEY=<already exists — confirm it's set>
+```
+
+---
+
+## 7. Success Criteria
+
+- [ ] Webhook receives a test DM and stores it in `ig_messages`
+- [ ] Icelandic name (e.g. Sigurjónsdóttir) auto-flags conversation
+- [ ] "PROMPT" keyword triggers auto DM with correct link
+- [ ] AI responds to a FAQ in Sandra's voice with confidence ≥ 0.80
+- [ ] Low-confidence response (< 0.80) gets flagged, not sent
+- [ ] Admin inbox shows flagged conversations first
+- [ ] Sandra can tag a contact as "friend" and future messages always flag
+- [ ] Sandra can manually reply from the admin inbox
+
+---
+
+## 8. What NOT to Build in This Sprint
+
+- Story reply handling (phase 2)
+- Weekly audience intelligence summary (phase 2)
+- "What to post" recommendations (phase 2)
+- ManyChat migration (after this is stable)
+- A/B response testing (phase 3)
+
+---
+
+## File Checklist for Codex
+
+```
+NEW FILES:
+app/api/webhooks/instagram/route.ts
+app/api/ig-agent/send-dm/route.ts
+app/api/ig-agent/respond/route.ts
+app/api/admin/ig-inbox/route.ts
+app/api/admin/ig-inbox/[conversationId]/reply/route.ts
+app/admin/ig-inbox/page.tsx
+lib/ig-agent/voice-prompt.ts
+lib/ig-agent/icelandic-detector.ts
+lib/ig-agent/triage.ts
+lib/ig-agent/contact-profiler.ts
+
+DB MIGRATION:
+migrations/add-ig-agent-tables.sql (or via db-migration skill)
+
+ENV VARS (add to Vercel):
+INSTAGRAM_WEBHOOK_VERIFY_TOKEN
+```
+
+---
+
+*Next task: IG-AGENT-02 — Audience Intelligence + Content Signals (weekly summary, what to post)*
