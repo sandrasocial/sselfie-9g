@@ -7,18 +7,20 @@ export const dynamic = "force-dynamic"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ig_connected?: string; ig_error?: string; detail?: string }>
+}) {
   const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // No auth user - redirect to login
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Try to get user from database
   let neonUser = null
   let userError = null
 
@@ -29,7 +31,6 @@ export default async function AdminPage() {
     userError = error
   }
 
-  // If user not found and we have email, try to sync/create
   if (!neonUser && user.email && !userError) {
     try {
       neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.name || user.user_metadata?.display_name)
@@ -39,21 +40,40 @@ export default async function AdminPage() {
     }
   }
 
-  // If still no user or there was an error, redirect to login
   if (!neonUser || userError) {
     console.error("[v0] User authenticated but could not be synced with database")
     redirect("/auth/login")
   }
 
-  // Check if user is admin
   if (neonUser.email !== ADMIN_EMAIL) {
     redirect("/")
   }
 
+  const params = await searchParams
+  const igConnected = params.ig_connected
+  const igError = params.ig_error
+  const igDetail = params.detail
+
   return (
-    <AdminDashboard
-      userId={String(neonUser.id)}
-      userName={neonUser.display_name || "Admin"}
-    />
+    <>
+      {igConnected && (
+        <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', color: '#155724', padding: '12px 20px', margin: '16px', borderRadius: '8px', fontFamily: 'sans-serif' }}>
+          ✅ Instagram connected: @{igConnected}
+        </div>
+      )}
+      {igError && (
+        <div style={{ background: '#f8d7da', border: '1px solid #f5c6cb', color: '#721c24', padding: '12px 20px', margin: '16px', borderRadius: '8px', fontFamily: 'sans-serif' }}>
+          ❌ Instagram connection failed: <strong>{igError}</strong>
+          {igDetail && <div style={{ marginTop: '6px', fontSize: '13px', opacity: 0.85 }}>{decodeURIComponent(igDetail)}</div>}
+          <div style={{ marginTop: '8px', fontSize: '13px' }}>
+            Run <code>/api/instagram/diagnose</code> (with admin secret header) for full diagnostics.
+          </div>
+        </div>
+      )}
+      <AdminDashboard
+        userId={String(neonUser.id)}
+        userName={neonUser.display_name || "Admin"}
+      />
+    </>
   )
 }

@@ -18,10 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Instagram App Secret not configured' }, { status: 500 })
     }
 
-    // These permissions work in Development Mode for testers
     const scope = [
       'pages_show_list',
       'pages_read_engagement',
+      'instagram_manage_insights',
+      'instagram_manage_messages',
+      'instagram_manage_comments',
+      'pages_messaging',
     ].join(',')
 
     // Build URL with proper Instagram API Onboarding channel
