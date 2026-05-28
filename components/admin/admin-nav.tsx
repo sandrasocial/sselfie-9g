@@ -13,6 +13,7 @@ export function AdminNav() {
     { label: 'SUPPORT', href: '/admin/customer-support' },
     { label: 'REVIEW', href: '/admin/webhook-review' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
+    { label: 'IG INBOX', href: '/admin/ig-inbox' },
     { label: 'PROMPT VAULT', href: '/admin/prompt-vault' },
     { label: 'ACADEMY', href: '/admin/academy' },
     { label: 'TESTIMONIALS', href: '/admin/testimonials' },
