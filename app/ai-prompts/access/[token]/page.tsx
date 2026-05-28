@@ -132,6 +132,22 @@ function PreviewCardEl({ card }: { card: PromptCard }) {
   )
 }
 
+function buildShootCheckoutHref(card: PromptCard) {
+  const params = new URLSearchParams({
+    source: "ai_prompts_access",
+    utm_source: "ai_prompts",
+    utm_medium: "prompt_pack",
+    utm_campaign: "ai_prompts_to_prompt_vault",
+    utm_content: `shoot_${card.id}`,
+    checkout_source: "free_prompt_shoot_cta",
+    buyer_stage: "lead",
+    cta_keyword: "full_shoot_after_free_prompt",
+    entry_path: "/ai-prompts/access/[token]",
+  })
+
+  return `/checkout/prompt-vault?${params.toString()}`
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -303,6 +319,26 @@ export default async function AiPromptsAccessPage({
                         <p className="ap-thumb-note">
                           <span className="ap-thumb-yours-label">Shot 1 of {meta.shotCount} is yours.</span>
                           {" "}{meta.shotCount - 1} more shots in the Vault.
+                        </p>
+                        <TrackedLink
+                          href={buildShootCheckoutHref(card)}
+                          className="ap-shoot-cta"
+                          trackEvent="ai_prompts_prompt_vault_click"
+                          trackProperties={{
+                            source: "ai-prompts",
+                            destination: "checkout-prompt-vault",
+                            utm_campaign: "ai_prompts_to_prompt_vault",
+                            utm_content: `shoot_${card.id}`,
+                            checkout_source: "free_prompt_shoot_cta",
+                            cta_position: "shoot_preview",
+                            prompt_id: card.id,
+                            prompt_title: card.title,
+                          }}
+                        >
+                          Get The Full Shoot + Future Drops
+                        </TrackedLink>
+                        <p className="ap-shoot-cta-note">
+                          Includes the remaining shots, newest collections, and future photoshoots.
                         </p>
                       </div>
                     )}
@@ -906,6 +942,38 @@ export default async function AiPromptsAccessPage({
         .ap-thumb-yours-label {
           color: rgba(245, 245, 245, 0.56);
           font-weight: 500;
+        }
+
+        .ap-shoot-cta {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 48px;
+          margin-top: 16px;
+          padding: 13px 18px;
+          background: #f5f5f5;
+          border: 1px solid #f5f5f5;
+          color: #0a0a0a;
+          text-align: center;
+          text-decoration: none;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          line-height: 1.35;
+          text-transform: uppercase;
+          transition: opacity 0.15s ease;
+        }
+
+        .ap-shoot-cta:hover {
+          opacity: 0.84;
+        }
+
+        .ap-shoot-cta-note {
+          margin: 10px 0 0;
+          font-size: 11px;
+          line-height: 1.55;
+          color: rgba(245, 245, 245, 0.42);
+          text-align: center;
         }
 
         @media (min-width: 900px) {
