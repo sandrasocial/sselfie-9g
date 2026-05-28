@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
       'pages_read_engagement',
       'instagram_basic',
       'business_management',
+      ...(process.env.INSTAGRAM_CONNECT_MESSAGING_SCOPES_ENABLED === 'true'
+        ? ['pages_messaging', 'instagram_manage_messages', 'instagram_manage_comments']
+        : []),
     ].join(',')
 
     // Build URL with proper Instagram API Onboarding channel

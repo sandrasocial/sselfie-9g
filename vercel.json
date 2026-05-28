@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/admin-alerts",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/ig-morning-briefing",
+      "schedule": "0 6 * * *"
     }
   ]
 }

@@ -155,11 +155,34 @@ export async function GET(request: NextRequest) {
     console.log("[Instagram Callback] Instagram profile fetched:", profileData.username)
 
     await sql`
-      INSERT INTO instagram_connections (user_id, instagram_username, instagram_user_id, access_token, token_expires_at, account_type)
-      VALUES (${userId}, ${profileData.username}, ${instagramUserId}, ${accessToken}, ${expiresAt.toISOString()}, ${"business"})
+      INSERT INTO instagram_connections (
+        user_id,
+        instagram_username,
+        instagram_user_id,
+        access_token,
+        page_id,
+        page_name,
+        page_access_token,
+        token_expires_at,
+        account_type
+      )
+      VALUES (
+        ${userId},
+        ${profileData.username},
+        ${instagramUserId},
+        ${accessToken},
+        ${selectedPage.id || null},
+        ${selectedPage.name || null},
+        ${selectedPage.access_token || null},
+        ${expiresAt.toISOString()},
+        ${"business"}
+      )
       ON CONFLICT (user_id, instagram_username)
       DO UPDATE SET
         access_token = ${accessToken},
+        page_id = ${selectedPage.id || null},
+        page_name = ${selectedPage.name || null},
+        page_access_token = ${selectedPage.access_token || null},
         token_expires_at = ${expiresAt.toISOString()},
         is_active = true,
         updated_at = NOW()
