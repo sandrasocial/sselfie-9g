@@ -1,44 +1,140 @@
+import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { OptInForm } from "@/components/ai-prompts/opt-in-form"
+import {
+  VAULT_COLLECTION_META,
+  FREEBIE_COLLECTION_PREVIEWS,
+} from "@/lib/ai-prompts/prompt-data"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "The ChatGPT Selfie Prompt Pack · SSELFIE",
+  title: "Selfie to Brand Shoot · SSELFIE",
   description:
-    "17 copy-paste prompts for turning one selfie into editorial, beauty, mirror, car, and content-ready visuals.",
+    "Free AI photoshoot prompts for turning one selfie into elevated personal brand images.",
 }
+
+// ── Dynamic hero + preview data ─────────────────────────────────────────────
+// Sourced from the same approved collection data that powers the Vault.
+// When new collections are added to VAULT_COLLECTION_META (newest-first),
+// the hero background and preview cards update automatically.
+
+/** Two-word short label for the preview strip — e.g. "Dark Feminine" */
+function collectionShortLabel(fullName: string): string {
+  return fullName.split(/\s+/).slice(0, 2).join(" ")
+}
+
+/**
+ * Hero background: 3rd thumbnail from the newest approved collection.
+ * Index 2 tends to be a more cinematic/full-body shot than the cover shot.
+ * Falls back through the collection list then to a curated static default.
+ */
+const HERO_IMAGE: string =
+  VAULT_COLLECTION_META[0]?.thumbnails[2] ??
+  VAULT_COLLECTION_META[0]?.thumbnails[0] ??
+  VAULT_COLLECTION_META[1]?.thumbnails[0] ??
+  "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
+
+/**
+ * Preview strip: Shot 1 from the 3 newest approved freebie collections.
+ * Updates automatically when FREEBIE_COLLECTION_PREVIEWS gains new entries.
+ * Do not show cards without a valid image src.
+ */
+const HERO_PREVIEWS = FREEBIE_COLLECTION_PREVIEWS.slice(0, 3)
+  .map((card) => {
+    const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
+    return {
+      src: card.exampleImage ?? "",
+      label: meta
+        ? collectionShortLabel(meta.name)
+        : card.title.split(" ").slice(0, 2).join(" "),
+    }
+  })
+  .filter((p) => p.src !== "")
+
+const VALUE_ITEMS = [
+  "Free AI photoshoot prompts you can test with your own selfies.",
+  "Editorial looks for personal brand images, profile photos, and content.",
+  "Beginner-friendly instructions so you know what to paste and where.",
+  "A growing free preview of the SSELFIE visual world, with new prompts added over time.",
+]
 
 export default function AiPromptsOptInPage() {
   return (
     <main className={inter.className}>
 
-      {/* ── Full-bleed hero ────────────────────────────────────────────── */}
+      {/* ── Editorial capture hero ─────────────────────────────────────── */}
       <section className="opt-hero-section">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/images/ai-prompts/ai-prompts-hero.jpg"
-          alt="Sandra in the car mirror — editorial selfie"
-          className="opt-hero-img"
-        />
-        <div className="opt-hero-overlay" aria-hidden="true" />
+        <div className="opt-hero-media" aria-hidden="true">
+          <Image
+            src={HERO_IMAGE}
+            alt=""
+            fill
+            priority
+            className="opt-hero-img"
+            style={{ objectFit: "cover", objectPosition: "50% 18%" }}
+          />
+        </div>
+        <div className="opt-hero-overlay" />
 
         <div className="opt-hero-content">
           <div className="opt-container">
             <p className="opt-eyebrow">FREE DOWNLOAD</p>
             <h1 className={`opt-headline ${cormorant.className}`}>
-              The ChatGPT Selfie Prompt Pack.
+              Selfie to Brand Shoot.
             </h1>
             <p className="opt-sub">
-              17 copy-paste prompts. Upload your selfie. Choose the look.
+              Get the free photoshoot prompts to turn your own selfie into cinematic,
+              editorial personal brand images. No studio, no photographer, no perfect setup.
             </p>
+
+            <div className="opt-proof-strip" aria-label="Photoshoot prompt examples">
+              {HERO_PREVIEWS.map((preview) => (
+                <div key={preview.src} className="opt-proof-card">
+                  <Image
+                    src={preview.src}
+                    alt={`${preview.label} AI photoshoot prompt preview`}
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 30vw, 150px"
+                    className="opt-proof-image"
+                  />
+                  <span>{preview.label}</span>
+                </div>
+              ))}
+            </div>
 
             <div className="opt-form-card">
               <OptInForm />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Value section ──────────────────────────────────────────────── */}
+      <section className="opt-value">
+        <div className="opt-value-inner">
+          <div className="opt-value-copy">
+            <p className="opt-value-label">WHAT YOU GET</p>
+            <h2 className={`opt-value-title ${cormorant.className}`}>
+              Your first step into the SSELFIE visual world.
+            </h2>
+            <p className="opt-value-body">
+              Upload your selfie, choose the look, and start creating elevated
+              brand-style images from your own photo. The prompts are the mechanism.
+              The transformation is the point.
+            </p>
+          </div>
+          <div className="opt-value-list">
+            {VALUE_ITEMS.map((item, index) => (
+              <div key={item} className="opt-value-item">
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <p>{item}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -50,7 +146,8 @@ export default function AiPromptsOptInPage() {
             Your photo is the starting point.
           </p>
           <p className="opt-bridge-body">
-            The better the original, the better the AI result. If you want to get the photo right before you run it through AI, start with the Free Selfie Guide. It is free.
+            The better the selfie, the better the AI result. Start with a clear
+            photo before you create your shoot.
           </p>
           <Link
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=landing_page&utm_campaign=ai_prompts_to_selfie_guide"
@@ -63,6 +160,11 @@ export default function AiPromptsOptInPage() {
 
       <style>{`
         /* ── Page shell ──────────────────────────────────────────────── */
+        main {
+          background: #F8FAFA;
+          color: #0D0E10;
+        }
+
         .opt-container {
           max-width: 540px;
           margin: 0 auto;
@@ -71,19 +173,20 @@ export default function AiPromptsOptInPage() {
         /* ── Hero ────────────────────────────────────────────────────── */
         .opt-hero-section {
           position: relative;
-          min-height: 100dvh;
+          min-height: 100svh;
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          background: #0D0E10;
+        }
+
+        .opt-hero-media {
+          position: absolute;
+          inset: 0;
         }
 
         .opt-hero-img {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: 50% 20%;
+          filter: saturate(0.72) contrast(1.05);
         }
 
         .opt-hero-overlay {
@@ -91,9 +194,9 @@ export default function AiPromptsOptInPage() {
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10,10,10,0.30) 0%,
-            rgba(10,10,10,0.06) 30%,
-            rgba(10,10,10,0.88) 100%
+            rgba(13, 14, 16, 0.22) 0%,
+            rgba(13, 14, 16, 0.26) 36%,
+            rgba(13, 14, 16, 0.92) 100%
           );
         }
 
@@ -104,7 +207,7 @@ export default function AiPromptsOptInPage() {
           flex-direction: column;
           justify-content: flex-end;
           flex: 1;
-          padding: 80px 24px 56px;
+          padding: 64px 22px 34px;
         }
 
         /* ── Hero typography ─────────────────────────────────────────── */
@@ -113,32 +216,70 @@ export default function AiPromptsOptInPage() {
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(245, 245, 245, 0.5);
+          color: rgba(248, 250, 250, 0.58);
+          text-transform: uppercase;
         }
 
         .opt-headline {
           margin: 0 0 16px;
-          font-size: clamp(2.4rem, 8vw, 3.6rem);
+          font-size: clamp(3rem, 14vw, 5.4rem);
           font-weight: 300;
-          line-height: 1.0;
-          letter-spacing: -0.02em;
-          color: #f5f5f5;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.4);
+          line-height: 0.92;
+          letter-spacing: 0;
+          color: #F8FAFA;
+          text-shadow: 0 18px 48px rgba(13, 14, 16, 0.54);
         }
 
         .opt-sub {
-          margin: 0 0 32px;
-          font-size: 16px;
-          line-height: 1.75;
-          color: rgba(245, 245, 245, 0.62);
+          margin: 0 0 22px;
+          font-size: 15px;
+          line-height: 1.72;
+          color: rgba(248, 250, 250, 0.72);
         }
 
-        /* ── Form card (dark overlay card, same pattern as selfie guide) */
+        .opt-proof-strip {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin: 0 0 18px;
+        }
+
+        .opt-proof-card {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          overflow: hidden;
+          border: 1px solid rgba(197, 198, 200, 0.28);
+          background: rgba(248, 250, 250, 0.08);
+        }
+
+        .opt-proof-image {
+          object-fit: cover;
+          object-position: center top;
+          filter: saturate(0.9) contrast(1.02);
+        }
+
+        .opt-proof-card span {
+          position: absolute;
+          left: 8px;
+          right: 8px;
+          bottom: 8px;
+          padding: 6px 7px;
+          background: rgba(13, 14, 16, 0.74);
+          color: #F8FAFA;
+          font-size: 8px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          line-height: 1.35;
+          text-transform: uppercase;
+        }
+
+        /* ── Form card ──────────────────────────────────────────────── */
         .opt-form-card {
-          background: rgba(20, 19, 18, 0.82);
-          border: 1px solid rgba(245, 245, 245, 0.10);
-          padding: 26px;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+          background: rgba(13, 14, 16, 0.84);
+          border: 1px solid rgba(197, 198, 200, 0.28);
+          padding: 22px;
+          backdrop-filter: blur(18px);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
         /* ── Form fields — used by OptInForm client component ─────────── */
@@ -148,7 +289,7 @@ export default function AiPromptsOptInPage() {
           font-weight: 500;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.38);
+          color: rgba(248, 250, 250, 0.58);
         }
 
         .opt-fields {
@@ -168,17 +309,18 @@ export default function AiPromptsOptInPage() {
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.08em;
-          color: rgba(245, 245, 245, 0.38);
+          color: rgba(248, 250, 250, 0.58);
           text-transform: uppercase;
         }
 
         .opt-input {
           width: 100%;
-          padding: 14px 16px;
-          background: rgba(255, 255, 255, 0.07);
-          border: 1px solid rgba(245, 245, 245, 0.14);
-          border-radius: 10px;
-          color: #f5f5f5;
+          min-height: 50px;
+          padding: 15px 16px;
+          background: rgba(248, 250, 250, 0.08);
+          border: 1px solid rgba(197, 198, 200, 0.3);
+          border-radius: 0;
+          color: #FFFFFF;
           font-size: 15px;
           font-family: inherit;
           outline: none;
@@ -187,20 +329,28 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-input::placeholder {
-          color: rgba(245, 245, 245, 0.28);
+          color: rgba(248, 250, 250, 0.34);
         }
 
         .opt-input:focus {
-          border-color: rgba(245, 245, 245, 0.32);
+          border-color: rgba(248, 250, 250, 0.7);
+        }
+
+        .opt-submit:focus-visible,
+        .opt-open-btn:focus-visible,
+        .opt-bridge-link:focus-visible {
+          outline: 2px solid rgba(248, 250, 250, 0.88);
+          outline-offset: 3px;
         }
 
         .opt-submit {
           width: 100%;
+          min-height: 52px;
           padding: 16px 20px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #F8FAFA;
+          color: #0D0E10;
           border: none;
-          border-radius: 999px;
+          border-radius: 0;
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.26em;
@@ -219,30 +369,30 @@ export default function AiPromptsOptInPage() {
           margin: 14px 0 0;
           font-size: 12px;
           line-height: 1.6;
-          color: rgba(245, 245, 245, 0.28);
+          color: rgba(248, 250, 250, 0.46);
           text-align: center;
         }
 
         .opt-confirmation {
           padding: 24px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(245, 245, 245, 0.12);
-          border-radius: 14px;
+          background: rgba(248, 250, 250, 0.08);
+          border: 1px solid rgba(197, 198, 200, 0.28);
+          border-radius: 0;
         }
 
         .opt-confirmation-text {
           margin: 0 0 20px;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.62);
+          color: rgba(248, 250, 250, 0.74);
         }
 
         .opt-open-btn {
           display: inline-block;
           padding: 14px 24px;
-          background: #f5f5f5;
-          color: #0a0a0a;
-          border-radius: 999px;
+          background: #F8FAFA;
+          color: #0D0E10;
+          border-radius: 0;
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.24em;
@@ -263,10 +413,78 @@ export default function AiPromptsOptInPage() {
           text-align: center;
         }
 
+        /* ── Value section ───────────────────────────────────────────── */
+        .opt-value {
+          background: #F8FAFA;
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
+          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
+          padding: 70px 24px;
+        }
+
+        .opt-value-inner {
+          max-width: 1040px;
+          margin: 0 auto;
+          display: grid;
+          gap: 34px;
+        }
+
+        .opt-value-label {
+          margin: 0 0 14px;
+          color: #818283;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.38em;
+          text-transform: uppercase;
+        }
+
+        .opt-value-title {
+          margin: 0 0 18px;
+          color: #0D0E10;
+          font-size: clamp(2.15rem, 8vw, 4rem);
+          font-weight: 300;
+          line-height: 1.02;
+        }
+
+        .opt-value-body {
+          margin: 0;
+          color: #4F5052;
+          font-size: 15px;
+          line-height: 1.8;
+          max-width: 560px;
+        }
+
+        .opt-value-list {
+          display: grid;
+          gap: 0;
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
+        }
+
+        .opt-value-item {
+          display: grid;
+          grid-template-columns: 34px 1fr;
+          gap: 16px;
+          padding: 18px 0;
+          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
+        }
+
+        .opt-value-item span {
+          color: #818283;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+        }
+
+        .opt-value-item p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
+        }
+
         /* ── Bridge section ──────────────────────────────────────────── */
         .opt-bridge {
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #FFFFFF;
+          color: #0D0E10;
           padding: 64px 24px 80px;
         }
 
@@ -275,14 +493,14 @@ export default function AiPromptsOptInPage() {
           font-size: clamp(1.5rem, 5vw, 2rem);
           font-weight: 300;
           line-height: 1.15;
-          color: #0a0a0a;
+          color: #0D0E10;
         }
 
         .opt-bridge-body {
           margin: 0 0 24px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(10, 10, 10, 0.5);
+          color: #4F5052;
         }
 
         .opt-bridge-link {
@@ -291,16 +509,16 @@ export default function AiPromptsOptInPage() {
           font-weight: 600;
           letter-spacing: 0.24em;
           text-transform: uppercase;
-          color: rgba(10, 10, 10, 0.52);
+          color: #282728;
           text-decoration: none;
-          border-bottom: 1px solid rgba(10, 10, 10, 0.2);
+          border-bottom: 1px solid rgba(79, 80, 82, 0.28);
           padding-bottom: 2px;
           transition: color 0.15s ease, border-color 0.15s ease;
         }
 
         .opt-bridge-link:hover {
-          color: #0a0a0a;
-          border-color: rgba(10, 10, 10, 0.5);
+          color: #0D0E10;
+          border-color: rgba(13, 14, 16, 0.55);
         }
 
         /* ── Responsive ──────────────────────────────────────────────── */
@@ -319,6 +537,50 @@ export default function AiPromptsOptInPage() {
 
           .opt-field {
             flex: 1;
+          }
+        }
+
+        @media (min-width: 900px) {
+          .opt-hero-section {
+            min-height: 100vh;
+          }
+
+          .opt-hero-content {
+            padding: 96px 64px 76px;
+          }
+
+          .opt-container {
+            margin-left: 0;
+            max-width: 620px;
+          }
+
+          .opt-headline {
+            font-size: clamp(4.6rem, 7vw, 7rem);
+          }
+
+          .opt-sub {
+            max-width: 580px;
+            font-size: 17px;
+          }
+
+          .opt-proof-strip {
+            max-width: 480px;
+            gap: 8px;
+            margin-bottom: 22px;
+          }
+
+          .opt-form-card {
+            max-width: 560px;
+          }
+
+          .opt-value {
+            padding: 92px 64px;
+          }
+
+          .opt-value-inner {
+            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+            align-items: start;
+            gap: 80px;
           }
         }
       `}</style>
