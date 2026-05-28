@@ -6,7 +6,6 @@ const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback
 
 // Admin-only diagnostic endpoint — shows exactly what's configured and what's broken
 export async function GET(request: NextRequest) {
-  const adminEmail = process.env.ADMIN_EMAIL
   // Simple admin guard — only accessible if you know the secret or from admin context
   const authHeader = request.headers.get('x-admin-secret')
   const isLocalDev = process.env.VERCEL_ENV === undefined
@@ -41,12 +40,14 @@ export async function GET(request: NextRequest) {
   const scope = [
     'pages_show_list',
     'pages_read_engagement',
-    'instagram_manage_insights',
-    'instagram_manage_messages',
-    'instagram_manage_comments',
-    'pages_messaging',
+    'instagram_basic',
+    'business_management',
   ]
   checks.requested_scope = { status: 'ok', detail: scope.join(', ') }
+  checks.page_selection = {
+    status: 'ok',
+    detail: 'OAuth callback checks all granted Facebook Pages and selects the Page with a linked Instagram Professional Account.',
+  }
 
   // 4. Check DB for existing connections
   try {
