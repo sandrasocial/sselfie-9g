@@ -16,14 +16,64 @@ Build a custom AI-powered Instagram DM and comment agent that:
 - Gives Sandra a calm, organised admin inbox so Instagram stops being overwhelming
 - Over time: learns what the audience needs, what to post, what's converting
 
-Meta permissions already approved: `instagram_manage_messages`, `instagram_manage_comments`, `pages_messaging`
+Meta permissions: connected and ready for **testing in Development Mode**. Real-user production DMs/webhooks may still require Meta App Review sign-off — treat current state as "testable with Sandra's account + up to 25 added testers" until confirmed otherwise.
+
 Instagram account connected: @sandra.social (token stored in `instagram_connections`)
+
+---
+
+## ⚠️ CRITICAL LAUNCH GATE — Read Before Building
+
+**`IG_AGENT_AUTO_SEND_ENABLED=false` must exist as an environment variable.**
+
+For the first week (at minimum), the agent MUST NOT auto-send anything. It should:
+- Draft responses ✅
+- Classify and triage ✅
+- Store everything in DB ✅
+- Send Sandra email/inbox notifications ✅
+- **Auto-send DMs: ❌ BLOCKED until this flag is set to `true`**
+
+This protects Sandra's voice and her account. One bad auto-send is worse than no auto-send.
+
+The flag is flipped to `true` only after Sandra has reviewed a week of drafts and confirmed they sound right.
+
+Every call to `lib/ig-agent/send-dm.ts` must check this flag first:
+```typescript
+if (process.env.IG_AGENT_AUTO_SEND_ENABLED !== 'true') {
+  // Don't send. Store as draft, flag for Sandra review.
+  return { sent: false, reason: 'auto_send_disabled' }
+}
+```
+
+Add `IG_AGENT_AUTO_SEND_ENABLED=false` to Vercel env vars from day one.
+
+---
+
+## ⚠️ PRE-BUILD VALIDATION REQUIRED
+
+Before locking in implementation, Codex must verify the Instagram send-message endpoint works with Sandra's actual token.
+
+Meta's messaging API behaves differently depending on whether the app uses Facebook Login vs Instagram Login. The endpoint and payload format can vary.
+
+**Run this test first (before writing any production code):**
+```typescript
+// Test: send a DM to Sandra's own IG account from the app token
+// POST https://graph.facebook.com/v21.0/me/messages
+// { recipient: { id: SANDRA_IG_USER_ID }, message: { text: "test 🤍" } }
+// Use token from instagram_connections WHERE instagram_username = 'sandra.social'
+// Log the full response — success or error
+```
+
+Use the existing `app/api/instagram/test-graph-api` route or a one-off test script.
+Document the working endpoint + payload format in `lib/ig-agent/send-dm.ts` comments before proceeding.
 
 ---
 
 ## Phase 1 — This Sprint
 
 Build the complete foundation: webhook receiver, DM sender, AI agent brain, triage engine, DB tables, and admin inbox.
+
+**`/my-inbox` is a core deliverable — not a nice-to-have.** Sandra's admin panel is too busy for daily use. `/my-inbox` is her primary daily interface with the agent.
 
 ---
 
@@ -590,12 +640,15 @@ Add to Vercel production environment:
 ```
 INSTAGRAM_WEBHOOK_VERIFY_TOKEN=<generate a random 32-char string>
 ANTHROPIC_API_KEY=<already exists — confirm it's set>
+IG_AGENT_AUTO_SEND_ENABLED=false   ← DO NOT change to true until Sandra approves first week of drafts
 ```
 
 ---
 
 ## 8. Success Criteria
 
+- [ ] Pre-build: send-message endpoint tested live with Sandra's token, working format documented
+- [ ] `IG_AGENT_AUTO_SEND_ENABLED=false` — agent drafts but does NOT send until flag is flipped
 - [ ] Webhook validates Meta HMAC signature — rejects unsigned requests with 403
 - [ ] Webhook receives a test DM and stores it in `ig_messages`
 - [ ] Icelandic name (e.g. Sigurjónsdóttir) auto-flags conversation + sends Sandra an email
