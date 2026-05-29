@@ -101,10 +101,10 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
   }
 
   const shell = mobile
-    ? "min-h-screen bg-[#0D0E10] text-[#F8FAFA]"
+    ? "min-h-screen bg-[#F5F5F5] text-[#0A0A0A]"
     : "min-h-screen bg-[#F8FAFA] text-[#0D0E10]"
   const panel = mobile
-    ? "border border-white/10 bg-white/[0.04]"
+    ? "border border-[#E5E5E5] bg-white"
     : "border border-[#C5C6C8]/40 bg-white"
 
   return (
@@ -122,8 +122,8 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                 onClick={() => setStatus(item)}
                 className={`min-h-10 border px-3 text-[10px] uppercase tracking-[0.18em] ${
                   status === item
-                    ? mobile ? "border-white bg-white text-[#0D0E10]" : "border-[#0D0E10] bg-[#0D0E10] text-white"
-                    : mobile ? "border-white/15 text-white/70" : "border-[#C5C6C8]/50 text-[#4F5052]"
+                    ? mobile ? "border-[#0A0A0A] bg-[#0A0A0A] text-white" : "border-[#0D0E10] bg-[#0D0E10] text-white"
+                    : mobile ? "border-[#E5E5E5] text-[#666666]" : "border-[#C5C6C8]/50 text-[#4F5052]"
                 }`}
               >
                 {item === "auto_handled" ? "handled" : item}
@@ -141,7 +141,7 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
           </div>
         ) : (
           <div className={mobile ? "space-y-4" : "grid grid-cols-[320px_minmax(0,1fr)_300px] gap-4"}>
-            <section className={`${panel} ${mobile ? "divide-y divide-white/10" : "divide-y divide-[#C5C6C8]/30"}`}>
+            <section className={`${panel} ${mobile ? "divide-y divide-[#E5E5E5]" : "divide-y divide-[#C5C6C8]/30"}`}>
               {data.conversations.map((conversation) => (
                 <button
                   key={conversation.id}
@@ -149,7 +149,7 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                     setSelectedId(conversation.id)
                     load(conversation.id)
                   }}
-                  className={`block w-full p-4 text-left ${selectedId === conversation.id ? mobile ? "bg-white/10" : "bg-[#F8FAFA]" : ""}`}
+                  className={`block w-full p-4 text-left ${selectedId === conversation.id ? mobile ? "bg-[#F5F5F5]" : "bg-[#F8FAFA]" : ""}`}
                 >
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <span className="font-medium">@{conversation.username || conversation.ig_user_id || "unknown"}</span>
@@ -174,7 +174,7 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                         key={message.id}
                         className={`max-w-[88%] p-3 text-sm leading-relaxed ${
                           message.from_type === "contact"
-                            ? mobile ? "bg-white/10" : "bg-[#F8FAFA]"
+                            ? mobile ? "bg-[#F5F5F5]" : "bg-[#F8FAFA]"
                             : "ml-auto bg-[#282728] text-white"
                         }`}
                       >
@@ -188,7 +188,7 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                       value={reply}
                       onChange={(event) => setReply(event.target.value)}
                       placeholder={process.env.NEXT_PUBLIC_IG_AGENT_AUTO_SEND_ENABLED === "true" ? "Reply as Sandra..." : "Draft a reply... auto-send is off"}
-                      className={`min-h-28 w-full resize-none border bg-transparent p-3 text-sm outline-none ${mobile ? "border-white/15" : "border-[#C5C6C8]/50"}`}
+                      className={`min-h-28 w-full resize-none border bg-transparent p-3 text-sm outline-none ${mobile ? "border-[#E5E5E5]" : "border-[#C5C6C8]/50"}`}
                     />
                     <div className="flex flex-wrap gap-2">
                       <button onClick={sendReply} className="min-h-11 bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.18em] text-white">Save Reply</button>

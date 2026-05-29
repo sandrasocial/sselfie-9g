@@ -16,6 +16,10 @@ const PUBLIC_MIDDLEWARE_BYPASSES = [
     prefix: "/api/cron/",
     reason: "Cron routes keep route-level CRON_SECRET checks.",
   },
+  {
+    prefix: "/api/webhooks/instagram",
+    reason: "Meta webhook verification requires no auth — route handles HMAC signature validation.",
+  },
 ] as const
 
 function getPublicBypass(pathname: string) {
