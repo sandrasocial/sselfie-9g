@@ -10,6 +10,7 @@ export function AdminNav() {
   
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
+    { label: 'BRIEFING', href: '/admin/daily-briefing' },
     { label: 'SUPPORT', href: '/admin/customer-support' },
     { label: 'REVIEW', href: '/admin/webhook-review' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
