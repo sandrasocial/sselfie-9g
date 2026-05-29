@@ -3481,10 +3481,10 @@ export async function POST(request: NextRequest) {
               }
 
               await updateTags(customerEmail!, {
+                ...buildAiPhotoshootResendTags("buyer"),
                 product: "prompt-vault",
                 journey: "prompt_vault",
                 bought_prompt_vault: "true",
-                ...buildAiPhotoshootResendTags("buyer"),
               }).catch((tagError) => {
                 console.error("[v0] Failed to update Prompt Vault tags:", tagError)
               })

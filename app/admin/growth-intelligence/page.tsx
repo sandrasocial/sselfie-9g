@@ -92,6 +92,7 @@ export default async function GrowthIntelligencePage({
 
   const purchases = paymentCounts.purchases || eventCounts.checkoutSuccesses
   const buyers = buyerCounts.buyers || paymentCounts.purchases
+  const vaultAccessOpeners = eventCounts.vaultAccessOpeners || 0
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -207,9 +208,9 @@ export default async function GrowthIntelligencePage({
           />
           <AdminMetricCard
             label="Vault Access Opens"
-            value={eventCounts.vaultAccessOpens}
+            value={vaultAccessOpeners}
             icon={<Eye className="h-5 w-5" />}
-            subtitle={`${formatPercent(eventCounts.vaultAccessOpens, buyers)} of buyers`}
+            subtitle={`${formatPercent(vaultAccessOpeners, buyers)} of buyers · ${eventCounts.vaultAccessOpens} total opens`}
           />
           <AdminMetricCard
             label="Vault Prompt Copies"
