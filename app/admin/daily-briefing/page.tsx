@@ -8,7 +8,6 @@ import {
   ClipboardList,
   ExternalLink,
   Eye,
-  ImageIcon,
   MessageCircle,
   MousePointerClick,
   RefreshCw,
@@ -16,6 +15,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
+import { MorningBoardVisualPlanner } from "@/components/admin/morning-board-visual-planner"
+import { getContentBoardData } from "@/lib/admin/content-planner"
 import { buildDailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
 import {
   formatMoney,
@@ -94,7 +95,15 @@ function Label({ children }: { children: ReactNode }) {
   )
 }
 
-function SectionTitle({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
+function SectionTitle({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow?: string
+  title: string
+  children?: ReactNode
+}) {
   return (
     <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -132,7 +141,9 @@ function ActionWidget({
           <Label>{label}</Label>
           <div className="text-[color:var(--ss-gray)]">{icon}</div>
         </div>
-        <h3 className="max-w-[18rem] text-lg font-medium leading-snug text-[color:var(--ss-night)]">{title}</h3>
+        <h3 className="max-w-[18rem] text-lg font-medium leading-snug text-[color:var(--ss-night)]">
+          {title}
+        </h3>
         <p className="mt-4 text-sm leading-7 text-[color:var(--ss-davy)]">{body}</p>
       </div>
       <div className="mt-6">
@@ -167,7 +178,11 @@ function SignalCard({
       <Label>{label}</Label>
       <h3 className="mt-4 text-base font-medium text-[color:var(--ss-night)]">{title}</h3>
       <p className="mt-3 text-sm leading-7 text-[color:var(--ss-davy)]">{body}</p>
-      {support && <p className="mt-5 border-t border-[rgba(197,198,200,.35)] pt-4 text-xs text-[color:var(--ss-gray)]">{support}</p>}
+      {support && (
+        <p className="mt-5 border-t border-[rgba(197,198,200,.35)] pt-4 text-xs text-[color:var(--ss-gray)]">
+          {support}
+        </p>
+      )}
     </article>
   )
 }
@@ -184,7 +199,9 @@ function ChecklistCard({
   return (
     <article className={boardCardClass("p-5 sm:p-6")}>
       <div className="mb-5 flex items-center justify-between gap-4">
-        <h3 className="text-sm font-medium uppercase tracking-[0.18em] text-[color:var(--ss-night)]">{title}</h3>
+        <h3 className="text-sm font-medium uppercase tracking-[0.18em] text-[color:var(--ss-night)]">
+          {title}
+        </h3>
         <div className="text-[color:var(--ss-gray)]">{icon}</div>
       </div>
       <div className="space-y-4">
@@ -201,7 +218,15 @@ function ChecklistCard({
   )
 }
 
-function MiniMetric({ label, value, helper }: { label: string; value: string | number; helper?: string }) {
+function MiniMetric({
+  label,
+  value,
+  helper,
+}: {
+  label: string
+  value: string | number
+  helper?: string
+}) {
   return (
     <div className="border-t border-[rgba(197,198,200,.35)] py-4">
       <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">{label}</p>
@@ -219,7 +244,10 @@ export default async function DailyBriefingPage({
   const params = await searchParams
   const requestedDays = Number(params.days || 7)
   const windowDays = [1, 3, 7, 14, 30].includes(requestedDays) ? requestedDays : 7
-  const report = await getGrowthIntelligenceReport(windowDays)
+  const [report, contentBoard] = await Promise.all([
+    getGrowthIntelligenceReport(windowDays),
+    getContentBoardData(),
+  ])
   const briefing = buildDailySandraBriefing(report)
 
   const topPromptSignals = report.topPromptSignals as PromptSignalRow[]
@@ -232,12 +260,17 @@ export default async function DailyBriefingPage({
   const buyers = report.buyerCounts.buyers || report.paymentCounts.purchases
   const topPaidPrompt = topPromptSignals[0]
   const topFreePrompt = freePromptSignals[0]
-  const strongestVisual = safeText(topPaidPrompt?.prompt_title || topFreePrompt?.prompt_title, "the strongest current transformation")
-  const topTag = topGrowthTags[0]?.tag ? humanTag(topGrowthTags[0].tag) : "new visual identity requests"
-  const topAttribution = attributionRows[0]
+  const strongestVisual = safeText(
+    topPaidPrompt?.prompt_title || topFreePrompt?.prompt_title,
+    "the strongest current transformation"
+  )
+  const topTag = topGrowthTags[0]?.tag
+    ? humanTag(topGrowthTags[0].tag)
+    : "new visual identity requests"
   const offerBridge =
     report.eventCounts.aiPromptAccessOpens > 0 &&
-    formatPercent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens) !== "0%"
+    formatPercent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens) !==
+      "0%"
       ? "Free preview to Vault"
       : "Free preview to Vault"
 
@@ -253,12 +286,6 @@ export default async function DailyBriefingPage({
     briefing.codexNext,
     "Keep the tracking layer stable and compare tomorrow's same four signals before adding more product complexity."
   )
-
-  const previewSlots = [
-    { label: "01", title: safeText(topPaidPrompt?.prompt_title || topFreePrompt?.prompt_title, "Transformation proof"), meta: topPaidPrompt?.mood || "Strongest prompt signal" },
-    { label: "02", title: topGrowthTags[0]?.tag ? humanTag(topGrowthTags[0].tag) : "Buyer language", meta: topGrowthTags[0]?.count ? `${topGrowthTags[0].count} IG tag signals` : "Waiting for live IG volume" },
-    { label: "03", title: topAttribution?.utm_content || topAttribution?.entry_post_slug || "Vault bridge", meta: topAttribution?.checkout_starts ? `${topAttribution.checkout_starts} checkout starts` : "Use clean UTM links today" },
-  ]
 
   return (
     <div className="min-h-screen bg-[color:var(--ss-seasalt)] text-[color:var(--ss-night)]">
@@ -277,7 +304,7 @@ export default async function DailyBriefingPage({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {[1, 3, 7, 14, 30].map((days) => (
+            {[1, 3, 7, 14, 30].map(days => (
               <Link
                 key={days}
                 href={`/admin/daily-briefing?days=${days}`}
@@ -310,11 +337,14 @@ export default async function DailyBriefingPage({
                 Pull Latest
               </Link>
             </div>
-            <p className="max-w-4xl text-xl leading-9 text-[color:var(--ss-raisin)]">{focusSummary}</p>
+            <p className="max-w-4xl text-xl leading-9 text-[color:var(--ss-raisin)]">
+              {focusSummary}
+            </p>
             <div className="mt-8 border-t border-[rgba(197,198,200,.35)] pt-6">
               <Label>Primary action</Label>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--ss-davy)]">
-                Post one transformation-led reel around {strongestVisual}. Show the finished image first, then bridge to the updated free preview and Vault.
+                Post one transformation-led reel around {strongestVisual}. Show the finished image
+                first, then bridge to the updated free preview and Vault.
               </p>
             </div>
           </article>
@@ -325,15 +355,22 @@ export default async function DailyBriefingPage({
               One reel. One bridge. One fix.
             </p>
             <p className="mt-5 text-sm leading-7 text-[color:var(--ss-silver)]">
-              Keep the offer path clean today. The point is not more ideas; it is one visible transformation, one useful preview, and one measured upgrade moment.
+              Keep the offer path clean today. The point is not more ideas; it is one visible
+              transformation, one useful preview, and one measured upgrade moment.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-4 border-t border-white/15 pt-6">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-silver)]">Vault visits</p>
-                <p className="mt-2 font-['Times_New_Roman'] text-3xl">{report.eventCounts.vaultVisits}</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-silver)]">
+                  Vault visits
+                </p>
+                <p className="mt-2 font-['Times_New_Roman'] text-3xl">
+                  {report.eventCounts.vaultVisits}
+                </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-silver)]">Sales</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-silver)]">
+                  Sales
+                </p>
                 <p className="mt-2 font-['Times_New_Roman'] text-3xl">{purchases}</p>
               </div>
             </div>
@@ -371,8 +408,16 @@ export default async function DailyBriefingPage({
         </section>
 
         <section className="mb-10 grid gap-4 lg:grid-cols-2">
-          <ChecklistCard title="Sandra Does Today" items={briefing.sandraNext} icon={<CheckCircle2 className="h-5 w-5" />} />
-          <ChecklistCard title="Claude/Codex Does Today" items={briefing.codexNext} icon={<ClipboardList className="h-5 w-5" />} />
+          <ChecklistCard
+            title="Sandra Does Today"
+            items={briefing.sandraNext}
+            icon={<CheckCircle2 className="h-5 w-5" />}
+          />
+          <ChecklistCard
+            title="Claude/Codex Does Today"
+            items={briefing.codexNext}
+            icon={<ClipboardList className="h-5 w-5" />}
+          />
         </section>
 
         <section className="mb-10">
@@ -382,9 +427,21 @@ export default async function DailyBriefingPage({
               <SignalCard
                 key={`working-${item}`}
                 label={`Working 0${index + 1}`}
-                title={index === 0 ? "Audience signal is moving" : index === 1 ? "Vault traffic has intent" : index === 2 ? "Revenue is tracked" : "Product use matters"}
+                title={
+                  index === 0
+                    ? "Audience signal is moving"
+                    : index === 1
+                      ? "Vault traffic has intent"
+                      : index === 2
+                        ? "Revenue is tracked"
+                        : "Product use matters"
+                }
                 body={item}
-                support={index === 0 ? `${report.eventCounts.aiPromptOptins} opt-ins · ${report.eventCounts.freePromptCopies} free prompt copies` : undefined}
+                support={
+                  index === 0
+                    ? `${report.eventCounts.aiPromptOptins} opt-ins · ${report.eventCounts.freePromptCopies} free prompt copies`
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -397,69 +454,37 @@ export default async function DailyBriefingPage({
               <SignalCard
                 key={`leaking-${item}`}
                 label={index === 0 ? "Fix next" : "Watch tomorrow"}
-                title={index === 0 ? "Bridge needs clarity" : index === 1 ? "Activation may leak" : index === 2 ? "Audience data is thin" : "Keep watching"}
+                title={
+                  index === 0
+                    ? "Bridge needs clarity"
+                    : index === 1
+                      ? "Activation may leak"
+                      : index === 2
+                        ? "Audience data is thin"
+                        : "Keep watching"
+                }
                 body={item}
               />
             ))}
           </div>
         </section>
 
-        <section className="mb-10 grid gap-4 lg:grid-cols-[1fr_.85fr]">
-          <div className={boardCardClass("p-5 sm:p-6")}>
-            <SectionTitle eyebrow="Creator direction" title="Today's Content Board">
-              <p className="text-xs leading-6 text-[color:var(--ss-gray)]">Graph post thumbnails are not stored yet, so this board uses current prompt and IG signal data.</p>
-            </SectionTitle>
-            <div className="grid gap-4 md:grid-cols-3">
-              {previewSlots.map((slot) => (
-                <article key={slot.label} className="border border-[rgba(197,198,200,.35)] bg-[color:var(--ss-seasalt)]">
-                  <div className="flex aspect-[4/5] items-end bg-[linear-gradient(145deg,var(--ss-white)_0%,var(--ss-seasalt)_48%,var(--ss-silver)_100%)] p-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ss-gray)]">Signal {slot.label}</p>
-                      <p className="mt-2 text-lg font-medium leading-tight text-[color:var(--ss-night)]">{slot.title}</p>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-xs leading-6 text-[color:var(--ss-davy)]">{slot.meta}</p>
-                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">Repurpose this</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className={boardCardClass("p-5 sm:p-6")}>
-            <SectionTitle eyebrow="Feed preview" title="3x3 Planner" />
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 9 }).map((_, index) => {
-                const slot = previewSlots[index % previewSlots.length]
-                return (
-                  <div
-                    key={`feed-slot-${index}`}
-                    className="aspect-square border border-[rgba(197,198,200,.4)] bg-white p-2"
-                  >
-                    <div className="flex h-full flex-col justify-between bg-[color:var(--ss-seasalt)] p-2">
-                      <ImageIcon className="h-4 w-4 text-[color:var(--ss-gray)]" />
-                      <div>
-                        <p className="text-[9px] uppercase tracking-[0.12em] text-[color:var(--ss-gray)]">Slot {index + 1}</p>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[color:var(--ss-davy)]">{slot.title}</p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <p className="mt-5 text-sm leading-7 text-[color:var(--ss-davy)]">
-              This is a visual placeholder until a planned-posts table exists. Next pass can add cover uploads, hooks, captions, CTA, offer bridge, and scheduling.
-            </p>
-          </div>
-        </section>
+        <MorningBoardVisualPlanner
+          initialPosts={contentBoard.recentPosts}
+          initialSlots={contentBoard.plannerSlots}
+          instagramSource={contentBoard.instagramSource}
+          plannerSource={contentBoard.plannerSource}
+        />
 
         <section className="mb-10 grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
           <div className={boardCardClass("p-5 sm:p-6")}>
             <SectionTitle eyebrow="Next planning layer" title="Content Calendar" />
             <div className="space-y-3">
               {briefing.postToday.map((item, index) => (
-                <div key={`calendar-${item}`} className="grid grid-cols-[40px_1fr] gap-3 border-t border-[rgba(197,198,200,.35)] pt-4">
+                <div
+                  key={`calendar-${item}`}
+                  className="grid grid-cols-[40px_1fr] gap-3 border-t border-[rgba(197,198,200,.35)] pt-4"
+                >
                   <div className="flex h-9 w-9 items-center justify-center border border-[rgba(197,198,200,.45)]">
                     <CalendarDays className="h-4 w-4 text-[color:var(--ss-gray)]" />
                   </div>
@@ -478,7 +503,7 @@ export default async function DailyBriefingPage({
             <SectionTitle eyebrow="Buyer language" title="Recent Signals" />
             {recentIgSignals.length > 0 ? (
               <div className="divide-y divide-[rgba(197,198,200,.35)]">
-                {recentIgSignals.slice(0, 4).map((signal) => (
+                {recentIgSignals.slice(0, 4).map(signal => (
                   <div key={signal.id} className="py-4">
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <p className="text-sm text-[color:var(--ss-night)]">@{signal.username}</p>
@@ -499,7 +524,9 @@ export default async function DailyBriefingPage({
               </div>
             ) : (
               <p className="text-sm leading-7 text-[color:var(--ss-davy)]">
-                No real IG signal volume in this window yet. Once Graph permissions and real comments/DMs flow, this becomes the place to mine hooks, objections, and next-shoot demand.
+                No real IG signal volume in this window yet. Once Graph permissions and real
+                comments/DMs flow, this becomes the place to mine hooks, objections, and next-shoot
+                demand.
               </p>
             )}
           </div>
@@ -521,10 +548,26 @@ export default async function DailyBriefingPage({
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <MiniMetric label="AI prompt opt-ins" value={report.eventCounts.aiPromptOptins} helper={`${report.eventCounts.aiPromptAccessOpens} access opens`} />
-              <MiniMetric label="Free to Vault clicks" value={report.eventCounts.freeToVaultClicks} helper={`${formatPercent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens)} from free access`} />
-              <MiniMetric label="Checkout starts" value={report.eventCounts.checkoutStarts} helper={`${formatPercent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)} from Vault visits`} />
-              <MiniMetric label="Revenue" value={formatMoney(report.paymentCounts.revenueCents)} helper={`${buyers} buyer records · ${report.eventCounts.vaultAccessOpeners} access openers`} />
+              <MiniMetric
+                label="AI prompt opt-ins"
+                value={report.eventCounts.aiPromptOptins}
+                helper={`${report.eventCounts.aiPromptAccessOpens} access opens`}
+              />
+              <MiniMetric
+                label="Free to Vault clicks"
+                value={report.eventCounts.freeToVaultClicks}
+                helper={`${formatPercent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens)} from free access`}
+              />
+              <MiniMetric
+                label="Checkout starts"
+                value={report.eventCounts.checkoutStarts}
+                helper={`${formatPercent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)} from Vault visits`}
+              />
+              <MiniMetric
+                label="Revenue"
+                value={formatMoney(report.paymentCounts.revenueCents)}
+                helper={`${buyers} buyer records · ${report.eventCounts.vaultAccessOpeners} access openers`}
+              />
             </div>
 
             <div className="overflow-x-auto">
@@ -542,15 +585,31 @@ export default async function DailyBriefingPage({
                 </thead>
                 <tbody className="divide-y divide-[rgba(197,198,200,.35)]">
                   {attributionRows.length > 0 ? (
-                    attributionRows.map((row) => (
-                      <tr key={`${row.source}-${row.utm_campaign}-${row.utm_content}-${row.entry_post_slug}-${row.cta_keyword}`}>
-                        <td className="py-3 pr-4 text-[color:var(--ss-night)]">{row.source || row.utm_source || "direct"}</td>
-                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">{row.utm_campaign || "-"}</td>
-                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">{row.utm_content || row.entry_post_slug || "-"}</td>
-                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">{row.cta_keyword || "-"}</td>
-                        <td className="py-3 pr-4 text-right text-[color:var(--ss-night)]">{row.checkout_starts}</td>
-                        <td className="py-3 pr-4 text-right text-[color:var(--ss-night)]">{row.purchases}</td>
-                        <td className="py-3 text-right text-[color:var(--ss-night)]">{row.recovery_sends}</td>
+                    attributionRows.map(row => (
+                      <tr
+                        key={`${row.source}-${row.utm_campaign}-${row.utm_content}-${row.entry_post_slug}-${row.cta_keyword}`}
+                      >
+                        <td className="py-3 pr-4 text-[color:var(--ss-night)]">
+                          {row.source || row.utm_source || "direct"}
+                        </td>
+                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">
+                          {row.utm_campaign || "-"}
+                        </td>
+                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">
+                          {row.utm_content || row.entry_post_slug || "-"}
+                        </td>
+                        <td className="py-3 pr-4 text-[color:var(--ss-davy)]">
+                          {row.cta_keyword || "-"}
+                        </td>
+                        <td className="py-3 pr-4 text-right text-[color:var(--ss-night)]">
+                          {row.checkout_starts}
+                        </td>
+                        <td className="py-3 pr-4 text-right text-[color:var(--ss-night)]">
+                          {row.purchases}
+                        </td>
+                        <td className="py-3 text-right text-[color:var(--ss-night)]">
+                          {row.recovery_sends}
+                        </td>
                       </tr>
                     ))
                   ) : (
@@ -566,15 +625,24 @@ export default async function DailyBriefingPage({
           </div>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/admin/growth-intelligence" className="inline-flex min-h-[44px] items-center gap-2 border border-[color:var(--ss-night)] bg-[color:var(--ss-night)] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-seasalt)]">
+            <Link
+              href="/admin/growth-intelligence"
+              className="inline-flex min-h-[44px] items-center gap-2 border border-[color:var(--ss-night)] bg-[color:var(--ss-night)] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-seasalt)]"
+            >
               Open Growth Intelligence Details
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
-            <Link href="/admin/prompt-vault" className="inline-flex min-h-[44px] items-center gap-2 border border-[rgba(197,198,200,.65)] bg-white px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-davy)]">
+            <Link
+              href="/admin/prompt-vault"
+              className="inline-flex min-h-[44px] items-center gap-2 border border-[rgba(197,198,200,.65)] bg-white px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-davy)]"
+            >
               Prompt Vault Monitor
               <Eye className="h-3.5 w-3.5" />
             </Link>
-            <Link href="/my-inbox" className="inline-flex min-h-[44px] items-center gap-2 border border-[rgba(197,198,200,.65)] bg-white px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-davy)]">
+            <Link
+              href="/my-inbox"
+              className="inline-flex min-h-[44px] items-center gap-2 border border-[rgba(197,198,200,.65)] bg-white px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-davy)]"
+            >
               My Inbox
               <MessageCircle className="h-3.5 w-3.5" />
             </Link>
