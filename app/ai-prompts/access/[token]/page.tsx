@@ -10,6 +10,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
+import { buildPromptVaultFreebieCheckoutHref } from "@/lib/revenue-engine/prompt-vault-freebie-checkout-url"
 import {
   REUSABLE_STARTER,
   MAIN_LOOKS,
@@ -27,7 +28,8 @@ const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "a
 
 export const metadata: Metadata = {
   title: "Your ChatGPT Selfie Prompts · SSELFIE",
-  description: "Your updated AI photoshoot preview: one selfie, cinematic transformations, and first shots from the SSELFIE Vault.",
+  description:
+    "Your updated AI photoshoot preview: one selfie, cinematic transformations, and first shots from the SSELFIE Vault.",
   robots: { index: false, follow: false },
 }
 
@@ -130,22 +132,6 @@ function PreviewCardEl({ card }: { card: PromptCard }) {
       </div>
     </article>
   )
-}
-
-function buildShootCheckoutHref(card: PromptCard) {
-  const params = new URLSearchParams({
-    source: "ai_prompts_access",
-    utm_source: "ai_prompts",
-    utm_medium: "prompt_pack",
-    utm_campaign: "ai_prompts_to_prompt_vault",
-    utm_content: `shoot_${card.id}`,
-    checkout_source: "free_prompt_shoot_cta",
-    buyer_stage: "lead",
-    cta_keyword: "full_shoot_after_free_prompt",
-    entry_path: "/ai-prompts/access/[token]",
-  })
-
-  return `/checkout/prompt-vault?${params.toString()}`
 }
 
 // ---------------------------------------------------------------------------
@@ -264,8 +250,8 @@ export default async function AiPromptsAccessPage({
             Your Updated Photoshoot Preview.
           </h1>
           <p className="ap-hero-sub">
-            Shot 1 from every Vault collection is here. Pick a visual identity, copy the
-            prompt, upload one selfie, and see which version of you feels the most alive.
+            Shot 1 from every Vault collection is here. Pick a visual identity, copy the prompt,
+            upload one selfie, and see which version of you feels the most alive.
           </p>
           <div className="ap-hero-actions">
             <a href="#vault-preview" className="ap-hero-cta">
@@ -273,8 +259,8 @@ export default async function AiPromptsAccessPage({
             </a>
           </div>
           <p className="ap-hero-safety">
-            Use your own photo or a photo you have permission to edit. AI can still change
-            small facial details, so check the result before you post.
+            Use your own photo or a photo you have permission to edit. AI can still change small
+            facial details, so check the result before you post.
           </p>
         </div>
       </section>
@@ -288,12 +274,12 @@ export default async function AiPromptsAccessPage({
               Shot 1 from every photoshoot collection.
             </h2>
             <p className="ap-workflow-note">
-              These are the opening shots from the full Vault. Each one gives you a different
-              visual identity from one selfie. The complete shoot directions are inside the Vault.
+              These are the opening shots from the full Vault. Each one gives you a different visual
+              identity from one selfie. The complete shoot directions are inside the Vault.
             </p>
             <div className="ap-vault-grid">
-              {FREEBIE_COLLECTION_PREVIEWS.map((card) => {
-                const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
+              {FREEBIE_COLLECTION_PREVIEWS.map(card => {
+                const meta = VAULT_COLLECTION_META.find(m => m.previewCardId === card.id)
                 return (
                   <div key={card.id} className="ap-vault-item">
                     <PreviewCardEl card={card} />
@@ -317,11 +303,16 @@ export default async function AiPromptsAccessPage({
                           ))}
                         </div>
                         <p className="ap-thumb-note">
-                          <span className="ap-thumb-yours-label">Shot 1 of {meta.shotCount} is yours.</span>
-                          {" "}{meta.shotCount - 1} more shots in the Vault.
+                          <span className="ap-thumb-yours-label">
+                            Shot 1 of {meta.shotCount} is yours.
+                          </span>{" "}
+                          {meta.shotCount - 1} more shots in the Vault.
                         </p>
                         <TrackedLink
-                          href={buildShootCheckoutHref(card)}
+                          href={buildPromptVaultFreebieCheckoutHref({
+                            promptId: card.id,
+                            accessToken: token,
+                          })}
                           className="ap-shoot-cta"
                           trackEvent="ai_prompts_prompt_vault_click"
                           trackProperties={{
@@ -371,17 +362,17 @@ export default async function AiPromptsAccessPage({
           <ul className="ap-before-list">
             <li>Use your own photo or a photo you have permission to edit.</li>
             <li>
-              Choose a clear selfie with your face visible. Sunglasses and heavy shadows
-              give AI less to work with.
+              Choose a clear selfie with your face visible. Sunglasses and heavy shadows give AI
+              less to work with.
             </li>
             <li>
-              Better light in the original means a better result. A blurry photo produces
-              a blurry AI version.
+              Better light in the original means a better result. A blurry photo produces a blurry
+              AI version.
             </li>
             <li>Copy one prompt at a time. Run it. Check the result before posting.</li>
             <li>
-              If the AI changes your face too much, start your next attempt with the
-              Reusable Starter Line below.
+              If the AI changes your face too much, start your next attempt with the Reusable
+              Starter Line below.
             </li>
           </ul>
         </div>
@@ -393,8 +384,8 @@ export default async function AiPromptsAccessPage({
           <p className="ap-eyebrow">PASTE THIS FIRST</p>
           <h2 className={`ap-section-title ${cormorant.className}`}>Your anchor prompt.</h2>
           <p className="ap-starter-note">
-            Add this before any other prompt if the AI is drifting too far from your face.
-            You can also use it on its own.
+            Add this before any other prompt if the AI is drifting too far from your face. You can
+            also use it on its own.
           </p>
           <div className="ap-starter-card">
             <p className="ap-starter-text">{REUSABLE_STARTER}</p>
@@ -428,7 +419,7 @@ export default async function AiPromptsAccessPage({
                   More transformations to test.
                 </h2>
                 <div className="ap-cards ap-main-grid">
-                  {MAIN_LOOKS.map((card) => (
+                  {MAIN_LOOKS.map(card => (
                     <PromptCardEl key={card.id} card={card} />
                   ))}
                 </div>
@@ -440,7 +431,7 @@ export default async function AiPromptsAccessPage({
                   Specific moments and quick variations.
                 </h2>
                 <div className="ap-cards">
-                  {BONUS_LOOKS.map((card) => (
+                  {BONUS_LOOKS.map(card => (
                     <PromptCardEl key={card.id} card={card} />
                   ))}
                 </div>
@@ -452,11 +443,11 @@ export default async function AiPromptsAccessPage({
                   Make the photo useful for content.
                 </h2>
                 <p className="ap-workflow-note">
-                  These do not change how you look. They help you understand your photo,
-                  edit it, caption it, and turn it into a content plan.
+                  These do not change how you look. They help you understand your photo, edit it,
+                  caption it, and turn it into a content plan.
                 </p>
                 <div className="ap-cards">
-                  {WORKFLOW_PROMPTS.map((card) => (
+                  {WORKFLOW_PROMPTS.map(card => (
                     <PromptCardEl key={card.id} card={card} isWorkflow />
                   ))}
                 </div>
@@ -473,15 +464,19 @@ export default async function AiPromptsAccessPage({
             The better the original selfie, the better the AI result.
           </h2>
           <p className="ap-bridge-body">
-            If your photo is dark, blurry, or awkward, AI has less to work with. The Free
-            Selfie Guide shows you the light, angles, and simple setup that make every
-            prompt work better. It is free.
+            If your photo is dark, blurry, or awkward, AI has less to work with. The Free Selfie
+            Guide shows you the light, angles, and simple setup that make every prompt work better.
+            It is free.
           </p>
           <TrackedLink
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_selfie_guide"
             className="ap-bridge-cta ap-bridge-cta-primary"
             trackEvent="ai_prompts_selfie_guide_click"
-            trackProperties={{ source: "ai-prompts", destination: "selfie-guide", utm_campaign: "ai_prompts_to_selfie_guide" }}
+            trackProperties={{
+              source: "ai-prompts",
+              destination: "selfie-guide",
+              utm_campaign: "ai_prompts_to_selfie_guide",
+            }}
           >
             Get the Free Selfie Guide
           </TrackedLink>
@@ -493,8 +488,9 @@ export default async function AiPromptsAccessPage({
         <div className="ap-section-inner">
           <p className="ap-kit-question">Want the whole shoot, not just the sample?</p>
           <p className="ap-kit-body">
-            The free prompts are the taste. The Vault gives you the full transformation system:
-            Dark Balcony, Coastal White, Marble Café, Denim Street, and Cozy Mirror with complete image directions.
+            The free prompts are the taste. The Vault gives you the full transformation system: Dark
+            Balcony, Coastal White, Marble Café, Denim Street, and Cozy Mirror with complete image
+            directions.
           </p>
           <TrackedLink
             href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_bridge&buyer_stage=lead"
