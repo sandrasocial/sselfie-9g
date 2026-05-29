@@ -13,6 +13,7 @@ const baseReport = {
     checkoutStarts: 44,
     recoverySends: 8,
     vaultAccessOpens: 5,
+    vaultAccessOpeners: 5,
     vaultPromptViews: 22,
     vaultPromptCopies: 18,
   },
@@ -57,6 +58,22 @@ describe("daily Sandra briefing", () => {
 
     expect(briefing.leaking.join(" ")).toContain("free prompt access")
     expect(briefing.codexNext.join(" ")).toContain("free preview to Vault bridge")
+  })
+
+  it("uses distinct access openers instead of raw access events", () => {
+    const briefing = buildDailySandraBriefing({
+      ...baseReport,
+      eventCounts: {
+        ...baseReport.eventCounts,
+        vaultAccessOpens: 20,
+        vaultAccessOpeners: 1,
+      },
+      buyerCounts: {
+        buyers: 6,
+      },
+    })
+
+    expect(briefing.leaking.join(" ")).toContain("17% of buyer records opened Vault access")
   })
 
   it("generates calm email html and text", () => {

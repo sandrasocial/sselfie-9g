@@ -27,6 +27,10 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS vault_access_opens,
+      COUNT(DISTINCT NULLIF(properties->>'token_prefix', '')) FILTER (
+        WHERE event_name = 'prompt_vault_access_opened'
+          AND properties->>'access_mode' = 'token'
+      )::int AS vault_access_openers,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS vault_prompt_views,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_copied')::int AS vault_prompt_copies
     FROM analytics_events
@@ -166,6 +170,7 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     recoverySends: toInt(eventCountsRow?.recovery_sends),
     checkoutSuccesses: toInt(eventCountsRow?.checkout_successes),
     vaultAccessOpens: toInt(eventCountsRow?.vault_access_opens),
+    vaultAccessOpeners: toInt(eventCountsRow?.vault_access_openers),
     vaultPromptViews: toInt(eventCountsRow?.vault_prompt_views),
     vaultPromptCopies: toInt(eventCountsRow?.vault_prompt_copies),
   }

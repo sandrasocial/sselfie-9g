@@ -20,6 +20,7 @@ type GrowthReportLike = {
     checkoutStarts: number
     recoverySends: number
     vaultAccessOpens: number
+    vaultAccessOpeners: number
     vaultPromptViews: number
     vaultPromptCopies: number
   }
@@ -113,7 +114,8 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
   const checkoutRate = percent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)
   const purchaseRate = percent(purchases, report.eventCounts.checkoutStarts)
   const freeBridgeRate = percent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens)
-  const accessRate = percent(report.eventCounts.vaultAccessOpens, buyers)
+  const distinctAccessOpeners = report.eventCounts.vaultAccessOpeners || 0
+  const accessRate = percent(distinctAccessOpeners, buyers)
   const copiesPerBuyer = buyers ? report.eventCounts.vaultPromptCopies / buyers : 0
   const topPaidPrompt = report.topPromptSignals[0]
   const topFreePrompt = report.freePromptSignals[0]
