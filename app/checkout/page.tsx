@@ -72,11 +72,11 @@ const CHECKOUT_COPY: Record<
     footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
   },
   prompt_vault: {
-    heroTitle: "Enter The Selfie to Brand Shoot Vault",
-    heroBody: "Get the remaining shots from this shoot, every newest drop, and future AI photoshoot collections.",
-    heading: "Secure checkout",
-    blurb: "Your Vault includes full shot sequences, copy-paste prompts, new editorial collections, and the growing private archive for turning one selfie into brand-shoot images.",
-    footer: "Digital purchase. Your Vault access link is delivered right after payment.",
+    heroTitle: "Get the full shoot + future drops",
+    heroBody: "You tried the opening shot. Now unlock the remaining shots, newest drops, and future SSELFIE photoshoots.",
+    heading: "The Selfie to Brand Shoot Vault",
+    blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
+    footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
   },
 }
 
@@ -86,6 +86,7 @@ function CheckoutContent() {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const productType = searchParams.get("product_type") || "unknown"
+  const isPromptVault = productType === "prompt_vault"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
     heroBody: "Secure your purchase and keep moving.",
@@ -194,7 +195,11 @@ function CheckoutContent() {
   return (
     <div className="min-h-screen bg-[#0d0c0b]">
       {/* Hero Image Section */}
-      <div className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] overflow-hidden">
+      <div
+        className={`relative overflow-hidden ${
+          isPromptVault ? "h-[22vh] sm:h-[30vh] md:h-[34vh]" : "h-[30vh] sm:h-[35vh] md:h-[40vh]"
+        }`}
+      >
         <Image
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2846%29-ZphddrVpPQn5mS7BINYUlTMSac3s87.jpeg"
           fill
@@ -214,20 +219,48 @@ function CheckoutContent() {
 
       {/* Checkout Form Section */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {productType === "prompt_vault" && (
-          <div className="mb-6 grid gap-2 sm:grid-cols-3">
-            {[
-              "Full shoots, not one prompt",
-              "Newest + future drops",
-              "Copy-paste in ChatGPT",
-            ].map(item => (
-              <div
-                key={item}
-                className="border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.08)] px-4 py-3 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-[#c8c4bb]"
-              >
-                {item}
+        {isPromptVault && (
+          <div className="mb-6 border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.08)] p-4 sm:p-5">
+            <div className="mb-4 grid grid-cols-4 gap-2">
+              {[
+                "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
+                "/images/ai-prompts/dark-balcony-shot-3.png",
+                "/images/ai-prompts/coastal-white-shot-3.jpg",
+                "/images/ai-prompts/denim-street-shot-5.jpg",
+              ].map(src => (
+                <div key={src} className="relative aspect-[3/4] overflow-hidden bg-[#1a1917]">
+                  <Image
+                    src={src}
+                    alt=""
+                    fill
+                    aria-hidden
+                    sizes="(max-width: 640px) 22vw, 160px"
+                    className="object-cover object-center"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div>
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#8a8780]">
+                  You are unlocking
+                </p>
+                <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#f0ede8] sm:text-3xl">
+                  The full shoot + all newest and future photoshoot drops.
+                </h2>
               </div>
-            ))}
+              <div className="text-left sm:text-right">
+                <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#f0ede8]">
+                  $27
+                </p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+                  one-time access
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#c8c4bb]">
+              Remaining shots · newest and future drops · copy-paste prompts · example images
+            </p>
           </div>
         )}
 

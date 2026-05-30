@@ -71,7 +71,9 @@ export function PromptVaultCheckoutLink({ label = "Get the Vault · $27" }: { la
         border: "1px solid transparent",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
-        whiteSpace: "nowrap",
+        whiteSpace: "normal",
+        textAlign: "center",
+        lineHeight: 1.35,
       }}
     >
       {label}

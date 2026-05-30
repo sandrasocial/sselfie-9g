@@ -38,12 +38,14 @@ const BUY_BUTTON_STYLE = {
   letterSpacing: "0.22em",
   textTransform: "uppercase",
   textDecoration: "none",
-  whiteSpace: "nowrap",
+  whiteSpace: "normal",
+  textAlign: "center",
+  lineHeight: 1.35,
   border: "none",
   cursor: "pointer",
 } as const
 
-function BuyButton({ label = "Enter The Full Vault · $27" }: { label?: string }) {
+function BuyButton({ label = "Get Full Shoots + Future Drops · $27" }: { label?: string }) {
   return (
     <Suspense
       fallback={
@@ -92,7 +94,7 @@ export default function PromptVaultPage() {
         >
           SSELFIE
         </Link>
-        <BuyButton label="Enter The Full Vault · $27" />
+        <BuyButton label="Full Vault · $27" />
       </nav>
 
       {/* ── HERO — editorial split ── */}
@@ -134,8 +136,8 @@ export default function PromptVaultPage() {
             }}
           >
             Turn one selfie into complete editorial photoshoot worlds. Preview
-            the opening shot, then enter the Vault for the remaining shots,
-            newest drops, and future collections.
+            the opening shot, then get the full shoot, all newest drops, and
+            future SSELFIE photoshoots for $27.
           </p>
           <a
             href="#free-previews"
@@ -437,8 +439,8 @@ export default function PromptVaultPage() {
                 "Six complete editorial collections",
                 "Full shot sequence for every mood",
                 "Example photo for every prompt",
-                "Growing — new collections drop regularly",
-                "One payment · Instant access",
+                "Newest drops + future SSELFIE photoshoots included",
+                "$27 one-time payment · Instant access",
               ].map((item) => (
                 <li key={item}>
                   <span

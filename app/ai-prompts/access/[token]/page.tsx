@@ -326,10 +326,10 @@ export default async function AiPromptsAccessPage({
                             prompt_title: card.title,
                           }}
                         >
-                          Get The Full Shoot + Future Drops
+                          Get The Full Shoot + Future Drops · $27
                         </TrackedLink>
                         <p className="ap-shoot-cta-note">
-                          Includes the remaining shots, newest collections, and future photoshoots.
+                          One-time access to the remaining shots, newest collections, and future photoshoots.
                         </p>
                       </div>
                     )}
@@ -348,7 +348,7 @@ export default async function AiPromptsAccessPage({
                   utm_campaign: "ai_prompts_to_prompt_vault",
                 }}
               >
-                Get the Full Photoshoot Vault · $27
+                Get the Full Shoot + Future Drops · $27
               </TrackedLink>
             </div>
           </div>
@@ -488,9 +488,8 @@ export default async function AiPromptsAccessPage({
         <div className="ap-section-inner">
           <p className="ap-kit-question">Want the whole shoot, not just the sample?</p>
           <p className="ap-kit-body">
-            The free prompts are the taste. The Vault gives you the full transformation system: Dark
-            Balcony, Coastal White, Marble Café, Denim Street, and Cozy Mirror with complete image
-            directions.
+            The free prompts are the taste. The Vault gives you the full shoot sequences, newest
+            drops, and future SSELFIE photoshoots with complete image directions.
           </p>
           <TrackedLink
             href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_bridge&buyer_stage=lead"
@@ -503,7 +502,7 @@ export default async function AiPromptsAccessPage({
               utm_content: "bottom_bridge",
             }}
           >
-            Open the Full Vault
+            Enter the Full Vault · $27
           </TrackedLink>
         </div>
       </section>

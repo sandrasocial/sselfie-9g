@@ -231,20 +231,19 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "prompt_vault",
-    name: "The AI Photo Prompt Vault",
-    displayName: "The AI Photo Prompt Vault",
+    name: "The Selfie to Brand Shoot Vault",
+    displayName: "The Selfie to Brand Shoot Vault",
     description:
-      "Copy-paste ChatGPT prompts for editorial brand photos. Growing collection of photoshoot styles. One-time access.",
+      "Full AI photoshoot sequences for turning one selfie into editorial brand images. Includes newest drops and future SSELFIE photoshoots.",
     priceInCents: 2700, // $27 one-time
     type: "prompt_vault",
     tag: "bought_prompt_vault",
     features: [
-      "Growing collection of editorial shoot prompts",
-      "Marble Café Wine Editorial",
-      "Soft Blazer + Light Denim Street Editorial",
-      "Cozy Leather + Oversized Knit Mirror Editorial",
+      "Full shoot sequences, not just one prompt",
+      "Newest drops and future SSELFIE photoshoots",
+      "Dark Feminine Café, Dark Balcony, Coastal White, and more",
       "Example photo for every prompt",
-      "Instant access, no account required",
+      "$27 one-time access, no account required",
     ],
   },
 ]
