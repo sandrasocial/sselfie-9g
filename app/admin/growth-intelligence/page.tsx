@@ -11,6 +11,7 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  AlertTriangle,
 } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AdminMetricCard } from "@/components/admin/shared"
@@ -56,6 +57,7 @@ type GrowthTagRow = {
 type AttributionRow = {
   source: string | null
   utm_source: string | null
+  utm_medium: string | null
   utm_campaign: string | null
   utm_content: string | null
   entry_post_slug: string | null
@@ -63,6 +65,8 @@ type AttributionRow = {
   checkout_starts: number
   purchases: number
   recovery_sends: number
+  recoverable_starts: number
+  unrecoverable_starts: number
 }
 
 type RecentIgSignalRow = {
@@ -195,6 +199,12 @@ export default async function GrowthIntelligencePage({
             subtitle={`${formatPercent(eventCounts.checkoutStarts, eventCounts.vaultVisits)} from Vault visits`}
           />
           <AdminMetricCard
+            label="Unrecoverable Starts"
+            value={eventCounts.checkoutUnrecoverableStarts}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            subtitle={`${formatPercent(eventCounts.checkoutUnrecoverableStarts, eventCounts.checkoutStarts)} missing email · ${eventCounts.manychatUnrecoverableStarts} ManyChat`}
+          />
+          <AdminMetricCard
             label="Purchases"
             value={purchases}
             icon={<DollarSign className="h-5 w-5" />}
@@ -306,6 +316,7 @@ export default async function GrowthIntelligencePage({
                       <th className="py-3 pr-4 text-right font-medium">Starts</th>
                       <th className="py-3 pr-4 text-right font-medium">Sales</th>
                       <th className="py-3 text-right font-medium">Recovery</th>
+                      <th className="py-3 text-right font-medium">No Email</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
@@ -319,6 +330,7 @@ export default async function GrowthIntelligencePage({
                         <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.purchases}</td>
                         <td className="py-3 text-right text-stone-950">{row.recovery_sends}</td>
+                        <td className="py-3 text-right text-stone-950">{row.unrecoverable_starts || 0}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -52,6 +52,8 @@ type AttributionRow = {
   checkout_starts: number
   purchases: number
   recovery_sends: number
+  recoverable_starts: number
+  unrecoverable_starts: number
 }
 
 type RecentIgSignalRow = {
@@ -569,6 +571,11 @@ export default async function DailyBriefingPage({
                 helper={`${formatPercent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)} from Vault visits`}
               />
               <MiniMetric
+                label="Unrecoverable starts"
+                value={report.eventCounts.checkoutUnrecoverableStarts}
+                helper={`${formatPercent(report.eventCounts.checkoutUnrecoverableStarts, report.eventCounts.checkoutStarts)} missing email · ${report.eventCounts.manychatUnrecoverableStarts} from ManyChat`}
+              />
+              <MiniMetric
                 label="Revenue"
                 value={formatMoney(report.paymentCounts.revenueCents)}
                 helper={`${buyers} buyer records · ${report.eventCounts.vaultAccessOpeners} access openers`}
@@ -586,6 +593,7 @@ export default async function DailyBriefingPage({
                     <th className="py-3 pr-4 text-right font-medium">Starts</th>
                     <th className="py-3 pr-4 text-right font-medium">Sales</th>
                     <th className="py-3 text-right font-medium">Recovery</th>
+                    <th className="py-3 text-right font-medium">No Email</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(197,198,200,.35)]">
@@ -615,11 +623,14 @@ export default async function DailyBriefingPage({
                         <td className="py-3 text-right text-[color:var(--ss-night)]">
                           {row.recovery_sends}
                         </td>
+                        <td className="py-3 text-right text-[color:var(--ss-night)]">
+                          {row.unrecoverable_starts || 0}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-5 text-[color:var(--ss-davy)]">
+                      <td colSpan={8} className="py-5 text-[color:var(--ss-davy)]">
                         No Prompt Vault checkout attribution rows in this window yet.
                       </td>
                     </tr>

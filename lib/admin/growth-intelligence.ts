@@ -14,27 +14,49 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
   const interval = `${windowDays} days`
 
   const [eventCountsRow] = await sql`
-    SELECT
-      COUNT(*) FILTER (WHERE event_name = 'ai_prompts_subscribed')::int AS ai_prompt_optins,
-      COUNT(*) FILTER (WHERE event_name = 'ai_prompts_access_opened')::int AS ai_prompt_access_opens,
-      COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_copied')::int AS free_prompt_copies,
-      COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_landing_view')::int AS vault_visits,
-      COUNT(*) FILTER (
-        WHERE event_name = 'checkout_start'
-          AND properties->>'product_type' = 'prompt_vault'
-      )::int AS checkout_starts,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS vault_access_opens,
-      COUNT(DISTINCT NULLIF(properties->>'token_prefix', '')) FILTER (
-        WHERE event_name = 'prompt_vault_access_opened'
-          AND properties->>'access_mode' = 'token'
-      )::int AS vault_access_openers,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS vault_prompt_views,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_copied')::int AS vault_prompt_copies
-    FROM analytics_events
-    WHERE created_at > NOW() - (${interval}::interval)
+    WITH analytics AS (
+      SELECT
+        COUNT(*) FILTER (WHERE event_name = 'ai_prompts_subscribed')::int AS ai_prompt_optins,
+        COUNT(*) FILTER (WHERE event_name = 'ai_prompts_access_opened')::int AS ai_prompt_access_opens,
+        COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_copied')::int AS free_prompt_copies,
+        COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
+        COUNT(*) FILTER (WHERE event_name IN ('prompt_vault_landing_view', 'prompt_vault_reel_click'))::int AS vault_visits,
+        COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
+        COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
+        COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS vault_access_opens,
+        COUNT(DISTINCT NULLIF(properties->>'token_prefix', '')) FILTER (
+          WHERE event_name = 'prompt_vault_access_opened'
+            AND properties->>'access_mode' = 'token'
+        )::int AS vault_access_openers,
+        COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS vault_prompt_views,
+        COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_copied')::int AS vault_prompt_copies
+      FROM analytics_events
+      WHERE created_at > NOW() - (${interval}::interval)
+    ), checkout AS (
+      SELECT
+        COUNT(*)::int AS checkout_starts,
+        COUNT(*) FILTER (WHERE status = 'completed')::int AS checkout_completed,
+        COUNT(*) FILTER (
+          WHERE status = 'started'
+            AND (user_email IS NULL OR BTRIM(user_email) = '')
+        )::int AS checkout_unrecoverable_starts,
+        COUNT(*) FILTER (
+          WHERE user_email IS NOT NULL
+            AND BTRIM(user_email) <> ''
+        )::int AS checkout_recoverable_starts,
+        COUNT(*) FILTER (
+          WHERE utm_medium = 'manychat'
+        )::int AS manychat_checkout_starts,
+        COUNT(*) FILTER (
+          WHERE utm_medium = 'manychat'
+            AND (user_email IS NULL OR BTRIM(user_email) = '')
+        )::int AS manychat_unrecoverable_starts
+      FROM checkout_attribution
+      WHERE created_at > NOW() - (${interval}::interval)
+        AND product_type = 'prompt_vault'
+        AND source <> 'codex_smoke_test'
+    )
+    SELECT * FROM analytics, checkout
   `
 
   const [paymentCountsRow] = await sql`
@@ -128,10 +150,19 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
       NULLIF(buyer_stage, '') AS buyer_stage,
       COUNT(*)::int AS checkout_starts,
       COUNT(*) FILTER (WHERE status = 'completed')::int AS purchases,
-      COUNT(*) FILTER (WHERE recovery_email_sent_at IS NOT NULL)::int AS recovery_sends
+      COUNT(*) FILTER (WHERE recovery_email_sent_at IS NOT NULL)::int AS recovery_sends,
+      COUNT(*) FILTER (
+        WHERE user_email IS NOT NULL
+          AND BTRIM(user_email) <> ''
+      )::int AS recoverable_starts,
+      COUNT(*) FILTER (
+        WHERE status = 'started'
+          AND (user_email IS NULL OR BTRIM(user_email) = '')
+      )::int AS unrecoverable_starts
     FROM checkout_attribution
     WHERE created_at > NOW() - (${interval}::interval)
       AND product_type = 'prompt_vault'
+      AND source <> 'codex_smoke_test'
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
     ORDER BY purchases DESC, checkout_starts DESC
     LIMIT 12
@@ -169,6 +200,11 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     checkoutStarts: toInt(eventCountsRow?.checkout_starts),
     recoverySends: toInt(eventCountsRow?.recovery_sends),
     checkoutSuccesses: toInt(eventCountsRow?.checkout_successes),
+    checkoutCompleted: toInt(eventCountsRow?.checkout_completed),
+    checkoutRecoverableStarts: toInt(eventCountsRow?.checkout_recoverable_starts),
+    checkoutUnrecoverableStarts: toInt(eventCountsRow?.checkout_unrecoverable_starts),
+    manychatCheckoutStarts: toInt(eventCountsRow?.manychat_checkout_starts),
+    manychatUnrecoverableStarts: toInt(eventCountsRow?.manychat_unrecoverable_starts),
     vaultAccessOpens: toInt(eventCountsRow?.vault_access_opens),
     vaultAccessOpeners: toInt(eventCountsRow?.vault_access_openers),
     vaultPromptViews: toInt(eventCountsRow?.vault_prompt_views),

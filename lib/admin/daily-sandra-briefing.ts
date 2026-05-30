@@ -18,6 +18,11 @@ type GrowthReportLike = {
     freeToVaultClicks: number
     vaultVisits: number
     checkoutStarts: number
+    checkoutCompleted: number
+    checkoutRecoverableStarts: number
+    checkoutUnrecoverableStarts: number
+    manychatCheckoutStarts: number
+    manychatUnrecoverableStarts: number
     recoverySends: number
     vaultAccessOpens: number
     vaultAccessOpeners: number
@@ -114,6 +119,14 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
   const checkoutRate = percent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)
   const purchaseRate = percent(purchases, report.eventCounts.checkoutStarts)
   const freeBridgeRate = percent(report.eventCounts.freeToVaultClicks, report.eventCounts.aiPromptAccessOpens)
+  const unrecoverableCheckoutRate = percent(
+    report.eventCounts.checkoutUnrecoverableStarts,
+    report.eventCounts.checkoutStarts,
+  )
+  const manychatUnrecoverableRate = percent(
+    report.eventCounts.manychatUnrecoverableStarts,
+    report.eventCounts.manychatCheckoutStarts,
+  )
   const distinctAccessOpeners = report.eventCounts.vaultAccessOpeners || 0
   const accessRate = percent(distinctAccessOpeners, buyers)
   const copiesPerBuyer = buyers ? report.eventCounts.vaultPromptCopies / buyers : 0
@@ -161,6 +174,14 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
     leaking.push(`Checkout intent exists, but only ${purchaseRate}% completed purchase. Watch recovery emails, payment issues, and price-friction language.`)
   }
 
+  if (report.eventCounts.checkoutStarts >= 5 && unrecoverableCheckoutRate >= 25) {
+    leaking.push(`${unrecoverableCheckoutRate}% of active checkout starts have no email attached yet. Those abandoners are harder to recover.`)
+  }
+
+  if (report.eventCounts.manychatCheckoutStarts >= 3 && manychatUnrecoverableRate >= 25) {
+    leaking.push(`${manychatUnrecoverableRate}% of ManyChat checkout starts are unrecoverable before Stripe captures email. Use direct checkout only for warm follow-up clicks.`)
+  }
+
   if (buyers > 0 && accessRate < 70) {
     leaking.push(`Only ${accessRate}% of buyer records opened Vault access. Delivery/access clarity may be leaking activation.`)
   }
@@ -190,6 +211,8 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
 
   if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
     codexNext.push("Improve the free preview to Vault bridge after the first prompt copy.")
+  } else if (report.eventCounts.manychatCheckoutStarts >= 3 && manychatUnrecoverableRate >= 25) {
+    codexNext.push("Tighten the ManyChat checkout path so more direct-checkout visitors arrive with a recoverable email.")
   } else if (topAttribution && Number(topAttribution.checkout_starts || 0) > 0 && Number(topAttribution.purchases || 0) === 0) {
     codexNext.push(`Audit the ${cleanLabel(topAttribution.utm_campaign || topAttribution.source, "top traffic source")} path because it starts checkout without purchases.`)
   } else if (buyers > 0 && accessRate < 70) {

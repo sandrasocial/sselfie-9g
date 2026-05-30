@@ -10,6 +10,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
+import { stripe } from "@/lib/stripe"
 import { addContactToSegment, updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generatePromptVaultCheckoutRecoveryEmail,
@@ -40,6 +41,56 @@ type RecoveryCandidate = {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const SEND_DELAY_MS = 650
+const HYDRATE_EMAIL_LIMIT = 50
+
+async function hydrateMissingCheckoutEmails() {
+  await ensureRevenueEngineSchema()
+
+  const sessions = (await sql`
+    SELECT session_id
+    FROM checkout_attribution
+    WHERE product_type = 'prompt_vault'
+      AND status = 'started'
+      AND (user_email IS NULL OR BTRIM(user_email) = '')
+      AND recovery_email_sent_at IS NULL
+      AND created_at <= NOW() - INTERVAL '1 hour'
+      AND created_at > NOW() - INTERVAL '7 days'
+    ORDER BY created_at ASC
+    LIMIT ${HYDRATE_EMAIL_LIMIT}
+  `) as Array<{ session_id: string }>
+
+  const results = { checked: sessions.length, hydrated: 0, failed: 0 }
+
+  for (const session of sessions) {
+    try {
+      const checkoutSession = await stripe.checkout.sessions.retrieve(session.session_id)
+      const email =
+        checkoutSession.customer_details?.email?.trim() ||
+        checkoutSession.customer_email?.trim() ||
+        null
+
+      if (email) {
+        await sql`
+          UPDATE checkout_attribution
+          SET user_email = ${email}, updated_at = NOW()
+          WHERE session_id = ${session.session_id}
+            AND (user_email IS NULL OR BTRIM(user_email) = '')
+        `
+        results.hydrated += 1
+      }
+    } catch (error) {
+      results.failed += 1
+      console.error("[prompt-vault-recovery] Failed to hydrate Stripe checkout email:", {
+        sessionId: session.session_id,
+        error,
+      })
+    }
+
+    await sleep(SEND_DELAY_MS)
+  }
+
+  return results
+}
 
 async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
   await ensureRevenueEngineSchema()
@@ -189,13 +240,20 @@ export async function GET(request: Request) {
     }
 
     if (process.env.PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED !== "true") {
-      const summary = { enabled: false, found: 0, sent: 0, failed: 0 }
+      const summary = { enabled: false, found: 0, sent: 0, failed: 0, hydrated: 0 }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
     }
 
+    const hydration = await hydrateMissingCheckoutEmails()
     const candidates = await getRecoveryCandidates()
-    const results = { enabled: true, found: candidates.length, sent: 0, failed: 0 }
+    const results = {
+      enabled: true,
+      found: candidates.length,
+      sent: 0,
+      failed: 0,
+      hydration,
+    }
 
     for (const candidate of candidates) {
       const firstName = getFirstNameForEmail({
