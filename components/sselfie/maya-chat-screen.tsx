@@ -1623,11 +1623,24 @@ export default function MayaChatScreen({
           ? imageLibrary.selfies.slice(0, 1) // Use first selfie as reference
           : []
 
+        const conceptImageLibrary = {
+          ...imageLibrary,
+          selfies: referenceImageUrl
+            ? Array.from(new Set([referenceImageUrl, ...(imageLibrary?.selfies ?? [])]))
+            : (imageLibrary?.selfies ?? []),
+          products: imageLibrary?.products ?? [],
+          people: imageLibrary?.people ?? [],
+          vibes: imageLibrary?.vibes ?? [],
+          intent: imageLibrary?.intent ?? "",
+        }
+
         let response: Response
         try {
           // Determine whether to use the Pro (selfie-based) endpoint.
-          // Use Pro if proMode is already on, OR if the user explicitly asked for
-          // selfie-based generation AND they have selfies in their library.
+          // Use Pro if SELFIE mode is active, OR if the user explicitly asked for
+          // selfie-based generation AND we have a real selfie reference.
+          // If not, fall back to Classic for users with a trained model instead
+          // of sending them to a dead upload/retrain path.
           // NOTE: check imageLibrary directly — hasImageLibrary is gated on proMode
           // and would always be false in Classic mode, defeating the purpose.
           const latestUserMsgText = userMessages[0] ? getMessageText(userMessages[0]) : ""
@@ -1635,8 +1648,9 @@ export default function MayaChatScreen({
           const hasSelfieSignal =
             SELFIE_SIGNAL_RE.test(latestUserMsgText) ||
             SELFIE_SIGNAL_RE.test(pendingConceptRequest ?? "")
-          const selfiesAvailable = imageLibrary != null && (imageLibrary?.selfies?.length ?? 0) > 0
-          const currentProMode = proMode || (hasSelfieSignal && selfiesAvailable)
+          const selfiesAvailable = conceptImageLibrary.selfies.length > 0
+          const wantsSelfieConcepts = proMode || hasSelfieSignal
+          const currentProMode = wantsSelfieConcepts && selfiesAvailable
           const apiEndpoint = currentProMode
             ? "/api/maya/pro/generate-concepts"
             : "/api/maya/generate-concepts"
@@ -1646,7 +1660,7 @@ export default function MayaChatScreen({
           const requestBody = currentProMode
             ? {
                 userRequest: pendingConceptRequest,
-                imageLibrary: imageLibrary, // Required for Pro Mode
+                imageLibrary: conceptImageLibrary, // Required for Pro Mode
                 category: null, // Let Maya determine dynamically
                 essenceWords: pendingConceptRequest?.split(' ').slice(0, 5).join(' ') || undefined, // Extract essence words from request
               }
@@ -1655,12 +1669,11 @@ export default function MayaChatScreen({
                 count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
                 conversationContext: conversationContext || undefined,
                 referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
-                proMode: proMode, // Pass Pro mode to use Nano Banana prompting
+                studioProMode: false,
                 enhancedAuthenticity: !hasProFeatures && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
                 guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
-                // Include full image library in Pro Mode
-                ...(hasImageLibrary ? {
-                  imageLibrary: imageLibrary,
+                ...(selfiesAvailable ? {
+                  imageLibrary: conceptImageLibrary,
                 } : {}),
               }
           
@@ -1684,6 +1697,11 @@ export default function MayaChatScreen({
             errorText = `HTTP ${response.status}`
           }
           console.error("[v0] ❌ generate-concepts failed:", response.status, errorText)
+          toast({
+            title: "Maya could not create those concepts",
+            description: "Refresh and try once more. If you are using a specific selfie, attach it in chat first. If you want your trained model, switch to MY MODEL.",
+            variant: "destructive",
+          })
           setIsGeneratingConcepts(false)
           setPendingConceptRequest(null)
           return
@@ -1708,7 +1726,7 @@ export default function MayaChatScreen({
           hasState: !!result.state,
           state: result.state,
           conceptsCount: concepts?.length,
-          isProMode: proMode,
+          isProMode: result.proMode ?? undefined,
         })
 
         if (concepts && Array.isArray(concepts) && concepts.length > 0) {
