@@ -15,13 +15,13 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "The AI Photo Prompt Vault · SSELFIE",
+  title: "The Selfie to Brand Shoot Vault · SSELFIE",
   description:
-    "Turn one selfie into editorial brand photos. Copy-paste prompts, ChatGPT does the rest. $27.",
+    "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds. $27.",
   openGraph: {
-    title: "The AI Photo Prompt Vault · SSELFIE",
+    title: "The Selfie to Brand Shoot Vault · SSELFIE",
     description:
-      "Turn one selfie into editorial brand photos. Copy-paste prompts, ChatGPT does the rest.",
+      "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds.",
     images: ["/academy/visibility-suite/sandra-hero.png"],
   },
 }
@@ -43,7 +43,7 @@ const BUY_BUTTON_STYLE = {
   cursor: "pointer",
 } as const
 
-function BuyButton({ label = "Get the Vault · $27" }: { label?: string }) {
+function BuyButton({ label = "Enter The Full Vault · $27" }: { label?: string }) {
   return (
     <Suspense
       fallback={
@@ -92,7 +92,7 @@ export default function PromptVaultPage() {
         >
           SSELFIE
         </Link>
-        <BuyButton label="Get the Vault · $27" />
+        <BuyButton label="Enter The Full Vault · $27" />
       </nav>
 
       {/* ── HERO — editorial split ── */}
@@ -109,7 +109,7 @@ export default function PromptVaultPage() {
               color: "#9B9189",
             }}
           >
-            SSELFIE · FREE PHOTOSHOOT PREVIEW
+              SELFIE TO BRAND SHOOT · THE VAULT
           </p>
           <h1
             className={cormorant.className}
@@ -122,7 +122,7 @@ export default function PromptVaultPage() {
               color: "#0A0A0A",
             }}
           >
-            Your<br />Photoshoot<br />Preview
+            The<br />Full Shoot<br />Vault
           </h1>
           <p
             style={{
@@ -133,9 +133,9 @@ export default function PromptVaultPage() {
               maxWidth: "400px",
             }}
           >
-            Shot 1 from every Vault collection is here. Pick a visual identity,
-            copy the prompt, upload one selfie, and see which version of you
-            feels the most alive.
+            Turn one selfie into complete editorial photoshoot worlds. Preview
+            the opening shot, then enter the Vault for the remaining shots,
+            newest drops, and future collections.
           </p>
           <a
             href="#free-previews"
@@ -147,7 +147,7 @@ export default function PromptVaultPage() {
               textDecoration: "none",
             }}
           >
-            Explore the shots ↓
+            Preview the worlds ↓
           </a>
         </div>
 
@@ -232,18 +232,19 @@ export default function PromptVaultPage() {
         </div>
       </section>
 
-      {/* ── FREE PREVIEW CARDS ── */}
+      {/* ── OPENING SHOT PREVIEW CARDS ── */}
       <section
         id="free-previews"
         style={{ borderTop: "1px solid #E5DDD4", background: "#FAF8F4" }}
       >
         <div className="pvf-section-inner">
-          <p className="pvf-eyebrow">THE FREE PREVIEW</p>
+          <p className="pvf-eyebrow">THE OPENING SHOT PREVIEW</p>
           <h2 className={`pvf-section-title ${cormorant.className}`}>
             Shot 1 from every collection.
           </h2>
           <p className="pvf-section-note">
-            Copy the prompt. Open ChatGPT. Attach your selfie. That is the whole process.
+            Start with the first look from each visual world. The full shoot
+            sequences live inside the Vault.
           </p>
 
           <div className="pvf-preview-grid">
@@ -289,8 +290,8 @@ export default function PromptVaultPage() {
                     </div>
                     {meta && (
                       <p className="pvf-vault-note">
-                        Shot 1 is free. The full {meta.shotCount}-shot collection
-                        is inside the Vault.
+                        This is the opening shot. The full {meta.shotCount}-shot
+                        collection is inside the Vault.
                       </p>
                     )}
                   </div>
@@ -415,9 +416,9 @@ export default function PromptVaultPage() {
 
           {/* Copy + CTA */}
           <div style={{ maxWidth: "640px" }}>
-            <p className="pvf-eyebrow">THE AI PHOTO PROMPT VAULT</p>
+            <p className="pvf-eyebrow">THE SELFIE TO BRAND SHOOT VAULT</p>
             <h2 className={`pvf-section-title ${cormorant.className}`}>
-              Want the full shoots?
+              Enter the full shoots.
             </h2>
             <p
               style={{
@@ -427,7 +428,7 @@ export default function PromptVaultPage() {
                 color: "#3A3632",
               }}
             >
-              The free preview gives you Shot 1 from every collection. The full
+              The preview shows you the opening shot from every collection. The
               Vault includes the complete shoot direction — the mood, styling,
               setting, feeling, and full shot sequence.
             </p>

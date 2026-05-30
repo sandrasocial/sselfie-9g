@@ -20,9 +20,11 @@ Use this when the reel asks people to comment `PROMPT` and the first step is the
 https://www.sselfie.ai/ai-prompts?utm_source=instagram&utm_medium=manychat&utm_campaign=prompt&utm_content={reel_slug}&entry_post_slug={reel_slug}&cta_keyword=PROMPT&buyer_stage=lead
 ```
 
-### Prompt Vault Direct Link
+### Prompt Vault Sales Page Link
 
-Use this only when the DM or story is intentionally sending warm buyers directly to the Vault.
+Use this when the DM or story is intentionally sending warm buyers to the Vault sales page before checkout.
+
+Important: `/prompt-vault` is a sales/preview page. It should never be described as the free prompt pack in ManyChat copy.
 
 ```text
 https://www.sselfie.ai/prompt-vault?source=prompt_vault_landing&utm_source=instagram&utm_medium=manychat&utm_campaign=prompt_vault_launch&utm_content={reel_slug}&entry_post_slug={reel_slug}&cta_keyword=VAULT&buyer_stage=lead
@@ -30,11 +32,17 @@ https://www.sselfie.ai/prompt-vault?source=prompt_vault_landing&utm_source=insta
 
 ### Checkout Direct Link
 
-Use this only for warm follow-up messages after someone has already seen/copied the preview.
+Use this for warm follow-up messages after someone has already seen/copied the preview, or when the CTA language is explicitly "get the full shoot" / "enter the Vault."
 
 ```text
 https://www.sselfie.ai/checkout/prompt-vault?source=prompt_vault_landing&utm_source=instagram&utm_medium=manychat&utm_campaign=prompt_vault_launch&utm_content={reel_slug}&entry_post_slug={reel_slug}&cta_keyword=VAULT&buyer_stage=lead
 ```
+
+### Existing Free Prompt Subscriber Rule
+
+If someone already signed up for the free prompt pack and the ManyChat message says "open your prompts" or "open your preview," send them to their free access link.
+
+If the ManyChat message says "get the full shoot," "enter the Vault," or "get all newest and future photoshoots," send them to the checkout direct link above.
 
 ## Reel Slug Naming
 
