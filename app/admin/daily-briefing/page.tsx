@@ -15,7 +15,9 @@ import {
   Sparkles,
 } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
+import { CodexTaskMemoryBoard } from "@/components/admin/codex-task-memory-board"
 import { MorningBoardVisualPlanner } from "@/components/admin/morning-board-visual-planner"
+import { getCodexTaskMemory } from "@/lib/admin/codex-task-memory"
 import { getContentBoardData } from "@/lib/admin/content-planner"
 import { buildDailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
 import {
@@ -249,6 +251,7 @@ export default async function DailyBriefingPage({
     getContentBoardData(),
   ])
   const briefing = buildDailySandraBriefing(report)
+  const codexTasks = await getCodexTaskMemory(report)
 
   const topPromptSignals = report.topPromptSignals as PromptSignalRow[]
   const freePromptSignals = report.freePromptSignals as PromptSignalRow[]
@@ -419,6 +422,8 @@ export default async function DailyBriefingPage({
             icon={<ClipboardList className="h-5 w-5" />}
           />
         </section>
+
+        <CodexTaskMemoryBoard initialTasks={codexTasks} windowDays={windowDays} />
 
         <section className="mb-10">
           <SectionTitle eyebrow="Plain language" title="What's Working" />
