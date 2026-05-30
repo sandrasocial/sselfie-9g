@@ -29,7 +29,7 @@ export function generatePromptVaultCheckoutRecoveryEmail({
     Inside are all the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style prompts I’ve been obsessing over lately…<br><br>
     And honestly? I keep adding more because I literally can’t stop making them 😂💋<br><br>
     If you still want in, here’s your link:<br><br>
-    <a href="${checkoutUrl}" style="color:#111111;text-decoration:underline;">${checkoutUrl}</a><br><br>
+    <a href="${checkoutUrl}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:14px 22px;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">Unlock VAULT</a><br><br>
     🤍<br>
     Sandra
   </div>
