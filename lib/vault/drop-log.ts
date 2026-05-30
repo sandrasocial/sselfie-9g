@@ -101,6 +101,22 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
     includedInEmailDrop: false,
     droppedAt: null,
   },
+  {
+    id: "clean-girl-morning",
+    name: "Clean Girl Founder Morning Editorial",
+    heroImage: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+    moodLine: "Mirror light. Skincare. Coffee. A calm founder morning.",
+    includedInEmailDrop: false,
+    droppedAt: null,
+  },
+  {
+    id: "noir-femme",
+    name: "NOIR FEMME Editorial",
+    heroImage: "/images/ai-prompts/noir-femme-shot-3.png",
+    moodLine: "Crushed blacks. Street movement. Full cinematic edge.",
+    includedInEmailDrop: false,
+    droppedAt: null,
+  },
 ]
 
 // ── Derived helpers ────────────────────────────────────────────────────────

@@ -18,16 +18,17 @@ import {
 } from "../editorial-email"
 import type { VaultDropCollection } from "../../vault/drop-log"
 
-const VAULT_LANDING = "https://www.sselfie.ai/prompt-vault"
+const VAULT_CHECKOUT = "https://www.sselfie.ai/checkout/prompt-vault"
 const FREE_PROMPTS_BASE = "https://www.sselfie.ai/ai-prompts"
 const FREE_PROMPTS_ACCESS_BASE = "https://www.sselfie.ai/ai-prompts/access"
 
 function vaultUrl(): string {
-  const url = new URL(VAULT_LANDING)
+  const url = new URL(VAULT_CHECKOUT)
   url.searchParams.set("utm_source", "resend")
   url.searchParams.set("utm_medium", "email")
   url.searchParams.set("utm_campaign", "vault_collection_drop")
   url.searchParams.set("utm_content", "non_buyer")
+  url.searchParams.set("checkout_source", "email_vault_collection_drop")
   return url.toString()
 }
 
