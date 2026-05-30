@@ -39,11 +39,47 @@ type RecoveryCandidate = {
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const SEND_DELAY_MS = 650
 
 async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
   await ensureRevenueEngineSchema()
 
   return (await sql`
+    WITH eligible_checkouts AS (
+      SELECT
+        session_id,
+        user_email,
+        source,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        campaign_id,
+        cta_keyword,
+        entry_post_slug,
+        buyer_stage,
+        created_at,
+        ROW_NUMBER() OVER (
+          PARTITION BY LOWER(BTRIM(user_email))
+          ORDER BY created_at ASC
+        ) AS email_rank
+      FROM checkout_attribution
+      WHERE product_type = 'prompt_vault'
+        AND status = 'started'
+        AND user_email IS NOT NULL
+        AND BTRIM(user_email) <> ''
+        AND recovery_email_sent_at IS NULL
+        AND created_at <= NOW() - INTERVAL '1 hour'
+        AND created_at > NOW() - INTERVAL '7 days'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM email_logs el
+          WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(checkout_attribution.user_email))
+            AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE}
+            AND el.status IN ('sent', 'delivered', 'suppressed')
+            AND el.sent_at > NOW() - INTERVAL '7 days'
+        )
+    )
     SELECT
       session_id,
       user_email,
@@ -57,22 +93,8 @@ async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
       entry_post_slug,
       buyer_stage,
       created_at
-    FROM checkout_attribution
-    WHERE product_type = 'prompt_vault'
-      AND status = 'started'
-      AND user_email IS NOT NULL
-      AND user_email <> ''
-      AND recovery_email_sent_at IS NULL
-      AND created_at <= NOW() - INTERVAL '1 hour'
-      AND created_at > NOW() - INTERVAL '7 days'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM email_logs el
-        WHERE LOWER(el.user_email) = LOWER(checkout_attribution.user_email)
-          AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE}
-          AND el.status IN ('sent', 'delivered', 'suppressed')
-          AND el.sent_at > NOW() - INTERVAL '7 days'
-      )
+    FROM eligible_checkouts
+    WHERE email_rank = 1
     ORDER BY created_at ASC
     LIMIT 50
   `) as RecoveryCandidate[]
@@ -201,7 +223,7 @@ export async function GET(request: Request) {
         results.failed += 1
       }
 
-      await sleep(150)
+      await sleep(SEND_DELAY_MS)
     }
 
     await cronLogger.success(results)
