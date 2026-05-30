@@ -72,11 +72,11 @@ const CHECKOUT_COPY: Record<
     footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
   },
   prompt_vault: {
-    heroTitle: "Complete your Prompt Vault order",
-    heroBody: "Turn one selfie into unlimited editorial photoshoots.",
+    heroTitle: "Enter The Selfie to Brand Shoot Vault",
+    heroBody: "Get the remaining shots from this shoot, every newest drop, and future AI photoshoot collections.",
     heading: "Secure checkout",
-    blurb: "You are buying instant AI photoshoot transformations with encrypted Stripe checkout.",
-    footer: "Digital purchase. Your vault access link is delivered right after payment.",
+    blurb: "Your Vault includes full shot sequences, copy-paste prompts, new editorial collections, and the growing private archive for turning one selfie into brand-shoot images.",
+    footer: "Digital purchase. Your Vault access link is delivered right after payment.",
   },
 }
 
@@ -214,6 +214,23 @@ function CheckoutContent() {
 
       {/* Checkout Form Section */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {productType === "prompt_vault" && (
+          <div className="mb-6 grid gap-2 sm:grid-cols-3">
+            {[
+              "Full shoots, not one prompt",
+              "Newest + future drops",
+              "Copy-paste in ChatGPT",
+            ].map(item => (
+              <div
+                key={item}
+                className="border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.08)] px-4 py-3 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-[#c8c4bb]"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="text-center mb-6 sm:mb-8">
           <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Secure Checkout</p>
           <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#f0ede8] tracking-wide mb-3">
