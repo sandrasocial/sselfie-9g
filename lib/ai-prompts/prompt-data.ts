@@ -23,7 +23,578 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
-// NEWEST — Dark Feminine Café Coffee-Run Editorial (6 shots)
+// COLLECTION 08 — NOIR FEMME Editorial (9 shots)
+// ---------------------------------------------------------------------------
+
+export const NOIR_FEMME_SERIES: PromptCard[] = [
+  {
+    number: "80",
+    id: "noir-femme-shot-1",
+    title: "Noir Femme · Walking Toward Camera",
+    whenToUse: "Your ground-level opener. Full-body upshot, mid-stride, lace flares lifting off cobblestones. Use for reel covers, carousel openers, or any content that leads with movement and presence.",
+    mood: "noir editorial · ground-level upshot · lace flares · full body · movement",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-1.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 1 of a 9-part NOIR FEMME editorial photoshoot.
+
+Scene: European cobblestone street, individual stones visible with mortar gaps. Raw dark stone building facade close behind her. Flat overcast daylight, heavy and cool. Camera at ground level, angled upward.
+
+Subject: Woman mid-stride, walking directly toward the camera. Both feet slightly off the ground — caught between steps. Black flare lace trousers lifting and separating with the stride — wide bell flares rising away from the cobblestones, large-scale floral lace pattern sharp and readable, sheer fabric showing the legs beneath. Oversized black blazer swinging open with the movement — belt tie loose, black lace bralette and bare midriff visible through the opening. Black quilted chain bag swinging at her side. Black open-toe heeled mules — one heel lifted mid-step. Thin gold necklace catching flat light. Long dark wavy hair lifting slightly with movement. Face forward, eyes straight at the lens — not performing, just walking.
+
+Composition: The lace flares are the dominant shape — two wide dark wings lifting away from the cobblestones in the foreground. Strong upward perspective — legs long, face at the top of the frame. Cobblestones recede behind her heels. Subject slightly off-center.
+
+Style: Black and white editorial movement photograph. Deep blacks throughout. Lace flares in mid-gray against near-black cobblestones. Heavy shadows under the flare hems. Dark moody grade — underexposed, crushed blacks, minimal highlights. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No plastic fabric. No static posed stance. No CGI surfaces. No warped lace pattern. No distorted leg anatomy. No centered composition. No illustration.`,
+  },
+  {
+    number: "81",
+    id: "noir-femme-shot-2",
+    title: "Noir Femme · Mid-Pivot Turning Away",
+    whenToUse: "The movement mystery shot. Body in rotation, hair sweeping, back to camera. Use for transitions, moody editorial breaks, or content about turning the page.",
+    mood: "noir editorial · mid-pivot · turning away · hair in motion · from behind",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-2.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 2 of a 9-part NOIR FEMME editorial photoshoot.
+
+Scene: European cobblestone street with raw rough-cut dark stone column on the left frame edge. Cream neoclassical stone facade blurred in the background. Heavy overcast light, flat and cool.
+
+Subject: Woman caught mid-pivot — body turning away from the camera, weight transferring in the turn. Shot from behind and slightly to the right. The back of the oversized black blazer dominant — crepe fabric twisting slightly with the turn, belt tie swinging outward from the waist. Long dark wavy hair sweeping across the back with the rotation — strands lifting and separating mid-air, not settled. Wide black lace trouser flares swinging outward with the pivot — bell hems lifting and slightly motion-blurred at the edges. One black open-toe heeled mule visible, heel lifted. The side of her jaw and one cheekbone barely visible at the frame edge — just enough to suggest the face without showing it fully.
+
+Composition: Camera at hip height, behind and to the right. Hair sweep and flare swing are the movement anchors. Stone column on the left creates a dark vertical border. The turning body creates a diagonal line across the frame. No centered composition.
+
+Style: Black and white editorial movement photograph. Dark moody grade — deep blacks in the blazer and cobblestones, hair mid-air in dark gray, lace flare edges slightly motion-blurred. Crushed blacks, underexposed, minimal highlights. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No plastic fabric. No static pose. No CGI surfaces. No warped lace. No centered composition. No full face visible. No illustration.`,
+  },
+  {
+    number: "82",
+    id: "noir-femme-shot-3",
+    title: "Noir Femme · Looking Back Over Shoulder",
+    whenToUse: "The head-turn tension shot. Body moving forward, face looking back. Use for before/after content, mid-walk lifestyle posts, or any caption about moving forward while staying aware.",
+    mood: "noir editorial · head turn · three-quarter profile · lace trousers · blazer closed",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-3.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 3 of a 9-part NOIR FEMME editorial photoshoot.
+
+Scene: European cobblestone street, raw dark stone wall running along the left side. Shot from slight distance at eye level. Heavy flat overcast light, cool and dim.
+
+Subject: Woman mid-walk, head turned back over her left shoulder looking behind her — body still moving forward. Oversized black blazer belted closed at the waist with the self-tie sash — front panels closed, belt knot sitting at the waist with soft fabric folds beneath. Blazer swinging slightly with the stride but remaining closed. Black flare lace trousers mid-stride — one flare hem lifted off the cobblestones. Face in three-quarter view — one eye fully visible looking directly back at the lens. Long dark wavy hair swept to one side by the head turn, strands crossing her cheek. Thin gold necklace catching a faint highlight. Black quilted chain bag on her shoulder.
+
+Composition: Camera at eye level, slight distance — head to just below the knee. Body moving forward creates a diagonal lean. Turned head creates tension — body going one way, eyes going the other. Blazer remains fully belted and closed.
+
+Style: Black and white editorial movement photograph. Dark moody grade — deep blacks in the blazer and stone wall, cobblestones in near-black, face in clean grayscale. Crushed blacks, underexposed. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No open blazer. No visible bralette or midriff. No plastic fabric. No static pose. No CGI surfaces. No warped lace. No centered composition. No illustration.`,
+  },
+  {
+    number: "83",
+    id: "noir-femme-shot-4",
+    title: "Noir Femme · Fixing the Heel",
+    whenToUse: "The graphic pause. One leg raised behind her, hand reaching to the ankle strap. A strong standalone shot or detail-heavy carousel slide.",
+    mood: "noir editorial · heel fix · upright balance · lace lifted mid-air · graphic line",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-4.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 4 of a 9-part NOIR FEMME editorial photoshoot.
+
+Scene: European cobblestone street, raw dark stone wall soft and out of focus behind her. Heavy overcast light from above, flat and cool.
+
+Subject: Woman standing upright — one leg lifted behind her, knee bent, foot raised up toward her hand. Her right arm reaching back and downward, fingers grasping the ankle strap of the black open-toe mule to adjust it — strap between her fingers, foot suspended behind her. Body weight entirely on the left leg, standing straight and upright — not bent forward. Oversized black blazer fully belted and closed — front panels together, belt knot at the waist. Black flare lace trousers — standing leg straight, raised leg showing the lace fabric pulling taut from the knee upward as the leg lifts. Lace flare of the raised leg hanging and swinging freely mid-air behind her. Black quilted chain bag on the shoulder. Face angled slightly downward looking toward the raised foot — hair falling forward slightly.
+
+Composition: Camera at three-quarter body height, slightly to the side. The raised leg and reaching arm create a strong graphic line — heel to hand. Standing leg straight and grounded on the cobblestone.
+
+Style: Black and white editorial movement photograph. Dark moody grade — deep blacks in the blazer, cobblestones in near-black, lifted lace flare in mid-gray catching flat light mid-air. Crushed blacks, underexposed. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No bent-forward posture. No open blazer. No visible midriff. No plastic fabric. No warped lace. No CGI surfaces. No distorted leg anatomy. No centered composition. No illustration.`,
+  },
+  {
+    number: "84",
+    id: "noir-femme-shot-5",
+    title: "Noir Femme · Walking Away Down the Street",
+    whenToUse: "The cinematic wide closer. Small figure, tall facades, converging vanishing-point perspective. Use as a series closer, reel cover, or any caption about moving forward alone.",
+    mood: "noir editorial · wide shot · vanishing point · walking away · architectural",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-5.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 5 of a 9-part NOIR FEMME editorial photoshoot.
+
+Scene: Long European cobblestone street receding into the distance. Cream neoclassical stone building facades on both sides — arched windows, carved cornices, buildings creating a corridor that narrows toward a vanishing point. Heavy overcast sky above. Shot from far back, wide.
+
+Subject: Woman walking away from the camera down the cobblestone street — small figure in the middle distance, not close. Both feet mid-stride. The back of the oversized black blazer — belt tie visible at the back waist. Wide black flare lace trousers — both bell flares lifting slightly with each step, lace hems brushing the cobblestones, sheer fabric catching flat overcast light. Long dark wavy hair moving with her stride. Black quilted chain bag on her shoulder. She does not look back.
+
+Composition: Camera at eye level, far back — she occupies roughly the middle third of the frame vertically, small against the tall building facades. Converging building lines and cobblestone street lines all lead to her. Subject slightly left or right of center — not centered. No other people on the street.
+
+Style: Black and white editorial wide photograph. Darkest, moodiest frame in the set — deep black cobblestones, near-black building facades in shadow, figure in mid-gray, pale overcast sky the only light source above. Maximum crushed blacks, heavily underexposed, figure almost dissolving into the street. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No plastic fabric. No CGI surfaces. No warped lace. No static pose. No other people on the street. No centered figure. No illustration.`,
+  },
+  {
+    number: "85",
+    id: "noir-femme-shot-6",
+    title: "Noir Femme · Eyes Down, Hair Across",
+    whenToUse: "Intimate face close-up — downcast eyes, hair falling across the cheek. Use for beauty posts, personal captions, or any post where the face tells the story without looking at the lens.",
+    mood: "noir portrait · close-up · eyes down · hair across · natural texture",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-6.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 6 of a 9-part NOIR FEMME editorial photoshoot — Bonus A.
+
+Scene: Raw dark European stone wall completely out of focus behind her. Single flat light source from above-left. Heavy and cool.
+
+Subject: Tight face crop — forehead to chin, cut close on both sides. Head tilted very slightly downward, eyes cast down — not at the camera. Long dark wavy hair falling forward, one thick section crossing the cheek and jaw, partially framing the face. Expression completely neutral — lips relaxed and closed, jaw soft. Thin gold necklace chain just visible at the bottom edge of the frame. Natural skin texture visible — pores, the faint shadow under the lower lip, the collarbone shadow beginning at the very bottom of the crop.
+
+Composition: Camera at face height, very close. The downward eye direction means we see the eyelids and lashes clearly. Shallow depth of field — face sharp, hair strands against the skin sharp, stone wall behind completely dissolved into dark gray.
+
+Style: Black and white editorial close portrait. Skin in clean grayscale with natural texture. Hair in deep dark gray. Dark moody grade, crushed blacks, underexposed. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No eye contact with camera. No over-smoothed skin. No idealized face. No CGI surfaces. No centered composition. No smile. No illustration.`,
+  },
+  {
+    number: "86",
+    id: "noir-femme-shot-7",
+    title: "Noir Femme · Mid-Hair Push, Eyes Closed",
+    whenToUse: "The private, unguarded portrait. Both hands at the hairline, eyes closed, face to the light. Use for intimate captions, process content, or any post where vulnerability is the message.",
+    mood: "noir portrait · hands in hair · eyes closed · private moment · intimate",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-7.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 7 of a 9-part NOIR FEMME editorial photoshoot — Bonus B.
+
+Scene: European cobblestone street, cream stone facade completely soft and out of focus behind her. Heavy flat overcast light from above.
+
+Subject: Tight face crop — just the face from chin to hairline. Both hands visible at the temples and hairline — fingers pressing hair back off the forehead, caught mid-push. Eyes closed in the gesture — eyelids relaxed, lashes resting. Lips slightly parted, not smiling, just breathing. The hair half-pushed back — some strands still falling forward across the forehead, caught between the fingers. Thin gold necklace just catching a faint line of light at the very bottom of the frame. Skin rendered in grayscale — the natural shadows under the cheekbones, the slight shadow above the upper lip.
+
+Composition: Camera at face height, close. The hands at the hairline frame the face from both sides. The closed eyes make this feel completely private. Shallow depth of field, stone facade completely dissolved behind her.
+
+Style: Black and white editorial close portrait. Natural skin texture intact. Dark moody grade, crushed blacks. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No open eyes. No over-smoothed skin. No idealized face. No distorted fingers. No CGI surfaces. No smile. No illustration.`,
+  },
+  {
+    number: "87",
+    id: "noir-femme-shot-8",
+    title: "Noir Femme · Sharp Profile, Chin Up",
+    whenToUse: "The architectural portrait. Pure 90-degree profile against dark stone — jawline, throat, necklace. Use for visual brand statements or any caption about clarity and direction.",
+    mood: "noir portrait · true 90° profile · chin up · jawline · architectural",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-8.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 8 of a 9-part NOIR FEMME editorial photoshoot — Bonus C.
+
+Scene: Dark European stone wall filling the background — close enough to be slightly textured, far enough to be out of focus. Single flat light source from directly in front of her face.
+
+Subject: Tight profile crop — her face turned exactly 90 degrees to the camera, pure side profile. Chin lifted slightly upward — the jaw line sharp against the dark background, the throat long, the thin gold necklace visible against the skin in profile. Eyes looking forward and slightly upward — not at the camera, focused on something in the distance. Lips closed, the natural curve of the upper and lower lip visible in profile. Long dark wavy hair falling behind the shoulder — one strand curling forward against the collarbone, visible at the bottom of the frame. The black blazer lapel visible at the very bottom edge.
+
+Composition: Camera at exact face height, perfectly level for a true side profile. The jaw line and throat are the composition. The dark stone wall behind creates maximum contrast against the lit side of the face. The shadow side of the face falls into near-black.
+
+Style: Black and white editorial profile portrait. The lit side of the face in clean grayscale, the shadow side crushed to near-black, the jaw line the sharpest edge in the frame. Dark moody grade. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No three-quarter turn — true 90 degree profile only. No over-smoothed skin. No idealized face. No eye contact with camera. No CGI surfaces. No illustration.`,
+  },
+  {
+    number: "88",
+    id: "noir-femme-shot-9",
+    title: "Noir Femme · Looking Back, Face Over Shoulder",
+    whenToUse: "The only direct-eye-contact shot in the series. Tight over-the-shoulder crop, sharp neck turn, full gaze straight to the lens. Use when you want to stop the scroll with pure presence.",
+    mood: "noir portrait · over shoulder · eye contact · direct · confrontational",
+    exampleImage: "/images/ai-prompts/noir-femme-shot-9.png",
+    prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
+
+Create image 9 of a 9-part NOIR FEMME editorial photoshoot — Bonus D.
+
+Scene: European cobblestone street receding behind her, stone wall soft on the left. Heavy overcast light, flat and cool from above.
+
+Subject: Tight crop from the shoulders up — her body facing away from the camera, face turned back over her right shoulder looking directly into the lens. The turn is sharp — maximum rotation, the neck muscles visible with the effort of the turn. Eyes direct and calm, looking straight into the camera — this is the only shot in the series with direct eye contact. Lips closed, expression neutral, no smile. Long dark wavy hair — most of it falling down her back away from us, but the turn has pulled some strands across her cheek and neck. The back of the oversized black blazer collar framing the neck and shoulder. The shoulder seam of the blazer sharp at the top of the frame.
+
+Composition: Camera at shoulder height, close — tight crop, just shoulders and face. The sharp neck turn creates a strong diagonal line from the shoulder to the jaw. The direct eye contact is the contrast to all other shots in the series.
+
+Style: Black and white editorial over-the-shoulder portrait. Deep black blazer back in the foreground, face in clean sharp grayscale, hair in dark gray. Dark moody grade, crushed blacks. Subtle film grain.
+
+Image quality: Vertical 9:16, 2K quality, minimum 1440 x 2560 px.
+
+Avoid: No over-smoothed skin. No idealized face. No CGI surfaces. No smile. No centered composition. No full forward-facing body. No illustration.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
+// COLLECTION 07 — Clean Girl Founder Morning Editorial (10 shots)
+// ---------------------------------------------------------------------------
+
+export const CLEAN_GIRL_MORNING_SERIES: PromptCard[] = [
+  {
+    number: "70",
+    id: "clean-girl-morning-shot-1",
+    title: "Clean Girl · Soft Morning Mirror Selfie",
+    whenToUse: "Your opener. Bedroom mirror selfie in cream knit loungewear, soft window light, phone covering part of the face. Use for morning routine content, outfit check captions, or any post about the quiet start of a founder day.",
+    mood: "clean girl · mirror selfie · morning soft · bedroom · cozy",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+    prompt: `Create image 1 of a 10-part clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A soft founder morning mirror selfie that feels calm, feminine, and elevated — like the first quiet moment before the workday begins.
+
+Micro-story moment: She is sitting on the edge of the bed or sofa, still in her soft morning clothes, taking a quick mirror selfie before starting her day.
+
+Scene and atmosphere: Creamy white bedroom or soft living room with white bedding, sheer curtains, soft window light, neutral pillows, and a clean minimal interior. Peaceful, expensive, and real — not staged.
+
+Wardrobe: Cream ribbed knit lounge pants, soft white tank or fitted cream top, oversized white cardigan slipping slightly off one shoulder, fluffy cream slippers or bare feet.
+
+Hair and makeup: Natural hair color from the uploaded reference photos. Soft brushed waves or relaxed morning waves, slightly undone. Fresh clean skin, brushed brows, soft cream blush, nude glossy lip.
+
+Accessories: Apple iPhone Pro Max only, held naturally for a mirror selfie.
+
+Pose and body language: Seated casually with one knee slightly bent, phone covering part of the face, shoulders relaxed, cardigan falling softly, body angled toward the mirror.
+
+Composition: Vertical 9:16 mirror selfie crop. Show the soft outfit, bed or sofa texture, window light, and calm neutral room. Keep the mirror reflection realistic and not overly perfect.
+
+Lighting: Soft natural morning daylight through sheer curtains, gentle shadows, no harsh flash.
+
+Color grading: Creamy whites, oat beige, soft warm highlights, muted shadows, low contrast, airy Pinterest editorial finish, subtle film grain.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp mirror reflection, crisp knit texture, realistic skin texture, no blur, no compression haze.
+
+Avoid: cluttered room, harsh white overexposure, distorted hands, extra fingers, warped phone, fake mirror reflection, plastic skin, CGI, cheap staged bedroom photoshoot.`,
+  },
+  {
+    number: "71",
+    id: "clean-girl-morning-shot-2",
+    title: "Clean Girl · Bathroom Skincare In Use",
+    whenToUse: "The real skincare moment — not a product shelf ad. Use for beauty content, morning routine posts, or any caption about showing up for yourself before anyone else.",
+    mood: "clean girl · bathroom · skincare · dewy skin · UGC morning routine",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-2.jpg",
+    prompt: `Create image 2 of the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A real bathroom skincare moment — the product is in use, not just displayed.
+
+Micro-story moment: She is standing at the bathroom mirror applying skincare or lip treatment while getting ready.
+
+Scene and atmosphere: Minimal beige bathroom with warm stone vanity, cream towel, mirror, soft daylight, and a slightly lived-in counter.
+
+Wardrobe: Oversized white robe or thick cream cardigan over a fitted white tank. Sleeves slightly long and soft.
+
+Hair and makeup: Natural hair color from the reference photos. Hair softly clipped back, tucked behind ears, or loosely tied. Skin is fresh and dewy, brows brushed, nude lip balm.
+
+Products: Use real mixed products naturally — Rhode Glazing Milk or Rhode Peptide Lip Treatment in hand, with Summer Fridays Jet Lag Mask, Laneige Lip Sleeping Mask, OUAI product, or BYOMA serum sitting casually on the vanity. Use 2–3 products maximum.
+
+Pose and body language: Face visible in the mirror or directly in frame. One hand applies Rhode Peptide Lip Treatment or skincare near the cheek. The other hand rests on the vanity or holds the product. Expression focused and natural.
+
+Composition: Vertical 9:16 bathroom mirror or side-angle frame. Show face, hand applying product, robe or cardigan sleeve, and small messy vanity detail. Not a perfect flatlay.
+
+Lighting: Soft bathroom daylight, warm stone reflection, gentle shadows.
+
+Color grading: Warm beige stone, creamy white robe, soft pastel product packaging, natural skin glow, low saturation, clean UGC editorial finish, subtle grain.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, crisp product packaging, realistic hand detail, no blur.
+
+Avoid: perfect product lineup, too many products, fake labels, distorted fingers, warped product tube, plastic skin, harsh commercial lighting, CGI.`,
+  },
+  {
+    number: "72",
+    id: "clean-girl-morning-shot-3",
+    title: "Clean Girl · Kitchen Coffee + Breakfast",
+    whenToUse: "The morning moves into the kitchen. Use for slow morning content, what-I-eat posts, or any caption about the pace of a founder day.",
+    mood: "clean girl · kitchen · coffee · breakfast · morning movement",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
+    prompt: `Create image 3 of the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: The morning moves into the kitchen — coffee, breakfast, and getting ready to work, not a still-life flatlay.
+
+Micro-story moment: She is standing at the kitchen counter making coffee or reaching for breakfast while checking her phone.
+
+Scene and atmosphere: Soft neutral kitchen with stone countertop, cream cabinets, morning light, coffee machine or mug, yogurt bowl with raspberries and granola, and a slightly imperfect real-life counter.
+
+Wardrobe: White fitted tank or cropped cream cardigan, relaxed butter-yellow boxer shorts or soft beige drawstring trousers. Bare feet, cream socks, or soft slippers.
+
+Hair and makeup: Natural hair color from the reference photos. Softly brushed, clipped back on one side, or loose with relaxed waves. Fresh skin, lip balm or gloss visible.
+
+Accessories: Apple iPhone Pro Max in one hand or resting on the counter. Coffee mug, yogurt bowl, spoon.
+
+Pose and body language: Standing slightly angled at the counter, one hand reaching for the mug or spoon, the other holding the phone low. Face visible, gaze lowered toward the counter or phone. Natural movement.
+
+Composition: Vertical 9:16 medium lifestyle frame from a slight side angle, showing face, outfit, kitchen counter, coffee, breakfast, and morning light.
+
+Lighting: Soft morning kitchen light, natural shadows, no flash.
+
+Color grading: Cream cabinets, oat beige counter, coffee brown, raspberry red accent, pale butter yellow, warm daylight, subtle film grain, airy UGC editorial finish.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, realistic food texture, crisp phone edge, no blur.
+
+Avoid: perfect flatlay, fake food, cluttered kitchen, warped phone, distorted hands, overexposed whites, plastic skin, CGI, staged sponsor post.`,
+  },
+  {
+    number: "73",
+    id: "clean-girl-morning-shot-4",
+    title: "Clean Girl · Living Room Founder Work Moment",
+    whenToUse: "The soft founder work shot. MacBook open, matcha nearby, elevated knit outfit. Use for working-from-home content, productivity captions, or posts about building something from wherever you are.",
+    mood: "clean girl · living room · laptop · founder work · soft editorial",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-4.jpg",
+    prompt: `Create image 4 of the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: The soft founder work moment — styled like an elevated fashion editorial instead of a boring laptop shot.
+
+Micro-story moment: She has moved to the living room, coffee nearby, laptop open, planning her day before getting fully dressed.
+
+Scene and atmosphere: Cream living room with soft sofa, low coffee table, sheer curtains, warm natural light, neutral textured pillows, Apple MacBook open, notebook, latte or matcha. Calm, personal, and lightly lived-in.
+
+Wardrobe: Fashion-forward home outfit — ivory off-shoulder fine-knit top or sculptural cream knit cardigan, relaxed wide-leg linen trousers or soft parachute trousers in oat beige. Current, elevated, feminine, and wearable.
+
+Hair and makeup: Natural hair color from the reference photos. Soft polished waves or a clean low bun with loose pieces. Fresh skin, cream blush, nude glossy lip, brushed brows.
+
+Accessories: Apple MacBook, Apple iPhone Pro Max, notebook, coffee or matcha. One lip product sitting naturally on the coffee table.
+
+Pose and body language: Seated sideways on the sofa or floor cushion, one leg tucked under, laptop open, one hand near the keyboard, face visible and turned toward the window or laptop. Focused, calm, in control.
+
+Composition: Vertical 9:16 editorial lifestyle frame from a low side angle or slightly above, showing face, outfit silhouette, laptop, coffee, and soft living room texture.
+
+Lighting: Soft window light, gentle shadows, airy but not overexposed.
+
+Color grading: Cream, oat beige, soft gold highlights, pale matcha green if present, low contrast, warm daylight, subtle grain, clean founder editorial finish.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, crisp knit and linen texture, realistic laptop detail, no blur.
+
+Avoid: corporate office vibe, boring sweatshirt outfit, too many props, fake laptop screen, distorted hands, product-ad stiffness, plastic skin, CGI.`,
+  },
+  {
+    number: "74",
+    id: "clean-girl-morning-shot-5",
+    title: "Clean Girl · Closet Getting Dressed Moment",
+    whenToUse: "The morning becomes fashion-forward. Wardrobe backdrop, getting-dressed action. Use for outfit reveal content, wardrobe posts, or any caption about showing up polished.",
+    mood: "clean girl · getting dressed · wardrobe · outfit transition · fashion-forward",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-5.jpg",
+    prompt: `Create image 5 of the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: The getting-dressed moment that makes the shoot feel desirable.
+
+Micro-story moment: She is in the closet or bedroom mirror area, changing from soft morning clothes into a polished founder outfit.
+
+Scene and atmosphere: Cream wardrobe or dressing area with soft shelves, neutral handbags, shoes, folded knits, and window light. Clean but lived-in, not a showroom.
+
+Wardrobe: Fashion-forward final outfit — soft ivory off-shoulder knit top or fitted white tank layered under an oversized cream cardigan, high-waisted wide-leg tailored trousers in warm beige or pale butter yellow, slim belt, pointed flats, ballet flats, loafers, or kitten heels. Current, elevated, feminine, and wearable.
+
+Hair and makeup: Natural hair color from the reference photos. Soft brushed waves or a clean low bun. Makeup fresh but finished — glossy nude lip, sculpted cheeks, brushed brows.
+
+Accessories: Apple iPhone Pro Max only, for mirror selfie or low in one hand. Optional minimal sunglasses or one neutral handbag if it fits naturally.
+
+Pose and body language: Standing near a mirror or closet doorway, one hand adjusting the cardigan, belt, or trouser waistband, phone held low or used for a mirror selfie. Face visible if possible. Body angled to show outfit.
+
+Composition: Vertical 9:16 three-quarter or full-body dressing-room frame. Show outfit silhouette, wardrobe context, and real getting-dressed action.
+
+Lighting: Soft window light, warm cream reflections, gentle shadows.
+
+Color grading: Warm cream wardrobe, oat beige trousers, ivory knit, soft gold highlights, natural skin tones, matte Pinterest editorial finish, subtle grain.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, crisp outfit texture, realistic wardrobe detail, no blur.
+
+Avoid: boring matching loungewear, phone covering whole face, stiff mirror pose, cluttered closet, fake bag logos, distorted hands, warped phone, CGI, cheap try-on haul energy.`,
+  },
+  {
+    number: "75",
+    id: "clean-girl-morning-shot-6",
+    title: "Clean Girl · Real Morning Objects Detail",
+    whenToUse: "The tactile detail slide. No face needed. Phone, coffee, lip product, laptop edge — the full morning through objects. Use as a carousel detail slide or standalone mood post.",
+    mood: "clean girl · detail shot · morning objects · no face · tactile",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-6.jpg",
+    prompt: `Create image 6 as the only detail shot of this clean girl founder morning editorial photoshoot.
+
+No full face needed.
+
+Editorial concept: The final tactile frame that captures the whole morning through objects and textures.
+
+Micro-story moment: The morning has happened — coffee, phone, lip product, skincare, knitwear, and laptop are all casually left behind.
+
+Scene and atmosphere: A cream coffee table, bed edge, vanity corner, or kitchen counter with soft daylight. Real and slightly imperfect.
+
+Wardrobe details: Cream knit sleeve or beige trouser fabric visible near the edge of the frame.
+
+Products: Use 3–4 mixed real products — Rhode Peptide Lip Treatment, Summer Fridays Lip Butter Balm, Laneige Lip Sleeping Mask, OUAI product, Dior Addict Lip Maximizer, Glow Recipe Dew Drops, or BYOMA product. Mix brands naturally.
+
+Accessories: Apple iPhone Pro Max, coffee cup or latte, Apple MacBook edge or notebook, one product lid open, one item slightly turned, one item partly out of frame.
+
+Pose and body language: One hand reaching for the phone or coffee, cardigan sleeve falling softly over the wrist. No full face needed.
+
+Composition: Vertical 9:16 close detail crop from above or side angle. It should feel like a real creator morning table, not a perfect product flatlay.
+
+Lighting: Soft daylight, gentle shadows, no flash.
+
+Color grading: Cream, beige, oat milk, soft coffee brown, muted warm highlights, low saturation, airy Pinterest detail edit, subtle grain.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, crisp knit fibers, sharp phone edge, realistic coffee foam, clean product packaging, no blur.
+
+Avoid: too many products, product-only ad shot, perfect symmetrical flatlay, random fake labels, distorted fingers, warped phone, fake coffee foam, plastic textures, CGI.`,
+  },
+  {
+    number: "76",
+    id: "clean-girl-morning-shot-7",
+    title: "Clean Girl · Bathroom Mirror Skincare Selfie",
+    whenToUse: "The post-skincare mirror check. Fresh skin, robe, phone up. Use for glow check captions, UGC-style beauty content, or morning routine posts that feel real and relatable.",
+    mood: "clean girl · bathroom mirror selfie · skincare glow · UGC · candid beauty",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-7.jpg",
+    prompt: `Create image 7 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A real bathroom mirror skincare selfie that feels like a soft UGC morning check-in, not a polished beauty campaign.
+
+Micro-story moment: She has just finished skincare and is checking her glow in the bathroom mirror.
+
+Scene and atmosphere: Minimal beige bathroom with warm stone vanity, soft neutral tiles, cream towel, gentle daylight, and a slightly lived-in counter with a few real beauty products casually placed.
+
+Wardrobe: Oversized white robe or cream cardigan over a fitted white tank. Sleeves slightly long and soft.
+
+Hair and makeup: Natural hair color from the reference photos. Hair softly clipped back, tucked behind the ears, or loosely tied. Skin looks fresh and dewy, brows brushed, nude glossy lip, minimal makeup.
+
+Products: 2–3 mixed products visible on the vanity — Rhode Glazing Milk, Summer Fridays Jet Lag Mask, Laneige Lip Sleeping Mask, OUAI product, BYOMA serum, or Glow Recipe Dew Drops. One product lid can be open.
+
+Accessories: Apple iPhone Pro Max only, held naturally for the mirror selfie.
+
+Pose and body language: Standing close to the mirror, phone covering part of the face but not all of it, one hand lightly touching the cheek or robe collar. Calm, fresh, real morning energy.
+
+Composition: Vertical 9:16 bathroom mirror selfie. Show face, robe or cardigan texture, phone, vanity, and small product cluster. Keep it candid and slightly imperfect.
+
+Lighting: Soft bathroom daylight, warm stone reflections, gentle shadows.
+
+Color grading: Warm beige stone, creamy whites, soft oat tones, natural skin glow, low saturation, subtle grain, clean UGC editorial finish.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp mirror reflection, crisp product packaging, realistic skin texture, no blur.
+
+Avoid: perfect product lineup, fake labels, harsh beauty lighting, distorted hands, extra fingers, warped phone, plastic skin, CGI, sponsored-ad stiffness.`,
+  },
+  {
+    number: "77",
+    id: "clean-girl-morning-shot-8",
+    title: "Clean Girl · Kitchen Counter iPhone Selfie",
+    whenToUse: "Coffee before content. Lean-back kitchen selfie with breakfast nearby. Use for morning routine posts, founder-lifestyle captions, or the quiet start before the busy day.",
+    mood: "clean girl · kitchen selfie · coffee · casual founder · morning",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-8.jpg",
+    prompt: `Create image 8 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A casual kitchen counter selfie during a slow founder morning, with coffee and breakfast nearby.
+
+Micro-story moment: She is leaning against the kitchen counter, holding her phone for a quick selfie while coffee is brewing or breakfast sits beside her.
+
+Scene and atmosphere: Soft neutral kitchen with cream cabinets, stone countertop, morning light, latte or matcha, yogurt bowl with raspberries and granola, and a real slightly imperfect counter setup.
+
+Wardrobe: White fitted tank or cropped cream cardigan with relaxed beige drawstring trousers, boxer shorts, or soft parachute pants. Casual, current, and desirable.
+
+Hair and makeup: Natural hair color from the reference photos. Softly brushed, clipped back on one side, or loose with relaxed waves. Fresh skin, nude glossy lip, brushed brows.
+
+Accessories: Apple iPhone Pro Max in hand. Coffee, breakfast bowl, and one small beauty item can sit on the counter.
+
+Pose and body language: Leaning slightly against the counter, phone held high or chest-level, face visible, one shoulder relaxed, one hand resting near the coffee or waistband. Calm soft expression.
+
+Composition: Vertical 9:16 iPhone selfie angle, slightly above eye level. Show face, outfit, counter, coffee, and breakfast without making it a flatlay.
+
+Lighting: Soft morning kitchen light, natural shadows, no flash.
+
+Color grading: Cream cabinets, oat beige counter, coffee brown, raspberry red accent, warm daylight, low contrast, airy UGC editorial finish.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, realistic food texture, crisp phone edge, no blur.
+
+Avoid: perfect flatlay, fake food texture, cluttered kitchen, overexposed whites, distorted hands, warped phone, plastic skin, CGI, staged sponsor-post energy.`,
+  },
+  {
+    number: "78",
+    id: "clean-girl-morning-shot-9",
+    title: "Clean Girl · Living Room Laptop Selfie",
+    whenToUse: "Soft founder work selfie — laptop open, matcha beside her, cozy outfit. Use for working-from-home content, accountability posts, or any caption about making the work feel good.",
+    mood: "clean girl · living room selfie · laptop · founder lifestyle · soft",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-9.jpg",
+    prompt: `Create image 9 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A soft founder work selfie that shows the reality of working from home, but makes it feel calm and elevated.
+
+Micro-story moment: She is sitting in the living room with her laptop open, taking a quick selfie before starting work.
+
+Scene and atmosphere: Cream living room with soft sofa, low coffee table, sheer curtains, warm natural light, neutral pillows, Apple MacBook open, notebook, latte or matcha. Calm, personal, lightly lived-in.
+
+Wardrobe: Fashion-forward home outfit — ivory off-shoulder fine-knit top, sculptural cream knit cardigan, or linen vest with wide-leg trousers or soft parachute trousers in oat beige.
+
+Hair and makeup: Natural hair color from the reference photos. Soft polished waves or clean low bun with loose pieces. Fresh skin, cream blush, nude glossy lip, brushed brows.
+
+Accessories: Apple iPhone Pro Max in hand for selfie. Apple MacBook, notebook, and coffee or matcha nearby.
+
+Pose and body language: Seated sideways on sofa or floor cushion, laptop open beside her, phone held naturally, one knee tucked or legs folded, face visible, relaxed focused expression.
+
+Composition: Vertical 9:16 casual iPhone selfie or slightly reflective screen-style angle. Show face, outfit, laptop, coffee, and soft living room texture.
+
+Lighting: Soft window light, gentle shadows, airy but not overexposed.
+
+Color grading: Cream, oat beige, soft gold highlights, pale matcha green if present, low contrast, warm daylight, subtle grain, clean founder editorial finish.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, crisp knit or linen texture, realistic laptop detail, no blur.
+
+Avoid: corporate office vibe, boring sweatshirt outfit, fake laptop screen, too many props, distorted hands, warped phone, plastic skin, CGI, product-ad stiffness.`,
+  },
+  {
+    number: "79",
+    id: "clean-girl-morning-shot-10",
+    title: "Clean Girl · Window Light FaceTime Selfie",
+    whenToUse: "The most intimate shot in the series. Close selfie near the window, finished look, just before the day starts. Use for personal check-in content, profile photos, or captions about showing up for yourself.",
+    mood: "clean girl · window light · close selfie · intimate · polished",
+    exampleImage: "/images/ai-prompts/clean-girl-morning-shot-10.jpg",
+    prompt: `Create image 10 as a creative selfie-style portrait from the same clean girl founder morning editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, body proportions, and natural texture from the reference photos.
+
+Editorial concept: A soft, intimate phone-camera selfie that feels like a founder checking in with herself before the day starts.
+
+Micro-story moment: She is sitting near the window after getting ready, holding the phone close like a FaceTime or front-camera selfie.
+
+Scene and atmosphere: Cream bedroom or living room near sheer curtains, soft sofa or bed edge, coffee nearby but blurred. Calm, bright, minimal.
+
+Wardrobe: Ivory off-shoulder knit, cream cardigan, or soft white fitted tank with wide-leg trousers. Stylish but still soft.
+
+Hair and makeup: Natural hair color from reference photos. Soft brushed waves, fresh makeup, glossy nude lip, brushed brows, soft cream blush.
+
+Pose and body language: Close selfie crop from shoulders up, face near the window light, one hand lightly touching hair or cardigan collar, expression calm and soft, eyes toward camera.
+
+Composition: Vertical 9:16 front-camera selfie feel, slightly high angle but flattering, close and intimate. Background softly blurred.
+
+Lighting: Soft side window light, gentle highlights on skin and hair, natural shadows.
+
+Color grading: Creamy whites, warm beige, soft oat tones, pale gold highlights, low contrast, airy matte edit, subtle film grain.
+
+Image quality: Vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px, sharp face, realistic skin texture, crisp hair detail, no blur.
+
+Avoid: overly posed glamour portrait, harsh beauty filter, plastic skin, heavy glam, cluttered background, CGI, generic stock-photo smile.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
+// COLLECTION 06 — Dark Feminine Café Coffee-Run Editorial (6 shots)
 // ---------------------------------------------------------------------------
 
 export const DARK_FEMININE_CAFE_SERIES: PromptCard[] = [
@@ -1307,6 +1878,39 @@ export type VaultCollectionMeta = {
 
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
+    previewCardId: "noir-femme-shot-1",
+    name: "NOIR FEMME Editorial",
+    shotCount: 9,
+    thumbnails: [
+      "/images/ai-prompts/noir-femme-shot-1.png",
+      "/images/ai-prompts/noir-femme-shot-2.png",
+      "/images/ai-prompts/noir-femme-shot-3.png",
+      "/images/ai-prompts/noir-femme-shot-4.png",
+      "/images/ai-prompts/noir-femme-shot-5.png",
+      "/images/ai-prompts/noir-femme-shot-6.png",
+      "/images/ai-prompts/noir-femme-shot-7.png",
+      "/images/ai-prompts/noir-femme-shot-8.png",
+      "/images/ai-prompts/noir-femme-shot-9.png",
+    ],
+  },
+  {
+    previewCardId: "clean-girl-morning-shot-1",
+    name: "Clean Girl Founder Morning Editorial",
+    shotCount: 10,
+    thumbnails: [
+      "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-2.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-4.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-5.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-6.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-7.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-8.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-9.jpg",
+      "/images/ai-prompts/clean-girl-morning-shot-10.jpg",
+    ],
+  },
+  {
     previewCardId: "dark-feminine-cafe-shot-1",
     name: "Dark Feminine Café Coffee-Run Editorial",
     shotCount: 6,
@@ -1418,6 +2022,8 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
+  ...(NOIR_FEMME_SERIES.length > 0           ? [NOIR_FEMME_SERIES[0]]           : []),
+  ...(CLEAN_GIRL_MORNING_SERIES.length > 0   ? [CLEAN_GIRL_MORNING_SERIES[0]]   : []),
   ...(DARK_FEMININE_CAFE_SERIES.length > 0 ? [DARK_FEMININE_CAFE_SERIES[0]] : []),
   ...(DARK_BALCONY_SERIES.length > 0   ? [DARK_BALCONY_SERIES[0]]   : []),
   ...(COASTAL_WHITE_SERIES.length > 0  ? [COASTAL_WHITE_SERIES[0]]  : []),

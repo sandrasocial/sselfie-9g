@@ -9,6 +9,8 @@ import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
+  NOIR_FEMME_SERIES,
+  CLEAN_GIRL_MORNING_SERIES,
   DARK_FEMININE_CAFE_SERIES,
   DARK_BALCONY_SERIES,
   COASTAL_WHITE_SERIES,
@@ -25,6 +27,20 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 // ── Collection data ─────────────────────────────────────────────────────────
 
 const COLLECTION_OVERVIEW = [
+  {
+    eyebrow: "COLLECTION 08",
+    title: "Noir Femme",
+    note: "Black lace flares. European cobblestones. Movement captured in deep black and white.",
+    image: NOIR_FEMME_SERIES[0]?.exampleImage,
+    href: "#noir-femme",
+  },
+  {
+    eyebrow: "COLLECTION 07",
+    title: "Clean Girl Morning",
+    note: "Cream knit, slow coffee, soft window light. The founder morning before the day begins.",
+    image: CLEAN_GIRL_MORNING_SERIES[0]?.exampleImage,
+    href: "#clean-girl-morning",
+  },
   {
     eyebrow: "COLLECTION 06",
     title: "Dark Feminine Café",
@@ -77,6 +93,22 @@ const VAULT_COLLECTIONS: Array<{
   heroImage?: string
   cards: PromptCard[]
 }> = [
+  {
+    id: "noir-femme",
+    eyebrow: "COLLECTION 08 · NOIR FEMME EDITORIAL",
+    title: "NOIR FEMME Editorial",
+    note: "European cobblestone streets, black lace flare trousers, oversized blazer, black and white. Five movement shots from ground level to wide vanishing point, plus four close portrait bonus shots — eyes down, hair push, sharp profile, and the only eye-contact shot in the set.",
+    heroImage: NOIR_FEMME_SERIES[0]?.exampleImage,
+    cards: NOIR_FEMME_SERIES,
+  },
+  {
+    id: "clean-girl-morning",
+    eyebrow: "COLLECTION 07 · CLEAN GIRL FOUNDER MORNING EDITORIAL",
+    title: "Clean Girl Founder Morning Editorial",
+    note: "A full morning narrative in cream, oat, and soft window light — from bedroom mirror selfie through skincare, kitchen coffee, laptop work, and getting dressed. Ten shots that turn a regular founder morning into aspirational content.",
+    heroImage: CLEAN_GIRL_MORNING_SERIES[0]?.exampleImage,
+    cards: CLEAN_GIRL_MORNING_SERIES,
+  },
   {
     id: "dark-feminine-cafe",
     eyebrow: "COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL",
