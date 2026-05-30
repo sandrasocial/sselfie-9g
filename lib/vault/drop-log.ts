@@ -17,14 +17,14 @@
 
 export const VAULT_EMAIL_CONFIG = {
   /** Must be set to true before /api/vault/email-drop will do anything real. */
-  automationApproved: true,
+  automationApproved: false,
 
   /**
    * When true: returns preview (counts, sample recipients, subject lines).
    * Does NOT create a run, does NOT send anything.
    * Set to false only after reviewing the dry-run and getting Sandra's approval.
    */
-  dryRun: false,
+  dryRun: true,
 
   /** Max recipients per /process batch call. Keep ≤50 for Vercel timeout safety. */
   maxBatchSize: 25,
@@ -82,40 +82,40 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
     name: "Dark Feminine Café Coffee-Run Editorial",
     heroImage: "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
     moodLine: "Black blazer. Coffee in hand. Moving through the city like you own it.",
-    includedInEmailDrop: false,
-    droppedAt: null,
+    includedInEmailDrop: true,
+    droppedAt: "2026-05-30",
   },
   {
     id: "coastal-white",
     name: "Coastal White Dress Sunset Editorial",
     heroImage: "/images/ai-prompts/coastal-white-shot-1.jpg",
     moodLine: "White linen. Salt air. Golden light on water.",
-    includedInEmailDrop: false,
-    droppedAt: null,
+    includedInEmailDrop: true,
+    droppedAt: "2026-05-30",
   },
   {
     id: "dark-balcony",
     name: "Dark Balcony Luxury City Editorial",
     heroImage: "/images/ai-prompts/dark-balcony-shot-1.png",
     moodLine: "City lights below. Evening silk. Luxury.",
-    includedInEmailDrop: false,
-    droppedAt: null,
+    includedInEmailDrop: true,
+    droppedAt: "2026-05-30",
   },
   {
     id: "clean-girl-morning",
     name: "Clean Girl Founder Morning Editorial",
     heroImage: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
     moodLine: "Mirror light. Skincare. Coffee. A calm founder morning.",
-    includedInEmailDrop: false,
-    droppedAt: null,
+    includedInEmailDrop: true,
+    droppedAt: "2026-05-30",
   },
   {
     id: "noir-femme",
     name: "NOIR FEMME Editorial",
     heroImage: "/images/ai-prompts/noir-femme-shot-3.png",
     moodLine: "Crushed blacks. Street movement. Full cinematic edge.",
-    includedInEmailDrop: false,
-    droppedAt: null,
+    includedInEmailDrop: true,
+    droppedAt: "2026-05-30",
   },
 ]
 
