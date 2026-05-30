@@ -17,14 +17,14 @@
 
 export const VAULT_EMAIL_CONFIG = {
   /** Must be set to true before /api/vault/email-drop will do anything real. */
-  automationApproved: false,
+  automationApproved: true,
 
   /**
    * When true: returns preview (counts, sample recipients, subject lines).
    * Does NOT create a run, does NOT send anything.
    * Set to false only after reviewing the dry-run and getting Sandra's approval.
    */
-  dryRun: true,
+  dryRun: false,
 
   /** Max recipients per /process batch call. Keep ≤50 for Vercel timeout safety. */
   maxBatchSize: 25,
