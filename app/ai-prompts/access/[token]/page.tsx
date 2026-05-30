@@ -103,7 +103,13 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
   )
 }
 
-function PreviewCardEl({ card }: { card: PromptCard }) {
+function PreviewCardEl({
+  card,
+  upgradeHref,
+}: {
+  card: PromptCard
+  upgradeHref?: string
+}) {
   return (
     <article id={card.id} className="ap-preview-card">
       {card.exampleImage && (
@@ -127,7 +133,25 @@ function PreviewCardEl({ card }: { card: PromptCard }) {
           <p>{card.prompt}</p>
         </details>
         <div className="pc-copy-row">
-          <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
+          <CopyButton
+            text={card.prompt}
+            promptTitle={card.title}
+            promptNumber={card.number}
+            afterCopyHref={upgradeHref}
+            afterCopyLabel="Get the remaining shots · $27"
+            afterCopyNote="Prompt copied. If this look is the one, the full shoot is inside the Vault."
+            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
+            afterCopyTrackProperties={{
+              source: "ai-prompts",
+              destination: "checkout-prompt-vault",
+              utm_campaign: "ai_prompts_to_prompt_vault",
+              utm_content: `copy_${card.id}`,
+              checkout_source: "after_copy_prompt_cta",
+              cta_position: "after_copy",
+              prompt_id: card.id,
+              prompt_title: card.title,
+            }}
+          />
         </div>
       </div>
     </article>
@@ -280,9 +304,13 @@ export default async function AiPromptsAccessPage({
             <div className="ap-vault-grid">
               {FREEBIE_COLLECTION_PREVIEWS.map(card => {
                 const meta = VAULT_COLLECTION_META.find(m => m.previewCardId === card.id)
+                const upgradeHref = buildPromptVaultFreebieCheckoutHref({
+                  promptId: card.id,
+                  accessToken: token,
+                })
                 return (
                   <div key={card.id} className="ap-vault-item">
-                    <PreviewCardEl card={card} />
+                    <PreviewCardEl card={card} upgradeHref={upgradeHref} />
                     {meta && (
                       <div className="ap-thumb-wrap">
                         <div className="ap-thumb-row">
@@ -309,10 +337,7 @@ export default async function AiPromptsAccessPage({
                           {meta.shotCount - 1} more shots in the Vault.
                         </p>
                         <TrackedLink
-                          href={buildPromptVaultFreebieCheckoutHref({
-                            promptId: card.id,
-                            accessToken: token,
-                          })}
+                          href={upgradeHref}
                           className="ap-shoot-cta"
                           trackEvent="ai_prompts_prompt_vault_click"
                           trackProperties={{
@@ -784,6 +809,13 @@ export default async function AiPromptsAccessPage({
           justify-content: flex-end;
         }
 
+        .copy-action {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+        }
+
         .copy-btn {
           padding: 8px 18px;
           background: transparent;
@@ -802,6 +834,38 @@ export default async function AiPromptsAccessPage({
         .copy-btn:hover {
           border-color: rgba(245, 245, 245, 0.38);
           color: rgba(245, 245, 245, 0.88);
+        }
+
+        .copy-after-cta {
+          width: 100%;
+          margin-top: 14px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(245, 245, 245, 0.08);
+          text-align: left;
+        }
+
+        .copy-after-note {
+          margin: 0 0 10px;
+          font-size: 12px;
+          line-height: 1.6;
+          color: rgba(245, 245, 245, 0.5);
+        }
+
+        .copy-after-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 44px;
+          padding: 12px 16px;
+          background: #f5f5f5;
+          color: #0a0a0a;
+          text-align: center;
+          text-decoration: none;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          line-height: 1.35;
+          text-transform: uppercase;
         }
 
         .ap-workflow-note {
@@ -1132,6 +1196,16 @@ export default async function AiPromptsAccessPage({
         .copy-btn:hover {
           color: #0d0c0b;
           border-color: rgba(13, 12, 11, 0.42);
+        }
+        .copy-after-cta {
+          border-top-color: rgba(13, 12, 11, 0.08);
+        }
+        .copy-after-note {
+          color: rgba(13, 12, 11, 0.56);
+        }
+        .copy-after-link {
+          background: #0d0c0b;
+          color: #f5f1eb;
         }
         .ap-bridge-cta,
         .ap-bridge-cta-primary,
