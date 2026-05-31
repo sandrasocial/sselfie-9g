@@ -49,7 +49,7 @@ type GrowthReportLike = {
     bugs: number
   }
   recentSupportThreads?: Array<{
-    id: string
+    id?: string | null
     user_name?: string | null
     user_email?: string | null
     type?: string | null
@@ -177,7 +177,7 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
     const status = cleanLabel(thread.status, "new")
     const subject = cleanLabel(thread.subject, "Customer support message")
     return {
-      id: thread.id,
+      id: cleanLabel(thread.id, "support-thread"),
       customer: cleanLabel(thread.user_name, "Customer"),
       email: cleanLabel(thread.user_email, "No email"),
       label: cleanLabel(thread.type, "support"),

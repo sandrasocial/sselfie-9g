@@ -14,6 +14,7 @@ type Props = {
   initialPosts: RecentInstagramPost[]
   initialSlots: ContentPlannerSlot[]
   instagramSource: ContentBoardData["instagramSource"]
+  instagramInsightStatus: ContentBoardData["instagramInsightStatus"]
   plannerSource: ContentBoardData["plannerSource"]
 }
 
@@ -72,12 +73,14 @@ export function MorningBoardVisualPlanner({
   initialPosts,
   initialSlots,
   instagramSource,
+  instagramInsightStatus,
   plannerSource,
 }: Props) {
   const [posts, setPosts] = useState(initialPosts)
   const [slots, setSlots] = useState(initialSlots)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [source, setSource] = useState(instagramSource)
+  const [insightStatus, setInsightStatus] = useState(instagramInsightStatus)
   const [statusMessage, setStatusMessage] = useState("")
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
   const [isPending, startTransition] = useTransition()
@@ -145,6 +148,7 @@ export function MorningBoardVisualPlanner({
       const boardData = (await boardResponse.json()) as ContentBoardData
       setPosts(boardData.recentPosts)
       setSource(boardData.instagramSource)
+      setInsightStatus(boardData.instagramInsightStatus)
       setStatusMessage(`Instagram refreshed. ${refreshData.synced || 0} posts synced.`)
     })
   }
@@ -262,6 +266,11 @@ export function MorningBoardVisualPlanner({
           <span>
             Instagram source: {source === "instagram_posts" ? "live database thumbnails" : source}
           </span>
+          {insightStatus === "thumbnails_only" && (
+            <span>
+              Insight metrics need Meta permission. Use live Graph pulls for saves/reach until approved.
+            </span>
+          )}
           {statusMessage && <span>{statusMessage}</span>}
         </div>
       </div>

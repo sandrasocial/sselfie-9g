@@ -30,6 +30,7 @@ export type RecentInstagramPost = {
   saves: number
   shares: number
   reach: number
+  lastSyncedAt: string
   signalLabel: string
 }
 
@@ -37,6 +38,7 @@ export type ContentBoardData = {
   recentPosts: RecentInstagramPost[]
   plannerSlots: ContentPlannerSlot[]
   instagramSource: "instagram_posts" | "empty" | "unavailable"
+  instagramInsightStatus: "with_insights" | "thumbnails_only" | "empty" | "unavailable"
   plannerSource: "content_calendars" | "default"
 }
 
@@ -121,6 +123,10 @@ function normalizeInstagramPost(row: Record<string, unknown>): RecentInstagramPo
     saves,
     shares,
     reach,
+    lastSyncedAt:
+      row.last_synced_at instanceof Date
+        ? row.last_synced_at.toISOString()
+        : toStringValue(row.last_synced_at),
     signalLabel: deriveSignalLabel({ comments, saves, shares, reach, likes }),
   }
 }
@@ -128,6 +134,7 @@ function normalizeInstagramPost(row: Record<string, unknown>): RecentInstagramPo
 export async function getRecentInstagramPosts(limit = 6): Promise<{
   posts: RecentInstagramPost[]
   source: ContentBoardData["instagramSource"]
+  insightStatus: ContentBoardData["instagramInsightStatus"]
 }> {
   try {
     const rows = await sql`
@@ -138,13 +145,15 @@ export async function getRecentInstagramPosts(limit = 6): Promise<{
     `
 
     const posts = rows.map(row => normalizeInstagramPost(row as Record<string, unknown>))
+    const hasInsightMetrics = posts.some(post => post.reach > 0 || post.saves > 0 || post.shares > 0)
     return {
       posts,
       source: posts.length > 0 ? "instagram_posts" : "empty",
+      insightStatus: posts.length === 0 ? "empty" : hasInsightMetrics ? "with_insights" : "thumbnails_only",
     }
   } catch (error) {
     console.error("[ContentPlanner] Failed to load instagram_posts:", error)
-    return { posts: [], source: "unavailable" }
+    return { posts: [], source: "unavailable", insightStatus: "unavailable" }
   }
 }
 
@@ -246,12 +255,73 @@ type GraphMedia = {
   id: string
   caption?: string
   media_type?: string
+  media_product_type?: string
   media_url?: string
   thumbnail_url?: string
   permalink?: string
   timestamp?: string
   like_count?: number
   comments_count?: number
+}
+
+type GraphInsightValue = {
+  name?: string
+  values?: Array<{ value?: number }>
+  total_value?: { value?: number }
+}
+
+type GraphInsightsResponse = {
+  data?: GraphInsightValue[]
+  error?: { message?: string }
+}
+
+async function fetchMediaInsights(mediaId: string, token: string): Promise<{
+  views: number | null
+  reach: number | null
+  saves: number | null
+  shares: number | null
+  likes: number | null
+  comments: number | null
+  totalInteractions: number | null
+}> {
+  const metrics = ["views", "reach", "saved", "likes", "comments", "shares", "total_interactions"]
+  const url = new URL(`https://graph.facebook.com/v21.0/${mediaId}/insights`)
+  url.searchParams.set("metric", metrics.join(","))
+  url.searchParams.set("access_token", token)
+
+  const response = await fetch(url)
+  const data = (await response.json()) as GraphInsightsResponse
+
+  if (!response.ok || data.error || !Array.isArray(data.data)) {
+    return {
+      views: null,
+      reach: null,
+      saves: null,
+      shares: null,
+      likes: null,
+      comments: null,
+      totalInteractions: null,
+    }
+  }
+
+  const values = new Map<string, number>()
+  for (const metric of data.data) {
+    if (!metric.name) continue
+    const value = metric.values?.[0]?.value ?? metric.total_value?.value
+    if (typeof value === "number" && Number.isFinite(value)) {
+      values.set(metric.name, value)
+    }
+  }
+
+  return {
+    views: values.get("views") ?? null,
+    reach: values.get("reach") ?? null,
+    saves: values.get("saved") ?? null,
+    shares: values.get("shares") ?? null,
+    likes: values.get("likes") ?? null,
+    comments: values.get("comments") ?? null,
+    totalInteractions: values.get("total_interactions") ?? null,
+  }
 }
 
 export async function refreshInstagramPostsFromGraph(limit = 9): Promise<{
@@ -276,7 +346,7 @@ export async function refreshInstagramPostsFromGraph(limit = 9): Promise<{
   }
 
   const fields =
-    "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count"
+    "id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count"
   const url = new URL(`https://graph.facebook.com/v21.0/${connection.instagram_user_id}/media`)
   url.searchParams.set("fields", fields)
   url.searchParams.set("limit", String(limit))
@@ -295,6 +365,8 @@ export async function refreshInstagramPostsFromGraph(limit = 9): Promise<{
   const media = Array.isArray(data.data) ? data.data : []
 
   for (const item of media) {
+    const insights = await fetchMediaInsights(item.id, String(token))
+
     await sql`
       INSERT INTO instagram_posts (
         connection_id,
@@ -305,21 +377,31 @@ export async function refreshInstagramPostsFromGraph(limit = 9): Promise<{
         media_url,
         permalink,
         posted_at,
+        impressions,
+        reach,
+        engagement,
         likes,
         comments,
+        saves,
+        shares,
         last_synced_at
       )
       VALUES (
         ${connection.id},
         ${connection.user_id},
         ${item.id},
-        ${item.media_type || null},
+        ${item.media_product_type || item.media_type || null},
         ${item.caption || null},
         ${item.thumbnail_url || item.media_url || null},
         ${item.permalink || null},
         ${item.timestamp ? new Date(item.timestamp).toISOString() : null},
-        ${item.like_count || 0},
-        ${item.comments_count || 0},
+        ${insights.views},
+        ${insights.reach},
+        ${insights.totalInteractions},
+        ${insights.likes ?? item.like_count ?? 0},
+        ${insights.comments ?? item.comments_count ?? 0},
+        ${insights.saves},
+        ${insights.shares},
         NOW()
       )
       ON CONFLICT (instagram_post_id)
@@ -329,8 +411,13 @@ export async function refreshInstagramPostsFromGraph(limit = 9): Promise<{
         media_url = EXCLUDED.media_url,
         permalink = EXCLUDED.permalink,
         posted_at = EXCLUDED.posted_at,
+        impressions = COALESCE(EXCLUDED.impressions, instagram_posts.impressions),
+        reach = COALESCE(EXCLUDED.reach, instagram_posts.reach),
+        engagement = COALESCE(EXCLUDED.engagement, instagram_posts.engagement),
         likes = EXCLUDED.likes,
         comments = EXCLUDED.comments,
+        saves = COALESCE(EXCLUDED.saves, instagram_posts.saves),
+        shares = COALESCE(EXCLUDED.shares, instagram_posts.shares),
         last_synced_at = NOW()
     `
   }
@@ -345,6 +432,7 @@ export async function getContentBoardData(): Promise<ContentBoardData> {
     recentPosts: instagram.posts,
     plannerSlots: planner.slots,
     instagramSource: instagram.source,
+    instagramInsightStatus: instagram.insightStatus,
     plannerSource: planner.source,
   }
 }

@@ -549,6 +549,7 @@ export default async function DailyBriefingPage({
           initialPosts={contentBoard.recentPosts}
           initialSlots={contentBoard.plannerSlots}
           instagramSource={contentBoard.instagramSource}
+          instagramInsightStatus={contentBoard.instagramInsightStatus}
           plannerSource={contentBoard.plannerSource}
         />
 
