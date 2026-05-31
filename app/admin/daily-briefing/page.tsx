@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Wrench,
 } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { CodexTaskMemoryBoard } from "@/components/admin/codex-task-memory-board"
@@ -63,6 +64,17 @@ type RecentIgSignalRow = {
   username: string
   latest_message: string | null
   growth_tags: string[] | null
+}
+
+type SupportThreadRow = {
+  id: string
+  customer: string
+  email: string
+  label: string
+  subject: string
+  message: string
+  status: string
+  action: string
 }
 
 function safeText(value: unknown, fallback = "Not enough signal yet") {
@@ -260,6 +272,7 @@ export default async function DailyBriefingPage({
   const topGrowthTags = report.topGrowthTags as GrowthTagRow[]
   const attributionRows = report.attributionRows as AttributionRow[]
   const recentIgSignals = report.recentIgSignals as RecentIgSignalRow[]
+  const supportThreads = briefing.supportThreads as SupportThreadRow[]
 
   const purchases = report.paymentCounts.purchases || report.eventCounts.checkoutSuccesses
   const buyers = report.buyerCounts.buyers || report.paymentCounts.purchases
@@ -426,6 +439,62 @@ export default async function DailyBriefingPage({
         </section>
 
         <CodexTaskMemoryBoard initialTasks={codexTasks} windowDays={windowDays} />
+
+        <section className="mb-10">
+          <SectionTitle eyebrow="Customer service" title="Support Threads">
+            <Link
+              href="/admin/customer-support"
+              className="inline-flex min-h-[44px] items-center gap-2 border border-[rgba(197,198,200,.65)] bg-white px-4 py-3 text-[10px] font-medium uppercase tracking-[0.18em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]"
+            >
+              Open Support
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </SectionTitle>
+
+          {supportThreads.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {supportThreads.slice(0, 4).map(thread => (
+                <article key={thread.id} className={boardCardClass("p-5 sm:p-6")}>
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <Label>
+                        {thread.label} · {thread.status}
+                      </Label>
+                      <h3 className="mt-3 text-base font-medium leading-snug text-[color:var(--ss-night)]">
+                        {thread.subject}
+                      </h3>
+                    </div>
+                    <Wrench className="h-5 w-5 shrink-0 text-[color:var(--ss-gray)]" />
+                  </div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--ss-gray)]">
+                    {thread.customer} · {thread.email}
+                  </p>
+                  <p className="mt-4 line-clamp-3 text-sm leading-7 text-[color:var(--ss-davy)]">
+                    {thread.message}
+                  </p>
+                  <p className="mt-4 border-t border-[rgba(197,198,200,.35)] pt-4 text-xs leading-6 text-[color:var(--ss-gray)]">
+                    {thread.action}
+                  </p>
+                  <Link
+                    href={`/admin/customer-support?q=${encodeURIComponent(thread.email)}`}
+                    className="mt-5 inline-flex min-h-[44px] items-center gap-2 border border-[color:var(--ss-night)] bg-[color:var(--ss-night)] px-4 py-3 text-[10px] font-medium uppercase tracking-[0.18em] text-[color:var(--ss-seasalt)]"
+                  >
+                    Open Thread
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <article className={boardCardClass("p-5 sm:p-6")}>
+              <p className="text-sm leading-7 text-[color:var(--ss-davy)]">
+                No fresh customer support threads in this window. Feedback still flows through
+                the in-app feedback form and lands in Customer Support when someone submits a bug
+                or question.
+              </p>
+            </article>
+          )}
+        </section>
 
         <section className="mb-10">
           <SectionTitle eyebrow="Plain language" title="What's Working" />

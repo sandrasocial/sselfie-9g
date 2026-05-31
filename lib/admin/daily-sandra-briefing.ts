@@ -41,6 +41,25 @@ type GrowthReportLike = {
     flagged: number
     agentDrafts: number
   }
+  supportCounts?: {
+    total: number
+    new: number
+    reviewing: number
+    resolved: number
+    bugs: number
+  }
+  recentSupportThreads?: Array<{
+    id: string
+    user_name?: string | null
+    user_email?: string | null
+    type?: string | null
+    subject?: string | null
+    message?: string | null
+    status?: string | null
+    created_at?: string | null
+    replied_at?: string | null
+    admin_reply?: string | null
+  }>
   topGrowthTags: ReportRow[]
   topPromptSignals: ReportRow[]
   freePromptSignals: ReportRow[]
@@ -56,10 +75,22 @@ export type DailySandraBriefing = {
   postToday: string[]
   codexNext: string[]
   sandraNext: string[]
+  supportThreads: Array<{
+    id: string
+    customer: string
+    email: string
+    label: string
+    subject: string
+    message: string
+    status: string
+    action: string
+    createdAt?: string | null
+  }>
   links: {
     growthIntelligence: string
     promptVault: string
     inbox: string
+    customerSupport: string
   }
 }
 
@@ -105,6 +136,13 @@ function contentInstructionForTag(value: unknown): string | null {
   }
 }
 
+function previewText(value: unknown, fallback = "No message preview"): string {
+  if (typeof value !== "string") return fallback
+  const clean = value.replace(/\s+/g, " ").trim()
+  if (!clean) return fallback
+  return clean.length > 220 ? `${clean.slice(0, 217)}...` : clean
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -135,6 +173,26 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
   const topGrowthTag = report.topGrowthTags[0]
   const topAttribution = report.attributionRows[0]
   const topVisual = cleanLabel(topPaidPrompt?.prompt_title || topFreePrompt?.prompt_title)
+  const supportThreads = (report.recentSupportThreads || []).map((thread) => {
+    const status = cleanLabel(thread.status, "new")
+    const subject = cleanLabel(thread.subject, "Customer support message")
+    return {
+      id: thread.id,
+      customer: cleanLabel(thread.user_name, "Customer"),
+      email: cleanLabel(thread.user_email, "No email"),
+      label: cleanLabel(thread.type, "support"),
+      subject,
+      message: previewText(thread.message),
+      status,
+      action:
+        status === "resolved"
+          ? "Already replied. Watch for follow-up."
+          : thread.type === "bug"
+            ? "Codex should inspect this before Sandra sends a final reply."
+            : "Sandra should review and reply from customer support.",
+      createdAt: thread.created_at,
+    }
+  })
 
   const working: string[] = []
   const leaking: string[] = []
@@ -190,6 +248,10 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
     leaking.push("IG audience intelligence is still thin. Real DMs/comments should improve once Meta permissions and traffic are flowing.")
   }
 
+  if ((report.supportCounts?.new || 0) > 0) {
+    leaking.push(`${report.supportCounts?.new} new customer support thread${report.supportCounts?.new === 1 ? "" : "s"} need review. Keep support inside the customer support inbox so issues do not get lost in email.`)
+  }
+
   if (leaking.length === 0) {
     leaking.push("No major leak is obvious in this window. Keep sending qualified traffic and watch the next 24 hours.")
   }
@@ -206,10 +268,12 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
   postToday.push("Send story traffic directly to the free preview or Vault with clean UTM tracking.")
 
   sandraNext.push("Choose today's reel angle from the strongest visual signal above.")
-  sandraNext.push("Review /my-inbox for emotional wording, objections, and aesthetic requests.")
+  sandraNext.push("Review /my-inbox and Customer Support for emotional wording, objections, bugs, and aesthetic requests.")
   sandraNext.push("Keep posting transformation proof before teaching the prompt mechanics.")
 
-  if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
+  if ((report.supportCounts?.new || 0) > 0 || (report.supportCounts?.reviewing || 0) > 0) {
+    codexNext.push("Triage open customer support threads and fix any product bugs before optimizing more funnel copy.")
+  } else if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
     codexNext.push("Improve the free preview to Vault bridge after the first prompt copy.")
   } else if (report.eventCounts.manychatCheckoutStarts >= 3 && manychatUnrecoverableRate >= 25) {
     codexNext.push("Tighten the ManyChat checkout path so more direct-checkout visitors arrive with a recoverable email.")
@@ -234,10 +298,12 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
     postToday: postToday.slice(0, 3),
     codexNext: codexNext.slice(0, 3),
     sandraNext: sandraNext.slice(0, 3),
+    supportThreads,
     links: {
       growthIntelligence: `${SITE_URL}/admin/growth-intelligence`,
       promptVault: `${SITE_URL}/admin/prompt-vault`,
       inbox: `${SITE_URL}/my-inbox`,
+      customerSupport: `${SITE_URL}/admin/customer-support`,
     },
   }
 }
@@ -248,6 +314,36 @@ function listHtml(items: string[]): string {
 
 function listText(items: string[]): string {
   return items.map((item) => `- ${item}`).join("\n")
+}
+
+function supportThreadsHtml(threads: DailySandraBriefing["supportThreads"]): string {
+  if (threads.length === 0) {
+    return `<p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">No new customer support threads in this window.</p>`
+  }
+
+  return threads
+    .slice(0, 4)
+    .map((thread) => {
+      const supportUrl = `${SITE_URL}/admin/customer-support?q=${encodeURIComponent(thread.email)}`
+      return `
+        <div style="border-top:1px solid rgba(197,198,200,.45);padding:14px 0 0;margin:14px 0 0;">
+          <p style="margin:0 0 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#818283;">${escapeHtml(thread.label)} · ${escapeHtml(thread.status)}</p>
+          <p style="margin:0 0 6px;font-size:15px;color:#0D0E10;font-weight:600;">${escapeHtml(thread.subject)}</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#4F5052;line-height:1.6;">${escapeHtml(thread.customer)} · ${escapeHtml(thread.email)}</p>
+          <p style="margin:0 0 10px;font-size:14px;color:#4F5052;line-height:1.7;">${escapeHtml(thread.message)}</p>
+          <p style="margin:0 0 10px;font-size:13px;color:#818283;line-height:1.6;">${escapeHtml(thread.action)}</p>
+          <a href="${supportUrl}" style="color:#0D0E10;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Open thread</a>
+        </div>`
+    })
+    .join("")
+}
+
+function supportThreadsText(threads: DailySandraBriefing["supportThreads"]): string {
+  if (threads.length === 0) return "- No new customer support threads in this window."
+  return threads
+    .slice(0, 4)
+    .map((thread) => `- [${thread.status}] ${thread.subject} from ${thread.customer} <${thread.email}>: ${thread.message} Action: ${thread.action}`)
+    .join("\n")
 }
 
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
@@ -271,6 +367,11 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
       </div>
 
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Customer threads</h2>
+        ${supportThreadsHtml(briefing.supportThreads)}
+      </div>
+
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What to post today</h2>
         <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.postToday)}</ul>
       </div>
@@ -289,13 +390,13 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open Growth Intelligence</a>
       </p>
       <p style="margin:18px 0 0;color:#818283;font-size:12px;line-height:1.6;">
-        Also useful: <a href="${briefing.links.inbox}" style="color:#4F5052;">my inbox</a> · <a href="${briefing.links.promptVault}" style="color:#4F5052;">Prompt Vault monitor</a>
+        Also useful: <a href="${briefing.links.inbox}" style="color:#4F5052;">my inbox</a> · <a href="${briefing.links.customerSupport}" style="color:#4F5052;">customer support</a> · <a href="${briefing.links.promptVault}" style="color:#4F5052;">Prompt Vault monitor</a>
       </p>
     </div>
   </body>
 </html>`
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

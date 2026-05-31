@@ -2,7 +2,8 @@
  * GET  /api/admin/customer-support?email=...  — look up a customer by email
  * POST /api/admin/customer-support            — resend delivery email for a product
  *
- * Admin-only. Secured by checking session email against ADMIN_EMAIL.
+ * Admin-only. This is the canonical customer support surface for purchase
+ * access, delivery history, and in-app feedback threads.
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -22,7 +23,7 @@ export const dynamic = "force-dynamic"
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
-async function requireAdmin(req: NextRequest): Promise<NextResponse | null> {
+async function requireAdmin(_req: NextRequest): Promise<NextResponse | null> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || user.email !== ADMIN_EMAIL) {
@@ -76,12 +77,30 @@ export async function GET(req: NextRequest) {
         LIMIT 30
       `,
       sql`
-        SELECT message, feedback_type, created_at
+        SELECT
+          id,
+          type,
+          subject,
+          message,
+          status,
+          images,
+          admin_reply,
+          replied_at,
+          created_at
         FROM feedback
-        WHERE LOWER(email) = ${email}
-        ORDER BY created_at DESC
+        WHERE LOWER(user_email) = ${email}
+        ORDER BY
+          CASE status
+            WHEN 'new' THEN 0
+            WHEN 'reviewing' THEN 1
+            ELSE 2
+          END,
+          created_at DESC
         LIMIT 10
-      `.catch(() => []),
+      `.catch((error) => {
+        console.error("[customer-support] Feedback lookup failed:", error)
+        return []
+      }),
       sql`
         SELECT id, source, access_token, email_tags, guide_access_email_sent, guide_access_email_sent_at, created_at
         FROM freebie_subscribers

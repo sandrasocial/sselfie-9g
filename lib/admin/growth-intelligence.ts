@@ -191,6 +191,42 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     LIMIT 8
   `
 
+  const [supportCountsRow] = await sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'new')::int AS new_count,
+      COUNT(*) FILTER (WHERE status = 'reviewing')::int AS reviewing_count,
+      COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved_count,
+      COUNT(*) FILTER (WHERE type = 'bug')::int AS bug_count
+    FROM feedback
+    WHERE created_at > NOW() - (${interval}::interval)
+  `.catch(() => [{ total: 0, new_count: 0, reviewing_count: 0, resolved_count: 0, bug_count: 0 }])
+
+  const recentSupportThreads = await sql`
+    SELECT
+      id,
+      user_name,
+      user_email,
+      type,
+      subject,
+      message,
+      status,
+      created_at,
+      replied_at,
+      images,
+      admin_reply
+    FROM feedback
+    WHERE created_at > NOW() - (${interval}::interval)
+    ORDER BY
+      CASE status
+        WHEN 'new' THEN 0
+        WHEN 'reviewing' THEN 1
+        ELSE 2
+      END,
+      created_at DESC
+    LIMIT 8
+  `.catch(() => [])
+
   const eventCounts = {
     aiPromptOptins: toInt(eventCountsRow?.ai_prompt_optins),
     aiPromptAccessOpens: toInt(eventCountsRow?.ai_prompt_access_opens),
@@ -229,6 +265,14 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     agentDrafts: toInt(igCountsRow?.agent_drafts),
   }
 
+  const supportCounts = {
+    total: toInt(supportCountsRow?.total),
+    new: toInt(supportCountsRow?.new_count),
+    reviewing: toInt(supportCountsRow?.reviewing_count),
+    resolved: toInt(supportCountsRow?.resolved_count),
+    bugs: toInt(supportCountsRow?.bug_count),
+  }
+
   const priorities = evaluateGrowthPriorities({
     vaultVisits: eventCounts.vaultVisits,
     freeToVaultClicks: eventCounts.freeToVaultClicks,
@@ -253,5 +297,7 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     freePromptSignals,
     attributionRows,
     recentIgSignals,
+    supportCounts,
+    recentSupportThreads,
   }
 }

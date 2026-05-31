@@ -35,8 +35,14 @@ interface CustomerData {
     created_at: string
   }>
   feedback: Array<{
+    id: string
+    type: string
+    subject: string
     message: string
-    feedback_type?: string
+    status: string
+    images?: string[]
+    admin_reply?: string | null
+    replied_at?: string | null
     created_at: string
   }>
   freebieSubs: Array<{
@@ -55,6 +61,7 @@ interface CustomerData {
 }
 
 const RESENDABLE_PRODUCTS = [
+  { id: "prompt_vault", label: "Prompt Vault" },
   { id: "starter_kit", label: "Starter Kit" },
   { id: "selfie_guide", label: "Selfie Guide" },
   { id: "masterclass", label: "Masterclass" },
@@ -114,7 +121,7 @@ export default function CustomerSupportPage() {
           .finally(() => setLoading(false))
       }
     }
-  }, [])
+  }, [searchParams])
 
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -398,8 +405,52 @@ export default function CustomerSupportPage() {
                 <div className="space-y-3">
                   {data.feedback.map((f, i) => (
                     <div key={i} className="rounded-lg bg-white p-4 text-sm">
-                      <p className="text-stone-700">{f.message}</p>
-                      <p className="mt-2 text-xs text-stone-400">{formatDate(f.created_at)}</p>
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-stone-500">
+                          {f.type}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] ${
+                            f.status === "resolved"
+                              ? "bg-green-100 text-green-700"
+                              : f.status === "reviewing"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {f.status}
+                        </span>
+                        <span className="text-xs text-stone-400">
+                          {formatDate(f.created_at)}
+                        </span>
+                      </div>
+                      <p className="font-medium text-stone-900">{f.subject}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-stone-700">{f.message}</p>
+                      {(f.images || []).length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {(f.images || []).map((url) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-600 underline"
+                            >
+                              View attachment
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {f.admin_reply && (
+                        <div className="mt-4 rounded-lg border border-green-100 bg-green-50 p-3">
+                          <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-green-700">
+                            Reply sent {f.replied_at ? `· ${formatDate(f.replied_at)}` : ""}
+                          </p>
+                          <p className="whitespace-pre-wrap text-xs leading-6 text-green-900">
+                            {f.admin_reply}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
