@@ -97,7 +97,7 @@ const VAULT_COLLECTIONS: Array<{
     id: "noir-femme",
     eyebrow: "COLLECTION 08 · NOIR FEMME EDITORIAL",
     title: "NOIR FEMME Editorial",
-    note: "European cobblestone streets, black lace flare trousers, oversized blazer, black and white. Five movement shots from ground level to wide vanishing point, plus four close portrait bonus shots — eyes down, hair push, sharp profile, and the only eye-contact shot in the set.",
+    note: "European cobblestone streets, black lace flare trousers, oversized blazer, black and white. Five movement shots from ground level to wide vanishing point, plus four close portrait bonus shots: eyes down, hair push, sharp profile, and the only eye-contact shot in the set.",
     heroImage: NOIR_FEMME_SERIES[0]?.exampleImage,
     cards: NOIR_FEMME_SERIES,
   },
@@ -105,7 +105,7 @@ const VAULT_COLLECTIONS: Array<{
     id: "clean-girl-morning",
     eyebrow: "COLLECTION 07 · CLEAN GIRL FOUNDER MORNING EDITORIAL",
     title: "Clean Girl Founder Morning Editorial",
-    note: "A full morning narrative in cream, oat, and soft window light — from bedroom mirror selfie through skincare, kitchen coffee, laptop work, and getting dressed. Ten shots that turn a regular founder morning into aspirational content.",
+    note: "A full morning narrative in cream, oat, and soft window light: bedroom mirror selfie, skincare, kitchen coffee, laptop work, and getting dressed. Ten shots that turn a regular founder morning into aspirational content.",
     heroImage: CLEAN_GIRL_MORNING_SERIES[0]?.exampleImage,
     cards: CLEAN_GIRL_MORNING_SERIES,
   },
@@ -113,7 +113,7 @@ const VAULT_COLLECTIONS: Array<{
     id: "dark-feminine-cafe",
     eyebrow: "COLLECTION 06 · DARK FEMININE CAFÉ COFFEE-RUN EDITORIAL",
     title: "Dark Feminine Café Coffee-Run Editorial",
-    note: "City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit — every shot in one coffee-run story.",
+    note: "City street, marble table, black blazer and boots. From street arrival to seated hero to reel-cover exit, every shot belongs to one coffee-run story.",
     heroImage: DARK_FEMININE_CAFE_SERIES[0]?.exampleImage,
     cards: DARK_FEMININE_CAFE_SERIES,
   },
@@ -158,6 +158,36 @@ const VAULT_COLLECTIONS: Array<{
     cards: COZY_LEATHER_SERIES,
   },
 ]
+
+const FIRST_RESULT_PATHS = [
+  {
+    label: "Most copied",
+    title: "Dark Feminine Brand Shoot",
+    useWhen: "Use this when you want your next profile, reel cover, or launch image to feel sharper and more expensive.",
+    selfie: "Best source selfie: clear face, dark top or blazer, soft window light, no sunglasses.",
+    fix: "If ChatGPT makes it too polished, rerun and add: keep my real facial features, natural skin texture, and normal expression.",
+    collectionHref: "#dark-feminine-cafe",
+    card: DARK_FEMININE_CAFE_SERIES[0],
+  },
+  {
+    label: "Fastest visual proof",
+    title: "Clean Girl Founder Morning",
+    useWhen: "Use this when you want soft founder energy: laptop, coffee, skincare, morning routine, calm personal brand.",
+    selfie: "Best source selfie: natural face, hair visible, neutral top, clean light from the front or side.",
+    fix: "If the result looks too generic, tell ChatGPT: keep my age, facial structure, hair color, and realistic body proportions.",
+    collectionHref: "#clean-girl-morning",
+    card: CLEAN_GIRL_MORNING_SERIES[0],
+  },
+  {
+    label: "Best for outfit/content",
+    title: "Denim Street Editorial",
+    useWhen: "Use this when you want full-body personal brand images that feel like a street-style content day.",
+    selfie: "Best source selfie: mirror selfie or full outfit photo with your body shape and outfit visible.",
+    fix: "If the outfit changes too much, rerun and add: preserve my outfit silhouette, body proportions, and natural pose.",
+    collectionHref: "#denim-street",
+    card: DENIM_STREET_SERIES[0],
+  },
+].filter((path) => path.card)
 
 export const metadata: Metadata = {
   title: "AI Photo Prompt Vault · SSELFIE",
@@ -359,16 +389,17 @@ export default async function PromptVaultAccessPage({
       {/* ── HERO ── */}
       <section className="pva-hero">
         <div className="pva-hero-inner">
-          <p className="pva-eyebrow">SSELFIE · THE VAULT</p>
+          <p className="pva-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`pva-headline ${cormorant.className}`}>
-            {firstName ? `${firstName}'s` : "Your"} AI<br />Photoshoot Vault
+            {firstName ? `${firstName}'s` : "The"} Selfie to<br />Brand Shoot Vault
           </h1>
           <p className="pva-subhead">
-            A growing library of editorial AI photoshoot collections, creative
-            direction, styling notes, and shot sequences — all from one selfie.
+            A guided library of full AI photoshoot sequences, creative direction,
+            styling notes, and tested prompts for turning one selfie into elevated
+            personal brand images.
           </p>
-          <a href="#vault-overview" className="pva-scroll-link">
-            Explore the collections ↓
+          <a href="#first-result" className="pva-scroll-link">
+            Start with your first result ↓
           </a>
         </div>
 
@@ -393,16 +424,83 @@ export default async function PromptVaultAccessPage({
         </div>
       </section>
 
+      {/* ── FIRST RESULT PATH ── */}
+      <section id="first-result" className="pva-first-result">
+        <div className="pva-first-result-inner">
+          <p className="pva-eyebrow">START HERE</p>
+          <h2 className={`pva-first-title ${cormorant.className}`}>
+            Get your first brand shoot result in seven minutes.
+          </h2>
+          <p className="pva-first-note">
+            Do not start by browsing everything. Choose one path, upload the right
+            selfie, copy the first prompt, and get one usable image before you try
+            another look.
+          </p>
+
+          <div className="pva-first-grid">
+            {FIRST_RESULT_PATHS.map((path) => (
+              <article key={path.title} className="pva-first-card">
+                {path.card.exampleImage && (
+                  <div className="pva-first-image-wrap">
+                    <Image
+                      src={path.card.exampleImage}
+                      alt={`${path.title} example`}
+                      fill
+                      className="pva-first-image"
+                      style={{ objectFit: "cover", objectPosition: "center top" }}
+                    />
+                  </div>
+                )}
+                <div className="pva-first-body">
+                  <span className="pva-first-label">{path.label}</span>
+                  <h3 className={`pva-first-card-title ${cormorant.className}`}>
+                    {path.title}
+                  </h3>
+                  <p className="pva-first-copy">{path.useWhen}</p>
+                  <div className="pva-first-instruction">
+                    <span>Selfie to use</span>
+                    <p>{path.selfie}</p>
+                  </div>
+                  <div className="pva-first-instruction">
+                    <span>If the result feels off</span>
+                    <p>{path.fix}</p>
+                  </div>
+                  <div className="pva-first-actions">
+                    <CopyButton
+                      text={path.card.prompt}
+                      promptTitle={path.card.title}
+                      promptNumber={path.card.number}
+                      trackEvent="prompt_vault_prompt_copied"
+                      trackSource="prompt-vault"
+                    />
+                    <a href={path.collectionHref} className="pva-first-open">
+                      Open full shoot
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="pva-troubleshoot">
+            <p className="pva-troubleshoot-label">If ChatGPT gives a weird result</p>
+            <p>
+              Start a fresh chat, upload the selfie again, paste the prompt, and add:
+              &quot;Preserve my real face, age, skin texture, hair color, body proportions,
+              and natural expression. Make it editorial, not fake.&quot;
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW TO USE ── */}
       <section className="pva-how-section">
         <div className="pva-how-inner">
-          <p className="pva-how-label">HOW TO USE</p>
+          <p className="pva-how-label">HOW IT WORKS</p>
           <ol className="pva-how-steps">
-            <li>Choose the aesthetic that calls to you from the collections below.</li>
-            <li>Open that collection and find the shot you want to recreate.</li>
-            <li>Tap <strong>Copy prompt</strong> on that card.</li>
-            <li>Open <strong>ChatGPT</strong>, start a new conversation, paste the prompt, attach your selfie.</li>
-            <li>Hit send. Your photo is ready in seconds.</li>
+            <li>Choose the visual world you want to create.</li>
+            <li>Open the shoot and copy the prompt.</li>
+            <li>Paste it into ChatGPT with your selfie and create the image.</li>
           </ol>
         </div>
       </section>
@@ -412,7 +510,7 @@ export default async function PromptVaultAccessPage({
         <div className="pva-overview-inner">
           <p className="pva-eyebrow">INSIDE THE VAULT</p>
           <h2 className={`pva-overview-title ${cormorant.className}`}>
-            Six complete collections.
+            Full photoshoot collections.
           </h2>
           <p className="pva-overview-note">
             Scroll the moodboard to pick the version of you you want to
@@ -441,7 +539,7 @@ export default async function PromptVaultAccessPage({
                   </h3>
                   <p className="pva-overview-card-note">{c.note}</p>
                   <span className="pva-overview-open-hint">
-                    Open collection →
+                    Open collection
                   </span>
                 </div>
               </a>
@@ -558,8 +656,8 @@ export default async function PromptVaultAccessPage({
       <style>{`
         /* Base */
         .pva-page {
-          background: #F5EFE6;
-          color: #0A0A0A;
+          background: #F8FAFA;
+          color: #0D0E10;
           min-height: 100vh;
         }
 
@@ -568,8 +666,8 @@ export default async function PromptVaultAccessPage({
           position: sticky;
           top: 0;
           z-index: 10;
-          background: #F5EFE6;
-          border-bottom: 1px solid #E5DDD4;
+          background: #F8FAFA;
+          border-bottom: 1px solid rgba(197,198,200,0.35);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -588,7 +686,7 @@ export default async function PromptVaultAccessPage({
           font-weight: 600;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #9B9189;
+          color: #818283;
         }
 
         /* Shared helpers */
@@ -635,6 +733,149 @@ export default async function PromptVaultAccessPage({
         }
         .pva-scroll-link:hover { color: #0A0A0A; }
 
+        /* First result */
+        .pva-first-result {
+          border-bottom: 1px solid rgba(197,198,200,0.35);
+          background: #F8FAFA;
+        }
+        .pva-first-result-inner {
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: clamp(56px, 7vw, 88px) clamp(20px, 4vw, 48px);
+        }
+        .pva-first-title {
+          margin: 0 0 16px;
+          font-size: clamp(2.2rem, 5.5vw, 4.6rem);
+          font-weight: 300;
+          line-height: 1.02;
+          color: #0D0E10;
+        }
+        .pva-first-note {
+          margin: 0 0 36px;
+          max-width: 620px;
+          font-size: 15px;
+          line-height: 1.8;
+          color: #4F5052;
+        }
+        .pva-first-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+        }
+        .pva-first-card {
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .pva-first-image-wrap {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          background: #F8FAFA;
+          overflow: hidden;
+        }
+        .pva-first-body {
+          padding: 22px 20px 20px;
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+        .pva-first-label {
+          margin-bottom: 12px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          color: #818283;
+        }
+        .pva-first-card-title {
+          margin: 0 0 12px;
+          font-size: clamp(1.55rem, 3vw, 2rem);
+          font-weight: 300;
+          line-height: 1.05;
+          color: #0D0E10;
+        }
+        .pva-first-copy {
+          margin: 0 0 18px;
+          font-size: 13px;
+          line-height: 1.7;
+          color: #4F5052;
+        }
+        .pva-first-instruction {
+          border-top: 1px solid rgba(197,198,200,0.35);
+          padding-top: 14px;
+          margin-top: 0;
+          margin-bottom: 14px;
+        }
+        .pva-first-instruction span {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          color: #818283;
+        }
+        .pva-first-instruction p {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.65;
+          color: #4F5052;
+        }
+        .pva-first-actions {
+          display: grid;
+          gap: 10px;
+          margin-top: auto;
+          padding-top: 8px;
+        }
+        .pva-first-actions .copy-action {
+          align-items: stretch;
+        }
+        .pva-first-actions .copy-btn,
+        .pva-first-open {
+          width: 100%;
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          text-decoration: none;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+        .pva-first-actions .copy-btn {
+          background: #0D0E10 !important;
+          border-color: #0D0E10 !important;
+          color: #FFFFFF !important;
+        }
+        .pva-first-open {
+          border: 1px solid rgba(13,14,16,0.18);
+          color: #0D0E10;
+        }
+        .pva-troubleshoot {
+          margin-top: 18px;
+          padding: 22px;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .pva-troubleshoot-label {
+          margin: 0 0 8px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.3em;
+          text-transform: uppercase;
+          color: #818283;
+        }
+        .pva-troubleshoot p:last-child {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.75;
+          color: #4F5052;
+        }
+
         /* Hero image strip */
         .pva-hero-strip {
           display: grid;
@@ -650,8 +891,8 @@ export default async function PromptVaultAccessPage({
 
         /* How to use */
         .pva-how-section {
-          border-bottom: 1px solid #E5DDD4;
-          background: #FAF8F4;
+          border-bottom: 1px solid rgba(197,198,200,0.35);
+          background: #FFFFFF;
           padding: clamp(32px, 4vw, 48px) clamp(20px, 4vw, 48px);
         }
         .pva-how-inner {
@@ -680,7 +921,7 @@ export default async function PromptVaultAccessPage({
 
         /* Overview */
         .pva-overview {
-          border-bottom: 1px solid #E5DDD4;
+          border-bottom: 1px solid rgba(197,198,200,0.35);
           background: #FFFFFF;
         }
         .pva-overview-inner {
@@ -711,8 +952,8 @@ export default async function PromptVaultAccessPage({
           display: block;
           color: inherit;
           text-decoration: none;
-          background: #F5EFE6;
-          border: 1px solid #E5DDD4;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.35);
           overflow: hidden;
           transition: border-color 0.2s;
         }
@@ -768,8 +1009,8 @@ export default async function PromptVaultAccessPage({
 
         /* Library */
         .pva-library {
-          border-bottom: 1px solid #E5DDD4;
-          background: #F5EFE6;
+          border-bottom: 1px solid rgba(197,198,200,0.35);
+          background: #F8FAFA;
         }
         .pva-library-inner {
           max-width: 1140px;
@@ -790,7 +1031,7 @@ export default async function PromptVaultAccessPage({
 
         /* Accordion */
         .pva-details {
-          border: 1px solid #E5DDD4;
+          border: 1px solid rgba(197,198,200,0.35);
           background: #FFFFFF;
           overflow: hidden;
         }
@@ -858,7 +1099,7 @@ export default async function PromptVaultAccessPage({
 
         /* Accordion content */
         .pva-details-content {
-          border-top: 1px solid #E5DDD4;
+          border-top: 1px solid rgba(197,198,200,0.35);
         }
 
         /* Thumbnail strip */
@@ -885,8 +1126,8 @@ export default async function PromptVaultAccessPage({
 
         /* Card */
         .pva-card {
-          background: #FAF8F4;
-          border: 1px solid #E5DDD4;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
           overflow: hidden;
           display: flex;
           flex-direction: column;
@@ -955,7 +1196,7 @@ export default async function PromptVaultAccessPage({
         }
         .pva-prompt-wrap {
           margin-top: auto;
-          border-top: 1px solid #E5DDD4;
+          border-top: 1px solid rgba(197,198,200,0.35);
           padding-top: 14px;
         }
         .pva-prompt-text {
@@ -981,10 +1222,10 @@ export default async function PromptVaultAccessPage({
 
         /* Footer */
         .pva-footer {
-          border-top: 1px solid #E5DDD4;
+          border-top: 1px solid rgba(197,198,200,0.35);
           padding: 36px 24px;
           text-align: center;
-          background: #F5EFE6;
+          background: #F8FAFA;
         }
         .pva-footer-text {
           margin: 0 0 8px;
@@ -1008,6 +1249,9 @@ export default async function PromptVaultAccessPage({
         @media (max-width: 960px) {
           .pva-overview-grid {
             grid-template-columns: repeat(2, 1fr);
+          }
+          .pva-first-grid {
+            grid-template-columns: 1fr;
           }
           .pva-thumb-strip {
             grid-template-columns: repeat(4, 1fr);

@@ -289,6 +289,38 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
+      {/* 1b. Seven-minute value test */}
+      <section className="ap-section ap-first-test">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">SELFIE TO BRAND SHOOT</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            Try one opening shot before you decide.
+          </h2>
+          <p className="ap-workflow-note ap-first-test-note">
+            The free preview is meant to prove the transformation quickly. Pick one visual world
+            below, upload a clear selfie into ChatGPT, copy Shot 1, and see if you want the full
+            shoot sequence.
+          </p>
+          <div className="ap-test-steps">
+            <div className="ap-test-step">
+              <span>01</span>
+              <p>Choose the version of you that feels the most magnetic today.</p>
+            </div>
+            <div className="ap-test-step">
+              <span>02</span>
+              <p>Copy the opening-shot prompt and paste it into ChatGPT with your selfie.</p>
+            </div>
+            <div className="ap-test-step">
+              <span>03</span>
+              <p>If the result works, unlock the remaining shots, newest drops, and future photoshoots.</p>
+            </div>
+          </div>
+          <a href="#vault-preview" className="ap-bridge-cta ap-bridge-cta-primary ap-test-cta">
+            Start With Shot 1
+          </a>
+        </div>
+      </section>
+
       {/* 2. Updated Vault preview — the core experience */}
       {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
@@ -334,7 +366,7 @@ export default async function AiPromptsAccessPage({
                           <span className="ap-thumb-yours-label">
                             Shot 1 of {meta.shotCount} is yours.
                           </span>{" "}
-                          {meta.shotCount - 1} more shots in the Vault.
+                          {meta.shotCount - 1} more images in this full shoot.
                         </p>
                         <TrackedLink
                           href={upgradeHref}
@@ -354,7 +386,7 @@ export default async function AiPromptsAccessPage({
                           Get The Full Shoot + Future Drops · $27
                         </TrackedLink>
                         <p className="ap-shoot-cta-note">
-                          One-time access to the remaining shots, newest collections, and future photoshoots.
+                          One-time access to the rest of this shoot, the newest collections, and future photoshoots.
                         </p>
                       </div>
                     )}
@@ -691,6 +723,51 @@ export default async function AiPromptsAccessPage({
           border-radius: 16px;
           padding: 28px 28px 20px;
           background: rgba(245, 245, 245, 0.03);
+        }
+
+        .ap-first-test {
+          background: #f8fafa;
+        }
+
+        .ap-first-test-note {
+          margin-bottom: 28px;
+        }
+
+        .ap-test-steps {
+          display: grid;
+          gap: 10px;
+          margin-bottom: 28px;
+        }
+
+        .ap-test-step {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 16px;
+          align-items: start;
+          padding: 18px 0;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+        }
+
+        .ap-test-step:last-child {
+          border-bottom: 1px solid rgba(13, 12, 11, 0.08);
+        }
+
+        .ap-test-step span {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+          color: rgba(13, 12, 11, 0.42);
+        }
+
+        .ap-test-step p {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.7;
+          color: rgba(13, 12, 11, 0.66);
+        }
+
+        .ap-test-cta {
+          border-radius: 0;
         }
 
         .ap-starter-text {
