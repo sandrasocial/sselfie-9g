@@ -25,6 +25,7 @@ import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templat
 import { generateStarterKitDay0DeliveryEmail } from "@/lib/email/templates/starter-kit-day0-delivery"
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
 import { generatePromptVaultDeliveryEmail } from "@/lib/email/templates/prompt-vault-delivery"
+import { generateSelfieToBrandShootDeliveryEmail } from "@/lib/email/templates/selfie-to-brand-shoot-delivery"
 import {
   generateAcademyProductDeliveryEmail,
   generateVisibilitySuiteDeliveryEmail,
@@ -43,6 +44,7 @@ import {
 import { hasStudioMembership } from "@/lib/subscription"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { ensurePaidSelfieGuideSubscriber } from "@/lib/freebie/selfie-guide-access"
+import { ensurePaidSelfieToBrandShootSubscriber } from "@/lib/freebie/selfie-to-brand-shoot-access"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
@@ -681,6 +683,8 @@ export async function POST(request: NextRequest) {
               productTag = "masterclass"
             } else if (productType === "prompt_vault") {
               productTag = "prompt-vault"
+            } else if (productType === "selfie_to_brand_shoot_system") {
+              productTag = "selfie-to-brand-shoot"
             } else if (productType === "visibility_suite") {
               productTag = "visibility-suite"
             }
@@ -1139,6 +1143,7 @@ export async function POST(request: NextRequest) {
                 productType !== "starter_kit" &&
                 productType !== "masterclass" &&
                 productType !== "prompt_vault" &&
+                productType !== "selfie_to_brand_shoot_system" &&
                 productType !== "visibility_suite" &&
                 !isTransformProductType(productType)
               ) {
@@ -1274,6 +1279,7 @@ export async function POST(request: NextRequest) {
                     productType === "starter_kit" ? "/academy/access/starter-kit" :
                     productType === "masterclass" ? "/academy/access/brand-strategy" :
                     productType === "prompt_vault" ? "/prompt-vault" :
+                    productType === "selfie_to_brand_shoot_system" ? "/academy/access/selfie-to-brand-shoot" :
                     isTransformProductType(productType) ? "/transform/studio" :
                     productType === "selfie_guide" || productType === "selfie_guide_bundle" ? "/selfie-guide" :
                     "/studio"
@@ -1337,6 +1343,7 @@ export async function POST(request: NextRequest) {
                     productType === "starter_kit" ||
                     productType === "masterclass" ||
                     productType === "prompt_vault" ||
+                    productType === "selfie_to_brand_shoot_system" ||
                     productType === "visibility_suite"
                   ) {
                     console.log(
@@ -3503,6 +3510,214 @@ export async function POST(request: NextRequest) {
                   properties: {
                     source: source || "landing_page",
                     product_type: "prompt_vault",
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                    is_test_mode: isTestMode,
+                  },
+                })
+              } catch {
+                // best effort only
+              }
+            }
+          } else if (productType === "selfie_to_brand_shoot_system") {
+            if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Selfie to Brand Shoot checkout completed but payment not confirmed (status: '${session.payment_status}').`
+              )
+            } else {
+              console.log(`[v0] 📸 Selfie to Brand Shoot purchase from ${customerEmail} - Payment confirmed`)
+
+              const isTestMode = !event.livemode
+              const paymentIntentId =
+                typeof session.payment_intent === "string"
+                  ? session.payment_intent
+                  : session.payment_intent?.id
+              const paymentIdForStorage = paymentIntentId || session.id
+              let customerId =
+                typeof session.customer === "string"
+                  ? session.customer
+                  : session.customer?.id || null
+              let paymentAmountCents = session.amount_total || 0
+
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                  customerId =
+                    typeof paymentIntent.customer === "string"
+                      ? paymentIntent.customer
+                      : paymentIntent.customer?.id || customerId
+                } catch (piError: any) {
+                  console.error(
+                    `[v0] Error retrieving payment intent for Selfie to Brand Shoot:`,
+                    piError.message
+                  )
+                }
+              }
+
+              const systemCustomerIdForStorage = customerId || session.id
+
+              if (systemCustomerIdForStorage) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForStorage},
+                      ${systemCustomerIdForStorage},
+                      ${userId},
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'selfie_to_brand_shoot_system',
+                      'selfie_to_brand_shoot_system',
+                      'Selfie to Brand Shoot System',
+                      ${JSON.stringify(session.metadata || {})},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id)
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing Selfie to Brand Shoot payment:`, paymentError.message)
+                }
+              }
+
+              if (userId) {
+                for (const tag of ["bought_selfie_to_brand_shoot_system", "bought_prompt_vault"]) {
+                  await sql`
+                    INSERT INTO user_tags (user_id, tag, source, metadata)
+                    VALUES (
+                      ${userId},
+                      ${tag},
+                      'selfie_to_brand_shoot_purchase',
+                      ${JSON.stringify({
+                        stripe_session_id: session.id,
+                        stripe_payment_id: paymentIdForStorage,
+                      })}
+                    )
+                    ON CONFLICT (user_id, tag) DO NOTHING
+                  `
+                }
+
+                await upsertPurchaseEntitlement({
+                  userId: String(userId),
+                  productId: "selfie_to_brand_shoot_system",
+                  sourceRef: paymentIdForStorage,
+                  metadata: {
+                    source: "stripe_webhook:selfie_to_brand_shoot_system",
+                    stripe_session_id: session.id,
+                  },
+                })
+                await upsertPurchaseEntitlement({
+                  userId: String(userId),
+                  productId: "prompt_vault",
+                  sourceRef: paymentIdForStorage,
+                  metadata: {
+                    source: "stripe_webhook:selfie_to_brand_shoot_system_includes_prompt_vault",
+                    stripe_session_id: session.id,
+                  },
+                })
+              }
+
+              try {
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                const subscriberRecord = await ensurePaidSelfieToBrandShootSubscriber(
+                  customerEmail!,
+                  session.customer_details?.name
+                )
+                const accessUrl = `${productionUrl}/access/selfie-to-brand-shoot/${subscriberRecord.accessToken}`
+                const vaultUrl = `${productionUrl}/access/prompt-vault/${subscriberRecord.accessToken}`
+                const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
+                  userId,
+                  customerEmail!,
+                  "/academy/access/selfie-to-brand-shoot"
+                )
+                const firstName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail!,
+                })
+                const email = generateSelfieToBrandShootDeliveryEmail({
+                  firstName,
+                  accessUrl,
+                  vaultUrl,
+                  passwordSetupUrl: passwordSetupLink,
+                })
+
+                const emailResult = await sendEmail({
+                  to: customerEmail!,
+                  subject: email.subject,
+                  html: email.html,
+                  text: email.text,
+                  emailType: "selfie_to_brand_shoot_delivery",
+                  tags: ["selfie-to-brand-shoot", "delivery"],
+                })
+
+                if (emailResult.success) {
+                  console.log(
+                    `[v0] ✅ Selfie to Brand Shoot delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`
+                  )
+                  await sql`
+                    UPDATE freebie_subscribers
+                    SET guide_access_email_sent = TRUE,
+                        guide_access_email_sent_at = NOW(),
+                        updated_at = NOW()
+                    WHERE id = ${subscriberRecord.subscriberId}
+                  `
+                } else {
+                  console.error(
+                    `[v0] ❌ Failed to send Selfie to Brand Shoot delivery email: ${emailResult.error}`
+                  )
+                }
+              } catch (emailError: any) {
+                console.error(`[v0] Error sending Selfie to Brand Shoot delivery email:`, emailError.message)
+              }
+
+              await updateTags(customerEmail!, {
+                ...buildAiPhotoshootResendTags("buyer"),
+                product: "selfie-to-brand-shoot",
+                journey: "selfie_to_brand_shoot",
+                bought_selfie_to_brand_shoot_system: "true",
+                bought_prompt_vault: "true",
+              }).catch((tagError) => {
+                console.error("[v0] Failed to update Selfie to Brand Shoot tags:", tagError)
+              })
+
+              const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
+              if (aiPhotoshootSegmentId) {
+                await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch((segmentError) => {
+                  console.error("[v0] Failed to add Selfie to Brand Shoot buyer to AI Photoshoot segment:", segmentError)
+                })
+              }
+
+              try {
+                await logAnalyticsEvent({
+                  eventName: "selfie_to_brand_shoot_checkout_success",
+                  userId: String(userId),
+                  properties: {
+                    source: source || "landing_page",
+                    product_type: "selfie_to_brand_shoot_system",
                     value: paymentAmountCents / 100,
                     currency: "usd",
                     stripe_session_id: session.id,

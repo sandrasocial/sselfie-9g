@@ -83,6 +83,12 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "prompt_vault_prompt_viewed",
   "prompt_vault_prompt_copied",
   "prompt_vault_checkout_recovery_sent",
+  "selfie_to_brand_shoot_landing_view",
+  "selfie_to_brand_shoot_checkout_success",
+  "selfie_to_brand_shoot_access_resolved",
+  "selfie_to_brand_shoot_access_failed",
+  "selfie_to_brand_shoot_access_opened",
+  "prompt_vault_system_upgrade_click",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

@@ -78,6 +78,10 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
     subText: "Your copy-paste editorial AI photoshoot prompts.",
     ctaLabel: "Open vault",
   },
+  selfie_to_brand_shoot_system: {
+    subText: "Your guided path from one selfie to elevated brand images.",
+    ctaLabel: "Open system",
+  },
   selfie_guide: {
     subText: "Your full selfie training and challenge flow.",
     ctaLabel: "Open guide",
@@ -92,6 +96,7 @@ const COURSE_PRODUCT_IDS = new Set(["branded_by_sselfie", "editing_masterclass"]
 const FEATURED_PRODUCT_IDS = [
   "masterclass",
   "starter_kit",
+  "selfie_to_brand_shoot_system",
   "prompt_vault",
   "selfie_guide_bundle",
   "selfie_guide",
@@ -117,6 +122,11 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
     image: "/images/ai-prompts/marble-wine-shot-1.jpg",
     label: "Prompt vault",
     href: "/academy/access/prompt-vault",
+  },
+  selfie_to_brand_shoot_system: {
+    image: "/images/ai-prompts/noir-femme-shot-3.png",
+    label: "System home",
+    href: "/academy/access/selfie-to-brand-shoot",
   },
   selfie_guide_bundle: {
     image: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",

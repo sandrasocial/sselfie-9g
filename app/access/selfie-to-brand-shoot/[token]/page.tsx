@@ -33,8 +33,9 @@ async function validateToken(token: string): Promise<TokenResult> {
       FROM freebie_subscribers
       WHERE access_token = ${token}
         AND (
-          source = 'prompt-vault-paid'
-          OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          source = 'selfie-to-brand-shoot-paid'
+          OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
           OR 'prompt-vault-admin-access' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
         )
       LIMIT 1
@@ -138,7 +139,7 @@ export default async function SelfieToBrandShootTokenAccessPage({
     eventName: "academy_home_opened",
     path: "/access/selfie-to-brand-shoot/[token]",
     properties: {
-      product_id: "selfie_to_brand_shoot_shell",
+      product_id: "selfie_to_brand_shoot_system",
       source: "prompt-vault-token",
       access_mode: result.valid ? "token" : "admin_override",
       token_prefix: token.slice(0, 8),

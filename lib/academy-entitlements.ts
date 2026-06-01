@@ -15,6 +15,7 @@ const DIRECT_ONE_TIME_ACADEMY_TYPES = [
   "starter_kit",
   "masterclass",
   "prompt_vault",
+  "selfie_to_brand_shoot_system",
 ] as const
 
 export type AcademyProductType = "course" | "pack" | "template" | "resource" | "bundle"
@@ -196,6 +197,19 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       accessTarget: "prompt-vault",
     },
     {
+      id: "selfie_to_brand_shoot_system",
+      slug: "selfie-to-brand-shoot",
+      title: "Selfie to Brand Shoot System",
+      type: "bundle",
+      membershipIncluded: false,
+      purchasable: true,
+      stripePriceId: process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM?.trim() || null,
+      active: true,
+      sortOrder: 68,
+      deliveryKind: "direct_private",
+      accessTarget: "selfie-to-brand-shoot",
+    },
+    {
       id: "selfie_guide",
       slug: "selfie-guide",
       title: "Selfie Guide",
@@ -258,7 +272,16 @@ function getFallbackMetadata(productId: string): FallbackMetadata {
 
   const pricingProduct = PRICING_PRODUCTS.find(product => product.id === productId)
   if (pricingProduct) {
-    const accessTarget = productId === "brand_strategy_pack" ? "brand-strategy" : "selfie-guide"
+    const directAccessTargets: Record<string, string> = {
+      brand_strategy_pack: "brand-strategy",
+      prompt_vault: "prompt-vault",
+      selfie_to_brand_shoot_system: "selfie-to-brand-shoot",
+      starter_kit: "starter-kit",
+      masterclass: "masterclass",
+      selfie_guide: "selfie-guide",
+      selfie_guide_bundle: "selfie-guide",
+    }
+    const accessTarget = directAccessTargets[productId] || "selfie-guide"
 
     return {
       name: pricingProduct.displayName || pricingProduct.name,

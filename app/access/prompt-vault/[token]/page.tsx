@@ -209,7 +209,10 @@ async function validateToken(token: string): Promise<TokenResult> {
       WHERE access_token = ${token}
         AND (
           source = 'prompt-vault-paid'
+          OR source = 'selfie-to-brand-shoot-paid'
           OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+          OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
           OR 'prompt-vault-admin-access' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
         )
       LIMIT 1
@@ -404,10 +407,10 @@ export default async function PromptVaultAccessPage({
               Start with your first result
             </a>
             <Link
-              href={`/access/selfie-to-brand-shoot/${encodeURIComponent(token)}`}
+              href={`/checkout/selfie-to-brand-shoot?source=vault_access&utm_source=owned&utm_medium=vault_access&utm_campaign=selfie_to_brand_shoot_system_upgrade&freebie_token=${encodeURIComponent(token)}&buyer_stage=micro`}
               className="pva-hero-secondary"
             >
-              Open the system home
+              Enter the full system
             </Link>
           </div>
         </div>

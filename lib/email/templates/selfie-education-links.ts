@@ -41,3 +41,11 @@ export function promptVaultLandingUrl() {
 export function promptVaultCheckoutUrl() {
   return `${SITE_URL}/checkout/prompt-vault`
 }
+
+export function selfieToBrandShootLandingUrl() {
+  return `${SITE_URL}/selfie-to-brand-shoot`
+}
+
+export function selfieToBrandShootCheckoutUrl() {
+  return `${SITE_URL}/checkout/selfie-to-brand-shoot`
+}

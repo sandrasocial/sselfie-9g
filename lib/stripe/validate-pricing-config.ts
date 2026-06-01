@@ -81,6 +81,18 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
     expectedAmount: 1700, // $17
     expectedRecurring: false,
   },
+  {
+    envVarName: "STRIPE_PRICE_PROMPT_VAULT",
+    productType: "prompt_vault",
+    expectedAmount: 2700, // $27
+    expectedRecurring: false,
+  },
+  {
+    envVarName: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
+    productType: "selfie_to_brand_shoot_system",
+    expectedAmount: 19700, // $197
+    expectedRecurring: false,
+  },
 ]
 
 export function getExpectedStripeConfigForProduct(productType: string): ExpectedStripeConfig | null {

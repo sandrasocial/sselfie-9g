@@ -27,6 +27,7 @@ export type PricingProductId =
   | "visibility_suite"
   | "academy_mini_product"
   | "prompt_vault"
+  | "selfie_to_brand_shoot_system"
 
 export type ProductLifecycleStatus = "live" | "archived"
 
@@ -50,6 +51,7 @@ export interface PricingProduct {
     | "visibility_suite"
     | "academy_mini_product"
     | "prompt_vault"
+    | "selfie_to_brand_shoot_system"
   lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
   credits?: number
@@ -246,6 +248,23 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "$27 one-time access, no account required",
     ],
   },
+  {
+    id: "selfie_to_brand_shoot_system",
+    name: "Selfie to Brand Shoot System",
+    displayName: "Selfie to Brand Shoot System",
+    description:
+      "The guided visual identity path for turning one selfie into elevated personal brand images, with Vault access included.",
+    priceInCents: 19700, // $197 one-time
+    type: "selfie_to_brand_shoot_system",
+    tag: "bought_selfie_to_brand_shoot_system",
+    features: [
+      "Lean Selfie to Brand Shoot workflow",
+      "Source selfie and angle guidance",
+      "Prompt Vault included",
+      "Image selection taste filter",
+      "Content-use guidance for your first AI brand shoot",
+    ],
+  },
 ]
 
 export const ARCHIVED_PRICING_PRODUCTS: PricingProduct[] = [
@@ -404,6 +423,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:prompt_vault",
     successNextAction: "/access/prompt-vault/[token]",
     lifecycleEmailEntryPoint: "prompt_vault_delivery",
+  },
+  selfie_to_brand_shoot_system: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/selfie-to-brand-shoot",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_to_brand_shoot_system",
+    successNextAction: "/access/selfie-to-brand-shoot/[token]",
+    lifecycleEmailEntryPoint: "selfie_to_brand_shoot_delivery",
   },
 }
 

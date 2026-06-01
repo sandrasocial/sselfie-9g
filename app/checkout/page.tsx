@@ -78,6 +78,13 @@ const CHECKOUT_COPY: Record<
     blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
     footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
   },
+  selfie_to_brand_shoot_system: {
+    heroTitle: "Build the full brand shoot path",
+    heroBody: "Turn one selfie into elevated personal brand images with the guided system and Vault included.",
+    heading: "Selfie to Brand Shoot System",
+    blurb: "One $197 payment unlocks the guided workflow, source selfie method, taste filter, content-use path, and full Vault access.",
+    footer: "One-time digital purchase. Your System access link is delivered right after payment.",
+  },
 }
 
 function CheckoutContent() {
@@ -87,6 +94,8 @@ function CheckoutContent() {
   const [error, setError] = useState<string | null>(null)
   const productType = searchParams.get("product_type") || "unknown"
   const isPromptVault = productType === "prompt_vault"
+  const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
+  const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
     heroBody: "Secure your purchase and keep moving.",
@@ -197,7 +206,7 @@ function CheckoutContent() {
       {/* Hero Image Section */}
       <div
         className={`relative overflow-hidden ${
-          isPromptVault ? "h-[22vh] sm:h-[30vh] md:h-[34vh]" : "h-[30vh] sm:h-[35vh] md:h-[40vh]"
+          isVisualIdentityOffer ? "h-[22vh] sm:h-[30vh] md:h-[34vh]" : "h-[30vh] sm:h-[35vh] md:h-[40vh]"
         }`}
       >
         <Image
@@ -219,7 +228,7 @@ function CheckoutContent() {
 
       {/* Checkout Form Section */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {isPromptVault && (
+        {isVisualIdentityOffer && (
           <div className="mb-6 border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.08)] p-4 sm:p-5">
             <div className="mb-4 grid grid-cols-4 gap-2">
               {[
@@ -246,12 +255,14 @@ function CheckoutContent() {
                   You are unlocking
                 </p>
                 <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#f0ede8] sm:text-3xl">
-                  The full shoot + all newest and future photoshoot drops.
+                  {isSelfieToBrandShoot
+                    ? "The guided system + full Vault access for your first AI brand shoot."
+                    : "The full shoot + all newest and future photoshoot drops."}
                 </h2>
               </div>
               <div className="text-left sm:text-right">
                 <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#f0ede8]">
-                  $27
+                  {isSelfieToBrandShoot ? "$197" : "$27"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
                   one-time access
@@ -259,7 +270,9 @@ function CheckoutContent() {
               </div>
             </div>
             <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#c8c4bb]">
-              Remaining shots · newest and future drops · copy-paste prompts · example images
+              {isSelfieToBrandShoot
+                ? "Guided workflow · source selfie method · Vault included · content-use path"
+                : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
             </p>
           </div>
         )}

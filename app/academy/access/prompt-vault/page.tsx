@@ -27,7 +27,10 @@ export default async function AcademyPromptVaultAccessPage() {
       AND fs.access_token IS NOT NULL
       AND (
         fs.source = 'prompt-vault-paid'
+        OR fs.source = 'selfie-to-brand-shoot-paid'
         OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
       )
     LIMIT 1
   `

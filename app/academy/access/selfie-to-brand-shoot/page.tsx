@@ -14,12 +14,7 @@ export const metadata: Metadata = {
 }
 
 const SUPPORTING_PRODUCT_IDS = new Set([
-  "prompt_vault",
-  "starter_kit",
-  "masterclass",
-  "selfie_guide",
-  "selfie_guide_bundle",
-  "brand_strategy_pack",
+  "selfie_to_brand_shoot_system",
 ])
 
 function getSafeFirstName(name: string | null | undefined) {
@@ -41,8 +36,9 @@ async function getPromptVaultSubscriber(email: string | null | undefined) {
     WHERE LOWER(email) = LOWER(${email})
       AND access_token IS NOT NULL
       AND (
-        source = 'prompt-vault-paid'
-        OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+        source = 'selfie-to-brand-shoot-paid'
+        OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+        OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
         OR 'prompt-vault-admin-access' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
       )
     ORDER BY created_at DESC
@@ -81,7 +77,7 @@ export default async function AcademySelfieToBrandShootAccessPage() {
     userId: neonUser.id,
     path: "/academy/access/selfie-to-brand-shoot",
     properties: {
-      product_id: "selfie_to_brand_shoot_shell",
+      product_id: "selfie_to_brand_shoot_system",
       source: "academy",
       has_prompt_vault_token: Boolean(vaultSubscriber?.access_token),
       membership_active: entitlementState.membershipActive,
