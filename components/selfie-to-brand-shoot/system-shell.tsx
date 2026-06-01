@@ -256,12 +256,11 @@ export function SelfieToBrandShootSystemShell({
                   <div className="sbs-source-selfies" aria-label="Real source selfie examples">
                     {sourceSelfies.map((selfie) => (
                       <figure key={selfie.label} className="sbs-source-selfie">
-                        <Image
+                        <img
                           src={selfie.image}
                           alt={`${selfie.label} source selfie example`}
-                          fill
                           loading="eager"
-                          sizes="(max-width: 768px) 32vw, 12vw"
+                          decoding="sync"
                           style={{ objectFit: "cover", objectPosition: selfie.objectPosition }}
                         />
                         <figcaption>
@@ -649,6 +648,12 @@ export function SelfieToBrandShootSystemShell({
           margin: 0;
           overflow: hidden;
           background: #FFFFFF;
+        }
+        .sbs-source-selfie img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
         }
         .sbs-source-selfie figcaption {
           position: absolute;
