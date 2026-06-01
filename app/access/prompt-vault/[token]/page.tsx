@@ -398,9 +398,17 @@ export default async function PromptVaultAccessPage({
             styling notes, and tested prompts for turning one selfie into elevated
             personal brand images.
           </p>
-          <a href="#first-result" className="pva-scroll-link">
-            Start with your first result ↓
-          </a>
+          <div className="pva-hero-actions">
+            <a href="#first-result" className="pva-hero-primary">
+              Start with your first result
+            </a>
+            <Link
+              href={`/access/selfie-to-brand-shoot/${encodeURIComponent(token)}`}
+              className="pva-hero-secondary"
+            >
+              Open the system home
+            </Link>
+          </div>
         </div>
 
         {/* Hero image strip — 3 shots from different collections */}
@@ -724,14 +732,40 @@ export default async function PromptVaultAccessPage({
           color: #3A3632;
           max-width: 520px;
         }
-        .pva-scroll-link {
-          font-size: 13px;
-          font-weight: 500;
-          letter-spacing: 0.08em;
-          color: #9B9189;
-          text-decoration: none;
+        .pva-hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
         }
-        .pva-scroll-link:hover { color: #0A0A0A; }
+        .pva-hero-primary,
+        .pva-hero-secondary {
+          min-height: 46px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 14px 22px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          text-align: center;
+          text-decoration: none;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .pva-hero-primary {
+          background: #0D0E10;
+          color: #F8FAFA;
+        }
+        .pva-hero-secondary {
+          background: #FFFFFF;
+          border: 1px solid rgba(13,14,16,0.18);
+          color: #0D0E10;
+        }
+        .pva-hero-primary:hover,
+        .pva-hero-secondary:hover {
+          opacity: 0.86;
+          transform: translateY(-1px);
+        }
 
         /* First result */
         .pva-first-result {
@@ -1260,6 +1294,14 @@ export default async function PromptVaultAccessPage({
 
         /* Mobile */
         @media (max-width: 640px) {
+          .pva-hero-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+          }
+          .pva-hero-primary,
+          .pva-hero-secondary {
+            width: 100%;
+          }
           .pva-hero-strip {
             height: clamp(160px, 50vw, 280px);
           }
