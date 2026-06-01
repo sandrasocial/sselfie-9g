@@ -321,6 +321,36 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
+      {/* 1c. Product path context */}
+      <section className="ap-section ap-path">
+        <div className="ap-section-inner ap-path-inner">
+          <div>
+            <p className="ap-eyebrow">WHERE THIS FITS</p>
+            <h2 className={`ap-section-title ${cormorant.className}`}>
+              This is the free preview, not the whole shoot.
+            </h2>
+            <p className="ap-workflow-note">
+              The preview helps you test the feeling. The Vault gives you the full
+              photoshoot collections. The Selfie to Brand Shoot System is the guided
+              path for turning the images into usable brand content.
+            </p>
+          </div>
+          <div className="ap-path-steps" aria-label="SSELFIE product path">
+            {[
+              ["01", "Preview", "Test Shot 1 from each visual world."],
+              ["02", "Vault", "Get full shoots, newest drops, and future photoshoots."],
+              ["03", "System", "Use the guided path to create, choose, and post the images."],
+            ].map(([n, title, body]) => (
+              <article key={n} className="ap-path-step">
+                <span>{n}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* 2. Updated Vault preview — the core experience */}
       {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
@@ -732,6 +762,52 @@ export default async function AiPromptsAccessPage({
 
         .ap-first-test {
           background: #f8fafa;
+        }
+
+        .ap-path {
+          background: #FFFFFF;
+        }
+
+        .ap-path-inner {
+          display: grid;
+          gap: 28px;
+        }
+
+        .ap-path-steps {
+          display: grid;
+          gap: 1px;
+          background: rgba(197, 198, 200, 0.35);
+          border: 1px solid rgba(197, 198, 200, 0.35);
+        }
+
+        .ap-path-step {
+          background: #FFFFFF;
+          padding: 22px 20px;
+        }
+
+        .ap-path-step span {
+          display: block;
+          margin-bottom: 22px;
+          color: #818283;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+        }
+
+        .ap-path-step h3 {
+          margin: 0 0 8px;
+          color: #0D0E10;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+
+        .ap-path-step p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.7;
         }
 
         .ap-first-test-note {
@@ -1183,6 +1259,15 @@ export default async function AiPromptsAccessPage({
           }
           .ap-cards.ap-main-grid > .pc:last-child {
             grid-column: 1 / -1;
+          }
+          .ap-path-inner {
+            max-width: 1080px;
+            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+            align-items: start;
+            gap: 68px;
+          }
+          .ap-path-steps {
+            grid-template-columns: repeat(3, 1fr);
           }
         }
 

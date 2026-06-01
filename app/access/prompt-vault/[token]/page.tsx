@@ -396,7 +396,8 @@ export default async function PromptVaultAccessPage({
           <p className="pva-subhead">
             A guided library of full AI photoshoot sequences, creative direction,
             styling notes, and tested prompts for turning one selfie into elevated
-            personal brand images.
+            personal brand images. This is your visual-world archive inside the
+            Selfie to Brand Shoot path.
           </p>
           <div className="pva-hero-actions">
             <a href="#first-result" className="pva-hero-primary">
@@ -442,7 +443,8 @@ export default async function PromptVaultAccessPage({
           <p className="pva-first-note">
             Do not start by browsing everything. Choose one path, upload the right
             selfie, copy the first prompt, and get one usable image before you try
-            another look.
+            another look. When you want the full guided workflow, open the System
+            home and follow the six-step path.
           </p>
 
           <div className="pva-first-grid">

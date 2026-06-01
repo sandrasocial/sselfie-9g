@@ -235,6 +235,49 @@ export default function PromptVaultPage() {
         </div>
       </section>
 
+      {/* ── LADDER CONTEXT ── */}
+      <section className="pvf-ladder">
+        <div className="pvf-ladder-inner">
+          <div>
+            <p className="pvf-eyebrow">THE SSELFIE PATH</p>
+            <h2 className={`pvf-section-title ${cormorant.className}`}>
+              The Vault is the visual-world archive.
+            </h2>
+            <p className="pvf-section-note">
+              It gives you the complete photoshoot prompts. The Selfie to Brand
+              Shoot System is the guided path that shows you which selfie to use,
+              how to create the images, how to choose the best results, and where
+              to use them first.
+            </p>
+          </div>
+          <div className="pvf-ladder-grid">
+            {[
+              {
+                n: "01",
+                title: "Preview",
+                body: "Free opening shots from the SSELFIE visual world.",
+              },
+              {
+                n: "02",
+                title: "Vault",
+                body: "Full shoots, newest drops, and future photoshoot collections.",
+              },
+              {
+                n: "03",
+                title: "System",
+                body: "The guided transformation path from selfie to usable brand content.",
+              },
+            ].map((step) => (
+              <article key={step.n} className="pvf-ladder-card">
+                <span>{step.n}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── OPENING SHOT PREVIEW CARDS ── */}
       <section
         id="free-previews"
@@ -539,6 +582,51 @@ export default function PromptVaultPage() {
           color: #4F5052;
         }
 
+        /* Product ladder */
+        .pvf-ladder {
+          border-top: 1px solid rgba(197,198,200,0.35);
+          background: #F8FAFA;
+          padding: clamp(60px, 7vw, 88px) clamp(18px, 4vw, 40px);
+        }
+        .pvf-ladder-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: grid;
+          gap: 36px;
+        }
+        .pvf-ladder-grid {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .pvf-ladder-card {
+          background: #FFFFFF;
+          padding: 24px 22px;
+        }
+        .pvf-ladder-card span {
+          display: block;
+          margin-bottom: 28px;
+          color: #818283;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+        }
+        .pvf-ladder-card h3 {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+        .pvf-ladder-card p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
+        }
+
         /* Hero — split desktop layout */
         .pvf-hero {
           display: grid;
@@ -737,6 +825,17 @@ export default function PromptVaultPage() {
           }
           .pvf-upsell-strip {
             grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 900px) {
+          .pvf-ladder-inner {
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+            align-items: start;
+            gap: 80px;
+          }
+          .pvf-ladder-grid {
+            grid-template-columns: repeat(3, 1fr);
           }
         }
       `}</style>

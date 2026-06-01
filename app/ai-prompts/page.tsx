@@ -62,6 +62,24 @@ const VALUE_ITEMS = [
   "A growing free preview of the SSELFIE visual world, with new prompts added over time.",
 ]
 
+const FUNNEL_STEPS = [
+  {
+    label: "01",
+    title: "Free Preview",
+    body: "Start with opening-shot prompts and see what your own selfie can become.",
+  },
+  {
+    label: "02",
+    title: "The Vault",
+    body: "Unlock the full photoshoot collections, newest drops, and future visual worlds.",
+  },
+  {
+    label: "03",
+    title: "The System",
+    body: "Use the guided Selfie to Brand Shoot path to choose, create, edit, and post the images.",
+  },
+]
+
 export default function AiPromptsOptInPage() {
   return (
     <main className={inter.className}>
@@ -124,8 +142,8 @@ export default function AiPromptsOptInPage() {
             </h2>
             <p className="opt-value-body">
               Upload your selfie, choose the look, and start creating elevated
-              brand-style images from your own photo. The prompts are the mechanism.
-              The transformation is the point.
+              brand-style images from your own photo. The prompts are the first
+              step. The full path is Selfie to Brand Shoot.
             </p>
           </div>
           <div className="opt-value-list">
@@ -134,6 +152,27 @@ export default function AiPromptsOptInPage() {
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <p>{item}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ladder section ────────────────────────────────────────────── */}
+      <section className="opt-path">
+        <div className="opt-path-inner">
+          <div>
+            <p className="opt-value-label">THE SSELFIE PATH</p>
+            <h2 className={`opt-value-title ${cormorant.className}`}>
+              Free preview today. Full brand shoot when you are ready.
+            </h2>
+          </div>
+          <div className="opt-path-list">
+            {FUNNEL_STEPS.map((step) => (
+              <article key={step.label} className="opt-path-card">
+                <span>{step.label}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </article>
             ))}
           </div>
         </div>
@@ -484,6 +523,57 @@ export default function AiPromptsOptInPage() {
           line-height: 1.75;
         }
 
+        /* ── Funnel path section ─────────────────────────────────────── */
+        .opt-path {
+          background: #FFFFFF;
+          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
+          padding: 70px 24px;
+        }
+
+        .opt-path-inner {
+          max-width: 1040px;
+          margin: 0 auto;
+          display: grid;
+          gap: 34px;
+        }
+
+        .opt-path-list {
+          display: grid;
+          gap: 1px;
+          background: rgba(197, 198, 200, 0.35);
+          border: 1px solid rgba(197, 198, 200, 0.35);
+        }
+
+        .opt-path-card {
+          background: #FFFFFF;
+          padding: 24px 22px;
+        }
+
+        .opt-path-card span {
+          display: block;
+          margin-bottom: 28px;
+          color: #818283;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+        }
+
+        .opt-path-card h3 {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+
+        .opt-path-card p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
+        }
+
         /* ── Bridge section ──────────────────────────────────────────── */
         .opt-bridge {
           background: #FFFFFF;
@@ -580,10 +670,24 @@ export default function AiPromptsOptInPage() {
             padding: 92px 64px;
           }
 
+          .opt-path {
+            padding: 92px 64px;
+          }
+
           .opt-value-inner {
             grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
             align-items: start;
             gap: 80px;
+          }
+
+          .opt-path-inner {
+            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+            align-items: start;
+            gap: 80px;
+          }
+
+          .opt-path-list {
+            grid-template-columns: repeat(3, 1fr);
           }
         }
       `}</style>
