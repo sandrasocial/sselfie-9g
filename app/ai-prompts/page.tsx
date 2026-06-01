@@ -159,6 +159,11 @@ export default function AiPromptsOptInPage() {
       </section>
 
       <style>{`
+        html,
+        body {
+          background: #F8FAFA;
+        }
+
         /* ── Page shell ──────────────────────────────────────────────── */
         main {
           background: #F8FAFA;
@@ -177,7 +182,7 @@ export default function AiPromptsOptInPage() {
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          background: #0D0E10;
+          background: #F8FAFA;
         }
 
         .opt-hero-media {
@@ -186,18 +191,16 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-hero-img {
-          filter: saturate(0.72) contrast(1.05);
+          filter: saturate(0.94) contrast(1.08);
         }
 
         .opt-hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(13, 14, 16, 0.22) 0%,
-            rgba(13, 14, 16, 0.26) 36%,
-            rgba(13, 14, 16, 0.92) 100%
-          );
+          background:
+            radial-gradient(circle at 74% 18%, rgba(13, 14, 16, 0.02) 0%, rgba(13, 14, 16, 0.16) 42%, rgba(13, 14, 16, 0.42) 100%),
+            linear-gradient(115deg, rgba(13, 14, 16, 0.64) 0%, rgba(13, 14, 16, 0.48) 38%, rgba(13, 14, 16, 0.1) 72%, rgba(13, 14, 16, 0.24) 100%),
+            linear-gradient(to top, rgba(13, 14, 16, 0.62) 0%, rgba(13, 14, 16, 0.02) 54%);
         }
 
         .opt-hero-content {
@@ -216,7 +219,7 @@ export default function AiPromptsOptInPage() {
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(248, 250, 250, 0.58);
+          color: rgba(248, 250, 250, 0.68);
           text-transform: uppercase;
         }
 
@@ -227,14 +230,14 @@ export default function AiPromptsOptInPage() {
           line-height: 0.92;
           letter-spacing: 0;
           color: #F8FAFA;
-          text-shadow: 0 18px 48px rgba(13, 14, 16, 0.54);
+          text-shadow: 0 18px 52px rgba(13, 14, 16, 0.72);
         }
 
         .opt-sub {
           margin: 0 0 22px;
           font-size: 15px;
           line-height: 1.72;
-          color: rgba(248, 250, 250, 0.72);
+          color: rgba(248, 250, 250, 0.78);
         }
 
         .opt-proof-strip {
@@ -248,8 +251,8 @@ export default function AiPromptsOptInPage() {
           position: relative;
           aspect-ratio: 4 / 5;
           overflow: hidden;
-          border: 1px solid rgba(197, 198, 200, 0.28);
-          background: rgba(248, 250, 250, 0.08);
+          border: 1px solid rgba(197, 198, 200, 0.38);
+          background: rgba(13, 14, 16, 0.24);
         }
 
         .opt-proof-image {
@@ -264,7 +267,7 @@ export default function AiPromptsOptInPage() {
           right: 8px;
           bottom: 8px;
           padding: 6px 7px;
-          background: rgba(13, 14, 16, 0.74);
+          background: rgba(13, 14, 16, 0.72);
           color: #F8FAFA;
           font-size: 8px;
           font-weight: 600;
@@ -275,11 +278,11 @@ export default function AiPromptsOptInPage() {
 
         /* ── Form card ──────────────────────────────────────────────── */
         .opt-form-card {
-          background: rgba(13, 14, 16, 0.84);
-          border: 1px solid rgba(197, 198, 200, 0.28);
+          background: rgba(13, 14, 16, 0.72);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           padding: 22px;
           backdrop-filter: blur(18px);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+          box-shadow: 0 28px 70px rgba(13, 14, 16, 0.28);
         }
 
         /* ── Form fields — used by OptInForm client component ─────────── */
@@ -289,7 +292,7 @@ export default function AiPromptsOptInPage() {
           font-weight: 500;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          color: rgba(248, 250, 250, 0.58);
+          color: rgba(248, 250, 250, 0.62);
         }
 
         .opt-fields {
@@ -309,7 +312,7 @@ export default function AiPromptsOptInPage() {
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.08em;
-          color: rgba(248, 250, 250, 0.58);
+          color: rgba(248, 250, 250, 0.74);
           text-transform: uppercase;
         }
 
@@ -317,10 +320,10 @@ export default function AiPromptsOptInPage() {
           width: 100%;
           min-height: 50px;
           padding: 15px 16px;
-          background: rgba(248, 250, 250, 0.08);
-          border: 1px solid rgba(197, 198, 200, 0.3);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 0;
-          color: #FFFFFF;
+          color: #F8FAFA;
           font-size: 15px;
           font-family: inherit;
           outline: none;
@@ -329,17 +332,17 @@ export default function AiPromptsOptInPage() {
         }
 
         .opt-input::placeholder {
-          color: rgba(248, 250, 250, 0.34);
+          color: rgba(248, 250, 250, 0.45);
         }
 
         .opt-input:focus {
-          border-color: rgba(248, 250, 250, 0.7);
+          border-color: rgba(248, 250, 250, 0.72);
         }
 
         .opt-submit:focus-visible,
         .opt-open-btn:focus-visible,
         .opt-bridge-link:focus-visible {
-          outline: 2px solid rgba(248, 250, 250, 0.88);
+          outline: 2px solid rgba(248, 250, 250, 0.8);
           outline-offset: 3px;
         }
 
@@ -369,14 +372,14 @@ export default function AiPromptsOptInPage() {
           margin: 14px 0 0;
           font-size: 12px;
           line-height: 1.6;
-          color: rgba(248, 250, 250, 0.46);
+          color: rgba(248, 250, 250, 0.56);
           text-align: center;
         }
 
         .opt-confirmation {
           padding: 24px;
-          background: rgba(248, 250, 250, 0.08);
-          border: 1px solid rgba(197, 198, 200, 0.28);
+          background: rgba(13, 14, 16, 0.72);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 0;
         }
 

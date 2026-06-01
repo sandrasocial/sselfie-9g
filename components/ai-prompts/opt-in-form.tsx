@@ -64,7 +64,7 @@ export function OptInForm() {
         <p className="opt-confirmation-text">It is on its way. Check your inbox.</p>
         {accessUrl && (
           <a href={accessUrl} className="opt-open-btn">
-            Open your prompt pack
+            Open your shoot preview
           </a>
         )}
       </div>
@@ -107,7 +107,7 @@ export function OptInForm() {
         </div>
       </div>
       <button type="submit" className="opt-submit" disabled={status === "loading"}>
-        {status === "loading" ? "Sending..." : "Send me the prompts"}
+        {status === "loading" ? "Sending..." : "Start my first brand shoot"}
       </button>
       {status === "error" && (
         <p className="opt-error">

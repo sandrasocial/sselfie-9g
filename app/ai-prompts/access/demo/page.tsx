@@ -202,13 +202,13 @@ export default function AiPromptsDemoPage() {
           </div>
         )}
         <div className="ap-hero-content">
-          <p className="ap-hero-eyebrow">SSELFIE · CHATGPT SELFIE PROMPT PACK</p>
+          <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
-            The ChatGPT Selfie Prompt Pack.
+            Your AI Photoshoot Preview.
           </h1>
           <p className="ap-hero-sub">
-            17 copy-paste prompts for turning one selfie into editorial, beauty, mirror,
-            car, and content-ready visuals.
+            Copy-paste photoshoot prompts for turning one selfie into editorial,
+            brand-ready visuals you can test before entering the full Vault.
           </p>
           <div className="ap-hero-actions">
             <a href="#clean-editorial" className="ap-hero-cta">
@@ -334,32 +334,37 @@ export default function AiPromptsDemoPage() {
         </div>
       </section>
 
-      {/* 8. Soft product bridge */}
+      {/* 8. Soft Vault bridge */}
       <section className="ap-section ap-kit-bridge">
         <div className="ap-section-inner">
           <p className="ap-kit-question">
-            Want the edit to look good before AI touches it?
+            Want the full shoot sequence?
           </p>
           <p className="ap-kit-body">
-            The Starter Kit includes the Lightroom presets, setup guide, posing guide,
-            caption templates, and 7-day content starter.
+            The Vault gives you the complete photoshoot worlds: every shot direction,
+            newest drops, and future SSELFIE collections in one private archive.
           </p>
           <Link
-            href="/starter-kit?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_starter_kit"
+            href="/checkout/prompt-vault?source=ai_prompts_demo&utm_source=ai_prompts&utm_medium=preview&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_demo_bridge&buyer_stage=lead"
             className="ap-bridge-cta ap-bridge-cta-secondary"
           >
-            See the Starter Kit
+            Enter the Full Vault
           </Link>
         </div>
       </section>
 
       <style>{`
+        html,
+        body {
+          background: #F8FAFA;
+        }
+
         /* ------------------------------------------------------------------ */
         /* Page shell                                                          */
         /* ------------------------------------------------------------------ */
         .ap-page {
-          background: #0a0a0a;
-          color: #f5f5f5;
+          background: #F8FAFA;
+          color: #0D0E10;
           min-height: 100vh;
         }
 
@@ -373,7 +378,7 @@ export default function AiPromptsDemoPage() {
           align-items: flex-end;
           padding: 0 24px 64px;
           overflow: hidden;
-          background: #0a0a0a;
+          background: #F8FAFA;
         }
 
         .ap-hero-image-wrap {
@@ -391,8 +396,8 @@ export default function AiPromptsDemoPage() {
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10, 10, 10, 0.28) 0%,
-            rgba(10, 10, 10, 0.82) 100%
+            rgba(248, 250, 250, 0.56) 0%,
+            rgba(248, 250, 250, 0.94) 100%
           );
         }
 
@@ -408,7 +413,7 @@ export default function AiPromptsDemoPage() {
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.38em;
-          color: rgba(245, 245, 245, 0.48);
+          color: #818283;
         }
 
         .ap-hero-title {
@@ -417,14 +422,14 @@ export default function AiPromptsDemoPage() {
           font-weight: 300;
           line-height: 0.96;
           letter-spacing: -0.02em;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .ap-hero-sub {
           margin: 0 0 32px;
           font-size: clamp(0.95rem, 2.5vw, 1.05rem);
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.7);
+          color: #4F5052;
           max-width: 520px;
         }
 
@@ -435,8 +440,8 @@ export default function AiPromptsDemoPage() {
         .ap-hero-cta {
           display: inline-block;
           padding: 14px 24px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          color: #F8FAFA;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 600;
@@ -452,7 +457,7 @@ export default function AiPromptsDemoPage() {
           margin: 0;
           font-size: 12px;
           line-height: 1.7;
-          color: rgba(245, 245, 245, 0.36);
+          color: #818283;
           max-width: 460px;
         }
 
@@ -461,7 +466,7 @@ export default function AiPromptsDemoPage() {
         /* ------------------------------------------------------------------ */
         .ap-section {
           padding: 72px 24px;
-          border-top: 1px solid rgba(245, 245, 245, 0.06);
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-section-inner {
@@ -474,7 +479,7 @@ export default function AiPromptsDemoPage() {
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(245, 245, 245, 0.36);
+          color: #818283;
         }
 
         .ap-section-title {
@@ -482,7 +487,7 @@ export default function AiPromptsDemoPage() {
           font-size: clamp(1.8rem, 5vw, 2.8rem);
           font-weight: 300;
           line-height: 1.08;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         /* ------------------------------------------------------------------ */
@@ -501,8 +506,8 @@ export default function AiPromptsDemoPage() {
           padding: 16px 0;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.66);
-          border-bottom: 1px solid rgba(245, 245, 245, 0.06);
+          color: #4F5052;
+          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
           counter-increment: before-counter;
         }
 
@@ -516,21 +521,21 @@ export default function AiPromptsDemoPage() {
           margin: 0 0 24px;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.54);
+          color: #4F5052;
         }
 
         .ap-starter-card {
-          border: 1px solid rgba(245, 245, 245, 0.12);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 16px;
           padding: 28px 28px 20px;
-          background: rgba(245, 245, 245, 0.03);
+          background: #FFFFFF;
         }
 
         .ap-starter-text {
           margin: 0 0 20px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.78);
+          color: #4F5052;
         }
 
         /* ------------------------------------------------------------------ */
@@ -543,15 +548,15 @@ export default function AiPromptsDemoPage() {
         }
 
         .pc {
-          border: 1px solid rgba(245, 245, 245, 0.09);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 18px;
           padding: 32px 28px 24px;
-          background: rgba(245, 245, 245, 0.025);
+          background: #FFFFFF;
         }
 
         .pc-workflow {
-          background: rgba(245, 245, 245, 0.04);
-          border-color: rgba(245, 245, 245, 0.11);
+          background: #FFFFFF;
+          border-color: rgba(197, 198, 200, 0.35);
         }
 
         .pc-header {
@@ -565,7 +570,7 @@ export default function AiPromptsDemoPage() {
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.18em;
-          color: rgba(245, 245, 245, 0.28);
+          color: #818283;
           flex-shrink: 0;
         }
 
@@ -574,7 +579,7 @@ export default function AiPromptsDemoPage() {
           font-size: clamp(1.45rem, 4vw, 1.9rem);
           font-weight: 300;
           line-height: 1.05;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .pc-when-label {
@@ -583,36 +588,36 @@ export default function AiPromptsDemoPage() {
           font-weight: 600;
           letter-spacing: 0.28em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.3);
+          color: #818283;
         }
 
         .pc-when {
           margin: 0 0 16px;
           font-size: 14px;
           line-height: 1.7;
-          color: rgba(245, 245, 245, 0.6);
+          color: #4F5052;
         }
 
         .pc-mood {
           margin: 0 0 24px;
           font-size: 11px;
           line-height: 1.6;
-          color: rgba(245, 245, 245, 0.32);
+          color: #818283;
           letter-spacing: 0.04em;
         }
 
         .pc-prompt-wrap {
-          border: 1px solid rgba(245, 245, 245, 0.08);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 10px;
           padding: 20px 20px 14px;
-          background: rgba(0, 0, 0, 0.25);
+          background: #F8FAFA;
         }
 
         .pc-prompt-text {
           margin: 0 0 16px;
           font-size: 14px;
           line-height: 1.85;
-          color: rgba(245, 245, 245, 0.72);
+          color: #4F5052;
           white-space: normal;
           word-break: break-word;
         }
@@ -626,9 +631,9 @@ export default function AiPromptsDemoPage() {
         .copy-btn {
           padding: 8px 18px;
           background: transparent;
-          border: 1px solid rgba(245, 245, 245, 0.18);
+          border: 1px solid rgba(197, 198, 200, 0.55);
           border-radius: 999px;
-          color: rgba(245, 245, 245, 0.56);
+          color: #4F5052;
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.22em;
@@ -639,8 +644,8 @@ export default function AiPromptsDemoPage() {
         }
 
         .copy-btn:hover {
-          border-color: rgba(245, 245, 245, 0.38);
-          color: rgba(245, 245, 245, 0.88);
+          border-color: rgba(13, 14, 16, 0.38);
+          color: rgba(13, 14, 16, 0.72);
         }
 
         /* ------------------------------------------------------------------ */
@@ -650,15 +655,15 @@ export default function AiPromptsDemoPage() {
           margin: -24px 0 36px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.48);
+          color: #818283;
         }
 
         /* ------------------------------------------------------------------ */
         /* Bridge — Free Selfie Guide                                          */
         /* ------------------------------------------------------------------ */
         .ap-bridge {
-          background: #141414;
-          border-top: 1px solid rgba(245, 245, 245, 0.06);
+          background: #FFFFFF;
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-bridge-inner {
@@ -671,14 +676,14 @@ export default function AiPromptsDemoPage() {
           font-size: clamp(2rem, 6vw, 3.2rem);
           font-weight: 300;
           line-height: 1.1;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .ap-bridge-body {
           margin: 0 0 36px;
           font-size: 15px;
           line-height: 1.85;
-          color: rgba(245, 245, 245, 0.56);
+          color: #4F5052;
           max-width: 540px;
           margin-left: auto;
           margin-right: auto;
@@ -699,35 +704,35 @@ export default function AiPromptsDemoPage() {
 
         .ap-bridge-cta-primary {
           padding: 16px 32px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          color: #F8FAFA;
         }
 
         .ap-bridge-cta-secondary {
           padding: 14px 28px;
-          border: 1px solid rgba(245, 245, 245, 0.2);
-          color: rgba(245, 245, 245, 0.62);
+          border: 1px solid rgba(197, 198, 200, 0.55);
+          color: #4F5052;
         }
 
         /* ------------------------------------------------------------------ */
-        /* Starter Kit soft bridge                                             */
+        /* Vault soft bridge                                                   */
         /* ------------------------------------------------------------------ */
         .ap-kit-bridge {
-          border-top: 1px solid rgba(245, 245, 245, 0.05);
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-kit-question {
           margin: 0 0 10px;
           font-size: 14px;
           font-weight: 500;
-          color: rgba(245, 245, 245, 0.44);
+          color: #818283;
         }
 
         .ap-kit-body {
           margin: 0 0 28px;
           font-size: 15px;
           line-height: 1.78;
-          color: rgba(245, 245, 245, 0.52);
+          color: #4F5052;
           max-width: 520px;
         }
 

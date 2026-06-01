@@ -27,7 +27,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "ai-prompts-hero.jpg")
 
 export const metadata: Metadata = {
-  title: "Your ChatGPT Selfie Prompts · SSELFIE",
+  title: "Your AI Photoshoot Preview · SSELFIE",
   description:
     "Your updated AI photoshoot preview: one selfie, cinematic transformations, and first shots from the SSELFIE Vault.",
   robots: { index: false, follow: false },
@@ -184,13 +184,13 @@ export default async function AiPromptsAccessPage({
             The access link may be expired or incorrect. Sign up to get a fresh one.
           </p>
           <Link href="/ai-prompts" className="ap-invalid-cta">
-            Get the prompt pack
+            Get the free shoot prompts
           </Link>
         </div>
         <style>{`
           .ap-page {
-            background: #0a0a0a;
-            color: #f5f5f5;
+            background: #F8FAFA;
+            color: #0D0E10;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -206,26 +206,26 @@ export default async function AiPromptsAccessPage({
             font-size: 9px;
             font-weight: 600;
             letter-spacing: 0.42em;
-            color: rgba(245, 245, 245, 0.32);
+            color: #818283;
           }
           .ap-invalid-headline {
             margin: 0 0 16px;
             font-size: clamp(2rem, 7vw, 3rem);
             font-weight: 300;
             line-height: 1.1;
-            color: #f5f5f5;
+            color: #0D0E10;
           }
           .ap-invalid-body {
             margin: 0 0 36px;
             font-size: 15px;
             line-height: 1.8;
-            color: rgba(245, 245, 245, 0.54);
+            color: #4F5052;
           }
           .ap-invalid-cta {
             display: inline-block;
             padding: 14px 28px;
-            background: #f5f5f5;
-            color: #0a0a0a;
+            background: #0D0E10;
+            color: #F8FAFA;
             border-radius: 999px;
             font-size: 11px;
             font-weight: 600;
@@ -269,7 +269,7 @@ export default async function AiPromptsAccessPage({
           </div>
         )}
         <div className="ap-hero-content">
-          <p className="ap-hero-eyebrow">SSELFIE · CHATGPT SELFIE PROMPT PACK</p>
+          <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
             Your Updated Photoshoot Preview.
           </h1>
@@ -565,9 +565,14 @@ export default async function AiPromptsAccessPage({
       </section>
 
       <style>{`
+        html,
+        body {
+          background: #F8FAFA;
+        }
+
         .ap-page {
-          background: #0a0a0a;
-          color: #f5f5f5;
+          background: #F8FAFA;
+          color: #0D0E10;
           min-height: 100vh;
         }
 
@@ -578,7 +583,7 @@ export default async function AiPromptsAccessPage({
           align-items: flex-end;
           padding: 0 24px 64px;
           overflow: hidden;
-          background: #0a0a0a;
+          background: #F8FAFA;
         }
 
         .ap-hero-image-wrap {
@@ -596,8 +601,8 @@ export default async function AiPromptsAccessPage({
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10, 10, 10, 0.28) 0%,
-            rgba(10, 10, 10, 0.82) 100%
+            rgba(248, 250, 250, 0.56) 0%,
+            rgba(248, 250, 250, 0.94) 100%
           );
         }
 
@@ -613,7 +618,7 @@ export default async function AiPromptsAccessPage({
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.38em;
-          color: rgba(245, 245, 245, 0.48);
+          color: #818283;
         }
 
         .ap-hero-title {
@@ -622,14 +627,14 @@ export default async function AiPromptsAccessPage({
           font-weight: 300;
           line-height: 0.96;
           letter-spacing: -0.02em;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .ap-hero-sub {
           margin: 0 0 32px;
           font-size: clamp(0.95rem, 2.5vw, 1.05rem);
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.7);
+          color: #4F5052;
           max-width: 520px;
         }
 
@@ -640,8 +645,8 @@ export default async function AiPromptsAccessPage({
         .ap-hero-cta {
           display: inline-block;
           padding: 14px 24px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          color: #F8FAFA;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 600;
@@ -657,13 +662,13 @@ export default async function AiPromptsAccessPage({
           margin: 0;
           font-size: 12px;
           line-height: 1.7;
-          color: rgba(245, 245, 245, 0.36);
+          color: #818283;
           max-width: 460px;
         }
 
         .ap-section {
           padding: 72px 24px;
-          border-top: 1px solid rgba(245, 245, 245, 0.06);
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-section-inner {
@@ -676,11 +681,11 @@ export default async function AiPromptsAccessPage({
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.4em;
-          color: rgba(245, 245, 245, 0.36);
+          color: #818283;
         }
 
         .ap-eyebrow-new {
-          color: rgba(245, 245, 245, 0.62);
+          color: #4F5052;
         }
 
         .ap-section-title {
@@ -688,7 +693,7 @@ export default async function AiPromptsAccessPage({
           font-size: clamp(1.8rem, 5vw, 2.8rem);
           font-weight: 300;
           line-height: 1.08;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .ap-before-list {
@@ -704,8 +709,8 @@ export default async function AiPromptsAccessPage({
           padding: 16px 0;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.66);
-          border-bottom: 1px solid rgba(245, 245, 245, 0.06);
+          color: #4F5052;
+          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-before-list li:first-child { padding-top: 0; }
@@ -715,14 +720,14 @@ export default async function AiPromptsAccessPage({
           margin: 0 0 24px;
           font-size: 15px;
           line-height: 1.75;
-          color: rgba(245, 245, 245, 0.54);
+          color: #4F5052;
         }
 
         .ap-starter-card {
-          border: 1px solid rgba(245, 245, 245, 0.12);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 16px;
           padding: 28px 28px 20px;
-          background: rgba(245, 245, 245, 0.03);
+          background: #FFFFFF;
         }
 
         .ap-first-test {
@@ -774,7 +779,7 @@ export default async function AiPromptsAccessPage({
           margin: 0 0 20px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.78);
+          color: #4F5052;
         }
 
         .ap-cards {
@@ -784,10 +789,10 @@ export default async function AiPromptsAccessPage({
         }
 
         .pc {
-          border: 1px solid rgba(245, 245, 245, 0.09);
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 18px;
           padding: 32px 28px 24px;
-          background: rgba(245, 245, 245, 0.025);
+          background: #FFFFFF;
           overflow: hidden;
         }
 
@@ -814,8 +819,8 @@ export default async function AiPromptsAccessPage({
         }
 
         .pc-workflow {
-          background: rgba(245, 245, 245, 0.04);
-          border-color: rgba(245, 245, 245, 0.11);
+          background: #FFFFFF;
+          border-color: rgba(197, 198, 200, 0.35);
         }
 
         .pc-header {
@@ -829,7 +834,7 @@ export default async function AiPromptsAccessPage({
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.18em;
-          color: rgba(245, 245, 245, 0.28);
+          color: #818283;
           flex-shrink: 0;
         }
 
@@ -838,7 +843,7 @@ export default async function AiPromptsAccessPage({
           font-size: clamp(1.45rem, 4vw, 1.9rem);
           font-weight: 300;
           line-height: 1.05;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .pc-when-label {
@@ -847,36 +852,36 @@ export default async function AiPromptsAccessPage({
           font-weight: 600;
           letter-spacing: 0.28em;
           text-transform: uppercase;
-          color: rgba(245, 245, 245, 0.3);
+          color: #818283;
         }
 
         .pc-when {
           margin: 0 0 16px;
           font-size: 14px;
           line-height: 1.7;
-          color: rgba(245, 245, 245, 0.6);
+          color: #4F5052;
         }
 
         .pc-mood {
           margin: 0 0 24px;
           font-size: 11px;
           line-height: 1.6;
-          color: rgba(245, 245, 245, 0.32);
+          color: #818283;
           letter-spacing: 0.04em;
         }
 
         .pc-prompt-wrap {
-          border: 1px solid rgba(245, 245, 245, 0.08);
+          border: 1px solid #FFFFFF;
           border-radius: 10px;
           padding: 20px 20px 14px;
-          background: rgba(0, 0, 0, 0.25);
+          background: #F8FAFA;
         }
 
         .pc-prompt-text {
           margin: 0 0 16px;
           font-size: 14px;
           line-height: 1.85;
-          color: rgba(245, 245, 245, 0.72);
+          color: #4F5052;
           white-space: normal;
           word-break: break-word;
         }
@@ -896,9 +901,9 @@ export default async function AiPromptsAccessPage({
         .copy-btn {
           padding: 8px 18px;
           background: transparent;
-          border: 1px solid rgba(245, 245, 245, 0.18);
+          border: 1px solid rgba(197, 198, 200, 0.45);
           border-radius: 999px;
-          color: rgba(245, 245, 245, 0.56);
+          color: #4F5052;
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.22em;
@@ -909,15 +914,15 @@ export default async function AiPromptsAccessPage({
         }
 
         .copy-btn:hover {
-          border-color: rgba(245, 245, 245, 0.38);
-          color: rgba(245, 245, 245, 0.88);
+          border-color: rgba(13, 14, 16, 0.38);
+          color: rgba(13, 14, 16, 0.72);
         }
 
         .copy-after-cta {
           width: 100%;
           margin-top: 14px;
           padding-top: 14px;
-          border-top: 1px solid rgba(245, 245, 245, 0.08);
+          border-top: 1px solid #FFFFFF;
           text-align: left;
         }
 
@@ -925,7 +930,7 @@ export default async function AiPromptsAccessPage({
           margin: 0 0 10px;
           font-size: 12px;
           line-height: 1.6;
-          color: rgba(245, 245, 245, 0.5);
+          color: #818283;
         }
 
         .copy-after-link {
@@ -934,8 +939,8 @@ export default async function AiPromptsAccessPage({
           justify-content: center;
           min-height: 44px;
           padding: 12px 16px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          color: #F8FAFA;
           text-align: center;
           text-decoration: none;
           font-size: 10px;
@@ -949,7 +954,7 @@ export default async function AiPromptsAccessPage({
           margin: -24px 0 36px;
           font-size: 15px;
           line-height: 1.8;
-          color: rgba(245, 245, 245, 0.48);
+          color: #818283;
         }
 
         .ap-vault-cta-row {
@@ -958,8 +963,8 @@ export default async function AiPromptsAccessPage({
         }
 
         .ap-bridge {
-          background: #141414;
-          border-top: 1px solid rgba(245, 245, 245, 0.06);
+          background: #FFFFFF;
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         .ap-bridge-inner {
@@ -972,14 +977,14 @@ export default async function AiPromptsAccessPage({
           font-size: clamp(2rem, 6vw, 3.2rem);
           font-weight: 300;
           line-height: 1.1;
-          color: #f5f5f5;
+          color: #0D0E10;
         }
 
         .ap-bridge-body {
           margin: 0 0 36px;
           font-size: 15px;
           line-height: 1.85;
-          color: rgba(245, 245, 245, 0.56);
+          color: #4F5052;
           max-width: 540px;
           margin-left: auto;
           margin-right: auto;
@@ -1000,18 +1005,18 @@ export default async function AiPromptsAccessPage({
 
         .ap-bridge-cta-primary {
           padding: 16px 32px;
-          background: #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          color: #F8FAFA;
         }
 
         .ap-bridge-cta-secondary {
           padding: 14px 28px;
-          border: 1px solid rgba(245, 245, 245, 0.2);
-          color: rgba(245, 245, 245, 0.62);
+          border: 1px solid rgba(197, 198, 200, 0.55);
+          color: #4F5052;
         }
 
         .ap-kit-bridge {
-          border-top: 1px solid rgba(245, 245, 245, 0.05);
+          border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
         /* Vault grid — same responsive behaviour as ap-cards but without last-child span */
@@ -1031,8 +1036,8 @@ export default async function AiPromptsAccessPage({
         .ap-thumb-wrap {
           margin-top: 0;
           padding: 18px 28px 22px;
-          background: rgba(245, 245, 245, 0.025);
-          border: 1px solid rgba(245, 245, 245, 0.09);
+          background: #FFFFFF;
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-top: none;
           border-radius: 0 0 18px 18px;
         }
@@ -1059,7 +1064,7 @@ export default async function AiPromptsAccessPage({
 
         .ap-thumb-item-yours {
           opacity: 1;
-          outline: 1.5px solid rgba(245, 245, 245, 0.48);
+          outline: 1.5px solid #818283;
           outline-offset: 2px;
         }
 
@@ -1071,12 +1076,12 @@ export default async function AiPromptsAccessPage({
           margin: 12px 0 0;
           font-size: 11px;
           line-height: 1.65;
-          color: rgba(245, 245, 245, 0.36);
+          color: #818283;
           letter-spacing: 0.02em;
         }
 
         .ap-thumb-yours-label {
-          color: rgba(245, 245, 245, 0.56);
+          color: #4F5052;
           font-weight: 500;
         }
 
@@ -1087,9 +1092,9 @@ export default async function AiPromptsAccessPage({
           min-height: 48px;
           margin-top: 16px;
           padding: 13px 18px;
-          background: #f5f5f5;
-          border: 1px solid #f5f5f5;
-          color: #0a0a0a;
+          background: #0D0E10;
+          border: 1px solid #0D0E10;
+          color: #F8FAFA;
           text-align: center;
           text-decoration: none;
           font-size: 10px;
@@ -1108,7 +1113,7 @@ export default async function AiPromptsAccessPage({
           margin: 10px 0 0;
           font-size: 11px;
           line-height: 1.55;
-          color: rgba(245, 245, 245, 0.42);
+          color: #818283;
           text-align: center;
         }
 
@@ -1124,14 +1129,14 @@ export default async function AiPromptsAccessPage({
           margin: 0 0 10px;
           font-size: 14px;
           font-weight: 500;
-          color: rgba(245, 245, 245, 0.44);
+          color: #818283;
         }
 
         .ap-kit-body {
           margin: 0 0 28px;
           font-size: 15px;
           line-height: 1.78;
-          color: rgba(245, 245, 245, 0.52);
+          color: #4F5052;
           max-width: 520px;
         }
 
@@ -1184,11 +1189,11 @@ export default async function AiPromptsAccessPage({
         /* Editorial light refresh: the access page should feel like the email
            and the product itself, not a dark prompt database. */
         .ap-page {
-          background: #f5f1eb;
-          color: #0d0c0b;
+          background: #F8FAFA;
+          color: #0D0E10;
         }
         .ap-hero {
-          background: #0d0c0b;
+          background: #F8FAFA;
         }
         .ap-hero-title {
           letter-spacing: 0;
@@ -1199,26 +1204,26 @@ export default async function AiPromptsAccessPage({
           border-top-color: rgba(13, 12, 11, 0.08);
         }
         .ap-section {
-          background: #f5f1eb;
+          background: #F8FAFA;
         }
         .ap-vault-preview,
         .ap-bonus-section {
-          background: #fffaf4;
+          background: #FFFFFF;
         }
         .ap-before,
         .ap-starter,
         .ap-kit-bridge {
-          background: #f0ede8;
+          background: #F8FAFA;
         }
         .ap-eyebrow,
         .pc-number,
         .pc-when-label {
-          color: rgba(13, 12, 11, 0.42);
+          color: #818283;
         }
         .ap-section-title,
         .pc-title,
         .ap-bridge-title {
-          color: #0d0c0b;
+          color: #0D0E10;
           letter-spacing: 0;
         }
         .ap-workflow-note,
@@ -1231,8 +1236,8 @@ export default async function AiPromptsAccessPage({
         }
         .pc,
         .ap-starter-card {
-          background: rgba(255, 250, 244, 0.82);
-          border-color: rgba(13, 12, 11, 0.1);
+          background: #FFFFFF;
+          border-color: rgba(197, 198, 200, 0.35);
           border-radius: 8px;
         }
         .pc-example-image-wrap {
@@ -1242,8 +1247,8 @@ export default async function AiPromptsAccessPage({
           border-radius: 8px 8px 0 0;
         }
         .pc-prompt-wrap {
-          background: rgba(240, 237, 232, 0.72);
-          border-color: rgba(13, 12, 11, 0.08);
+          background: #F8FAFA;
+          border-color: rgba(197, 198, 200, 0.35);
         }
         .pc-prompt-text,
         .ap-starter-text {
@@ -1255,8 +1260,8 @@ export default async function AiPromptsAccessPage({
           color: rgba(13, 12, 11, 0.48);
         }
         .ap-thumb-wrap {
-          background: rgba(255, 250, 244, 0.82);
-          border-color: rgba(13, 12, 11, 0.1);
+          background: #FFFFFF;
+          border-color: rgba(197, 198, 200, 0.35);
           border-radius: 0 0 8px 8px;
         }
         .ap-thumb-item-yours {
@@ -1266,13 +1271,13 @@ export default async function AiPromptsAccessPage({
           color: rgba(13, 12, 11, 0.7);
         }
         .copy-btn {
-          color: #0d0c0b;
-          border-color: rgba(13, 12, 11, 0.18);
+          color: #0D0E10;
+          border-color: rgba(197, 198, 200, 0.6);
           background: transparent;
         }
         .copy-btn:hover {
-          color: #0d0c0b;
-          border-color: rgba(13, 12, 11, 0.42);
+          color: #0D0E10;
+          border-color: rgba(13, 14, 16, 0.42);
         }
         .copy-after-cta {
           border-top-color: rgba(13, 12, 11, 0.08);
@@ -1281,23 +1286,23 @@ export default async function AiPromptsAccessPage({
           color: rgba(13, 12, 11, 0.56);
         }
         .copy-after-link {
-          background: #0d0c0b;
-          color: #f5f1eb;
+          background: #0D0E10;
+          color: #F8FAFA;
         }
         .ap-bridge-cta,
         .ap-bridge-cta-primary,
         .ap-bridge-cta-secondary {
-          background: #0d0c0b;
-          color: #f5f1eb;
-          border-color: #0d0c0b;
+          background: #0D0E10;
+          color: #F8FAFA;
+          border-color: #0D0E10;
           border-radius: 0;
         }
         .ap-bridge {
-          background: #fffaf4;
+          background: #FFFFFF;
         }
         .ap-bonus-library {
-          border: 1px solid rgba(13, 12, 11, 0.1);
-          background: rgba(255, 250, 244, 0.84);
+          border: 1px solid rgba(197, 198, 200, 0.35);
+          background: #FFFFFF;
           border-radius: 8px;
           padding: 24px;
         }
@@ -1325,13 +1330,13 @@ export default async function AiPromptsAccessPage({
           margin-top: 56px;
         }
         .ap-preview-card {
-          background: rgba(255, 250, 244, 0.86);
-          border: 1px solid rgba(13, 12, 11, 0.1);
+          background: #FFFFFF;
+          border: 1px solid rgba(197, 198, 200, 0.35);
           border-radius: 8px 8px 0 0;
           overflow: hidden;
         }
         .ap-preview-image-wrap {
-          background: #f0ede8;
+          background: #F8FAFA;
         }
         .ap-preview-image {
           display: block;
@@ -1359,7 +1364,7 @@ export default async function AiPromptsAccessPage({
         }
         .ap-preview-title {
           margin: 10px 0 12px;
-          color: #0d0c0b;
+          color: #0D0E10;
           font-size: clamp(1.6rem, 6vw, 2.3rem);
           font-weight: 300;
           line-height: 1.04;

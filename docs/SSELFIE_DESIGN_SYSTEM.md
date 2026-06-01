@@ -39,24 +39,30 @@ SSELFIE should not feel like:
 6. Keep UI calm, minimal, and readable.
 7. Avoid icons and emojis unless Sandra explicitly approves a specific use.
 8. Avoid colorful SaaS palettes, gradients, pink, green, purple, and decorative UI noise.
-9. Do not use dark-first email templates.
-10. Do not reuse old SELFIE AI design guidance as current SSELFIE guidance.
+9. Dark editorial overlays are allowed on full-bleed images when they make white typography readable and the image feel cinematic.
+10. Do not use dark-first email templates.
+11. Do not reuse old SELFIE AI design guidance as current SSELFIE guidance.
 
 ## Color Direction
 
 Approved base:
 
-- Soft white
-- Warm off-white
-- Soft white containers
-- Warm gray and stone neutrals
-- Deep graphite
-- Luxury black as contrast or accent
+- Seasalt `#F8FAFA`
+- White `#FFFFFF`
+- Silver `#C5C6C8`
+- Gray `#818283`
+- Davy's Gray `#4F5052`
+- Raisin Black `#282728`
+- Night `#0D0E10`
 
-Use black carefully. It can be a button, headline contrast, footer, thin frame, or premium accent. It should not make the whole brand feel heavy or dark by default.
+Use Night/Raisin Black carefully. It can be a button, headline contrast, thin frame, premium accent, or image overlay. It should not become the dominant page background or make the product feel heavy/dark by default.
+
+Approved exception: full-bleed image heroes may use Night/Raisin Black gradient overlays when the photo remains visible and the section reads as cinematic editorial imagery, not a dark SaaS/product shell. The page should continue into Seasalt, white, or cool smoke sections below the hero.
 
 Avoid:
 
+- Black-background product UI
+- Warm beige/cream drift
 - Pink brand systems
 - Green accents
 - Purple AI palettes

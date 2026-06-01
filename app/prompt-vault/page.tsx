@@ -31,7 +31,7 @@ const BUY_BUTTON_STYLE = {
   alignItems: "center",
   justifyContent: "center",
   padding: "13px 28px",
-  background: "#0A0A0A",
+  background: "#0D0E10",
   color: "#FFFFFF",
   fontSize: "10px",
   fontWeight: 600,
@@ -61,7 +61,7 @@ function BuyButton({ label = "Get Full Shoots + Future Drops · $27" }: { label?
 
 export default function PromptVaultPage() {
   return (
-    <main className={inter.className} style={{ background: "#F5EFE6", color: "#0A0A0A" }}>
+    <main className={inter.className} style={{ background: "#F8FAFA", color: "#0D0E10" }}>
       <Suspense fallback={null}>
         <PromptVaultAnalytics />
       </Suspense>
@@ -72,8 +72,8 @@ export default function PromptVaultPage() {
           position: "sticky",
           top: 0,
           zIndex: 10,
-          background: "#F5EFE6",
-          borderBottom: "1px solid #E5DDD4",
+          background: "#F8FAFA",
+          borderBottom: "1px solid rgba(197,198,200,0.35)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -84,7 +84,7 @@ export default function PromptVaultPage() {
           href="/"
           className={cormorant.className}
           style={{
-            color: "#0A0A0A",
+            color: "#0D0E10",
             fontSize: "16px",
             fontWeight: 300,
             letterSpacing: "0.34em",
@@ -108,30 +108,31 @@ export default function PromptVaultPage() {
               fontWeight: 600,
               letterSpacing: "0.42em",
               textTransform: "uppercase",
-              color: "#9B9189",
+              color: "#818283",
             }}
           >
               SELFIE TO BRAND SHOOT · THE VAULT
           </p>
           <h1
             className={cormorant.className}
+            aria-label="The Selfie to Brand Shoot Vault"
             style={{
               margin: "0 0 24px",
-              fontSize: "clamp(44px, 6.5vw, 88px)",
+              fontSize: "clamp(42px, 6.2vw, 82px)",
               fontWeight: 300,
-              lineHeight: 1.0,
+              lineHeight: 0.98,
               letterSpacing: "-0.025em",
-              color: "#0A0A0A",
+              color: "#0D0E10",
             }}
           >
-            The<br />Full Shoot<br />Vault
+            The<br />Selfie to<br />Brand Shoot<br />Vault
           </h1>
           <p
             style={{
               margin: "0 0 32px",
               fontSize: "17px",
               lineHeight: 1.85,
-              color: "#3A3632",
+              color: "#4F5052",
               maxWidth: "400px",
             }}
           >
@@ -145,7 +146,7 @@ export default function PromptVaultPage() {
               fontSize: "13px",
               fontWeight: 500,
               letterSpacing: "0.08em",
-              color: "#9B9189",
+              color: "#818283",
               textDecoration: "none",
             }}
           >
@@ -180,7 +181,7 @@ export default function PromptVaultPage() {
       {/* ── DESIRE BRIDGE ── */}
       <section
         style={{
-          borderTop: "1px solid #E5DDD4",
+          borderTop: "1px solid rgba(197,198,200,0.35)",
           padding: "clamp(60px, 7vw, 88px) clamp(18px, 4vw, 40px)",
         }}
       >
@@ -193,7 +194,7 @@ export default function PromptVaultPage() {
               fontWeight: 300,
               lineHeight: 1.24,
               letterSpacing: "-0.01em",
-              color: "#0A0A0A",
+              color: "#0D0E10",
             }}
           >
             You&apos;ve been saving those photos<br />for a reason.
@@ -203,7 +204,7 @@ export default function PromptVaultPage() {
               margin: "0 0 18px",
               fontSize: "16px",
               lineHeight: 1.85,
-              color: "#3A3632",
+              color: "#4F5052",
             }}
           >
             The cinematic ones. That editorial aesthetic. The kind of content
@@ -215,7 +216,7 @@ export default function PromptVaultPage() {
               margin: "0 0 18px",
               fontSize: "16px",
               lineHeight: 1.85,
-              color: "#3A3632",
+              color: "#4F5052",
             }}
           >
             You&apos;ve been quietly building a picture of who you want to be online.
@@ -225,7 +226,7 @@ export default function PromptVaultPage() {
               margin: 0,
               fontSize: "16px",
               lineHeight: 1.85,
-              color: "#3A3632",
+              color: "#4F5052",
               fontStyle: "italic",
             }}
           >
@@ -237,7 +238,7 @@ export default function PromptVaultPage() {
       {/* ── OPENING SHOT PREVIEW CARDS ── */}
       <section
         id="free-previews"
-        style={{ borderTop: "1px solid #E5DDD4", background: "#FAF8F4" }}
+        style={{ borderTop: "1px solid rgba(197,198,200,0.35)", background: "#FFFFFF" }}
       >
         <div className="pvf-section-inner">
           <p className="pvf-eyebrow">THE OPENING SHOT PREVIEW</p>
@@ -307,7 +308,7 @@ export default function PromptVaultPage() {
       {/* ── HOW IT WORKS ── */}
       <section
         style={{
-          borderTop: "1px solid #E5DDD4",
+          borderTop: "1px solid rgba(197,198,200,0.35)",
           padding: "clamp(64px, 8vw, 96px) clamp(18px, 4vw, 40px)",
         }}
       >
@@ -323,18 +324,18 @@ export default function PromptVaultPage() {
             {[
               {
                 n: "01",
-                title: "Pick a look",
-                body: "Find the aesthetic you want above. Every preview includes an example photo so you know exactly what you are getting.",
+                title: "Choose the visual world you want to create.",
+                body: "Start with the collection that feels closest to the woman you want your content to look like.",
               },
               {
                 n: "02",
-                title: "Copy and paste",
-                body: "One tap copies the prompt. Open ChatGPT, start a new conversation, paste it in. Attach your selfie.",
+                title: "Open the shoot and copy the prompt.",
+                body: "Each opening shot gives you a clear direction, example image, and prompt you can use immediately.",
               },
               {
                 n: "03",
-                title: "Your photo is ready",
-                body: "ChatGPT generates it. Download it. Post it. The whole thing takes under a minute.",
+                title: "Paste it into ChatGPT with your selfie.",
+                body: "Upload your photo, create the image, then use the full Vault when you want the complete shot sequence.",
               },
             ].map((step) => (
               <div key={step.n}>
@@ -344,7 +345,7 @@ export default function PromptVaultPage() {
                     fontSize: "10px",
                     fontWeight: 600,
                     letterSpacing: "0.36em",
-                    color: "#9B9189",
+                    color: "#818283",
                   }}
                 >
                   {step.n}
@@ -356,7 +357,7 @@ export default function PromptVaultPage() {
                     fontSize: "clamp(20px, 2.5vw, 28px)",
                     fontWeight: 300,
                     lineHeight: 1.18,
-                    color: "#0A0A0A",
+                    color: "#0D0E10",
                   }}
                 >
                   {step.title}
@@ -366,7 +367,7 @@ export default function PromptVaultPage() {
                     margin: 0,
                     fontSize: "15px",
                     lineHeight: 1.82,
-                    color: "#3A3632",
+                    color: "#4F5052",
                   }}
                 >
                   {step.body}
@@ -378,7 +379,7 @@ export default function PromptVaultPage() {
             style={{
               marginTop: "48px",
               fontSize: "14px",
-              color: "#9B9189",
+              color: "#818283",
               lineHeight: 1.7,
             }}
           >
@@ -390,8 +391,8 @@ export default function PromptVaultPage() {
       {/* ── VAULT UPSELL ── */}
       <section
         style={{
-          borderTop: "1px solid #E5DDD4",
-          background: "#FAF8F4",
+          borderTop: "1px solid rgba(197,198,200,0.35)",
+          background: "#FFFFFF",
           padding: "clamp(64px, 8vw, 96px) clamp(18px, 4vw, 40px)",
         }}
       >
@@ -427,7 +428,7 @@ export default function PromptVaultPage() {
                 margin: "0 0 28px",
                 fontSize: "16px",
                 lineHeight: 1.85,
-                color: "#3A3632",
+                color: "#4F5052",
               }}
             >
               The preview shows you the opening shot from every collection. The
@@ -436,7 +437,7 @@ export default function PromptVaultPage() {
             </p>
             <ul className="pvf-upsell-list">
               {[
-                "Six complete editorial collections",
+                "A growing archive of complete editorial collections",
                 "Full shot sequence for every mood",
                 "Example photo for every prompt",
                 "Newest drops + future SSELFIE photoshoots included",
@@ -444,7 +445,7 @@ export default function PromptVaultPage() {
               ].map((item) => (
                 <li key={item}>
                   <span
-                    style={{ color: "#9B9189", marginRight: "10px" }}
+                    style={{ color: "#818283", marginRight: "10px" }}
                   >
                     ·
                   </span>
@@ -461,7 +462,7 @@ export default function PromptVaultPage() {
               }}
             >
               <BuyButton />
-              <p style={{ margin: 0, fontSize: "13px", color: "#9B9189" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#818283" }}>
                 One-time payment. Access link sent to your inbox.
               </p>
             </div>
@@ -472,16 +473,16 @@ export default function PromptVaultPage() {
       {/* ── FOOTER ── */}
       <footer
         style={{
-          borderTop: "1px solid #E5DDD4",
+          borderTop: "1px solid rgba(197,198,200,0.35)",
           padding: "40px 24px",
           textAlign: "center",
         }}
       >
-        <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#9B9189" }}>
+        <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#818283" }}>
           Questions? Email{" "}
           <a
             href="mailto:support@sselfie.ai"
-            style={{ color: "#3A3632", textDecoration: "none" }}
+            style={{ color: "#4F5052", textDecoration: "none" }}
           >
             support@sselfie.ai
           </a>
@@ -494,7 +495,7 @@ export default function PromptVaultPage() {
             fontWeight: 300,
             letterSpacing: "0.46em",
             textTransform: "uppercase",
-            color: "#9B9189",
+            color: "#818283",
           }}
         >
           SSELFIE
@@ -502,6 +503,11 @@ export default function PromptVaultPage() {
       </footer>
 
       <style>{`
+        html,
+        body {
+          background: #F8FAFA;
+        }
+
         /* Section inner */
         .pvf-section-inner {
           max-width: 1200px;
@@ -516,7 +522,7 @@ export default function PromptVaultPage() {
           font-weight: 600;
           letter-spacing: 0.42em;
           text-transform: uppercase;
-          color: #9B9189;
+          color: #818283;
         }
         .pvf-section-title {
           margin: 0 0 16px;
@@ -524,13 +530,13 @@ export default function PromptVaultPage() {
           font-weight: 300;
           line-height: 1.06;
           letter-spacing: -0.01em;
-          color: #0A0A0A;
+          color: #0D0E10;
         }
         .pvf-section-note {
           margin: 0 0 48px;
           font-size: 16px;
           line-height: 1.85;
-          color: #3A3632;
+          color: #4F5052;
         }
 
         /* Hero — split desktop layout */
@@ -567,7 +573,7 @@ export default function PromptVaultPage() {
         }
         .pvf-preview-card {
           background: #FFFFFF;
-          border: 1px solid #E5DDD4;
+          border: 1px solid rgba(197,198,200,0.35);
           overflow: hidden;
           display: flex;
           flex-direction: column;
@@ -576,7 +582,7 @@ export default function PromptVaultPage() {
           position: relative;
           aspect-ratio: 4/5;
           overflow: hidden;
-          background: #EDE8E1;
+          background: #F8FAFA;
           flex-shrink: 0;
         }
         .pvf-preview-image {
@@ -590,8 +596,8 @@ export default function PromptVaultPage() {
           position: absolute;
           bottom: 14px;
           left: 14px;
-          background: rgba(250,248,244,0.94);
-          color: #0A0A0A;
+          background: rgba(248,250,250,0.94);
+          color: #0D0E10;
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.2em;
@@ -610,32 +616,32 @@ export default function PromptVaultPage() {
           font-weight: 600;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: #9B9189;
+          color: #818283;
         }
         .pvf-card-title {
           margin: 0 0 8px;
           font-size: clamp(18px, 2vw, 26px);
           font-weight: 300;
           line-height: 1.12;
-          color: #0A0A0A;
+          color: #0D0E10;
         }
         .pvf-card-mood {
           margin: 0 0 8px;
           font-size: 13px;
           line-height: 1.65;
-          color: #9B9189;
+          color: #818283;
           font-style: italic;
         }
         .pvf-card-when {
           margin: 0 0 20px;
           font-size: 14px;
           line-height: 1.75;
-          color: #3A3632;
+          color: #4F5052;
         }
         .pvf-prompt-wrap {
           margin-top: auto;
           padding-top: 18px;
-          border-top: 1px solid #E5DDD4;
+          border-top: 1px solid rgba(197,198,200,0.35);
         }
         .pvf-prompt-label {
           margin: 0 0 8px;
@@ -643,31 +649,31 @@ export default function PromptVaultPage() {
           font-weight: 600;
           letter-spacing: 0.36em;
           text-transform: uppercase;
-          color: #9B9189;
+          color: #818283;
         }
         .pvf-prompt-text {
           margin: 0 0 14px;
           font-size: 13px;
           line-height: 1.75;
-          color: #3A3632;
+          color: #4F5052;
           white-space: pre-wrap;
         }
         .pvf-vault-note {
           margin: 14px 0 0;
           font-size: 12px;
           line-height: 1.6;
-          color: #9B9189;
+          color: #818283;
           font-style: italic;
         }
 
-        /* CopyButton override for cream context */
+        /* CopyButton override for light editorial context */
         .copy-btn {
-          color: #0A0A0A !important;
+          color: #0D0E10 !important;
           border-color: rgba(10,10,10,0.2) !important;
           background: transparent !important;
         }
         .copy-btn:hover {
-          color: #0A0A0A !important;
+          color: #0D0E10 !important;
           border-color: rgba(10,10,10,0.5) !important;
           background: transparent !important;
         }
@@ -703,7 +709,7 @@ export default function PromptVaultPage() {
         }
         .pvf-upsell-list li {
           font-size: 14px;
-          color: #3A3632;
+          color: #4F5052;
           line-height: 1.6;
         }
 
