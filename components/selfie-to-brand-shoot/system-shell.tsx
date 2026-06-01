@@ -31,6 +31,27 @@ const featuredCollections = VAULT_COLLECTION_META.slice(0, 4).map((collection, i
   shotCount: collection.shotCount,
 }))
 
+const sourceSelfies = [
+  {
+    label: "Front",
+    note: "Face straight to camera",
+    image: "/images/selfie-to-brand-shoot/source-selfie-front.jpg",
+    objectPosition: "center 38%",
+  },
+  {
+    label: "Left side",
+    note: "Profile and jawline",
+    image: "/images/selfie-to-brand-shoot/source-selfie-left-profile.jpg",
+    objectPosition: "24% 38%",
+  },
+  {
+    label: "Right side",
+    note: "Three-quarter angle",
+    image: "/images/selfie-to-brand-shoot/source-selfie-right-profile.jpg",
+    objectPosition: "68% 38%",
+  },
+]
+
 const firstResultSteps = [
   "Choose or take one clear source selfie.",
   "Pick one visual world for the version of you you want to show.",
@@ -46,10 +67,11 @@ const modules = [
     title: "Start With One Selfie",
     promise:
       "Choose the source photo that gives AI enough truth to keep you looking like you.",
-    image: CLEAN_GIRL_MORNING_SERIES[1]?.exampleImage,
+    image: sourceSelfies[0].image,
     action: "Open selfie guide",
     href: "/selfie-guide",
     status: "Source photo",
+    sourceSelfiePanel: true,
   },
   {
     number: "02",
@@ -230,7 +252,26 @@ export function SelfieToBrandShootSystemShell({
           {modules.map((module) => (
             <article key={module.number} className="sbs-module">
               <div className="sbs-module-image">
-                {module.image && (
+                {module.sourceSelfiePanel ? (
+                  <div className="sbs-source-selfies" aria-label="Real source selfie examples">
+                    {sourceSelfies.map((selfie) => (
+                      <figure key={selfie.label} className="sbs-source-selfie">
+                        <Image
+                          src={selfie.image}
+                          alt={`${selfie.label} source selfie example`}
+                          fill
+                          loading="eager"
+                          sizes="(max-width: 768px) 32vw, 12vw"
+                          style={{ objectFit: "cover", objectPosition: selfie.objectPosition }}
+                        />
+                        <figcaption>
+                          <span>{selfie.label}</span>
+                          <small>{selfie.note}</small>
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                ) : module.image ? (
                   <Image
                     src={module.image}
                     alt={`${module.title} module preview`}
@@ -238,7 +279,7 @@ export function SelfieToBrandShootSystemShell({
                     sizes="(max-width: 768px) 100vw, 34vw"
                     style={{ objectFit: "cover", objectPosition: "center top" }}
                   />
-                )}
+                ) : null}
               </div>
               <div className="sbs-module-copy">
                 <p className="sbs-module-meta">
@@ -594,6 +635,43 @@ export function SelfieToBrandShootSystemShell({
           overflow: hidden;
           background: #F8FAFA;
         }
+        .sbs-source-selfies {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          height: 100%;
+          min-height: 380px;
+          gap: 1px;
+          background: rgba(197,198,200,0.45);
+        }
+        .sbs-source-selfie {
+          position: relative;
+          min-width: 0;
+          margin: 0;
+          overflow: hidden;
+          background: #FFFFFF;
+        }
+        .sbs-source-selfie figcaption {
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          display: grid;
+          gap: 3px;
+          padding: 10px;
+          background: rgba(13,14,16,0.62);
+          color: #F8FAFA;
+        }
+        .sbs-source-selfie span {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+        .sbs-source-selfie small {
+          color: rgba(248,250,250,0.78);
+          font-size: 11px;
+          line-height: 1.35;
+        }
         .sbs-module-copy {
           max-width: 520px;
         }
@@ -794,6 +872,22 @@ export function SelfieToBrandShootSystemShell({
           }
           .sbs-module-image {
             min-height: 360px;
+          }
+          .sbs-source-selfies {
+            min-height: 360px;
+          }
+          .sbs-source-selfie figcaption {
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            padding: 8px 7px;
+          }
+          .sbs-source-selfie span {
+            font-size: 8px;
+            letter-spacing: 0.18em;
+          }
+          .sbs-source-selfie small {
+            display: none;
           }
           .sbs-footer {
             display: grid;
