@@ -66,6 +66,12 @@ Added:
 - 3-step free preview test.
 - Clearer bridge: Shot 1 is free; the rest of the shoot, newest drops, and future photoshoots are inside the Vault.
 
+### Proof And Objection Capture
+
+Source of truth: `docs/funnel/PROMPT_VAULT_PROOF_AND_OBJECTION_TRACKER_2026-06-01.md`
+
+During this test, collect proof and objections manually so the decision is not based on revenue alone.
+
 ## Revenue Target
 
 The practical 7-day target is not $1M pace yet. This test is meant to prove whether the low-ticket front door can convert.
@@ -131,6 +137,8 @@ Run the council again and decide between:
 - Show at least one before/after or source/result sequence.
 - Send VAULT traffic to the improved path.
 - Collect buyer/nonbuyer replies.
+- Ask every new buyer if they tried their first Vault prompt.
+- Tag objections using the proof and objection tracker.
 
 ## Codex Does Daily
 
@@ -142,4 +150,3 @@ Run the council again and decide between:
 ## Review Date
 
 2026-06-08
-
