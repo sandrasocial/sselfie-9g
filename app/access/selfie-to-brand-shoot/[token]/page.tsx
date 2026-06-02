@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
-import { SelfieToBrandShootSystemShell } from "@/components/selfie-to-brand-shoot/system-shell"
+import { SelfieToBrandShootCourseShell } from "@/components/selfie-to-brand-shoot/course-shell-v1"
 
 export const metadata: Metadata = {
   title: "Selfie to Brand Shoot System · SSELFIE",
@@ -147,7 +147,7 @@ export default async function SelfieToBrandShootTokenAccessPage({
   }).catch(() => {})
 
   return (
-    <SelfieToBrandShootSystemShell
+    <SelfieToBrandShootCourseShell
       firstName={result.valid ? getSafeFirstName(result.name) : null}
       vaultHref={
         result.valid

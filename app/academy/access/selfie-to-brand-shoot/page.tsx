@@ -5,7 +5,7 @@ import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
-import { SelfieToBrandShootSystemShell } from "@/components/selfie-to-brand-shoot/system-shell"
+import { SelfieToBrandShootCourseShell } from "@/components/selfie-to-brand-shoot/course-shell-v1"
 
 export const metadata: Metadata = {
   title: "Selfie to Brand Shoot System · SSELFIE Academy",
@@ -85,7 +85,7 @@ export default async function AcademySelfieToBrandShootAccessPage() {
   }).catch(() => {})
 
   return (
-    <SelfieToBrandShootSystemShell
+    <SelfieToBrandShootCourseShell
       firstName={getSafeFirstName(vaultSubscriber?.name)}
       vaultHref={vaultHref}
       accessMode="academy"
