@@ -1553,8 +1553,8 @@ function KeepFixDeleteBlock() {
       {keepFixDeleteColumns.map(column => (
         <article key={column.label}>
           <div>
-            <p className="sbs-kicker">{column.copy}</p>
             <h4 className={cormorant.className}>{column.label}</h4>
+            <p className="sbs-kfd-intro">{column.copy}</p>
           </div>
           <div className="sbs-kfd-checks">
             {column.checks.map(check => (
@@ -3714,6 +3714,13 @@ export function SelfieToBrandShootCourseShell({
           font-weight: 300;
           letter-spacing: -0.02em;
           line-height: 0.96;
+        }
+        .sbs-kfd-intro {
+          max-width: 24ch;
+          margin: 12px 0 0;
+          color: #4F5052;
+          font-size: 13px;
+          line-height: 1.65;
         }
         .sbs-kfd-checks {
           display: grid;
