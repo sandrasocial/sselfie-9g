@@ -5,7 +5,6 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 
 import {
   DARK_FEMININE_CAFE_SERIES,
-  NOIR_FEMME_SERIES,
   VAULT_COLLECTION_META,
 } from "@/lib/ai-prompts/prompt-data"
 import { CopyPromptButton } from "./copy-prompt-button"
@@ -754,6 +753,159 @@ const fixPromptCards = [
   },
 ]
 
+const module4HeroImages = [
+  {
+    label: "Keep",
+    image:
+      "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-08-profile-candidate.jpeg",
+    objectPosition: "center 24%",
+  },
+  {
+    label: "Fix",
+    image:
+      "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-04-movement-transition.jpeg",
+    objectPosition: "center 30%",
+  },
+  {
+    label: "Delete",
+    image: "/images/selfie-to-brand-shoot/module-2-signature-world/before-grid-08-filtered-face.png",
+    objectPosition: "center 32%",
+  },
+]
+
+const keepFixDeleteColumns = [
+  {
+    label: "Keep",
+    copy: "Use the image if it still feels recognizable, believable, and useful.",
+    checks: [
+      "Your face still looks like you.",
+      "Your skin and hair feel believable.",
+      "Your expression feels natural.",
+      "Your age feels accurate.",
+      "The image matches your Signature Visual World.",
+      "The image has a clear content use.",
+      "You would actually post it.",
+    ],
+  },
+  {
+    label: "Fix",
+    copy: "Refine the image if the direction is strong but one detail is off.",
+    checks: [
+      "Your face is close but slightly off.",
+      "The lighting needs adjustment.",
+      "The pose or crop is awkward.",
+      "Skin looks too smooth.",
+      "The image feels too AI.",
+      "The concept is strong but execution is weak.",
+    ],
+  },
+  {
+    label: "Delete",
+    copy: "Remove the image if it breaks likeness or pulls your brand into a random world.",
+    checks: [
+      "Your face changed too much.",
+      "Body or hands look fake.",
+      "Age, skin tone, or hair changed.",
+      "The image belongs to a random aesthetic.",
+      "It looks like another woman.",
+      "It breaks your Signature Visual World.",
+    ],
+  },
+]
+
+const module4VisualExamples = [
+  {
+    label: "Keep",
+    title: "Believable + brand-aligned",
+    image:
+      "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-08-profile-candidate.jpeg",
+    objectPosition: "center 24%",
+    works: "The face is clear, the styling belongs to one world, and the image could become a profile or about-me visual.",
+    off: "Nothing major. This is the kind of result you save first.",
+    next: "Keep it. Use it as one of your identity anchors.",
+  },
+  {
+    label: "Fix",
+    title: "Almost there",
+    image:
+      "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-04-movement-transition.jpeg",
+    objectPosition: "center 30%",
+    works: "The mood, movement, and visual world are strong enough to keep exploring.",
+    off: "If the face feels slightly off, do not change the whole aesthetic. Fix the likeness, crop, or pose first.",
+    next: "Use a fix prompt and ask for the same world with a more recognizable face.",
+  },
+  {
+    label: "Delete",
+    title: "Too AI / not you",
+    image: "/images/selfie-to-brand-shoot/module-2-signature-world/before-grid-08-filtered-face.png",
+    objectPosition: "center 32%",
+    works: "The image might look polished at first glance.",
+    off: "The face signal is too distorted, and the image does not protect a recognizable personal brand identity.",
+    next: "Delete it. Start from a clearer source selfie or calmer prompt direction.",
+  },
+]
+
+const faceConsistencyChecks = [
+  "Eyes",
+  "Nose",
+  "Mouth",
+  "Jawline",
+  "Face shape",
+  "Hairline",
+  "Hair color",
+  "Skin tone",
+  "Age",
+  "Expression",
+  "Overall: would my friend recognize me?",
+]
+
+const brandConsistencyChecks = [
+  "My Signature Visual World",
+  "My main colors",
+  "My lighting direction",
+  "My wardrobe direction",
+  "My background world",
+  "My emotional signal",
+  "My Instagram feed direction",
+  "My profile / offer / content style",
+]
+
+const mayaReviewBrief = `Review this AI brand shoot image using my Visual Consistency Code.
+
+Image intended use: [profile photo / reel cover / lifestyle image / offer image / story image]
+
+My Visual Consistency Code:
+- Signature Visual World:
+- Main colors:
+- Lighting:
+- Wardrobe direction:
+- Background world:
+- Emotional signal:
+- What I repeat:
+- What I avoid:
+
+Please review the image as Keep / Fix / Delete.
+
+Tell me:
+1. Why you chose Keep, Fix, or Delete.
+2. What still looks like me.
+3. What looks off or too AI.
+4. Whether it still matches my Signature Visual World.
+5. The best use case for this image.
+6. One fix prompt I can copy if the image is close but not there yet.
+
+Do not judge if I look perfect. Judge if the image is recognizable, believable, brand-aligned, and usable.`
+
+const finalSelectSlots = [
+  "Profile / Identity Image",
+  "Reel Cover / Editorial Image",
+  "Lifestyle / Brand Image",
+  "Supporting Image 1",
+  "Supporting Image 2",
+  "Supporting Image 3",
+  "Supporting Image 4",
+]
+
 const featuredCollections = VAULT_COLLECTION_META.slice(0, 4).map((collection, index) => ({
   name: collection.name
     .replace(" Editorial", "")
@@ -801,12 +953,13 @@ const modules = [
     number: "04",
     title: "Pick The Images That Still Look Like You",
     outcome: "Keep the results that feel realistic, premium, and aligned with your identity.",
-    image: NOIR_FEMME_SERIES[3]?.exampleImage ?? NOIR_FEMME_SERIES[2]?.exampleImage,
-    imagePosition: "center top",
+    image:
+      "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-08-profile-candidate.jpeg",
+    imagePosition: "center 24%",
     href: "#module-4",
-    status: "Coming next",
-    time: "12 minutes",
-    available: false,
+    status: "Ready",
+    time: "16 minutes",
+    available: true,
   },
   {
     number: "05",
@@ -838,7 +991,7 @@ function CourseProgressBar() {
     <div className="sbs-course-progress" aria-label="Course progress">
       <div className="sbs-progress-copy">
         <span>Progress</span>
-        <strong>3 of 5 modules ready</strong>
+        <strong>4 of 5 modules ready</strong>
       </div>
       <div className="sbs-progress-track" aria-hidden="true">
         <span />
@@ -1372,6 +1525,161 @@ function FixPromptCardsBlock() {
   )
 }
 
+function Module4HeroSequence() {
+  return (
+    <div className="sbs-module4-sequence" aria-label="Keep fix delete image review preview">
+      {module4HeroImages.map((item, index) => (
+        <figure key={item.label}>
+          <Image
+            src={item.image}
+            alt={`${item.label} image review example`}
+            fill
+            sizes="(max-width: 768px) 30vw, 10vw"
+            style={{ objectFit: "cover", objectPosition: item.objectPosition }}
+          />
+          <figcaption>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            {item.label}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  )
+}
+
+function KeepFixDeleteBlock() {
+  return (
+    <div className="sbs-kfd-grid">
+      {keepFixDeleteColumns.map(column => (
+        <article key={column.label}>
+          <div>
+            <p className="sbs-kicker">{column.copy}</p>
+            <h4 className={cormorant.className}>{column.label}</h4>
+          </div>
+          <div className="sbs-kfd-checks">
+            {column.checks.map(check => (
+              <span key={check}>{check}</span>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module4VisualExamplesBlock() {
+  return (
+    <div className="sbs-module4-example-grid">
+      {module4VisualExamples.map(example => (
+        <article key={example.label}>
+          <figure>
+            <Image
+              src={example.image}
+              alt={`${example.label}: ${example.title}`}
+              fill
+              sizes="(max-width: 768px) 100vw, 20vw"
+              style={{ objectFit: "cover", objectPosition: example.objectPosition }}
+            />
+            <figcaption>{example.label}</figcaption>
+          </figure>
+          <div>
+            <p className="sbs-kicker">{example.title}</p>
+            <h4 className={cormorant.className}>{example.label}</h4>
+            <span>
+              <strong>What works</strong>
+              {example.works}
+            </span>
+            <span>
+              <strong>What is off</strong>
+              {example.off}
+            </span>
+            <span>
+              <strong>What to do next</strong>
+              {example.next}
+            </span>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module4ChecklistBlock({
+  title,
+  items,
+}: {
+  title: string
+  items: string[]
+}) {
+  return (
+    <div className="sbs-module4-checklist" aria-label={title}>
+      {items.map(item => (
+        <label key={item}>
+          <input type="checkbox" />
+          <span>{item}</span>
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function MayaReviewLayerBlock() {
+  return (
+    <div className="sbs-maya-review-layer">
+      <div>
+        <p className="sbs-kicker">MAYA REVIEW BRIEF</p>
+        <h4 className={cormorant.className}>Ask Maya to review the image.</h4>
+        <p>
+          Upload your image in Maya or paste it into your AI workspace, then use this review brief
+          with your Visual Consistency Code. The goal is a clear Keep, Fix, or Delete decision.
+        </p>
+      </div>
+      <div className="sbs-maya-review-steps">
+        {["Image", "Visual Code", "Use Case", "Keep / Fix / Delete"].map((step, index) => (
+          <article key={step}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <p>{step}</p>
+          </article>
+        ))}
+      </div>
+      <details className="sbs-prompt-text" open>
+        <summary>Review brief</summary>
+        <p>{mayaReviewBrief}</p>
+      </details>
+      <CopyPromptButton text={mayaReviewBrief} label="Copy review brief" />
+    </div>
+  )
+}
+
+function FinalBrandShootSelectsBlock() {
+  return (
+    <div className="sbs-final-selects">
+      {finalSelectSlots.map((slot, index) => (
+        <article key={slot}>
+          <header>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <h4>{slot}</h4>
+          </header>
+          <div>
+            {[
+              "Keep / Fix / Delete",
+              "Why I chose it",
+              "What I will use it for",
+              "What I need to fix",
+              "Fix prompt if needed",
+            ].map(field => (
+              <label key={field}>
+                <span>{field}</span>
+                <i aria-hidden="true" />
+              </label>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 function CourseSidebar({ vaultHref }: { vaultHref: string }) {
   return (
     <aside className="sbs-course-sidebar" aria-label="Course modules">
@@ -1826,8 +2134,109 @@ export function SelfieToBrandShootCourseShell({
             </div>
           </section>
 
+          <section
+            id="module-4"
+            className="sbs-module-four"
+            aria-label="Module 4: Pick The Images That Still Look Like You"
+          >
+            <header className="sbs-lesson-hero sbs-module-four-hero">
+              <div>
+                <p className="sbs-kicker">MODULE 04</p>
+                <h2 className={cormorant.className}>Pick The Images That Still Look Like You.</h2>
+                <p>
+                  Not every beautiful AI image belongs in your personal brand. In this module,
+                  you&apos;ll learn how to choose the images that still feel like you, match your
+                  Signature Visual World, and are usable for your content.
+                </p>
+              </div>
+              <Module4HeroSequence />
+            </header>
+
+            <LessonSection eyebrow="SANDRA'S RULE" title="Recognizable beats perfect" open>
+              <div className="sbs-taste-note">
+                <p>
+                  If the image is beautiful but it does not look like you, it does not belong in
+                  your personal brand. Your audience needs to recognize you, not a fantasy version
+                  of you.
+                </p>
+              </div>
+            </LessonSection>
+
+            <LessonSection eyebrow="DECISION SYSTEM" title="Keep / Fix / Delete Framework" open>
+              <KeepFixDeleteBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="VISUAL EXAMPLES" title="Keep, fix, or delete" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  A good AI image is not only pretty. It still has to look believable, belong to
+                  your chosen visual world, and have a clear use in your content.
+                </p>
+              </div>
+              <Module4VisualExamplesBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="FACE CHECK" title="Would my audience recognize me?" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Before you judge the outfit, pose, or background, check the face. If the face is
+                  not yours, the image does not carry your brand.
+                </p>
+              </div>
+              <Module4ChecklistBlock
+                title="Would my audience recognize me?"
+                items={faceConsistencyChecks}
+              />
+            </LessonSection>
+
+            <LessonSection eyebrow="BRAND CHECK" title="Does this still match my visual world?" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Likeness matters first. Then check whether the image still fits the visual code
+                  you chose in Module 2.
+                </p>
+              </div>
+              <Module4ChecklistBlock
+                title="Does this still match my visual world?"
+                items={brandConsistencyChecks}
+              />
+            </LessonSection>
+
+            <LessonSection
+              eyebrow="MAYA REVIEW"
+              title="Ask Maya to review this image using your Visual Consistency Code"
+              open
+            >
+              <MayaReviewLayerBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="FINAL OUTPUT" title="My Final Brand Shoot Selects" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Choose your best 3-7 images. Each selected image should have a reason, a use, and
+                  a clear decision: keep it, fix it, or delete it.
+                </p>
+              </div>
+              <FinalBrandShootSelectsBlock />
+            </LessonSection>
+
+            <div className="sbs-module-next">
+              <div>
+                <p className="sbs-kicker">ACTION STEP</p>
+                <h3 className={cormorant.className}>Choose your final 3-7 images.</h3>
+                <p>
+                  Pick one profile image, one reel-cover image, one lifestyle image, and up to four
+                  supporting brand images.
+                </p>
+              </div>
+              <a href="#module-5" className="sbs-primary">
+                I Picked My Best Images
+              </a>
+            </div>
+          </section>
+
           <div className="sbs-placeholder-stack" aria-label="Future course modules">
-            {modules.slice(3).map(module => (
+            {modules.slice(4).map(module => (
               <PlaceholderModule key={module.number} module={module} />
             ))}
           </div>
@@ -2017,7 +2426,7 @@ export function SelfieToBrandShootCourseShell({
         }
         .sbs-progress-track span {
           display: block;
-          width: 60%;
+          width: 80%;
           height: 100%;
           background: #0D0E10;
         }
@@ -3243,6 +3652,248 @@ export function SelfieToBrandShootCourseShell({
           line-height: 1.5;
           text-transform: uppercase;
         }
+        .sbs-module-four {
+          margin-top: 14px;
+        }
+        .sbs-module-four-hero {
+          grid-template-columns: minmax(0, 0.72fr) minmax(300px, 0.58fr);
+        }
+        .sbs-module4-sequence {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+          min-height: 430px;
+        }
+        .sbs-module4-sequence figure,
+        .sbs-module4-example-grid figure {
+          position: relative;
+          min-height: 100%;
+          margin: 0;
+          overflow: hidden;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-module4-sequence figcaption,
+        .sbs-module4-example-grid figcaption {
+          position: absolute;
+          left: 8px;
+          right: 8px;
+          bottom: 8px;
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 7px 8px;
+          background: rgba(13,14,16,0.64);
+          color: #F8FAFA;
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          line-height: 1.3;
+          text-transform: uppercase;
+        }
+        .sbs-kfd-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-kfd-grid article {
+          display: grid;
+          align-content: start;
+          gap: 18px;
+          padding: 18px;
+          background: #FFFFFF;
+        }
+        .sbs-kfd-grid h4,
+        .sbs-module4-example-grid h4,
+        .sbs-maya-review-layer h4 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: clamp(2.2rem, 4vw, 3.7rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.96;
+        }
+        .sbs-kfd-checks {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-kfd-checks span {
+          display: block;
+          padding: 11px 12px;
+          background: #F8FAFA;
+          color: #282728;
+          font-size: 12px;
+          line-height: 1.55;
+        }
+        .sbs-module4-example-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .sbs-module4-example-grid article {
+          display: grid;
+          grid-template-rows: minmax(310px, auto) 1fr;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-module4-example-grid article > div {
+          display: grid;
+          align-content: start;
+          gap: 13px;
+          padding: 16px;
+        }
+        .sbs-module4-example-grid span {
+          display: grid;
+          gap: 7px;
+          padding: 12px;
+          background: #F8FAFA;
+          color: #4F5052;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .sbs-module4-example-grid strong {
+          color: #0D0E10;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .sbs-module4-checklist {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module4-checklist label {
+          display: grid;
+          grid-template-columns: 18px minmax(0, 1fr);
+          gap: 10px;
+          align-items: start;
+          padding: 14px;
+          background: #FFFFFF;
+          color: #282728;
+          font-size: 13px;
+          line-height: 1.65;
+        }
+        .sbs-module4-checklist input {
+          width: 15px;
+          height: 15px;
+          margin-top: 3px;
+          accent-color: #0D0E10;
+        }
+        .sbs-maya-review-layer {
+          display: grid;
+          grid-template-columns: minmax(250px, 0.58fr) minmax(0, 1fr);
+          gap: 14px;
+          padding: 18px;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-maya-review-layer > div:first-child {
+          display: grid;
+          align-content: start;
+          gap: 12px;
+        }
+        .sbs-maya-review-steps {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-maya-review-steps article {
+          min-height: 104px;
+          display: grid;
+          align-content: space-between;
+          padding: 13px;
+          background: #FFFFFF;
+        }
+        .sbs-maya-review-steps span {
+          color: #818283;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .sbs-maya-review-steps p {
+          color: #282728;
+          font-size: 12px;
+          line-height: 1.55;
+        }
+        .sbs-maya-review-layer .sbs-prompt-text,
+        .sbs-maya-review-layer .sbs-copy-button {
+          grid-column: 1 / -1;
+        }
+        .sbs-final-selects {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-final-selects article {
+          display: grid;
+          grid-template-columns: minmax(210px, 0.46fr) minmax(0, 1fr);
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-final-selects header,
+        .sbs-final-selects article > div {
+          background: #FFFFFF;
+          padding: 15px;
+        }
+        .sbs-final-selects header {
+          display: grid;
+          align-content: start;
+          gap: 18px;
+        }
+        .sbs-final-selects header span {
+          color: #818283;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+        }
+        .sbs-final-selects h4 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          line-height: 1.45;
+          text-transform: uppercase;
+        }
+        .sbs-final-selects article > div {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 1px;
+          padding: 0;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-final-selects label {
+          min-height: 86px;
+          display: grid;
+          align-content: space-between;
+          gap: 12px;
+          padding: 13px;
+          background: #F8FAFA;
+        }
+        .sbs-final-selects label span {
+          color: #4F5052;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          line-height: 1.45;
+          text-transform: uppercase;
+        }
+        .sbs-final-selects i {
+          display: block;
+          height: 1px;
+          background: rgba(13,14,16,0.25);
+        }
         .sbs-trouble-list {
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -3353,7 +4004,13 @@ export function SelfieToBrandShootCourseShell({
           .sbs-volume-grid,
           .sbs-step-flow,
           .sbs-prompt-card-grid,
-          .sbs-starter-board {
+          .sbs-starter-board,
+          .sbs-kfd-grid,
+          .sbs-module4-example-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .sbs-maya-review-steps,
+          .sbs-final-selects article > div {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .sbs-one-world-uses {
@@ -3368,6 +4025,9 @@ export function SelfieToBrandShootCourseShell({
           .sbs-world-comparison,
           .sbs-brand-world-card,
           .sbs-concierge,
+          .sbs-module-four-hero,
+          .sbs-maya-review-layer,
+          .sbs-final-selects article,
           .sbs-module-next,
           .sbs-mini-planner,
           .sbs-upgrade-bridge,
@@ -3433,6 +4093,7 @@ export function SelfieToBrandShootCourseShell({
           .sbs-visual-code-summary,
           .sbs-visual-code-examples article,
           .sbs-module3-outcome > div,
+          .sbs-module4-checklist,
           .sbs-world-decision-selector,
           .sbs-consistency-code {
             grid-template-columns: 1fr;
@@ -3490,7 +4151,11 @@ export function SelfieToBrandShootCourseShell({
           .sbs-step-flow,
           .sbs-prompt-card-grid,
           .sbs-starter-board,
-          .sbs-fix-prompt-grid {
+          .sbs-fix-prompt-grid,
+          .sbs-kfd-grid,
+          .sbs-module4-example-grid,
+          .sbs-maya-review-steps,
+          .sbs-final-selects article > div {
             grid-template-columns: 1fr;
           }
           .sbs-module-card-image {
@@ -3524,6 +4189,15 @@ export function SelfieToBrandShootCourseShell({
             min-height: 255px;
           }
           .sbs-module3-sequence figcaption {
+            display: grid;
+          }
+          .sbs-module4-sequence {
+            min-height: auto;
+          }
+          .sbs-module4-sequence figure {
+            min-height: 250px;
+          }
+          .sbs-module4-sequence figcaption {
             display: grid;
           }
           .sbs-lesson-section summary {
