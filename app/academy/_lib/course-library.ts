@@ -192,6 +192,8 @@ const SUITE_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid"] as const
 
 function getOwnedProductEyebrow(productId: string): string {
   switch (productId) {
+    case "selfie_to_brand_shoot_system":
+      return "Selfie to Brand Shoot"
     case "starter_kit":
       return "Starter Kit"
     case "masterclass":
@@ -213,6 +215,8 @@ function getOwnedProductEyebrow(productId: string): string {
 
 function getOwnedProductActionLabel(productId: string): string {
   switch (productId) {
+    case "selfie_to_brand_shoot_system":
+      return "Open System"
     case "starter_kit":
       return "Open Kit"
     case "masterclass":
@@ -348,7 +352,9 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
     }
   } else if (primaryOwnedProduct) {
     heroDescription =
-      primaryOwnedProduct.id === "starter_kit"
+      primaryOwnedProduct.id === "selfie_to_brand_shoot_system"
+        ? "Your Selfie to Brand Shoot System is ready. Start with one source selfie, choose one signature visual world, then let Maya help you build the prompts."
+        : primaryOwnedProduct.id === "starter_kit"
         ? "Your Starter Kit is ready. Start with the quick win and then move into the fuller method."
         : "Your paid content is ready inside SSELFIE."
     primaryLink = {

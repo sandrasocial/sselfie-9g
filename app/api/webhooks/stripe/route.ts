@@ -3647,7 +3647,7 @@ export async function POST(request: NextRequest) {
                   customerEmail!,
                   session.customer_details?.name
                 )
-                const accessUrl = `${productionUrl}/access/selfie-to-brand-shoot/${subscriberRecord.accessToken}`
+                const accessUrl = `${productionUrl}/academy/access/selfie-to-brand-shoot`
                 const vaultUrl = `${productionUrl}/access/prompt-vault/${subscriberRecord.accessToken}`
                 const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
                   userId,

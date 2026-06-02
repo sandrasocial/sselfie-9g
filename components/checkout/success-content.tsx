@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/sselfie/loading-spinner"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 interface SuccessContentProps {
   initialUserInfo: any
@@ -111,7 +110,7 @@ const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
   "Content-use path for the first result",
 ]
 
-function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
+function getSuccessActionConfig(productType: string | undefined): SuccessActionConfig {
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
     return {
       href: "/studio?tab=maya&welcome=weekly-system",
@@ -158,10 +157,10 @@ function getSuccessActionConfig(productType: string | undefined, resolvedReturnT
 
   if (productType === "selfie_to_brand_shoot_system") {
     return {
-      href: "/selfie-to-brand-shoot",
-      label: "Check your email for access",
+      href: "/academy/access/selfie-to-brand-shoot",
+      label: "Open The System",
       helper:
-        "Your Selfie to Brand Shoot System is ready. If this page does not open it automatically, use the access link in your inbox.",
+        "Your Selfie to Brand Shoot System is ready inside Academy. Open it there so Maya can remember your visual world as you move through the course.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Selfie%20to%20Brand%20Shoot%20access",
       secondaryLabel: "Need help? Email support",
     }
@@ -264,7 +263,7 @@ export function SuccessContent({
   initialEmail,
   sessionId,
   purchaseType,
-  returnTo,
+  returnTo: _returnTo,
   brandStrategyBumpSelected = false,
 }: SuccessContentProps) {
   const router = useRouter()
@@ -273,7 +272,6 @@ export function SuccessContent({
   const isPromptVaultPurchase = purchaseType === "prompt_vault"
   const isSelfieToBrandShootPurchase = purchaseType === "selfie_to_brand_shoot_system"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
-  const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/studio")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
@@ -359,7 +357,7 @@ export function SuccessContent({
   const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
     "Your payment went through. Your Prompt Vault access is still syncing.",
   )
-  const [isPollingSelfieToBrandShootAccess, setIsPollingSelfieToBrandShootAccess] = useState(Boolean(isSelfieToBrandShootPurchase && sessionId))
+  const [isPollingSelfieToBrandShootAccess, setIsPollingSelfieToBrandShootAccess] = useState(false)
   const [selfieToBrandShootPollAttempts, setSelfieToBrandShootPollAttempts] = useState(0)
   const [selfieToBrandShootStatus, setSelfieToBrandShootStatus] = useState("Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes.")
   const [showSelfieToBrandShootTimeout, setShowSelfieToBrandShootTimeout] = useState(false)
@@ -376,7 +374,7 @@ export function SuccessContent({
   // purchased. userInfo.productType comes from the subscriptions table (last subscription on
   // the account) and can be a different product entirely for returning users.
   const resolvedProductType = (purchaseType || userInfo?.productType || "") as string
-  const successAction = getSuccessActionConfig(resolvedProductType, resolvedReturnTo)
+  const successAction = getSuccessActionConfig(resolvedProductType)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -416,7 +414,7 @@ export function SuccessContent({
         return
       }
 
-      if (isSelfieToBrandShootPurchase && sessionId) {
+      if (user && isSelfieToBrandShootPurchase && sessionId) {
         setIsPollingSelfieToBrandShootAccess(true)
         setSelfieToBrandShootPollAttempts(0)
         setShowSelfieToBrandShootTimeout(false)
@@ -562,7 +560,7 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/access/selfie-to-brand-shoot/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+            router.push(`/academy/access/selfie-to-brand-shoot?checkout_session=${encodeURIComponent(sessionId)}`)
           }, 400)
           return
         }
