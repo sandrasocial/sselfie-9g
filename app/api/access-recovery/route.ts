@@ -61,7 +61,7 @@ const PRODUCT_ACCESS_URL: Record<string, string> = {
   prompt_vault: "/academy/access/prompt-vault",
   "prompt-vault-paid": "/prompt-vault",
   selfie_to_brand_shoot_system: "/academy/access/selfie-to-brand-shoot",
-  "selfie-to-brand-shoot-paid": "/selfie-to-brand-shoot",
+  "selfie-to-brand-shoot-paid": "/academy/access/selfie-to-brand-shoot",
 }
 
 export async function POST(req: NextRequest) {

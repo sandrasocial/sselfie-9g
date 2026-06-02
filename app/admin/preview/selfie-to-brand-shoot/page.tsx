@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { SelfieToBrandShootSystemShell } from "@/components/selfie-to-brand-shoot/system-shell"
+import { SelfieToBrandShootCourseShell } from "@/components/selfie-to-brand-shoot/course-shell-v1"
 
 export const metadata: Metadata = {
   title: "Preview · Selfie to Brand Shoot",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function AdminSelfieToBrandShootPreviewPage() {
   return (
-    <SelfieToBrandShootSystemShell
+    <SelfieToBrandShootCourseShell
       firstName="Sandra"
       vaultHref="/academy/access/prompt-vault"
       accessMode="academy"

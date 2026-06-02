@@ -3,7 +3,6 @@ import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
 import {
-  CLEAN_GIRL_MORNING_SERIES,
   DARK_FEMININE_CAFE_SERIES,
   NOIR_FEMME_SERIES,
   VAULT_COLLECTION_META,
@@ -35,20 +34,190 @@ const sourceSelfies = [
   {
     label: "Front",
     note: "Face straight to camera",
-    image: "/images/selfie-to-brand-shoot/source-selfie-front.jpg",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-front-selfie.png",
     objectPosition: "center 38%",
   },
   {
-    label: "Left side",
-    note: "Profile and jawline",
+    label: "3/4 angle",
+    note: "Editorial but clear",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+    objectPosition: "center 38%",
+  },
+  {
+    label: "Mirror",
+    note: "Useful as support",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
+    objectPosition: "center 34%",
+  },
+]
+
+const selfieExampleCards = [
+  {
+    label: "Good Selfie",
+    eyebrow: "Use this when possible",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-front-selfie.png",
+        label: "Clear front",
+        objectPosition: "center 38%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+        label: "Clear 3/4",
+        objectPosition: "center 38%",
+      },
+    ],
+    traits: [
+      "Clear face",
+      "Soft natural light",
+      "Full facial features visible",
+      "No heavy filter",
+      "Simple background",
+      "Natural expression",
+      "Front or slight 3/4 angle",
+      "High-resolution image",
+    ],
+    note: "This gives AI the best chance of keeping you recognizable.",
+  },
+  {
+    label: "Okay Selfie",
+    eyebrow: "Can work, but may need more tries",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
+        label: "Mirror support",
+        objectPosition: "center 34%",
+      },
+    ],
+    traits: [
+      "Mirror selfie",
+      "Slightly busy background",
+      "Uneven light",
+      "Phone partly visible",
+      "Slight shadow",
+      "Mild filter",
+      "A more dramatic angle",
+      "Still clear enough to read the face",
+    ],
+    note: "This might work, but expect more variation. If your first result looks off, try a clearer selfie before changing the prompt.",
+  },
+  {
+    label: "Bad Selfie",
+    eyebrow: "Do not start here",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-blurry-selfie.png",
+        label: "Blurry",
+        objectPosition: "center 40%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-filtered-selfie.png",
+        label: "Filtered",
+        objectPosition: "center 40%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-covered-face-selfie.png",
+        label: "Covered",
+        objectPosition: "center 38%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-group-or-cropped-selfie.png",
+        label: "Unclear",
+        objectPosition: "center 40%",
+      },
+    ],
+    traits: [
+      "Face covered",
+      "Blurry or dark",
+      "Sunglasses",
+      "Heavy beauty filter",
+      "Face too small",
+      "Group photo",
+      "Extreme angle",
+      "Cropped forehead or chin",
+    ],
+    note: "Bad input creates fake output. Do not fight the prompt if the source selfie is the problem.",
+  },
+]
+
+const sourceSelfieChecklist = [
+  "My face is clear and sharp.",
+  "My full face is visible.",
+  "My eyes, nose, mouth, jawline, and hairline are not hidden.",
+  "The photo is well-lit.",
+  "The photo is not blurry.",
+  "The photo is not overly filtered.",
+  "I am the only person in the image.",
+  "My face is not too far away.",
+  "My head is not cropped.",
+  "My face is not covered by sunglasses, hair, hands, or phone.",
+  "My expression feels natural.",
+  "My skin tone and hair color look close to real life.",
+  "My shoulders or upper body are visible if possible.",
+  "The image is high enough quality to zoom in without losing the face.",
+]
+
+const angleGuidance = [
+  {
+    title: "Front-facing selfie",
+    bestFor: "Keeping facial identity strong.",
+    note: "Best beginner option.",
+    image: sourceSelfies[0].image,
+    objectPosition: "center 38%",
+  },
+  {
+    title: "Slight 3/4 angle",
+    bestFor: "Editorial portraits.",
+    note: "Good if the face is still clear.",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+    objectPosition: "center 38%",
+  },
+  {
+    title: "Side-angle selfie",
+    bestFor: "Cinematic and lifestyle shots.",
+    note: "Use only if features are still visible.",
     image: "/images/selfie-to-brand-shoot/source-selfie-left-profile.jpg",
     objectPosition: "24% 38%",
   },
   {
-    label: "Right side",
-    note: "Three-quarter angle",
-    image: "/images/selfie-to-brand-shoot/source-selfie-right-profile.jpg",
-    objectPosition: "68% 38%",
+    title: "Mirror selfie",
+    bestFor: "Outfit or body reference.",
+    note: "Less ideal for face accuracy.",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
+    objectPosition: "center 34%",
+  },
+]
+
+const fakeResultChecks = [
+  {
+    problem: "Face does not look like you",
+    cause: "Source selfie unclear",
+    fix: "Try a clearer front-facing selfie.",
+  },
+  {
+    problem: "Skin tone is wrong",
+    cause: "Bad lighting or filter",
+    fix: "Use a natural-light selfie.",
+  },
+  {
+    problem: "Hair looks wrong",
+    cause: "Hair hidden or cropped",
+    fix: "Use a photo where hair is visible.",
+  },
+  {
+    problem: "Face looks too perfect",
+    cause: "Prompt over-stylized",
+    fix: "Use natural skin texture, realistic face, do not over-smooth.",
+  },
+  {
+    problem: "Body looks weird",
+    cause: "Selfie has no body reference",
+    fix: "Start with face accuracy first, then later add outfit or body reference.",
+  },
+  {
+    problem: "Result looks too AI",
+    cause: "Prompt too dramatic",
+    fix: "Choose a calmer visual world or reduce cinematic wording.",
   },
 ]
 
@@ -68,8 +237,8 @@ const modules = [
     promise:
       "Choose the source photo that gives AI enough truth to keep you looking like you.",
     image: sourceSelfies[0].image,
-    action: "Open selfie guide",
-    href: "/selfie-guide",
+    action: "Choose my source selfie",
+    href: "#module-1",
     status: "Source photo",
     sourceSelfiePanel: true,
   },
@@ -98,7 +267,7 @@ const modules = [
     title: "Pick The Images That Look Like You",
     promise:
       "Keep the images that feel real, premium, and aligned. Discard the ones that look too AI.",
-    image: NOIR_FEMME_SERIES[8]?.exampleImage,
+    image: NOIR_FEMME_SERIES[2]?.exampleImage,
     action: "Use the checklist",
     href: "#image-selection",
     status: "Taste filter",
@@ -108,7 +277,7 @@ const modules = [
     title: "Turn Them Into Content",
     promise:
       "Decide where the shoot goes first: profile, reel cover, story, offer, or next post.",
-    image: CLEAN_GIRL_MORNING_SERIES[3]?.exampleImage,
+    image: DARK_FEMININE_CAFE_SERIES[0]?.exampleImage,
     action: "Plan first use",
     href: "#content-use",
     status: "Content use",
@@ -236,6 +405,183 @@ export function SelfieToBrandShootSystemShell({
         ))}
       </section>
 
+      <section id="module-1" className="sbs-module-depth">
+        <div className="sbs-module-depth-hero">
+          <div>
+            <p className="sbs-kicker">MODULE 01</p>
+            <h2 className={`sbs-section-title ${cormorant.className}`}>
+              Start With One Selfie.
+            </h2>
+            <p>
+              Your first AI brand shoot starts before the prompt. It starts with
+              the photo you upload. This step helps you choose the selfie that
+              gives you the most believable, elevated result.
+            </p>
+            <a href="#source-selfie-checklist" className="sbs-primary">
+              Choose My Source Selfie
+            </a>
+          </div>
+          <div className="sbs-module-depth-image">
+            <Image
+              src={sourceSelfies[0].image}
+              alt="Clear front-facing source selfie example"
+              fill
+              sizes="(max-width: 768px) 100vw, 36vw"
+              style={{ objectFit: "cover", objectPosition: "center 38%" }}
+            />
+          </div>
+        </div>
+
+        <div className="sbs-rule-card">
+          <p className="sbs-kicker">THE RULE</p>
+          <h3 className={cormorant.className}>Clear beats pretty.</h3>
+          <p>
+            Do not start with the most filtered, angled, dramatic selfie. Start
+            with the clearest photo of your face. AI can style you beautifully
+            later, but it needs to understand you first.
+          </p>
+        </div>
+
+        <div className="sbs-example-grid" aria-label="Good, okay, and bad source selfie examples">
+          {selfieExampleCards.map((example) => (
+            <article key={example.label} className="sbs-example-card">
+              <div className={`sbs-example-image-grid sbs-example-image-grid-${example.images.length}`}>
+                {example.images.map((image) => (
+                  <figure key={image.src} className="sbs-example-image">
+                    <Image
+                      src={image.src}
+                      alt={`${example.label}: ${image.label}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 14vw"
+                      style={{ objectFit: "cover", objectPosition: image.objectPosition }}
+                    />
+                    <figcaption>{image.label}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <div className="sbs-example-copy">
+                <p className="sbs-example-eyebrow">{example.eyebrow}</p>
+                <h3 className={cormorant.className}>{example.label}</h3>
+                <div className="sbs-trait-list">
+                  {example.traits.map((trait) => (
+                    <span key={trait}>{trait}</span>
+                  ))}
+                </div>
+                <p>{example.note}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div id="source-selfie-checklist" className="sbs-checklist-panel">
+          <div className="sbs-checklist-intro">
+            <p className="sbs-kicker">UPLOAD CHECK</p>
+            <h3 className={cormorant.className}>Your source selfie should have:</h3>
+            <p>
+              If ChatGPT cannot clearly understand your face, it will guess. And
+              when AI guesses, the result usually looks fake.
+            </p>
+          </div>
+          <div className="sbs-source-checklist">
+            {sourceSelfieChecklist.map((item) => (
+              <p key={item}>{item}</p>
+            ))}
+          </div>
+        </div>
+
+        <aside className="sbs-taste-note">
+          <p className="sbs-kicker">SANDRA&apos;S TASTE NOTE</p>
+          <p>
+            Your AI result is only as strong as the selfie you give it. The goal
+            is not to upload your prettiest selfie. The goal is to upload your
+            clearest selfie. Pretty can happen later. Clarity comes first.
+          </p>
+        </aside>
+
+        <div className="sbs-angle-section">
+          <div className="sbs-section-header sbs-narrow">
+            <p className="sbs-kicker">BEST ANGLE TO START WITH</p>
+            <h3 className={`sbs-section-title ${cormorant.className}`}>
+              Start simple before you experiment.
+            </h3>
+            <p>
+              For your first AI brand shoot, start with a clear front-facing or
+              slight 3/4 selfie. Once you get better results, you can experiment
+              with side angles, mirror selfies, and full-body references.
+            </p>
+          </div>
+          <div className="sbs-angle-grid">
+            {angleGuidance.map((angle) => (
+              <article key={angle.title} className="sbs-angle-card">
+                <div className="sbs-angle-image">
+                  <Image
+                    src={angle.image}
+                    alt={`${angle.title} example`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 18vw"
+                    style={{ objectFit: "cover", objectPosition: angle.objectPosition }}
+                  />
+                </div>
+                <div>
+                  <h4>{angle.title}</h4>
+                  <p>{angle.bestFor}</p>
+                  <small>{angle.note}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="sbs-support-photo">
+            <h4>Full-body photo</h4>
+            <p>
+              Best for styling or outfit support. Use it as support, not the main
+              face source.
+            </p>
+          </div>
+        </div>
+
+        <div className="sbs-troubleshooting">
+          <div className="sbs-section-header">
+            <p className="sbs-kicker">FIRST RESULT WARNING</p>
+            <h3 className={`sbs-section-title ${cormorant.className}`}>
+              If the result looks fake, do not blame yourself.
+            </h3>
+            <p>
+              Most bad AI results come from one of three things: unclear selfie,
+              wrong visual world, or too dramatic prompt. Start by fixing the
+              selfie first.
+            </p>
+          </div>
+          <div className="sbs-trouble-table" role="table" aria-label="First result troubleshooting">
+            <div className="sbs-trouble-row sbs-trouble-head" role="row">
+              <span role="columnheader">Problem</span>
+              <span role="columnheader">Likely cause</span>
+              <span role="columnheader">First fix</span>
+            </div>
+            {fakeResultChecks.map((check) => (
+              <div key={check.problem} className="sbs-trouble-row" role="row">
+                <span role="cell">{check.problem}</span>
+                <span role="cell">{check.cause}</span>
+                <span role="cell">{check.fix}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="sbs-module-complete">
+          <div>
+            <p className="sbs-kicker">MODULE COMPLETE</p>
+            <h3 className={cormorant.className}>Have your selfie?</h3>
+            <p>
+              Now you are ready to choose the visual world that tells AI what
+              kind of brand shoot to create.
+            </p>
+          </div>
+          <a href="#module-02" className="sbs-primary">
+            I Have My Selfie - Choose My Visual World
+          </a>
+        </div>
+      </section>
+
       <section id="modules" className="sbs-section">
         <div className="sbs-section-header sbs-narrow">
           <p className="sbs-kicker">THE SYSTEM</p>
@@ -250,7 +596,7 @@ export function SelfieToBrandShootSystemShell({
 
         <div className="sbs-module-list">
           {modules.map((module) => (
-            <article key={module.number} className="sbs-module">
+            <article key={module.number} id={`module-${module.number}`} className="sbs-module">
               <div className="sbs-module-image">
                 {module.sourceSelfiePanel ? (
                   <div className="sbs-source-selfies" aria-label="Real source selfie examples">
@@ -607,6 +953,309 @@ export function SelfieToBrandShootSystemShell({
           letter-spacing: 0.22em;
           text-transform: uppercase;
         }
+        .sbs-module-depth {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: clamp(58px, 7vw, 104px) clamp(20px, 5vw, 64px);
+        }
+        .sbs-module-depth-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.55fr);
+          gap: clamp(24px, 5vw, 64px);
+          align-items: center;
+          margin-bottom: 18px;
+          padding: clamp(20px, 4vw, 38px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module-depth-hero p:not(.sbs-kicker),
+        .sbs-rule-card p,
+        .sbs-checklist-intro p,
+        .sbs-taste-note p:not(.sbs-kicker),
+        .sbs-troubleshooting p,
+        .sbs-module-complete p,
+        .sbs-support-photo p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 15px;
+          line-height: 1.8;
+        }
+        .sbs-module-depth-hero .sbs-primary {
+          margin-top: 28px;
+        }
+        .sbs-module-depth-image {
+          position: relative;
+          min-height: 520px;
+          overflow: hidden;
+          background: #F8FAFA;
+        }
+        .sbs-rule-card {
+          margin-bottom: 18px;
+          padding: clamp(22px, 4vw, 42px);
+          background: #282728;
+          color: #F8FAFA;
+        }
+        .sbs-rule-card .sbs-kicker {
+          color: #C5C6C8;
+        }
+        .sbs-rule-card h3 {
+          margin: 0 0 14px;
+          color: #F8FAFA;
+          font-size: clamp(2.4rem, 5vw, 4.8rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.96;
+        }
+        .sbs-rule-card p {
+          max-width: 720px;
+          color: rgba(248,250,250,0.78);
+        }
+        .sbs-example-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 18px;
+          margin-bottom: 18px;
+        }
+        .sbs-example-card {
+          display: grid;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-example-image-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          min-height: 430px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-example-image-grid-1 {
+          grid-template-columns: 1fr;
+        }
+        .sbs-example-image-grid-4 {
+          grid-template-rows: repeat(2, minmax(0, 1fr));
+        }
+        .sbs-example-image {
+          position: relative;
+          min-height: 214px;
+          margin: 0;
+          overflow: hidden;
+          background: #F8FAFA;
+        }
+        .sbs-example-image-grid-1 .sbs-example-image {
+          min-height: 430px;
+        }
+        .sbs-example-image figcaption {
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          padding: 8px 9px;
+          background: rgba(13,14,16,0.62);
+          color: #F8FAFA;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .sbs-example-copy {
+          display: grid;
+          gap: 16px;
+          padding: 20px;
+        }
+        .sbs-example-eyebrow {
+          margin: 0;
+          color: #818283;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+        .sbs-example-copy h3 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: clamp(2rem, 3vw, 3rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.98;
+        }
+        .sbs-example-copy p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 13px;
+          line-height: 1.7;
+        }
+        .sbs-trait-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .sbs-trait-list span {
+          padding: 8px 9px;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.35);
+          color: #282728;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .sbs-checklist-panel {
+          display: grid;
+          grid-template-columns: minmax(0, 0.62fr) minmax(0, 1fr);
+          gap: clamp(22px, 4vw, 48px);
+          margin-bottom: 18px;
+          padding: clamp(22px, 4vw, 42px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-checklist-intro h3,
+        .sbs-module-complete h3 {
+          margin: 0 0 14px;
+          color: #0D0E10;
+          font-size: clamp(2.3rem, 4vw, 4rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.96;
+        }
+        .sbs-source-checklist {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-source-checklist p {
+          min-height: 92px;
+          display: flex;
+          align-items: flex-end;
+          margin: 0;
+          padding: 16px;
+          background: #FFFFFF;
+          color: #282728;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .sbs-taste-note {
+          margin-bottom: 18px;
+          padding: clamp(22px, 4vw, 38px);
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.5);
+        }
+        .sbs-taste-note p:not(.sbs-kicker) {
+          max-width: 820px;
+          color: #282728;
+          font-size: clamp(1.25rem, 2.1vw, 1.7rem);
+          line-height: 1.55;
+        }
+        .sbs-angle-section {
+          margin-bottom: 18px;
+          padding: clamp(22px, 4vw, 42px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-angle-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-angle-card {
+          display: grid;
+          background: #FFFFFF;
+        }
+        .sbs-angle-image {
+          position: relative;
+          min-height: 300px;
+          overflow: hidden;
+          background: #F8FAFA;
+        }
+        .sbs-angle-card div:last-child {
+          padding: 16px;
+        }
+        .sbs-angle-card h4,
+        .sbs-support-photo h4 {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          line-height: 1.4;
+          text-transform: uppercase;
+        }
+        .sbs-angle-card p {
+          margin: 0 0 8px;
+          color: #282728;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        .sbs-angle-card small {
+          color: #818283;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        .sbs-support-photo {
+          margin-top: 1px;
+          padding: 20px;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-troubleshooting {
+          margin-bottom: 18px;
+          padding: clamp(22px, 4vw, 42px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-trouble-table {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-trouble-row {
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr);
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-trouble-row span {
+          min-height: 84px;
+          display: flex;
+          align-items: center;
+          padding: 16px;
+          background: #FFFFFF;
+          color: #282728;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .sbs-trouble-head span {
+          min-height: auto;
+          background: #F8FAFA;
+          color: #818283;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+        .sbs-module-complete {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 22px;
+          align-items: end;
+          padding: clamp(22px, 4vw, 42px);
+          background: #282728;
+        }
+        .sbs-module-complete .sbs-kicker {
+          color: #C5C6C8;
+        }
+        .sbs-module-complete h3 {
+          color: #F8FAFA;
+        }
+        .sbs-module-complete p {
+          max-width: 660px;
+          color: rgba(248,250,250,0.76);
+        }
+        .sbs-module-complete .sbs-primary {
+          background: #F8FAFA;
+          color: #0D0E10;
+        }
         .sbs-narrow {
           max-width: 640px;
         }
@@ -814,6 +1463,20 @@ export function SelfieToBrandShootSystemShell({
           .sbs-visual-worlds {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          .sbs-module-depth-hero,
+          .sbs-checklist-panel,
+          .sbs-module-complete {
+            grid-template-columns: 1fr;
+          }
+          .sbs-example-grid {
+            grid-template-columns: 1fr;
+          }
+          .sbs-example-card {
+            grid-template-columns: minmax(220px, 0.45fr) minmax(0, 0.55fr);
+          }
+          .sbs-angle-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
           .sbs-module,
           .sbs-module:nth-child(even),
           .sbs-check-section,
@@ -867,8 +1530,61 @@ export function SelfieToBrandShootSystemShell({
           }
           .sbs-path-list,
           .sbs-visual-worlds,
-          .sbs-check-grid {
+          .sbs-check-grid,
+          .sbs-source-checklist,
+          .sbs-angle-grid {
             grid-template-columns: 1fr;
+          }
+          .sbs-module-depth {
+            padding-left: 14px;
+            padding-right: 14px;
+          }
+          .sbs-module-depth-hero,
+          .sbs-rule-card,
+          .sbs-checklist-panel,
+          .sbs-angle-section,
+          .sbs-troubleshooting,
+          .sbs-module-complete {
+            padding: 18px;
+          }
+          .sbs-module-depth-image {
+            min-height: 430px;
+          }
+          .sbs-example-card {
+            grid-template-columns: 1fr;
+          }
+          .sbs-example-image-grid {
+            min-height: auto;
+          }
+          .sbs-example-image {
+            min-height: 260px;
+          }
+          .sbs-example-image-grid-1 .sbs-example-image {
+            min-height: 420px;
+          }
+          .sbs-example-image figcaption {
+            left: 7px;
+            right: 7px;
+            bottom: 7px;
+            padding: 7px;
+            font-size: 7px;
+          }
+          .sbs-source-checklist p {
+            min-height: 74px;
+          }
+          .sbs-trouble-row,
+          .sbs-trouble-head {
+            grid-template-columns: 1fr;
+          }
+          .sbs-trouble-head {
+            display: none;
+          }
+          .sbs-trouble-row {
+            margin-bottom: 1px;
+          }
+          .sbs-trouble-row span {
+            min-height: auto;
+            align-items: flex-start;
           }
           .sbs-path-list li {
             min-height: 132px;
