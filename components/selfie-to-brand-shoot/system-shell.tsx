@@ -34,20 +34,20 @@ const sourceSelfies = [
   {
     label: "Front",
     note: "Face straight to camera",
-    image: "/images/selfie-to-brand-shoot/source-selfie-front.jpg",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-front-selfie.png",
     objectPosition: "center 38%",
   },
   {
-    label: "Left side",
-    note: "Profile and jawline",
-    image: "/images/selfie-to-brand-shoot/source-selfie-left-profile.jpg",
-    objectPosition: "24% 38%",
+    label: "3/4 angle",
+    note: "Editorial but clear",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+    objectPosition: "center 38%",
   },
   {
-    label: "Right side",
-    note: "Three-quarter angle",
-    image: "/images/selfie-to-brand-shoot/source-selfie-right-profile.jpg",
-    objectPosition: "68% 38%",
+    label: "Mirror",
+    note: "Useful as support",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
+    objectPosition: "center 34%",
   },
 ]
 
@@ -55,8 +55,18 @@ const selfieExampleCards = [
   {
     label: "Good Selfie",
     eyebrow: "Use this when possible",
-    image: sourceSelfies[0].image,
-    objectPosition: "center 38%",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-front-selfie.png",
+        label: "Clear front",
+        objectPosition: "center 38%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+        label: "Clear 3/4",
+        objectPosition: "center 38%",
+      },
+    ],
     traits: [
       "Clear face",
       "Soft natural light",
@@ -72,8 +82,13 @@ const selfieExampleCards = [
   {
     label: "Okay Selfie",
     eyebrow: "Can work, but may need more tries",
-    image: "/images/selfie-guide/mirror-selfie-side-profile.jpg",
-    objectPosition: "center 34%",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
+        label: "Mirror support",
+        objectPosition: "center 34%",
+      },
+    ],
     traits: [
       "Mirror selfie",
       "Slightly busy background",
@@ -89,8 +104,28 @@ const selfieExampleCards = [
   {
     label: "Bad Selfie",
     eyebrow: "Do not start here",
-    image: "/images/selfie-guide/face-covered-selfie.jpg",
-    objectPosition: "center 38%",
+    images: [
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-blurry-selfie.png",
+        label: "Blurry",
+        objectPosition: "center 40%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-filtered-selfie.png",
+        label: "Filtered",
+        objectPosition: "center 40%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-covered-face-selfie.png",
+        label: "Covered",
+        objectPosition: "center 38%",
+      },
+      {
+        src: "/images/selfie-to-brand-shoot/module-1-source-selfies/bad-group-or-cropped-selfie.png",
+        label: "Unclear",
+        objectPosition: "center 40%",
+      },
+    ],
     traits: [
       "Face covered",
       "Blurry or dark",
@@ -134,21 +169,21 @@ const angleGuidance = [
     title: "Slight 3/4 angle",
     bestFor: "Editorial portraits.",
     note: "Good if the face is still clear.",
-    image: sourceSelfies[2].image,
-    objectPosition: "68% 38%",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-3-4-selfie.png",
+    objectPosition: "center 38%",
   },
   {
     title: "Side-angle selfie",
     bestFor: "Cinematic and lifestyle shots.",
     note: "Use only if features are still visible.",
-    image: sourceSelfies[1].image,
+    image: "/images/selfie-to-brand-shoot/source-selfie-left-profile.jpg",
     objectPosition: "24% 38%",
   },
   {
     title: "Mirror selfie",
     bestFor: "Outfit or body reference.",
     note: "Less ideal for face accuracy.",
-    image: "/images/selfie-guide/mirror-selfie-side-profile.jpg",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/okay-mirror-selfie.png",
     objectPosition: "center 34%",
   },
 ]
@@ -410,14 +445,19 @@ export function SelfieToBrandShootSystemShell({
         <div className="sbs-example-grid" aria-label="Good, okay, and bad source selfie examples">
           {selfieExampleCards.map((example) => (
             <article key={example.label} className="sbs-example-card">
-              <div className="sbs-example-image">
-                <Image
-                  src={example.image}
-                  alt={`${example.label} example`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 28vw"
-                  style={{ objectFit: "cover", objectPosition: example.objectPosition }}
-                />
+              <div className={`sbs-example-image-grid sbs-example-image-grid-${example.images.length}`}>
+                {example.images.map((image) => (
+                  <figure key={image.src} className="sbs-example-image">
+                    <Image
+                      src={image.src}
+                      alt={`${example.label}: ${image.label}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 14vw"
+                      style={{ objectFit: "cover", objectPosition: image.objectPosition }}
+                    />
+                    <figcaption>{image.label}</figcaption>
+                  </figure>
+                ))}
               </div>
               <div className="sbs-example-copy">
                 <p className="sbs-example-eyebrow">{example.eyebrow}</p>
@@ -981,11 +1021,41 @@ export function SelfieToBrandShootSystemShell({
           background: #FFFFFF;
           border: 1px solid rgba(197,198,200,0.35);
         }
+        .sbs-example-image-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          min-height: 430px;
+          background: rgba(197,198,200,0.35);
+        }
+        .sbs-example-image-grid-1 {
+          grid-template-columns: 1fr;
+        }
+        .sbs-example-image-grid-4 {
+          grid-template-rows: repeat(2, minmax(0, 1fr));
+        }
         .sbs-example-image {
           position: relative;
-          min-height: 430px;
+          min-height: 214px;
+          margin: 0;
           overflow: hidden;
           background: #F8FAFA;
+        }
+        .sbs-example-image-grid-1 .sbs-example-image {
+          min-height: 430px;
+        }
+        .sbs-example-image figcaption {
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          padding: 8px 9px;
+          background: rgba(13,14,16,0.62);
+          color: #F8FAFA;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
         }
         .sbs-example-copy {
           display: grid;
@@ -1483,8 +1553,21 @@ export function SelfieToBrandShootSystemShell({
           .sbs-example-card {
             grid-template-columns: 1fr;
           }
+          .sbs-example-image-grid {
+            min-height: auto;
+          }
           .sbs-example-image {
+            min-height: 260px;
+          }
+          .sbs-example-image-grid-1 .sbs-example-image {
             min-height: 420px;
+          }
+          .sbs-example-image figcaption {
+            left: 7px;
+            right: 7px;
+            bottom: 7px;
+            padding: 7px;
+            font-size: 7px;
           }
           .sbs-source-checklist p {
             min-height: 74px;
