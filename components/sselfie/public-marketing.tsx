@@ -830,12 +830,61 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function StarterKitPageContent() {
+export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFailed?: boolean }) {
   const starterKitCheckoutHref = usePreservedAttributionHref("/checkout/starter-kit")
 
   return (
     <PublicPageShell>
       <PublicNav />
+
+      {checkoutFailed && (
+        <section
+          className="mf"
+          style={{
+            background: C.cream,
+            borderBottom: `1px solid ${C.divCream}`,
+            padding: "18px 22px",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1120px",
+              margin: "0 auto",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "14px",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ minWidth: "240px", flex: "1 1 420px" }}>
+              <p style={{ ...ty("eyebrow", false), marginBottom: "6px" }}>Checkout</p>
+              <p style={{ ...ty("body", false), margin: 0, fontSize: "14px" }}>
+                Your payment form did not open cleanly. Try once more and keep this page open while Stripe loads.
+              </p>
+            </div>
+            <Link
+              href={starterKitCheckoutHref}
+              style={{
+                display: "inline-flex",
+                minHeight: "42px",
+                alignItems: "center",
+                justifyContent: "center",
+                border: `1px solid ${C.ink}`,
+                color: C.cream,
+                background: C.ink,
+                padding: "0 16px",
+                textDecoration: "none",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                fontSize: "10px",
+              }}
+            >
+              Retry checkout
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* HERO — dark */}
       <Hero

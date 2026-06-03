@@ -219,6 +219,8 @@ const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "vault_credit",
+  "upgrade_credit",
 ] as const
 
 export function buildCheckoutRedirectUrl(
@@ -290,8 +292,12 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
       utm_medium TEXT,
       utm_campaign TEXT,
       utm_content TEXT,
+      email_type TEXT,
       campaign_id INTEGER,
       referral_code TEXT,
+      guide_cta TEXT,
+      freebie_source TEXT,
+      checkout_source TEXT,
       cta_keyword TEXT,
       quiz_result TEXT,
       return_to TEXT,
@@ -317,6 +323,10 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_status_idx ON checkout_attribution (status, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_campaign_idx ON checkout_attribution (campaign_id, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_referral_idx ON checkout_attribution (referral_code, created_at DESC);`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS email_type TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS guide_cta TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS freebie_source TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS checkout_source TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS quiz_result TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
@@ -353,8 +363,12 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       utm_medium,
       utm_campaign,
       utm_content,
+      email_type,
       campaign_id,
       referral_code,
+      guide_cta,
+      freebie_source,
+      checkout_source,
       cta_keyword,
       quiz_result,
       return_to,
@@ -377,8 +391,12 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       ${record.utmMedium || null},
       ${record.utmCampaign || null},
       ${record.utmContent || null},
+      ${record.emailType || null},
       ${record.campaignId || null},
       ${record.referralCode || null},
+      ${record.guideCta || null},
+      ${record.freebieSource || null},
+      ${record.checkoutSource || null},
       ${record.ctaKeyword || null},
       ${record.quizResult || null},
       ${record.returnTo || null},
@@ -402,8 +420,12 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       utm_medium = COALESCE(EXCLUDED.utm_medium, checkout_attribution.utm_medium),
       utm_campaign = COALESCE(EXCLUDED.utm_campaign, checkout_attribution.utm_campaign),
       utm_content = COALESCE(EXCLUDED.utm_content, checkout_attribution.utm_content),
+      email_type = COALESCE(EXCLUDED.email_type, checkout_attribution.email_type),
       campaign_id = COALESCE(EXCLUDED.campaign_id, checkout_attribution.campaign_id),
       referral_code = COALESCE(EXCLUDED.referral_code, checkout_attribution.referral_code),
+      guide_cta = COALESCE(EXCLUDED.guide_cta, checkout_attribution.guide_cta),
+      freebie_source = COALESCE(EXCLUDED.freebie_source, checkout_attribution.freebie_source),
+      checkout_source = COALESCE(EXCLUDED.checkout_source, checkout_attribution.checkout_source),
       cta_keyword = COALESCE(EXCLUDED.cta_keyword, checkout_attribution.cta_keyword),
       quiz_result = COALESCE(EXCLUDED.quiz_result, checkout_attribution.quiz_result),
       return_to = COALESCE(EXCLUDED.return_to, checkout_attribution.return_to),

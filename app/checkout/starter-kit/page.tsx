@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createServerClient } from "@/lib/supabase/server"
-import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
+import { buildCheckoutRedirectUrl, getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
 
 export const metadata: Metadata = {
   title: "Checkout | Starter Kit",
@@ -32,6 +33,7 @@ export default async function StarterKitCheckoutPage({
   const params = await searchParams
   const attribution = getCheckoutAttributionFromParams(params, {
     source: "starter_kit_paid",
+    buyerStage: "micro",
   })
   const supabase = await createServerClient()
   const {
@@ -39,6 +41,26 @@ export default async function StarterKitCheckoutPage({
   } = await supabase.auth.getUser()
 
   try {
+    await logAnalyticsEvent({
+      eventName: "starter_kit_checkout_session_requested",
+      path: "/checkout/starter-kit",
+      properties: {
+        product_type: "starter_kit",
+        source: attribution.source,
+        utm_source: attribution.utmSource,
+        utm_medium: attribution.utmMedium,
+        utm_campaign: attribution.utmCampaign,
+        utm_content: attribution.utmContent,
+        email_type: attribution.emailType,
+        checkout_source: attribution.checkoutSource,
+        guide_cta: attribution.guideCta,
+        freebie_source: attribution.freebieSource,
+        cta_keyword: attribution.ctaKeyword,
+        entry_post_slug: attribution.entryPostSlug,
+        buyer_stage: attribution.buyerStage,
+      },
+    })
+
     const clientSecret = await createLandingCheckoutSession(
       "starter_kit",
       undefined,
@@ -47,7 +69,30 @@ export default async function StarterKitCheckoutPage({
     )
 
     if (clientSecret) {
-      redirect(`/checkout?client_secret=${clientSecret}&product_type=starter_kit`)
+      const sessionId = clientSecret.split("_secret_")[0] || null
+
+      await logAnalyticsEvent({
+        eventName: "starter_kit_checkout_session_created",
+        path: "/checkout/starter-kit",
+        properties: {
+          product_type: "starter_kit",
+          checkout_session_id: sessionId,
+          source: attribution.source,
+          utm_source: attribution.utmSource,
+          utm_medium: attribution.utmMedium,
+          utm_campaign: attribution.utmCampaign,
+          utm_content: attribution.utmContent,
+          email_type: attribution.emailType,
+          checkout_source: attribution.checkoutSource,
+          guide_cta: attribution.guideCta,
+          freebie_source: attribution.freebieSource,
+          cta_keyword: attribution.ctaKeyword,
+          entry_post_slug: attribution.entryPostSlug,
+          buyer_stage: attribution.buyerStage,
+        },
+      })
+
+      redirect(buildCheckoutRedirectUrl(clientSecret, "starter_kit", params))
     }
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) {
@@ -55,7 +100,27 @@ export default async function StarterKitCheckoutPage({
     }
 
     console.error("[Starter Kit Checkout] Error creating checkout session:", error)
+    await logAnalyticsEvent({
+      eventName: "starter_kit_checkout_session_failed",
+      path: "/checkout/starter-kit",
+      properties: {
+        product_type: "starter_kit",
+        source: attribution.source,
+        utm_source: attribution.utmSource,
+        utm_medium: attribution.utmMedium,
+        utm_campaign: attribution.utmCampaign,
+        utm_content: attribution.utmContent,
+        email_type: attribution.emailType,
+        checkout_source: attribution.checkoutSource,
+        guide_cta: attribution.guideCta,
+        freebie_source: attribution.freebieSource,
+        cta_keyword: attribution.ctaKeyword,
+        entry_post_slug: attribution.entryPostSlug,
+        buyer_stage: attribution.buyerStage,
+        error_message: error?.message || String(error),
+      },
+    })
   }
 
-  redirect("/starter-kit?checkout=failed")
+  redirect("/starter-kit?checkout=failed&source=checkout_retry")
 }

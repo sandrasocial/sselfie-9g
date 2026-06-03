@@ -28,6 +28,8 @@ const ATTRIBUTION_KEYS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "vault_credit",
+  "upgrade_credit",
 ] as const
 
 function checkoutAttributionProperties(searchParams: URLSearchParams) {
@@ -95,7 +97,9 @@ function CheckoutContent() {
   const productType = searchParams.get("product_type") || "unknown"
   const isPromptVault = productType === "prompt_vault"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
+  const isStarterKit = productType === "starter_kit"
   const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
+  const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
     heroBody: "Secure your purchase and keep moving.",
@@ -131,9 +135,38 @@ function CheckoutContent() {
         )
         .catch(() => {})
     }
+    if (productType === "selfie_to_brand_shoot_system") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "selfie_to_brand_shoot_checkout_start",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              vault_credit_applied: hasVaultCredit,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
+    if (productType === "starter_kit") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "starter_kit_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
 
     setClientSecret(secret)
-  }, [productType, searchParams])
+  }, [hasVaultCredit, productType, searchParams])
 
   const handleComplete = async () => {
     if (clientSecret) {
@@ -259,10 +292,10 @@ function CheckoutContent() {
               </div>
               <div className="text-left sm:text-right">
                 <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
-                  {isSelfieToBrandShoot ? "$197" : "$27"}
+                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$170" : "$197") : "$27"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
-                  one-time access
+                  {hasVaultCredit ? "$27 Vault credit applied" : "one-time access"}
                 </p>
               </div>
             </div>
@@ -282,6 +315,16 @@ function CheckoutContent() {
           <p className="text-xs sm:text-sm text-[#4F5052] font-light leading-relaxed max-w-xl mx-auto">
             {checkoutCopy.blurb}
           </p>
+          {isStarterKit && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                Instant access after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Presets, setup guide, posing guide, caption templates, and the 7-day content starter are delivered right away.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="border border-[rgba(197,198,200,0.55)] bg-white p-3 shadow-[0_18px_70px_rgba(13,14,16,0.08)] sm:p-5 md:p-6">
