@@ -12,8 +12,13 @@ type EventCounts = {
   landing_views: number
   reel_clicks: number
   free_to_vault_clicks: number
+  checkout_session_requested: number
+  checkout_session_created: number
+  checkout_session_failed: number
   checkout_starts: number
+  payment_form_rendered: number
   recovery_sends: number
+  payment_completed: number
   checkout_successes: number
   access_opens: number
   prompt_views: number
@@ -82,11 +87,16 @@ async function getPromptVaultMetrics(windowDays: number) {
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_landing_view')::int AS landing_views,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_reel_click')::int AS reel_clicks,
       COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_requested')::int AS checkout_session_requested,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_created')::int AS checkout_session_created,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_failed')::int AS checkout_session_failed,
       COUNT(*) FILTER (
         WHERE event_name = 'checkout_start'
           AND properties->>'product_type' = 'prompt_vault'
       )::int AS checkout_starts,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_payment_form_rendered')::int AS payment_form_rendered,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
+      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_payment_completed')::int AS payment_completed,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS access_opens,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS prompt_views,
@@ -195,8 +205,13 @@ async function getPromptVaultMetrics(windowDays: number) {
     landing_views: toInt(eventCountsRow?.landing_views),
     reel_clicks: toInt(eventCountsRow?.reel_clicks),
     free_to_vault_clicks: toInt(eventCountsRow?.free_to_vault_clicks),
+    checkout_session_requested: toInt(eventCountsRow?.checkout_session_requested),
+    checkout_session_created: toInt(eventCountsRow?.checkout_session_created),
+    checkout_session_failed: toInt(eventCountsRow?.checkout_session_failed),
     checkout_starts: toInt(eventCountsRow?.checkout_starts),
+    payment_form_rendered: toInt(eventCountsRow?.payment_form_rendered),
     recovery_sends: toInt(eventCountsRow?.recovery_sends),
+    payment_completed: toInt(eventCountsRow?.payment_completed),
     checkout_successes: toInt(eventCountsRow?.checkout_successes),
     access_opens: toInt(eventCountsRow?.access_opens),
     prompt_views: toInt(eventCountsRow?.prompt_views),
@@ -329,6 +344,59 @@ export default async function PromptVaultAdminPage({
             subtitle={`D2 ${buyerCounts.day2_sent} · D5 ${buyerCounts.day5_sent} · D10 ${buyerCounts.day10_sent}`}
           />
         </div>
+
+        <section className="mb-8 border border-stone-200 bg-white p-5 sm:p-6">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-[10px] uppercase tracking-[0.24em] text-stone-400">
+                Checkout Diagnostic
+              </p>
+              <h2 className="font-['Times_New_Roman'] text-xl font-extralight uppercase tracking-[0.18em] text-stone-950 sm:text-2xl">
+                Session to Payment Form
+              </h2>
+            </div>
+            <p className="max-w-xl text-xs leading-relaxed text-stone-500">
+              This shows whether buyers are dropping before Stripe loads, inside the payment form, or after payment.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-5">
+            {[
+              {
+                label: "Requested",
+                value: eventCounts.checkout_session_requested,
+                detail: "Checkout route opened",
+              },
+              {
+                label: "Created",
+                value: eventCounts.checkout_session_created,
+                detail: `${pct(eventCounts.checkout_session_created, eventCounts.checkout_session_requested)} of requests`,
+              },
+              {
+                label: "Failed",
+                value: eventCounts.checkout_session_failed,
+                detail: "Session creation errors",
+              },
+              {
+                label: "Form Rendered",
+                value: eventCounts.payment_form_rendered,
+                detail: `${pct(eventCounts.payment_form_rendered, eventCounts.checkout_session_created)} of sessions`,
+              },
+              {
+                label: "Completed",
+                value: eventCounts.payment_completed || eventCounts.checkout_successes,
+                detail: `${pct(eventCounts.payment_completed || eventCounts.checkout_successes, eventCounts.payment_form_rendered || eventCounts.checkout_starts)} of forms`,
+              },
+            ].map((metric) => (
+              <div key={metric.label} className="border border-stone-100 bg-stone-50 p-4">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-stone-400">{metric.label}</p>
+                <p className="mt-3 font-['Times_New_Roman'] text-3xl font-extralight text-stone-950">
+                  {metric.value}
+                </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-stone-500">{metric.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="bg-white border border-stone-200 p-6 rounded-none">

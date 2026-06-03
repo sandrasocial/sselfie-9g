@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import {
@@ -33,6 +34,55 @@ async function getEmailFromFreebieToken(token?: string | null): Promise<string |
   `
 
   return (rows[0]?.email as string | undefined) || null
+}
+
+function getErrorInfo(error: unknown): { message: string; code: string | null; type: string | null } {
+  if (error instanceof Error) {
+    const stripeLike = error as Error & { code?: unknown; type?: unknown }
+    return {
+      message: error.message,
+      code: typeof stripeLike.code === "string" ? stripeLike.code : null,
+      type: typeof stripeLike.type === "string" ? stripeLike.type : null,
+    }
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const value = error as { message?: unknown; code?: unknown; type?: unknown }
+    return {
+      message: typeof value.message === "string" ? value.message : "Unknown checkout session error",
+      code: typeof value.code === "string" ? value.code : null,
+      type: typeof value.type === "string" ? value.type : null,
+    }
+  }
+
+  return {
+    message: typeof error === "string" ? error : "Unknown checkout session error",
+    code: null,
+    type: null,
+  }
+}
+
+function promptVaultCheckoutProperties(
+  params: Awaited<Parameters<typeof getCheckoutAttributionFromParams>[0]>,
+  attribution: ReturnType<typeof getCheckoutAttributionFromParams>,
+  extra?: Record<string, string | number | boolean | null>,
+) {
+  return {
+    product_type: "prompt_vault",
+    source: attribution.source || "prompt_vault_paid",
+    utm_source: attribution.utmSource || null,
+    utm_medium: attribution.utmMedium || null,
+    utm_campaign: attribution.utmCampaign || null,
+    utm_content: attribution.utmContent || null,
+    campaign_id: attribution.campaignId ? String(attribution.campaignId) : null,
+    cta_keyword: attribution.ctaKeyword || null,
+    entry_post_slug: attribution.entryPostSlug || null,
+    buyer_stage: attribution.buyerStage || null,
+    checkout_source: attribution.checkoutSource || null,
+    freebie_source: attribution.freebieSource || null,
+    has_freebie_token: Boolean(params.freebie_token),
+    ...extra,
+  }
 }
 
 export default async function PromptVaultCheckoutPage({
@@ -71,6 +121,22 @@ export default async function PromptVaultCheckoutPage({
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
 
   try {
+    await logAnalyticsEvent({
+      eventName: "prompt_vault_checkout_session_requested",
+      userId: authUser?.id || null,
+      path: "/checkout/prompt-vault",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: promptVaultCheckoutProperties(params, attribution, {
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: Boolean(authUser?.email || freebieEmail),
+      }),
+    })
+
     const clientSecret = await createLandingCheckoutSession(
       "prompt_vault",
       undefined,
@@ -79,6 +145,23 @@ export default async function PromptVaultCheckoutPage({
     )
 
     if (clientSecret) {
+      const stripeSessionId = clientSecret.split("_secret_")[0] || null
+      await logAnalyticsEvent({
+        eventName: "prompt_vault_checkout_session_created",
+        userId: authUser?.id || null,
+        path: "/checkout/prompt-vault",
+        utm: {
+          source: attribution.utmSource,
+          medium: attribution.utmMedium,
+          campaign: attribution.utmCampaign,
+          content: attribution.utmContent,
+        },
+        properties: promptVaultCheckoutProperties(params, attribution, {
+          checkout_session_id: stripeSessionId,
+          has_auth_user: Boolean(authUser?.id),
+          has_prefill_email: Boolean(authUser?.email || freebieEmail),
+        }),
+      })
       redirect(buildCheckoutRedirectUrl(clientSecret, "prompt_vault", params))
     }
   } catch (error: unknown) {
@@ -92,6 +175,25 @@ export default async function PromptVaultCheckoutPage({
       throw error
     }
 
+    const errorInfo = getErrorInfo(error)
+    await logAnalyticsEvent({
+      eventName: "prompt_vault_checkout_session_failed",
+      userId: authUser?.id || null,
+      path: "/checkout/prompt-vault",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: promptVaultCheckoutProperties(params, attribution, {
+        error_message: errorInfo.message,
+        error_code: errorInfo.code,
+        error_type: errorInfo.type,
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: Boolean(authUser?.email || freebieEmail),
+      }),
+    })
     console.error("[Prompt Vault Checkout] Error creating checkout session:", error)
   }
 

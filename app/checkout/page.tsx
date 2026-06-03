@@ -121,6 +121,20 @@ function CheckoutContent() {
       ...checkoutAttributionProperties(searchParams),
       checkout_session_id: secret.split("_secret_")[0] || null,
     })
+    if (productType === "prompt_vault") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "prompt_vault_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
 
     console.log("[v0] Checkout page - Setting client secret")
     setClientSecret(secret)

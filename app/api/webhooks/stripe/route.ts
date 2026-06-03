@@ -3517,6 +3517,19 @@ export async function POST(request: NextRequest) {
                     is_test_mode: isTestMode,
                   },
                 })
+                await logAnalyticsEvent({
+                  eventName: "prompt_vault_payment_completed",
+                  userId: String(userId),
+                  properties: {
+                    source: source || "landing_page",
+                    product_type: "prompt_vault",
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                    is_test_mode: isTestMode,
+                  },
+                })
               } catch {
                 // best effort only
               }
