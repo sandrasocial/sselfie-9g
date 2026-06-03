@@ -30,6 +30,31 @@ async function getEmailFromFreebieToken(token?: string | null): Promise<string |
   return (rows[0]?.email as string | undefined) || null
 }
 
+async function hasPromptVaultBuyerAccess(input: {
+  token?: string | null
+  email?: string | null
+}): Promise<boolean> {
+  const cleanToken = input.token?.trim()
+  const cleanEmail = input.email?.trim().toLowerCase()
+  if (!cleanToken && !cleanEmail) return false
+
+  const rows = await sql`
+    SELECT 1
+    FROM freebie_subscribers
+    WHERE (
+        (${cleanToken || null}::text IS NOT NULL AND access_token = ${cleanToken || null})
+        OR (${cleanEmail || null}::text IS NOT NULL AND LOWER(email) = ${cleanEmail || null})
+      )
+      AND (
+        source = 'prompt-vault-paid'
+        OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+      )
+    LIMIT 1
+  `
+
+  return rows.length > 0
+}
+
 export default async function SelfieToBrandShootCheckoutPage({
   searchParams,
 }: {
@@ -51,6 +76,8 @@ export default async function SelfieToBrandShootCheckoutPage({
     entry_post_slug?: string
     buyer_stage?: string
     freebie_token?: string
+    vault_credit?: string
+    upgrade_credit?: string
     returnTo?: string
     return_to?: string
   }>
@@ -65,17 +92,41 @@ export default async function SelfieToBrandShootCheckoutPage({
     data: { user: authUser },
   } = await supabase.auth.getUser()
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
+  const checkoutEmail = authUser?.email ?? freebieEmail ?? null
+  const vaultCreditEligible = await hasPromptVaultBuyerAccess({
+    token: params.freebie_token,
+    email: checkoutEmail,
+  })
+  const checkoutParams = {
+    ...params,
+    ...(vaultCreditEligible
+      ? {
+          vault_credit: "1",
+          upgrade_credit: "2700",
+          buyer_stage: params.buyer_stage || "micro",
+        }
+      : {}),
+  }
 
   try {
     const clientSecret = await createLandingCheckoutSession(
       "selfie_to_brand_shoot_system",
-      undefined,
-      authUser?.email ?? freebieEmail ?? null,
-      attribution,
+      vaultCreditEligible ? "VAULT27" : undefined,
+      checkoutEmail,
+      {
+        ...attribution,
+        ...(vaultCreditEligible
+          ? {
+              source: attribution.source || "vault_access",
+              checkoutSource: attribution.checkoutSource || "vault_buyer_upgrade_credit",
+              buyerStage: "micro",
+            }
+          : {}),
+      },
     )
 
     if (clientSecret) {
-      redirect(buildCheckoutRedirectUrl(clientSecret, "selfie_to_brand_shoot_system", params))
+      redirect(buildCheckoutRedirectUrl(clientSecret, "selfie_to_brand_shoot_system", checkoutParams))
     }
   } catch (error: unknown) {
     if (

@@ -24,7 +24,14 @@ const path = [
   "Turn the shoot into a profile image, reel cover, story, or offer visual.",
 ]
 
-export default function SelfieToBrandShootLandingPage() {
+export default async function SelfieToBrandShootLandingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ checkout?: string }>
+}) {
+  const params = searchParams ? await searchParams : {}
+  const checkoutFailed = params.checkout === "failed"
+
   logAnalyticsEvent({
     eventName: "selfie_to_brand_shoot_landing_view",
     path: "/selfie-to-brand-shoot",
@@ -35,13 +42,27 @@ export default function SelfieToBrandShootLandingPage() {
 
   return (
     <main className={`sbs-sales ${inter.className}`}>
+      {checkoutFailed && (
+        <section className="sbs-retry-banner" aria-label="Checkout retry">
+          <div>
+            <p className="sbs-label">CHECKOUT PAUSED</p>
+            <h2 className={cormorant.className}>Your payment form did not open cleanly.</h2>
+            <p>
+              Nothing was charged. Try again and we will reopen the secure System checkout for you.
+            </p>
+          </div>
+          <Link href="/checkout/selfie-to-brand-shoot?source=checkout_retry" className="sbs-primary">
+            Retry Checkout
+          </Link>
+        </section>
+      )}
       <section className="sbs-sales-hero">
         <div className="sbs-sales-copy">
           <p className="sbs-label">SELFIE TO BRAND SHOOT</p>
           <h1 className={cormorant.className}>Turn one selfie into your first AI brand shoot.</h1>
           <p>
-            The guided SSELFIE path for creating elevated personal brand images
-            from your own photo. The Vault is included.
+            The guided SSELFIE path for creating elevated personal brand images from your own
+            photo. The full Prompt Vault is included, but this is not just prompts.
           </p>
           <div className="sbs-actions">
             <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
@@ -75,8 +96,8 @@ export default function SelfieToBrandShootLandingPage() {
           <h2 className={cormorant.className}>A transformation path, not another prompt folder.</h2>
         </div>
         <p>
-          Source selfie guidance, Vault access, visual-world selection, first-result
-          workflow, image selection, and content-use direction.
+          Source selfie guidance, Vault access, visual-world selection, first-result workflow,
+          image selection, Maya prompt support, and a content-use plan for your first week.
         </p>
       </section>
 
@@ -106,6 +127,10 @@ export default function SelfieToBrandShootLandingPage() {
             You are not buying more AI options. You are buying the path for
             deciding what to create, what to keep, and where that image belongs.
           </p>
+          <p>
+            If you already bought the Vault, your $27 can be credited toward the full System from
+            your Vault access page.
+          </p>
           <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
             Enter Selfie To Brand Shoot
           </Link>
@@ -117,6 +142,25 @@ export default function SelfieToBrandShootLandingPage() {
           min-height: 100vh;
           background: #F8FAFA;
           color: #0D0E10;
+        }
+        .sbs-retry-banner {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 22px;
+          align-items: center;
+          max-width: 1180px;
+          margin: 24px auto 0;
+          padding: 22px clamp(20px, 5vw, 34px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.55);
+          box-shadow: 0 16px 50px rgba(13,14,16,0.06);
+        }
+        .sbs-retry-banner h2 {
+          margin-bottom: 10px;
+          font-size: clamp(2rem, 4vw, 3.4rem);
+        }
+        .sbs-retry-banner p {
+          margin: 0;
         }
         .sbs-sales-hero {
           display: grid;
@@ -274,7 +318,8 @@ export default function SelfieToBrandShootLandingPage() {
         @media (max-width: 860px) {
           .sbs-sales-hero,
           .sbs-sales-strip,
-          .sbs-sales-proof {
+          .sbs-sales-proof,
+          .sbs-retry-banner {
             grid-template-columns: 1fr;
           }
           .sbs-sales h1 {

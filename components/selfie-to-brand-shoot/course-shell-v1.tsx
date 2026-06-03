@@ -1005,13 +1005,62 @@ const module5GridImages = [
 ]
 
 const module5SevenDayPlan = [
-  ["Day 1", "Update profile image", "Use the clearest identity image first."],
-  ["Day 2", "Story intro", "Share the source selfie, the result, and why this look feels like you."],
-  ["Day 3", "Reel cover", "Post a simple transformation reel with one strong cover line."],
-  ["Day 4", "Carousel", "Teach the before, visual world, prompt, result, and what you kept."],
-  ["Day 5", "Offer image", "Use one confident visual to point to your guide, Vault, offer, or service."],
-  ["Day 6", "About-me post", "Tell the story behind the woman your visuals are starting to show."],
-  ["Day 7", "Feed refresh", "Pin or place the strongest images so the profile starts to feel cohesive."],
+  {
+    day: "Day 1",
+    title: "Update profile image",
+    use: "Use the clearest identity image first.",
+    caption:
+      "New visual chapter. I wanted my profile to feel more like the woman I am becoming, so I started with one clear image.",
+    action: "Upload the image, check the crop, and make sure your face is recognizable in the small circle.",
+  },
+  {
+    day: "Day 2",
+    title: "Story intro",
+    use: "Share the source selfie, the result, and why this look feels like you.",
+    caption:
+      "I started with a normal selfie and built this visual world from it. The goal was not perfect. The goal was recognizable.",
+    action: "Post 3-5 story frames: selfie, result, what changed, why it fits, and one reply keyword or link.",
+  },
+  {
+    day: "Day 3",
+    title: "Reel cover",
+    use: "Post a simple transformation reel with one strong cover line.",
+    caption:
+      "One selfie can carry more brand direction than you think when the style, light, and mood are clear.",
+    action: "Use the editorial cover image and keep the overlay to one short line.",
+  },
+  {
+    day: "Day 4",
+    title: "Carousel",
+    use: "Teach the before, visual world, prompt, result, and what you kept.",
+    caption:
+      "The difference was not just the prompt. It was choosing one visual world before creating the image.",
+    action: "Build 5 slides: before, visual world, prompt direction, result, and what you would repeat.",
+  },
+  {
+    day: "Day 5",
+    title: "Offer image",
+    use: "Use one confident visual to point to your guide, Vault, offer, or service.",
+    caption:
+      "If your visuals are starting to feel random, start with one world you can repeat. That is what makes the brand feel clear.",
+    action: "Pair the strongest authority image with one CTA. Do not explain everything.",
+  },
+  {
+    day: "Day 6",
+    title: "About-me post",
+    use: "Tell the story behind the woman your visuals are starting to show.",
+    caption:
+      "For a long time I thought I needed a studio, a photographer, and perfect timing. I actually needed a clearer visual direction.",
+    action: "Use a softer identity image and write 5-7 lines about what this new visual chapter represents.",
+  },
+  {
+    day: "Day 7",
+    title: "Feed refresh",
+    use: "Pin or place the strongest images so the profile starts to feel cohesive.",
+    caption:
+      "Your feed does not need to be perfect. But it should feel like the same woman lives there.",
+    action: "Choose your top 3 images and decide which one becomes profile, which one becomes cover, and which one becomes story proof.",
+  },
 ]
 
 const module5StoryFrames = [
@@ -1037,6 +1086,15 @@ const module5CaptionHooks = [
   },
 ]
 
+const module5FinalChecklist = [
+  "I chose one profile / identity image.",
+  "I chose one reel or carousel cover image.",
+  "I chose one lifestyle or story image.",
+  "I know which image points to my offer, guide, or next step.",
+  "I have one 7-day posting plan instead of a folder of random images.",
+  "My first week repeats the same visual world.",
+]
+
 const featuredCollections = VAULT_COLLECTION_META.slice(0, 4).map((collection, index) => ({
   name: collection.name
     .replace(" Editorial", "")
@@ -1054,7 +1112,7 @@ const modules = [
     image: sourceSelfies[0].image,
     imagePosition: "center 38%",
     href: "#module-1",
-    status: "In progress",
+    status: "Ready",
     time: "12 minutes",
     available: true,
   },
@@ -1907,11 +1965,20 @@ function Module5MiniFeedPlannerBlock() {
 function Module5SevenDayPlanBlock() {
   return (
     <div className="sbs-module5-plan">
-      {module5SevenDayPlan.map(([day, title, copy]) => (
-        <article key={day}>
-          <span>{day}</span>
-          <h4>{title}</h4>
-          <p>{copy}</p>
+      {module5SevenDayPlan.map(item => (
+        <article key={item.day}>
+          <span>{item.day}</span>
+          <h4>{item.title}</h4>
+          <p>{item.use}</p>
+          <div className="sbs-module5-plan-detail">
+            <strong>Caption starter</strong>
+            <p>{item.caption}</p>
+            <CopyPromptButton text={item.caption} label="Copy caption" />
+          </div>
+          <div className="sbs-module5-plan-detail">
+            <strong>Action</strong>
+            <p>{item.action}</p>
+          </div>
         </article>
       ))}
     </div>
@@ -1941,6 +2008,19 @@ function Module5CaptionHooksBlock() {
           <p>{hook.text}</p>
           <CopyPromptButton text={hook.text} label="Copy hook" />
         </article>
+      ))}
+    </div>
+  )
+}
+
+function Module5FinalChecklistBlock() {
+  return (
+    <div className="sbs-module5-final-checklist">
+      {module5FinalChecklist.map(item => (
+        <label key={item}>
+          <input type="checkbox" />
+          <span>{item}</span>
+        </label>
       ))}
     </div>
   )
@@ -2547,6 +2627,19 @@ export function SelfieToBrandShootCourseShell({
             </LessonSection>
 
             <LessonSection eyebrow="7-DAY PLAN" title="One brand shoot can give you a week of content" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Do this before you make more images. Give each image one job, then use the
+                  caption starter to post the result while the visual direction is still fresh.
+                </p>
+                <a
+                  href="/downloads/selfie-to-brand-shoot-7-day-plan.txt"
+                  download
+                  className="sbs-text-link"
+                >
+                  Download the 7-day plan
+                </a>
+              </div>
               <Module5SevenDayPlanBlock />
             </LessonSection>
 
@@ -2570,6 +2663,16 @@ export function SelfieToBrandShootCourseShell({
               <Module5CaptionHooksBlock />
             </LessonSection>
 
+            <LessonSection eyebrow="FINAL CHECK" title="Before you call the shoot finished" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  You are done when the images have a job. The goal is not a bigger gallery. The
+                  goal is a first week of brand visuals you can actually post.
+                </p>
+              </div>
+              <Module5FinalChecklistBlock />
+            </LessonSection>
+
             <div className="sbs-module-next">
               <div>
                 <p className="sbs-kicker">FINAL ACTION</p>
@@ -2581,6 +2684,9 @@ export function SelfieToBrandShootCourseShell({
               </div>
               <a href="#mini-feed-planner" className="sbs-primary">
                 Build My 3x3 Plan
+              </a>
+              <a href={vaultHref} className="sbs-secondary">
+                Open The Vault
               </a>
             </div>
           </section>
@@ -4366,7 +4472,7 @@ export function SelfieToBrandShootCourseShell({
           border: 1px solid rgba(197,198,200,0.35);
         }
         .sbs-module5-plan {
-          grid-template-columns: repeat(7, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .sbs-module5-story-sequence {
           grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -4384,6 +4490,9 @@ export function SelfieToBrandShootCourseShell({
           padding: 15px;
           background: #FFFFFF;
         }
+        .sbs-module5-plan article {
+          min-height: 310px;
+        }
         .sbs-module5-plan span,
         .sbs-module5-story-sequence span {
           color: #818283;
@@ -4391,6 +4500,41 @@ export function SelfieToBrandShootCourseShell({
           font-weight: 700;
           letter-spacing: 0.18em;
           text-transform: uppercase;
+        }
+        .sbs-module5-plan-detail {
+          display: grid;
+          gap: 8px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module5-plan-detail strong {
+          color: #0D0E10;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .sbs-module5-final-checklist {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module5-final-checklist label {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          min-height: 82px;
+          padding: 18px;
+          background: #FFFFFF;
+          color: #4F5052;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        .sbs-module5-final-checklist input {
+          margin-top: 4px;
+          accent-color: #0D0E10;
         }
         .sbs-module5-hook-grid .sbs-copy-button {
           align-self: end;
@@ -4441,6 +4585,10 @@ export function SelfieToBrandShootCourseShell({
         .sbs-module-next .sbs-primary {
           background: #F8FAFA;
           color: #0D0E10;
+        }
+        .sbs-module-next .sbs-secondary {
+          border-color: rgba(248,250,250,0.38);
+          color: #F8FAFA;
         }
         .sbs-placeholder-stack {
           display: grid;
@@ -4601,6 +4749,7 @@ export function SelfieToBrandShootCourseShell({
           .sbs-visual-code-examples article,
           .sbs-module3-outcome > div,
           .sbs-module4-checklist,
+          .sbs-module5-final-checklist,
           .sbs-module5-overlay-grid,
           .sbs-world-decision-selector,
           .sbs-consistency-code {
@@ -4667,7 +4816,8 @@ export function SelfieToBrandShootCourseShell({
           .sbs-module5-use-grid,
           .sbs-module5-plan,
           .sbs-module5-story-sequence,
-          .sbs-module5-hook-grid {
+          .sbs-module5-hook-grid,
+          .sbs-module5-final-checklist {
             grid-template-columns: 1fr;
           }
           .sbs-module-card-image {

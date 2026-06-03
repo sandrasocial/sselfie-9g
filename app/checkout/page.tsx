@@ -28,6 +28,8 @@ const ATTRIBUTION_KEYS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "vault_credit",
+  "upgrade_credit",
 ] as const
 
 function checkoutAttributionProperties(searchParams: URLSearchParams) {
@@ -96,6 +98,7 @@ function CheckoutContent() {
   const isPromptVault = productType === "prompt_vault"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
   const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
+  const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
     heroBody: "Secure your purchase and keep moving.",
@@ -131,9 +134,24 @@ function CheckoutContent() {
         )
         .catch(() => {})
     }
+    if (productType === "selfie_to_brand_shoot_system") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "selfie_to_brand_shoot_checkout_start",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              vault_credit_applied: hasVaultCredit,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
 
     setClientSecret(secret)
-  }, [productType, searchParams])
+  }, [hasVaultCredit, productType, searchParams])
 
   const handleComplete = async () => {
     if (clientSecret) {
@@ -259,10 +277,10 @@ function CheckoutContent() {
               </div>
               <div className="text-left sm:text-right">
                 <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
-                  {isSelfieToBrandShoot ? "$197" : "$27"}
+                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$170" : "$197") : "$27"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
-                  one-time access
+                  {hasVaultCredit ? "$27 Vault credit applied" : "one-time access"}
                 </p>
               </div>
             </div>

@@ -7,6 +7,7 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
+import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
   NOIR_FEMME_SERIES,
@@ -377,6 +378,7 @@ export default async function PromptVaultAccessPage({
 
   const firstName =
     (result.valid && result.name) ? result.name.split(" ")[0] : null
+  const systemUpgradeHref = `/checkout/selfie-to-brand-shoot?source=vault_access&utm_source=owned&utm_medium=vault_access&utm_campaign=selfie_to_brand_shoot_system_upgrade&freebie_token=${encodeURIComponent(token)}&buyer_stage=micro&vault_credit=1`
 
   return (
     <main className={`pva-page ${inter.className}`}>
@@ -406,12 +408,19 @@ export default async function PromptVaultAccessPage({
             <a href="#first-result" className="pva-hero-primary">
               Start with your first result
             </a>
-            <Link
-              href={`/checkout/selfie-to-brand-shoot?source=vault_access&utm_source=owned&utm_medium=vault_access&utm_campaign=selfie_to_brand_shoot_system_upgrade&freebie_token=${encodeURIComponent(token)}&buyer_stage=micro`}
+            <TrackedLink
+              href={systemUpgradeHref}
               className="pva-hero-secondary"
+              trackEvent="prompt_vault_system_upgrade_click"
+              trackProperties={{
+                source: "vault_access",
+                placement: "hero",
+                buyer_stage: "micro",
+                upgrade_credit: "2700",
+              }}
             >
-              Enter the full system
-            </Link>
+              Complete the System for $170
+            </TrackedLink>
           </div>
         </div>
 
@@ -433,6 +442,40 @@ export default async function PromptVaultAccessPage({
               />
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="pva-system-upgrade" aria-label="Selfie to Brand Shoot System upgrade">
+        <div className="pva-system-upgrade-inner">
+          <div>
+            <p className="pva-eyebrow">NEXT STEP</p>
+            <h2 className={`pva-upgrade-title ${cormorant.className}`}>
+              The Vault gives you the shoots. The System shows you how to build the brand.
+            </h2>
+            <p className="pva-upgrade-copy">
+              Use your $27 Vault purchase as credit toward Selfie to Brand Shoot. You keep the full
+              Vault and add the guided path: source selfie, signature visual world, first prompt
+              lab, likeness filter, and 7-day content plan.
+            </p>
+          </div>
+          <div className="pva-upgrade-card">
+            <span>$27 credit applied</span>
+            <strong className={cormorant.className}>Complete the System for $170.</strong>
+            <p>For Vault buyers only. Standard access is $197.</p>
+            <TrackedLink
+              href={systemUpgradeHref}
+              className="pva-upgrade-button"
+              trackEvent="prompt_vault_system_upgrade_click"
+              trackProperties={{
+                source: "vault_access",
+                placement: "system_upgrade_block",
+                buyer_stage: "micro",
+                upgrade_credit: "2700",
+              }}
+            >
+              Upgrade To The Full System
+            </TrackedLink>
+          </div>
         </div>
       </section>
 
@@ -770,6 +813,80 @@ export default async function PromptVaultAccessPage({
         .pva-hero-secondary:hover {
           opacity: 0.86;
           transform: translateY(-1px);
+        }
+
+        .pva-system-upgrade {
+          border-bottom: 1px solid rgba(197,198,200,0.35);
+          background: #FFFFFF;
+        }
+        .pva-system-upgrade-inner {
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: clamp(42px, 6vw, 72px) clamp(20px, 4vw, 48px);
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(300px, 0.58fr);
+          gap: clamp(24px, 5vw, 58px);
+          align-items: center;
+        }
+        .pva-upgrade-title {
+          max-width: 740px;
+          margin: 0 0 18px;
+          color: #0D0E10;
+          font-size: clamp(2.35rem, 5.2vw, 4.8rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.96;
+        }
+        .pva-upgrade-copy {
+          max-width: 610px;
+          margin: 0;
+          color: #4F5052;
+          font-size: 15px;
+          line-height: 1.85;
+        }
+        .pva-upgrade-card {
+          display: grid;
+          gap: 14px;
+          padding: clamp(22px, 4vw, 34px);
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.45);
+          box-shadow: 0 18px 60px rgba(13,14,16,0.06);
+        }
+        .pva-upgrade-card span {
+          color: #818283;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+        .pva-upgrade-card strong {
+          color: #0D0E10;
+          font-size: clamp(2.2rem, 4vw, 3.8rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.98;
+        }
+        .pva-upgrade-card p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 13px;
+          line-height: 1.7;
+        }
+        .pva-upgrade-button {
+          min-height: 48px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 6px;
+          padding: 14px 18px;
+          background: #0D0E10;
+          color: #F8FAFA;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-align: center;
+          text-decoration: none;
+          text-transform: uppercase;
         }
 
         /* First result */
@@ -1286,6 +1403,9 @@ export default async function PromptVaultAccessPage({
 
         /* Tablet */
         @media (max-width: 960px) {
+          .pva-system-upgrade-inner {
+            grid-template-columns: 1fr;
+          }
           .pva-overview-grid {
             grid-template-columns: repeat(2, 1fr);
           }

@@ -219,6 +219,8 @@ const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "vault_credit",
+  "upgrade_credit",
 ] as const
 
 export function buildCheckoutRedirectUrl(

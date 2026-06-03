@@ -38,6 +38,7 @@ import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/template
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
+  generatePromptVaultDay3SystemUpgradeEmail,
   generatePromptVaultDay5FixBadResultEmail,
 } from "@/lib/email/templates/prompt-vault-buyer-sequence"
 
@@ -530,6 +531,9 @@ async function sendPromptVaultTouchEmail(
     case "prompt-vault-day2-first-result":
       email = generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
       break
+    case "prompt-vault-day3-system-upgrade":
+      email = generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl })
+      break
     case "prompt-vault-day5-fix-bad-result":
       email = generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
       break
@@ -713,6 +717,7 @@ export async function GET(request: Request) {
       aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
       promptVaultDay2: { found: 0, sent: 0, failed: 0 },
+      promptVaultDay3: { found: 0, sent: 0, failed: 0 },
       promptVaultDay5: { found: 0, sent: 0, failed: 0 },
       promptVaultDay10: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
@@ -821,6 +826,7 @@ export async function GET(request: Request) {
     const promptVaultNurtureEnabled = process.env.PROMPT_VAULT_NURTURE_ENABLED === "true"
     const promptVaultTouchResultKeys = [
       "promptVaultDay2",
+      "promptVaultDay3",
       "promptVaultDay5",
       "promptVaultDay10",
     ] as const
@@ -1021,6 +1027,7 @@ export async function GET(request: Request) {
       results.aiPromptsDay5.sent +
       results.aiPromptsDay7.sent +
       results.promptVaultDay2.sent +
+      results.promptVaultDay3.sent +
       results.promptVaultDay5.sent +
       results.promptVaultDay10.sent +
       results.selfieGuideDay0.sent +
@@ -1050,6 +1057,7 @@ export async function GET(request: Request) {
       results.aiPromptsDay5.failed +
       results.aiPromptsDay7.failed +
       results.promptVaultDay2.failed +
+      results.promptVaultDay3.failed +
       results.promptVaultDay5.failed +
       results.promptVaultDay10.failed +
       results.selfieGuideDay0.failed +
@@ -1083,6 +1091,7 @@ export async function GET(request: Request) {
       aiPromptsDay7: results.aiPromptsDay7,
       promptVaultNurtureEnabled,
       promptVaultDay2: results.promptVaultDay2,
+      promptVaultDay3: results.promptVaultDay3,
       promptVaultDay5: results.promptVaultDay5,
       promptVaultDay10: results.promptVaultDay10,
       selfieGuideDay0: results.selfieGuideDay0,

@@ -89,6 +89,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "prompt_vault_prompt_copied",
   "prompt_vault_checkout_recovery_sent",
   "selfie_to_brand_shoot_landing_view",
+  "selfie_to_brand_shoot_checkout_start",
   "selfie_to_brand_shoot_checkout_success",
   "selfie_to_brand_shoot_access_resolved",
   "selfie_to_brand_shoot_access_failed",
