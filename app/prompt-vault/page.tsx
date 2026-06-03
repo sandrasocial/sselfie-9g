@@ -59,7 +59,14 @@ function BuyButton({ label = "Get Full Shoots + Future Drops · $27" }: { label?
   )
 }
 
-export default function PromptVaultPage() {
+export default async function PromptVaultPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ checkout?: string }>
+}) {
+  const params = searchParams ? await searchParams : {}
+  const checkoutFailed = params.checkout === "failed"
+
   return (
     <main className={inter.className} style={{ background: "#F8FAFA", color: "#0D0E10" }}>
       <Suspense fallback={null}>
@@ -96,6 +103,47 @@ export default function PromptVaultPage() {
         </Link>
         <BuyButton label="Full Vault · $27" />
       </nav>
+
+      {checkoutFailed && (
+        <section
+          style={{
+            borderBottom: "1px solid rgba(197,198,200,0.45)",
+            background: "#FFFFFF",
+            padding: "18px clamp(18px, 4vw, 40px)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "980px",
+              margin: "0 auto",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "14px",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  margin: "0 0 4px",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: "#818283",
+                }}
+              >
+                Checkout paused
+              </p>
+              <p style={{ margin: 0, color: "#4F5052", fontSize: "14px", lineHeight: 1.6 }}>
+                Payment did not open correctly. Tap below to try again.
+              </p>
+            </div>
+            <BuyButton label="Try Checkout Again · $27" />
+          </div>
+        </section>
+      )}
 
       {/* ── HERO — editorial split ── */}
       <section className="pvf-hero">

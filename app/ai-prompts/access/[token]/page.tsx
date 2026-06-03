@@ -252,6 +252,15 @@ export default async function AiPromptsAccessPage({
     },
   }).catch(() => {})
 
+  const vaultPreviewCheckoutHref = buildPromptVaultFreebieCheckoutHref({
+    promptId: "vault_preview",
+    accessToken: token,
+  })
+  const bottomBridgeCheckoutHref = buildPromptVaultFreebieCheckoutHref({
+    promptId: "bottom_bridge",
+    accessToken: token,
+  })
+
   return (
     <main className={`ap-page ${inter.className}`}>
       {/* 1. Hero */}
@@ -426,13 +435,15 @@ export default async function AiPromptsAccessPage({
             </div>
             <div className="ap-vault-cta-row">
               <TrackedLink
-                href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=vault_preview&checkout_source=free_prompts_bridge&buyer_stage=lead"
+                href={vaultPreviewCheckoutHref}
                 className="ap-bridge-cta ap-bridge-cta-primary"
                 trackEvent="ai_prompts_prompt_vault_click"
                 trackProperties={{
                   source: "ai-prompts",
-                  destination: "prompt-vault",
+                  destination: "checkout-prompt-vault",
                   utm_campaign: "ai_prompts_to_prompt_vault",
+                  utm_content: "vault_preview",
+                  checkout_source: "free_prompts_bridge",
                 }}
               >
                 Get the Full Shoot + Future Drops · $27
@@ -579,14 +590,15 @@ export default async function AiPromptsAccessPage({
             drops, and future SSELFIE photoshoots with complete image directions.
           </p>
           <TrackedLink
-            href="/prompt-vault?source=ai_prompts_access&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_bridge&buyer_stage=lead"
+            href={bottomBridgeCheckoutHref}
             className="ap-bridge-cta ap-bridge-cta-secondary"
             trackEvent="ai_prompts_prompt_vault_click"
             trackProperties={{
               source: "ai-prompts",
-              destination: "prompt-vault",
+              destination: "checkout-prompt-vault",
               utm_campaign: "ai_prompts_to_prompt_vault",
               utm_content: "bottom_bridge",
+              checkout_source: "free_prompts_bridge",
             }}
           >
             Enter the Full Vault · $27

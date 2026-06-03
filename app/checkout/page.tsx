@@ -107,11 +107,7 @@ function CheckoutContent() {
   useEffect(() => {
     const secret = searchParams.get("client_secret")
 
-    console.log("[v0] Checkout page - client_secret present:", !!secret)
-    console.log("[v0] Checkout page - Stripe key present:", !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-
     if (!secret) {
-      console.log("[v0] Checkout page - No client_secret found")
       setError("No checkout session found")
       return
     }
@@ -136,26 +132,17 @@ function CheckoutContent() {
         .catch(() => {})
     }
 
-    console.log("[v0] Checkout page - Setting client secret")
     setClientSecret(secret)
   }, [productType, searchParams])
 
   const handleComplete = async () => {
-    console.log("[v0] ==================== PAYMENT COMPLETED ====================")
-    console.log("[v0] handleComplete triggered")
-    console.log("[v0] Client secret:", clientSecret ? "present" : "missing")
-
     if (clientSecret) {
       const sessionId = clientSecret.split("_secret_")[0]
-      console.log("[v0] Extracted session ID:", sessionId)
 
       try {
-        console.log("[v0] Fetching session email from API...")
         const response = await fetch(`/api/checkout-session?session_id=${sessionId}`)
-        console.log("[v0] API response status:", response.status)
 
         const sessionData = await response.json()
-        console.log("[v0] Session data:", JSON.stringify(sessionData, null, 2))
 
         // Get product_type from query params or session metadata
         const productTypeFromQuery = searchParams.get("product_type")
@@ -167,31 +154,27 @@ function CheckoutContent() {
         const brandStrategyBumpParam = sessionData.has_brand_strategy_pack ? "&brand_strategy_bump=1" : ""
 
         const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
-        console.log("[v0] Redirecting to success page with session_id only:", redirectUrl)
         router.push(redirectUrl)
-      } catch (error) {
-        console.error("[v0] Error getting session email:", error)
+      } catch {
         const fallbackUrl = `/checkout/success?session_id=${sessionId}`
-        console.log("[v0] Fallback redirect:", fallbackUrl)
         router.push(fallbackUrl)
       }
-    } else {
-      console.error("[v0] No client secret available in handleComplete!")
     }
-    console.log("[v0] ==================== END PAYMENT COMPLETED ====================")
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
         <div className="max-w-md text-center">
-          <div className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
+          <div className="mb-4 font-['Cormorant_Garamond'] text-2xl font-light uppercase tracking-[0.18em] text-[#0D0E10] sm:text-3xl">
             Something went wrong
           </div>
-          <p className="text-sm text-[#8a8780] font-light mb-6">We couldn&apos;t find your checkout session.</p>
+          <p className="mb-6 text-sm font-light leading-relaxed text-[#4F5052]">
+            We couldn&apos;t find your checkout session. Please go back and try once more.
+          </p>
           <button
             onClick={() => router.push("/")}
-            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+            className="bg-[#0D0E10] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#F8FAFA] transition-colors hover:bg-[#282728]"
           >
             Go back to Home
           </button>
@@ -202,25 +185,23 @@ function CheckoutContent() {
 
   if (!clientSecret) {
     return (
-      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
         <div className="text-center">
-          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
+          <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#0D0E10] sm:text-2xl md:text-3xl lg:text-4xl">
             S S E L F I E
           </div>
-          <p className="text-sm sm:text-base text-[#8a8780] font-light">Complete your order</p>
+          <p className="text-sm font-light text-[#4F5052] sm:text-base">Preparing your secure checkout</p>
         </div>
       </div>
     )
   }
 
-  console.log("[v0] Checkout page - Rendering EmbeddedCheckout component")
-
   return (
-    <div className="min-h-screen bg-[#0d0c0b]">
+    <div className="min-h-screen bg-[#F8FAFA] text-[#0D0E10]">
       {/* Hero Image Section */}
       <div
-        className={`relative overflow-hidden ${
-          isVisualIdentityOffer ? "h-[22vh] sm:h-[30vh] md:h-[34vh]" : "h-[30vh] sm:h-[35vh] md:h-[40vh]"
+        className={`relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
+          isVisualIdentityOffer ? "h-[20vh] sm:h-[26vh] md:h-[30vh]" : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
         }`}
       >
         <Image
@@ -230,20 +211,22 @@ function CheckoutContent() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-[#F8FAFA]/40 to-[#F8FAFA]" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
+          <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.18em] text-[#0D0E10] sm:text-2xl md:text-3xl lg:text-4xl">
             {checkoutCopy.heroTitle}
           </div>
-          <p className="text-sm sm:text-base text-[#c8c4bb] font-light">{checkoutCopy.heroBody}</p>
+          <p className="max-w-2xl text-sm font-light leading-relaxed text-[#4F5052] sm:text-base">
+            {checkoutCopy.heroBody}
+          </p>
         </div>
       </div>
 
       {/* Checkout Form Section */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {isVisualIdentityOffer && (
-          <div className="mb-6 border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.08)] p-4 sm:p-5">
+          <div className="mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5">
             <div className="mb-4 grid grid-cols-4 gap-2">
               {[
                 "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
@@ -251,7 +234,7 @@ function CheckoutContent() {
                 "/images/ai-prompts/coastal-white-shot-3.jpg",
                 "/images/ai-prompts/denim-street-shot-5.jpg",
               ].map(src => (
-                <div key={src} className="relative aspect-[3/4] overflow-hidden bg-[#1a1917]">
+                <div key={src} className="relative aspect-[3/4] overflow-hidden bg-[#F8FAFA]">
                   <Image
                     src={src}
                     alt=""
@@ -265,25 +248,25 @@ function CheckoutContent() {
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#8a8780]">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#818283]">
                   You are unlocking
                 </p>
-                <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#f0ede8] sm:text-3xl">
+                <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#0D0E10] sm:text-3xl">
                   {isSelfieToBrandShoot
                     ? "The guided system + full Vault access for your first AI brand shoot."
                     : "The full shoot + all newest and future photoshoot drops."}
                 </h2>
               </div>
               <div className="text-left sm:text-right">
-                <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#f0ede8]">
+                <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
                   {isSelfieToBrandShoot ? "$197" : "$27"}
                 </p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
                   one-time access
                 </p>
               </div>
             </div>
-            <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#c8c4bb]">
+            <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]">
               {isSelfieToBrandShoot
                 ? "Guided workflow · source selfie method · Vault included · content-use path"
                 : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
@@ -292,16 +275,16 @@ function CheckoutContent() {
         )}
 
         <div className="text-center mb-6 sm:mb-8">
-          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Secure Checkout</p>
-          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#f0ede8] tracking-wide mb-3">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#818283] mb-3">Secure Checkout</p>
+          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#0D0E10] tracking-wide mb-3">
             {checkoutCopy.heading}
           </h1>
-          <p className="text-xs sm:text-sm text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-[#4F5052] font-light leading-relaxed max-w-xl mx-auto">
             {checkoutCopy.blurb}
           </p>
         </div>
 
-        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-4 sm:p-6 md:p-8">
+        <div className="border border-[rgba(197,198,200,0.55)] bg-white p-3 shadow-[0_18px_70px_rgba(13,14,16,0.08)] sm:p-5 md:p-6">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{
@@ -314,10 +297,10 @@ function CheckoutContent() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-[10px] sm:text-xs text-[#8a8780] font-light leading-relaxed">
+          <p className="text-[10px] sm:text-xs text-[#818283] font-light leading-relaxed">
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
-          <p className="text-[10px] sm:text-xs text-[#8a8780] font-light leading-relaxed mt-2">
+          <p className="text-[10px] sm:text-xs text-[#818283] font-light leading-relaxed mt-2">
             {checkoutCopy.footer}
           </p>
         </div>
@@ -330,12 +313,12 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
+        <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
           <div className="text-center">
-            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
+            <div className="mb-4 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#0D0E10] sm:text-2xl">
               Loading your checkout
             </div>
-            <p className="text-sm text-[#8a8780] font-light">Please wait a moment...</p>
+            <p className="text-sm font-light text-[#4F5052]">Please wait a moment...</p>
           </div>
         </div>
       }

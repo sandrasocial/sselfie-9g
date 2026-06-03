@@ -24,17 +24,17 @@ export async function createLandingCheckoutSession(
   customerEmail?: string | null,
   options?: LandingCheckoutOptions,
 ) {
-  console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
+  console.log("[landing-checkout] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
   if (!product) {
-    console.error("[v0] Product not found:", productId)
+    console.error("[landing-checkout] Product not found:", productId)
     throw new Error(`Product with id "${productId}" not found`)
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
-  const allowManualPromotionCodes = !isSubscription
+  const allowManualPromotionCodes = !isSubscription && product.type !== "prompt_vault"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const bonusCredits =
     typeof options?.bonusCredits === "number" && Number.isFinite(options.bonusCredits) && options.bonusCredits > 0
@@ -52,7 +52,7 @@ export async function createLandingCheckoutSession(
 
   const actualPrice = product.priceInCents
 
-  console.log("[v0] Checkout config:", {
+  console.log("[landing-checkout] Checkout config:", {
     productId,
     productType: product.type,
     isSubscription,
@@ -107,15 +107,15 @@ export async function createLandingCheckoutSession(
   stripePriceId = stripePriceId?.trim()
 
   if (!stripePriceId) {
-    console.error("[v0] ❌ CRITICAL: Missing Stripe Price ID for product:", productId)
-    console.error("[v0] ❌ Required environment variable:", envVarName)
-    console.error("[v0] ❌ This checkout cannot proceed without proper price configuration")
+    console.error("[landing-checkout] ❌ CRITICAL: Missing Stripe Price ID for product:", productId)
+    console.error("[landing-checkout] ❌ Required environment variable:", envVarName)
+    console.error("[landing-checkout] ❌ This checkout cannot proceed without proper price configuration")
     throw new Error(
       `Stripe Price ID not configured. Please contact support. (Missing: ${envVarName})`
     )
   }
 
-  console.log("[v0] Using Stripe Price ID:", stripePriceId)
+  console.log("[landing-checkout] Using Stripe Price ID:", stripePriceId)
 
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
   let validatedCoupon: string | null = null
@@ -133,9 +133,9 @@ export async function createLandingCheckoutSession(
           }
         }
         validatedCoupon = coupon.id
-        console.log(`[v0] ✅ Valid promo code found: ${promoCode.toUpperCase()}, applying discount`)
+        console.log(`[landing-checkout] ✅ Valid promo code found: ${promoCode.toUpperCase()}, applying discount`)
       } else {
-        console.log(`[v0] ⚠️ Promo code ${promoCode.toUpperCase()} is not valid`)
+        console.log(`[landing-checkout] ⚠️ Promo code ${promoCode.toUpperCase()} is not valid`)
       }
     } catch (error: any) {
       if (error instanceof Error && error.message.includes("no longer available")) {
@@ -143,7 +143,7 @@ export async function createLandingCheckoutSession(
       }
       // Invalid coupon code - only allow manual promotion codes for non-subscription products
       console.log(
-        `[v0] ⚠️ Promo code ${promoCode?.toUpperCase()} not found, ${allowManualPromotionCodes ? "allowing" : "blocking"} manual promotion codes`,
+        `[landing-checkout] ⚠️ Promo code ${promoCode?.toUpperCase()} not found, ${allowManualPromotionCodes ? "allowing" : "blocking"} manual promotion codes`,
       )
     }
   }
@@ -206,8 +206,8 @@ export async function createLandingCheckoutSession(
 
   try {
     const session = await stripe.checkout.sessions.create(sessionConfig)
-    console.log("[v0] Checkout session created successfully:", session.id)
-    console.log("[v0] Client secret generated:", !!session.client_secret)
+    console.log("[landing-checkout] Checkout session created successfully:", session.id)
+    console.log("[landing-checkout] Client secret generated:", !!session.client_secret)
     await upsertCheckoutAttribution({
       sessionId: session.id,
       checkoutOrigin: "guest",
@@ -233,7 +233,7 @@ export async function createLandingCheckoutSession(
     })
     return session.client_secret
   } catch (error: any) {
-    console.error("[v0] Stripe API error creating checkout session:", {
+    console.error("[landing-checkout] Stripe API error creating checkout session:", {
       message: error.message,
       type: error.type,
       code: error.code,
@@ -303,7 +303,7 @@ export async function getUserByEmail(email: string) {
 
     const hasAccount = user.password_setup_complete === true
 
-    console.log("[v0] getUserByEmail result:", {
+    console.log("[landing-checkout] getUserByEmail result:", {
       email: user.email,
       password_setup_complete: user.password_setup_complete,
       hasAccount: hasAccount,
@@ -317,7 +317,7 @@ export async function getUserByEmail(email: string) {
       credits: creditsResult[0]?.balance || 0,
     }
   } catch (error: any) {
-    console.error("[v0] getUserByEmail error:", error)
+    console.error("[landing-checkout] getUserByEmail error:", error)
     return null
   }
 }
