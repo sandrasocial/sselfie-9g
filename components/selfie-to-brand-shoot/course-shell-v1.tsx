@@ -3,10 +3,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
-import {
-  DARK_FEMININE_CAFE_SERIES,
-  VAULT_COLLECTION_META,
-} from "@/lib/ai-prompts/prompt-data"
+import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
 import { CopyPromptButton } from "./copy-prompt-button"
 import { MayaPromptConcierge } from "./maya-prompt-concierge"
 import { VisualConsistencyCodeBuilder } from "./visual-consistency-code-builder"
@@ -906,6 +903,140 @@ const finalSelectSlots = [
   "Supporting Image 4",
 ]
 
+const module5AssetBase = "/images/selfie-to-brand-shoot/module-5-content-use"
+
+const module5HeroImages = [
+  {
+    label: "Profile",
+    image: `${module5AssetBase}/profile-identity-cafe.jpg`,
+    objectPosition: "center 28%",
+  },
+  {
+    label: "Cover",
+    image: `${module5AssetBase}/reel-cover-cafe.jpg`,
+    objectPosition: "center 24%",
+  },
+  {
+    label: "Story",
+    image: `${module5AssetBase}/story-intro-lipstick.jpg`,
+    objectPosition: "center 28%",
+  },
+]
+
+const module5ContentUses = [
+  {
+    title: "Profile photo",
+    copy: "Use the clearest identity image when your face needs to be recognized fast.",
+    image: `${module5AssetBase}/profile-identity-cafe.jpg`,
+    objectPosition: "center 28%",
+  },
+  {
+    title: "Reel cover",
+    copy: "Choose a strong vertical image with clean space for one readable hook.",
+    image: `${module5AssetBase}/reel-cover-cafe.jpg`,
+    objectPosition: "center 24%",
+  },
+  {
+    title: "Carousel cover",
+    copy: "Use an image that can hold a headline without fighting the face or outfit.",
+    image: `${module5AssetBase}/carousel-cover-street.jpg`,
+    objectPosition: "center 30%",
+  },
+  {
+    title: "Story intro",
+    copy: "Pick a softer, closer moment that feels like a real update from your world.",
+    image: `${module5AssetBase}/story-intro-lipstick.jpg`,
+    objectPosition: "center 28%",
+  },
+  {
+    title: "Offer visual",
+    copy: "Use a confident image when you are pointing people toward a product or next step.",
+    image: `${module5AssetBase}/offer-visual-phone.jpg`,
+    objectPosition: "center 26%",
+  },
+  {
+    title: "About-me image",
+    copy: "Choose a polished human image that makes your brand feel personal, not faceless.",
+    image: `${module5AssetBase}/about-me-balcony.jpg`,
+    objectPosition: "center 24%",
+  },
+  {
+    title: "Lifestyle post",
+    copy: "Use work, coffee, or daily-life images to make the shoot feel lived-in.",
+    image: `${module5AssetBase}/lifestyle-work-laptop.jpg`,
+    objectPosition: "center 38%",
+  },
+]
+
+const module5OverlayExamples = [
+  {
+    label: "Reel cover",
+    headline: "From one selfie to this",
+    subline: "AI brand shoot",
+    image: `${module5AssetBase}/reel-cover-cafe.jpg`,
+    objectPosition: "center 24%",
+  },
+  {
+    label: "Carousel cover",
+    headline: "One shoot, seven posts",
+    subline: "Save this content plan",
+    image: `${module5AssetBase}/carousel-cover-street.jpg`,
+    objectPosition: "center 30%",
+  },
+  {
+    label: "Story CTA",
+    headline: "This is your visual world",
+    subline: "Reply SHOOT for the next step",
+    image: `${module5AssetBase}/story-intro-lipstick.jpg`,
+    objectPosition: "center 28%",
+  },
+]
+
+const module5GridImages = [
+  { role: "Profile", image: `${module5AssetBase}/profile-identity-cafe.jpg`, objectPosition: "center 28%" },
+  { role: "Reel cover", image: `${module5AssetBase}/reel-cover-cafe.jpg`, objectPosition: "center 24%" },
+  { role: "Detail", image: `${module5AssetBase}/detail-coffee.jpg`, objectPosition: "center center" },
+  { role: "Movement", image: `${module5AssetBase}/movement-walk.jpg`, objectPosition: "center 34%" },
+  { role: "Brand image", image: `${module5AssetBase}/story-intro-lipstick.jpg`, objectPosition: "center 28%" },
+  { role: "Texture", image: `${module5AssetBase}/detail-wine.jpg`, objectPosition: "center center" },
+  { role: "Work", image: `${module5AssetBase}/lifestyle-work-laptop.jpg`, objectPosition: "center 38%" },
+  { role: "About", image: `${module5AssetBase}/about-me-balcony.jpg`, objectPosition: "center 24%" },
+  { role: "Breath", image: `${module5AssetBase}/quiet-product-detail.jpg`, objectPosition: "center center" },
+]
+
+const module5SevenDayPlan = [
+  ["Day 1", "Update profile image", "Use the clearest identity image first."],
+  ["Day 2", "Story intro", "Share the source selfie, the result, and why this look feels like you."],
+  ["Day 3", "Reel cover", "Post a simple transformation reel with one strong cover line."],
+  ["Day 4", "Carousel", "Teach the before, visual world, prompt, result, and what you kept."],
+  ["Day 5", "Offer image", "Use one confident visual to point to your guide, Vault, offer, or service."],
+  ["Day 6", "About-me post", "Tell the story behind the woman your visuals are starting to show."],
+  ["Day 7", "Feed refresh", "Pin or place the strongest images so the profile starts to feel cohesive."],
+]
+
+const module5StoryFrames = [
+  { title: "Start here", copy: "Show the normal selfie or starting point." },
+  { title: "Reveal", copy: "Show the strongest brand shoot result." },
+  { title: "Why it works", copy: "Point out face, colors, mood, and visual world." },
+  { title: "Use it", copy: "Show where it becomes a profile photo, cover, or post." },
+  { title: "Invite", copy: "Give one clear next step, link, or reply keyword." },
+]
+
+const module5CaptionHooks = [
+  {
+    title: "Transformation hook",
+    text: "I started with one normal selfie and turned it into a small brand shoot I can actually use.",
+  },
+  {
+    title: "Visual identity hook",
+    text: "Your content starts to feel different when your photos finally match the woman you are becoming.",
+  },
+  {
+    title: "Soft offer hook",
+    text: "If you want your own selfie to brand shoot, start with the guide and choose one visual world first.",
+  },
+]
+
 const featuredCollections = VAULT_COLLECTION_META.slice(0, 4).map((collection, index) => ({
   name: collection.name
     .replace(" Editorial", "")
@@ -966,12 +1097,12 @@ const modules = [
     title: "Turn The Shoot Into Content",
     outcome:
       "Turn one shoot into profile images, reel covers, stories, carousels, and offer visuals.",
-    image: DARK_FEMININE_CAFE_SERIES[1]?.exampleImage ?? DARK_FEMININE_CAFE_SERIES[0]?.exampleImage,
-    imagePosition: "center top",
+    image: `${module5AssetBase}/reel-cover-cafe.jpg`,
+    imagePosition: "center 24%",
     href: "#module-5",
-    status: "Coming next",
+    status: "Ready",
     time: "18 minutes",
-    available: false,
+    available: true,
   },
 ]
 
@@ -991,7 +1122,7 @@ function CourseProgressBar() {
     <div className="sbs-course-progress" aria-label="Course progress">
       <div className="sbs-progress-copy">
         <span>Progress</span>
-        <strong>4 of 5 modules ready</strong>
+        <strong>5 of 5 modules ready</strong>
       </div>
       <div className="sbs-progress-track" aria-hidden="true">
         <span />
@@ -1680,6 +1811,141 @@ function FinalBrandShootSelectsBlock() {
   )
 }
 
+function Module5HeroBoard() {
+  return (
+    <div className="sbs-module5-hero-board" aria-label="Module 5 content use preview">
+      {module5HeroImages.map((item, index) => (
+        <figure key={item.label}>
+          <Image
+            src={item.image}
+            alt={`${item.label} content use preview`}
+            fill
+            sizes="(max-width: 768px) 30vw, 10vw"
+            style={{ objectFit: "cover", objectPosition: item.objectPosition }}
+          />
+          <figcaption>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            {item.label}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  )
+}
+
+function Module5ContentUseGrid() {
+  return (
+    <div className="sbs-module5-use-grid">
+      {module5ContentUses.map(use => (
+        <article key={use.title}>
+          <figure>
+            <Image
+              src={use.image}
+              alt={`${use.title} example`}
+              fill
+              sizes="(max-width: 768px) 100vw, 18vw"
+              style={{ objectFit: "cover", objectPosition: use.objectPosition }}
+            />
+          </figure>
+          <div>
+            <h4>{use.title}</h4>
+            <p>{use.copy}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module5OverlayExamplesBlock() {
+  return (
+    <div className="sbs-module5-overlay-grid">
+      {module5OverlayExamples.map(example => (
+        <article key={example.label}>
+          <figure>
+            <Image
+              src={example.image}
+              alt={`${example.label} overlay example`}
+              fill
+              sizes="(max-width: 768px) 100vw, 22vw"
+              style={{ objectFit: "cover", objectPosition: example.objectPosition }}
+            />
+            <figcaption>
+              <span>{example.label}</span>
+              <strong className={cormorant.className}>{example.headline}</strong>
+              <em>{example.subline}</em>
+            </figcaption>
+          </figure>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module5MiniFeedPlannerBlock() {
+  return (
+    <div className="sbs-module5-feed-planner" id="mini-feed-planner">
+      {module5GridImages.map((item, index) => (
+        <figure key={`${item.role}-${index}`}>
+          <Image
+            src={item.image}
+            alt={`${item.role} grid slot`}
+            fill
+            sizes="(max-width: 768px) 32vw, 12vw"
+            style={{ objectFit: "cover", objectPosition: item.objectPosition }}
+          />
+          <figcaption>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            {item.role}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  )
+}
+
+function Module5SevenDayPlanBlock() {
+  return (
+    <div className="sbs-module5-plan">
+      {module5SevenDayPlan.map(([day, title, copy]) => (
+        <article key={day}>
+          <span>{day}</span>
+          <h4>{title}</h4>
+          <p>{copy}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module5StorySequenceBlock() {
+  return (
+    <div className="sbs-module5-story-sequence">
+      {module5StoryFrames.map((frame, index) => (
+        <article key={frame.title}>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <h4>{frame.title}</h4>
+          <p>{frame.copy}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function Module5CaptionHooksBlock() {
+  return (
+    <div className="sbs-module5-hook-grid">
+      {module5CaptionHooks.map(hook => (
+        <article key={hook.title}>
+          <h4>{hook.title}</h4>
+          <p>{hook.text}</p>
+          <CopyPromptButton text={hook.text} label="Copy hook" />
+        </article>
+      ))}
+    </div>
+  )
+}
+
 function CourseSidebar({ vaultHref }: { vaultHref: string }) {
   return (
     <aside className="sbs-course-sidebar" aria-label="Course modules">
@@ -1703,19 +1969,6 @@ function CourseSidebar({ vaultHref }: { vaultHref: string }) {
       </nav>
       <ResourceQuickLinks vaultHref={vaultHref} />
     </aside>
-  )
-}
-
-function PlaceholderModule({ module }: { module: (typeof modules)[number] }) {
-  return (
-    <section id={module.href.replace("#", "")} className="sbs-placeholder-module">
-      <div>
-        <p className="sbs-kicker">MODULE {module.number}</p>
-        <h3 className={cormorant.className}>{module.title}</h3>
-        <p>{module.outcome}</p>
-      </div>
-      <span>{module.status}</span>
-    </section>
   )
 }
 
@@ -2235,25 +2488,100 @@ export function SelfieToBrandShootCourseShell({
             </div>
           </section>
 
-          <div className="sbs-placeholder-stack" aria-label="Future course modules">
-            {modules.slice(4).map(module => (
-              <PlaceholderModule key={module.number} module={module} />
-            ))}
-          </div>
+          <section
+            id="module-5"
+            className="sbs-module-five"
+            aria-label="Module 5: Turn The Shoot Into Content"
+          >
+            <header className="sbs-lesson-hero sbs-module-five-hero">
+              <div>
+                <p className="sbs-kicker">MODULE 05</p>
+                <h2 className={cormorant.className}>Turn The Shoot Into Content.</h2>
+                <p>
+                  Your images are not meant to sit in your camera roll. In this module, you&apos;ll
+                  turn your selected brand shoot images into profile visuals, covers, stories,
+                  carousels, offer posts, and a simple first week of content.
+                </p>
+              </div>
+              <Module5HeroBoard />
+            </header>
 
-          <section id="mini-feed-planner" className="sbs-mini-planner">
-            <div>
-              <p className="sbs-kicker">RESOURCE PLACEHOLDER</p>
-              <h3 className={cormorant.className}>3x3 Mini Feed Planner</h3>
-              <p>
-                This is the future planning space for turning one shoot into profile images, covers,
-                stories, carousels, and offer visuals.
-              </p>
-            </div>
-            <div className="sbs-mini-grid" aria-hidden="true">
-              {Array.from({ length: 9 }).map((_, index) => (
-                <span key={index} />
-              ))}
+            <LessonSection eyebrow="SANDRA'S RULE" title="Use the image while the feeling is fresh" open>
+              <div className="sbs-taste-note">
+                <p>
+                  A beautiful image only becomes valuable when you use it. Do not wait until the
+                  full feed is perfect. Choose the best image, give it one job, and let it help your
+                  audience recognize the woman you are becoming.
+                </p>
+              </div>
+            </LessonSection>
+
+            <LessonSection eyebrow="CONTENT SYSTEM" title="One shoot, many uses" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  You do not need seven different aesthetics. You need one visual world that can
+                  become different kinds of content.
+                </p>
+              </div>
+              <Module5ContentUseGrid />
+            </LessonSection>
+
+            <LessonSection eyebrow="OVERLAY EXAMPLES" title="Use text as the layer, not the identity" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Keep the image as the emotional proof. Add only enough text to give the post a
+                  clear job.
+                </p>
+              </div>
+              <Module5OverlayExamplesBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="FEED PREVIEW" title="3x3 Mini Feed Planner" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Plan variety inside one visual world: face, movement, detail, work, lifestyle,
+                  offer, and quiet breathing space.
+                </p>
+              </div>
+              <Module5MiniFeedPlannerBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="7-DAY PLAN" title="One brand shoot can give you a week of content" open>
+              <Module5SevenDayPlanBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="STORY FLOW" title="Turn the shoot into a story sequence" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Stories should feel simple: where you started, what you made, why it matters, and
+                  what she should do next.
+                </p>
+              </div>
+              <Module5StorySequenceBlock />
+            </LessonSection>
+
+            <LessonSection eyebrow="COPY STARTERS" title="Caption and hook starters" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Start with the visual. Then use one clear sentence to tell people what they are
+                  looking at.
+                </p>
+              </div>
+              <Module5CaptionHooksBlock />
+            </LessonSection>
+
+            <div className="sbs-module-next">
+              <div>
+                <p className="sbs-kicker">FINAL ACTION</p>
+                <h3 className={cormorant.className}>Plan your first seven pieces of content.</h3>
+                <p>
+                  Choose one profile image, one cover, one story sequence, one carousel, one offer
+                  visual, one about-me post, and one quiet supporting image.
+                </p>
+              </div>
+              <a href="#mini-feed-planner" className="sbs-primary">
+                Build My 3x3 Plan
+              </a>
             </div>
           </section>
         </article>
@@ -2426,7 +2754,7 @@ export function SelfieToBrandShootCourseShell({
         }
         .sbs-progress-track span {
           display: block;
-          width: 80%;
+          width: 100%;
           height: 100%;
           background: #0D0E10;
         }
@@ -3901,6 +4229,173 @@ export function SelfieToBrandShootCourseShell({
           height: 1px;
           background: rgba(13,14,16,0.25);
         }
+        .sbs-module-five {
+          margin-top: 14px;
+        }
+        .sbs-module-five-hero {
+          grid-template-columns: minmax(0, 0.76fr) minmax(300px, 0.54fr);
+        }
+        .sbs-module5-hero-board {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+          min-height: 430px;
+        }
+        .sbs-module5-hero-board figure,
+        .sbs-module5-use-grid figure,
+        .sbs-module5-overlay-grid figure,
+        .sbs-module5-feed-planner figure {
+          position: relative;
+          min-height: 100%;
+          margin: 0;
+          overflow: hidden;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-module5-hero-board figcaption,
+        .sbs-module5-feed-planner figcaption {
+          position: absolute;
+          left: 8px;
+          right: 8px;
+          bottom: 8px;
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 7px 8px;
+          background: rgba(13,14,16,0.64);
+          color: #F8FAFA;
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          line-height: 1.3;
+          text-transform: uppercase;
+        }
+        .sbs-module5-use-grid {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module5-use-grid article {
+          display: grid;
+          grid-template-rows: minmax(210px, auto) 1fr;
+          background: #FFFFFF;
+        }
+        .sbs-module5-use-grid article > div {
+          display: grid;
+          align-content: start;
+          gap: 10px;
+          padding: 13px;
+        }
+        .sbs-module5-use-grid h4,
+        .sbs-module5-plan h4,
+        .sbs-module5-story-sequence h4,
+        .sbs-module5-hook-grid h4 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          line-height: 1.45;
+          text-transform: uppercase;
+        }
+        .sbs-module5-use-grid p,
+        .sbs-module5-plan p,
+        .sbs-module5-story-sequence p,
+        .sbs-module5-hook-grid p {
+          color: #4F5052;
+          font-size: 12px;
+          line-height: 1.65;
+        }
+        .sbs-module5-overlay-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .sbs-module5-overlay-grid article {
+          min-height: 560px;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-module5-overlay-grid figcaption {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          gap: 10px;
+          padding: 18px;
+          background: linear-gradient(180deg, rgba(13,14,16,0.04) 0%, rgba(13,14,16,0.18) 42%, rgba(13,14,16,0.72) 100%);
+          color: #F8FAFA;
+        }
+        .sbs-module5-overlay-grid span,
+        .sbs-module5-overlay-grid em {
+          font-size: 9px;
+          font-style: normal;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          line-height: 1.4;
+          text-transform: uppercase;
+        }
+        .sbs-module5-overlay-grid strong {
+          max-width: 10ch;
+          font-size: clamp(3rem, 5vw, 5.4rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.92;
+          text-transform: none;
+        }
+        .sbs-module5-feed-planner {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.45);
+          border: 1px solid rgba(197,198,200,0.45);
+        }
+        .sbs-module5-feed-planner figure {
+          aspect-ratio: 4 / 5;
+          border: 0;
+        }
+        .sbs-module5-plan,
+        .sbs-module5-story-sequence,
+        .sbs-module5-hook-grid {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-module5-plan {
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+        .sbs-module5-story-sequence {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+        .sbs-module5-hook-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .sbs-module5-plan article,
+        .sbs-module5-story-sequence article,
+        .sbs-module5-hook-grid article {
+          min-height: 150px;
+          display: grid;
+          align-content: start;
+          gap: 12px;
+          padding: 15px;
+          background: #FFFFFF;
+        }
+        .sbs-module5-plan span,
+        .sbs-module5-story-sequence span {
+          color: #818283;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .sbs-module5-hook-grid .sbs-copy-button {
+          align-self: end;
+          margin-top: 4px;
+        }
         .sbs-trouble-list {
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -4013,11 +4508,15 @@ export function SelfieToBrandShootCourseShell({
           .sbs-prompt-card-grid,
           .sbs-starter-board,
           .sbs-kfd-grid,
-          .sbs-module4-example-grid {
+          .sbs-module4-example-grid,
+          .sbs-module5-use-grid,
+          .sbs-module5-plan {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .sbs-maya-review-steps,
-          .sbs-final-selects article > div {
+          .sbs-final-selects article > div,
+          .sbs-module5-story-sequence,
+          .sbs-module5-hook-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .sbs-one-world-uses {
@@ -4033,6 +4532,7 @@ export function SelfieToBrandShootCourseShell({
           .sbs-brand-world-card,
           .sbs-concierge,
           .sbs-module-four-hero,
+          .sbs-module-five-hero,
           .sbs-maya-review-layer,
           .sbs-final-selects article,
           .sbs-module-next,
@@ -4101,6 +4601,7 @@ export function SelfieToBrandShootCourseShell({
           .sbs-visual-code-examples article,
           .sbs-module3-outcome > div,
           .sbs-module4-checklist,
+          .sbs-module5-overlay-grid,
           .sbs-world-decision-selector,
           .sbs-consistency-code {
             grid-template-columns: 1fr;
@@ -4162,7 +4663,11 @@ export function SelfieToBrandShootCourseShell({
           .sbs-kfd-grid,
           .sbs-module4-example-grid,
           .sbs-maya-review-steps,
-          .sbs-final-selects article > div {
+          .sbs-final-selects article > div,
+          .sbs-module5-use-grid,
+          .sbs-module5-plan,
+          .sbs-module5-story-sequence,
+          .sbs-module5-hook-grid {
             grid-template-columns: 1fr;
           }
           .sbs-module-card-image {
@@ -4206,6 +4711,22 @@ export function SelfieToBrandShootCourseShell({
           }
           .sbs-module4-sequence figcaption {
             display: grid;
+          }
+          .sbs-module5-hero-board {
+            min-height: auto;
+          }
+          .sbs-module5-hero-board figure {
+            min-height: 250px;
+          }
+          .sbs-module5-hero-board figcaption,
+          .sbs-module5-feed-planner figcaption {
+            display: grid;
+          }
+          .sbs-module5-use-grid article {
+            grid-template-rows: minmax(360px, auto) 1fr;
+          }
+          .sbs-module5-overlay-grid article {
+            min-height: 520px;
           }
           .sbs-lesson-section summary {
             gap: 10px;
