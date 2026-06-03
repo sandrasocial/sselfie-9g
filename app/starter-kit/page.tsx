@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: "AI-ready selfie presets, posing, editing, captions, and a 7-day content starter for $37.",
 }
 
-export default function StarterKitPage() {
-  return <StarterKitPageContent />
+export default async function StarterKitPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ checkout?: string }>
+}) {
+  const params = searchParams ? await searchParams : {}
+  return <StarterKitPageContent checkoutFailed={params.checkout === "failed"} />
 }

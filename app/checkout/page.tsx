@@ -97,6 +97,7 @@ function CheckoutContent() {
   const productType = searchParams.get("product_type") || "unknown"
   const isPromptVault = productType === "prompt_vault"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
+  const isStarterKit = productType === "starter_kit"
   const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
   const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
@@ -143,6 +144,20 @@ function CheckoutContent() {
               product_type: productType,
               checkout_session_id: secret.split("_secret_")[0] || null,
               vault_credit_applied: hasVaultCredit,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
+    if (productType === "starter_kit") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "starter_kit_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
               ...checkoutAttributionProperties(searchParams),
             },
           }),
@@ -300,6 +315,16 @@ function CheckoutContent() {
           <p className="text-xs sm:text-sm text-[#4F5052] font-light leading-relaxed max-w-xl mx-auto">
             {checkoutCopy.blurb}
           </p>
+          {isStarterKit && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                Instant access after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Presets, setup guide, posing guide, caption templates, and the 7-day content starter are delivered right away.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="border border-[rgba(197,198,200,0.55)] bg-white p-3 shadow-[0_18px_70px_rgba(13,14,16,0.08)] sm:p-5 md:p-6">

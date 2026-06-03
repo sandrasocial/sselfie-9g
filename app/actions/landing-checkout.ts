@@ -34,7 +34,7 @@ export async function createLandingCheckoutSession(
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
-  const allowManualPromotionCodes = !isSubscription && product.type !== "prompt_vault"
+  const allowManualPromotionCodes = !isSubscription && product.type !== "prompt_vault" && product.type !== "starter_kit"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const bonusCredits =
     typeof options?.bonusCredits === "number" && Number.isFinite(options.bonusCredits) && options.bonusCredits > 0
@@ -220,8 +220,12 @@ export async function createLandingCheckoutSession(
       utmMedium: attribution.utmMedium,
       utmCampaign: attribution.utmCampaign,
       utmContent: attribution.utmContent,
+      emailType: attribution.emailType,
       campaignId: attribution.campaignId,
       referralCode: attribution.referralCode,
+      guideCta: attribution.guideCta,
+      freebieSource: attribution.freebieSource,
+      checkoutSource: attribution.checkoutSource,
       ctaKeyword: attribution.ctaKeyword,
       quizResult: attribution.quizResult,
       returnTo: attribution.returnTo,
