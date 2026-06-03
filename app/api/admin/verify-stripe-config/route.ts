@@ -42,6 +42,8 @@ export async function GET() {
       "STRIPE_PRICE_BRAND_STRATEGY_PACK",
       "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
       "STRIPE_PRICE_SELFIE_GUIDE",
+      "STRIPE_PRICE_PROMPT_VAULT",
+      "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
     ]
     
     for (const envVar of envVars) {
@@ -119,6 +121,18 @@ export async function GET() {
         envVar: "STRIPE_PRICE_SELFIE_GUIDE",
         expectedAmount: 1700,
         expectedAmountFormatted: "$17.00",
+        expectedRecurring: false,
+      },
+      prompt_vault: {
+        envVar: "STRIPE_PRICE_PROMPT_VAULT",
+        expectedAmount: 2700,
+        expectedAmountFormatted: "$27.00",
+        expectedRecurring: false,
+      },
+      selfie_to_brand_shoot_system: {
+        envVar: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
+        expectedAmount: 19700,
+        expectedAmountFormatted: "$197.00",
         expectedRecurring: false,
       },
     }

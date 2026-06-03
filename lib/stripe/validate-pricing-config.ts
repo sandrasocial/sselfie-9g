@@ -264,6 +264,8 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_PRICE_BRAND_STRATEGY_PACK = Active price for $19 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE_BUNDLE = Active price for $27 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE = Active price for $17 one-time payment",
+      "  STRIPE_PRICE_PROMPT_VAULT = Active price for $27 one-time payment",
+      "  STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM = Active price for $197 one-time payment",
       "",
       "=" .repeat(80),
       "",

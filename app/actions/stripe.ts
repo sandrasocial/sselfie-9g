@@ -154,18 +154,19 @@ export async function startProductCheckoutSession(
   
   // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
-  const envVarName =
-    product.type === "one_time_session"
-      ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-      : product.type === "paid_blueprint"
-        ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
-        : product.type === "brand_strategy_pack"
-          ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
-          : product.type === "selfie_guide_bundle"
-            ? "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE"
-          : product.type === "selfie_guide"
-            ? "STRIPE_PRICE_SELFIE_GUIDE"
-            : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+  const envVarByProductType: Record<string, string> = {
+    one_time_session: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
+    paid_blueprint: "STRIPE_PAID_BLUEPRINT_PRICE_ID",
+    brand_strategy_pack: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+    selfie_guide_bundle: "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
+    selfie_guide: "STRIPE_PRICE_SELFIE_GUIDE",
+    starter_kit: "STRIPE_PRICE_STARTER_KIT",
+    masterclass: "STRIPE_PRICE_MASTERCLASS",
+    prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
+    selfie_to_brand_shoot_system: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
+    sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+  }
+  const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
@@ -179,6 +180,14 @@ export async function startProductCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE_BUNDLE
   } else if (product.type === "selfie_guide") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE
+  } else if (product.type === "starter_kit") {
+    stripePriceId = process.env.STRIPE_PRICE_STARTER_KIT
+  } else if (product.type === "masterclass") {
+    stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
+  } else if (product.type === "prompt_vault") {
+    stripePriceId = process.env.STRIPE_PRICE_PROMPT_VAULT
+  } else if (product.type === "selfie_to_brand_shoot_system") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM
   }
   stripePriceId = stripePriceId?.trim()
 
