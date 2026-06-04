@@ -6,8 +6,10 @@ import {
 } from "@/lib/instagram/page-selection"
 
 
-const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || "1210263417166165"
-const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!
+const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || "1210263417166165"
+const FACEBOOK_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!
+const INSTAGRAM_LOGIN_APP_ID = process.env.INSTAGRAM_LOGIN_APP_ID
+const INSTAGRAM_LOGIN_APP_SECRET = process.env.INSTAGRAM_LOGIN_APP_SECRET
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
 const PREFERRED_INSTAGRAM_USERNAMES = [
   process.env.INSTAGRAM_PREFERRED_USERNAME,
@@ -32,12 +34,16 @@ function parseOAuthState(rawState?: string | null) {
 }
 
 async function exchangeInstagramLoginCode(code: string) {
+  if (!INSTAGRAM_LOGIN_APP_ID || !INSTAGRAM_LOGIN_APP_SECRET) {
+    throw new Error("Instagram Login app id/secret are not configured in Vercel")
+  }
+
   const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: INSTAGRAM_APP_ID,
-      client_secret: INSTAGRAM_APP_SECRET,
+      client_id: INSTAGRAM_LOGIN_APP_ID,
+      client_secret: INSTAGRAM_LOGIN_APP_SECRET,
       grant_type: "authorization_code",
       redirect_uri: REDIRECT_URI,
       code,
@@ -56,7 +62,7 @@ async function exchangeInstagramLoginCode(code: string) {
 
   const longLivedUrl = new URL("https://graph.instagram.com/access_token")
   longLivedUrl.searchParams.set("grant_type", "ig_exchange_token")
-  longLivedUrl.searchParams.set("client_secret", INSTAGRAM_APP_SECRET)
+  longLivedUrl.searchParams.set("client_secret", INSTAGRAM_LOGIN_APP_SECRET)
   longLivedUrl.searchParams.set("access_token", shortLivedToken)
 
   const longLivedResponse = await fetch(longLivedUrl.toString())
@@ -171,7 +177,7 @@ export async function GET(request: NextRequest) {
     console.log("[Instagram Callback] Exchanging code for token")
 
     const tokenResponse = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&client_secret=${INSTAGRAM_APP_SECRET}&code=${code}`,
+      `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&client_secret=${FACEBOOK_APP_SECRET}&code=${code}`,
     )
 
     const tokenData = await tokenResponse.json()
@@ -185,7 +191,7 @@ export async function GET(request: NextRequest) {
     console.log("[Instagram Callback] Short-lived token obtained, exchanging for long-lived")
 
     const longLivedResponse = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${INSTAGRAM_APP_ID}&client_secret=${INSTAGRAM_APP_SECRET}&fb_exchange_token=${shortLivedToken}`,
+      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${FACEBOOK_APP_ID}&client_secret=${FACEBOOK_APP_SECRET}&fb_exchange_token=${shortLivedToken}`,
     )
 
     const longLivedData = await longLivedResponse.json()

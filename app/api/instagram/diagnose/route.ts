@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db/client'
 
-const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'
+const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'
+const INSTAGRAM_LOGIN_APP_ID = process.env.INSTAGRAM_LOGIN_APP_ID
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
 
 // Admin-only diagnostic endpoint — shows exactly what's configured and what's broken
@@ -17,13 +18,29 @@ export async function GET(request: NextRequest) {
   const checks: Record<string, { status: 'ok' | 'missing' | 'error'; detail: string }> = {}
 
   // 1. Check env vars
-  checks.INSTAGRAM_APP_ID = INSTAGRAM_APP_ID
-    ? { status: 'ok', detail: INSTAGRAM_APP_ID }
+  checks.INSTAGRAM_APP_ID = FACEBOOK_APP_ID
+    ? { status: 'ok', detail: FACEBOOK_APP_ID }
     : { status: 'missing', detail: 'Not set — using hardcoded fallback 1210263417166165' }
 
   checks.INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET
     ? { status: 'ok', detail: 'Set (hidden)' }
     : { status: 'missing', detail: 'CRITICAL: Not set in environment' }
+
+  checks.INSTAGRAM_LOGIN_APP_ID = INSTAGRAM_LOGIN_APP_ID
+    ? { status: 'ok', detail: INSTAGRAM_LOGIN_APP_ID }
+    : {
+        status: 'missing',
+        detail:
+          'Required for the preferred Instagram Login path. Set this to the App ID from Meta’s Instagram Login / Instagram API setup.',
+      }
+
+  checks.INSTAGRAM_LOGIN_APP_SECRET = process.env.INSTAGRAM_LOGIN_APP_SECRET
+    ? { status: 'ok', detail: 'Set (hidden)' }
+    : {
+        status: 'missing',
+        detail:
+          'Required for the preferred Instagram Login path. Set this to the secret for the same Instagram Login app.',
+      }
 
   checks.NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
     ? { status: 'ok', detail: process.env.NEXT_PUBLIC_SITE_URL }
@@ -81,15 +98,16 @@ export async function GET(request: NextRequest) {
   }
 
   // 5. Meta app URL for Sandra to verify settings
-  const metaAppUrl = `https://developers.facebook.com/apps/${INSTAGRAM_APP_ID}/settings/basic/`
-  const metaLoginUrl = `https://developers.facebook.com/apps/${INSTAGRAM_APP_ID}/fb-login/settings/`
+  const metaAppIdForLinks = INSTAGRAM_LOGIN_APP_ID || FACEBOOK_APP_ID
+  const metaAppUrl = `https://developers.facebook.com/apps/${metaAppIdForLinks}/settings/basic/`
+  const metaLoginUrl = `https://developers.facebook.com/apps/${metaAppIdForLinks}/use_cases/customize/`
 
   return NextResponse.json({
     summary: 'Instagram Integration Diagnostic',
     checks,
     action_required: {
       step1: `Go to Meta for Developers: ${metaAppUrl}`,
-      step2: `Add this EXACT URL to Valid OAuth Redirect URIs: ${metaLoginUrl}`,
+      step2: `Confirm the Instagram Login / Instagram API setup uses this App ID and add this EXACT callback URL where Meta asks for OAuth redirect URIs: ${metaLoginUrl}`,
       redirect_uri_to_add: REDIRECT_URI,
       step3: 'Reconnect from the SSELFIE admin Connect Instagram button. It now uses Instagram Login.',
       step4: 'If app is in Development Mode, add your Instagram account as a Tester in App Roles',

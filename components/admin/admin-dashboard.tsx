@@ -88,7 +88,7 @@ function InstagramConnect({ userId }: { userId: string }) {
       if (data.authUrl) {
         window.location.href = data.authUrl
       } else {
-        setError(data.error || 'Failed to generate auth URL')
+        setError(data.detail || data.error || 'Failed to generate auth URL')
         setLoading(false)
       }
     } catch {
