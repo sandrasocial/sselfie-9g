@@ -33,20 +33,33 @@ export async function GET(request: NextRequest) {
   checks.redirect_uri = { status: 'ok', detail: REDIRECT_URI }
   checks.redirect_uri_note = {
     status: 'ok',
-    detail: `This exact URL must be in Meta App → Facebook Login → Valid OAuth Redirect URIs`,
+    detail: `This exact URL must be in Meta App OAuth redirect settings for the selected login product`,
   }
 
   // 3. What scope the app requests
-  const scope = [
+  const facebookScope = [
     'pages_show_list',
     'pages_read_engagement',
     'instagram_basic',
     'business_management',
   ]
-  checks.requested_scope = { status: 'ok', detail: scope.join(', ') }
+  const instagramLoginScope = (
+    process.env.INSTAGRAM_LOGIN_SCOPES ||
+    [
+      'instagram_business_basic',
+      'instagram_business_manage_messages',
+      'instagram_business_manage_comments',
+      'instagram_business_manage_insights',
+      'instagram_business_content_publish',
+    ].join(', ')
+  )
+  checks.requested_scope = {
+    status: 'ok',
+    detail: `Instagram Login: ${instagramLoginScope}. Facebook Page fallback: ${facebookScope.join(', ')}`,
+  }
   checks.page_selection = {
     status: 'ok',
-    detail: 'OAuth callback checks all granted Facebook Pages and selects the Page with a linked Instagram Professional Account.',
+    detail: 'Preferred path is Instagram Login with IGAA tokens. Facebook Page selection remains as a legacy fallback.',
   }
 
   // 4. Check DB for existing connections
@@ -78,7 +91,7 @@ export async function GET(request: NextRequest) {
       step1: `Go to Meta for Developers: ${metaAppUrl}`,
       step2: `Add this EXACT URL to Valid OAuth Redirect URIs: ${metaLoginUrl}`,
       redirect_uri_to_add: REDIRECT_URI,
-      step3: 'Make sure your Instagram account is linked to a Facebook Page (Instagram → Settings → Accounts Centre)',
+      step3: 'Reconnect from the SSELFIE admin Connect Instagram button. It now uses Instagram Login.',
       step4: 'If app is in Development Mode, add your Instagram account as a Tester in App Roles',
     },
   })

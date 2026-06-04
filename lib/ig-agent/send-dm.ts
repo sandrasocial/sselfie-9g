@@ -1,23 +1,30 @@
 import { sql } from "@/lib/db/client"
+import { resolveInstagramConnectionMode } from "@/lib/instagram/connection-mode"
 
 export type SendIgDmResult =
   | { sent: true; messageId: string | null }
-  | { sent: false; reason: "auto_send_disabled" | "missing_connection" | "missing_page_token" | "graph_error"; error?: string }
+  | {
+      sent: false
+      reason: "auto_send_disabled" | "missing_connection" | "missing_messaging_token" | "missing_instagram_user_id" | "graph_error"
+      error?: string
+    }
 
 type ConnectionRow = {
   access_token: string | null
   page_access_token?: string | null
+  instagram_user_id?: string | null
+  account_type?: string | null
+  id?: number
 }
 
 /**
  * Sends Instagram DMs through Meta Graph API.
  *
- * Pre-build validation on 2026-05-28:
- * - Existing user token against /me/messages failed with GraphMethodException (#100).
- * - Page token against /me/messages reached the messaging API but failed with (#230)
- *   until pages_messaging is granted.
- * - Therefore this function is launch-gated by IG_AGENT_AUTO_SEND_ENABLED and requires
- *   page_access_token from instagram_connections after reconnecting with messaging scopes.
+ * Supports both connection models:
+ * - Instagram Login / IGAA token: graph.instagram.com/{ig-user-id}/messages
+ * - Legacy Facebook Page token: graph.facebook.com/me/messages
+ *
+ * The function is still launch-gated by IG_AGENT_AUTO_SEND_ENABLED.
  */
 export async function sendInstagramDm(params: {
   igUserId: string
@@ -50,7 +57,7 @@ export async function sendInstagramDm(params: {
   }
 
   const rows = await sql`
-    SELECT access_token, page_access_token
+    SELECT id, instagram_user_id, access_token, page_access_token, account_type
     FROM instagram_connections
     WHERE instagram_username = 'sandra.social'
       AND is_active = TRUE
@@ -61,10 +68,19 @@ export async function sendInstagramDm(params: {
 
   if (!connection) return { sent: false, reason: "missing_connection" }
 
-  const token = connection.page_access_token || connection.access_token
-  if (!token) return { sent: false, reason: "missing_page_token" }
+  const mode = resolveInstagramConnectionMode(connection)
+  const token = mode === "instagram_login" ? connection.access_token : connection.page_access_token || connection.access_token
+  if (!token) return { sent: false, reason: "missing_messaging_token" }
+  if (mode === "instagram_login" && !connection.instagram_user_id) {
+    return { sent: false, reason: "missing_instagram_user_id" }
+  }
 
-  const response = await fetch("https://graph.facebook.com/v21.0/me/messages", {
+  const endpoint =
+    mode === "instagram_login"
+      ? `https://graph.instagram.com/v21.0/${connection.instagram_user_id}/messages`
+      : "https://graph.facebook.com/v21.0/me/messages"
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -79,6 +95,14 @@ export async function sendInstagramDm(params: {
 
   if (!response.ok) {
     const error = payload?.error?.message || `Graph API failed with status ${response.status}`
+    await sql`
+      UPDATE instagram_connections
+      SET messaging_status = 'failed',
+          last_messaging_test_at = NOW(),
+          messaging_test_error = ${error},
+          updated_at = NOW()
+      WHERE id = ${connection.id || null}
+    `
     await sql`
       INSERT INTO ig_messages (
         conversation_id,
@@ -113,6 +137,14 @@ export async function sendInstagramDm(params: {
 
   const messageId = payload?.message_id || payload?.recipient_id || null
   await sql`
+    UPDATE instagram_connections
+    SET messaging_status = 'ok',
+        last_messaging_test_at = NOW(),
+        messaging_test_error = NULL,
+        updated_at = NOW()
+    WHERE id = ${connection.id || null}
+  `
+  await sql`
     INSERT INTO ig_messages (
       conversation_id,
       ig_message_id,
@@ -140,4 +172,3 @@ export async function sendInstagramDm(params: {
 
   return { sent: true, messageId }
 }
-

@@ -83,7 +83,7 @@ function InstagramConnect({ userId }: { userId: string }) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/instagram/connect?userId=${userId}`)
+      const res = await fetch(`/api/instagram/connect?userId=${userId}&provider=instagram`)
       const data = await res.json()
       if (data.authUrl) {
         window.location.href = data.authUrl
@@ -101,7 +101,7 @@ function InstagramConnect({ userId }: { userId: string }) {
     <div className="bg-white border border-stone-200 p-4 sm:p-6">
       <p className="text-xs text-stone-500 mb-1 tracking-[0.15em] uppercase">Connect Account</p>
       <p className="text-sm text-stone-600 mb-4">
-        Link your Instagram Business account via Facebook OAuth to enable Graph API access.
+        Link your Instagram Business account via Instagram Login to enable Graph API access.
       </p>
       {error && (
         <p className="text-xs text-red-600 mb-3">{error}</p>

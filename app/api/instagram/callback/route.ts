@@ -17,11 +17,89 @@ const PREFERRED_INSTAGRAM_USERNAMES = [
   "sselfie",
 ].filter(Boolean) as string[]
 
+function parseOAuthState(rawState?: string | null) {
+  const state = rawState?.trim()
+  if (!state) return { provider: "facebook_page" as const, userId: null }
+
+  if (state.startsWith("instagram_login:")) {
+    return {
+      provider: "instagram_login" as const,
+      userId: state.replace("instagram_login:", "").trim() || null,
+    }
+  }
+
+  return { provider: "facebook_page" as const, userId: state }
+}
+
+async function exchangeInstagramLoginCode(code: string) {
+  const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: INSTAGRAM_APP_ID,
+      client_secret: INSTAGRAM_APP_SECRET,
+      grant_type: "authorization_code",
+      redirect_uri: REDIRECT_URI,
+      code,
+    }),
+  })
+  const tokenData = await tokenResponse.json()
+
+  if (tokenData.error) {
+    throw new Error(tokenData.error_message || tokenData.error?.message || "Instagram Login token exchange failed")
+  }
+
+  const shortLivedToken = tokenData.access_token as string | undefined
+  if (!shortLivedToken) {
+    throw new Error("Instagram Login did not return an access token")
+  }
+
+  const longLivedUrl = new URL("https://graph.instagram.com/access_token")
+  longLivedUrl.searchParams.set("grant_type", "ig_exchange_token")
+  longLivedUrl.searchParams.set("client_secret", INSTAGRAM_APP_SECRET)
+  longLivedUrl.searchParams.set("access_token", shortLivedToken)
+
+  const longLivedResponse = await fetch(longLivedUrl.toString())
+  const longLivedData = await longLivedResponse.json()
+
+  if (longLivedData.error) {
+    throw new Error(longLivedData.error?.message || "Instagram Login long-lived token exchange failed")
+  }
+
+  const accessToken = (longLivedData.access_token || shortLivedToken) as string
+  const expiresIn = Number(longLivedData.expires_in) || 60 * 24 * 60 * 60
+
+  return {
+    accessToken,
+    expiresAt: new Date(Date.now() + expiresIn * 1000),
+    fallbackUserId: String(tokenData.user_id || ""),
+  }
+}
+
+async function fetchInstagramLoginProfile(accessToken: string, fallbackUserId?: string | null) {
+  const profileUrl = new URL("https://graph.instagram.com/v21.0/me")
+  profileUrl.searchParams.set("fields", "id,user_id,username,account_type")
+  profileUrl.searchParams.set("access_token", accessToken)
+
+  const profileResponse = await fetch(profileUrl.toString())
+  const profileData = await profileResponse.json()
+
+  if (profileData.error) {
+    throw new Error(profileData.error?.message || "Instagram Login profile fetch failed")
+  }
+
+  return {
+    id: String(profileData.user_id || profileData.id || fallbackUserId || ""),
+    username: String(profileData.username || ""),
+    accountType: String(profileData.account_type || "business").toLowerCase(),
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get("code")
-    const userId = searchParams.get("state")
+    const { provider, userId } = parseOAuthState(searchParams.get("state"))
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
 
@@ -29,6 +107,65 @@ export async function GET(request: NextRequest) {
       const metaError = new URL(request.url).searchParams.get("error_description") || "no_code_or_user"
       console.error("[Instagram Callback] Missing code or userId. Meta error:", metaError)
       return NextResponse.redirect(`${baseUrl}/admin?ig_error=auth_failed&detail=${encodeURIComponent(metaError)}`)
+    }
+
+    if (provider === "instagram_login") {
+      try {
+        console.log("[Instagram Callback] Exchanging Instagram Login code for token")
+        const token = await exchangeInstagramLoginCode(code)
+        const profile = await fetchInstagramLoginProfile(token.accessToken, token.fallbackUserId)
+
+        if (!profile.id || !profile.username) {
+          return NextResponse.redirect(`${baseUrl}/admin?ig_error=profile_fetch_failed&detail=Instagram+Login+did+not+return+an+account+id+and+username`)
+        }
+
+        await sql`
+          INSERT INTO instagram_connections (
+            user_id,
+            instagram_username,
+            instagram_user_id,
+            access_token,
+            page_id,
+            page_name,
+            page_access_token,
+            token_expires_at,
+            account_type,
+            messaging_status
+          )
+          VALUES (
+            ${userId},
+            ${profile.username},
+            ${profile.id},
+            ${token.accessToken},
+            NULL,
+            NULL,
+            NULL,
+            ${token.expiresAt.toISOString()},
+            ${"instagram_login"},
+            ${"needs_permission_test"}
+          )
+          ON CONFLICT (user_id, instagram_username)
+          DO UPDATE SET
+            instagram_user_id = ${profile.id},
+            access_token = ${token.accessToken},
+            page_id = NULL,
+            page_name = NULL,
+            page_access_token = NULL,
+            token_expires_at = ${token.expiresAt.toISOString()},
+            account_type = ${"instagram_login"},
+            messaging_status = ${"needs_permission_test"},
+            messaging_test_error = NULL,
+            is_active = true,
+            updated_at = NOW()
+        `
+
+        console.log("[Instagram Callback] Instagram Login connection saved for @", profile.username)
+
+        return NextResponse.redirect(`${baseUrl}/admin?ig_connected=${encodeURIComponent(profile.username)}&ig_provider=instagram_login`)
+      } catch (error) {
+        console.error("[Instagram Callback] Instagram Login flow failed:", error)
+        return NextResponse.redirect(`${baseUrl}/admin?ig_error=instagram_login_failed&detail=${encodeURIComponent(error instanceof Error ? error.message : String(error))}`)
+      }
     }
 
     console.log("[Instagram Callback] Exchanging code for token")

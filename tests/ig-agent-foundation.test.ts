@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import { isLikelyIcelandic } from "@/lib/ig-agent/icelandic-detector"
 import { triageIncomingMessage } from "@/lib/ig-agent/triage"
 import { verifyMetaSignature } from "@/lib/ig-agent/webhook-security"
+import { isInstagramLoginToken, resolveInstagramConnectionMode } from "@/lib/instagram/connection-mode"
 
 describe("IG agent foundation", () => {
   it("detects Icelandic names with accented and normalized surnames", () => {
@@ -46,5 +47,16 @@ describe("IG agent foundation", () => {
     expect(verifyMetaSignature({ body, appSecret, signature })).toBe(true)
     expect(verifyMetaSignature({ body, appSecret, signature: "sha256=bad" })).toBe(false)
   })
-})
 
+  it("detects Instagram Login IGAA tokens for the DM send path", () => {
+    expect(isInstagramLoginToken("IGAA_mock_token")).toBe(true)
+    expect(isInstagramLoginToken("EAAR_mock_token")).toBe(false)
+    expect(resolveInstagramConnectionMode({ access_token: "IGAA_mock_token" })).toBe("instagram_login")
+    expect(resolveInstagramConnectionMode({ access_token: "EAAR_mock_token", page_access_token: "page-token" })).toBe(
+      "facebook_page",
+    )
+    expect(resolveInstagramConnectionMode({ access_token: "not-prefixed", account_type: "instagram_login" })).toBe(
+      "instagram_login",
+    )
+  })
+})
