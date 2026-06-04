@@ -117,6 +117,14 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
     includedInEmailDrop: true,
     droppedAt: "2026-05-30",
   },
+  {
+    id: "quiet-luxury-london",
+    name: "Quiet Luxury London Editorial",
+    heroImage: "/images/ai-prompts/quiet-luxury-london-shot-3.jpg",
+    moodLine: "Camel tailoring. Black cab. An old-money London morning.",
+    includedInEmailDrop: false,
+    droppedAt: null,
+  },
 ]
 
 // ── Derived helpers ────────────────────────────────────────────────────────

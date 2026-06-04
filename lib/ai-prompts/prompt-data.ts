@@ -23,6 +23,364 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
+// COLLECTION 09 — Quiet Luxury London Editorial (9 shots)
+// ---------------------------------------------------------------------------
+
+export const QUIET_LUXURY_LONDON_SERIES: PromptCard[] = [
+  {
+    number: "89",
+    id: "quiet-luxury-london-shot-1",
+    title: "Quiet Luxury London · Café Arrival",
+    whenToUse: "Your opener. Full-body street style walking up to the café, coffee not in hand yet. Use for reel covers, carousel openers, or any caption about starting the day in your element.",
+    mood: "quiet luxury · london street · arriving · full body · camel tailoring",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
+    prompt: `Create image 1 of a 6-part quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: a quiet upscale London street outside a white-painted café with arched windows and black iron lanterns. Pale stone pavement, black-and-white woven bistro chairs and a small round marble table on the sidewalk, soft overcast morning light, muted neoclassical architecture behind.
+
+Outfit: oversized camel-taupe tailored blazer with strong shoulders and long relaxed sleeves, worn open over a fitted cream high-neck top. Matching high-waisted wide-leg tailored trousers in the same camel-taupe. Black pointed slingback heels with a low kitten heel. A small black quilted leather chain bag worn on one shoulder. Black rectangular sunglasses. Minimal gold jewelry: thin hoops, a fine necklace, a few slim rings.
+
+Hair: long soft waves with a clean middle part and natural movement through the lengths. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin finish, softly sculpted cheeks, natural brows, soft brown eye definition, warm nude satin lip. Polished and modern, not heavy glam.
+
+Accessories/props: black rectangular sunglasses, black quilted chain bag, minimal gold jewelry only. No phone, no coffee yet.
+
+Pose: walking along the pavement toward the café, one foot mid-step, blazer moving slightly with the motion, one hand resting near the bag strap, head turned softly toward the café windows, calm confident expression.
+
+Camera + lens: shot on Canon EOS R5 with a 35mm lens from a proper distance, full-body lifestyle framing, realistic proportions, no wide-angle distortion.
+
+Camera angle: waist-height street-style angle, pulled back enough to keep the full body natural and balanced.
+
+Composition: vertical 9:16 full-body movement shot, subject slightly off-center, café facade and bistro chairs visible behind her, pavement lines leading toward the entrance.
+
+Body proportion lock: keep full-body anatomy realistic. Natural head size, natural leg length, normal heel size, balanced torso, realistic hips and shoulders, natural walking posture. Avoid stretched legs, tiny head, warped feet, exaggerated runway proportions, wide-angle body distortion.
+
+Mood: arriving at the café, old-money London calm, quiet luxury, confident and effortless.
+
+Color grading: warm camel and cream tones, soft black accents, muted gray London pavement, gentle gold warmth on skin and jewelry, low-saturation quiet-luxury edit, subtle film grain, polished editorial contrast.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, coffee in hand, distorted hands, extra fingers, warped heels, stretched legs, tiny head, elongated torso, warped waist, plastic skin, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, blur, cluttered street background, random logos.`,
+  },
+  {
+    number: "90",
+    id: "quiet-luxury-london-shot-2",
+    title: "Quiet Luxury London · Coffee Run",
+    whenToUse: "The coffee-in-hand moment. Three-quarter body carrying the takeaway tray, mid-stride. Ideal for day-in-my-life content or any caption about moving through the city with ease.",
+    mood: "quiet luxury · coffee run · takeaway cups · three-quarter · lifestyle",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-2.jpg",
+    prompt: `Create image 2 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: just outside the white London café, pale stone pavement, black iron lanterns and arched windows behind, the marble bistro table and woven chairs softly out of focus, gentle overcast daylight.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, matching wide-leg trousers, black pointed slingback heels, small black quilted chain bag on one shoulder, black rectangular sunglasses, minimal gold jewelry.
+
+Hair: long soft waves with a clean middle part and natural movement. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, natural brows, soft brown eye definition, warm nude satin lip, polished daytime editorial finish.
+
+Accessories/props: one cardboard takeaway coffee tray holding two paper cups, held in one hand at waist height. Black quilted chain bag on the shoulder, black sunglasses, minimal gold jewelry. No phone.
+
+Pose: walking slowly away from the café counter holding the coffee tray in one hand, the other hand relaxed near the bag, body angled three-quarters, head turned slightly down toward the cups or off to the side, calm unbothered expression.
+
+Camera + lens: shot on Canon EOS R5 with a 50mm portrait lens, natural compression, realistic body proportions, no wide-angle distortion.
+
+Camera angle: eye-level lifestyle angle, slightly pulled back to show the outfit, the coffee tray, and the café context without stretching the body.
+
+Composition: vertical 9:16 three-quarter editorial shot, café facade softly blurred behind, subject framed slightly off-center, coffee tray clearly readable.
+
+Body proportion lock: preserve realistic standing and walking proportions. Natural head size, natural arm length, balanced shoulders, waist, hips, torso, hands, and feet. Avoid stretched legs, oversized hands, warped waist, tiny head, exaggerated model proportions.
+
+Mood: coffee run, chic everyday luxury, calm confidence, fashion-forward London morning.
+
+Color grading: warm camel and cream tones, soft black accents, kraft-brown coffee cups, muted gray pavement, gentle gold warmth, creamy highlights, subtle film grain, soft quiet-luxury editorial contrast.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, distorted hands, extra fingers, warped coffee cups, fake cup lids, spilled coffee, warped heels, stretched legs, tiny head, plastic skin, heavy glam makeup, cartoonish AI style, CGI, messy anatomy, blur, random logos.`,
+  },
+  {
+    number: "91",
+    id: "quiet-luxury-london-shot-3",
+    title: "Quiet Luxury London · Seated Marble Hero",
+    whenToUse: "The hero shot of the series. Seated at the marble bistro table, legs crossed, coffee resting, the heels and chain bag in full view. The centrepiece. Perfect as a single post or carousel cover.",
+    mood: "quiet luxury · seated hero · marble bistro table · crossed legs · fashion editorial",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-3.jpg",
+    prompt: `Create image 3 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: outside the white London café at a small round marble bistro table with black-and-white woven bistro chairs on pale stone pavement. Arched café windows and black lanterns softly behind, muted overcast morning light, quiet old-money street atmosphere.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, matching wide-leg trousers, black pointed slingback heels, small black quilted chain bag, black rectangular sunglasses, minimal gold jewelry.
+
+Hair: long soft waves with a clean middle part and natural movement through the lengths. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin finish, softly sculpted cheeks, natural brows, soft brown eye definition, warm nude satin lip.
+
+Accessories/props: one paper takeaway coffee cup or a small espresso cup on the marble table, black quilted chain bag resting on the table or hung over the chair back, minimal gold jewelry. No phone.
+
+Pose: seated on the woven bistro chair with one leg crossed over the other so the pointed slingback heel is visible, torso angled slightly, one hand resting on the knee or the table near the cup, chin softly lifted, face turned toward the street as if watching the morning, calm confident expression.
+
+Camera + lens: shot on Canon EOS R5 with a 50mm portrait lens, natural compression, realistic human proportions, no wide-angle distortion.
+
+Camera angle: eye-level seated angle, slightly pulled back to keep proportions natural and show the table, bag, and heels.
+
+Composition: vertical 9:16 medium-full seated editorial shot, marble table and woven chair clearly framed, subject slightly off-center, heels and bag included but not exaggerated.
+
+Body proportion lock: keep seated anatomy realistic. Natural head size, natural leg length, realistic knee bend, balanced shoulders, waist, hips, torso, hands, and feet. Avoid stretched legs, tiny head, elongated torso, oversized hands, warped waist, exaggerated fashion-model anatomy.
+
+Mood: main fashion hero moment, old-money London ease, confident, expensive, effortless quiet-luxury editorial.
+
+Color grading: warm camel and cream tones, soft black accents, creamy marble highlights, muted gray stone, gentle gold warmth, slightly desaturated quiet-luxury palette, soft contrast, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, random extra props, distorted hands, extra fingers, warped heels, warped coffee cup, stretched legs, tiny head, elongated torso, warped waist, wide-angle body distortion, plastic skin, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, cluttered table, random logos.`,
+  },
+  {
+    number: "92",
+    id: "quiet-luxury-london-shot-4",
+    title: "Quiet Luxury London · Sunglasses Beauty",
+    whenToUse: "A close-up candid while seated. Gold jewelry, sunglasses, completely at ease. Works beautifully for beauty, fragrance, or any caption about a quiet moment to yourself.",
+    mood: "quiet luxury · beauty close-up · gold jewelry · sunglasses · personal moment",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-4.jpg",
+    prompt: `Create image 4 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: seated near the café window or beside the glass exterior, soft reflections in the glass, marble table edge nearby, warm café lights and muted London street movement blurred behind.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, black rectangular sunglasses worn or lowered slightly down the nose, minimal gold jewelry: thin hoops, a fine necklace, slim rings.
+
+Hair: long soft waves with a clean middle part and face-framing pieces, natural movement around the face and shoulders. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, soft brown eye definition, natural brows, warm nude satin lip.
+
+Accessories/props: black rectangular sunglasses and minimal gold jewelry only. No phone, no extra props.
+
+Pose: candid seated beauty moment, one hand lightly adjusting the sunglasses or resting near the jaw, the other relaxed near the blazer lapel or collarbone, relaxed mouth, calm confident expression, eyes toward the camera or softly to the side.
+
+Camera + lens: shot on Sony A7R V with an 85mm portrait lens, shallow depth of field, sharp face detail, realistic facial proportions, soft background compression.
+
+Camera angle: eye-level close portrait angle, clean and straight, no face distortion.
+
+Composition: vertical 9:16 close-up to waist-up crop, face, sunglasses, gold jewelry, and blazer collar sharp, café glass reflection softly blurred behind, clean side space for text overlay.
+
+Body proportion lock: keep facial structure, neck length, shoulder width, hand size, and finger length realistic. Avoid changed face, stretched neck, oversized fingers, warped sunglasses, distorted lips.
+
+Mood: candid personal moment, polished, feminine, quiet-luxury London beauty, caught-between-moments energy.
+
+Color grading: warm camel and cream tones, soft natural skin, muted nude lip, gentle gold warmth on the jewelry, cool gray glass reflections, soft café bokeh, gentle contrast, subtle film grain, luxury editorial finish.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, warped sunglasses, distorted fingers, extra fingers, changed face, plastic skin, over-smoothed beauty filter, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, blur, compression haze.`,
+  },
+  {
+    number: "93",
+    id: "quiet-luxury-london-shot-5",
+    title: "Quiet Luxury London · Detail Cutaway",
+    whenToUse: "The atmospheric detail shot. Chain bag on the woven chair, takeaway coffees, pointed heels on marble, gold rings. No full face needed. Use as a carousel filler or a standalone mood image that grounds the whole editorial.",
+    mood: "quiet luxury · detail shot · chain bag · heels · coffee · cutaway",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-5.jpg",
+    prompt: `Create image 5 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos only as identity reference if any part of the person is visible. Preserve natural skin tone, realistic hand shape, and natural texture from the reference photos.
+
+Scene: close-up detail at the outdoor London café, round marble table with two kraft-brown takeaway coffee cups in a cardboard tray, black-and-white woven bistro chair edge, a small black quilted leather chain bag resting on the chair seat, pale stone pavement below, soft café window reflection blurred behind.
+
+Outfit: camel-taupe blazer sleeve draping naturally into the frame, black pointed slingback heels visible on the marble or pavement, minimal gold rings.
+
+Hair: no full face needed.
+
+Makeup: no full face needed.
+
+Accessories/props: black quilted chain bag with gold-tone chain strap, two kraft-brown takeaway coffee cups in a cardboard tray, minimal gold rings, black pointed slingback heels. No phone.
+
+Pose: no full face needed. One hand with minimal gold rings resting near the marble table or the bag, blazer sleeve draped naturally, the chain bag and heels readable in the frame.
+
+Camera + lens: shot on Sony A7R V with a 70mm macro-style lens, shallow depth of field, crisp texture detail, realistic hands, leather, gold chain, coffee cups, marble, and heel leather.
+
+Camera angle: close-up detail angle from slightly above table or knee height, natural perspective, no hand, bag, cup, or heel distortion.
+
+Composition: vertical 9:16 detail shot, chain bag, gold chain, coffee cups, blazer sleeve, marble, and heel texture sharp, background softly blurred.
+
+Body proportion lock: keep hand, wrist, and any visible limb scale realistic. Normal finger length, natural knuckles, no extra fingers, no warped wrist, no plastic skin.
+
+Mood: quiet-luxury London detail, café cutaway, polished Pinterest carousel image.
+
+Color grading: creamy marble, kraft-brown coffee cups, soft black quilted leather, muted gold chain and rings, warm camel blazer, gray stone, cool glass reflections, soft low-saturation quiet-luxury finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, distorted hands, extra fingers, warped coffee cups, fake tray shape, warped quilted pattern, melted leather, warped heel shape, random logos, fake brand marks, plastic skin, blur, cluttered table.`,
+  },
+  {
+    number: "94",
+    id: "quiet-luxury-london-shot-6",
+    title: "Quiet Luxury London · Reel Cover Exit",
+    whenToUse: "The exit shot. Full body walking away down the London street, coffee in hand, head turned back over the shoulder, phone box and black cab behind. The perfect reel cover, reel thumbnail, or closing carousel image.",
+    mood: "quiet luxury · reel cover · leaving · london street · head turn · full body exit",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-6.jpg",
+    prompt: `Create image 6 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: a quiet London street after the coffee stop, neoclassical stone building facade behind, a black London cab parked at the curb and a dark phone box softly out of focus, pale stone pavement, gentle overcast daylight, calm city atmosphere.
+
+Outfit: oversized camel-taupe tailored blazer with relaxed long sleeves over a fitted cream high-neck top, matching wide-leg trousers, black pointed slingback heels, small black quilted chain bag on one shoulder, black rectangular sunglasses, minimal gold jewelry.
+
+Hair: long loose waves moving naturally as she turns, smooth at the roots with relaxed face-framing layers. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: polished natural editorial makeup with blurred skin, softly sculpted cheeks, soft brown eye definition, warm nude satin lip.
+
+Accessories/props: one kraft-brown takeaway coffee cup held naturally in one hand, black quilted chain bag on the shoulder, black sunglasses, minimal gold jewelry. No phone.
+
+Pose: walking away down the pavement, body angled three-quarters away, head turned back over the shoulder toward the camera, blazer and hair moving slightly, coffee cup held naturally, confident relaxed expression.
+
+Camera + lens: shot on Canon EOS R5 with a 35mm lens from a proper distance, full-body lifestyle framing, natural proportions, no wide-angle distortion.
+
+Camera angle: waist-height angle, pulled back enough to keep the body balanced and realistic.
+
+Composition: vertical 9:16 full-body reel-cover shot with clean space at the top or side for text overlay, London street and stone facade behind, movement visible in the blazer and hair.
+
+Body proportion lock: preserve natural full-body proportions. Normal leg length, natural heel size, balanced torso, normal head size, realistic hips and shoulders. Avoid stretched legs, tiny head, warped feet, oversized hands, exaggerated runway body.
+
+Mood: leaving-the-café candid, cool, effortless, old-money London street style, strong quiet-luxury reel cover energy.
+
+Color grading: warm camel and cream tones, soft black accents, muted gray London street, warm coffee-cup highlight, gentle gold warmth, soft city shadows, slightly desaturated quiet-luxury editorial finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, stiff walking pose, distorted feet, extra toes, unrealistic body proportions, stretched legs, tiny head, oversized coffee cup, warped cup lid, warped heels, plastic skin, over-smoothed beauty filter, cartoonish AI style, CGI, messy anatomy, blur, cluttered background, random logos.`,
+  },
+  {
+    number: "95",
+    id: "quiet-luxury-london-shot-7",
+    title: "Quiet Luxury London · Grand Entrance",
+    whenToUse: "The architecture beat. Pulled back at the entrance of a grand London building, the facade celebrated around you. Use for establishing shots, location reveals, or any caption about the city itself.",
+    mood: "quiet luxury · london architecture · grand facade · establishing · full body",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-7.jpg",
+    prompt: `Create image 7 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: the grand entrance of an elegant London building, a white-painted or pale stone neoclassical facade with a tall arched doorway, black iron lanterns, fluted columns or carved cornices, polished black door framing. Warm interior light glows softly through the glass behind the door. Pale stone steps and pavement, gentle overcast daylight, quiet old-money street.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, matching wide-leg trousers, black pointed slingback heels, small black quilted chain bag on one shoulder, black rectangular sunglasses, minimal gold jewelry.
+
+Hair: long soft waves with a clean middle part and natural movement. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin finish, softly sculpted cheeks, natural brows, soft brown eye definition, warm nude satin lip.
+
+Accessories/props: black quilted chain bag, black sunglasses, minimal gold jewelry only. No phone, no coffee.
+
+Pose: standing at the foot of the steps or just inside the arched doorway, body angled toward the architecture, one hand resting near the bag strap, head turned slightly up or to the side, calm composed expression. She is a smaller figure within the grand facade, not filling the frame.
+
+Camera + lens: shot on Canon EOS R5 with a 35mm lens from a proper distance, architectural framing that keeps both the building and the full body natural, no wide-angle distortion.
+
+Camera angle: eye-level to slightly low angle to let the building rise above her, pulled well back.
+
+Composition: vertical 9:16 establishing shot, the grand facade and arched doorway dominant, subject positioned off-center within the architecture, strong vertical building lines.
+
+Body proportion lock: keep full-body anatomy realistic at a distance. Natural head size, natural leg length, balanced torso, realistic hips and shoulders, normal heel size. Avoid stretched legs, tiny head, warped feet, exaggerated proportions.
+
+Mood: arriving somewhere expensive, old-money London, quiet luxury, architectural and calm.
+
+Color grading: warm camel and cream tones, soft black door and iron accents, pale stone facade, muted gray London light, warm glow from the interior windows, gentle gold warmth, low-saturation quiet-luxury edit, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, sharp architectural detail, no blur, no low-resolution softness, no compression haze.
+
+Avoid: phone, distorted hands, extra fingers, warped heels, warped architecture, melted columns, crooked building lines, stretched legs, tiny head, plastic skin, heavy glam makeup, cartoonish AI style, CGI, fantasy lighting, blur, random logos, fake signage text.`,
+  },
+  {
+    number: "96",
+    id: "quiet-luxury-london-shot-8",
+    title: "Quiet Luxury London · Checking Phone",
+    whenToUse: "The candid pause. Stopped on the pavement checking your phone, coffee in the other hand. Founder-on-the-go energy. Works for productivity captions, day-in-my-life content, or any honest in-between moment.",
+    mood: "quiet luxury · checking phone · candid pause · coffee · real moment",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-8.jpg",
+    prompt: `Create image 8 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: paused on a quiet London pavement beside a pale stone building, soft reflections in a shop window behind, black iron railings, muted overcast morning light, calm street atmosphere.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, matching wide-leg trousers, black pointed slingback heels, small black quilted chain bag on one shoulder, black rectangular sunglasses worn or pushed up on the head, minimal gold jewelry.
+
+Hair: long soft waves with a clean middle part and natural movement. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, natural brows, soft brown eye definition, warm nude satin lip.
+
+Accessories/props: an Apple iPhone Pro Max held in one hand, checked naturally, and one kraft-brown takeaway coffee cup in the other hand. Black quilted chain bag on the shoulder, minimal gold jewelry.
+
+Pose: standing still on the pavement, body angled three-quarters, head tilted slightly down toward the phone screen in one hand, the coffee cup held low in the other hand, shoulders relaxed, calm focused expression, a real caught-mid-day pause.
+
+Camera + lens: shot on Canon EOS R5 with a 50mm portrait lens, natural compression, realistic body proportions, no wide-angle distortion.
+
+Camera angle: eye-level street angle, slightly pulled back to show the outfit, phone, coffee, and quiet street context.
+
+Composition: vertical 9:16 three-quarter editorial shot, subject slightly off-center, soft street and window reflections behind, phone and coffee clearly readable.
+
+Body proportion lock: keep standing proportions realistic. Natural head size, natural arm length, balanced shoulders, waist, hips, torso, hands, and feet. Avoid stretched legs, oversized hands, warped phone, tiny head, exaggerated proportions.
+
+Mood: founder-on-the-go, quiet-luxury London morning, calm focus, real in-between moment, candid and effortless.
+
+Color grading: warm camel and cream tones, soft black accents, kraft-brown coffee cup, muted gray London street, gentle gold warmth, soft reflections, low-saturation quiet-luxury finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze.
+
+Avoid: distorted hands, extra fingers, warped phone, fake Apple logo, warped coffee cup, warped heels, stretched legs, tiny head, plastic skin, heavy glam makeup, cartoonish AI style, CGI, blur, cluttered street, random logos, readable text on the phone screen.`,
+  },
+  {
+    number: "97",
+    id: "quiet-luxury-london-shot-9",
+    title: "Quiet Luxury London · Through the Cab Window",
+    whenToUse: "The cinematic closer. Seen from outside through the window of a black London cab, soft glass reflections over you inside. The most editorial frame in the set. Use as a standalone art-direction post or the final carousel slide.",
+    mood: "quiet luxury · black cab · through glass · cinematic · series closer",
+    exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-9.jpg",
+    prompt: `Create image 9 of the same quiet luxury London editorial photoshoot.
+
+Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos.
+
+Scene: a classic black London cab parked or pausing at the curb, photographed from outside on the pavement, looking in through the rear side window. The window glass carries soft reflections of the pale stone London street and overcast sky. Inside, the dark cab interior is dim and warm. She is seated in the back.
+
+Outfit: oversized camel-taupe tailored blazer over a fitted cream high-neck top, small black quilted chain bag on her lap, minimal gold jewelry, black rectangular sunglasses worn or held.
+
+Hair: long soft waves with a clean middle part falling around the face. Keep the person's natural hair color from the uploaded reference photos.
+
+Makeup: blurred natural skin, softly sculpted cheeks, soft brown eye definition, natural brows, warm nude satin lip.
+
+Accessories/props: black quilted chain bag on the lap, minimal gold jewelry, black sunglasses. No phone.
+
+Pose: seated in the back of the cab, body turned slightly toward the window, face in three-quarter view looking out or softly down, one hand resting on the bag or near the window edge, calm reflective expression. Part of her is veiled by the soft reflections on the glass.
+
+Camera + lens: shot on Sony A7R V with an 85mm portrait lens from outside the cab, shooting through the window glass, shallow depth of field, sharp face inside the glass, soft reflective layer on the surface.
+
+Camera angle: eye-level to the window from the pavement, straight into the glass, natural perspective, no face distortion.
+
+Composition: vertical 9:16 cinematic crop, the cab window framing her, street reflections layered over the glass, her face and figure readable inside the dim interior, off-center.
+
+Body proportion lock: keep seated anatomy and facial structure realistic through the glass. Natural head size, neck length, shoulder width, hand size. Avoid changed face, doubled-face reflection errors, stretched neck, oversized fingers, warped window frame.
+
+Mood: leaving the city quietly, reflective, expensive, cinematic, the soft private end of a London morning.
+
+Color grading: warm camel and cream tones inside, soft black cab interior, cool gray-silver reflections on the glass, muted London street tones in the reflection, gentle gold warmth on skin and jewelry, low-saturation cinematic finish, subtle film grain.
+
+Image quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp face detail through the glass, realistic glass reflection, no blur on the main subject, no low-resolution softness, no compression haze.
+
+Avoid: distorted reflection, doubled or warped face, fake-looking glass, warped window frame, distorted hands, extra fingers, plastic skin, over-smoothed beauty filter, cartoonish AI style, CGI, fantasy lighting, blur, random logos, fake signage text.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
 // COLLECTION 08 — NOIR FEMME Editorial (9 shots)
 // ---------------------------------------------------------------------------
 
@@ -1878,6 +2236,22 @@ export type VaultCollectionMeta = {
 
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
+    previewCardId: "quiet-luxury-london-shot-1",
+    name: "Quiet Luxury London Editorial",
+    shotCount: 9,
+    thumbnails: [
+      "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-2.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-3.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-4.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-5.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-6.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-7.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-8.jpg",
+      "/images/ai-prompts/quiet-luxury-london-shot-9.jpg",
+    ],
+  },
+  {
     previewCardId: "noir-femme-shot-1",
     name: "NOIR FEMME Editorial",
     shotCount: 9,
@@ -2022,6 +2396,7 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
+  ...(QUIET_LUXURY_LONDON_SERIES.length > 0  ? [QUIET_LUXURY_LONDON_SERIES[0]]  : []),
   ...(NOIR_FEMME_SERIES.length > 0           ? [NOIR_FEMME_SERIES[0]]           : []),
   ...(CLEAN_GIRL_MORNING_SERIES.length > 0   ? [CLEAN_GIRL_MORNING_SERIES[0]]   : []),
   ...(DARK_FEMININE_CAFE_SERIES.length > 0 ? [DARK_FEMININE_CAFE_SERIES[0]] : []),

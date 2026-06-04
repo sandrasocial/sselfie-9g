@@ -10,6 +10,7 @@ import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
+  QUIET_LUXURY_LONDON_SERIES,
   NOIR_FEMME_SERIES,
   CLEAN_GIRL_MORNING_SERIES,
   DARK_FEMININE_CAFE_SERIES,
@@ -28,6 +29,13 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 // ── Collection data ─────────────────────────────────────────────────────────
 
 const COLLECTION_OVERVIEW = [
+  {
+    eyebrow: "COLLECTION 09",
+    title: "Quiet Luxury London",
+    note: "Camel tailoring, black cab, takeaway coffee. An old-money London morning, start to finish.",
+    image: QUIET_LUXURY_LONDON_SERIES[0]?.exampleImage,
+    href: "#quiet-luxury-london",
+  },
   {
     eyebrow: "COLLECTION 08",
     title: "Noir Femme",
@@ -94,6 +102,14 @@ const VAULT_COLLECTIONS: Array<{
   heroImage?: string
   cards: PromptCard[]
 }> = [
+  {
+    id: "quiet-luxury-london",
+    eyebrow: "COLLECTION 09 · QUIET LUXURY LONDON EDITORIAL",
+    title: "Quiet Luxury London Editorial",
+    note: "Camel tailoring, black quilted bag, pointed slingbacks, takeaway coffee on a London morning. Nine shots from café arrival through the seated marble hero to the cinematic black-cab closer.",
+    heroImage: QUIET_LUXURY_LONDON_SERIES[0]?.exampleImage,
+    cards: QUIET_LUXURY_LONDON_SERIES,
+  },
   {
     id: "noir-femme",
     eyebrow: "COLLECTION 08 · NOIR FEMME EDITORIAL",
