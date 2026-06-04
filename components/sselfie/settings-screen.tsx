@@ -25,6 +25,7 @@ import {
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
+import { getAccessLabel } from "@/lib/customer-access-labels"
 
 interface SettingsScreenProps {
   onBack?: () => void // Made onBack optional since it's not always provided
@@ -306,12 +307,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     }
   }
 
-  const displayMembership =
-    userInfo?.product_type === "sselfie_studio_membership"
-      ? "Studio Member"
-      : userInfo?.product_type === "one_time_session"
-        ? "One-Time Session"
-        : "Free"
+  const displayMembership = getAccessLabel(userInfo?.product_type)
 
   const settingsCardClass =
     "rounded-[22px] border border-white/10 bg-[rgba(25,23,21,0.82)] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6 md:p-8"
@@ -608,7 +604,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               <div className="flex items-center gap-3 py-3">
                 <CreditCard size={16} className="text-white/55" />
                 <div>
-                  <p className="text-xs text-white/55 uppercase tracking-wider">Membership</p>
+                  <p className="text-xs text-white/55 uppercase tracking-wider">Access</p>
                   <p className="text-sm font-medium uppercase text-[color:var(--color-porcelain)]">{displayMembership}</p>
                 </div>
               </div>
@@ -676,13 +672,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <InfoPill
                 label="Current plan"
-                value={
-                  userInfo.product_type === "sselfie_studio_membership"
-                    ? "Studio Membership"
-                    : userInfo.product_type === "one_time_session"
-                      ? "One-Time Session"
-                      : "Free"
-                }
+                value={getAccessLabel(userInfo.product_type)}
               />
               <InfoPill
                 label="Upgrade to"
