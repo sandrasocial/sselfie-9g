@@ -24,9 +24,9 @@ describe("selfie guide paid funnel", () => {
     expect(product?.priceInCents).toBe(1700)
     expect(product?.features).toEqual(
       expect.arrayContaining([
+        "First-photo checklist",
         "Interactive checklists for every step",
         "7-Day Selfie Challenge",
-        "Lightroom preset pack bonus",
       ]),
     )
   })
@@ -92,5 +92,27 @@ describe("selfie guide paid funnel", () => {
     expect(stripeActionContents).not.toContain("assertStripePriceConfigForProduct")
     expect(stripeActionContents).not.toContain("stripe.prices.retrieve(")
     expect(stripeActionContents).not.toContain("await assertStripePricingConfig()")
+  })
+
+  it("preserves free guide token context into Starter Kit checkout", () => {
+    const guideExperienceContents = fs.readFileSync(
+      path.join(ROOT, "components/freebie/selfie-guide-experience.tsx"),
+      "utf8",
+    )
+    const starterKitCheckoutContents = fs.readFileSync(path.join(ROOT, "app/checkout/starter-kit/page.tsx"), "utf8")
+
+    expect(guideExperienceContents).toContain("freebie_token")
+    expect(guideExperienceContents).toContain("withGuideStarterKitAttribution(href || \"#\", token)")
+    expect(starterKitCheckoutContents).toContain("getEmailFromFreebieToken")
+    expect(starterKitCheckoutContents).toContain("params.freebie_token")
+  })
+
+  it("uses Stripe idempotency for known-email one-time checkout sessions", () => {
+    const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
+
+    expect(landingActionContents).toContain("buildCheckoutSessionIdempotencyKey")
+    expect(landingActionContents).toContain("stripe.checkout.sessions.create(sessionConfig, stripeRequestOptions)")
+    expect(landingActionContents).toContain("starter_kit")
+    expect(landingActionContents).toContain("prompt_vault")
   })
 })

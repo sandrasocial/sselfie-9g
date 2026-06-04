@@ -1,6 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
+import { createHash } from "crypto"
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
@@ -17,6 +18,41 @@ import {
 type LandingCheckoutOptions = {
   bonusCredits?: number
 } & CheckoutAttributionInput
+
+const IDEMPOTENT_ONE_TIME_PRODUCT_TYPES = new Set([
+  "selfie_guide",
+  "selfie_guide_bundle",
+  "starter_kit",
+  "masterclass",
+  "brand_strategy_pack",
+  "prompt_vault",
+  "selfie_to_brand_shoot_system",
+])
+
+function buildCheckoutSessionIdempotencyKey(input: {
+  productType: string
+  stripePriceId: string
+  customerEmail?: string | null
+  promoCode?: string | null
+}) {
+  const email = input.customerEmail?.trim().toLowerCase()
+  if (!email || !IDEMPOTENT_ONE_TIME_PRODUCT_TYPES.has(input.productType)) {
+    return null
+  }
+
+  const fifteenMinuteBucket = Math.floor(Date.now() / (15 * 60 * 1000))
+  const rawKey = [
+    "landing_checkout",
+    input.productType,
+    input.stripePriceId,
+    email,
+    input.promoCode?.trim().toUpperCase() || "no_promo",
+    fifteenMinuteBucket,
+  ].join(":")
+  const digest = createHash("sha256").update(rawKey).digest("hex").slice(0, 32)
+
+  return `sselfie_checkout_${input.productType}_${digest}`
+}
 
 export async function createLandingCheckoutSession(
   productId: string,
@@ -205,7 +241,16 @@ export async function createLandingCheckoutSession(
   }
 
   try {
-    const session = await stripe.checkout.sessions.create(sessionConfig)
+    const idempotencyKey = isSubscription
+      ? null
+      : buildCheckoutSessionIdempotencyKey({
+          productType: product.type,
+          stripePriceId,
+          customerEmail,
+          promoCode,
+        })
+    const stripeRequestOptions: Stripe.RequestOptions = idempotencyKey ? { idempotencyKey } : {}
+    const session = await stripe.checkout.sessions.create(sessionConfig, stripeRequestOptions)
     console.log("[landing-checkout] Checkout session created successfully:", session.id)
     console.log("[landing-checkout] Client secret generated:", !!session.client_secret)
     await upsertCheckoutAttribution({

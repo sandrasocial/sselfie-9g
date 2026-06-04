@@ -89,6 +89,21 @@ const CHECKOUT_COPY: Record<
   },
 }
 
+const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
+  starter_kit: [
+    "Instant access after payment",
+    "One-time $37 purchase",
+    "No subscription or credit plan",
+    "Email delivery plus Academy access",
+  ],
+  prompt_vault: [
+    "Instant Vault access after payment",
+    "One-time $27 purchase",
+    "No subscription or credit plan",
+    "Use the prompts in ChatGPT with your own selfie",
+  ],
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -107,6 +122,7 @@ function CheckoutContent() {
     blurb: "Your payment is encrypted and protected with Stripe.",
     footer: "Cancel anytime. 30-day refund if you're not happy.",
   }
+  const confidencePoints = CHECKOUT_CONFIDENCE_POINTS[productType] ?? []
 
   useEffect(() => {
     const secret = searchParams.get("client_secret")
@@ -323,6 +339,28 @@ function CheckoutContent() {
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
                 Presets, setup guide, posing guide, caption templates, and the 7-day content starter are delivered right away.
               </p>
+            </div>
+          )}
+          {isPromptVault && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                What happens after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Your access link opens the full Vault right away so you can copy the complete shoot prompts and use them in ChatGPT with your own selfie.
+              </p>
+            </div>
+          )}
+          {confidencePoints.length > 0 && (
+            <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
+              {confidencePoints.map((point) => (
+                <div
+                  key={point}
+                  className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"
+                >
+                  {point}
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -32,7 +32,7 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 })
 
-function withGuideStarterKitAttribution(destination: string) {
+function withGuideStarterKitAttribution(destination: string, token?: string) {
   if (destination !== "/starter-kit" && destination !== "/checkout/starter-kit") {
     return destination
   }
@@ -44,6 +44,10 @@ function withGuideStarterKitAttribution(destination: string) {
     guide_cta: "starter_kit",
     source: "selfie_guide_access",
   })
+  const cleanToken = token?.trim()
+  if (cleanToken) {
+    params.set("freebie_token", cleanToken)
+  }
 
   return `${destination}?${params.toString()}`
 }
@@ -1033,7 +1037,7 @@ export default function SelfieGuideExperience({
       hr: () => <hr className="prose-hr" />,
       a: ({ href, children }) => (
         <a
-          href={withGuideStarterKitAttribution(href || "#")}
+          href={withGuideStarterKitAttribution(href || "#", token)}
           className="prose-link"
           onClick={() => {
             const destination = href || "#"
@@ -1104,7 +1108,7 @@ export default function SelfieGuideExperience({
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
               <Link
-                href={withGuideStarterKitAttribution("/starter-kit")}
+                href={withGuideStarterKitAttribution("/starter-kit", token)}
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
@@ -1390,7 +1394,7 @@ export default function SelfieGuideExperience({
             <p className="sg-funnel-price">$37 · One time.</p>
             <div className="sg-funnel-ctas">
               <Link
-                href={withGuideStarterKitAttribution("/starter-kit")}
+                href={withGuideStarterKitAttribution("/starter-kit", token)}
                 className="sg-cta-primary"
                 onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
               >
