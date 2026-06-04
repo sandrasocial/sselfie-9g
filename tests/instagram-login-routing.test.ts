@@ -19,6 +19,9 @@ describe("Instagram Login routing", () => {
     expect(connectRoute).toContain("instagram_business_manage_messages")
     expect(connectRoute).toContain("instagram_business_manage_comments")
     expect(connectRoute).toContain("instagram_business_manage_insights")
+    expect(connectRoute).toContain("'pages_messaging'")
+    expect(connectRoute).toContain("'instagram_manage_messages'")
+    expect(connectRoute).toContain("'instagram_manage_comments'")
   })
 
   it("stores Instagram Login tokens without requiring Facebook Page tokens", () => {
