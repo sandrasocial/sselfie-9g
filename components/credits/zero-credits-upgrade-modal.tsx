@@ -9,11 +9,12 @@ import useSWR from "swr"
 interface ZeroCreditsUpgradeModalProps {
   credits: number
   onClose?: () => void
+  suppress?: boolean
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgradeModalProps) {
+export function ZeroCreditsUpgradeModal({ credits, onClose, suppress = false }: ZeroCreditsUpgradeModalProps) {
   const [showModal, setShowModal] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -30,6 +31,11 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const isFreeUser = entitlementType === "free"
 
   useEffect(() => {
+    if (suppress) {
+      setShowModal(false)
+      return
+    }
+
     // Show for paid users AND free users when credits reach 0.
     // Free users reaching 0 credits are at peak upgrade intent — catch them here.
     const isKnownUser = isPaidUser || isFreeUser
@@ -48,7 +54,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
       setShowModal(false)
       setDismissed(false)
     }
-  }, [credits, dismissed, showModal, isPaidUser, isFreeUser])
+  }, [credits, dismissed, showModal, isPaidUser, isFreeUser, suppress])
 
   const handleUpgrade = async () => {
     try {
@@ -83,13 +89,13 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(13,12,11,0.90)] backdrop-blur-sm p-4 animate-fade-in">
           <div className="relative w-full max-w-sm bg-[rgba(28,27,25,0.97)] border border-[rgba(195,190,182,0.25)] backdrop-blur-[70px] rounded-2xl p-6 sm:p-8">
             <h2 className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl tracking-[0.2em] uppercase text-[#f0ede8] text-center mb-3">
-              You&apos;ve been creating.
+              You&apos;re at 0 credits.
             </h2>
 
             <p className="text-center text-[#8a8780] font-['Inter'] text-sm mb-6">
-              You&apos;ve used every credit — that means you&apos;ve been showing up. Keep the momentum going.
+              Your guides, courses, and Vault purchases are still yours. Studio image generation uses credits, so add a credit pack or join Studio when you want to create images inside SSELFIE.
               <br /><br />
-              Studio gives you 200 credits a month — that&apos;s 100 brand photos, consistently, without having to think about it. Or top up now with a one-time pack if you want to keep it flexible.
+              Studio includes 200 credits a month. A one-time credit pack is there if you want to keep it flexible.
             </p>
 
             <div className="space-y-3 mb-8">
@@ -122,7 +128,6 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
     </>
   )
 }
-
 
 
 

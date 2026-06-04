@@ -564,6 +564,16 @@ export default function SselfieApp({
   const isPaidBlueprintUserForAccess =
     (access.isPaidBlueprintOnly || blueprintEntitlementType === "paid") && !access.isMember
   const isOneTimeSession = productType === "one_time_session"
+  const isOneTimeAcademyProductBuyer = [
+    "starter_kit",
+    "prompt_vault",
+    "selfie_to_brand_shoot_system",
+    "selfie_guide",
+    "selfie_guide_bundle",
+    "masterclass",
+    "editing_masterclass",
+    "brand_strategy_pack",
+  ].includes(productType || "")
   const hasAcademyPurchases = ownedProducts.length > 0
   const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
@@ -1552,9 +1562,19 @@ export default function SselfieApp({
                       hubVideoId={hubVideoIdFromSearchParams}
                     />
                   )}
-                  {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
+                  {activeTab === "feed-planner" && (
+                    lockedTabIds.includes("feed-planner") ? (
+                      <UpgradeOrCredits
+                        feature="Planner"
+                        isPaidBlueprintUser={isPaidBlueprintUserForAccess}
+                        requiresMembership={true}
+                      />
+                    ) : (
+                      <FeedPlannerClient userId={userId.toString()} userName={userName} />
+                    )
+                  )}
                   {activeTab === "academy" && (
-                    (!access.canUseGenerators || academyBlocked) ? (
+                    academyBlocked ? (
                       <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
                     ) : (
                       <AcademyScreen />
@@ -1589,7 +1609,10 @@ export default function SselfieApp({
           - FreeModeUpsellModal: Only for free users in feed planner when 2+ credits used (handled in feed-single-placeholder.tsx)
           These modals have built-in detection to prevent conflicts */}
       <LowCreditModal credits={creditBalance} threshold={30} />
-      <ZeroCreditsUpgradeModal credits={creditBalance} />
+      <ZeroCreditsUpgradeModal
+        credits={creditBalance}
+        suppress={!myProductsData || isAcademyOnlyUser || isOneTimeAcademyProductBuyer}
+      />
 
       {/* Post-purchase welcome modal: shown once after any paid checkout */}
       {pendingWelcomeProduct && !pendingWelcomeDismissed && (
