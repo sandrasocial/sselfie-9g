@@ -79,12 +79,11 @@ function InstagramConnect({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleConnect(provider: 'instagram' | 'facebook_page') {
+  async function handleConnect() {
     setLoading(true)
     setError(null)
     try {
-      const providerParam = provider === 'instagram' ? '&provider=instagram' : ''
-      const res = await fetch(`/api/instagram/connect?userId=${userId}${providerParam}`)
+      const res = await fetch(`/api/instagram/connect?userId=${userId}`)
       const data = await res.json()
       if (data.authUrl) {
         window.location.href = data.authUrl
@@ -102,30 +101,21 @@ function InstagramConnect({ userId }: { userId: string }) {
     <div className="bg-white border border-stone-200 p-4 sm:p-6">
       <p className="text-xs text-stone-500 mb-1 tracking-[0.15em] uppercase">Connect Account</p>
       <p className="text-sm text-stone-600 mb-4">
-        Link your Instagram Business account via Instagram Login to enable Graph API access.
+        Link your Instagram Business account through the Facebook Page connection that already works with this Meta app.
       </p>
       <p className="text-xs text-stone-500 mb-4 leading-relaxed">
-        If Meta shows “Invalid platform app,” use the Facebook Page fallback while the Instagram Login app id is corrected in Meta.
+        Instagram Login is paused until Meta has a dedicated Instagram platform app id. This button uses the stable fallback path.
       </p>
       {error && (
         <p className="text-xs text-red-600 mb-3">{error}</p>
       )}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={() => handleConnect('instagram')}
-          disabled={loading}
-          className="text-xs tracking-[0.15em] uppercase bg-stone-950 text-white px-6 py-3 hover:bg-stone-700 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Redirecting...' : 'Connect Instagram Login'}
-        </button>
-        <button
-          onClick={() => handleConnect('facebook_page')}
-          disabled={loading}
-          className="text-xs tracking-[0.15em] uppercase border border-stone-300 bg-white text-stone-700 px-6 py-3 hover:bg-stone-100 transition-colors disabled:opacity-50"
-        >
-          Facebook Page Fallback
-        </button>
-      </div>
+      <button
+        onClick={handleConnect}
+        disabled={loading}
+        className="text-xs tracking-[0.15em] uppercase bg-stone-950 text-white px-6 py-3 hover:bg-stone-700 transition-colors disabled:opacity-50"
+      >
+        {loading ? 'Redirecting...' : 'Connect Instagram'}
+      </button>
     </div>
   )
 }

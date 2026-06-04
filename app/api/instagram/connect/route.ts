@@ -38,6 +38,17 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      if (INSTAGRAM_LOGIN_APP_ID === FACEBOOK_APP_ID) {
+        return NextResponse.json(
+          {
+            error: 'Instagram Login App ID is not an Instagram platform app',
+            detail:
+              'The configured INSTAGRAM_LOGIN_APP_ID matches the Facebook app id. Use the admin Connect Instagram button without provider=instagram until Meta has a dedicated Instagram Login app id.',
+          },
+          { status: 500 },
+        )
+      }
+
       if (!INSTAGRAM_LOGIN_APP_SECRET) {
         return NextResponse.json(
           {

@@ -6,16 +6,16 @@ import { describe, expect, it } from "vitest"
 const ROOT = process.cwd()
 
 describe("Instagram Login routing", () => {
-  it("offers Instagram Login as the admin reconnect path", () => {
+  it("keeps admin reconnect on the stable Facebook Page fallback path", () => {
     const adminDashboard = fs.readFileSync(path.join(ROOT, "components/admin/admin-dashboard.tsx"), "utf8")
     const connectRoute = fs.readFileSync(path.join(ROOT, "app/api/instagram/connect/route.ts"), "utf8")
 
-    expect(adminDashboard).toContain("provider=instagram")
-    expect(adminDashboard).toContain("Instagram Login")
-    expect(adminDashboard).toContain("Facebook Page Fallback")
+    expect(adminDashboard).not.toContain("provider=instagram")
+    expect(adminDashboard).toContain("Instagram Login is paused")
     expect(connectRoute).toContain("https://www.instagram.com/oauth/authorize")
     expect(connectRoute).toContain("INSTAGRAM_LOGIN_APP_ID")
     expect(connectRoute).toContain("Instagram Login App ID not configured")
+    expect(connectRoute).toContain("INSTAGRAM_LOGIN_APP_ID === FACEBOOK_APP_ID")
     expect(connectRoute).toContain("instagram_business_manage_messages")
     expect(connectRoute).toContain("instagram_business_manage_comments")
     expect(connectRoute).toContain("instagram_business_manage_insights")
