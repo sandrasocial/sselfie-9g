@@ -79,11 +79,12 @@ function InstagramConnect({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleConnect() {
+  async function handleConnect(provider: 'instagram' | 'facebook_page') {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/instagram/connect?userId=${userId}&provider=instagram`)
+      const providerParam = provider === 'instagram' ? '&provider=instagram' : ''
+      const res = await fetch(`/api/instagram/connect?userId=${userId}${providerParam}`)
       const data = await res.json()
       if (data.authUrl) {
         window.location.href = data.authUrl
@@ -103,16 +104,28 @@ function InstagramConnect({ userId }: { userId: string }) {
       <p className="text-sm text-stone-600 mb-4">
         Link your Instagram Business account via Instagram Login to enable Graph API access.
       </p>
+      <p className="text-xs text-stone-500 mb-4 leading-relaxed">
+        If Meta shows “Invalid platform app,” use the Facebook Page fallback while the Instagram Login app id is corrected in Meta.
+      </p>
       {error && (
         <p className="text-xs text-red-600 mb-3">{error}</p>
       )}
-      <button
-        onClick={handleConnect}
-        disabled={loading}
-        className="text-xs tracking-[0.15em] uppercase bg-stone-950 text-white px-6 py-3 hover:bg-stone-700 transition-colors disabled:opacity-50"
-      >
-        {loading ? 'Redirecting...' : 'Connect Instagram'}
-      </button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={() => handleConnect('instagram')}
+          disabled={loading}
+          className="text-xs tracking-[0.15em] uppercase bg-stone-950 text-white px-6 py-3 hover:bg-stone-700 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Redirecting...' : 'Connect Instagram Login'}
+        </button>
+        <button
+          onClick={() => handleConnect('facebook_page')}
+          disabled={loading}
+          className="text-xs tracking-[0.15em] uppercase border border-stone-300 bg-white text-stone-700 px-6 py-3 hover:bg-stone-100 transition-colors disabled:opacity-50"
+        >
+          Facebook Page Fallback
+        </button>
+      </div>
     </div>
   )
 }

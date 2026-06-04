@@ -12,6 +12,7 @@ describe("Instagram Login routing", () => {
 
     expect(adminDashboard).toContain("provider=instagram")
     expect(adminDashboard).toContain("Instagram Login")
+    expect(adminDashboard).toContain("Facebook Page Fallback")
     expect(connectRoute).toContain("https://www.instagram.com/oauth/authorize")
     expect(connectRoute).toContain("INSTAGRAM_LOGIN_APP_ID")
     expect(connectRoute).toContain("Instagram Login App ID not configured")
