@@ -77,6 +77,45 @@ interface PersonalPageItem {
   updatedAt: string
 }
 
+function getProductDisplayName(productType?: string | null): string {
+  switch (productType) {
+    case "sselfie_studio_membership":
+    case "brand_studio_membership":
+      return "Studio"
+    case "one_time_session":
+      return "Session"
+    case "starter_kit":
+    case "starter-kit-paid":
+      return "Starter Kit"
+    case "prompt_vault":
+    case "prompt-vault-paid":
+      return "Prompt Vault"
+    case "selfie_to_brand_shoot_system":
+    case "selfie-to-brand-shoot-paid":
+      return "Selfie to Brand Shoot"
+    case "selfie_guide":
+    case "selfie_guide_bundle":
+    case "selfie-guide-paid":
+      return "Selfie Guide"
+    case "masterclass":
+    case "editing_masterclass":
+      return "Editing Masterclass"
+    case "brand_strategy_pack":
+      return "Brand Strategy Pack"
+    case "paid_blueprint":
+      return "Paid Blueprint"
+    default:
+      return "Free"
+  }
+}
+
+function getAccessLabel(productType?: string | null): string {
+  const displayName = getProductDisplayName(productType)
+  if (displayName === "Free") return "Free Member"
+  if (displayName === "Studio") return "Studio Member"
+  return `${displayName} Access`
+}
+
 export default function AccountScreen({ user, creditBalance: _creditBalance }: AccountScreenProps) {
   const [activeSection, setActiveSection] = useState<AccountSection>("profile")
   
@@ -434,12 +473,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
   const displayAvatar = profileInfo?.avatar || user.avatar || "/placeholder.svg"
-  const displayPlan =
-    profileInfo?.product_type === "sselfie_studio_membership"
-      ? "Studio"
-      : profileInfo?.product_type === "one_time_session"
-        ? "Session"
-        : "Free"
+  const displayPlan = getProductDisplayName(profileInfo?.product_type)
   const userInitial = displayName.charAt(0).toUpperCase()
 
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
@@ -558,7 +592,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                   <p className="mx-auto max-w-xl text-sm leading-relaxed text-[color:var(--color-whisper)]">{profileInfo.bio}</p>
                 )}
                 <p className="inline-flex rounded-[4px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.4em] text-[color:var(--app-text-secondary)]">
-                  {displayPlan} Member
+                  {getAccessLabel(profileInfo?.product_type)}
                 </p>
               </div>
 
@@ -747,13 +781,9 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                 <p className="text-sm text-[color:var(--color-whisper)]">{userInfo.email}</p>
               </div>
               <div className={glassRow}>
-                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Membership</p>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Access</p>
                 <p className="text-sm uppercase text-[color:var(--color-whisper)]">
-                  {userInfo.product_type === "sselfie_studio_membership"
-                    ? "Studio Member"
-                    : userInfo.product_type === "one_time_session"
-                      ? "One-Time Session"
-                      : "Free"}
+                  {getAccessLabel(userInfo.product_type)}
                 </p>
               </div>
               <div className={glassRow}>
@@ -789,13 +819,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <InfoPill
                   label="Current plan"
-                  value={
-                    userInfo.product_type === "sselfie_studio_membership"
-                      ? "Studio Membership"
-                      : userInfo.product_type === "one_time_session"
-                        ? "One-Time Session"
-                        : "Free"
-                  }
+                  value={getAccessLabel(userInfo.product_type)}
                 />
                 <InfoPill label="Upgrade to" value="Creator Studio" />
                 <InfoPill label="Credits" value="200 credits / month" />
