@@ -15,6 +15,7 @@ import UnifiedLoading from "./unified-loading"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DesignClasses } from "@/lib/design-tokens"
+import { getAccessLabel } from "@/lib/customer-access-labels"
 
 interface ProfileScreenProps {
   user: User
@@ -190,12 +191,6 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
 
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
   const displayAvatar = profileInfo?.avatar || user.avatar || "/placeholder.svg"
-  const displayPlan =
-    profileInfo?.product_type === "sselfie_studio_membership"
-      ? "Studio"
-      : profileInfo?.product_type === "one_time_session"
-        ? "Session"
-        : "Free"
   const userInitial = displayName.charAt(0).toUpperCase()
 
   const handleNavigation = (tab: string) => {
@@ -357,7 +352,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
           </h2>
           {profileInfo?.bio && <p className="text-sm text-stone-600 max-w-md mx-auto">{profileInfo.bio}</p>}
           <p className="text-xs tracking-[0.3em] uppercase font-light bg-stone-500/10 px-4 py-2 rounded-full inline-block text-stone-600">
-            {displayPlan} Member
+            {getAccessLabel(profileInfo?.product_type)}
           </p>
         </div>
 
