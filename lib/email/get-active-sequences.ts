@@ -28,12 +28,37 @@ const SEQUENCE_SEGMENTS: Array<{
   {
     jobName: "nurture-sequence",
     label: "Nurture Sequence",
-    segmentKeys: ["nurtureDay1", "nurtureDay3", "nurtureDay7", "nurtureDay10"],
+    segmentKeys: [],
+  },
+  {
+    jobName: "ai-photoshoot-nurture",
+    label: "AI Photoshoot Nurture",
+    segmentKeys: [],
+  },
+  {
+    jobName: "prompt-vault-checkout-recovery",
+    label: "Prompt Vault Checkout Recovery",
+    segmentKeys: [],
+  },
+  {
+    jobName: "nurture-sequence",
+    label: "Selfie to Brand Shoot Activation",
+    segmentKeys: [],
+  },
+  {
+    jobName: "selfie-to-brand-shoot-checkout-recovery",
+    label: "Selfie to Brand Shoot Checkout Recovery",
+    segmentKeys: [],
   },
   {
     jobName: "onboarding-sequence",
     label: "Onboarding Sequence",
     segmentKeys: ["onboardingDay0", "onboardingDay2", "onboardingDay7"],
+  },
+  {
+    jobName: "win-back-sequence",
+    label: "Win-Back Sequence",
+    segmentKeys: [],
   },
 ]
 
@@ -144,7 +169,7 @@ export async function getActiveSequenceStatus(
       schedule,
       nextRun: getNextRun(schedule),
       eligibleCount,
-      active: eligibleCount > 0,
+      active: Boolean(schedule) || eligibleCount > 0,
       segments: segmentInfo,
     }
   })

@@ -62,7 +62,9 @@ export default async function SelfieToBrandShootLandingPage({
           <h1 className={cormorant.className}>Turn one selfie into your first AI brand shoot.</h1>
           <p>
             The guided SSELFIE path for creating elevated personal brand images from your own
-            photo. The full Prompt Vault is included, but this is not just prompts.
+            photo, so you know what to post, how to show up, and how to turn your visuals into a
+            simple first step online. The full Prompt Vault is included, but this is not just
+            prompts.
           </p>
           <div className="sbs-actions">
             <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
@@ -97,8 +99,39 @@ export default async function SelfieToBrandShootLandingPage({
         </div>
         <p>
           Source selfie guidance, Vault access, visual-world selection, first-result workflow,
-          image selection, Maya prompt support, and a content-use plan for your first week.
+          image selection, Maya prompt support, a course workbook, and a content-use plan for your
+          first week.
         </p>
+      </section>
+
+      <section className="sbs-sales-deliverables">
+        {[
+          {
+            title: "Choose the right source selfie",
+            copy: "Stop guessing which photo to upload. Learn what gives AI enough truth to keep you recognizable.",
+          },
+          {
+            title: "Build one Signature Visual World",
+            copy: "Choose the repeatable style, colors, light, wardrobe, and mood your audience can start recognizing.",
+          },
+          {
+            title: "Create your first three image anchors",
+            copy: "Use starter prompts and Maya support to create a profile portrait, reel cover, and lifestyle image.",
+          },
+          {
+            title: "Keep, fix, or delete with taste",
+            copy: "Choose images that still look like you, match your world, and have a clear content use.",
+          },
+          {
+            title: "Turn the shoot into content",
+            copy: "Leave with a 3x3 feed rhythm, caption starters, story sequence, and a first 7-day posting plan.",
+          },
+        ].map(item => (
+          <article key={item.title}>
+            <h3 className={cormorant.className}>{item.title}</h3>
+            <p>{item.copy}</p>
+          </article>
+        ))}
       </section>
 
       <section className="sbs-sales-path">
@@ -125,7 +158,8 @@ export default async function SelfieToBrandShootLandingPage({
           <h2 className={cormorant.className}>Aesthetic certainty for the woman becoming visible online.</h2>
           <p>
             You are not buying more AI options. You are buying the path for
-            deciding what to create, what to keep, and where that image belongs.
+            deciding what to create, what to keep, and where that image belongs in the brand you
+            are building online.
           </p>
           <p>
             If you already bought the Vault, your $27 can be credited toward the full System from
@@ -282,6 +316,37 @@ export default async function SelfieToBrandShootLandingPage({
           grid-template-columns: repeat(5, 1fr);
           gap: 1px;
         }
+        .sbs-sales-deliverables {
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: 0 clamp(20px, 5vw, 64px) clamp(48px, 7vw, 70px);
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 1px;
+        }
+        .sbs-sales-deliverables article {
+          min-height: 250px;
+          display: grid;
+          align-content: end;
+          gap: 14px;
+          padding: 22px;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-sales-deliverables h3 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: clamp(2rem, 3vw, 3.1rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.98;
+        }
+        .sbs-sales-deliverables p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.7;
+        }
         .sbs-sales-path article {
           min-height: 190px;
           padding: 22px;
@@ -340,8 +405,14 @@ export default async function SelfieToBrandShootLandingPage({
           .sbs-sales-path {
             grid-template-columns: 1fr;
           }
+          .sbs-sales-deliverables {
+            grid-template-columns: 1fr;
+          }
           .sbs-sales-path article {
             min-height: unset;
+          }
+          .sbs-sales-deliverables article {
+            min-height: 190px;
           }
         }
       `}</style>

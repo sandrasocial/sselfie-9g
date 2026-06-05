@@ -6,6 +6,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
 import { CopyPromptButton } from "./copy-prompt-button"
 import { MayaPromptConcierge } from "./maya-prompt-concierge"
+import { TrackedCourseLink } from "./tracked-course-link"
 import { VisualConsistencyCodeBuilder } from "./visual-consistency-code-builder"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
@@ -1166,6 +1167,7 @@ const modules = [
 
 const quickLinks = [
   { label: "Open The Vault", href: "vault" },
+  { label: "Course Workbook", href: "/downloads/selfie-to-brand-shoot-workbook.txt" },
   { label: "Source Selfie Checklist", href: "#source-selfie-checklist" },
   { label: "Troubleshooting", href: "#troubleshooting" },
   { label: "3x3 Mini Feed Planner", href: "#mini-feed-planner" },
@@ -1193,9 +1195,22 @@ function ResourceQuickLinks({ vaultHref }: { vaultHref: string }) {
   return (
     <div className="sbs-quick-links" aria-label="Course quick links">
       {quickLinks.map(link => (
-        <Link key={link.label} href={resolveHref(link.href, vaultHref)}>
+        <TrackedCourseLink
+          key={link.label}
+          href={resolveHref(link.href, vaultHref)}
+          event={
+            link.href.includes("workbook")
+              ? "selfie_to_brand_shoot_workbook_downloaded"
+              : "selfie_to_brand_shoot_module_started"
+          }
+          properties={{
+            quick_link: link.label,
+            target: link.href,
+            location: "quick_links",
+          }}
+        >
           {link.label}
-        </Link>
+        </TrackedCourseLink>
       ))}
     </div>
   )
@@ -1228,13 +1243,18 @@ function ModuleCard({
         </p>
         <h3 className={cormorant.className}>{module.title}</h3>
         <p>{module.outcome}</p>
-        <Link
+        <TrackedCourseLink
           href={resolveHref(module.href, vaultHref)}
           className="sbs-text-link"
-          aria-disabled={!module.available}
+          event="selfie_to_brand_shoot_module_started"
+          properties={{
+            module: Number(module.number),
+            module_title: module.title,
+            location: "module_card",
+          }}
         >
           {module.available ? "Start Module" : "Preview Step"}
-        </Link>
+        </TrackedCourseLink>
       </div>
     </article>
   )
@@ -1658,7 +1678,11 @@ function PromptCard({ card }: { card: (typeof starterPromptCards)[number] }) {
           <summary>Read prompt</summary>
           <p>{card.prompt}</p>
         </details>
-        <CopyPromptButton text={card.prompt} />
+        <CopyPromptButton
+          text={card.prompt}
+          analyticsLabel={card.title}
+          analyticsContext={{ module: 3, prompt_type: "starter", prompt_title: card.title }}
+        />
       </div>
     </article>
   )
@@ -1707,7 +1731,12 @@ function FixPromptCardsBlock() {
         <article key={card.title}>
           <h4>{card.title}</h4>
           <p>{card.prompt}</p>
-          <CopyPromptButton text={card.prompt} label="Copy fix" />
+          <CopyPromptButton
+            text={card.prompt}
+            label="Copy fix"
+            analyticsLabel={card.title}
+            analyticsContext={{ module: 3, prompt_type: "fix", prompt_title: card.title }}
+          />
         </article>
       ))}
     </div>
@@ -1835,7 +1864,12 @@ function MayaReviewLayerBlock() {
         <summary>Review brief</summary>
         <p>{mayaReviewBrief}</p>
       </details>
-      <CopyPromptButton text={mayaReviewBrief} label="Copy review brief" />
+      <CopyPromptButton
+        text={mayaReviewBrief}
+        label="Copy review brief"
+        analyticsLabel="Maya review brief"
+        analyticsContext={{ module: 4, prompt_type: "review_brief" }}
+      />
     </div>
   )
 }
@@ -1973,7 +2007,12 @@ function Module5SevenDayPlanBlock() {
           <div className="sbs-module5-plan-detail">
             <strong>Caption starter</strong>
             <p>{item.caption}</p>
-            <CopyPromptButton text={item.caption} label="Copy caption" />
+            <CopyPromptButton
+              text={item.caption}
+              label="Copy caption"
+              analyticsLabel={item.day}
+              analyticsContext={{ module: 5, prompt_type: "caption", day: item.day }}
+            />
           </div>
           <div className="sbs-module5-plan-detail">
             <strong>Action</strong>
@@ -2006,7 +2045,12 @@ function Module5CaptionHooksBlock() {
         <article key={hook.title}>
           <h4>{hook.title}</h4>
           <p>{hook.text}</p>
-          <CopyPromptButton text={hook.text} label="Copy hook" />
+          <CopyPromptButton
+            text={hook.text}
+            label="Copy hook"
+            analyticsLabel={hook.title}
+            analyticsContext={{ module: 5, prompt_type: "hook", hook_title: hook.title }}
+          />
         </article>
       ))}
     </div>
@@ -2036,15 +2080,21 @@ function CourseSidebar({ vaultHref }: { vaultHref: string }) {
       </div>
       <nav className="sbs-sidebar-modules">
         {modules.map(module => (
-          <Link
+          <TrackedCourseLink
             key={module.number}
             href={resolveHref(module.href, vaultHref)}
             className={module.available ? "is-active" : ""}
+            event="selfie_to_brand_shoot_module_started"
+            properties={{
+              module: Number(module.number),
+              module_title: module.title,
+              location: "course_sidebar",
+            }}
           >
             <span>{module.number}</span>
             <strong>{module.title}</strong>
             <small>{module.status}</small>
-          </Link>
+          </TrackedCourseLink>
         ))}
       </nav>
       <ResourceQuickLinks vaultHref={vaultHref} />
@@ -2080,7 +2130,8 @@ export function SelfieToBrandShootCourseShell({
           <h1 className={cormorant.className}>{titlePrefix} course home.</h1>
           <p>
             A guided visual workflow for turning one clear selfie into an elevated AI brand shoot
-            you can use in your content.
+            you can use to start showing up, posting clearly, and building your personal brand
+            online.
           </p>
           <CourseProgressBar />
           <div className="sbs-home-actions">
@@ -2113,6 +2164,11 @@ export function SelfieToBrandShootCourseShell({
         <div className="sbs-section-heading">
           <p className="sbs-kicker">YOUR SELFIE TO BRAND SHOOT PATH</p>
           <h2 className={cormorant.className}>Five steps. One first result.</h2>
+          <p>
+            This is not a prompt folder. You will choose the right source photo, pick one visual
+            direction, create your first images, decide what still looks like you, and turn the
+            shoot into a first week of content with a clear next step.
+          </p>
         </div>
         <div className="sbs-module-card-grid">
           {modules.map(module => (
@@ -2200,9 +2256,14 @@ export function SelfieToBrandShootCourseShell({
                 Pick one clear front-facing or slight 3/4 selfie. Save it somewhere easy to find
                 before you open the Vault or ChatGPT.
               </p>
-              <a href="#module-2" className="sbs-primary">
+              <TrackedCourseLink
+                href="#module-2"
+                className="sbs-primary"
+                event="selfie_to_brand_shoot_module_completed"
+                properties={{ module: 1, action: "i_have_my_selfie" }}
+              >
                 I Have My Selfie
-              </a>
+              </TrackedCourseLink>
             </div>
           </LessonSection>
 
@@ -2225,9 +2286,14 @@ export function SelfieToBrandShootCourseShell({
                 you for.
               </p>
             </div>
-            <a href="#module-2" className="sbs-primary">
+            <TrackedCourseLink
+              href="#module-2"
+              className="sbs-primary"
+              event="selfie_to_brand_shoot_module_started"
+              properties={{ module: 2, action: "continue_to_module_2" }}
+            >
               Continue To Module 2
-            </a>
+            </TrackedCourseLink>
           </div>
 
           <section
@@ -2345,9 +2411,14 @@ export function SelfieToBrandShootCourseShell({
                   direction.
                 </p>
               </div>
-              <a href="#module-3" className="sbs-primary">
+              <TrackedCourseLink
+                href="#module-3"
+                className="sbs-primary"
+                event="selfie_to_brand_shoot_module_completed"
+                properties={{ module: 2, action: "visual_world_chosen" }}
+              >
                 I Chose My Visual World
-              </a>
+              </TrackedCourseLink>
             </div>
           </section>
 
@@ -2461,9 +2532,14 @@ export function SelfieToBrandShootCourseShell({
                   Brand Image. Then choose your best result from each category.
                 </p>
               </div>
-              <a href="#module-4" className="sbs-primary">
+              <TrackedCourseLink
+                href="#module-4"
+                className="sbs-primary"
+                event="selfie_to_brand_shoot_module_completed"
+                properties={{ module: 3, action: "starter_shoot_created" }}
+              >
                 I Created My Starter Shoot
-              </a>
+              </TrackedCourseLink>
             </div>
           </section>
 
@@ -2562,9 +2638,14 @@ export function SelfieToBrandShootCourseShell({
                   supporting brand images.
                 </p>
               </div>
-              <a href="#module-5" className="sbs-primary">
+              <TrackedCourseLink
+                href="#module-5"
+                className="sbs-primary"
+                event="selfie_to_brand_shoot_final_selects_completed"
+                properties={{ module: 4, action: "final_selects_picked" }}
+              >
                 I Picked My Best Images
-              </a>
+              </TrackedCourseLink>
             </div>
           </section>
 
@@ -2632,13 +2713,15 @@ export function SelfieToBrandShootCourseShell({
                   Do this before you make more images. Give each image one job, then use the
                   caption starter to post the result while the visual direction is still fresh.
                 </p>
-                <a
+                <TrackedCourseLink
                   href="/downloads/selfie-to-brand-shoot-7-day-plan.txt"
                   download
                   className="sbs-text-link"
+                  event="selfie_to_brand_shoot_content_plan_completed"
+                  properties={{ module: 5, resource: "7_day_plan_download" }}
                 >
                   Download the 7-day plan
-                </a>
+                </TrackedCourseLink>
               </div>
               <Module5SevenDayPlanBlock />
             </LessonSection>
@@ -2673,6 +2756,24 @@ export function SelfieToBrandShootCourseShell({
               <Module5FinalChecklistBlock />
             </LessonSection>
 
+            <LessonSection eyebrow="WORKBOOK" title="Save the decisions you made" open>
+              <div className="sbs-worksheet-intro">
+                <p>
+                  Your real deliverable is not only the images. It is the visual direction, prompt
+                  set, keep/fix/delete filter, and first-week content plan you can repeat.
+                </p>
+                <TrackedCourseLink
+                  href="/downloads/selfie-to-brand-shoot-workbook.txt"
+                  download
+                  className="sbs-text-link"
+                  event="selfie_to_brand_shoot_workbook_downloaded"
+                  properties={{ module: 5, resource: "course_workbook" }}
+                >
+                  Download the course workbook
+                </TrackedCourseLink>
+              </div>
+            </LessonSection>
+
             <div className="sbs-module-next">
               <div>
                 <p className="sbs-kicker">FINAL ACTION</p>
@@ -2682,9 +2783,14 @@ export function SelfieToBrandShootCourseShell({
                   visual, one about-me post, and one quiet supporting image.
                 </p>
               </div>
-              <a href="#mini-feed-planner" className="sbs-primary">
+              <TrackedCourseLink
+                href="#mini-feed-planner"
+                className="sbs-primary"
+                event="selfie_to_brand_shoot_content_plan_completed"
+                properties={{ module: 5, action: "build_3x3_plan" }}
+              >
                 Build My 3x3 Plan
-              </a>
+              </TrackedCourseLink>
               <a href={vaultHref} className="sbs-secondary">
                 Open The Vault
               </a>
@@ -2702,6 +2808,24 @@ export function SelfieToBrandShootCourseShell({
           <Link href={vaultHref} className="sbs-primary">
             Open The Vault
           </Link>
+          <TrackedCourseLink
+            href="/downloads/selfie-to-brand-shoot-workbook.txt"
+            download
+            className="sbs-secondary"
+            event="selfie_to_brand_shoot_workbook_downloaded"
+            properties={{ resource: "course_workbook", location: "final_resources" }}
+          >
+            Download Workbook
+          </TrackedCourseLink>
+          <TrackedCourseLink
+            href="/downloads/selfie-to-brand-shoot-7-day-plan.txt"
+            download
+            className="sbs-secondary"
+            event="selfie_to_brand_shoot_content_plan_completed"
+            properties={{ resource: "7_day_plan", location: "final_resources" }}
+          >
+            Download 7-Day Plan
+          </TrackedCourseLink>
           {hasStudioAccess && (
             <Link href="/studio?tab=maya" className="sbs-secondary">
               Open Studio
@@ -3007,7 +3131,7 @@ export function SelfieToBrandShootCourseShell({
         }
         .sbs-quick-links {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 1px;
           margin-top: 18px;
           background: rgba(197,198,200,0.35);

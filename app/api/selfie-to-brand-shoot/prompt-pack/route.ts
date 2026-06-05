@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { NextResponse } from "next/server"
 
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { sql } from "@/lib/db/client"
@@ -211,11 +212,38 @@ Each prompt must explicitly say to use the uploaded source selfie as identity re
       const parsed = JSON.parse(extractJsonObject(text))
       const pack = coercePromptPack(parsed)
       if (pack) {
+        logAnalyticsEvent({
+          eventName: "selfie_to_brand_shoot_maya_prompt_pack_built",
+          userId: user.neonUser.id,
+          path: "/api/selfie-to-brand-shoot/prompt-pack",
+          properties: {
+            product_id: "selfie_to_brand_shoot_system",
+            source: "maya",
+            use_cases: useCases,
+            starter_count: pack.starterShoot.length,
+            extra_count: pack.extraImages.length,
+            fix_count: pack.fixPrompts.length,
+          },
+        }).catch(() => {})
         return NextResponse.json({ promptPack: pack, source: "maya" })
       }
     } catch (error) {
       console.error("[selfie-to-brand-shoot prompt-pack] Maya generation fallback used:", error)
     }
+
+    logAnalyticsEvent({
+      eventName: "selfie_to_brand_shoot_maya_prompt_pack_built",
+      userId: user.neonUser.id,
+      path: "/api/selfie-to-brand-shoot/prompt-pack",
+      properties: {
+        product_id: "selfie_to_brand_shoot_system",
+        source: "fallback",
+        use_cases: useCases,
+        starter_count: fallback.starterShoot.length,
+        extra_count: fallback.extraImages.length,
+        fix_count: fallback.fixPrompts.length,
+      },
+    }).catch(() => {})
 
     return NextResponse.json({ promptPack: fallback, source: "fallback" })
   } catch (error) {

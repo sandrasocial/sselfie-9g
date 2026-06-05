@@ -84,6 +84,18 @@ export default async function AcademySelfieToBrandShootAccessPage() {
     },
   }).catch(() => {})
 
+  logAnalyticsEvent({
+    eventName: "selfie_to_brand_shoot_access_opened",
+    userId: neonUser.id,
+    path: "/academy/access/selfie-to-brand-shoot",
+    properties: {
+      product_id: "selfie_to_brand_shoot_system",
+      source: "academy",
+      has_prompt_vault_token: Boolean(vaultSubscriber?.access_token),
+      membership_active: entitlementState.membershipActive,
+    },
+  }).catch(() => {})
+
   return (
     <SelfieToBrandShootCourseShell
       firstName={getSafeFirstName(vaultSubscriber?.name)}

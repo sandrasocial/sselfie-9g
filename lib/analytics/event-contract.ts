@@ -98,6 +98,17 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "selfie_to_brand_shoot_access_resolved",
   "selfie_to_brand_shoot_access_failed",
   "selfie_to_brand_shoot_access_opened",
+  "selfie_to_brand_shoot_module_started",
+  "selfie_to_brand_shoot_module_completed",
+  "selfie_to_brand_shoot_workbook_downloaded",
+  "selfie_to_brand_shoot_visual_code_saved",
+  "selfie_to_brand_shoot_maya_prompt_pack_built",
+  "selfie_to_brand_shoot_prompt_pack_copied",
+  "selfie_to_brand_shoot_final_selects_completed",
+  "selfie_to_brand_shoot_content_plan_completed",
+  "selfie_to_brand_shoot_testimonial_requested",
+  "selfie_to_brand_shoot_testimonial_submitted",
+  "selfie_to_brand_shoot_checkout_recovery_sent",
   "prompt_vault_system_upgrade_click",
 ] as const
 
