@@ -249,8 +249,13 @@ export async function createLandingCheckoutSession(
           customerEmail,
           promoCode,
         })
-    const stripeRequestOptions: Stripe.RequestOptions = idempotencyKey ? { idempotencyKey } : {}
-    const session = await stripe.checkout.sessions.create(sessionConfig, stripeRequestOptions)
+    // CHECKOUT-02: only pass an options object when we actually have an idempotency
+    // key. Passing an empty `{}` made stripe-node throw "Unknown arguments
+    // ([object Object])" and broke ~25% of Vault checkouts (the no-email ManyChat
+    // "VAULT" reel traffic, where idempotencyKey resolves to null).
+    const session = idempotencyKey
+      ? await stripe.checkout.sessions.create(sessionConfig, { idempotencyKey })
+      : await stripe.checkout.sessions.create(sessionConfig)
     console.log("[landing-checkout] Checkout session created successfully:", session.id)
     console.log("[landing-checkout] Client secret generated:", !!session.client_secret)
     await upsertCheckoutAttribution({
