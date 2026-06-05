@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { sql } from "@/lib/db/client"
@@ -105,6 +106,17 @@ export async function POST(request: Request) {
       [SELFIE_TO_BRAND_SHOOT_VISUAL_CODE_MEMORY_KEY]: visualCode,
       selfie_to_brand_shoot_visual_code_updated_at: new Date().toISOString(),
     })
+
+    logAnalyticsEvent({
+      eventName: "selfie_to_brand_shoot_visual_code_saved",
+      userId: user.neonUser.id,
+      path: "/api/selfie-to-brand-shoot/visual-code",
+      properties: {
+        product_id: "selfie_to_brand_shoot_system",
+        has_signature_world: Boolean(visualCode.signatureVisualWorld),
+        has_first_shoot_direction: Boolean(visualCode.firstShootDirection),
+      },
+    }).catch(() => {})
 
     return NextResponse.json({ success: true, visualCode })
   } catch (error) {

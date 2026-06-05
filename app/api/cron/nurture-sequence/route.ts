@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
@@ -8,6 +9,7 @@ import { SELFIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/selfie-guide-email-seque
 import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
 import { AI_PROMPTS_EMAIL_TOUCHES } from "@/lib/email/ai-prompts-email-sequence"
 import { PROMPT_VAULT_EMAIL_TOUCHES } from "@/lib/email/prompt-vault-email-sequence"
+import { SELFIE_TO_BRAND_SHOOT_EMAIL_TOUCHES } from "@/lib/email/selfie-to-brand-shoot-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
 import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/freebie-guide-day1-light-tip"
@@ -41,6 +43,12 @@ import {
   generatePromptVaultDay3SystemUpgradeEmail,
   generatePromptVaultDay5FixBadResultEmail,
 } from "@/lib/email/templates/prompt-vault-buyer-sequence"
+import {
+  generateSelfieToBrandShootDay1SourceAndWorldEmail,
+  generateSelfieToBrandShootDay3FirstShootEmail,
+  generateSelfieToBrandShootDay5SelectAndContentEmail,
+  generateSelfieToBrandShootDay7ProofRequestEmail,
+} from "@/lib/email/templates/selfie-to-brand-shoot-buyer-sequence"
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
   .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
@@ -86,6 +94,14 @@ interface PromptVaultTouchCandidate {
   created_at: string
 }
 
+interface SelfieToBrandShootTouchCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  converted_at: string | null
+  created_at: string
+}
+
 interface StarterKitCandidate {
   email: string
   name: string | null
@@ -122,6 +138,13 @@ function aiPromptsAccessUrl(candidate: { access_token: string | null }): string 
 function promptVaultAccessUrl(candidate: { access_token: string | null }): string {
   const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/access/prompt-vault/${token}` : `${SITE_URL}/prompt-vault`
+}
+
+function selfieToBrandShootAccessUrl(candidate: { access_token: string | null }): string {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0
+    ? `${SITE_URL}/access/selfie-to-brand-shoot/${token}`
+    : `${SITE_URL}/academy/access/selfie-to-brand-shoot`
 }
 
 function aiPromptsNurtureStartDate(): string {
@@ -296,6 +319,38 @@ async function getPromptVaultTouchCandidates(
     ORDER BY LOWER(fs.email), COALESCE(fs.converted_at, fs.updated_at, fs.created_at) DESC
     LIMIT 200
   `) as PromptVaultTouchCandidate[]
+}
+
+async function getSelfieToBrandShootTouchCandidates(
+  days: number,
+  emailType: string
+): Promise<SelfieToBrandShootTouchCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(fs.email))
+      fs.email,
+      NULLIF(BTRIM(fs.name), '') AS name,
+      fs.access_token,
+      fs.converted_at,
+      fs.created_at
+    FROM freebie_subscribers fs
+    WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${days} days`}::interval)
+      AND fs.email IS NOT NULL
+      AND fs.email <> ''
+      AND (
+        fs.source = 'selfie-to-brand-shoot-paid'
+        OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(fs.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+      )
+    ORDER BY LOWER(fs.email), COALESCE(fs.converted_at, fs.updated_at, fs.created_at) DESC
+    LIMIT 200
+  `) as SelfieToBrandShootTouchCandidate[]
 }
 
 async function getStarterKitCandidates(
@@ -557,6 +612,45 @@ async function sendPromptVaultTouchEmail(
   })
 }
 
+async function sendSelfieToBrandShootTouchEmail(
+  emailType: string,
+  candidate: SelfieToBrandShootTouchCandidate,
+  accessUrl: string
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "selfie-to-brand-shoot-day1-source-and-world":
+      email = generateSelfieToBrandShootDay1SourceAndWorldEmail({ firstName, accessUrl })
+      break
+    case "selfie-to-brand-shoot-day3-first-shoot":
+      email = generateSelfieToBrandShootDay3FirstShootEmail({ firstName, accessUrl })
+      break
+    case "selfie-to-brand-shoot-day5-select-and-content":
+      email = generateSelfieToBrandShootDay5SelectAndContentEmail({ firstName, accessUrl })
+      break
+    case "selfie-to-brand-shoot-day7-proof-request":
+      email = generateSelfieToBrandShootDay7ProofRequestEmail({ firstName, accessUrl })
+      break
+    default:
+      throw new Error(`Unknown Selfie to Brand Shoot email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["selfie-to-brand-shoot", emailType],
+    marketing: true,
+  })
+}
+
 function starterKitAccessUrl(_candidate: StarterKitCandidate): string {
   const token = typeof _candidate.access_token === "string" ? _candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/access/starter-kit/${token}` : STARTER_KIT_FALLBACK_URL
@@ -720,6 +814,10 @@ export async function GET(request: Request) {
       promptVaultDay3: { found: 0, sent: 0, failed: 0 },
       promptVaultDay5: { found: 0, sent: 0, failed: 0 },
       promptVaultDay10: { found: 0, sent: 0, failed: 0 },
+      selfieToBrandShootDay1: { found: 0, sent: 0, failed: 0 },
+      selfieToBrandShootDay3: { found: 0, sent: 0, failed: 0 },
+      selfieToBrandShootDay5: { found: 0, sent: 0, failed: 0 },
+      selfieToBrandShootDay7: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay3: { found: 0, sent: 0, failed: 0 },
       selfieGuideDay7: { found: 0, sent: 0, failed: 0 },
@@ -843,6 +941,63 @@ export async function GET(request: Request) {
             const result = await sendPromptVaultTouchEmail(touch.emailType, candidate, accessUrl)
             if (result.success) {
               results[resultKey].sent += 1
+            } else {
+              results[resultKey].failed += 1
+              results.errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: result.error || "unknown",
+              })
+            }
+          } catch (error: unknown) {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: errorMessage(error),
+            })
+          }
+
+          await sleep(150)
+        }
+      }
+    }
+
+    const selfieToBrandShootNurtureEnabled =
+      process.env.SELFIE_TO_BRAND_SHOOT_NURTURE_ENABLED === "true"
+    const selfieToBrandShootTouchResultKeys = [
+      "selfieToBrandShootDay1",
+      "selfieToBrandShootDay3",
+      "selfieToBrandShootDay5",
+      "selfieToBrandShootDay7",
+    ] as const
+
+    if (selfieToBrandShootNurtureEnabled) {
+      for (const [index, touch] of SELFIE_TO_BRAND_SHOOT_EMAIL_TOUCHES.entries()) {
+        const resultKey = selfieToBrandShootTouchResultKeys[index]
+        const candidates = await getSelfieToBrandShootTouchCandidates(touch.days, touch.emailType)
+        results[resultKey].found = candidates.length
+
+        for (const candidate of candidates) {
+          const accessUrl = selfieToBrandShootAccessUrl(candidate)
+          try {
+            const result = await sendSelfieToBrandShootTouchEmail(
+              touch.emailType,
+              candidate,
+              accessUrl
+            )
+            if (result.success) {
+              results[resultKey].sent += 1
+              if (touch.emailType === "selfie-to-brand-shoot-day7-proof-request") {
+                logAnalyticsEvent({
+                  eventName: "selfie_to_brand_shoot_testimonial_requested",
+                  path: "/api/cron/nurture-sequence",
+                  properties: {
+                    product_id: "selfie_to_brand_shoot_system",
+                    email_type: touch.emailType,
+                  },
+                }).catch(() => {})
+              }
             } else {
               results[resultKey].failed += 1
               results.errors.push({
@@ -1030,6 +1185,10 @@ export async function GET(request: Request) {
       results.promptVaultDay3.sent +
       results.promptVaultDay5.sent +
       results.promptVaultDay10.sent +
+      results.selfieToBrandShootDay1.sent +
+      results.selfieToBrandShootDay3.sent +
+      results.selfieToBrandShootDay5.sent +
+      results.selfieToBrandShootDay7.sent +
       results.selfieGuideDay0.sent +
       results.selfieGuideDay3.sent +
       results.selfieGuideDay7.sent +
@@ -1060,6 +1219,10 @@ export async function GET(request: Request) {
       results.promptVaultDay3.failed +
       results.promptVaultDay5.failed +
       results.promptVaultDay10.failed +
+      results.selfieToBrandShootDay1.failed +
+      results.selfieToBrandShootDay3.failed +
+      results.selfieToBrandShootDay5.failed +
+      results.selfieToBrandShootDay7.failed +
       results.selfieGuideDay0.failed +
       results.selfieGuideDay3.failed +
       results.selfieGuideDay7.failed +
@@ -1094,6 +1257,11 @@ export async function GET(request: Request) {
       promptVaultDay3: results.promptVaultDay3,
       promptVaultDay5: results.promptVaultDay5,
       promptVaultDay10: results.promptVaultDay10,
+      selfieToBrandShootNurtureEnabled,
+      selfieToBrandShootDay1: results.selfieToBrandShootDay1,
+      selfieToBrandShootDay3: results.selfieToBrandShootDay3,
+      selfieToBrandShootDay5: results.selfieToBrandShootDay5,
+      selfieToBrandShootDay7: results.selfieToBrandShootDay7,
       selfieGuideDay0: results.selfieGuideDay0,
       selfieGuideDay3: results.selfieGuideDay3,
       selfieGuideDay7: results.selfieGuideDay7,

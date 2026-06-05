@@ -288,6 +288,12 @@ function ConciergeOutputGroup({
               text={card.prompt}
               label={variant === "primary" ? "Copy prompt" : "Copy"}
               className={variant === "primary" ? "sbs-copy-button" : "sbs-copy-button is-secondary"}
+              analyticsLabel={card.title}
+              analyticsContext={{
+                module: 3,
+                prompt_type: variant === "primary" ? "maya_starter" : "maya_extra_or_fix",
+                prompt_title: card.title,
+              }}
             />
           </article>
         ))}

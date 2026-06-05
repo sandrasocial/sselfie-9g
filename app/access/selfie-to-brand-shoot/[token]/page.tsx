@@ -146,6 +146,17 @@ export default async function SelfieToBrandShootTokenAccessPage({
     },
   }).catch(() => {})
 
+  logAnalyticsEvent({
+    eventName: "selfie_to_brand_shoot_access_opened",
+    path: "/access/selfie-to-brand-shoot/[token]",
+    properties: {
+      product_id: "selfie_to_brand_shoot_system",
+      source: "token",
+      access_mode: result.valid ? "token" : "admin_override",
+      token_prefix: token.slice(0, 8),
+    },
+  }).catch(() => {})
+
   return (
     <SelfieToBrandShootCourseShell
       firstName={result.valid ? getSafeFirstName(result.name) : null}

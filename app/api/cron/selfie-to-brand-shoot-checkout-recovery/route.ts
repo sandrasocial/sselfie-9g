@@ -1,0 +1,270 @@
+import { NextResponse } from "next/server"
+
+import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { createCronLogger } from "@/lib/cron-logger"
+import { sql } from "@/lib/db/client"
+import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import { sendEmail } from "@/lib/email/send-email"
+import { stripe } from "@/lib/stripe"
+import {
+  generateSelfieToBrandShootCheckoutRecoveryEmail,
+  SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+} from "@/lib/email/templates/selfie-to-brand-shoot-checkout-recovery"
+import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
+
+export const dynamic = "force-dynamic"
+export const maxDuration = 60
+
+const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
+const REPLY_TO_EMAIL = "hello@sselfie.ai"
+const SEND_DELAY_MS = 650
+const HYDRATE_EMAIL_LIMIT = 50
+
+type RecoveryCandidate = {
+  session_id: string
+  user_email: string
+  source: string | null
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  utm_content: string | null
+  campaign_id: number | null
+  cta_keyword: string | null
+  entry_post_slug: string | null
+  buyer_stage: string | null
+  created_at: string
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+async function hydrateMissingCheckoutEmails() {
+  await ensureRevenueEngineSchema()
+
+  const sessions = (await sql`
+    SELECT session_id
+    FROM checkout_attribution
+    WHERE product_type = 'selfie_to_brand_shoot_system'
+      AND status = 'started'
+      AND (user_email IS NULL OR BTRIM(user_email) = '')
+      AND recovery_email_sent_at IS NULL
+      AND created_at <= NOW() - INTERVAL '1 hour'
+      AND created_at > NOW() - INTERVAL '7 days'
+    ORDER BY created_at ASC
+    LIMIT ${HYDRATE_EMAIL_LIMIT}
+  `) as Array<{ session_id: string }>
+
+  const results = { checked: sessions.length, hydrated: 0, failed: 0 }
+
+  for (const session of sessions) {
+    try {
+      const checkoutSession = await stripe.checkout.sessions.retrieve(session.session_id)
+      const email =
+        checkoutSession.customer_details?.email?.trim() ||
+        checkoutSession.customer_email?.trim() ||
+        null
+
+      if (email) {
+        await sql`
+          UPDATE checkout_attribution
+          SET user_email = ${email}, updated_at = NOW()
+          WHERE session_id = ${session.session_id}
+            AND (user_email IS NULL OR BTRIM(user_email) = '')
+        `
+        results.hydrated += 1
+      }
+    } catch (error) {
+      results.failed += 1
+      console.error("[selfie-to-brand-shoot-recovery] Failed to hydrate Stripe checkout email:", {
+        sessionId: session.session_id,
+        error,
+      })
+    }
+
+    await sleep(SEND_DELAY_MS)
+  }
+
+  return results
+}
+
+async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
+  await ensureRevenueEngineSchema()
+
+  return (await sql`
+    WITH eligible_checkouts AS (
+      SELECT
+        session_id,
+        user_email,
+        source,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        campaign_id,
+        cta_keyword,
+        entry_post_slug,
+        buyer_stage,
+        created_at,
+        ROW_NUMBER() OVER (
+          PARTITION BY LOWER(BTRIM(user_email))
+          ORDER BY created_at ASC
+        ) AS email_rank
+      FROM checkout_attribution
+      WHERE product_type = 'selfie_to_brand_shoot_system'
+        AND status = 'started'
+        AND user_email IS NOT NULL
+        AND BTRIM(user_email) <> ''
+        AND recovery_email_sent_at IS NULL
+        AND created_at <= NOW() - INTERVAL '1 hour'
+        AND created_at > NOW() - INTERVAL '7 days'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM email_logs el
+          WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(checkout_attribution.user_email))
+            AND el.email_type = ${SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE}
+            AND el.status IN ('sent', 'delivered', 'suppressed')
+            AND el.sent_at > NOW() - INTERVAL '7 days'
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM freebie_subscribers fs
+          WHERE LOWER(BTRIM(fs.email)) = LOWER(BTRIM(checkout_attribution.user_email))
+            AND (
+              fs.source = 'selfie-to-brand-shoot-paid'
+              OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+              OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+            )
+        )
+    )
+    SELECT
+      session_id,
+      user_email,
+      source,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      campaign_id,
+      cta_keyword,
+      entry_post_slug,
+      buyer_stage,
+      created_at
+    FROM eligible_checkouts
+    WHERE email_rank = 1
+    ORDER BY created_at ASC
+    LIMIT 50
+  `) as RecoveryCandidate[]
+}
+
+async function markRecoverySent(candidate: RecoveryCandidate, messageId?: string) {
+  await sql`
+    UPDATE checkout_attribution
+    SET
+      status = 'abandoned',
+      recovery_email_sent_at = NOW(),
+      recovery_email_type = ${SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE},
+      recovery_email_message_id = ${messageId || null},
+      updated_at = NOW()
+    WHERE session_id = ${candidate.session_id}
+  `
+
+  await logAnalyticsEvent({
+    eventName: "selfie_to_brand_shoot_checkout_recovery_sent",
+    path: "/api/cron/selfie-to-brand-shoot-checkout-recovery",
+    utm: {
+      source: candidate.utm_source,
+      medium: candidate.utm_medium,
+      campaign: candidate.utm_campaign,
+      content: candidate.utm_content,
+    },
+    properties: {
+      session_id: candidate.session_id,
+      source: candidate.source,
+      campaign_id: candidate.campaign_id,
+      cta_keyword: candidate.cta_keyword,
+      entry_post_slug: candidate.entry_post_slug,
+      buyer_stage: candidate.buyer_stage,
+    },
+  })
+}
+
+export async function GET(request: Request) {
+  const cronLogger = createCronLogger("selfie-to-brand-shoot-checkout-recovery")
+  await cronLogger.start()
+
+  try {
+    const authHeader = request.headers.get("authorization")
+    const cronSecret = process.env.CRON_SECRET
+    const isProduction =
+      process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+
+    if (isProduction) {
+      if (!cronSecret) {
+        await cronLogger.error(new Error("Unauthorized"), {
+          reason: "CRON_SECRET not set in production",
+        })
+        return NextResponse.json(
+          { error: "Unauthorized: CRON_SECRET required in production" },
+          { status: 401 },
+        )
+      }
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    }
+
+    if (process.env.SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_ENABLED !== "true") {
+      const summary = { enabled: false, found: 0, sent: 0, failed: 0, hydrated: 0 }
+      await cronLogger.success(summary)
+      return NextResponse.json({ success: true, ...summary })
+    }
+
+    const hydration = await hydrateMissingCheckoutEmails()
+    const candidates = await getRecoveryCandidates()
+    const results = {
+      enabled: true,
+      found: candidates.length,
+      sent: 0,
+      failed: 0,
+      hydration,
+    }
+
+    for (const candidate of candidates) {
+      const firstName = getFirstNameForEmail({ email: candidate.user_email })
+      const email = generateSelfieToBrandShootCheckoutRecoveryEmail({ firstName })
+
+      const sent = await sendEmail({
+        to: candidate.user_email,
+        from: FROM_EMAIL,
+        replyTo: REPLY_TO_EMAIL,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        emailType: SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+        tags: ["selfie-to-brand-shoot", "checkout-recovery"],
+        marketing: true,
+      })
+
+      if (sent.success) {
+        results.sent += 1
+        await markRecoverySent(candidate, sent.messageId)
+      } else {
+        results.failed += 1
+      }
+
+      await sleep(SEND_DELAY_MS)
+    }
+
+    await cronLogger.success(results)
+    return NextResponse.json({ success: true, ...results })
+  } catch (error: unknown) {
+    await cronLogger.error(error, { step: "selfie-to-brand-shoot-checkout-recovery" })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Checkout recovery cron failed",
+      },
+      { status: 500 },
+    )
+  }
+}
