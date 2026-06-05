@@ -138,8 +138,11 @@ function PreviewCardEl({
             promptTitle={card.title}
             promptNumber={card.number}
             afterCopyHref={upgradeHref}
-            afterCopyLabel="Get the remaining shots · $27"
-            afterCopyNote="Prompt copied. If this look is the one, the full shoot is inside the Vault."
+            afterCopyTitle="Love how that came out?"
+            afterCopyLabel="Get the full Vault · $27"
+            afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
+            afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{
               source: "ai-prompts",
@@ -1009,14 +1012,23 @@ export default async function AiPromptsAccessPage({
         .copy-after-cta {
           width: 100%;
           margin-top: 14px;
-          padding-top: 14px;
-          border-top: 1px solid #FFFFFF;
+          padding: 16px;
+          border: 1px solid #FFFFFF;
+          background: #FFFFFF;
           text-align: left;
         }
 
+        .copy-after-title {
+          margin: 0 0 8px;
+          color: #0D0E10;
+          font-size: 15px;
+          font-weight: 500;
+          line-height: 1.35;
+        }
+
         .copy-after-note {
-          margin: 0 0 10px;
-          font-size: 12px;
+          margin: 0 0 14px;
+          font-size: 13px;
           line-height: 1.6;
           color: #818283;
         }
@@ -1036,6 +1048,13 @@ export default async function AiPromptsAccessPage({
           letter-spacing: 0.18em;
           line-height: 1.35;
           text-transform: uppercase;
+        }
+
+        .copy-after-footnote {
+          margin: 10px 0 0;
+          color: #818283;
+          font-size: 11px;
+          line-height: 1.55;
         }
 
         .ap-workflow-note {
@@ -1377,14 +1396,20 @@ export default async function AiPromptsAccessPage({
           border-color: rgba(13, 14, 16, 0.42);
         }
         .copy-after-cta {
-          border-top-color: rgba(13, 12, 11, 0.08);
+          border-color: rgba(13, 12, 11, 0.08);
         }
         .copy-after-note {
           color: rgba(13, 12, 11, 0.56);
         }
+        .copy-after-title {
+          color: #0D0E10;
+        }
         .copy-after-link {
           background: #0D0E10;
           color: #F8FAFA;
+        }
+        .copy-after-footnote {
+          color: rgba(13, 12, 11, 0.56);
         }
         .ap-bridge-cta,
         .ap-bridge-cta-primary,

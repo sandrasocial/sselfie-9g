@@ -34,6 +34,7 @@ import { generateMasterclassDay2CheckinEmail } from "@/lib/email/templates/maste
 import { generateMasterclassDay5DeepenEmail } from "@/lib/email/templates/masterclass-day5-deepen"
 import { generateMasterclassDay7SoftWorkWithMeEmail } from "@/lib/email/templates/masterclass-day7-soft-work-with-me"
 import { generateMasterclassDay10DirectInviteEmail } from "@/lib/email/templates/masterclass-day10-direct-invite"
+import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
@@ -265,7 +266,9 @@ async function getAiPromptsTouchCandidates(
         OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
       )
       AND NOT (
-        'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_prompt_vault' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'bought_starter_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'bought_masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -275,7 +278,7 @@ async function getAiPromptsTouchCandidates(
         FROM users u
         INNER JOIN subscriptions s ON s.user_id = u.id::varchar
         WHERE LOWER(u.email) = LOWER(fs.email)
-          AND s.product_type IN ('starter_kit', 'masterclass')
+          AND s.product_type IN ('prompt_vault', 'starter_kit', 'masterclass')
           AND s.status = 'active'
       )
       AND NOT EXISTS (
@@ -547,6 +550,9 @@ async function sendAiPromptsTouchEmail(
   let email: { html: string; text: string; subject: string }
 
   switch (emailType) {
+    case "ai-prompts-day1-vault-bridge":
+      email = generateAiPromptsDay1VaultBridgeEmail({ firstName })
+      break
     case "ai-prompts-day2-try-first-prompt":
       email = generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
       break
@@ -807,6 +813,7 @@ export async function GET(request: Request) {
       freebieGuideDay5: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay8: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay14: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay1: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay2: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
@@ -840,9 +847,7 @@ export async function GET(request: Request) {
 
     const freebieGuideTouchResultKeys = [
       "freebieGuideDay1",
-      "freebieGuideDay3",
       "freebieGuideDay5",
-      "freebieGuideDay8",
       "freebieGuideDay14",
     ] as const
 
@@ -880,7 +885,7 @@ export async function GET(request: Request) {
 
     const aiPromptsEnabled = process.env.AI_PROMPTS_NURTURE_ENABLED === "true"
     const aiPromptsStartDate = aiPromptsNurtureStartDate()
-    const aiPromptsTouchResultKeys = ["aiPromptsDay2", "aiPromptsDay5", "aiPromptsDay7"] as const
+    const aiPromptsTouchResultKeys = ["aiPromptsDay1", "aiPromptsDay5", "aiPromptsDay7"] as const
 
     if (aiPromptsEnabled) {
       for (const [index, touch] of AI_PROMPTS_EMAIL_TOUCHES.entries()) {
