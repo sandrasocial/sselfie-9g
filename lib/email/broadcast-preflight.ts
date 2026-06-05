@@ -11,6 +11,11 @@ export interface BroadcastPreflightResult {
   suppressedAudienceEmails: string[]
 }
 
+export interface BroadcastMergeTagIssue {
+  tag: string
+  index: number
+}
+
 export function normalizeEmailAddress(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null
   const normalized = value.trim().toLowerCase()
@@ -41,4 +46,41 @@ export function computeBroadcastPreflight(input: BroadcastPreflightInput): Broad
     sendableEmails,
     suppressedAudienceEmails,
   }
+}
+
+function isSupportedResendBroadcastTag(tag: string): boolean {
+  const trimmed = tag.trim()
+
+  if (trimmed === "{{{RESEND_UNSUBSCRIBE_URL}}}") return true
+
+  return /^{{{contact\.(first_name|last_name|email)(\|[^{}]+)?}}}$/.test(trimmed)
+}
+
+export function findUnsupportedBroadcastMergeTags(content: string): BroadcastMergeTagIssue[] {
+  const issues: BroadcastMergeTagIssue[] = []
+  const tagPattern = /{{{?[^{}]+}?}}/g
+  let match: RegExpExecArray | null
+
+  while ((match = tagPattern.exec(content)) !== null) {
+    const tag = match[0]
+    if (!isSupportedResendBroadcastTag(tag)) {
+      issues.push({
+        tag,
+        index: match.index,
+      })
+    }
+  }
+
+  return issues
+}
+
+export function assertNoUnsupportedBroadcastMergeTags(content: string): void {
+  const issues = findUnsupportedBroadcastMergeTags(content)
+  if (issues.length === 0) return
+
+  const badTags = Array.from(new Set(issues.map((issue) => issue.tag))).join(", ")
+  throw new Error(
+    `Broadcast contains unsupported Resend merge tag(s): ${badTags}. ` +
+      "Use documented broadcast tags like {{{contact.first_name|there}}} or remove personalization.",
+  )
 }
