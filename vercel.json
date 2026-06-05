@@ -41,6 +41,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/selfie-to-brand-shoot-checkout-recovery",
+      "schedule": "15 * * * *"
+    },
+    {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "5 10 * * *"
     },
