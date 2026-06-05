@@ -63,6 +63,78 @@ const forYouIf = [
   "You want to look like the woman you are becoming online.",
 ]
 
+const transformationProof = [
+  {
+    label: "Source selfie",
+    title: "Start with one clear photo",
+    image: "/images/selfie-to-brand-shoot/source-selfie-front.jpg",
+    alt: "Clear source selfie example for the Selfie to Brand Shoot System",
+  },
+  {
+    label: "Brand shoot result",
+    title: "Create the first brand image",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/profile-identity-cafe.jpg",
+    alt: "AI personal brand shoot result created from a source selfie",
+  },
+  {
+    label: "Where it goes",
+    title: "Use it for your profile, reel cover, story, or offer",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/reel-cover-cafe.jpg",
+    alt: "Editorial reel cover example from the Selfie to Brand Shoot System",
+  },
+]
+
+const sameWorldUses = [
+  {
+    label: "Profile image",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/profile-identity-cafe.jpg",
+    alt: "Profile image example from one cohesive visual world",
+  },
+  {
+    label: "Reel cover",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/reel-cover-cafe.jpg",
+    alt: "Reel cover example from one cohesive visual world",
+  },
+  {
+    label: "Story image",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/story-intro-lipstick.jpg",
+    alt: "Story image example from one cohesive visual world",
+  },
+]
+
+const systemPreview = [
+  {
+    module: "Module 1",
+    title: "Choose the selfie",
+    image: "/images/selfie-to-brand-shoot/module-1-source-selfies/good-front-selfie.png",
+    alt: "Module 1 source selfie decision preview",
+  },
+  {
+    module: "Module 2",
+    title: "Pick the visual world",
+    image: "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-05-brand-anchor.jpeg",
+    alt: "Module 2 signature visual world preview",
+  },
+  {
+    module: "Module 3",
+    title: "Build the prompt",
+    image: "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-07-work-creator.jpeg",
+    alt: "Module 3 brand shoot prompt preview",
+  },
+  {
+    module: "Module 4",
+    title: "Keep what still looks like you",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/about-me-balcony.jpg",
+    alt: "Module 4 image selection preview",
+  },
+  {
+    module: "Module 5",
+    title: "Turn it into content",
+    image: "/images/selfie-to-brand-shoot/module-5-content-use/lifestyle-work-laptop.jpg",
+    alt: "Module 5 content planning preview",
+  },
+]
+
 export default async function SelfieToBrandShootLandingPage({
   searchParams,
 }: {
@@ -138,6 +210,35 @@ export default async function SelfieToBrandShootLandingPage({
         </div>
       </section>
 
+      <section className="sbs-proof-strip">
+        <div className="sbs-proof-intro">
+          <p className="sbs-label">WHAT THIS ACTUALLY LOOKS LIKE</p>
+          <h2 className={cormorant.className}>One selfie becomes something you can use.</h2>
+          <p>
+            The point is not to make a folder of pretty AI images. The point is to move from one
+            usable source photo into brand visuals that have a clear job.
+          </p>
+        </div>
+        <div className="sbs-transformation-row">
+          {transformationProof.map((item, index) => (
+            <article key={item.label} className="sbs-transform-card">
+              <div className="sbs-transform-image">
+                <Image
+                  src={item.image}
+                  alt={item.alt}
+                  fill
+                  sizes="(max-width: 768px) 86vw, 27vw"
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                />
+              </div>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p className="sbs-label">{item.label}</p>
+              <h3 className={cormorant.className}>{item.title}</h3>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="sbs-sales-strip">
         <div>
           <p className="sbs-label">WHAT YOU&apos;LL CREATE</p>
@@ -157,6 +258,31 @@ export default async function SelfieToBrandShootLandingPage({
             <p>{item.copy}</p>
           </article>
         ))}
+      </section>
+
+      <section className="sbs-world-proof">
+        <div>
+          <p className="sbs-label">ONE VISUAL WORLD, MANY USES</p>
+          <h2 className={cormorant.className}>Your images should feel connected, not copied.</h2>
+          <p>
+            You are not choosing a new aesthetic every time you post. You are building one
+            recognizable look that can stretch across different content moments.
+          </p>
+        </div>
+        <div className="sbs-world-grid" aria-label="One visual world shown across three content uses">
+          {sameWorldUses.map(item => (
+            <figure key={item.label}>
+              <Image
+                src={item.image}
+                alt={item.alt}
+                fill
+                sizes="(max-width: 768px) 86vw, 19vw"
+                style={{ objectFit: "cover", objectPosition: "center top" }}
+              />
+              <figcaption>{item.label}</figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
 
       <section className="sbs-sales-learn">
@@ -181,6 +307,34 @@ export default async function SelfieToBrandShootLandingPage({
             <p>{step}</p>
           </article>
         ))}
+      </section>
+
+      <section className="sbs-system-preview">
+        <div>
+          <p className="sbs-label">INSIDE THE SYSTEM</p>
+          <h2 className={cormorant.className}>You are not left guessing what to do next.</h2>
+          <p>
+            Each module gives you one decision, one action, and one clear output so the process
+            feels guided instead of overwhelming.
+          </p>
+        </div>
+        <div className="sbs-system-strip">
+          {systemPreview.map(item => (
+            <article key={item.module}>
+              <div>
+                <Image
+                  src={item.image}
+                  alt={item.alt}
+                  fill
+                  sizes="(max-width: 768px) 82vw, 16vw"
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                />
+              </div>
+              <p className="sbs-label">{item.module}</p>
+              <h3 className={cormorant.className}>{item.title}</h3>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="sbs-sales-for-you">
@@ -353,6 +507,9 @@ export default async function SelfieToBrandShootLandingPage({
         .sbs-sales-strip,
         .sbs-sales-learn,
         .sbs-sales-for-you,
+        .sbs-proof-strip,
+        .sbs-world-proof,
+        .sbs-system-preview,
         .sbs-sales-proof {
           max-width: 1180px;
           margin: 0 auto;
@@ -366,11 +523,110 @@ export default async function SelfieToBrandShootLandingPage({
           align-items: end;
         }
         .sbs-sales-learn,
+        .sbs-proof-strip,
+        .sbs-world-proof,
+        .sbs-system-preview,
         .sbs-sales-for-you {
           display: grid;
           grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
           gap: clamp(28px, 5vw, 68px);
           align-items: start;
+        }
+        .sbs-proof-intro {
+          position: sticky;
+          top: 24px;
+        }
+        .sbs-transformation-row {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-transform-card {
+          min-width: 0;
+          display: grid;
+          gap: 12px;
+          padding: 16px;
+          background: #FFFFFF;
+        }
+        .sbs-transform-image {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          overflow: hidden;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.28);
+        }
+        .sbs-transform-card > span {
+          color: #818283;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+        }
+        .sbs-transform-card .sbs-label {
+          margin: 0;
+        }
+        .sbs-transform-card h3,
+        .sbs-system-strip h3 {
+          margin: 0;
+          color: #0D0E10;
+          font-size: clamp(1.9rem, 2.4vw, 2.8rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 1;
+        }
+        .sbs-world-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1px;
+          min-width: 0;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-world-grid figure {
+          position: relative;
+          min-height: clamp(360px, 36vw, 500px);
+          margin: 0;
+          overflow: hidden;
+          background: #FFFFFF;
+        }
+        .sbs-world-grid figcaption {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          padding: 9px 10px;
+          background: rgba(13,14,16,0.68);
+          color: #F8FAFA;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .sbs-system-strip {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-system-strip article {
+          min-width: 0;
+          display: grid;
+          align-content: start;
+          gap: 14px;
+          padding: 14px;
+          background: #FFFFFF;
+        }
+        .sbs-system-strip article > div {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          overflow: hidden;
+          background: #F8FAFA;
+          border: 1px solid rgba(197,198,200,0.28);
+        }
+        .sbs-system-strip .sbs-label {
+          margin: 0;
         }
         .sbs-learn-list {
           display: grid;
@@ -489,6 +745,9 @@ export default async function SelfieToBrandShootLandingPage({
           .sbs-sales-hero,
           .sbs-sales-strip,
           .sbs-sales-learn,
+          .sbs-proof-strip,
+          .sbs-world-proof,
+          .sbs-system-preview,
           .sbs-sales-for-you,
           .sbs-sales-proof,
           .sbs-retry-banner {
@@ -511,6 +770,17 @@ export default async function SelfieToBrandShootLandingPage({
           }
           .sbs-sales-path {
             grid-template-columns: 1fr;
+          }
+          .sbs-transformation-row,
+          .sbs-world-grid,
+          .sbs-system-strip {
+            grid-template-columns: 1fr;
+          }
+          .sbs-proof-intro {
+            position: static;
+          }
+          .sbs-world-grid figure {
+            min-height: 460px;
           }
           .sbs-sales-deliverables {
             grid-template-columns: 1fr;
