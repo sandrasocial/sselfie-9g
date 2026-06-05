@@ -45,7 +45,7 @@ const BUY_BUTTON_STYLE = {
   cursor: "pointer",
 } as const
 
-function BuyButton({ label = "Get Full Shoots + Future Drops · $27" }: { label?: string }) {
+function BuyButton({ label = "Get the Vault · $27" }: { label?: string }) {
   return (
     <Suspense
       fallback={
@@ -101,7 +101,7 @@ export default async function PromptVaultPage({
         >
           SSELFIE
         </Link>
-        <BuyButton label="Full Vault · $27" />
+        <BuyButton label="Get the Vault · $27" />
       </nav>
 
       {checkoutFailed && (
@@ -159,11 +159,11 @@ export default async function PromptVaultPage({
               color: "#818283",
             }}
           >
-              SELFIE TO BRAND SHOOT · THE VAULT
+              THE AI PHOTO PROMPT VAULT
           </p>
           <h1
             className={cormorant.className}
-            aria-label="The Selfie to Brand Shoot Vault"
+            aria-label="Turn one selfie into unlimited photoshoots"
             style={{
               margin: "0 0 24px",
               fontSize: "clamp(42px, 6.2vw, 82px)",
@@ -173,7 +173,7 @@ export default async function PromptVaultPage({
               color: "#0D0E10",
             }}
           >
-            The<br />Selfie to<br />Brand Shoot<br />Vault
+            Turn one<br />selfie into<br />unlimited<br />photoshoots.
           </h1>
           <p
             style={{
@@ -184,9 +184,10 @@ export default async function PromptVaultPage({
               maxWidth: "400px",
             }}
           >
-            Turn one selfie into complete editorial photoshoot worlds. Preview
-            the opening shot, then get the full shoot, all newest drops, and
-            future SSELFIE photoshoots for $27.
+            Every editorial collection, every copy-paste ChatGPT prompt, every example image so
+            you know exactly what you&apos;re creating. You bring one selfie. The vault brings the
+            direction. One payment includes every current collection, plus the new ones I keep
+            adding.
           </p>
           <a
             href="#free-previews"

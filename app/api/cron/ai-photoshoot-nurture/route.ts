@@ -6,6 +6,7 @@ import { AI_PROMPTS_EMAIL_TOUCHES, type AiPromptsEmailType } from "@/lib/email/a
 import { PROMPT_VAULT_EMAIL_TOUCHES, type PromptVaultEmailType } from "@/lib/email/prompt-vault-email-sequence"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
+import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
@@ -228,6 +229,8 @@ function generateAiPromptsEmail(
   const accessUrl = aiPromptsAccessUrl(candidate)
 
   switch (emailType) {
+    case "ai-prompts-day1-vault-bridge":
+      return generateAiPromptsDay1VaultBridgeEmail({ firstName })
     case "ai-prompts-day2-try-first-prompt":
       return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":
