@@ -11,17 +11,56 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 
 export const metadata: Metadata = {
   title: "Selfie to Brand Shoot System | SSELFIE",
-  description: "Turn one selfie into elevated personal brand images with Sandra's visual identity system.",
+  description: "Turn one clear selfie into your first AI brand shoot with Sandra's guided SSELFIE system.",
 }
 
 const featured = VAULT_COLLECTION_META.slice(0, 4)
 
 const path = [
-  "Choose the source selfie that keeps you looking like you.",
-  "Pick the visual world your brand needs next.",
-  "Create one first result before browsing everything.",
-  "Use Sandra's taste filter to keep the strongest images.",
-  "Turn the shoot into a profile image, reel cover, story, or offer visual.",
+  "Choose the right selfie.",
+  "Pick your signature look.",
+  "Create your first three AI brand images.",
+  "Choose the images that still look like you.",
+  "Turn them into content you can actually post.",
+]
+
+const whatYouCreate = [
+  {
+    title: "A profile image",
+    copy: "A clear first-impression image that feels like your next era, not a random AI face.",
+  },
+  {
+    title: "A reel cover",
+    copy: "A stronger editorial image you can use for covers, hooks, carousels, or your grid.",
+  },
+  {
+    title: "A lifestyle image",
+    copy: "A less posed brand image for stories, soft selling, and everyday content.",
+  },
+  {
+    title: "A 3x3 feed direction",
+    copy: "A simple visual rhythm so your Instagram starts feeling cohesive instead of random.",
+  },
+  {
+    title: "A 7-day content plan",
+    copy: "A clear way to use the images, so they do not just sit in your camera roll.",
+  },
+]
+
+const whatYouLearn = [
+  "Choose the selfie that gives AI the best chance of keeping you recognizable.",
+  "Pick one Signature Visual World so your brand starts looking cohesive, not random.",
+  "Create your first 3-image AI brand shoot with simple prompts and Maya support.",
+  "Use the Keep / Fix / Delete filter so you stop saving images that look pretty but do not look like you.",
+  "Turn your final images into posts, stories, reel covers, offer visuals, and profile updates.",
+]
+
+const forYouIf = [
+  "You know your content could look more elevated.",
+  "You want brand photos, but you are not ready to book a full photoshoot.",
+  "You have tried AI images before, but the results looked random, fake, or nothing like you.",
+  "You want your Instagram, website, and offers to feel more cohesive.",
+  "You want to look like the woman you are becoming online.",
 ]
 
 export default async function SelfieToBrandShootLandingPage({
@@ -61,10 +100,17 @@ export default async function SelfieToBrandShootLandingPage({
           <p className="sbs-label">SELFIE TO BRAND SHOOT</p>
           <h1 className={cormorant.className}>Turn one selfie into your first AI brand shoot.</h1>
           <p>
-            The guided SSELFIE path for creating elevated personal brand images from your own
-            photo, so you know what to post, how to show up, and how to turn your visuals into a
-            simple first step online. The full Prompt Vault is included, but this is not just
-            prompts.
+            You do not need a studio. You do not need a photographer. You do not need a perfect
+            photo of yourself.
+          </p>
+          <p>
+            You need one clear selfie, the right visual direction, and a simple system that shows
+            you what to do next.
+          </p>
+          <p>
+            I will show you how to choose the right selfie, pick your signature look, create your
+            first AI brand images, choose the ones that still look like you, and turn them into
+            content you can actually post.
           </p>
           <div className="sbs-actions">
             <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
@@ -94,44 +140,38 @@ export default async function SelfieToBrandShootLandingPage({
 
       <section className="sbs-sales-strip">
         <div>
-          <p className="sbs-label">WHAT YOU GET</p>
-          <h2 className={cormorant.className}>A transformation path, not another prompt folder.</h2>
+          <p className="sbs-label">WHAT YOU&apos;LL CREATE</p>
+          <h2 className={cormorant.className}>Your first AI brand shoot, from one selfie.</h2>
         </div>
         <p>
-          Source selfie guidance, Vault access, visual-world selection, first-result workflow,
-          image selection, Maya prompt support, a course workbook, and a content-use plan for your
-          first week.
+          Inside the system, you will build a small but powerful set of brand images you can use
+          across your Instagram, website, offers, stories, and everyday content. The full Prompt
+          Vault is included, but this is not just a folder of prompts.
         </p>
       </section>
 
       <section className="sbs-sales-deliverables">
-        {[
-          {
-            title: "Choose the right source selfie",
-            copy: "Stop guessing which photo to upload. Learn what gives AI enough truth to keep you recognizable.",
-          },
-          {
-            title: "Build one Signature Visual World",
-            copy: "Choose the repeatable style, colors, light, wardrobe, and mood your audience can start recognizing.",
-          },
-          {
-            title: "Create your first three image anchors",
-            copy: "Use starter prompts and Maya support to create a profile portrait, reel cover, and lifestyle image.",
-          },
-          {
-            title: "Keep, fix, or delete with taste",
-            copy: "Choose images that still look like you, match your world, and have a clear content use.",
-          },
-          {
-            title: "Turn the shoot into content",
-            copy: "Leave with a 3x3 feed rhythm, caption starters, story sequence, and a first 7-day posting plan.",
-          },
-        ].map(item => (
+        {whatYouCreate.map(item => (
           <article key={item.title}>
             <h3 className={cormorant.className}>{item.title}</h3>
             <p>{item.copy}</p>
           </article>
         ))}
+      </section>
+
+      <section className="sbs-sales-learn">
+        <div>
+          <p className="sbs-label">WHAT YOU&apos;LL LEARN</p>
+          <h2 className={cormorant.className}>The simple path from selfie to brand images.</h2>
+        </div>
+        <div className="sbs-learn-list">
+          {whatYouLearn.map(item => (
+            <article key={item}>
+              <span />
+              <p>{item}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="sbs-sales-path">
@@ -141,6 +181,20 @@ export default async function SelfieToBrandShootLandingPage({
             <p>{step}</p>
           </article>
         ))}
+      </section>
+
+      <section className="sbs-sales-for-you">
+        <div>
+          <p className="sbs-label">THIS IS FOR YOU IF</p>
+          <h2 className={cormorant.className}>
+            You want better brand photos, but you do not know where to start.
+          </h2>
+        </div>
+        <div>
+          {forYouIf.map(item => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
       </section>
 
       <section className="sbs-sales-proof">
@@ -155,11 +209,12 @@ export default async function SelfieToBrandShootLandingPage({
         </div>
         <div>
           <p className="sbs-label">THE CORE PROMISE</p>
-          <h2 className={cormorant.className}>Aesthetic certainty for the woman becoming visible online.</h2>
+          <h2 className={cormorant.className}>This is not about making random AI photos.</h2>
           <p>
-            You are not buying more AI options. You are buying the path for
-            deciding what to create, what to keep, and where that image belongs in the brand you
-            are building online.
+            It is about creating a visual identity your audience can start recognizing.
+          </p>
+          <p>
+            One selfie. One visual world. One simple brand shoot you can actually use.
           </p>
           <p>
             If you already bought the Vault, your $27 can be credited toward the full System from
@@ -296,6 +351,8 @@ export default async function SelfieToBrandShootLandingPage({
           text-transform: uppercase;
         }
         .sbs-sales-strip,
+        .sbs-sales-learn,
+        .sbs-sales-for-you,
         .sbs-sales-proof {
           max-width: 1180px;
           margin: 0 auto;
@@ -307,6 +364,54 @@ export default async function SelfieToBrandShootLandingPage({
           grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
           gap: 34px;
           align-items: end;
+        }
+        .sbs-sales-learn,
+        .sbs-sales-for-you {
+          display: grid;
+          grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+          gap: clamp(28px, 5vw, 68px);
+          align-items: start;
+        }
+        .sbs-learn-list {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-learn-list article {
+          display: grid;
+          grid-template-columns: 14px minmax(0, 1fr);
+          gap: 16px;
+          align-items: start;
+          padding: 18px 20px;
+          background: #FFFFFF;
+        }
+        .sbs-learn-list span {
+          width: 7px;
+          height: 7px;
+          margin-top: 10px;
+          border-radius: 999px;
+          background: #0D0E10;
+        }
+        .sbs-learn-list p,
+        .sbs-sales-for-you p {
+          max-width: none;
+          margin: 0;
+        }
+        .sbs-sales-for-you > div:last-child {
+          display: grid;
+          gap: 14px;
+          padding: 26px;
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-sales-for-you > div:last-child p {
+          padding-bottom: 14px;
+          border-bottom: 1px solid rgba(197,198,200,0.28);
+        }
+        .sbs-sales-for-you > div:last-child p:last-child {
+          padding-bottom: 0;
+          border-bottom: 0;
         }
         .sbs-sales-path {
           max-width: 1180px;
@@ -383,6 +488,8 @@ export default async function SelfieToBrandShootLandingPage({
         @media (max-width: 860px) {
           .sbs-sales-hero,
           .sbs-sales-strip,
+          .sbs-sales-learn,
+          .sbs-sales-for-you,
           .sbs-sales-proof,
           .sbs-retry-banner {
             grid-template-columns: 1fr;
