@@ -2,7 +2,10 @@ import "server-only"
 import { getDb } from '@/lib/db/client'
 import { processEmailLinks, validateEmailLinks } from './link-library'
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
-import { computeBroadcastPreflight } from "@/lib/email/broadcast-preflight"
+import {
+  assertNoUnsupportedBroadcastMergeTags,
+  computeBroadcastPreflight,
+} from "@/lib/email/broadcast-preflight"
 import { requireResendClient } from "@/lib/resend/client"
 
 export interface BroadcastRecipientPreflight {
@@ -99,6 +102,11 @@ export async function sendNewsletterBroadcast(
 
   // 3. Validate email content
   const validationIssues = validateEmailLinks(processedHTML)
+  assertNoUnsupportedBroadcastMergeTags(processedHTML)
+  if (typeof campaign.body_text === "string") {
+    assertNoUnsupportedBroadcastMergeTags(campaign.body_text)
+  }
+
   if (validationIssues.length > 0) {
     console.warn(`[Newsletter Broadcast] Validation issues found:`, validationIssues)
     // Log to database but don't block sending (they might be false positives)
