@@ -3575,6 +3575,26 @@ export async function POST(request: NextRequest) {
                 }
               }
 
+              try {
+                await markRevenueEnginePurchase({
+                  sessionId: session.id,
+                  userId: referralPurchaseUserId || null,
+                  userEmail: customerEmail || null,
+                  stripeCustomerId: customerId || vaultCustomerIdForStorage || null,
+                  stripePaymentId: paymentIdForStorage,
+                  purchaseValueCents: paymentAmountCents,
+                  purchaseCurrency: typeof session.currency === "string" ? session.currency : "usd",
+                  purchasedAt: new Date(),
+                  emailType: session.metadata?.email_type || null,
+                  campaignId: session.metadata?.campaign_id || null,
+                })
+              } catch (attributionError: any) {
+                console.error(
+                  "[v0] Failed to persist Prompt Vault revenue attribution immediately after payment:",
+                  attributionError.message,
+                )
+              }
+
               if (userId) {
                 await sql`
                   INSERT INTO user_tags (user_id, tag, source, metadata)
