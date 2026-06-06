@@ -1,10 +1,11 @@
 import { buildRevenueEmailLink } from "./revenue-links"
 import { promptVaultCheckoutUrl } from "./selfie-education-links"
+import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
 
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE = "prompt-vault-checkout-recovery"
 
 export function generatePromptVaultCheckoutRecoveryEmail({
-  firstName: _firstName,
+  firstName,
 }: {
   firstName: string
 }) {
@@ -16,42 +17,51 @@ export function generatePromptVaultCheckoutRecoveryEmail({
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
   })
 
-  const bodyHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111111;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 22px;font-size:16px;line-height:1.75;">
-    Hey babe 🫶🏼<br><br>
-    You were SO close to unlocking VAULT 😭✨<br><br>
-    Inside are all the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style prompts I’ve been obsessing over lately…<br><br>
-    And honestly? I keep adding more because I literally can’t stop making them 😂💋<br><br>
-    If you still want in, here’s your link:<br><br>
-    <a href="${checkoutUrl}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:14px 22px;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">Unlock VAULT</a><br><br>
-    🤍<br>
-    Sandra
-  </div>
-</body>
-</html>`
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Prompt Vault, so I wanted to send the link back to you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompt shows you what one selfie can become. The Vault gives you the full set of visual directions to keep creating from that same starting point.</p>
+    ${renderStonePanel(
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Use it when you want more than one random AI image.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Choose a photoshoot world, copy the prompt, upload your selfie, and start testing the version of you that actually feels exciting to post.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;">Simple. Visual. No overthinking.</p>`,
+      "What the Vault helps with"
+    )}
+    <div style="margin:26px 0 22px;">${renderStoneButton("Get the Prompt Vault", checkoutUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you were just browsing, that is completely okay.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">But if you still want the prompts, this is the easiest place to start.</p>
+  `
 
   return {
-    subject: "your transformation is waiting",
-    html: bodyHtml,
-    text: `Hey babe 🫶🏼
+    subject: "here is the vault link",
+    html: renderStoneShell({
+      title: "Here is the Vault link.",
+      eyebrow: "Prompt Vault",
+      subtitle: "A simple way back to the prompts you were looking at.",
+      bodyHtml,
+      footerLead: "Reply if checkout gave you trouble.",
+      footerSignoff: "Sandra x",
+    }),
+    text: `Hi ${firstName},
 
-You were SO close to unlocking VAULT 😭✨
+You were looking at the Prompt Vault, so I wanted to send the link back to you.
 
-Inside are all the cinematic, luxury, dark feminine, glam, mirror selfie, and main-character-style prompts I’ve been obsessing over lately…
+The free prompt shows you what one selfie can become. The Vault gives you the full set of visual directions to keep creating from that same starting point.
 
-And honestly? I keep adding more because I literally can’t stop making them 😂💋
+What the Vault helps with:
+- Use it when you want more than one random AI image.
+- Choose a photoshoot world, copy the prompt, upload your selfie, and start testing the version of you that actually feels exciting to post.
+- Simple. Visual. No overthinking.
 
-If you still want in, here’s your link:
-
+Get the Prompt Vault:
 ${checkoutUrl}
 
-🤍
-Sandra`,
+If you were just browsing, that is completely okay.
+
+But if you still want the prompts, this is the easiest place to start.
+
+Reply if checkout gave you trouble.
+
+Sandra x`,
   }
 }
