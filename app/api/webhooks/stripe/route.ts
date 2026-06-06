@@ -956,6 +956,7 @@ export async function POST(request: NextRequest) {
             source === "visibility_suite_paid" ||
             source === "transform_paid" ||
             source === "prompt_vault_paid" ||
+            source === "ai_prompts_access" ||
             source === "selfie_to_brand_shoot_paid"
 
           if (!customerEmail) {
