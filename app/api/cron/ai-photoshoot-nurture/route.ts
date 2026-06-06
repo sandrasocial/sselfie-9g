@@ -48,6 +48,7 @@ interface PromptVaultCandidate {
 
 interface TouchResult {
   found: number
+  wouldSend: number
   sent: number
   failed: number
   skipped: number
@@ -294,7 +295,7 @@ async function sendPromptVaultTouch(emailType: PromptVaultEmailType, candidate: 
 }
 
 function emptyTouchResult(): TouchResult {
-  return { found: 0, sent: 0, failed: 0, skipped: 0 }
+  return { found: 0, wouldSend: 0, sent: 0, failed: 0, skipped: 0 }
 }
 
 function isTouchResult(value: unknown): value is TouchResult {
@@ -302,6 +303,7 @@ function isTouchResult(value: unknown): value is TouchResult {
     value &&
       typeof value === "object" &&
       "found" in value &&
+      "wouldSend" in value &&
       "sent" in value &&
       "failed" in value &&
       "skipped" in value,
@@ -313,6 +315,11 @@ export async function GET(request: Request) {
   await cronLogger.start()
 
   try {
+    const url = new URL(request.url)
+    const dryRun =
+      url.searchParams.get("dry_run") === "1" ||
+      url.searchParams.get("dryRun") === "true" ||
+      url.searchParams.get("preview") === "1"
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     const isProduction =
@@ -344,6 +351,7 @@ export async function GET(request: Request) {
     let remainingSends = maxTotalPerRun
 
     const results: Record<string, TouchResult | boolean | number | string> = {
+      dryRun,
       aiPromptsEnabled,
       promptVaultEnabled,
       maxPerTouch,
@@ -353,14 +361,14 @@ export async function GET(request: Request) {
     }
     const errors: Array<{ email: string; touch: string; error: string }> = []
 
-    if (aiPromptsEnabled) {
+    if (aiPromptsEnabled || dryRun) {
       for (const touch of AI_PROMPTS_EMAIL_TOUCHES) {
         const key = resultKey(touch.emailType)
         const result = emptyTouchResult()
         results[key] = result
 
         if (remainingSends <= 0) {
-          result.skipped = maxPerTouch
+          result.skipped = dryRun ? 0 : maxPerTouch
           continue
         }
 
@@ -373,6 +381,13 @@ export async function GET(request: Request) {
           limit: Math.min(maxPerTouch, remainingSends),
         })
         result.found = candidates.length
+
+        if (dryRun) {
+          result.wouldSend = candidates.length
+          result.skipped = candidates.length
+          remainingSends -= candidates.length
+          continue
+        }
 
         for (const candidate of candidates) {
           const sent = await sendAiPromptsTouch(touch.emailType, candidate)
@@ -394,14 +409,14 @@ export async function GET(request: Request) {
       }
     }
 
-    if (promptVaultEnabled) {
+    if (promptVaultEnabled || dryRun) {
       for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
         const key = resultKey(touch.emailType)
         const result = emptyTouchResult()
         results[key] = result
 
         if (remainingSends <= 0) {
-          result.skipped = maxPerTouch
+          result.skipped = dryRun ? 0 : maxPerTouch
           continue
         }
 
@@ -413,6 +428,13 @@ export async function GET(request: Request) {
           limit: Math.min(maxPerTouch, remainingSends),
         })
         result.found = candidates.length
+
+        if (dryRun) {
+          result.wouldSend = candidates.length
+          result.skipped = candidates.length
+          remainingSends -= candidates.length
+          continue
+        }
 
         for (const candidate of candidates) {
           const sent = await sendPromptVaultTouch(touch.emailType, candidate)
@@ -438,6 +460,10 @@ export async function GET(request: Request) {
       (total, value) => total + (isTouchResult(value) ? value.sent : 0),
       0,
     )
+    const totalWouldSend = Object.values(results).reduce<number>(
+      (total, value) => total + (isTouchResult(value) ? value.wouldSend : 0),
+      0,
+    )
     const totalFailed = Object.values(results).reduce<number>(
       (total, value) => total + (isTouchResult(value) ? value.failed : 0),
       0,
@@ -445,6 +471,7 @@ export async function GET(request: Request) {
 
     const summary = {
       ...results,
+      totalWouldSend,
       totalSent,
       totalFailed,
       remainingSends,
