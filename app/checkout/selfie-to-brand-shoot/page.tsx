@@ -31,6 +31,38 @@ async function getEmailFromFreebieToken(token?: string | null): Promise<string |
   return (rows[0]?.email as string | undefined) || null
 }
 
+function getErrorInfo(error: unknown): { message: string; code: string | null; type: string | null } {
+  if (error instanceof Error) {
+    const stripeLike = error as Error & { code?: unknown; type?: unknown }
+    return {
+      message: error.message,
+      code: typeof stripeLike.code === "string" ? stripeLike.code : null,
+      type: typeof stripeLike.type === "string" ? stripeLike.type : null,
+    }
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const value = error as { message?: unknown; code?: unknown; type?: unknown }
+    return {
+      message: typeof value.message === "string" ? value.message : "Unknown checkout session error",
+      code: typeof value.code === "string" ? value.code : null,
+      type: typeof value.type === "string" ? value.type : null,
+    }
+  }
+
+  return {
+    message: typeof error === "string" ? error : "Unknown checkout session error",
+    code: null,
+    type: null,
+  }
+}
+
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+}
+
 async function hasPromptVaultBuyerAccess(input: {
   token?: string | null
   email?: string | null
@@ -103,6 +135,8 @@ export default async function SelfieToBrandShootCheckoutPage({
     freebie_token?: string
     vault_credit?: string
     upgrade_credit?: string
+    checkout_email?: string
+    email?: string
     returnTo?: string
     return_to?: string
   }>
@@ -117,7 +151,8 @@ export default async function SelfieToBrandShootCheckoutPage({
     data: { user: authUser },
   } = await supabase.auth.getUser()
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
-  const checkoutEmail = authUser?.email ?? freebieEmail ?? null
+  const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
+  const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
   const vaultCreditEligible = await hasPromptVaultBuyerAccess({
     token: params.freebie_token,
     email: checkoutEmail,
@@ -135,7 +170,7 @@ export default async function SelfieToBrandShootCheckoutPage({
 
   try {
     await logAnalyticsEvent({
-      eventName: "selfie_to_brand_shoot_checkout_start",
+      eventName: "selfie_to_brand_shoot_checkout_session_requested",
       userId: authUser?.id || null,
       path: "/checkout/selfie-to-brand-shoot",
       utm: {
@@ -147,6 +182,7 @@ export default async function SelfieToBrandShootCheckoutPage({
       properties: checkoutStartProperties(params, attribution, {
         has_auth_user: Boolean(authUser?.id),
         has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
         vault_credit_applied: vaultCreditEligible,
       }),
     })
@@ -168,6 +204,25 @@ export default async function SelfieToBrandShootCheckoutPage({
     )
 
     if (clientSecret) {
+      const stripeSessionId = clientSecret.split("_secret_")[0] || null
+      await logAnalyticsEvent({
+        eventName: "selfie_to_brand_shoot_checkout_session_created",
+        userId: authUser?.id || null,
+        path: "/checkout/selfie-to-brand-shoot",
+        utm: {
+          source: attribution.utmSource,
+          medium: attribution.utmMedium,
+          campaign: attribution.utmCampaign,
+          content: attribution.utmContent,
+        },
+        properties: checkoutStartProperties(params, attribution, {
+          checkout_session_id: stripeSessionId,
+          has_auth_user: Boolean(authUser?.id),
+          has_prefill_email: Boolean(checkoutEmail),
+          prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
+          vault_credit_applied: vaultCreditEligible,
+        }),
+      })
       redirect(buildCheckoutRedirectUrl(clientSecret, "selfie_to_brand_shoot_system", checkoutParams))
     }
   } catch (error: unknown) {
@@ -181,6 +236,27 @@ export default async function SelfieToBrandShootCheckoutPage({
       throw error
     }
 
+    const errorInfo = getErrorInfo(error)
+    await logAnalyticsEvent({
+      eventName: "selfie_to_brand_shoot_checkout_session_failed",
+      userId: authUser?.id || null,
+      path: "/checkout/selfie-to-brand-shoot",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: checkoutStartProperties(params, attribution, {
+        error_message: errorInfo.message,
+        error_code: errorInfo.code,
+        error_type: errorInfo.type,
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
+        vault_credit_applied: vaultCreditEligible,
+      }),
+    })
     console.error("[Selfie to Brand Shoot Checkout] Error creating checkout session:", error)
   }
 

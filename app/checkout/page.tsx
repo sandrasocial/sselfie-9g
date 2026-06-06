@@ -81,10 +81,10 @@ const CHECKOUT_COPY: Record<
     footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
   },
   selfie_to_brand_shoot_system: {
-    heroTitle: "Build the full brand shoot path",
-    heroBody: "Turn one selfie into elevated personal brand images with the guided system and Vault included.",
+    heroTitle: "Start your first AI brand shoot",
+    heroBody: "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
     heading: "Selfie to Brand Shoot System",
-    blurb: "One $197 payment unlocks the guided workflow, source selfie method, taste filter, content-use path, and full Vault access.",
+    blurb: "You are buying the guided $197 system for turning one selfie into a cohesive personal brand shoot, with the full Prompt Vault included.",
     footer: "One-time digital purchase. Your System access link is delivered right after payment.",
   },
 }
@@ -101,6 +101,12 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "One-time $27 purchase",
     "No subscription or credit plan",
     "Use the prompts in ChatGPT with your own selfie",
+  ],
+  selfie_to_brand_shoot_system: [
+    "Instant course access after payment",
+    "One-time $197 purchase",
+    "Full Prompt Vault included",
+    "Use ChatGPT with your own selfie",
   ],
 }
 
@@ -348,6 +354,16 @@ function CheckoutContent() {
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
                 Your access link opens the full Vault right away so you can copy the complete shoot prompts and use them in ChatGPT with your own selfie.
+              </p>
+            </div>
+          )}
+          {isSelfieToBrandShoot && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                What happens after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Your access link opens the full course right away. Start with Module 1, choose your Signature Visual World, create your first three AI brand images, then turn them into content.
               </p>
             </div>
           )}
