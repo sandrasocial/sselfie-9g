@@ -883,7 +883,9 @@ export async function GET(request: Request) {
       }
     }
 
-    const aiPromptsEnabled = process.env.AI_PROMPTS_NURTURE_ENABLED === "true"
+    const legacyAiPromptsEnabled = process.env.LEGACY_NURTURE_AI_PROMPTS_ENABLED === "true"
+    const aiPromptsEnabled =
+      process.env.AI_PROMPTS_NURTURE_ENABLED === "true" && legacyAiPromptsEnabled
     const aiPromptsStartDate = aiPromptsNurtureStartDate()
     const aiPromptsTouchResultKeys = ["aiPromptsDay1", "aiPromptsDay5", "aiPromptsDay7"] as const
 
@@ -926,7 +928,9 @@ export async function GET(request: Request) {
       }
     }
 
-    const promptVaultNurtureEnabled = process.env.PROMPT_VAULT_NURTURE_ENABLED === "true"
+    const legacyPromptVaultEnabled = process.env.LEGACY_NURTURE_PROMPT_VAULT_ENABLED === "true"
+    const promptVaultNurtureEnabled =
+      process.env.PROMPT_VAULT_NURTURE_ENABLED === "true" && legacyPromptVaultEnabled
     const promptVaultTouchResultKeys = [
       "promptVaultDay2",
       "promptVaultDay3",
