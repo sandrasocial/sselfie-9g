@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import {
@@ -53,6 +54,30 @@ async function hasPromptVaultBuyerAccess(input: {
   `
 
   return rows.length > 0
+}
+
+function checkoutStartProperties(
+  params: Awaited<Parameters<typeof getCheckoutAttributionFromParams>[0]>,
+  attribution: ReturnType<typeof getCheckoutAttributionFromParams>,
+  extra?: Record<string, string | number | boolean | null>,
+) {
+  return {
+    product_type: "selfie_to_brand_shoot_system",
+    source: attribution.source || "selfie_to_brand_shoot_paid",
+    utm_source: attribution.utmSource || null,
+    utm_medium: attribution.utmMedium || null,
+    utm_campaign: attribution.utmCampaign || null,
+    utm_content: attribution.utmContent || null,
+    campaign_id: attribution.campaignId ? String(attribution.campaignId) : null,
+    cta_keyword: attribution.ctaKeyword || null,
+    entry_post_slug: attribution.entryPostSlug || null,
+    buyer_stage: attribution.buyerStage || null,
+    checkout_source: attribution.checkoutSource || null,
+    freebie_source: attribution.freebieSource || null,
+    has_freebie_token: Boolean(params.freebie_token),
+    requested_vault_credit: params.vault_credit === "1" || params.upgrade_credit === "2700",
+    ...extra,
+  }
 }
 
 export default async function SelfieToBrandShootCheckoutPage({
@@ -109,6 +134,23 @@ export default async function SelfieToBrandShootCheckoutPage({
   }
 
   try {
+    await logAnalyticsEvent({
+      eventName: "selfie_to_brand_shoot_checkout_start",
+      userId: authUser?.id || null,
+      path: "/checkout/selfie-to-brand-shoot",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: checkoutStartProperties(params, attribution, {
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: Boolean(checkoutEmail),
+        vault_credit_applied: vaultCreditEligible,
+      }),
+    })
+
     const clientSecret = await createLandingCheckoutSession(
       "selfie_to_brand_shoot_system",
       vaultCreditEligible ? "VAULT27" : undefined,
