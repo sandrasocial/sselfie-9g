@@ -111,8 +111,18 @@ describe("selfie guide paid funnel", () => {
     const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
 
     expect(landingActionContents).toContain("buildCheckoutSessionIdempotencyKey")
-    expect(landingActionContents).toContain("stripe.checkout.sessions.create(sessionConfig, stripeRequestOptions)")
+    expect(landingActionContents).toContain("stripe.checkout.sessions.create(sessionConfig, { idempotencyKey })")
+    expect(landingActionContents).toContain("stripe.checkout.sessions.create(sessionConfig)")
     expect(landingActionContents).toContain("starter_kit")
     expect(landingActionContents).toContain("prompt_vault")
+  })
+
+  it("sanitizes saved lead emails before pre-filling Stripe checkout", () => {
+    const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
+
+    expect(landingActionContents).toContain("normalizeStripeCustomerEmail")
+    expect(landingActionContents).toContain("const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)")
+    expect(landingActionContents).toContain("...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail })")
+    expect(landingActionContents).toContain("customerEmail: normalizedCustomerEmail")
   })
 })
