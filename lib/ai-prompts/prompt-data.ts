@@ -23,6 +23,132 @@ export type PromptCard = {
 }
 
 // ---------------------------------------------------------------------------
+// COLLECTION 10 — Mysterious Vogue Editorial (7 shots)
+// ---------------------------------------------------------------------------
+
+export const MYSTERIOUS_VOGUE_SERIES: PromptCard[] = [
+  {
+    number: "98",
+    id: "mysterious-vogue-shot-1",
+    title: "Mysterious Vogue · Half-Light",
+    whenToUse: "An extreme close-up with half the face swallowed by shadow, one eye and nude lips holding the frame. Use as a striking profile photo, a mysterious single post, or anywhere you want the image to do the talking.",
+    mood: "mysterious vogue · half shadow · one eye · chiaroscuro · beauty close-up",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-1.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a cinematic minimalist close-up of half of my face, with a large part of the face immersed in deep black shadow. One eye visible, with long voluminous highly detailed eyelashes, a perfectly shaped thick eyebrow, warm nude makeup with soft brown eyeshadow and subtle eyeliner. Natural pink lips, slightly glossy, smooth skin with visible realistic texture.
+
+Dramatic chiaroscuro lighting coming from the right, strong contrast between light and darkness, mysterious and elegant atmosphere. Completely black background, shallow depth of field, sharp focus on the eye and lips, luxury editorial beauty photography, photorealistic rendering, ultra-detailed, 85mm lens, f/1.4, soft studio lighting, 8K quality, vertical 9:16.
+
+No text, no accessories, no over-smoothed skin.`,
+  },
+  {
+    number: "99",
+    id: "mysterious-vogue-shot-2",
+    title: "Mysterious Vogue · After Rain",
+    whenToUse: "Damp tousled hair, bronze glam, sensual luxury-campaign energy. Use when you want something editorial and a little undone, or a caption with some heat behind it.",
+    mood: "mysterious vogue · damp hair · bronze glam · sensual · luxury campaign",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-2.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a cinematic close-up beauty portrait with slightly damp, tousled brunette hair falling naturally around my face and partly over one eye. The mood is dark, moody, sensual, and high-fashion, like a luxury beauty campaign after rain.
+
+The face is lit from one side with dramatic warm studio light, while the other side fades into deep black shadow. One eye should be sharp and intense. Makeup is soft bronze glam with defined brows, long lashes, warm brown eyeshadow, glowing skin, and nude glossy lips.
+
+Keep skin realistic with visible texture, pores, natural shine, and refined editorial retouching. Black background, strong chiaroscuro lighting, deep shadows, shallow depth of field, sharp focus on eyes and lips, 85mm lens, f/1.4, ultra-realistic 8K, vertical 9:16.
+
+No text, no accessories, no water droplets on face unless very subtle.`,
+  },
+  {
+    number: "100",
+    id: "mysterious-vogue-shot-3",
+    title: "Mysterious Vogue · Black Blazer",
+    whenToUse: "Shoulders-up in a sharp black blazer, calm and powerful, lit from one side. Strong for a profile photo, an about-me moment, or any caption about meaning business.",
+    mood: "mysterious vogue · black blazer · calm power · shoulders up · editorial",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-3.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a luxury black-and-white inspired editorial portrait, but keep the final image in warm cinematic color. I am wearing a structured black blazer with nothing distracting underneath, styled in a minimal, elegant, expensive way. The shot is cropped close from the shoulders up.
+
+My face is partly covered in deep shadow, with one side lit by dramatic warm studio light. My expression is calm, serious, confident, and feminine. Hair is dark brunette, softly tousled, with volume and natural movement.
+
+Makeup is polished but not heavy: defined brows, soft smoky brown eyes, long lashes, glowing bronzed skin, sculpted cheekbones, nude glossy lips, and visible realistic skin texture.
+
+Black background, cinematic chiaroscuro lighting, luxury editorial magazine style, shallow depth of field, 85mm lens, f/1.4, ultra-realistic 8K, vertical 9:16.
+
+No text, no bright colors, no extra props.`,
+  },
+  {
+    number: "101",
+    id: "mysterious-vogue-shot-4",
+    title: "Mysterious Vogue · Noir Beam",
+    whenToUse: "A dramatic noir close-up, one strong beam of warm light across the face, a bold classic red lip. Use for high-impact single posts or anything that needs pure presence.",
+    mood: "mysterious vogue · noir · side beam · intense · classic red lip",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-4.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a dramatic noir-inspired beauty portrait with deep black shadows and one strong beam of warm side light across my face. Keep the composition close and minimal. My expression is intense, calm, and powerful.
+
+Style me with soft dark brunette waves, sculpted glowing skin, defined brows, long lashes, soft smoky brown eye makeup, and a deep classic red lip. The red lip should look expensive, slightly satin, not cartoonish or overly bright.
+
+The background is completely black. Use dramatic chiaroscuro lighting, strong contrast, sharp focus on eyes and lips, realistic skin texture, luxury editorial beauty photography, 85mm lens, f/1.4, shallow depth of field, ultra-realistic 8K, vertical 9:16.
+
+No jewelry, no text, no extra props.`,
+  },
+  {
+    number: "102",
+    id: "mysterious-vogue-shot-5",
+    title: "Mysterious Vogue · Eyes Closed",
+    whenToUse: "Eyes gently closed, face turned to the light, fragrance-campaign calm. Use for intimate, quiet captions or a softer moment that breaks up a bolder grid.",
+    mood: "mysterious vogue · eyes closed · side light · fragrance campaign · intimate",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-5.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a close-up portrait with my eyes gently closed, face turned slightly toward the light, looking peaceful, elegant, and cinematic. The mood should feel intimate, expensive, and almost like a fragrance campaign.
+
+Use dramatic side lighting from the right, with one side of the face glowing and the other side melting into black shadow. Focus on skin texture, lashes, brows, cheekbone, nose, and glossy nude lips. Hair is soft, dark brunette, slightly messy, falling naturally around the face.
+
+Makeup is warm nude glam: soft brown eyeshadow, defined brows, long lashes, bronzed glowing skin, sculpted cheekbones, natural glossy lips. Black background, deep shadows, shallow depth of field, 85mm lens, f/1.4, ultra-realistic 8K, vertical 9:16.
+
+No text, no props, no over-smoothed skin.`,
+  },
+  {
+    number: "103",
+    id: "mysterious-vogue-shot-6",
+    title: "Mysterious Vogue · Hair Across",
+    whenToUse: "Loose hair falling across the face, one sharp eye on the camera. Mysterious, feminine, high-fashion. Use as a scroll-stopper or a moody single post.",
+    mood: "mysterious vogue · hair across face · one eye · direct gaze · high fashion",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-6.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a dramatic extreme close-up where loose dark brunette hair falls across part of my face, partly covering one side. One eye remains visible and sharp, looking directly into the camera with a calm, intense expression. The hair should feel natural, soft, and editorial, not messy in a bad way.
+
+Use strong cinematic side lighting with deep black shadows, warm highlights, realistic skin texture, glossy lips, defined brows, long lashes, soft bronze eye makeup, and sculpted cheekbones. The image should feel mysterious, feminine, expensive, and high-fashion.
+
+Black background, shallow depth of field, sharp focus on the visible eye and lips, 85mm lens, f/1.4, luxury editorial beauty campaign, ultra-realistic 8K, vertical 9:16.
+
+No text, no accessories, no fake-looking skin.`,
+  },
+  {
+    number: "104",
+    id: "mysterious-vogue-shot-7",
+    title: "Mysterious Vogue · Cover Portrait",
+    whenToUse: "The hero of the set. A centered magazine-cover beauty portrait, direct powerful gaze, one side of the face glowing. Use as a single post, a profile photo, or the carousel cover.",
+    mood: "mysterious vogue · magazine cover · centered · direct gaze · hero",
+    exampleImage: "/images/ai-prompts/mysterious-vogue-shot-7.png",
+    prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
+
+Create a high-end magazine cover style beauty portrait, cropped from the shoulders up. I am centered in the frame, looking directly into the camera with a calm, powerful, feminine expression. The image should feel like a luxury beauty campaign, dark, minimal, and expensive.
+
+Use dramatic black background, sculpted side lighting, deep shadows, warm highlights, glowing realistic skin, defined brows, soft smoky brown eyes, long lashes, nude glossy lips, and dark brunette hair with natural volume. One side of the face should be more illuminated, while the other side is softly swallowed by shadow.
+
+Editorial composition, shallow depth of field, sharp focus on eyes and lips, 85mm lens, f/1.4, ultra-realistic 8K, vertical 9:16.
+
+No text, no logo, no extra props, no colorful background.`,
+  },
+]
+
+// ---------------------------------------------------------------------------
 // COLLECTION 09 — Quiet Luxury London Editorial (9 shots)
 // ---------------------------------------------------------------------------
 
@@ -2236,6 +2362,20 @@ export type VaultCollectionMeta = {
 
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
+    previewCardId: "mysterious-vogue-shot-1",
+    name: "Mysterious Vogue Editorial",
+    shotCount: 7,
+    thumbnails: [
+      "/images/ai-prompts/mysterious-vogue-shot-1.png",
+      "/images/ai-prompts/mysterious-vogue-shot-2.png",
+      "/images/ai-prompts/mysterious-vogue-shot-3.png",
+      "/images/ai-prompts/mysterious-vogue-shot-4.png",
+      "/images/ai-prompts/mysterious-vogue-shot-5.png",
+      "/images/ai-prompts/mysterious-vogue-shot-6.png",
+      "/images/ai-prompts/mysterious-vogue-shot-7.png",
+    ],
+  },
+  {
     previewCardId: "quiet-luxury-london-shot-1",
     name: "Quiet Luxury London Editorial",
     shotCount: 9,
@@ -2396,6 +2536,7 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
+  ...(MYSTERIOUS_VOGUE_SERIES.length > 0     ? [MYSTERIOUS_VOGUE_SERIES[0]]     : []),
   ...(QUIET_LUXURY_LONDON_SERIES.length > 0  ? [QUIET_LUXURY_LONDON_SERIES[0]]  : []),
   ...(NOIR_FEMME_SERIES.length > 0           ? [NOIR_FEMME_SERIES[0]]           : []),
   ...(CLEAN_GIRL_MORNING_SERIES.length > 0   ? [CLEAN_GIRL_MORNING_SERIES[0]]   : []),

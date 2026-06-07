@@ -125,6 +125,14 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
     includedInEmailDrop: false,
     droppedAt: null,
   },
+  {
+    id: "mysterious-vogue",
+    name: "Mysterious Vogue Editorial",
+    heroImage: "/images/ai-prompts/mysterious-vogue-shot-3.png",
+    moodLine: "Deep shadow. One beam of warm light. Luxury beauty drama.",
+    includedInEmailDrop: false,
+    droppedAt: null,
+  },
 ]
 
 // ── Derived helpers ────────────────────────────────────────────────────────

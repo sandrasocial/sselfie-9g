@@ -10,6 +10,7 @@ import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import {
+  MYSTERIOUS_VOGUE_SERIES,
   QUIET_LUXURY_LONDON_SERIES,
   NOIR_FEMME_SERIES,
   CLEAN_GIRL_MORNING_SERIES,
@@ -29,6 +30,13 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 // ── Collection data ─────────────────────────────────────────────────────────
 
 const COLLECTION_OVERVIEW = [
+  {
+    eyebrow: "COLLECTION 10",
+    title: "Mysterious Vogue",
+    note: "Deep black shadow, one beam of warm light. Luxury beauty close-ups with real editorial drama.",
+    image: MYSTERIOUS_VOGUE_SERIES[0]?.exampleImage,
+    href: "#mysterious-vogue",
+  },
   {
     eyebrow: "COLLECTION 09",
     title: "Quiet Luxury London",
@@ -102,6 +110,14 @@ const VAULT_COLLECTIONS: Array<{
   heroImage?: string
   cards: PromptCard[]
 }> = [
+  {
+    id: "mysterious-vogue",
+    eyebrow: "COLLECTION 10 · MYSTERIOUS VOGUE EDITORIAL",
+    title: "Mysterious Vogue Editorial",
+    note: "Dark chiaroscuro beauty close-ups. Half-shadow eyes, damp tousled hair, a black blazer, a noir red lip. Seven luxury editorial portraits where one beam of warm light does all the work.",
+    heroImage: MYSTERIOUS_VOGUE_SERIES[0]?.exampleImage,
+    cards: MYSTERIOUS_VOGUE_SERIES,
+  },
   {
     id: "quiet-luxury-london",
     eyebrow: "COLLECTION 09 · QUIET LUXURY LONDON EDITORIAL",
