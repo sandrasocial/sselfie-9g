@@ -55,26 +55,49 @@ export default function BioPage() {
         </div>
 
         <div className="bio-links">
-          <Link href="/selfie-guide" className="bio-card bio-card-primary">
-            <span className="bio-card-eyebrow">FREE GUIDE</span>
-            <span className={`bio-card-title ${cormorant.className}`}>
-              Your first real selfie starts here.
+          <Link href="/selfie-guide" className="bio-card">
+            <Image
+              src="/images/ai-prompts/quiet-luxury-london-shot-1.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 460px) 100vw, 420px"
+              className="bio-card-bg"
+              style={{ objectFit: "cover", objectPosition: "50% 26%" }}
+              priority
+            />
+            <span className="bio-card-overlay" aria-hidden="true" />
+            <span className="bio-card-content">
+              <span className="bio-card-eyebrow">FREE GUIDE</span>
+              <span className={`bio-card-title ${cormorant.className}`}>
+                Your first real selfie starts here.
+              </span>
+              <span className="bio-card-body">
+                Light, angles, confidence. The guide is free and you can start today.
+              </span>
+              <span className="bio-card-cta">Get the free guide</span>
             </span>
-            <span className="bio-card-body">
-              Light, angles, confidence. The guide is free and you can start today.
-            </span>
-            <span className="bio-card-cta">Get the free guide</span>
           </Link>
 
-          <Link href="/ai-prompts" className="bio-card bio-card-secondary">
-            <span className="bio-card-eyebrow">FREE DOWNLOAD</span>
-            <span className={`bio-card-title ${cormorant.className}`}>
-              The ChatGPT Selfie Prompt Pack.
+          <Link href="/ai-prompts" className="bio-card">
+            <Image
+              src="/images/ai-prompts/dark-feminine-cafe-shot-1.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 460px) 100vw, 420px"
+              className="bio-card-bg"
+              style={{ objectFit: "cover", objectPosition: "50% 22%" }}
+            />
+            <span className="bio-card-overlay" aria-hidden="true" />
+            <span className="bio-card-content">
+              <span className="bio-card-eyebrow">FREE DOWNLOAD</span>
+              <span className={`bio-card-title ${cormorant.className}`}>
+                The ChatGPT Selfie Prompt Pack.
+              </span>
+              <span className="bio-card-body">
+                17 copy-paste prompts. Upload your selfie. Choose the look.
+              </span>
+              <span className="bio-card-cta">Get the prompts</span>
             </span>
-            <span className="bio-card-body">
-              17 copy-paste prompts. Upload your selfie. Choose the look.
-            </span>
-            <span className="bio-card-cta">Get the prompts</span>
           </Link>
 
           <div className="bio-tertiary">
@@ -182,65 +205,89 @@ export default function BioPage() {
           width: 100%;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 14px;
         }
 
         .bio-card {
+          position: relative;
+          display: flex;
+          min-height: 268px;
+          border-radius: 18px;
+          overflow: hidden;
+          text-decoration: none;
+          color: #ffffff;
+          isolation: isolate;
+          box-shadow: 0 18px 40px -24px rgba(10, 10, 10, 0.55);
+        }
+
+        .bio-card-bg {
+          z-index: 0;
+          transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+          will-change: transform;
+        }
+
+        .bio-card:hover .bio-card-bg {
+          transform: scale(1.045);
+        }
+
+        .bio-card-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          background:
+            linear-gradient(
+              to top,
+              rgba(8, 8, 8, 0.86) 0%,
+              rgba(8, 8, 8, 0.58) 38%,
+              rgba(8, 8, 8, 0.18) 70%,
+              rgba(8, 8, 8, 0.28) 100%
+            );
+        }
+
+        .bio-card-content {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          align-self: flex-end;
           display: flex;
           flex-direction: column;
           gap: 5px;
-          padding: 22px 22px 20px;
-          border-radius: 18px;
-          text-decoration: none;
-          transition: opacity 0.15s ease;
-        }
-
-        .bio-card:hover {
-          opacity: 0.87;
-        }
-
-        .bio-card-primary {
-          background: #0a0a0a;
-          color: #f5f5f5;
-        }
-
-        .bio-card-secondary {
-          background: transparent;
-          border: 1px solid rgba(10, 10, 10, 0.14);
-          color: #0a0a0a;
+          padding: 24px 24px 22px;
         }
 
         .bio-card-eyebrow {
           font-size: 9px;
           font-weight: 600;
-          letter-spacing: 0.32em;
-          opacity: 0.48;
+          letter-spacing: 0.34em;
+          color: rgba(255, 255, 255, 0.72);
         }
 
         .bio-card-title {
-          font-size: 1.4rem;
+          font-size: 1.5rem;
           font-weight: 300;
-          line-height: 1.1;
-          margin-top: 2px;
+          line-height: 1.12;
+          margin-top: 3px;
+          color: #ffffff;
+          text-shadow: 0 1px 18px rgba(0, 0, 0, 0.5);
         }
 
         .bio-card-body {
           font-size: 13px;
-          line-height: 1.65;
-          opacity: 0.65;
-          margin-top: 2px;
+          line-height: 1.6;
+          color: rgba(255, 255, 255, 0.82);
+          margin-top: 3px;
+          max-width: 30ch;
+          text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
         }
 
         .bio-card-cta {
-          margin-top: 12px;
+          margin-top: 14px;
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.24em;
           text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.92);
         }
-
-        .bio-card-primary .bio-card-cta { color: rgba(245, 245, 245, 0.7); }
-        .bio-card-secondary .bio-card-cta { color: rgba(10, 10, 10, 0.5); }
 
         .bio-tertiary {
           margin-top: 4px;
