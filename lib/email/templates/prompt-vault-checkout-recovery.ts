@@ -6,8 +6,10 @@ export const PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE = "prompt-vault-checkout-
 
 export function generatePromptVaultCheckoutRecoveryEmail({
   firstName,
+  recipientEmail,
 }: {
   firstName: string
+  recipientEmail?: string | null
 }) {
   const checkoutUrl = buildRevenueEmailLink(promptVaultCheckoutUrl(), {
     source: "email",
@@ -15,6 +17,7 @@ export function generatePromptVaultCheckoutRecoveryEmail({
     campaign: "prompt_vault_checkout_recovery",
     content: "return_to_checkout",
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+    checkoutEmail: recipientEmail,
   })
 
   const bodyHtml = `

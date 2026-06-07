@@ -307,7 +307,10 @@ export async function GET(request: Request) {
       const firstName = getFirstNameForEmail({
         email: candidate.user_email,
       })
-      const email = generatePromptVaultCheckoutRecoveryEmail({ firstName })
+      const email = generatePromptVaultCheckoutRecoveryEmail({
+        firstName,
+        recipientEmail: candidate.user_email,
+      })
 
       const sent = await sendEmail({
         to: candidate.user_email,

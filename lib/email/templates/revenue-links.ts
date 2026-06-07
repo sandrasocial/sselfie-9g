@@ -10,6 +10,13 @@ interface RevenueLinkOptions {
   emailType?: string
   campaignId?: string
   referralCode?: string
+  checkoutEmail?: string | null
+}
+
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 export function buildRevenueEmailLink(url: string, options: RevenueLinkOptions): string {
@@ -34,6 +41,11 @@ export function buildRevenueEmailLink(url: string, options: RevenueLinkOptions):
 
   if (options.referralCode) {
     resolved.searchParams.set("ref", options.referralCode)
+  }
+
+  const checkoutEmail = normalizeCheckoutEmail(options.checkoutEmail)
+  if (checkoutEmail) {
+    resolved.searchParams.set("checkout_email", checkoutEmail)
   }
 
   return resolved.toString()

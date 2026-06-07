@@ -551,7 +551,7 @@ async function sendAiPromptsTouchEmail(
 
   switch (emailType) {
     case "ai-prompts-day1-vault-bridge":
-      email = generateAiPromptsDay1VaultBridgeEmail({ firstName })
+      email = generateAiPromptsDay1VaultBridgeEmail({ firstName, recipientEmail: candidate.email })
       break
     case "ai-prompts-day2-try-first-prompt":
       email = generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
@@ -560,7 +560,7 @@ async function sendAiPromptsTouchEmail(
       email = generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
       break
     case "ai-prompts-day7-prompt-vault-offer":
-      email = generateAiPromptsDay7PromptVaultOfferEmail({ firstName })
+      email = generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
       break
     default:
       throw new Error(`Unknown AI Prompts email type: ${emailType}`)
@@ -593,7 +593,7 @@ async function sendPromptVaultTouchEmail(
       email = generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
       break
     case "prompt-vault-day3-system-upgrade":
-      email = generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl })
+      email = generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl, recipientEmail: candidate.email })
       break
     case "prompt-vault-day5-fix-bad-result":
       email = generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
