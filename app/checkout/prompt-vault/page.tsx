@@ -9,6 +9,8 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { shouldShowPromptVaultCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 
 export const metadata: Metadata = {
   title: "Checkout | AI Photo Prompt Vault",
@@ -114,6 +116,7 @@ export default async function PromptVaultCheckoutPage({
     freebie_token?: string
     checkout_email?: string
     email?: string
+    skip_email_capture?: string
     returnTo?: string
     return_to?: string
   }>
@@ -129,6 +132,33 @@ export default async function PromptVaultCheckoutPage({
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
+  const shouldCaptureEmail = shouldShowPromptVaultCheckoutEmailCapture({
+    params,
+    hasRecoverableEmail: Boolean(checkoutEmail),
+    hasAuthUser: Boolean(authUser?.id),
+    hasFreebieToken: Boolean(params.freebie_token?.trim()),
+  })
+
+  if (shouldCaptureEmail) {
+    await logAnalyticsEvent({
+      eventName: "prompt_vault_checkout_email_capture_view",
+      userId: authUser?.id || null,
+      path: "/checkout/prompt-vault",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: promptVaultCheckoutProperties(params, attribution, {
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: false,
+        prefill_email_source: "none",
+      }),
+    })
+
+    return <PromptVaultCheckoutEmailCapture params={params} />
+  }
 
   try {
     await logAnalyticsEvent({

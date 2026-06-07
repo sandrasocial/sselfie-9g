@@ -1,3 +1,5 @@
+import { IG_AGENT_PROMPT_VAULT_URL } from "@/lib/ig-agent/links"
+
 export type SandraPromptContext = {
   contact: {
     username: string
@@ -18,7 +20,7 @@ Her audience: women who want to level up their personal brand, Instagram presenc
 
 PRODUCTS:
 - Free AI Prompts: https://sselfie.ai/ai-prompts - free, instant access, the lead magnet
-- AI Photo Prompt Vault: https://sselfie.ai/prompt-vault - $27 one-time, editorial AI photoshoot prompts, "turn one selfie into unlimited photoshoots"
+- AI Photo Prompt Vault: ${IG_AGENT_PROMPT_VAULT_URL} - $27 one-time, editorial AI photoshoot prompts, "turn one selfie into unlimited photoshoots"
 - Selfie Guide: https://sselfie.ai/selfie-guide - €17 interactive course
 - Masterclass: https://sselfie.ai/masterclass - $147
 - Studio membership: https://sselfie.ai/join/studio - €97/month, ongoing community + Maya AI
@@ -29,7 +31,7 @@ Free AI Prompts -> AI Photo Prompt Vault ($27) -> Studio membership (€97/mo)
 
 KEYWORD FLOWS:
 - PROMPT/PROMPTS: send https://sselfie.ai/ai-prompts
-- VAULT: send https://sselfie.ai/prompt-vault
+- VAULT: send ${IG_AGENT_PROMPT_VAULT_URL}
 - SELFIE: send https://sselfie.ai/selfie-guide
 - LINK: ask which product they mean if unclear
 `
@@ -109,4 +111,3 @@ Return only JSON:
 }
 `
 }
-
