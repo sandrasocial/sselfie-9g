@@ -4,18 +4,21 @@ import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay1VaultBridgeParams {
   firstName: string
+  recipientEmail?: string | null
 }
 
 const EMAIL_TYPE = "ai-prompts-day1-vault-bridge"
 
 export function generateAiPromptsDay1VaultBridgeEmail({
   firstName,
+  recipientEmail,
 }: AiPromptsDay1VaultBridgeParams): { html: string; text: string; subject: string } {
   const promptVaultUrl = buildRevenueEmailLink(promptVaultCheckoutUrl(), {
     campaign: "ai_prompts_day1_vault_bridge",
     content: "get_full_vault",
     medium: "nurture",
     emailType: EMAIL_TYPE,
+    checkoutEmail: recipientEmail,
   })
 
   const subject = "did your photo come out?"

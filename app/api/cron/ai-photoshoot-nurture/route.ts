@@ -231,13 +231,13 @@ function generateAiPromptsEmail(
 
   switch (emailType) {
     case "ai-prompts-day1-vault-bridge":
-      return generateAiPromptsDay1VaultBridgeEmail({ firstName })
+      return generateAiPromptsDay1VaultBridgeEmail({ firstName, recipientEmail: candidate.email })
     case "ai-prompts-day2-try-first-prompt":
       return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":
       return generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
     case "ai-prompts-day7-prompt-vault-offer":
-      return generateAiPromptsDay7PromptVaultOfferEmail({ firstName })
+      return generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
     default:
       throw new Error(`Unknown AI prompts email type: ${emailType}`)
   }
@@ -254,7 +254,7 @@ function generatePromptVaultEmail(
     case "prompt-vault-day2-first-result":
       return generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
     case "prompt-vault-day3-system-upgrade":
-      return generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl })
+      return generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl, recipientEmail: candidate.email })
     case "prompt-vault-day5-fix-bad-result":
       return generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
     case "prompt-vault-day10-next-shoot":

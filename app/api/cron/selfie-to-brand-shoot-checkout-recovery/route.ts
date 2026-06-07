@@ -279,7 +279,10 @@ export async function GET(request: Request) {
 
     for (const candidate of candidates) {
       const firstName = getFirstNameForEmail({ email: candidate.user_email })
-      const email = generateSelfieToBrandShootCheckoutRecoveryEmail({ firstName })
+      const email = generateSelfieToBrandShootCheckoutRecoveryEmail({
+        firstName,
+        recipientEmail: candidate.user_email,
+      })
 
       const sent = await sendEmail({
         to: candidate.user_email,

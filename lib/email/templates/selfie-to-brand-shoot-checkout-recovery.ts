@@ -7,8 +7,10 @@ export const SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE =
 
 export function generateSelfieToBrandShootCheckoutRecoveryEmail({
   firstName,
+  recipientEmail,
 }: {
   firstName: string
+  recipientEmail?: string | null
 }) {
   const checkoutUrl = buildRevenueEmailLink(selfieToBrandShootCheckoutUrl(), {
     source: "email",
@@ -16,6 +18,7 @@ export function generateSelfieToBrandShootCheckoutRecoveryEmail({
     campaign: "selfie_to_brand_shoot_checkout_recovery",
     content: "return_to_checkout",
     emailType: SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+    checkoutEmail: recipientEmail,
   })
 
   const bodyHtml = `
