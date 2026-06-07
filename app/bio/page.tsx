@@ -1,5 +1,3 @@
-import fs from "node:fs"
-import path from "node:path"
 import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
@@ -8,7 +6,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
-const SANDRA_IMAGE = path.join(process.cwd(), "public", "images", "sandra-bio.jpg")
+const HERO_IMAGE = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
 export const metadata: Metadata = {
   title: "Sandra · SSELFIE",
@@ -17,26 +15,33 @@ export const metadata: Metadata = {
 }
 
 export default function BioPage() {
-  const hasImage = fs.existsSync(SANDRA_IMAGE)
-
   return (
     <main className={`bio-page ${inter.className}`}>
-      <div className="bio-inner">
-        <p className="bio-wordmark">SSELFIE</p>
+      <div className="bio-hero">
+        <Image
+          src={HERO_IMAGE}
+          alt="Sandra, founder of SSELFIE"
+          fill
+          sizes="100vw"
+          className="bio-hero-img"
+          style={{ objectFit: "cover", objectPosition: "50% 16%" }}
+          priority
+        />
+        <span className="bio-hero-fade" aria-hidden="true" />
+        <p className="bio-hero-wordmark">SSELFIE</p>
+      </div>
 
-        <div className="bio-portrait-wrap">
-          {hasImage ? (
+      <div className="bio-inner">
+        <div className="bio-profile-wrap">
+          <span className="bio-profile">
             <Image
-              src="/images/sandra-bio.jpg"
-              alt="Sandra, founder of SSELFIE"
-              width={200}
-              height={260}
-              className="bio-portrait"
-              priority
+              src={HERO_IMAGE}
+              alt="Sandra"
+              fill
+              sizes="120px"
+              style={{ objectFit: "cover", objectPosition: "48% 24%" }}
             />
-          ) : (
-            <div className="bio-portrait-placeholder" aria-hidden="true" />
-          )}
+          </span>
         </div>
 
         <div className="bio-identity">
@@ -122,47 +127,82 @@ export default function BioPage() {
           min-height: 100vh;
           background: #f5f5f5;
           color: #0a0a0a;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 52px 20px 80px;
+          padding: 0 0 80px;
+        }
+
+        .bio-hero {
+          position: relative;
+          width: 100%;
+          height: clamp(360px, 62vh, 560px);
+          overflow: hidden;
+          background: #ece8e3;
+        }
+
+        .bio-hero-img {
+          z-index: 0;
+        }
+
+        .bio-hero-fade {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          background:
+            linear-gradient(
+              to bottom,
+              rgba(10, 10, 10, 0.3) 0%,
+              rgba(10, 10, 10, 0) 16%
+            ),
+            linear-gradient(
+              to bottom,
+              rgba(245, 245, 245, 0) 52%,
+              rgba(245, 245, 245, 0.55) 82%,
+              #f5f5f5 100%
+            );
+        }
+
+        .bio-hero-wordmark {
+          position: absolute;
+          top: 22px;
+          left: 0;
+          right: 0;
+          z-index: 2;
+          margin: 0;
+          text-align: center;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.42em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.94);
+          text-shadow: 0 1px 14px rgba(0, 0, 0, 0.4);
         }
 
         .bio-inner {
+          position: relative;
+          z-index: 2;
           width: 100%;
           max-width: 420px;
+          margin: 0 auto;
+          padding: 0 20px;
           display: flex;
           flex-direction: column;
           align-items: center;
         }
 
-        .bio-wordmark {
-          margin: 0 0 36px;
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 0.42em;
-          text-transform: uppercase;
-          color: rgba(10, 10, 10, 0.36);
+        .bio-profile-wrap {
+          margin-top: -58px;
+          margin-bottom: 18px;
         }
 
-        .bio-portrait-wrap {
-          margin-bottom: 28px;
-        }
-
-        .bio-portrait {
-          width: 160px;
-          height: 200px;
-          border-radius: 16px;
-          object-fit: cover;
+        .bio-profile {
+          position: relative;
           display: block;
-        }
-
-        .bio-portrait-placeholder {
-          width: 160px;
-          height: 200px;
-          border-radius: 16px;
-          background: rgba(10, 10, 10, 0.06);
-          border: 1px solid rgba(10, 10, 10, 0.1);
+          width: 116px;
+          height: 116px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 4px solid #f5f5f5;
+          box-shadow: 0 12px 30px -12px rgba(10, 10, 10, 0.45);
+          background: #ece8e3;
         }
 
         .bio-identity {
