@@ -41,8 +41,12 @@ function withGuideStarterKitAttribution(destination: string, token?: string) {
     utm_source: "free_guide",
     utm_medium: "guide",
     utm_campaign: "selfie_guide_to_starter_kit",
+    utm_content: "guide_access_bridge",
     guide_cta: "starter_kit",
     source: "selfie_guide_access",
+    checkout_source: "selfie_guide_access_bridge",
+    cta_keyword: "SELFIE",
+    buyer_stage: "lead",
   })
   const cleanToken = token?.trim()
   if (cleanToken) {
@@ -1108,11 +1112,11 @@ export default function SelfieGuideExperience({
             </p>
             <div className="sg-funnel-ctas" style={{ justifyContent: "flex-start", marginTop: "28px" }}>
               <Link
-                href={withGuideStarterKitAttribution("/starter-kit", token)}
+                href={withGuideStarterKitAttribution("/checkout/starter-kit", token)}
                 className="sg-cta-primary"
-                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+                onClick={() => trackGuideUpsellClick("/checkout/starter-kit", "starter_kit")}
               >
-                See what&apos;s inside
+                Get the Starter Kit · $37
               </Link>
             </div>
             <p className="sg-funnel-price" style={{ marginTop: "14px", fontSize: "12px", color: "rgba(200,196,187,0.6)" }}>
@@ -1377,10 +1381,10 @@ export default function SelfieGuideExperience({
               One session. Seven days of content.
             </h3>
             <p className="sg-funnel-copy">
-              The Starter Kit takes what you just learned and gives you everything to do it faster.
-              Presets that match the edits in this guide. One tap in Lightroom Mobile and the look is done.
-              Editing walkthroughs so you can see exactly what each adjustment does and why.
-              A 7-day content starter that turns one phone session into a full week of posts. You show up once. The content keeps going.
+              Your selfie is the foundation. The Starter Kit helps you make it camera-ready:
+              the posing cheatsheet, the exact presets I use, and a simple content starter so
+              your photos have somewhere to go. This is the next step before one selfie becomes
+              a full brand shoot.
             </p>
             <div className="sg-funnel-product-img">
               <Image
@@ -1394,11 +1398,11 @@ export default function SelfieGuideExperience({
             <p className="sg-funnel-price">$37 · One time.</p>
             <div className="sg-funnel-ctas">
               <Link
-                href={withGuideStarterKitAttribution("/starter-kit", token)}
+                href={withGuideStarterKitAttribution("/checkout/starter-kit", token)}
                 className="sg-cta-primary"
-                onClick={() => trackGuideUpsellClick("/starter-kit", "starter_kit")}
+                onClick={() => trackGuideUpsellClick("/checkout/starter-kit", "starter_kit")}
               >
-                See what&apos;s inside
+                Get the Starter Kit · $37
               </Link>
             </div>
             <p className="sg-funnel-note">No subscription. Yours to keep.</p>

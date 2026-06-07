@@ -30,6 +30,28 @@ const DRY_RUN = process.env.DRY_RUN === "true"
 const DAYS = Number(process.env.DAYS || 90)
 const BLUEPRINT_ONLY = process.env.BLUEPRINT_ONLY === "true"
 
+async function ensureStripePaymentAttributionSchema() {
+  if (DRY_RUN) return
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS customer_email TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS checkout_session_id TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS source TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_source TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_medium TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_campaign TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_content TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS checkout_source TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS cta_keyword TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS entry_post_slug TEXT`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS buyer_stage TEXT`
+  await sql`CREATE INDEX IF NOT EXISTS stripe_payments_customer_email_idx ON stripe_payments (LOWER(customer_email), payment_date DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS stripe_payments_checkout_session_idx ON stripe_payments (checkout_session_id)`
+}
+
+function metadataString(metadata: Record<string, any> | undefined | null, key: string): string | null {
+  const value = metadata?.[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
 function getStartTimestampSeconds() {
   const now = Date.now()
   return Math.floor((now - DAYS * 24 * 60 * 60 * 1000) / 1000)
@@ -116,6 +138,17 @@ async function upsertStripePayment(record: {
   product_type?: string | null
   description?: string | null
   metadata?: Record<string, any>
+  customer_email?: string | null
+  checkout_session_id?: string | null
+  source?: string | null
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  utm_content?: string | null
+  checkout_source?: string | null
+  cta_keyword?: string | null
+  entry_post_slug?: string | null
+  buyer_stage?: string | null
   payment_date: Date
   is_test_mode: boolean
 }) {
@@ -134,6 +167,17 @@ async function upsertStripePayment(record: {
       product_type,
       description,
       metadata,
+      customer_email,
+      checkout_session_id,
+      source,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      checkout_source,
+      cta_keyword,
+      entry_post_slug,
+      buyer_stage,
       payment_date,
       is_test_mode,
       created_at,
@@ -152,6 +196,17 @@ async function upsertStripePayment(record: {
       ${record.product_type || null},
       ${record.description || null},
       ${JSON.stringify(record.metadata || {})},
+      ${record.customer_email || null},
+      ${record.checkout_session_id || null},
+      ${record.source || null},
+      ${record.utm_source || null},
+      ${record.utm_medium || null},
+      ${record.utm_campaign || null},
+      ${record.utm_content || null},
+      ${record.checkout_source || null},
+      ${record.cta_keyword || null},
+      ${record.entry_post_slug || null},
+      ${record.buyer_stage || null},
       ${record.payment_date},
       ${record.is_test_mode},
       NOW(),
@@ -166,7 +221,49 @@ async function upsertStripePayment(record: {
       payment_type = ${record.payment_type},
       product_type = ${record.product_type || null},
       metadata = COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+      customer_email = COALESCE(stripe_payments.customer_email, ${record.customer_email || null}),
+      checkout_session_id = COALESCE(stripe_payments.checkout_session_id, ${record.checkout_session_id || null}),
+      source = COALESCE(stripe_payments.source, ${record.source || null}),
+      utm_source = COALESCE(stripe_payments.utm_source, ${record.utm_source || null}),
+      utm_medium = COALESCE(stripe_payments.utm_medium, ${record.utm_medium || null}),
+      utm_campaign = COALESCE(stripe_payments.utm_campaign, ${record.utm_campaign || null}),
+      utm_content = COALESCE(stripe_payments.utm_content, ${record.utm_content || null}),
+      checkout_source = COALESCE(stripe_payments.checkout_source, ${record.checkout_source || null}),
+      cta_keyword = COALESCE(stripe_payments.cta_keyword, ${record.cta_keyword || null}),
+      entry_post_slug = COALESCE(stripe_payments.entry_post_slug, ${record.entry_post_slug || null}),
+      buyer_stage = COALESCE(stripe_payments.buyer_stage, ${record.buyer_stage || null}),
       updated_at = NOW()
+  `
+}
+
+async function markCheckoutAttributionCompletedFromSession(input: {
+  session_id: string
+  stripe_payment_id: string
+  stripe_customer_id?: string | null
+  user_id?: string | null
+  user_email?: string | null
+  amount_cents: number
+  currency: string
+  purchased_at: Date
+}) {
+  if (DRY_RUN) return
+  await sql`
+    UPDATE checkout_attribution
+    SET
+      status = 'completed',
+      stripe_payment_id = COALESCE(stripe_payment_id, ${input.stripe_payment_id}),
+      stripe_customer_id = COALESCE(stripe_customer_id, ${input.stripe_customer_id || null}),
+      user_id = COALESCE(user_id, ${input.user_id || null}),
+      user_email = COALESCE(user_email, ${input.user_email || null}),
+      purchase_value_cents = COALESCE(purchase_value_cents, ${input.amount_cents}),
+      purchase_currency = COALESCE(purchase_currency, ${input.currency}),
+      purchased_at = COALESCE(purchased_at, ${input.purchased_at}),
+      recovered_at = CASE
+        WHEN recovery_email_sent_at IS NOT NULL THEN COALESCE(recovered_at, ${input.purchased_at})
+        ELSE recovered_at
+      END,
+      updated_at = NOW()
+    WHERE session_id = ${input.session_id}
   `
 }
 
@@ -427,14 +524,19 @@ async function backfillCheckoutSessions(startTs: number) {
 
       const amount = session.amount_total || 0
       if (amount <= 0 && !isPaidBlueprint) continue
+      const customerEmail =
+        session.customer_details?.email?.trim().toLowerCase() ||
+        session.customer_email?.trim().toLowerCase() ||
+        null
 
       const userId =
         (session.metadata?.user_id as string | undefined) ||
         (paymentIntent && typeof paymentIntent === "object" ? (paymentIntent.metadata?.user_id as string | undefined) : undefined) ||
-        (session.customer_email ? await findUserIdByEmail(session.customer_email).catch(() => null) : null)
+        (customerEmail ? await findUserIdByEmail(customerEmail).catch(() => null) : null)
+      const stripePaymentId = paymentIntentId || session.id
 
       await upsertStripePayment({
-        stripe_payment_id: paymentIntentId || session.id,
+        stripe_payment_id: stripePaymentId,
         stripe_customer_id: resolvedCustomerId,
         user_id: userId || null,
         amount_cents: amount,
@@ -444,8 +546,29 @@ async function backfillCheckoutSessions(startTs: number) {
         product_type,
         description: description || "Checkout session payment",
         metadata: meta,
+        customer_email: customerEmail,
+        checkout_session_id: session.id,
+        source: metadataString(meta, "source"),
+        utm_source: metadataString(meta, "utm_source"),
+        utm_medium: metadataString(meta, "utm_medium"),
+        utm_campaign: metadataString(meta, "utm_campaign"),
+        utm_content: metadataString(meta, "utm_content"),
+        checkout_source: metadataString(meta, "checkout_source"),
+        cta_keyword: metadataString(meta, "cta_keyword"),
+        entry_post_slug: metadataString(meta, "entry_post_slug"),
+        buyer_stage: metadataString(meta, "buyer_stage"),
         payment_date: new Date((session.created || 0) * 1000),
         is_test_mode: !session.livemode,
+      })
+      await markCheckoutAttributionCompletedFromSession({
+        session_id: session.id,
+        stripe_payment_id: stripePaymentId,
+        stripe_customer_id: resolvedCustomerId,
+        user_id: userId || null,
+        user_email: customerEmail,
+        amount_cents: amount,
+        currency: session.currency || "usd",
+        purchased_at: new Date((session.created || 0) * 1000),
       })
       stored += 1
     }
@@ -463,6 +586,7 @@ async function main() {
   const startTs = getStartTimestampSeconds()
   console.log(`[BACKFILL] Recent Stripe payments (days=${DAYS}, dry run=${DRY_RUN})`)
 
+  await ensureStripePaymentAttributionSchema()
   const piResult = await backfillPaymentIntents(startTs)
   const invoiceResult = await backfillInvoices(startTs)
   const chargeResult = await backfillCharges(startTs)

@@ -28,6 +28,12 @@ async function getEmailFromFreebieToken(token?: string | null): Promise<string |
   return (rows[0]?.email as string | undefined) || null
 }
 
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+}
+
 export default async function StarterKitCheckoutPage({
   searchParams,
 }: {
@@ -46,6 +52,8 @@ export default async function StarterKitCheckoutPage({
     returnTo?: string
     return_to?: string
     freebie_token?: string
+    checkout_email?: string
+    email?: string
   }>
 }) {
   const params = await searchParams
@@ -58,7 +66,15 @@ export default async function StarterKitCheckoutPage({
     data: { user: authUser },
   } = await supabase.auth.getUser()
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
-  const checkoutEmail = authUser?.email ?? freebieEmail ?? null
+  const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
+  const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
+  const prefillEmailSource = authUser?.email
+    ? "auth"
+    : freebieEmail
+      ? "freebie_token"
+      : urlEmail
+        ? "url"
+        : "none"
 
   try {
     await logAnalyticsEvent({
@@ -80,6 +96,7 @@ export default async function StarterKitCheckoutPage({
         buyer_stage: attribution.buyerStage,
         has_freebie_token: Boolean(params.freebie_token),
         has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: prefillEmailSource,
       },
     })
 
@@ -113,6 +130,7 @@ export default async function StarterKitCheckoutPage({
           buyer_stage: attribution.buyerStage,
           has_freebie_token: Boolean(params.freebie_token),
           has_prefill_email: Boolean(checkoutEmail),
+          prefill_email_source: prefillEmailSource,
         },
       })
 
@@ -143,6 +161,7 @@ export default async function StarterKitCheckoutPage({
         buyer_stage: attribution.buyerStage,
         has_freebie_token: Boolean(params.freebie_token),
         has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: prefillEmailSource,
         error_message: error?.message || String(error),
       },
     })

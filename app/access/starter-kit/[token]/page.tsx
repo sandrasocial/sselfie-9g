@@ -37,6 +37,29 @@ function upperName(name: string | undefined | null) {
   return value.length > 0 ? value.toUpperCase() : "FRIEND"
 }
 
+function buildSystemUpgradeHref(token: string, email?: string | null) {
+  const params = new URLSearchParams({
+    source: "starter_kit_access",
+    utm_source: "owned",
+    utm_medium: "starter_kit_access",
+    utm_campaign: "starter_kit_to_selfie_to_brand_shoot_system",
+    utm_content: "starter_kit_access_upgrade_block",
+    checkout_source: "starter_kit_buyer_upgrade_credit",
+    cta_keyword: "STARTER_KIT",
+    buyer_stage: "micro",
+    starter_kit_credit: "1",
+    upgrade_credit: "3700",
+    freebie_token: token,
+  })
+
+  const cleanEmail = email?.trim().toLowerCase()
+  if (cleanEmail) {
+    params.set("checkout_email", cleanEmail)
+  }
+
+  return `/checkout/selfie-to-brand-shoot?${params.toString()}`
+}
+
 async function getStarterKitRecord(token: string): Promise<{
   status: "ok" | "not_found" | "error"
   data?: StarterKitRecord
@@ -170,6 +193,7 @@ export default async function StarterKitAccessPage({
 
   const desktopPresetDownloadUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || null
   const guideAccessUrl = `/selfie-guide/access/${token}`
+  const systemUpgradeHref = buildSystemUpgradeHref(token, result.data.email)
 
   // Log access event (fire-and-forget — do not block render)
   logAnalyticsEvent({
@@ -264,6 +288,26 @@ export default async function StarterKitAccessPage({
         </article>
       </section>
 
+      <section className="system-upgrade">
+        <div className="system-upgrade-copy">
+          <p className="eyebrow">Next Step</p>
+          <h2 className={cormorant.className}>Now turn the selfie into the shoot.</h2>
+          <p>
+            The Starter Kit helps you create the source photo. Selfie to Brand Shoot shows you how
+            to turn that one clear selfie into your first AI brand images, choose the results that
+            still look like you, and use them in your content.
+          </p>
+        </div>
+        <div className="system-upgrade-card">
+          <span>$37 credit applied</span>
+          <strong className={cormorant.className}>Complete the System for $160.</strong>
+          <p>You keep the Starter Kit and add the guided brand shoot path.</p>
+          <Link href={systemUpgradeHref} className="primary-cta">
+            Complete the System
+          </Link>
+        </div>
+      </section>
+
       <style>{`
         .starter-kit-page {
           min-height: 100vh;
@@ -310,6 +354,46 @@ export default async function StarterKitAccessPage({
           display: grid;
           gap: 20px;
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .system-upgrade {
+          max-width: 1100px;
+          margin: 24px auto 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+          gap: 20px;
+          border: 1px solid rgba(244, 240, 230, 0.14);
+          background: rgba(244, 240, 230, 0.04);
+          padding: 28px;
+          border-radius: 20px;
+        }
+
+        .system-upgrade-copy p {
+          max-width: 640px;
+        }
+
+        .system-upgrade-card {
+          border: 1px solid rgba(244, 240, 230, 0.16);
+          background: rgba(15, 13, 11, 0.42);
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: center;
+        }
+
+        .system-upgrade-card span {
+          font-size: 10px;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(244, 240, 230, 0.58);
+        }
+
+        .system-upgrade-card strong {
+          margin-top: 10px;
+          font-size: 2rem;
+          font-weight: 300;
+          line-height: 1;
         }
 
         .card {
@@ -399,6 +483,12 @@ export default async function StarterKitAccessPage({
           letter-spacing: 0.26em;
           text-transform: uppercase;
           color: rgba(244, 240, 230, 0.58) !important;
+        }
+
+        @media (max-width: 760px) {
+          .system-upgrade {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </main>
