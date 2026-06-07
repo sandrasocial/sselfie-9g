@@ -175,11 +175,13 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     type: "starter_kit",
     tag: "bought_starter_kit",
     features: [
-      "Selfie Guide access",
-      "Preset download link",
-      "Quick-start checklist for your next selfie",
-      "7-day content starter",
-      "What to post this week prompts",
+      "The SSELFIE Presets (phone + desktop) - one tap to that warm, editorial look",
+      "Quick Preset Setup Guide - up and running in about 2 minutes, even if you've never edited a photo",
+      "The Posing Playbook - simple angles and poses that make any photo look intentional",
+      "The Caption & Content Library - captions and post ideas so your photos actually become posts",
+      "The Storytelling Captions - turn a nice photo into a post people connect with",
+      "The 7-Day Content Starter - exactly what to post this week, day by day",
+      "The Selfie Guide - get a stronger photo before you even begin",
     ],
   },
   {
@@ -233,8 +235,8 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "prompt_vault",
-    name: "The Selfie to Brand Shoot Vault",
-    displayName: "The Selfie to Brand Shoot Vault",
+    name: "The Prompt Vault",
+    displayName: "The Prompt Vault",
     description:
       "Full AI photoshoot sequences for turning one selfie into editorial brand images. Includes newest drops and future SSELFIE photoshoots.",
     priceInCents: 2700, // $27 one-time
@@ -250,8 +252,8 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "selfie_to_brand_shoot_system",
-    name: "Selfie to Brand Shoot System",
-    displayName: "Selfie to Brand Shoot System",
+    name: "The Selfie to Brand Shoot System",
+    displayName: "The Selfie to Brand Shoot System",
     description:
       "The guided visual identity path for turning one selfie into elevated personal brand images, with Vault access included.",
     priceInCents: 19700, // $197 one-time

@@ -11,8 +11,8 @@ import {
 } from "@/lib/revenue-engine/checkout-attribution"
 
 export const metadata: Metadata = {
-  title: "Checkout | AI Photo Prompt Vault",
-  description: "Complete your AI Photo Prompt Vault purchase.",
+  title: "Checkout | The Prompt Vault",
+  description: "Complete your Prompt Vault purchase.",
 }
 
 async function getEmailFromFreebieToken(token?: string | null): Promise<string | null> {

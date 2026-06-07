@@ -15,11 +15,11 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "The Selfie to Brand Shoot Vault · SSELFIE",
+  title: "The Prompt Vault · SSELFIE",
   description:
     "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds. $27.",
   openGraph: {
-    title: "The Selfie to Brand Shoot Vault · SSELFIE",
+    title: "The Prompt Vault · SSELFIE",
     description:
       "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds.",
     images: ["/academy/visibility-suite/sandra-hero.png"],
@@ -159,11 +159,11 @@ export default async function PromptVaultPage({
               color: "#818283",
             }}
           >
-              SELFIE TO BRAND SHOOT · THE VAULT
+              THE PROMPT VAULT
           </p>
           <h1
             className={cormorant.className}
-            aria-label="The Selfie to Brand Shoot Vault"
+            aria-label="The Prompt Vault"
             style={{
               margin: "0 0 24px",
               fontSize: "clamp(42px, 6.2vw, 82px)",

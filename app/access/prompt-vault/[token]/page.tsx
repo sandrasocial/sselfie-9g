@@ -207,7 +207,7 @@ const FIRST_RESULT_PATHS = [
 ].filter((path) => path.card)
 
 export const metadata: Metadata = {
-  title: "AI Photo Prompt Vault · SSELFIE",
+  title: "The Prompt Vault · SSELFIE",
   description: "Turn one selfie into unlimited editorial photoshoots.",
   robots: { index: false, follow: false },
 }
@@ -410,15 +410,15 @@ export default async function PromptVaultAccessPage({
       {/* ── HERO ── */}
       <section className="pva-hero">
         <div className="pva-hero-inner">
-          <p className="pva-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
+          <p className="pva-eyebrow">SSELFIE · THE PROMPT VAULT</p>
           <h1 className={`pva-headline ${cormorant.className}`}>
-            {firstName ? `${firstName}'s` : "The"} Selfie to<br />Brand Shoot Vault
+            {firstName ? `${firstName}'s` : "The"} Prompt<br />Vault
           </h1>
           <p className="pva-subhead">
             A guided library of full AI photoshoot sequences, creative direction,
             styling notes, and tested prompts for turning one selfie into elevated
-            personal brand images. This is your visual-world archive inside the
-            Selfie to Brand Shoot path.
+            personal brand images. The Vault is the prompts. The System is the guided
+            path that uses them, with the Vault included.
           </p>
           <div className="pva-hero-actions">
             <a href="#first-result" className="pva-hero-primary">
@@ -435,7 +435,7 @@ export default async function PromptVaultAccessPage({
                 upgrade_credit: "2700",
               }}
             >
-              Complete the System for $170
+              See the System · $170
             </TrackedLink>
           </div>
         </div>
@@ -464,20 +464,19 @@ export default async function PromptVaultAccessPage({
       <section className="pva-system-upgrade" aria-label="Selfie to Brand Shoot System upgrade">
         <div className="pva-system-upgrade-inner">
           <div>
-            <p className="pva-eyebrow">NEXT STEP</p>
+            <p className="pva-eyebrow">YOUR $27 IS A CREDIT</p>
             <h2 className={`pva-upgrade-title ${cormorant.className}`}>
-              The Vault gives you the shoots. The System shows you how to build the brand.
+              Love the Vault? Get the whole method for less.
             </h2>
             <p className="pva-upgrade-copy">
-              Use your $27 Vault purchase as credit toward Selfie to Brand Shoot. You keep the full
-              Vault and add the guided path: source selfie, signature visual world, first prompt
-              lab, likeness filter, and 7-day content plan.
+              The Selfie to Brand Shoot System walks you through the entire path, with this Vault
+              included. Your $27 is already applied, so it&apos;s $170 instead of $197. No code needed.
             </p>
           </div>
           <div className="pva-upgrade-card">
             <span>$27 credit applied</span>
-            <strong className={cormorant.className}>Complete the System for $170.</strong>
-            <p>For Vault buyers only. Standard access is $197.</p>
+            <strong className={cormorant.className}>The Selfie to Brand Shoot System</strong>
+            <p>The Vault is the prompts. The System is the whole method.</p>
             <TrackedLink
               href={systemUpgradeHref}
               className="pva-upgrade-button"
@@ -489,7 +488,7 @@ export default async function PromptVaultAccessPage({
                 upgrade_credit: "2700",
               }}
             >
-              Upgrade To The Full System
+              See the System · $170
             </TrackedLink>
           </div>
         </div>

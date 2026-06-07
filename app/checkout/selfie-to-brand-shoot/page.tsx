@@ -10,7 +10,7 @@ import {
 } from "@/lib/revenue-engine/checkout-attribution"
 
 export const metadata: Metadata = {
-  title: "Checkout | Selfie to Brand Shoot System",
+  title: "Checkout | The Selfie to Brand Shoot System",
   description: "Complete your Selfie to Brand Shoot System purchase.",
 }
 

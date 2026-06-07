@@ -1,5 +1,5 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
-import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
+import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
 
 export interface SelfieGuideActivationDay0Params {
@@ -25,51 +25,43 @@ export function generateSelfieGuideActivationDay0Email({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your guide is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You do not need to binge it. You do not need to suddenly become a camera person.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Give yourself fifteen quiet minutes. Take one phone photo and turn it into a post with a job.</p>
-    ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.7;color:#f0ede8;">Here&apos;s how I&apos;d use it today:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">1. Open the guide<br />2. Read chapter one only<br />3. Take one new photo<br />4. Choose what the post is supposed to do next</p>`,
-      "Start Here",
-    )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open your guide", trackedAccessUrl)}</div>
-    <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">If you get stuck, reply to this email and tell me what feels hard. I&apos;ll point you in the right direction.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your Selfie Guide is ready. Here it is:</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open my Selfie Guide", trackedAccessUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Before you dive in, here&apos;s one fast win you can try in the next five minutes:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and instantly looks more flattering. Most people shoot from too low, and that&apos;s what makes a photo feel a bit off.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try it by a window with the light on your face. That&apos;s the whole trick.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Have a play with it, and I&apos;ll check in tomorrow to see how it went.</p>
   `
 
   const html = renderStoneShell({
-    title: "Your guide is waiting",
+    title: "Your free selfie guide.",
     eyebrow: "Selfie Guide",
-    subtitle: "Start simple. One chapter. One photo. One post with a job.",
+    subtitle: "The angle trick that changes everything.",
     bodyHtml,
-    footerLead: "Start small. Keep it easy.",
+    footerLead: "",
   })
 
   const text = `Selfie Guide
 
 Hey ${name},
 
-Your guide is ready.
+Your Selfie Guide is ready. Here it is:
 
-You do not need to binge it. You do not need to suddenly become a camera person.
+Open my Selfie Guide: ${trackedAccessUrl}
 
-Give yourself fifteen quiet minutes. Take one phone photo and turn it into a post with a job.
+Before you dive in, here's one fast win you can try in the next five minutes:
 
-Here's how I'd use it today:
-1. Open the guide
-2. Read chapter one only
-3. Take one new photo
-4. Choose what the post is supposed to do next
+Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and instantly looks more flattering. Most people shoot from too low, and that's what makes a photo feel a bit off.
 
-Open your guide: ${trackedAccessUrl}
+Try it by a window with the light on your face. That's the whole trick.
 
-If you get stuck, reply to this email and tell me what feels hard. I'll point you in the right direction.
+Have a play with it, and I'll check in tomorrow to see how it went.
 
-Sandra`
+Sandra x`
 
   return {
     html,
     text,
-    subject: "Your guide is ready",
+    subject: "your free selfie guide (+ one quick fix)",
   }
 }

@@ -76,14 +76,14 @@ const CHECKOUT_COPY: Record<
   prompt_vault: {
     heroTitle: "Get the full shoot + future drops",
     heroBody: "You tried the opening shot. Now unlock the remaining shots, newest drops, and future SSELFIE photoshoots.",
-    heading: "The Selfie to Brand Shoot Vault",
+    heading: "The Prompt Vault",
     blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
     footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
   },
   selfie_to_brand_shoot_system: {
     heroTitle: "Build the full brand shoot path",
     heroBody: "Turn one selfie into elevated personal brand images with the guided system and Vault included.",
-    heading: "Selfie to Brand Shoot System",
+    heading: "The Selfie to Brand Shoot System",
     blurb: "One $197 payment unlocks the guided workflow, source selfie method, taste filter, content-use path, and full Vault access.",
     footer: "One-time digital purchase. Your System access link is delivered right after payment.",
   },
