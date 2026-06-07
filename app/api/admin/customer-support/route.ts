@@ -190,6 +190,7 @@ export async function POST(req: NextRequest) {
         : `${SITE_URL}/academy/access/starter-kit`
       const email = generateStarterKitDay0DeliveryEmail({
         firstName,
+        recipientEmail: normalizedEmail,
         accessUrl,
         presetDownloadUrl: process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || undefined,
       })

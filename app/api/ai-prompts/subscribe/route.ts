@@ -83,6 +83,7 @@ async function sendDeliveryEmail(input: {
 
   const { html, text, subject } = generateAiPromptsDay0DeliveryEmail({
     firstName: input.firstName,
+    recipientEmail: input.email,
     accessUrl: input.accessUrl,
   })
 

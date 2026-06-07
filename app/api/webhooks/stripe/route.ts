@@ -3282,6 +3282,7 @@ export async function POST(request: NextRequest) {
                 })
                 const email = generateStarterKitDay0DeliveryEmail({
                   firstName,
+                  recipientEmail: customerEmail!,
                   accessUrl: libraryAccessUrl,
                   fallbackUrl: fallbackAccessUrl,
                   passwordSetupUrl: passwordSetupLink,

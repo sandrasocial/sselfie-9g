@@ -1,5 +1,6 @@
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
+import { starterKitCheckoutUrl } from "./selfie-education-links"
 
 interface FreebieGuideTouchParams {
   firstName: string
@@ -9,48 +10,61 @@ interface FreebieGuideTouchParams {
 
 export function generateFreebieGuideDay1LightTipEmail({
   firstName,
-  accessUrl,
+  recipientEmail,
 }: FreebieGuideTouchParams): { html: string; text: string; subject: string } {
-  const trackedAccessUrl = buildRevenueEmailLink(accessUrl, {
+  const starterKitUrl = new URL(buildRevenueEmailLink(starterKitCheckoutUrl(), {
     campaign: "freebie_guide_day1_light_tip",
-    content: "open_chapter_two",
-  })
+    content: "get_starter_kit",
+    emailType: "freebie-guide-day1-light-tip",
+  }))
+  starterKitUrl.searchParams.set("checkout_email", recipientEmail)
+  starterKitUrl.searchParams.set("checkout_source", "freebie_guide_day1_starter_kit")
+  starterKitUrl.searchParams.set("cta_keyword", "SELFIE")
+  starterKitUrl.searchParams.set("buyer_stage", "lead")
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Try this before anything else.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Find a window. Natural light, no direct sun. Face it. Take ten photos.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That is it. No new outfit. No ring light. No editing yet.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Most people see the difference immediately. The light does most of the work.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">When you are ready for the next layer, chapter two covers angles and phone position.</p>
-    <div style="margin:28px 0 14px;">${renderStoneButton("Open chapter two", trackedAccessUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hey ${firstName},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Did you get to try the angle trick? I hope your photos are already looking more like you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Here&apos;s the honest next step. The guide helps you take a better selfie. But to make it look truly polished, like the photos you save and wish were yours, you need two things most people are missing: the right edit and the right pose.</p>
+    <p style="margin:0 0 10px;font-size:16px;line-height:1.8;">That&apos;s exactly what the Starter Kit is:</p>
+    <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
+      <li>My SSELFIE presets, so one tap gives your photo that warm, editorial look</li>
+      <li>A simple posing guide with the angles that flatter everyone</li>
+      <li>Captions and a 7-day content plan, so your photos actually become posts</li>
+    </ul>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">It&apos;s $37, one time, yours to keep. It&apos;s the fastest way to go from &quot;better selfie&quot; to &quot;wait, who took that?&quot;</p>
+    <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit · $37", starterKitUrl.toString())}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Either way, keep shooting. You&apos;re closer than you think.</p>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
   `
 
   return {
-    subject: "The fastest selfie upgrade you can do today",
+    subject: "how did your selfies turn out?",
     html: renderStoneShell({
       eyebrow: "Selfie Guide",
-      title: "The fastest selfie upgrade.",
-      subtitle: "Natural light first.",
+      title: "How did your selfies turn out?",
+      subtitle: "The little toolset that makes them look expensive.",
       bodyHtml,
-      footerLead: "Do the simple thing first.",
+      footerLead: "",
       footerSignoff: "",
     }),
-    text: `Hi ${firstName},
+    text: `Hey ${firstName},
 
-Try this before anything else.
+Did you get to try the angle trick? I hope your photos are already looking more like you.
 
-Find a window. Natural light, no direct sun. Face it. Take ten photos.
+Here's the honest next step. The guide helps you take a better selfie. But to make it look truly polished, like the photos you save and wish were yours, you need two things most people are missing: the right edit and the right pose.
 
-That is it. No new outfit. No ring light. No editing yet.
+That's exactly what the Starter Kit is:
+- My SSELFIE presets, so one tap gives your photo that warm, editorial look
+- A simple posing guide with the angles that flatter everyone
+- Captions and a 7-day content plan, so your photos actually become posts
 
-Most people see the difference immediately. The light does most of the work.
+It's $37, one time, yours to keep. It's the fastest way to go from "better selfie" to "wait, who took that?"
 
-When you are ready for the next layer, chapter two covers angles and phone position.
+Get the Starter Kit · $37:
+${starterKitUrl.toString()}
 
-Open chapter two:
-${trackedAccessUrl}
+Either way, keep shooting. You're closer than you think.
 
 Sandra x`,
   }

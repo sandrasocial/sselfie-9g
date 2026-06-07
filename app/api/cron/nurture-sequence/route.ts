@@ -680,6 +680,7 @@ async function sendStarterKitTouchEmail(
     case "starter-kit-day0-delivery":
       email = generateStarterKitDay0DeliveryEmail({
         firstName,
+        recipientEmail: candidate.email,
         accessUrl,
         presetDownloadUrl: process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || undefined,
       })

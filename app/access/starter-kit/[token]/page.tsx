@@ -213,6 +213,26 @@ export default async function StarterKitAccessPage({
         </p>
       </section>
 
+      <section className="system-upgrade">
+        <div className="system-upgrade-copy">
+          <p className="eyebrow">YOUR $37 IS A CREDIT</p>
+          <h2 className={cormorant.className}>Ready for the full thing? Your $37 comes off.</h2>
+          <p>
+            The Selfie to Brand Shoot System is the complete guided path. Choose your look, build
+            a full shoot from one selfie, and turn it into content. Your Starter Kit credit is
+            already applied, so it&apos;s $160 instead of $197. No code needed.
+          </p>
+        </div>
+        <div className="system-upgrade-card">
+          <span>$37 credit applied</span>
+          <strong className={cormorant.className}>The Selfie to Brand Shoot System</strong>
+          <p>Your Starter Kit helps create the source photo. The System shows you what to do with it.</p>
+          <Link href={systemUpgradeHref} className="primary-cta">
+            See the System · $160
+          </Link>
+        </div>
+      </section>
+
       <section className="grid">
         <article className="card">
           <p className="card-label">Start Here</p>
