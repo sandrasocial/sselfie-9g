@@ -28,15 +28,18 @@ function collectionShortLabel(fullName: string): string {
 }
 
 /**
- * Hero background: 3rd thumbnail from the newest approved collection.
- * Index 2 tends to be a more cinematic/full-body shot than the cover shot.
- * Falls back through the collection list then to a curated static default.
+ * Hero background: PINNED to a warm lifestyle image, intentionally NOT auto-swapped.
+ * (Previously pulled the newest collection's 3rd thumbnail, which meant a dark
+ * beauty close-up could land here. The opt-in hero should always be an
+ * aspirational, lifestyle, full-body shot from a flagship collection.)
+ *
+ * To change it: swap the path below for any thumbnail in VAULT_COLLECTION_META.
+ * Good lifestyle alternatives:
+ *   "/images/ai-prompts/quiet-luxury-london-shot-1.jpg" (café arrival, full body)
+ *   "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"  (seated hero)
+ *   "/images/ai-prompts/coastal-white-shot-1.jpg"       (cliffside full body)
  */
-const HERO_IMAGE: string =
-  VAULT_COLLECTION_META[0]?.thumbnails[2] ??
-  VAULT_COLLECTION_META[0]?.thumbnails[0] ??
-  VAULT_COLLECTION_META[1]?.thumbnails[0] ??
-  "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
+const HERO_IMAGE: string = "/images/ai-prompts/quiet-luxury-london-shot-3.jpg"
 
 /**
  * Preview strip: Shot 1 from the 3 newest approved freebie collections.
