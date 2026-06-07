@@ -688,10 +688,10 @@ async function sendStarterKitTouchEmail(
       email = generateStarterKitDay5ProofEmail({ firstName, accessUrl })
       break
     case "starter-kit-day7-soft-masterclass":
-      email = generateStarterKitDay7SoftMasterclassEmail({ firstName })
+      email = generateStarterKitDay7SoftMasterclassEmail({ firstName, recipientEmail: candidate.email })
       break
     case "starter-kit-day10-masterclass-breakdown":
-      email = generateStarterKitDay10MasterclassBreakdownEmail({ firstName })
+      email = generateStarterKitDay10MasterclassBreakdownEmail({ firstName, recipientEmail: candidate.email })
       break
     case "starter-kit-day14-masterclass-offer":
       email = generateStarterKitDay14MasterclassOfferEmail({ firstName })

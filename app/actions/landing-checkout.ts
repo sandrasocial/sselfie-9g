@@ -19,6 +19,12 @@ type LandingCheckoutOptions = {
   bonusCredits?: number
 } & CheckoutAttributionInput
 
+function normalizeStripeCustomerEmail(email?: string | null): string | null {
+  const value = email?.trim().toLowerCase()
+  if (!value) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null
+}
+
 const IDEMPOTENT_ONE_TIME_PRODUCT_TYPES = new Set([
   "selfie_guide",
   "selfie_guide_bundle",
@@ -72,6 +78,7 @@ export async function createLandingCheckoutSession(
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
   const allowManualPromotionCodes = !isSubscription && product.type !== "prompt_vault" && product.type !== "starter_kit"
   const checkoutSource = options?.source?.trim() || "landing_page"
+  const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)
   const bonusCredits =
     typeof options?.bonusCredits === "number" && Number.isFinite(options.bonusCredits) && options.bonusCredits > 0
       ? Math.floor(options.bonusCredits)
@@ -188,7 +195,7 @@ export async function createLandingCheckoutSession(
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
-    ...(customerEmail && { customer_email: customerEmail }),
+    ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
     line_items: [
       {
         price: stripePriceId,
@@ -235,7 +242,7 @@ export async function createLandingCheckoutSession(
         referralCode: attribution.referralCode,
         checkoutSource: options?.checkoutSource || checkoutSource,
       }),
-      ...(customerEmail && { customer_email: customerEmail }),
+      ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
       ...(promoCode && { promo_code: promoCode }),
     },
   }
@@ -246,11 +253,12 @@ export async function createLandingCheckoutSession(
       : buildCheckoutSessionIdempotencyKey({
           productType: product.type,
           stripePriceId,
-          customerEmail,
+          customerEmail: normalizedCustomerEmail,
           promoCode,
         })
-    const stripeRequestOptions: Stripe.RequestOptions = idempotencyKey ? { idempotencyKey } : {}
-    const session = await stripe.checkout.sessions.create(sessionConfig, stripeRequestOptions)
+    const session = idempotencyKey
+      ? await stripe.checkout.sessions.create(sessionConfig, { idempotencyKey })
+      : await stripe.checkout.sessions.create(sessionConfig)
     console.log("[landing-checkout] Checkout session created successfully:", session.id)
     console.log("[landing-checkout] Client secret generated:", !!session.client_secret)
     await upsertCheckoutAttribution({
@@ -277,7 +285,7 @@ export async function createLandingCheckoutSession(
       entryPath: attribution.entryPath,
       entryPostSlug: attribution.entryPostSlug,
       buyerStage: attribution.buyerStage,
-      userEmail: customerEmail || null,
+      userEmail: normalizedCustomerEmail,
       stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
     })
     return session.client_secret

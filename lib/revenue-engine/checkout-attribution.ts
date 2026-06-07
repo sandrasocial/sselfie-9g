@@ -342,6 +342,20 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_recovery_idx ON checkout_attribution (product_type, status, recovery_email_sent_at, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_purchase_idx ON checkout_attribution (purchased_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_user_idx ON checkout_attribution (user_id, created_at DESC);`
+
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS customer_email TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS checkout_session_id TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS source TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_source TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_medium TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_campaign TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_content TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS checkout_source TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS buyer_stage TEXT;`
+  await sql`CREATE INDEX IF NOT EXISTS stripe_payments_customer_email_idx ON stripe_payments (LOWER(customer_email), payment_date DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS stripe_payments_checkout_session_idx ON stripe_payments (checkout_session_id);`
 }
 
 export async function upsertCheckoutAttribution(record: CheckoutAttributionRecord): Promise<void> {

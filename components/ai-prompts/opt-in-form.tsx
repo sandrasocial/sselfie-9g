@@ -2,16 +2,25 @@
 
 import { useState } from "react"
 
-function getUtmParams(): { utm_source?: string; utm_medium?: string; utm_campaign?: string } {
+function getAttributionParams(): Record<string, string> {
   if (typeof window === "undefined") return {}
   const p = new URLSearchParams(window.location.search)
-  const result: { utm_source?: string; utm_medium?: string; utm_campaign?: string } = {}
-  const src = p.get("utm_source")
-  const med = p.get("utm_medium")
-  const cam = p.get("utm_campaign")
-  if (src) result.utm_source = src
-  if (med) result.utm_medium = med
-  if (cam) result.utm_campaign = cam
+  const result: Record<string, string> = {}
+  const keys = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "checkout_source",
+    "cta_keyword",
+    "entry_post_slug",
+  ]
+  for (const key of keys) {
+    const value = p.get(key)
+    if (value) result[key] = value
+  }
+  result.landing_path = `${window.location.pathname}${window.location.search}`
+  if (document.referrer) result.referrer = document.referrer
   return result
 }
 
@@ -37,7 +46,7 @@ export function OptInForm() {
       const res = await fetch("/api/ai-prompts/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email, ...getUtmParams() }),
+        body: JSON.stringify({ firstName, email, ...getAttributionParams() }),
       })
 
       if (!res.ok) {

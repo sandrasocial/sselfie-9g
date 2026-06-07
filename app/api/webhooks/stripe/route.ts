@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import type Stripe from "stripe"
 import { getStripeWebhookSecret, stripe } from "@/lib/stripe"
 import {
   addCredits,
@@ -54,7 +55,10 @@ import {
   trackReferralSignup,
 } from "@/lib/referrals/service"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
-import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
+import {
+  ensureRevenueEngineSchema,
+  markCheckoutAttributionCompleted,
+} from "@/lib/revenue-engine/checkout-attribution"
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 import {
   AI_PHOTOSHOOT_AUDIENCE,
@@ -247,6 +251,60 @@ async function markRevenueEnginePurchase(params: {
   } catch (error) {
     console.error("[v0] Failed to mark email conversion attribution:", error)
   }
+}
+
+function checkoutMetadataString(
+  metadata: Record<string, string> | Stripe.Metadata | null | undefined,
+  key: string,
+): string | null {
+  const value = metadata?.[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
+function getCheckoutSessionPaymentId(session: Stripe.Checkout.Session): string | null {
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id || null
+
+  if (paymentIntentId) return paymentIntentId
+  return session.mode === "payment" ? session.id : null
+}
+
+function getCheckoutSessionSubscriptionId(session: Stripe.Checkout.Session): string | null {
+  return typeof session.subscription === "string"
+    ? session.subscription
+    : session.subscription?.id || null
+}
+
+async function hydrateStripePaymentAttributionFromCheckout(params: {
+  session: Stripe.Checkout.Session
+  customerEmail?: string | null
+  stripePaymentId?: string | null
+}) {
+  if (!params.stripePaymentId) return
+
+  await ensureRevenueEngineSchema()
+
+  const metadata = params.session.metadata || {}
+
+  await sql`
+    UPDATE stripe_payments
+    SET
+      customer_email = COALESCE(customer_email, ${params.customerEmail || null}),
+      checkout_session_id = COALESCE(checkout_session_id, ${params.session.id}),
+      source = COALESCE(source, ${checkoutMetadataString(metadata, "source")}),
+      utm_source = COALESCE(utm_source, ${checkoutMetadataString(metadata, "utm_source")}),
+      utm_medium = COALESCE(utm_medium, ${checkoutMetadataString(metadata, "utm_medium")}),
+      utm_campaign = COALESCE(utm_campaign, ${checkoutMetadataString(metadata, "utm_campaign")}),
+      utm_content = COALESCE(utm_content, ${checkoutMetadataString(metadata, "utm_content")}),
+      checkout_source = COALESCE(checkout_source, ${checkoutMetadataString(metadata, "checkout_source")}),
+      cta_keyword = COALESCE(cta_keyword, ${checkoutMetadataString(metadata, "cta_keyword")}),
+      entry_post_slug = COALESCE(entry_post_slug, ${checkoutMetadataString(metadata, "entry_post_slug")}),
+      buyer_stage = COALESCE(buyer_stage, ${checkoutMetadataString(metadata, "buyer_stage")}),
+      updated_at = NOW()
+    WHERE stripe_payment_id = ${params.stripePaymentId}
+  `
 }
 
 async function markEmailLogConversionForCheckout(params: {
@@ -4524,8 +4582,12 @@ export async function POST(request: NextRequest) {
           }
 
           try {
+            const revenuePaymentId = getCheckoutSessionPaymentId(session)
+            const revenueSubscriptionId = getCheckoutSessionSubscriptionId(session)
             await markRevenueEnginePurchase({
               sessionId: session.id,
+              stripePaymentId: revenuePaymentId,
+              stripeSubscriptionId: revenueSubscriptionId,
               userId: referralPurchaseUserId || null,
               userEmail: customerEmail || null,
               stripeCustomerId:
@@ -4535,6 +4597,11 @@ export async function POST(request: NextRequest) {
               purchasedAt: new Date(),
               emailType: session.metadata?.email_type || null,
               campaignId: session.metadata?.campaign_id || null,
+            })
+            await hydrateStripePaymentAttributionFromCheckout({
+              session,
+              customerEmail,
+              stripePaymentId: revenuePaymentId,
             })
           } catch (attributionError: any) {
             console.error(

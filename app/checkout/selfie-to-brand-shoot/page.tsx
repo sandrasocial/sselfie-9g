@@ -55,6 +55,37 @@ async function hasPromptVaultBuyerAccess(input: {
   return rows.length > 0
 }
 
+async function hasStarterKitBuyerAccess(input: {
+  token?: string | null
+  email?: string | null
+}): Promise<boolean> {
+  const cleanToken = input.token?.trim()
+  const cleanEmail = input.email?.trim().toLowerCase()
+  if (!cleanToken && !cleanEmail) return false
+
+  const rows = await sql`
+    SELECT 1
+    FROM freebie_subscribers
+    WHERE (
+        (${cleanToken || null}::text IS NOT NULL AND access_token = ${cleanToken || null})
+        OR (${cleanEmail || null}::text IS NOT NULL AND LOWER(email) = ${cleanEmail || null})
+      )
+      AND (
+        source = 'starter-kit-paid'
+        OR 'starter-kit-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
+      )
+    LIMIT 1
+  `
+
+  return rows.length > 0
+}
+
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+}
+
 export default async function SelfieToBrandShootCheckoutPage({
   searchParams,
 }: {
@@ -77,7 +108,10 @@ export default async function SelfieToBrandShootCheckoutPage({
     buyer_stage?: string
     freebie_token?: string
     vault_credit?: string
+    starter_kit_credit?: string
     upgrade_credit?: string
+    checkout_email?: string
+    email?: string
     returnTo?: string
     return_to?: string
   }>
@@ -92,11 +126,23 @@ export default async function SelfieToBrandShootCheckoutPage({
     data: { user: authUser },
   } = await supabase.auth.getUser()
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
-  const checkoutEmail = authUser?.email ?? freebieEmail ?? null
+  const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
+  const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
   const vaultCreditEligible = await hasPromptVaultBuyerAccess({
     token: params.freebie_token,
     email: checkoutEmail,
   })
+  const starterKitCreditEligible = vaultCreditEligible
+    ? false
+    : await hasStarterKitBuyerAccess({
+        token: params.freebie_token,
+        email: checkoutEmail,
+      })
+  const upgradePromoCode = vaultCreditEligible
+    ? "VAULT27"
+    : starterKitCreditEligible
+      ? "STARTER37"
+      : undefined
   const checkoutParams = {
     ...params,
     ...(vaultCreditEligible
@@ -106,19 +152,28 @@ export default async function SelfieToBrandShootCheckoutPage({
           buyer_stage: params.buyer_stage || "micro",
         }
       : {}),
+    ...(starterKitCreditEligible
+      ? {
+          starter_kit_credit: "1",
+          upgrade_credit: "3700",
+          buyer_stage: params.buyer_stage || "micro",
+        }
+      : {}),
   }
 
   try {
     const clientSecret = await createLandingCheckoutSession(
       "selfie_to_brand_shoot_system",
-      vaultCreditEligible ? "VAULT27" : undefined,
+      upgradePromoCode,
       checkoutEmail,
       {
         ...attribution,
-        ...(vaultCreditEligible
+        ...(vaultCreditEligible || starterKitCreditEligible
           ? {
-              source: attribution.source || "vault_access",
-              checkoutSource: attribution.checkoutSource || "vault_buyer_upgrade_credit",
+              source: attribution.source || (vaultCreditEligible ? "vault_access" : "starter_kit_access"),
+              checkoutSource:
+                attribution.checkoutSource ||
+                (vaultCreditEligible ? "vault_buyer_upgrade_credit" : "starter_kit_buyer_upgrade_credit"),
               buyerStage: "micro",
             }
           : {}),

@@ -15,6 +15,13 @@ import {
 const DELIVERY_RESEND_COOLDOWN_MINUTES = 15
 const SOURCE = "ai-prompts"
 
+function safeAttribution(value: unknown, maxLength = 500): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed
+}
+
 function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.sselfie.ai")
     .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
@@ -101,7 +108,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { firstName, email, utm_source, utm_medium, utm_campaign } = body
+    const {
+      firstName,
+      email,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      checkout_source,
+      cta_keyword,
+      entry_post_slug,
+      landing_path,
+      referrer,
+    } = body
 
     if (!email || !firstName) {
       return NextResponse.json({ error: "Email and first name are required" }, { status: 400 })
@@ -143,7 +162,32 @@ export async function POST(request: NextRequest) {
           UPDATE freebie_subscribers
           SET access_token = ${accessToken},
               email_tags   = ${updatedTags}::text[],
+              utm_source = COALESCE(utm_source, ${safeAttribution(utm_source, 120)}),
+              utm_medium = COALESCE(utm_medium, ${safeAttribution(utm_medium, 120)}),
+              utm_campaign = COALESCE(utm_campaign, ${safeAttribution(utm_campaign, 160)}),
+              utm_content = COALESCE(utm_content, ${safeAttribution(utm_content, 160)}),
+              checkout_source = COALESCE(checkout_source, ${safeAttribution(checkout_source, 120)}),
+              cta_keyword = COALESCE(cta_keyword, ${safeAttribution(cta_keyword, 80)}),
+              entry_post_slug = COALESCE(entry_post_slug, ${safeAttribution(entry_post_slug, 160)}),
+              landing_path = COALESCE(landing_path, ${safeAttribution(landing_path, 500)}),
+              referrer = COALESCE(referrer, ${safeAttribution(referrer, 500)}),
               updated_at   = NOW()
+          WHERE id = ${subscriber.id}
+        `
+      } else {
+        await sql`
+          UPDATE freebie_subscribers
+          SET
+            utm_source = COALESCE(utm_source, ${safeAttribution(utm_source, 120)}),
+            utm_medium = COALESCE(utm_medium, ${safeAttribution(utm_medium, 120)}),
+            utm_campaign = COALESCE(utm_campaign, ${safeAttribution(utm_campaign, 160)}),
+            utm_content = COALESCE(utm_content, ${safeAttribution(utm_content, 160)}),
+            checkout_source = COALESCE(checkout_source, ${safeAttribution(checkout_source, 120)}),
+            cta_keyword = COALESCE(cta_keyword, ${safeAttribution(cta_keyword, 80)}),
+            entry_post_slug = COALESCE(entry_post_slug, ${safeAttribution(entry_post_slug, 160)}),
+            landing_path = COALESCE(landing_path, ${safeAttribution(landing_path, 500)}),
+            referrer = COALESCE(referrer, ${safeAttribution(referrer, 500)}),
+            updated_at = NOW()
           WHERE id = ${subscriber.id}
         `
       }
@@ -152,9 +196,7 @@ export async function POST(request: NextRequest) {
         await addOrUpdateResendContact(normalizedEmail, firstNameFrom(subscriber.name, trimmedFirstName), {
           source: "ai-prompts",
           status: "lead",
-          product: "ai-prompts",
           journey: "nurture",
-          segment: "ai-photoshoot-audience",
           ...buildAiPhotoshootResendTags("curious"),
           signup_date: new Date().toISOString().split("T")[0],
         })
@@ -202,7 +244,8 @@ export async function POST(request: NextRequest) {
     const result = await sql`
       INSERT INTO freebie_subscribers (
         email, name, source, access_token,
-        utm_source, utm_medium, utm_campaign,
+        utm_source, utm_medium, utm_campaign, utm_content,
+        checkout_source, cta_keyword, entry_post_slug, landing_path, referrer,
         email_tags, created_at, updated_at,
         guide_access_email_sent, guide_access_email_sent_at
       )
@@ -211,9 +254,15 @@ export async function POST(request: NextRequest) {
         ${trimmedFirstName},
         ${SOURCE},
         ${accessToken},
-        ${utm_source || null},
-        ${utm_medium || null},
-        ${utm_campaign || null},
+        ${safeAttribution(utm_source, 120)},
+        ${safeAttribution(utm_medium, 120)},
+        ${safeAttribution(utm_campaign, 160)},
+        ${safeAttribution(utm_content, 160)},
+        ${safeAttribution(checkout_source, 120)},
+        ${safeAttribution(cta_keyword, 80)},
+        ${safeAttribution(entry_post_slug, 160)},
+        ${safeAttribution(landing_path, 500)},
+        ${safeAttribution(referrer, 500)},
         ${emailTags}::text[],
         NOW(),
         NOW(),
@@ -236,9 +285,7 @@ export async function POST(request: NextRequest) {
     const resendResult = await addOrUpdateResendContact(normalizedEmail, resolvedFirstName, {
       source: "ai-prompts",
       status: "lead",
-      product: "ai-prompts",
       journey: "nurture",
-      segment: "ai-photoshoot-audience",
       ...buildAiPhotoshootResendTags("curious"),
       signup_date: new Date().toISOString().split("T")[0],
     })
