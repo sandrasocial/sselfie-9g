@@ -168,6 +168,131 @@ async function flagForReview(params: {
   }
 }
 
+function getStripeObjectId(value: any): string | null {
+  if (!value) return null
+  if (typeof value === "string") return value
+  if (typeof value.id === "string") return value.id
+  return null
+}
+
+function getSessionCustomerId(session: any, paymentIntent?: any | null): string {
+  return (
+    getStripeObjectId(paymentIntent?.customer) ||
+    getStripeObjectId(session.customer) ||
+    (session.customer_details?.email ? `email:${session.customer_details.email}` : null) ||
+    (session.customer_email ? `email:${session.customer_email}` : null) ||
+    `session:${session.id}`
+  )
+}
+
+async function recordCheckoutSessionRevenue(params: {
+  event: any
+  session: any
+  userId?: string | null
+  productType?: string | null
+  paymentType?: string
+  customerEmail?: string | null
+  description?: string
+}): Promise<{ recorded: boolean; stripePaymentId: string; stripeCustomerId: string }> {
+  const { event, session } = params
+  const paymentIntentId = getStripeObjectId(session.payment_intent)
+  let paymentIntent: any | null =
+    session.payment_intent && typeof session.payment_intent === "object"
+      ? session.payment_intent
+      : null
+
+  if (paymentIntentId && !paymentIntent) {
+    try {
+      paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    } catch (error: any) {
+      console.error(
+        "[v0] ⚠️ Could not retrieve payment intent for revenue recording:",
+        error?.message || error
+      )
+    }
+  }
+
+  const stripePaymentId = paymentIntentId || session.id
+  const stripeCustomerId = getSessionCustomerId(session, paymentIntent)
+  const amountCents =
+    typeof paymentIntent?.amount === "number"
+      ? paymentIntent.amount
+      : typeof session.amount_total === "number"
+        ? session.amount_total
+        : 0
+  const currency =
+    String(paymentIntent?.currency || session.currency || "usd").toLowerCase()
+  const isPaid = session.payment_status === "paid" || session.amount_total === 0
+  const status = isPaid ? "succeeded" : "pending"
+  const productType = params.productType || session.metadata?.product_type || null
+  const paymentType = params.paymentType || productType || session.mode || "checkout_session"
+  const metadata = {
+    ...(session.metadata || {}),
+    stripe_session_id: session.id,
+    stripe_event_id: event.id,
+    customer_email: params.customerEmail || session.customer_details?.email || session.customer_email || null,
+    recorded_without_user_id: params.userId ? false : true,
+    recording_source: "stripe_webhook_checkout_session",
+  }
+
+  try {
+    await sql`
+      INSERT INTO stripe_payments (
+        stripe_payment_id,
+        stripe_customer_id,
+        user_id,
+        amount_cents,
+        currency,
+        status,
+        payment_type,
+        product_type,
+        description,
+        metadata,
+        payment_date,
+        is_test_mode,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${stripePaymentId},
+        ${stripeCustomerId},
+        ${params.userId || null},
+        ${amountCents},
+        ${currency},
+        ${status},
+        ${paymentType},
+        ${productType},
+        ${params.description || productType || "Checkout session payment"},
+        ${JSON.stringify(metadata)},
+        NOW(),
+        ${!event.livemode},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT (stripe_payment_id)
+      DO UPDATE SET
+        stripe_customer_id = EXCLUDED.stripe_customer_id,
+        user_id = COALESCE(stripe_payments.user_id, EXCLUDED.user_id),
+        amount_cents = EXCLUDED.amount_cents,
+        currency = EXCLUDED.currency,
+        status = EXCLUDED.status,
+        payment_type = EXCLUDED.payment_type,
+        product_type = EXCLUDED.product_type,
+        description = EXCLUDED.description,
+        metadata = COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+        is_test_mode = EXCLUDED.is_test_mode,
+        updated_at = NOW()
+    `
+    console.log(
+      `[v0] ✅ Recorded checkout revenue: payment=${stripePaymentId} product=${productType || "unknown"} user=${params.userId || "NULL"}`
+    )
+    return { recorded: true, stripePaymentId, stripeCustomerId }
+  } catch (error: any) {
+    console.error("[v0] ⚠️ Failed to record checkout revenue:", error?.message || error)
+    return { recorded: false, stripePaymentId, stripeCustomerId }
+  }
+}
+
 async function maybeTrackCheckoutReferralSignup(
   referredUserId: string | null | undefined,
   referralCode: string | null | undefined,
@@ -888,7 +1013,9 @@ export async function POST(request: NextRequest) {
             source === "masterclass_paid" ||
             source === "visibility_suite_paid" ||
             source === "transform_paid" ||
-            source === "prompt_vault_paid"
+            source === "prompt_vault_paid" ||
+            source === "ai_prompts_access" ||
+            source === "selfie_to_brand_shoot_paid"
 
           if (!customerEmail) {
             console.error(`[v0] 🚨 CRITICAL: No customer email found for payment session ${session.id}. Flagging for admin review.`)
@@ -928,6 +1055,16 @@ export async function POST(request: NextRequest) {
             `[v0]   Product type from metadata: ${productType || "❌ MISSING - will skip processing!"}`
           )
           console.log(`[v0]   Promo code from metadata: ${session.metadata.promo_code || "none"}`)
+
+          const revenueRecord = await recordCheckoutSessionRevenue({
+            event,
+            session,
+            userId: userId || null,
+            productType: productType || null,
+            paymentType: productType || session.mode,
+            customerEmail,
+            description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
+          })
 
           if (!productType) {
             console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)
@@ -1532,18 +1669,33 @@ export async function POST(request: NextRequest) {
               }
             } else {
               console.error(
-                `[v0] No user found for email ${customerEmail} and not from landing page - cannot process payment`
+                `[v0] No user found for email ${customerEmail} and source=${source || "missing"} is not a public paid checkout source. Revenue has been recorded; skipping user-bound fulfillment.`
               )
-              await markEventFailed("stripe", event.id, new Error("User not found for payment")).catch((statusError) => {
-                console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
+              await flagForReview({
+                stripeEventId: event.id,
+                eventType: event.type,
+                sessionId: session.id,
+                customerEmail,
+                productType,
+                amountCents: session.amount_total ?? null,
+                currency: session.currency ?? null,
+                reason: "processing_error",
+                rawMetadata: session.metadata as Record<string, unknown>,
+                notes: `Revenue recorded (${revenueRecord.stripePaymentId}); missing user_id for user-bound fulfillment. Source: ${source || "missing"}.`,
               })
-              return NextResponse.json(
-                {
-                  error: "User not found for payment",
-                },
-                { status: 400 }
-              )
             }
+          }
+
+          if (userId) {
+            await recordCheckoutSessionRevenue({
+              event,
+              session,
+              userId,
+              productType: productType || null,
+              paymentType: productType || session.mode,
+              customerEmail,
+              description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
+            })
           }
 
           if (productType === "academy_mini_product" || productType === "visibility_suite") {
@@ -1722,16 +1874,29 @@ export async function POST(request: NextRequest) {
           }
 
           if (!userId) {
-            console.error("[v0] No user_id found for payment - skipping")
-            await markEventFailed("stripe", event.id, new Error("Missing user_id for payment")).catch((statusError) => {
-              console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
-            })
-            return NextResponse.json(
-              {
-                error: "Missing user_id for payment",
-              },
-              { status: 400 }
+            console.error(
+              `[v0] No user_id found after revenue recording - skipping user-bound fulfillment for payment ${revenueRecord.stripePaymentId}`
             )
+            await flagForReview({
+              stripeEventId: event.id,
+              eventType: event.type,
+              sessionId: session.id,
+              customerEmail,
+              productType,
+              amountCents: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              reason: "processing_error",
+              rawMetadata: session.metadata as Record<string, unknown>,
+              notes: `Revenue recorded (${revenueRecord.stripePaymentId}); missing user_id after email lookup/account creation. Entitlement/access was not granted.`,
+            })
+            await markEventProcessed("stripe", event.id).catch((statusError) => {
+              console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
+            })
+            return NextResponse.json({
+              received: true,
+              recorded: revenueRecord.recorded,
+              warning: "missing_user_id_for_fulfillment",
+            })
           }
 
           // Save Stripe customer ID to users table for one-time purchases
@@ -3467,6 +3632,26 @@ export async function POST(request: NextRequest) {
                 } catch (paymentError: any) {
                   console.error(`[v0] Error storing prompt vault payment:`, paymentError.message)
                 }
+              }
+
+              try {
+                await markRevenueEnginePurchase({
+                  sessionId: session.id,
+                  userId: referralPurchaseUserId || null,
+                  userEmail: customerEmail || null,
+                  stripeCustomerId: customerId || vaultCustomerIdForStorage || null,
+                  stripePaymentId: paymentIdForStorage,
+                  purchaseValueCents: paymentAmountCents,
+                  purchaseCurrency: typeof session.currency === "string" ? session.currency : "usd",
+                  purchasedAt: new Date(),
+                  emailType: session.metadata?.email_type || null,
+                  campaignId: session.metadata?.campaign_id || null,
+                })
+              } catch (attributionError: any) {
+                console.error(
+                  "[v0] Failed to persist Prompt Vault revenue attribution immediately after payment:",
+                  attributionError.message,
+                )
               }
 
               if (userId) {

@@ -2,6 +2,7 @@ import { generateText } from "ai"
 import { z } from "zod"
 import { createMayaAnthropicModel, createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { buildContactContext } from "@/lib/ig-agent/contact-profiler"
+import { IG_AGENT_PROMPT_VAULT_URL } from "@/lib/ig-agent/links"
 import { buildSandraSystemPrompt } from "@/lib/ig-agent/voice-prompt"
 import { detectGrowthTags } from "@/lib/ig-agent/triage"
 import type { IgResponderResult } from "@/lib/ig-agent/types"
@@ -22,7 +23,7 @@ function fallbackDraft(message: string): IgResponderResult {
   const isPrompt = /\bprompt/i.test(message)
   const isVault = /\bvault/i.test(message)
   const response = isVault
-    ? "Ahhh yes babe 😭🫶🏼\n\nThe Vault is where I keep the full AI photoshoot prompts I've been obsessing over lately 👀✨\n\nYou can see it here:\nhttps://sselfie.ai/prompt-vault 🤍"
+    ? `Ahhh yes babe 😭🫶🏼\n\nThe Vault is where I keep the full AI photoshoot prompts I've been obsessing over lately 👀✨\n\nYou can see it here:\n${IG_AGENT_PROMPT_VAULT_URL} 🤍`
     : isPrompt
       ? "Omg yes babe 😭✨\n\nYou can grab the free prompts here:\nhttps://sselfie.ai/ai-prompts\n\nStart with a clear selfie and just test one look first 👀🤍"
       : "Awww babe 😭🫶🏼\n\nI saw this and I'm saving it for Sandra to look at properly 🤍"

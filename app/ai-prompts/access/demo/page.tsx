@@ -9,6 +9,8 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "ai-prompts-hero.jpg")
+const DEMO_VAULT_CHECKOUT_HREF =
+  "/checkout/prompt-vault?source=ai_prompts_demo&utm_source=ai_prompts&utm_medium=preview&utm_campaign=ai_prompts_to_prompt_vault&utm_content=after_copy_demo&checkout_source=after_copy_prompt_cta&buyer_stage=lead&cta_keyword=full_shoot_after_free_prompt"
 
 // ---------------------------------------------------------------------------
 // Prompt data
@@ -171,7 +173,21 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
       <div className="pc-prompt-wrap">
         <p className="pc-prompt-text">{card.prompt}</p>
         <div className="pc-copy-row">
-          <CopyButton text={card.prompt} />
+          <CopyButton
+            text={card.prompt}
+            afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
+            afterCopyLabel="Get the full Vault · $27"
+            afterCopyTitle="Love how that came out?"
+            afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
+            afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
+            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
+            afterCopyTrackProperties={{
+              prompt_id: card.id,
+              prompt_title: card.title,
+              source: "ai_prompts_demo_after_copy",
+            }}
+          />
         </div>
       </div>
     </article>
@@ -259,7 +275,21 @@ export default function AiPromptsDemoPage() {
           <div className="ap-starter-card">
             <p className="ap-starter-text">{REUSABLE_STARTER}</p>
             <div className="pc-copy-row">
-              <CopyButton text={REUSABLE_STARTER} />
+              <CopyButton
+                text={REUSABLE_STARTER}
+                afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
+                afterCopyLabel="Get the full Vault · $27"
+                afterCopyTitle="Love how that came out?"
+                afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
+                afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+                afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
+                afterCopyTrackEvent="ai_prompts_prompt_vault_click"
+                afterCopyTrackProperties={{
+                  prompt_id: "reusable-starter-line",
+                  prompt_title: "Reusable Starter Line",
+                  source: "ai_prompts_demo_after_copy",
+                }}
+              />
             </div>
           </div>
         </div>
@@ -646,6 +676,50 @@ export default function AiPromptsDemoPage() {
         .copy-btn:hover {
           border-color: rgba(13, 14, 16, 0.38);
           color: rgba(13, 14, 16, 0.72);
+        }
+
+        .copy-after-cta {
+          width: 100%;
+          margin-top: 18px;
+          padding: 16px;
+          border: 1px solid rgba(197, 198, 200, 0.35);
+          border-radius: 10px;
+          background: #FFFFFF;
+        }
+
+        .copy-after-title {
+          margin: 0 0 6px;
+          color: #0D0E10;
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0;
+        }
+
+        .copy-after-note {
+          margin: 0 0 12px;
+          color: #4F5052;
+          font-size: 13px;
+          line-height: 1.65;
+        }
+
+        .copy-after-link {
+          display: inline-block;
+          padding: 11px 16px;
+          border-radius: 999px;
+          background: #0D0E10;
+          color: #F8FAFA;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          text-decoration: none;
+        }
+
+        .copy-after-footnote {
+          margin: 10px 0 0;
+          color: #818283;
+          font-size: 11px;
+          line-height: 1.55;
         }
 
         /* ------------------------------------------------------------------ */

@@ -55,6 +55,27 @@ function resolveEmailTypeFromTags(eventData: any): string | null {
   return lifecycleTag?.name || null
 }
 
+function slugifyEmailSubject(subject: string | null): string {
+  if (!subject) return ""
+  return subject
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+function resolveBroadcastEmailType(eventData: any, broadcastId: string | null): string | null {
+  if (!broadcastId) return null
+
+  const idPart = broadcastId.slice(0, 8)
+  const subjectSlug = slugifyEmailSubject(typeof eventData?.subject === "string" ? eventData.subject : null)
+  const base = subjectSlug ? `broadcast-${idPart}-${subjectSlug}` : `broadcast-${idPart}`
+
+  return base.slice(0, 50)
+}
+
 function looksLikeEmail(value: string): boolean {
   const v = value.trim().toLowerCase()
   return v.includes("@") && !v.includes(" ") && !v.startsWith("{") && !v.startsWith("[")
@@ -117,7 +138,14 @@ function resolveResendEventId(body: any): string | null {
 }
 
 function resolveEventTimestamp(eventData: any, body: any): Date {
-  const raw = eventData?.timestamp || eventData?.created_at || body?.created_at || body?.timestamp
+  const raw =
+    eventData?.timestamp ||
+    eventData?.open?.timestamp ||
+    eventData?.click?.timestamp ||
+    eventData?.bounce?.timestamp ||
+    eventData?.created_at ||
+    body?.created_at ||
+    body?.timestamp
   if (raw) {
     const parsed = new Date(raw)
     if (Number.isFinite(parsed.getTime())) return parsed
@@ -236,6 +264,10 @@ async function updateEmailEventStatus(eventRowId: number | null, status: string,
   `
 }
 
+function emailLogStatusSql(status: EmailLogStatus | undefined) {
+  return status || null
+}
+
 async function updateByMessageId(input: {
   messageId: string
   status?: EmailLogStatus
@@ -249,9 +281,12 @@ async function updateByMessageId(input: {
     SET
       status = CASE
         WHEN status IN ('bounced', 'complained', 'failed', 'suppressed')
-          AND ${input.status || null} IN ('sent', 'delivered', 'scheduled')
+          AND ${emailLogStatusSql(input.status)} IN ('sent', 'delivered', 'scheduled', 'delivery_delayed')
         THEN status
-        ELSE COALESCE(${input.status || null}, status)
+        WHEN status = 'delivered'
+          AND ${emailLogStatusSql(input.status)} IN ('sent', 'scheduled', 'delivery_delayed')
+        THEN status
+        ELSE COALESCE(${emailLogStatusSql(input.status)}, status)
       END,
       campaign_id = COALESCE(${input.campaignId || null}, campaign_id),
       error_message = COALESCE(${input.errorMessage || null}, error_message),
@@ -305,9 +340,12 @@ async function updateUniqueRecentLogByRecipient(input: {
       resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
       status = CASE
         WHEN status IN ('bounced', 'complained', 'failed', 'suppressed')
-          AND ${input.status || null} IN ('sent', 'delivered', 'scheduled')
+          AND ${emailLogStatusSql(input.status)} IN ('sent', 'delivered', 'scheduled', 'delivery_delayed')
         THEN status
-        ELSE COALESCE(${input.status || null}, status)
+        WHEN status = 'delivered'
+          AND ${emailLogStatusSql(input.status)} IN ('sent', 'scheduled', 'delivery_delayed')
+        THEN status
+        ELSE COALESCE(${emailLogStatusSql(input.status)}, status)
       END,
       campaign_id = COALESCE(${input.campaignId || null}, campaign_id),
       error_message = COALESCE(${input.errorMessage || null}, error_message),
@@ -316,6 +354,98 @@ async function updateUniqueRecentLogByRecipient(input: {
       clicked = CASE WHEN ${input.clickedAt || null}::timestamptz IS NULL THEN clicked ELSE true END,
       clicked_at = COALESCE(clicked_at, ${input.clickedAt || null})
     WHERE id = ${candidates[0].id}
+    RETURNING id, user_email, email_type, campaign_id
+  `
+}
+
+async function upsertBroadcastEmailLog(input: {
+  recipientEmail: string | null
+  messageId: string | null
+  emailType: string | null
+  campaignId?: number | null
+  status?: EmailLogStatus
+  errorMessage?: string | null
+  openedAt?: Date | null
+  clickedAt?: Date | null
+  sentAt?: Date | null
+}) {
+  if (!input.recipientEmail || !input.emailType) return [] as any[]
+
+  const candidates = input.messageId
+    ? await sql`
+        SELECT id
+        FROM email_logs
+        WHERE resend_message_id = ${input.messageId}
+        LIMIT 1
+      `
+    : []
+
+  const fallbackCandidates =
+    candidates.length > 0
+      ? candidates
+      : await sql`
+          SELECT id
+          FROM email_logs
+          WHERE LOWER(BTRIM(user_email)) = ${input.recipientEmail}
+            AND email_type = ${input.emailType}
+            AND sent_at > NOW() - INTERVAL '30 days'
+          ORDER BY sent_at DESC
+          LIMIT 1
+        `
+
+  if (fallbackCandidates.length > 0) {
+    return await sql`
+      UPDATE email_logs
+      SET
+        resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
+        status = CASE
+          WHEN status IN ('bounced', 'complained', 'failed', 'suppressed')
+            AND ${emailLogStatusSql(input.status)} IN ('sent', 'delivered', 'scheduled', 'delivery_delayed')
+          THEN status
+          WHEN status = 'delivered'
+            AND ${emailLogStatusSql(input.status)} IN ('sent', 'scheduled', 'delivery_delayed')
+          THEN status
+          ELSE COALESCE(${emailLogStatusSql(input.status)}, status)
+        END,
+        campaign_id = COALESCE(${input.campaignId || null}, campaign_id),
+        error_message = COALESCE(${input.errorMessage || null}, error_message),
+        opened = CASE WHEN ${input.openedAt || null}::timestamptz IS NULL THEN opened ELSE true END,
+        opened_at = COALESCE(opened_at, ${input.openedAt || null}),
+        clicked = CASE WHEN ${input.clickedAt || null}::timestamptz IS NULL THEN clicked ELSE true END,
+        clicked_at = COALESCE(clicked_at, ${input.clickedAt || null})
+      WHERE id = ${fallbackCandidates[0].id}
+      RETURNING id, user_email, email_type, campaign_id
+    `
+  }
+
+  return await sql`
+    INSERT INTO email_logs (
+      user_email,
+      email_type,
+      resend_message_id,
+      status,
+      error_message,
+      sent_at,
+      timestamp,
+      campaign_id,
+      opened,
+      opened_at,
+      clicked,
+      clicked_at
+    ) VALUES (
+      ${input.recipientEmail},
+      ${input.emailType},
+      ${input.messageId || null},
+      ${input.status || "sent"},
+      ${input.errorMessage || null},
+      ${input.sentAt || new Date()},
+      ${input.sentAt || new Date()},
+      ${input.campaignId || null},
+      ${Boolean(input.openedAt)},
+      ${input.openedAt || null},
+      ${Boolean(input.clickedAt)},
+      ${input.clickedAt || null}
+    )
     RETURNING id, user_email, email_type, campaign_id
   `
 }
@@ -365,6 +495,20 @@ async function updateEmailLog(context: ResendEventContext) {
     })
   }
 
+  if (rows.length === 0 && context.broadcastId) {
+    rows = await upsertBroadcastEmailLog({
+      recipientEmail: context.recipientEmail,
+      messageId: context.messageId,
+      emailType: context.resolvedEmailType,
+      campaignId: context.campaignId,
+      status,
+      errorMessage,
+      openedAt,
+      clickedAt,
+      sentAt: context.eventTimestamp,
+    })
+  }
+
   return { matched: rows.length > 0, matchCount: rows.length, rows }
 }
 
@@ -397,7 +541,8 @@ async function buildContext(body: any): Promise<ResendEventContext> {
   const campaignType = await resolveCampaignTypeById(campaignId)
   const campaignKeyFromEvents = await resolveCampaignKeyByBroadcastId(broadcastId)
   const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
-  const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || null
+  const broadcastEmailType = resolveBroadcastEmailType(eventData, broadcastId)
+  const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || broadcastEmailType || null
 
   return {
     body,

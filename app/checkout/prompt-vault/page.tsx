@@ -9,6 +9,8 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { shouldShowPromptVaultCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 
 export const metadata: Metadata = {
   title: "Checkout | The Prompt Vault",
@@ -62,6 +64,12 @@ function getErrorInfo(error: unknown): { message: string; code: string | null; t
   }
 }
 
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+}
+
 function promptVaultCheckoutProperties(
   params: Awaited<Parameters<typeof getCheckoutAttributionFromParams>[0]>,
   attribution: ReturnType<typeof getCheckoutAttributionFromParams>,
@@ -106,6 +114,9 @@ export default async function PromptVaultCheckoutPage({
     entry_post_slug?: string
     buyer_stage?: string
     freebie_token?: string
+    checkout_email?: string
+    email?: string
+    skip_email_capture?: string
     returnTo?: string
     return_to?: string
   }>
@@ -119,6 +130,35 @@ export default async function PromptVaultCheckoutPage({
     data: { user: authUser },
   } = await supabase.auth.getUser()
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
+  const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
+  const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
+  const shouldCaptureEmail = shouldShowPromptVaultCheckoutEmailCapture({
+    params,
+    hasRecoverableEmail: Boolean(checkoutEmail),
+    hasAuthUser: Boolean(authUser?.id),
+    hasFreebieToken: Boolean(params.freebie_token?.trim()),
+  })
+
+  if (shouldCaptureEmail) {
+    await logAnalyticsEvent({
+      eventName: "prompt_vault_checkout_email_capture_view",
+      userId: authUser?.id || null,
+      path: "/checkout/prompt-vault",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: promptVaultCheckoutProperties(params, attribution, {
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: false,
+        prefill_email_source: "none",
+      }),
+    })
+
+    return <PromptVaultCheckoutEmailCapture params={params} />
+  }
 
   try {
     await logAnalyticsEvent({
@@ -133,14 +173,15 @@ export default async function PromptVaultCheckoutPage({
       },
       properties: promptVaultCheckoutProperties(params, attribution, {
         has_auth_user: Boolean(authUser?.id),
-        has_prefill_email: Boolean(authUser?.email || freebieEmail),
+        has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
       }),
     })
 
     const clientSecret = await createLandingCheckoutSession(
       "prompt_vault",
       undefined,
-      authUser?.email ?? freebieEmail ?? null,
+      checkoutEmail,
       attribution
     )
 
@@ -159,7 +200,8 @@ export default async function PromptVaultCheckoutPage({
         properties: promptVaultCheckoutProperties(params, attribution, {
           checkout_session_id: stripeSessionId,
           has_auth_user: Boolean(authUser?.id),
-          has_prefill_email: Boolean(authUser?.email || freebieEmail),
+          has_prefill_email: Boolean(checkoutEmail),
+          prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
         }),
       })
       redirect(buildCheckoutRedirectUrl(clientSecret, "prompt_vault", params))
@@ -191,7 +233,8 @@ export default async function PromptVaultCheckoutPage({
         error_code: errorInfo.code,
         error_type: errorInfo.type,
         has_auth_user: Boolean(authUser?.id),
-        has_prefill_email: Boolean(authUser?.email || freebieEmail),
+        has_prefill_email: Boolean(checkoutEmail),
+        prefill_email_source: authUser?.email ? "auth" : freebieEmail ? "freebie_token" : urlEmail ? "url" : "none",
       }),
     })
     console.error("[Prompt Vault Checkout] Error creating checkout session:", error)

@@ -2,8 +2,8 @@
  * Backfill recent Stripe payments into stripe_payments (idempotent).
  *
  * Usage:
- *   DRY_RUN=true DAYS=30 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
- *   DAYS=30 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
+ *   DRY_RUN=true DAYS=90 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
+ *   DAYS=90 pnpm exec tsx scripts/backfill/backfill-stripe-payments-recent.ts
  */
 
 import { config } from "dotenv"
@@ -24,10 +24,10 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL not set")
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-11-20.acacia" })
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2026-01-28.clover" })
 const sql = neon(DATABASE_URL)
 const DRY_RUN = process.env.DRY_RUN === "true"
-const DAYS = Number(process.env.DAYS || 30)
+const DAYS = Number(process.env.DAYS || 90)
 const BLUEPRINT_ONLY = process.env.BLUEPRINT_ONLY === "true"
 
 async function ensureStripePaymentAttributionSchema() {
@@ -215,8 +215,12 @@ async function upsertStripePayment(record: {
     ON CONFLICT (stripe_payment_id)
     DO UPDATE SET
       status = ${record.status},
+      user_id = COALESCE(stripe_payments.user_id, EXCLUDED.user_id),
+      amount_cents = EXCLUDED.amount_cents,
+      currency = EXCLUDED.currency,
       payment_type = ${record.payment_type},
       product_type = ${record.product_type || null},
+      metadata = COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata,
       customer_email = COALESCE(stripe_payments.customer_email, ${record.customer_email || null}),
       checkout_session_id = COALESCE(stripe_payments.checkout_session_id, ${record.checkout_session_id || null}),
       source = COALESCE(stripe_payments.source, ${record.source || null}),
@@ -278,30 +282,35 @@ async function backfillPaymentIntents(startTs: number) {
 
     for (const pi of paymentIntents.data) {
       processed += 1
-      if (pi.status !== "succeeded") continue
-      if (pi.invoice) continue // handled by invoices backfill
+      const paymentIntent = pi as Stripe.PaymentIntent & { invoice?: string | Stripe.Invoice | null }
+      if (paymentIntent.status !== "succeeded") continue
+      if (paymentIntent.invoice) continue // handled by invoices backfill
 
-      const customerId = typeof pi.customer === "string" ? pi.customer : pi.customer?.id
-      if (!customerId) continue
+      const customerId =
+        typeof paymentIntent.customer === "string"
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id
+      const fallbackCustomerId = `payment_intent:${paymentIntent.id}`
+      const resolvedCustomerId = customerId || fallbackCustomerId
 
-      const userId = await findUserIdByCustomerId(customerId)
-      const description = pi.description || ""
-      const meta = pi.metadata || {}
+      const userId = customerId ? await findUserIdByCustomerId(customerId) : null
+      const description = paymentIntent.description || ""
+      const meta = paymentIntent.metadata || {}
       const { payment_type, product_type } = resolvePaymentType(meta, description)
 
       await upsertStripePayment({
-        stripe_payment_id: pi.id,
-        stripe_customer_id: customerId,
+        stripe_payment_id: paymentIntent.id,
+        stripe_customer_id: resolvedCustomerId,
         user_id: userId,
-        amount_cents: pi.amount,
-        currency: pi.currency || "usd",
+        amount_cents: paymentIntent.amount,
+        currency: paymentIntent.currency || "usd",
         status: "succeeded",
         payment_type,
         product_type,
         description,
         metadata: meta,
-        payment_date: new Date(pi.created * 1000),
-        is_test_mode: !pi.livemode,
+        payment_date: new Date(paymentIntent.created * 1000),
+        is_test_mode: !paymentIntent.livemode,
       })
       stored += 1
     }
@@ -331,9 +340,17 @@ async function backfillInvoices(startTs: number) {
 
     for (const invoice of invoices.data) {
       processed += 1
+      const paidInvoice = invoice as Stripe.Invoice & {
+        subscription?: string | Stripe.Subscription | null
+        charge?: string | Stripe.Charge | null
+        payment_intent?: string | Stripe.PaymentIntent | null
+      }
       const subscriptionId =
-        typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
-      const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
+        typeof paidInvoice.subscription === "string"
+          ? paidInvoice.subscription
+          : paidInvoice.subscription?.id
+      const customerId =
+        typeof paidInvoice.customer === "string" ? paidInvoice.customer : paidInvoice.customer?.id
       if (!subscriptionId || !customerId) continue
 
       let productType = "sselfie_studio_membership"
@@ -345,27 +362,27 @@ async function backfillInvoices(startTs: number) {
       }
 
       const paymentId =
-        (typeof invoice.charge === "string" ? invoice.charge : invoice.charge?.id) ||
-        (typeof invoice.payment_intent === "string" ? invoice.payment_intent : invoice.payment_intent?.id) ||
-        invoice.id
+        (typeof paidInvoice.charge === "string" ? paidInvoice.charge : paidInvoice.charge?.id) ||
+        (typeof paidInvoice.payment_intent === "string" ? paidInvoice.payment_intent : paidInvoice.payment_intent?.id) ||
+        paidInvoice.id
 
       const userId = await findUserIdByCustomerId(customerId)
 
       await upsertStripePayment({
         stripe_payment_id: paymentId,
-        stripe_invoice_id: invoice.id,
+        stripe_invoice_id: paidInvoice.id,
         stripe_subscription_id: subscriptionId,
         stripe_customer_id: customerId,
         user_id: userId,
-        amount_cents: invoice.amount_paid,
-        currency: invoice.currency || "usd",
-        status: invoice.status || "succeeded",
+        amount_cents: paidInvoice.amount_paid,
+        currency: paidInvoice.currency || "usd",
+        status: paidInvoice.status || "succeeded",
         payment_type: "subscription",
         product_type: productType,
-        description: invoice.description || `Subscription payment - ${productType}`,
-        metadata: invoice.metadata || {},
-        payment_date: new Date(invoice.created * 1000),
-        is_test_mode: !invoice.livemode,
+        description: paidInvoice.description || `Subscription payment - ${productType}`,
+        metadata: paidInvoice.metadata || {},
+        payment_date: new Date(paidInvoice.created * 1000),
+        is_test_mode: !paidInvoice.livemode,
       })
       stored += 1
     }
@@ -384,7 +401,7 @@ async function backfillCharges(startTs: number) {
   let startingAfter: string | undefined
   let processed = 0
   let stored = 0
-  let skippedNoCustomer = 0
+  let fallbackCustomer = 0
 
   while (hasMore) {
     const charges = await stripe.charges.list({
@@ -395,33 +412,41 @@ async function backfillCharges(startTs: number) {
 
     for (const charge of charges.data) {
       processed += 1
-      if (!charge.paid || charge.refunded) continue
-      if (charge.invoice) continue // handled by invoices backfill
-
-      const customerId = typeof charge.customer === "string" ? charge.customer : charge.customer?.id
-      if (!customerId) {
-        skippedNoCustomer += 1
-        continue
+      const paidCharge = charge as Stripe.Charge & {
+        invoice?: string | Stripe.Invoice | null
+        payment_intent?: string | Stripe.PaymentIntent | null
       }
+      if (!paidCharge.paid || paidCharge.refunded) continue
+      if (paidCharge.invoice) continue // handled by invoices backfill
+      if (paidCharge.payment_intent) continue // handled by payment intents / checkout sessions backfill
 
-      const userId = await findUserIdByCustomerId(customerId)
-      const description = charge.description || ""
-      const meta = charge.metadata || {}
+      const customerId =
+        typeof paidCharge.customer === "string" ? paidCharge.customer : paidCharge.customer?.id
+      const fallbackCustomerId =
+        paidCharge.billing_details?.email ? `email:${paidCharge.billing_details.email}` : `charge:${paidCharge.id}`
+      const resolvedCustomerId = customerId || fallbackCustomerId
+      if (!customerId) fallbackCustomer += 1
+
+      const userId =
+        (customerId ? await findUserIdByCustomerId(customerId) : null) ||
+        (paidCharge.billing_details?.email ? await findUserIdByEmail(paidCharge.billing_details.email).catch(() => null) : null)
+      const description = paidCharge.description || ""
+      const meta = paidCharge.metadata || {}
       const { payment_type, product_type } = resolvePaymentType(meta, description)
 
       await upsertStripePayment({
-        stripe_payment_id: charge.id,
-        stripe_customer_id: customerId,
+        stripe_payment_id: paidCharge.id,
+        stripe_customer_id: resolvedCustomerId,
         user_id: userId,
-        amount_cents: charge.amount,
-        currency: charge.currency || "usd",
-        status: charge.status || "succeeded",
+        amount_cents: paidCharge.amount,
+        currency: paidCharge.currency || "usd",
+        status: paidCharge.status || "succeeded",
         payment_type,
         product_type,
         description,
         metadata: meta,
-        payment_date: new Date(charge.created * 1000),
-        is_test_mode: !charge.livemode,
+        payment_date: new Date(paidCharge.created * 1000),
+        is_test_mode: !paidCharge.livemode,
       })
       stored += 1
     }
@@ -432,7 +457,7 @@ async function backfillCharges(startTs: number) {
     }
   }
 
-  return { processed, stored, skippedNoCustomer }
+  return { processed, stored, fallbackCustomer }
 }
 
 async function backfillCheckoutSessions(startTs: number) {
@@ -574,8 +599,8 @@ async function main() {
     chargeResult.processed,
     "stored:",
     chargeResult.stored,
-    "skipped (no customer):",
-    chargeResult.skippedNoCustomer,
+    "fallback customer:",
+    chargeResult.fallbackCustomer,
   )
   console.log(
     "[BACKFILL] Checkout sessions processed:",

@@ -49,6 +49,9 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_reel_click")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_prompt_viewed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("prompt_vault_checkout_recovery_sent")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_checkout_start")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_checkout_success")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_access_opened")
   })
 
   it("rejects unknown event names", () => {
@@ -75,5 +78,8 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("prompt_vault_reel_click")).toBe(true)
     expect(isAllowedAnalyticsEventName("prompt_vault_prompt_viewed")).toBe(true)
     expect(isAllowedAnalyticsEventName("prompt_vault_checkout_recovery_sent")).toBe(true)
+    expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_checkout_start")).toBe(true)
+    expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_checkout_success")).toBe(true)
+    expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_access_opened")).toBe(true)
   })
 })

@@ -12,8 +12,6 @@ export interface FreebieGuideEmailTouchDefinition {
 
 export const FREEBIE_GUIDE_EMAIL_TOUCHES: FreebieGuideEmailTouchDefinition[] = [
   { days: 1, emailType: "freebie-guide-day1-light-tip" },
-  { days: 3, emailType: "freebie-guide-day3-edit-bridge" },
   { days: 5, emailType: "freebie-guide-day5-story" },
-  { days: 8, emailType: "freebie-guide-day8-starter-kit-direct" },
   { days: 14, emailType: "freebie-guide-day14-masterclass-bridge" },
 ]

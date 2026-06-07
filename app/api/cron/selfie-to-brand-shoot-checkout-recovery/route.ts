@@ -19,6 +19,8 @@ const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const SEND_DELAY_MS = 650
 const HYDRATE_EMAIL_LIMIT = 50
+const HYDRATE_RECHECK_AFTER_HOURS = 12
+const HYDRATE_MAX_ATTEMPTS = 3
 
 type RecoveryCandidate = {
   session_id: string
@@ -37,11 +39,28 @@ type RecoveryCandidate = {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-async function hydrateMissingCheckoutEmails() {
+async function ensureRecoveryHydrationSchema() {
   await ensureRevenueEngineSchema()
 
+  await sql`
+    ALTER TABLE checkout_attribution
+    ADD COLUMN IF NOT EXISTS email_hydration_checked_at TIMESTAMPTZ
+  `
+  await sql`
+    ALTER TABLE checkout_attribution
+    ADD COLUMN IF NOT EXISTS email_hydration_attempts INTEGER NOT NULL DEFAULT 0
+  `
+  await sql`
+    CREATE INDEX IF NOT EXISTS checkout_attribution_email_hydration_idx
+    ON checkout_attribution (product_type, status, email_hydration_checked_at, created_at DESC)
+  `
+}
+
+async function hydrateMissingCheckoutEmails() {
+  await ensureRecoveryHydrationSchema()
+
   const sessions = (await sql`
-    SELECT session_id
+    SELECT session_id, email_hydration_attempts
     FROM checkout_attribution
     WHERE product_type = 'selfie_to_brand_shoot_system'
       AND status = 'started'
@@ -49,11 +68,16 @@ async function hydrateMissingCheckoutEmails() {
       AND recovery_email_sent_at IS NULL
       AND created_at <= NOW() - INTERVAL '1 hour'
       AND created_at > NOW() - INTERVAL '7 days'
+      AND email_hydration_attempts < ${HYDRATE_MAX_ATTEMPTS}
+      AND (
+        email_hydration_checked_at IS NULL
+        OR email_hydration_checked_at <= NOW() - (${`${HYDRATE_RECHECK_AFTER_HOURS} hours`}::interval)
+      )
     ORDER BY created_at ASC
     LIMIT ${HYDRATE_EMAIL_LIMIT}
-  `) as Array<{ session_id: string }>
+  `) as Array<{ session_id: string; email_hydration_attempts: number }>
 
-  const results = { checked: sessions.length, hydrated: 0, failed: 0 }
+  const results = { checked: sessions.length, hydrated: 0, unavailable: 0, failed: 0 }
 
   for (const session of sessions) {
     try {
@@ -66,14 +90,38 @@ async function hydrateMissingCheckoutEmails() {
       if (email) {
         await sql`
           UPDATE checkout_attribution
-          SET user_email = ${email}, updated_at = NOW()
+          SET
+            user_email = ${email},
+            email_hydration_checked_at = NOW(),
+            email_hydration_attempts = email_hydration_attempts + 1,
+            updated_at = NOW()
           WHERE session_id = ${session.session_id}
             AND (user_email IS NULL OR BTRIM(user_email) = '')
         `
         results.hydrated += 1
+      } else {
+        await sql`
+          UPDATE checkout_attribution
+          SET
+            email_hydration_checked_at = NOW(),
+            email_hydration_attempts = email_hydration_attempts + 1,
+            updated_at = NOW()
+          WHERE session_id = ${session.session_id}
+            AND (user_email IS NULL OR BTRIM(user_email) = '')
+        `
+        results.unavailable += 1
       }
     } catch (error) {
       results.failed += 1
+      await sql`
+        UPDATE checkout_attribution
+        SET
+          email_hydration_checked_at = NOW(),
+          email_hydration_attempts = email_hydration_attempts + 1,
+          updated_at = NOW()
+        WHERE session_id = ${session.session_id}
+          AND (user_email IS NULL OR BTRIM(user_email) = '')
+      `
       console.error("[selfie-to-brand-shoot-recovery] Failed to hydrate Stripe checkout email:", {
         sessionId: session.session_id,
         error,
@@ -231,7 +279,10 @@ export async function GET(request: Request) {
 
     for (const candidate of candidates) {
       const firstName = getFirstNameForEmail({ email: candidate.user_email })
-      const email = generateSelfieToBrandShootCheckoutRecoveryEmail({ firstName })
+      const email = generateSelfieToBrandShootCheckoutRecoveryEmail({
+        firstName,
+        recipientEmail: candidate.user_email,
+      })
 
       const sent = await sendEmail({
         to: candidate.user_email,

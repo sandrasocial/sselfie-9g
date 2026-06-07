@@ -2,6 +2,8 @@ import { createHmac } from "crypto"
 import { describe, expect, it } from "vitest"
 
 import { isLikelyIcelandic } from "@/lib/ig-agent/icelandic-detector"
+import { IG_AGENT_PROMPT_VAULT_URL } from "@/lib/ig-agent/links"
+import { generateSandraDraft } from "@/lib/ig-agent/responder"
 import { triageIncomingMessage } from "@/lib/ig-agent/triage"
 import { verifyMetaSignature } from "@/lib/ig-agent/webhook-security"
 import { isInstagramLoginToken, resolveInstagramConnectionMode } from "@/lib/instagram/connection-mode"
@@ -58,5 +60,17 @@ describe("IG agent foundation", () => {
     expect(resolveInstagramConnectionMode({ access_token: "not-prefixed", account_type: "instagram_login" })).toBe(
       "instagram_login",
     )
+  })
+
+  it("uses the attributed Prompt Vault link in fallback Vault replies", async () => {
+    const result = await generateSandraDraft({
+      igUserId: "123",
+      latestMessage: "VAULT please",
+      forceFallback: true,
+    })
+
+    expect(result.response).toContain(IG_AGENT_PROMPT_VAULT_URL)
+    expect(result.response).toContain("utm_medium=manychat")
+    expect(result.response).toContain("checkout_source=instagram_dm")
   })
 })

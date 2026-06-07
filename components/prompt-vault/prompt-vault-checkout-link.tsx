@@ -23,6 +23,8 @@ const ATTRIBUTION_KEYS = [
   "entry_post_slug",
   "buyer_stage",
   "freebie_token",
+  "checkout_email",
+  "email",
 ] as const
 
 function buildCheckoutHref(searchParams: { get(name: string): string | null }): string {

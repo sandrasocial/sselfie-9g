@@ -6,6 +6,7 @@ import { AI_PROMPTS_EMAIL_TOUCHES, type AiPromptsEmailType } from "@/lib/email/a
 import { PROMPT_VAULT_EMAIL_TOUCHES, type PromptVaultEmailType } from "@/lib/email/prompt-vault-email-sequence"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
+import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
@@ -47,6 +48,7 @@ interface PromptVaultCandidate {
 
 interface TouchResult {
   found: number
+  wouldSend: number
   sent: number
   failed: number
   skipped: number
@@ -228,12 +230,14 @@ function generateAiPromptsEmail(
   const accessUrl = aiPromptsAccessUrl(candidate)
 
   switch (emailType) {
+    case "ai-prompts-day1-vault-bridge":
+      return generateAiPromptsDay1VaultBridgeEmail({ firstName, recipientEmail: candidate.email })
     case "ai-prompts-day2-try-first-prompt":
       return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":
       return generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
     case "ai-prompts-day7-prompt-vault-offer":
-      return generateAiPromptsDay7PromptVaultOfferEmail({ firstName })
+      return generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
     default:
       throw new Error(`Unknown AI prompts email type: ${emailType}`)
   }
@@ -250,7 +254,7 @@ function generatePromptVaultEmail(
     case "prompt-vault-day2-first-result":
       return generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
     case "prompt-vault-day3-system-upgrade":
-      return generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl })
+      return generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl, recipientEmail: candidate.email })
     case "prompt-vault-day5-fix-bad-result":
       return generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
     case "prompt-vault-day10-next-shoot":
@@ -291,7 +295,7 @@ async function sendPromptVaultTouch(emailType: PromptVaultEmailType, candidate: 
 }
 
 function emptyTouchResult(): TouchResult {
-  return { found: 0, sent: 0, failed: 0, skipped: 0 }
+  return { found: 0, wouldSend: 0, sent: 0, failed: 0, skipped: 0 }
 }
 
 function isTouchResult(value: unknown): value is TouchResult {
@@ -299,6 +303,7 @@ function isTouchResult(value: unknown): value is TouchResult {
     value &&
       typeof value === "object" &&
       "found" in value &&
+      "wouldSend" in value &&
       "sent" in value &&
       "failed" in value &&
       "skipped" in value,
@@ -310,6 +315,11 @@ export async function GET(request: Request) {
   await cronLogger.start()
 
   try {
+    const url = new URL(request.url)
+    const dryRun =
+      url.searchParams.get("dry_run") === "1" ||
+      url.searchParams.get("dryRun") === "true" ||
+      url.searchParams.get("preview") === "1"
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     const isProduction =
@@ -341,6 +351,7 @@ export async function GET(request: Request) {
     let remainingSends = maxTotalPerRun
 
     const results: Record<string, TouchResult | boolean | number | string> = {
+      dryRun,
       aiPromptsEnabled,
       promptVaultEnabled,
       maxPerTouch,
@@ -350,14 +361,14 @@ export async function GET(request: Request) {
     }
     const errors: Array<{ email: string; touch: string; error: string }> = []
 
-    if (aiPromptsEnabled) {
+    if (aiPromptsEnabled || dryRun) {
       for (const touch of AI_PROMPTS_EMAIL_TOUCHES) {
         const key = resultKey(touch.emailType)
         const result = emptyTouchResult()
         results[key] = result
 
         if (remainingSends <= 0) {
-          result.skipped = maxPerTouch
+          result.skipped = dryRun ? 0 : maxPerTouch
           continue
         }
 
@@ -370,6 +381,13 @@ export async function GET(request: Request) {
           limit: Math.min(maxPerTouch, remainingSends),
         })
         result.found = candidates.length
+
+        if (dryRun) {
+          result.wouldSend = candidates.length
+          result.skipped = candidates.length
+          remainingSends -= candidates.length
+          continue
+        }
 
         for (const candidate of candidates) {
           const sent = await sendAiPromptsTouch(touch.emailType, candidate)
@@ -391,14 +409,14 @@ export async function GET(request: Request) {
       }
     }
 
-    if (promptVaultEnabled) {
+    if (promptVaultEnabled || dryRun) {
       for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
         const key = resultKey(touch.emailType)
         const result = emptyTouchResult()
         results[key] = result
 
         if (remainingSends <= 0) {
-          result.skipped = maxPerTouch
+          result.skipped = dryRun ? 0 : maxPerTouch
           continue
         }
 
@@ -410,6 +428,13 @@ export async function GET(request: Request) {
           limit: Math.min(maxPerTouch, remainingSends),
         })
         result.found = candidates.length
+
+        if (dryRun) {
+          result.wouldSend = candidates.length
+          result.skipped = candidates.length
+          remainingSends -= candidates.length
+          continue
+        }
 
         for (const candidate of candidates) {
           const sent = await sendPromptVaultTouch(touch.emailType, candidate)
@@ -435,6 +460,10 @@ export async function GET(request: Request) {
       (total, value) => total + (isTouchResult(value) ? value.sent : 0),
       0,
     )
+    const totalWouldSend = Object.values(results).reduce<number>(
+      (total, value) => total + (isTouchResult(value) ? value.wouldSend : 0),
+      0,
+    )
     const totalFailed = Object.values(results).reduce<number>(
       (total, value) => total + (isTouchResult(value) ? value.failed : 0),
       0,
@@ -442,6 +471,7 @@ export async function GET(request: Request) {
 
     const summary = {
       ...results,
+      totalWouldSend,
       totalSent,
       totalFailed,
       remainingSends,

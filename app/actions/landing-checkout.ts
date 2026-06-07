@@ -22,6 +22,9 @@ type LandingCheckoutOptions = {
 function normalizeStripeCustomerEmail(email?: string | null): string | null {
   const value = email?.trim().toLowerCase()
   if (!value) return null
+
+  // Stripe validates customer_email before creating the session. If a saved lead
+  // email has a typo, skip prefill so checkout still opens and asks for email.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null
 }
 
@@ -256,6 +259,10 @@ export async function createLandingCheckoutSession(
           customerEmail: normalizedCustomerEmail,
           promoCode,
         })
+    // CHECKOUT-02: only pass an options object when we actually have an idempotency
+    // key. Passing an empty `{}` made stripe-node throw "Unknown arguments
+    // ([object Object])" and broke ~25% of Vault checkouts (the no-email ManyChat
+    // "VAULT" reel traffic, where idempotencyKey resolves to null).
     const session = idempotencyKey
       ? await stripe.checkout.sessions.create(sessionConfig, { idempotencyKey })
       : await stripe.checkout.sessions.create(sessionConfig)

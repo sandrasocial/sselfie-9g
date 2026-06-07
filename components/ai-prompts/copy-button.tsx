@@ -11,8 +11,11 @@ export function CopyButton({
   trackEvent = "ai_prompts_prompt_copied",
   trackSource = "ai-prompts",
   afterCopyHref,
+  afterCopyTitle,
   afterCopyLabel,
   afterCopyNote,
+  afterCopyFootnote,
+  afterCopyViewEvent,
   afterCopyTrackEvent,
   afterCopyTrackProperties,
 }: {
@@ -22,8 +25,11 @@ export function CopyButton({
   trackEvent?: "ai_prompts_prompt_copied" | "prompt_vault_prompt_copied"
   trackSource?: "ai-prompts" | "prompt-vault"
   afterCopyHref?: string
+  afterCopyTitle?: string
   afterCopyLabel?: string
   afterCopyNote?: string
+  afterCopyFootnote?: string
+  afterCopyViewEvent?: string
   afterCopyTrackEvent?: string
   afterCopyTrackProperties?: Record<string, string>
 }) {
@@ -50,6 +56,16 @@ export function CopyButton({
       setCopied(true)
       if (afterCopyHref) {
         setShowAfterCopyCta(true)
+        if (afterCopyViewEvent) {
+          try {
+            trackAnalyticsEvent({
+              event: afterCopyViewEvent,
+              properties: afterCopyTrackProperties,
+            })
+          } catch {
+            // Tracking is fire-and-forget — never block copy.
+          }
+        }
         setTimeout(() => setShowAfterCopyCta(false), 16000)
       }
       fireTrack()
@@ -95,10 +111,12 @@ export function CopyButton({
       </button>
       {showAfterCopyCta && afterCopyHref && (
         <div className="copy-after-cta">
+          {afterCopyTitle && <p className="copy-after-title">{afterCopyTitle}</p>}
           {afterCopyNote && <p className="copy-after-note">{afterCopyNote}</p>}
           <Link href={afterCopyHref} className="copy-after-link" onClick={handleAfterCopyClick}>
             {afterCopyLabel || "Get the full shoot"}
           </Link>
+          {afterCopyFootnote && <p className="copy-after-footnote">{afterCopyFootnote}</p>}
         </div>
       )}
     </div>

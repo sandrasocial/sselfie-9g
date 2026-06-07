@@ -5,11 +5,12 @@ import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-e
 
 export interface AiPromptsDay7Params {
   firstName: string
+  recipientEmail?: string | null
 }
 
 const EMAIL_TYPE = "ai-prompts-day7-prompt-vault-offer"
 
-export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName }: AiPromptsDay7Params): {
+export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail }: AiPromptsDay7Params): {
   html: string
   text: string
   subject: string
@@ -19,6 +20,7 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName }: AiProm
     content: "prompt_vault_offer",
     medium: "nurture",
     emailType: EMAIL_TYPE,
+    checkoutEmail: recipientEmail,
   })
   const subject = "one prompt showed you the door"
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")

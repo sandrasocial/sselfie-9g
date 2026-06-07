@@ -7,8 +7,10 @@ export const SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE =
 
 export function generateSelfieToBrandShootCheckoutRecoveryEmail({
   firstName,
+  recipientEmail,
 }: {
   firstName: string
+  recipientEmail?: string | null
 }) {
   const checkoutUrl = buildRevenueEmailLink(selfieToBrandShootCheckoutUrl(), {
     source: "email",
@@ -16,46 +18,56 @@ export function generateSelfieToBrandShootCheckoutRecoveryEmail({
     campaign: "selfie_to_brand_shoot_checkout_recovery",
     content: "return_to_checkout",
     emailType: SELFIE_TO_BRAND_SHOOT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+    checkoutEmail: recipientEmail,
   })
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the guided system for turning one selfie into a cohesive personal brand shoot.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If this is still the next step you want, your checkout link is here.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at Selfie to Brand Shoot, so I wanted to send the link back to you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is for the moment where one good AI image is not enough anymore.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You want to know which selfie to use, what style to choose, how to make the images still look like you, and how to actually use them in your content.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Inside, you choose the source selfie, choose one Signature Visual World, create the shoot, pick the images that still look like you, and turn them into content.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Start simple. One photo. One visual direction. One first brand shoot.</p>`,
-      "What you get"
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Choose the right source selfie.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Pick one Signature Visual World.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Create your first three brand images.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;">Then turn them into content you can actually post.</p>`,
+      "Inside the System"
     )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Continue Checkout", checkoutUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">If now is not the right time, that is okay. No pressure.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Start the System", checkoutUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You do not need a studio, a photographer, or a perfect photo of yourself.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Just one clear selfie, one visual direction, and one simple next step.</p>
   `
 
   return {
-    subject: "your brand shoot link",
+    subject: "here is the brand shoot link",
     html: renderStoneShell({
-      title: "Your brand shoot link.",
+      title: "Here is the brand shoot link.",
       eyebrow: "Selfie to Brand Shoot",
-      subtitle: "A calm way back to the guided system.",
+      subtitle: "A calm way back to the system for turning one selfie into your first AI brand shoot.",
       bodyHtml,
       footerLead: "Reply if checkout gave you trouble.",
       footerSignoff: "Sandra x",
     }),
     text: `Hi ${firstName},
 
-You were looking at the guided system for turning one selfie into a cohesive personal brand shoot.
+You were looking at Selfie to Brand Shoot, so I wanted to send the link back to you.
 
-If this is still the next step you want, your checkout link is here.
+This is for the moment where one good AI image is not enough anymore.
 
-What you get:
-Inside, you choose the source selfie, choose one Signature Visual World, create the shoot, pick the images that still look like you, and turn them into content.
+You want to know which selfie to use, what style to choose, how to make the images still look like you, and how to actually use them in your content.
 
-Start simple. One photo. One visual direction. One first brand shoot.
+Inside the System:
+- Choose the right source selfie.
+- Pick one Signature Visual World.
+- Create your first three brand images.
+- Then turn them into content you can actually post.
 
-Continue Checkout:
+Start the System:
 ${checkoutUrl}
 
-If now is not the right time, that is okay. No pressure.
+You do not need a studio, a photographer, or a perfect photo of yourself.
+
+Just one clear selfie, one visual direction, and one simple next step.
 
 Reply if checkout gave you trouble.
 

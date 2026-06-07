@@ -5,6 +5,7 @@ import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-e
 interface PromptVaultBuyerEmailParams {
   firstName: string
   accessUrl: string
+  recipientEmail?: string | null
 }
 
 function promptVaultTokenFromAccessUrl(accessUrl: string): string | null {
@@ -146,11 +147,13 @@ Sandra x`
 export function generatePromptVaultDay3SystemUpgradeEmail({
   firstName,
   accessUrl,
+  recipientEmail,
 }: PromptVaultBuyerEmailParams): { html: string; text: string; subject: string } {
   const upgradeUrl = buildRevenueEmailLink(buildSystemUpgradeUrl(accessUrl), {
     campaign: "prompt_vault_system_upgrade",
     content: "vault_buyer_credit",
     emailType: "prompt-vault-day3-system-upgrade",
+    checkoutEmail: recipientEmail,
   })
   const vaultUrl = buildRevenueEmailLink(accessUrl, {
     campaign: "prompt_vault_system_upgrade",
