@@ -5,6 +5,8 @@ import { getUserSubscription } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 import { parseStudioAcademyContext } from "@/lib/academy/studio-query-context"
+// Studio 3.0: admin-only override to route the admin to the new /app shell.
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 
 export const dynamic = "force-dynamic"
 
@@ -21,6 +23,7 @@ export default async function StudioPage({
     source?: string
     product?: string
     first_time_product_user?: string
+    legacy?: string
   }>
 }) {
   // Await searchParams in Next.js 15+
@@ -50,6 +53,14 @@ export default async function StudioPage({
   // Check if admin is impersonating (simple cookie check)
   const { getImpersonatedUserId } = await import("@/lib/simple-impersonation")
   const impersonatedUserId = await getImpersonatedUserId()
+
+  // Studio 3.0 admin override: send the admin straight to the new /app shell, UNLESS they
+  // are impersonating a member or explicitly inspecting legacy with ?legacy=1. This is
+  // admin-only — the 7 active members never match isAdminEmail, so their legacy Studio is
+  // completely untouched.
+  if (!impersonatedUserId && params.legacy !== "1" && isAdminEmail(user.email)) {
+    redirect("/app")
+  }
 
   let neonUser = null
   let userError = null
