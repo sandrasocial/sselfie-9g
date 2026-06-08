@@ -4,6 +4,15 @@
 // model's NATIVE text rendering stays editorial and legible. Pure + unit-testable.
 
 import type { GraphicTextSpec, OutputFormat } from "@/components/app-v3/types"
+import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
+import {
+  IDENTITY_ANCHOR,
+  REALISM_TOKENS,
+  QUIET_LUXURY_FALLBACK,
+  cameraForText,
+  lightingForText,
+} from "@/lib/app-v3/maya/ingredients"
+import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
 export type RequestSize = "1024x1024" | "1024x1792"
@@ -38,6 +47,111 @@ const BRAND_GRAPHIC_STYLE =
 
 function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
+}
+
+// ─── MAYA-REBUILD-03: concept compiler (Nano Banana order) ──────────────────────
+// Stage 2 of the two-stage pipeline. Takes the LLM-authored CreativeBrief and lays its
+// ingredients down in the order gpt-image responds to best (it is instruction-following
+// like Nano Banana, NOT tag-based like Flux):
+//
+//   1. Identity Anchor (first line, always)
+//   2. Outfit / Brand
+//   3. Setting / Mood / Pose
+//   4. Camera + Lighting + Realism tokens
+//   (+ on-image graphic layer for non-photo formats)
+//
+// Pure + unit-testable. compileMayaPrompt (above) is untouched and still serves the
+// legacy form path; this is the new concept path used by /api/app-v3/maya/generate.
+
+function buildGraphicLayer(
+  brief: CreativeBrief,
+  format: Exclude<OutputFormat, "photo">,
+  brandKit?: BrandKit | null,
+): string {
+  const palette =
+    brandKit?.colors?.length || brandKit?.fonts?.length
+      ? `Use the brand kit — colors: ${(brandKit.colors ?? []).join(", ") || "as provided"}; ` +
+        `type: ${(brandKit.fonts ?? []).join(", ") || "elegant serif headline, clean sans body"}.`
+      : `Use the Quiet Luxury palette so it reads high-end: ${QUIET_LUXURY_FALLBACK.colors.join(", ")}; ` +
+        `${QUIET_LUXURY_FALLBACK.fonts.join(" and ")}; ${QUIET_LUXURY_FALLBACK.vibe}.`
+
+  const base =
+    "Premium light-editorial SSELFIE layout: calm, spacious, magazine-quality. " +
+    palette +
+    " Render all text crisply and perfectly legible, spelled exactly as given, with generous safe-zone margins " +
+    "so nothing is cropped by app UI. No emojis, no clip-art, no gradients, no clutter."
+
+  const g = brief.graphic
+  if (format === "carousel") {
+    const slides = (g?.slides ?? []).filter((s) => clean(s.heading))
+    const safe = slides.length > 0 ? slides : [{ heading: clean(g?.headline) || "Slide 1" }]
+    const lines = safe
+      .map((s, i) => {
+        const role = s.role ? ` [${s.role}]` : i === 0 ? " [hook]" : ""
+        return `Slide ${i + 1}${role}: heading "${clean(s.heading)}"${s.body ? `, body "${clean(s.body)}"` : ""}`
+      })
+      .join("; ")
+    return `${base} Cohesive ${safe.length}-slide carousel, same palette and type across every slide. ${lines}.`
+  }
+
+  // reel-cover / story-slide
+  const headline = clean(g?.headline) || "Your headline here"
+  const subline = clean(g?.subline)
+  return `${base} ${format === "reel-cover" ? "Vertical Reel cover" : "Vertical Story slide"}. ` +
+    `Headline (prominent): "${headline}".${subline ? ` Supporting line: "${subline}".` : ""}`
+}
+
+export interface CompileConceptOptions {
+  brandKit?: BrandKit | null
+}
+
+/**
+ * Compile ONE Maya concept brief into a production gpt-image prompt in Nano Banana order.
+ * The returned prompt always opens with the identity anchor and (for photos) ends with the
+ * realism tokens. Camera + lighting fall back to the positioning-matched ingredient library
+ * if Maya's brief left them thin.
+ */
+export function compileConceptPrompt(
+  brief: CreativeBrief,
+  format: OutputFormat,
+  opts?: CompileConceptOptions,
+): string {
+  const positioningText = `${brief.outfit} ${brief.setting} ${brief.mood}`
+  const camera = clean(brief.cameraSpec) || cameraForText(positioningText)
+  const lighting = clean(brief.lighting) || lightingForText(positioningText)
+
+  const layers: string[] = []
+
+  // 1. IDENTITY ANCHOR — first, strong, unambiguous.
+  layers.push(IDENTITY_ANCHOR)
+
+  // 2. OUTFIT / BRAND — exact names.
+  layers.push(clean(brief.outfit))
+
+  // 3. SETTING / MOOD / POSE.
+  layers.push(
+    [clean(brief.setting), clean(brief.mood), clean(brief.pose)].filter(Boolean).join(". ") + ".",
+  )
+
+  // 4. CAMERA + LIGHTING + REALISM.
+  layers.push(`Shot on ${camera}.`)
+  layers.push(`Lighting: ${lighting}.`)
+
+  if (format === "photo") {
+    layers.push(REALISM_TOKENS + ".")
+    layers.push(
+      "Fill the frame edge to edge with the final photo — no white border, mat, mockup, phone screen, or app UI.",
+    )
+  } else {
+    layers.push(buildGraphicLayer(brief, format, opts?.brandKit))
+  }
+
+  return layers.filter(Boolean).join("\n")
+}
+
+/** Vertical for photos/covers/stories, square for carousels (keeps text safe from cropping). */
+export function conceptRequestSize(format: OutputFormat): RequestSize {
+  return format === "carousel" ? "1024x1024" : "1024x1792"
 }
 
 export function compileMayaPrompt(input: CompileInput): CompiledPrompt {

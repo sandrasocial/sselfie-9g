@@ -1,59 +1,93 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Maya Concierge (live engine).
-// Opens with the chosen aesthetic preloaded, captures format + on-image text + a reference
-// selfie, then generates via the synchronous OpenAI route. Supports photos and native
-// graphics (Reel cover, Story slide, carousel) and conversational edits.
+// SSELFIE Studio 3.0 — Maya Concierge (MAYA-REBUILD-03: conversational rebuild).
+//
+// This is the missing layer Sandra felt. Instead of a form with one Generate button, Maya
+// now holds a real streaming conversation (Claude Sonnet 4.5 via /api/app-v3/maya/chat),
+// proposes EXACTLY 3 concept directions inline as cards, and the user clicks one to fire the
+// synchronous OpenAI generation (/api/app-v3/maya/generate). "Tweak" is just another message.
+//
+// Reuses the lean primitives only (ConceptCard, concierge-context). It does NOT port the
+// 2,237-line legacy chat interface or any Flux/Pro-mode wiring.
 
-import { useRef, useState } from "react"
-import Image from "next/image"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
-import { generateMayaImage, type ProgressEvent } from "./generate-image-client"
-import type { GeneratedResult, OutputFormat } from "./types"
+import { ConceptCard, type ConceptGenState } from "./concept-card"
+import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import type { OutputFormat } from "./types"
 
-const FORMAT_OPTIONS: { id: OutputFormat; label: string; hint: string; needsText: boolean }[] = [
-  { id: "photo", label: "A photo", hint: "A single editorial brand image.", needsText: false },
-  { id: "reel-cover", label: "A Reel cover", hint: "Image plus a headline.", needsText: true },
-  { id: "carousel", label: "A carousel", hint: "Up to 5 cohesive slides.", needsText: true },
-  { id: "story-slide", label: "A Story slide", hint: "A vertical slide with text.", needsText: true },
+const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
+  { id: "photo", label: "Photo" },
+  { id: "reel-cover", label: "Reel cover" },
+  { id: "carousel", label: "Carousel" },
+  { id: "story-slide", label: "Story slide" },
 ]
 
-const PROGRESS_LABEL: Record<ProgressEvent["state"], string> = {
-  compiling: "Setting the scene...",
-  generating: "Creating your images...",
-  saving: "Saving to your gallery...",
-  done: "Done.",
-}
-
-function parseSlides(text: string): { heading: string }[] {
-  return text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(0, 5)
-    .map((heading) => ({ heading }))
+/** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming). */
+function extractConcepts(part: any): ConceptCardData[] | null {
+  if (!part || typeof part !== "object") return null
+  if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
+  const payload = part.output?.concepts ?? part.input?.concepts
+  if (!Array.isArray(payload)) return null
+  return payload.filter(
+    (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string",
+  )
 }
 
 export function MayaConcierge() {
-  const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, setGraphicText, close } = useConcierge()
+  const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, close } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
+  const threadEndRef = useRef<HTMLDivElement>(null)
 
   const [uploading, setUploading] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [progress, setProgress] = useState<ProgressEvent | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [results, setResults] = useState<GeneratedResult[]>([])
-  const [headline, setHeadline] = useState("")
-  const [slidesText, setSlidesText] = useState("")
-  const [editText, setEditText] = useState("")
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [input, setInput] = useState("")
+  // Per-card generation state, keyed by `${messageId}:${conceptId}`.
+  const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
+
+  // Latest context for the chat transport (read fresh on every send).
+  const extrasRef = useRef<{
+    aestheticName: string
+    aestheticIntent: string
+    format: OutputFormat
+    referenceSelfieUrl: string | null
+  }>({ aestheticName: "", aestheticIntent: "", format: "photo", referenceSelfieUrl: null })
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/app-v3/maya/chat",
+        prepareSendMessagesRequest: ({ messages }) => ({
+          body: { messages, ...extrasRef.current },
+        }),
+      }),
+    [],
+  )
+
+  const { messages, sendMessage, status, error } = useChat({ transport })
+
+  const isThinking = status === "submitted" || status === "streaming"
+
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [messages, isThinking])
 
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
-  const needsText = FORMAT_OPTIONS.find((o) => o.id === outputFormat)?.needsText ?? false
-  const isCarousel = outputFormat === "carousel"
+  const format: OutputFormat = outputFormat ?? "photo"
+
+  // Keep the transport context current.
+  extrasRef.current = {
+    aestheticName: aesthetic.name,
+    aestheticIntent: aesthetic.intent,
+    format,
+    referenceSelfieUrl,
+  }
 
   async function handleUpload(file: File) {
-    setError(null)
+    setUploadError(null)
     setUploading(true)
     try {
       const form = new FormData()
@@ -63,213 +97,233 @@ export function MayaConcierge() {
       if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
       setReferenceSelfieUrl(data.url)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed")
+      setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
       setUploading(false)
     }
   }
 
-  async function runGenerate(refineFromImageUrl?: string) {
-    if (!outputFormat) return
-    setError(null)
-    setGenerating(true)
-    setProgress({ state: "compiling" })
-    const graphicText = needsText ? (isCarousel ? { slides: parseSlides(slidesText) } : { headline }) : null
-    if (graphicText) setGraphicText(graphicText)
+  function handleSend() {
+    const text = input.trim()
+    if (!text || isThinking) return
+    sendMessage({ text })
+    setInput("")
+  }
+
+  async function generateConcept(key: string, concept: ConceptCardData) {
+    if (!referenceSelfieUrl) {
+      setGenState((s) => ({
+        ...s,
+        [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
+      }))
+      return
+    }
+    setGenState((s) => ({ ...s, [key]: { status: "generating" } }))
     try {
-      const { images } = await generateMayaImage(
-        {
-          aesthetic,
-          outputFormat,
+      const res = await fetch("/api/app-v3/maya/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brief: concept.brief,
+          format,
           referenceSelfieUrl,
-          userText: refineFromImageUrl ? editText : undefined,
-          graphicText,
-          refineFromImageUrl: refineFromImageUrl ?? null,
-        },
-        { onProgress: setProgress },
-      )
-      setResults((prev) => [{ images, outputFormat, createdAt: Date.now() }, ...prev])
-      setEditText("")
+          conceptTitle: concept.title,
+        }),
+      })
+      const data = (await res.json().catch(() => null)) as
+        | { imageUrl?: string; error?: string }
+        | null
+      if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Generation failed")
+      setGenState((s) => ({ ...s, [key]: { status: "done", imageUrl: data.imageUrl } }))
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed")
-    } finally {
-      setGenerating(false)
-      setProgress(null)
+      setGenState((s) => ({
+        ...s,
+        [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
+      }))
     }
   }
 
-  const canGenerate =
-    !!outputFormat &&
-    !!referenceSelfieUrl &&
-    !generating &&
-    (!needsText || (isCarousel ? slidesText.trim().length > 0 : headline.trim().length > 0))
-
-  const latest = results[0]
+  const hasStarted = messages.length > 0
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Close" onClick={close} className="absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px]" />
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={close}
+        className="absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px]"
+      />
       <aside
         role="dialog"
         aria-label={`Maya — ${aesthetic.name}`}
         className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl"
       >
+        {/* Header */}
         <header className="border-b border-[#C5C6C8]/40 px-6 py-5">
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Maya</p>
-          <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">{aesthetic.name}</h2>
+          <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
+            {aesthetic.name}
+          </h2>
         </header>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-          <div className="rounded-[4px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-            <p>
-              {aesthetic.name} is a beautiful choice. {aesthetic.blurb}
-            </p>
-            <p className="mt-3">What are we creating?</p>
-          </div>
-
-          {/* Format */}
-          <div className="space-y-2">
+        {/* Setup row: format + selfie (compact, always available) */}
+        <div className="space-y-3 border-b border-[#C5C6C8]/40 px-6 py-4">
+          <div className="flex flex-wrap gap-2">
             {FORMAT_OPTIONS.map((opt) => {
-              const selected = outputFormat === opt.id
+              const selected = format === opt.id
               return (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setOutputFormat(opt.id)}
-                  className={`block w-full rounded-[4px] border px-4 py-3 text-left transition-colors ${
+                  className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
                     selected
                       ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                      : "border-[#C5C6C8]/60 bg-white text-[#282728] hover:border-[#0D0E10]/40"
+                      : "border-[#C5C6C8]/60 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
                   }`}
                 >
-                  <span className="block text-[15px]">{opt.label}</span>
-                  <span className={`block text-[12px] ${selected ? "text-white/70" : "text-[#818283]"}`}>{opt.hint}</span>
+                  {opt.label}
                 </button>
               )
             })}
           </div>
 
-          {/* Text capture for graphic formats */}
-          {needsText && !isCarousel && (
-            <input
-              type="text"
-              value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
-              placeholder="What should it say?"
-              className="w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
-            />
-          )}
-          {needsText && isCarousel && (
-            <textarea
-              value={slidesText}
-              onChange={(e) => setSlidesText(e.target.value)}
-              placeholder={"One line per slide (up to 5):\nHook\nPoint one\nPoint two\nCall to action"}
-              rows={5}
-              className="w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
-            />
-          )}
-
-          {/* Reference selfie */}
-          {outputFormat && (
-            <div className="rounded-[4px] border border-dashed border-[#C5C6C8] bg-white p-5 text-center">
-              {referenceSelfieUrl ? (
-                <div className="space-y-2">
-                  <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-full">
-                    <Image src={referenceSelfieUrl} alt="Your selfie" fill className="object-cover" sizes="80px" />
-                  </div>
-                  <button type="button" onClick={() => fileInput.current?.click()} className="text-[12px] text-[#4F5052] underline">
-                    Use a different selfie
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className="text-[14px] text-[#282728]">Upload one clear selfie.</p>
-                  <p className="mt-1 text-[12px] text-[#818283]">Good light, face easy to see.</p>
-                  <button
-                    type="button"
-                    onClick={() => fileInput.current?.click()}
-                    disabled={uploading}
-                    className="mt-4 rounded-[4px] bg-[#0D0E10] px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] text-white disabled:opacity-60"
-                  >
-                    {uploading ? "Uploading..." : "Upload selfie"}
-                  </button>
-                </>
-              )}
-              <input
-                ref={fileInput}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) void handleUpload(f)
-                }}
-              />
-            </div>
-          )}
-
-          {/* Generate */}
-          {outputFormat && (
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => void runGenerate()}
-              disabled={!canGenerate}
-              className="w-full rounded-[4px] bg-[#0D0E10] px-5 py-3.5 text-[12px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
             >
-              {generating ? PROGRESS_LABEL[progress?.state ?? "generating"] : "Generate"}
+              {referenceSelfieUrl ? "✓ Selfie added" : uploading ? "Uploading…" : "Add your selfie"}
             </button>
-          )}
-
-          {progress?.state === "generating" && progress.total && progress.total > 1 && (
-            <p className="text-center text-[12px] text-[#818283]">
-              Slide {progress.index} of {progress.total}
-            </p>
-          )}
-          {error && <p className="rounded-[4px] bg-[#282728]/5 px-4 py-3 text-[13px] text-[#282728]">{error}</p>}
-
-          {/* Results */}
-          {latest && (
-            <div className="space-y-3">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Your result</p>
-              <div className={latest.images.length > 1 ? "flex gap-3 overflow-x-auto pb-2" : ""}>
-                {latest.images.map((url, i) => (
-                  <div
-                    key={url}
-                    className={`relative overflow-hidden rounded-[4px] bg-white ${
-                      latest.images.length > 1 ? "aspect-square w-44 shrink-0" : "aspect-[4/5]"
-                    }`}
-                  >
-                    <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" sizes="(max-width:480px) 90vw, 400px" />
-                  </div>
-                ))}
-              </div>
-              {/* Conversational edit */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  placeholder="Ask for a tweak, e.g. make my blazer black"
-                  className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
-                />
-                <button
-                  type="button"
-                  onClick={() => latest.images[0] && void runGenerate(latest.images[0])}
-                  disabled={generating || editText.trim().length === 0}
-                  className="rounded-[4px] border border-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] disabled:opacity-40"
-                >
-                  Tweak
-                </button>
-              </div>
-            </div>
-          )}
+            {referenceSelfieUrl && (
+              <span className="text-[11px] text-[#818283]">Maya will keep your face.</span>
+            )}
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void handleUpload(f)
+              }}
+            />
+          </div>
+          {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
         </div>
 
-        <footer className="border-t border-[#C5C6C8]/40 px-6 py-4">
-          <button type="button" onClick={close} className="text-[12px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]">
+        {/* Thread */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+          {/* Static opener */}
+          <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
+            <p>{aesthetic.name} — beautiful choice. {aesthetic.blurb}</p>
+            <p className="mt-2">
+              Tell me what you're making and who it's for. I'll give you three directions to pick from.
+            </p>
+          </div>
+
+          {messages.map((m: any) => {
+            const isUser = m.role === "user"
+            const parts = Array.isArray(m.parts) ? m.parts : []
+            const text = parts
+              .filter((p: any) => p?.type === "text" && typeof p.text === "string")
+              .map((p: any) => p.text)
+              .join("")
+            const conceptPart = parts.map(extractConcepts).find(Boolean) as
+              | ConceptCardData[]
+              | undefined
+
+            return (
+              <div key={m.id} className="space-y-4">
+                {text.trim() && (
+                  <div
+                    className={
+                      isUser
+                        ? "ml-auto max-w-[88%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white"
+                        : "max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]"
+                    }
+                  >
+                    {text}
+                  </div>
+                )}
+
+                {conceptPart && conceptPart.length > 0 && (
+                  <div className="space-y-3">
+                    {conceptPart.map((concept) => {
+                      const key = `${m.id}:${concept.id}`
+                      return (
+                        <ConceptCard
+                          key={key}
+                          concept={concept}
+                          gen={genState[key] ?? { status: "idle" }}
+                          onGenerate={() => void generateConcept(key, concept)}
+                          disabled={!referenceSelfieUrl}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {isThinking && (
+            <div className="flex items-center gap-2 text-[#818283]">
+              <span className="flex gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8] [animation-delay:-0.2s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8] [animation-delay:-0.1s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8]" />
+              </span>
+              <span className="text-[13px]">Maya is thinking…</span>
+            </div>
+          )}
+
+          {error && (
+            <p className="rounded-[4px] bg-[#282728]/5 px-4 py-3 text-[13px] text-[#282728]">
+              Maya couldn't reply just now. Try sending that again.
+            </p>
+          )}
+
+          <div ref={threadEndRef} />
+        </div>
+
+        {/* Composer */}
+        <div className="border-t border-[#C5C6C8]/40 px-6 py-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
+              placeholder={
+                hasStarted ? "Tweak it, or ask for something new…" : "e.g. founder photos for my coaching launch"
+              }
+              className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isThinking || input.trim().length === 0}
+              className="rounded-[4px] bg-[#0D0E10] px-5 text-[12px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+            >
+              Send
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={close}
+            className="mt-3 text-[12px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
+          >
             Back to looks
           </button>
-        </footer>
+        </div>
       </aside>
     </div>
   )
