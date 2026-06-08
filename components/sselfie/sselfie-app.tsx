@@ -956,6 +956,10 @@ export default function SselfieApp({
   // Feed Planner is removed from the primary nav and Academy is demoted to the
   // secondary menu. Neither is deleted; both stay reachable via secondaryTabs so
   // paid Feed Planner / Academy buyers keep access.
+  // NOTE: isMayaConsolidated is still used elsewhere in this component (Maya sub-tab
+  // gating, the slide menu), so it must stay defined even though primaryTabs no longer
+  // branches on it.
+  const isMayaConsolidated = isMayaConsolidatedExperienceEnabled()
   const primaryTabs = tabs.filter(
     (tab) => tab.id === "maya" || tab.id === "gallery" || tab.id === "account",
   )
