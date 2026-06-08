@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+// Phase 1 Maya rebuild: LEGACY Pro generation route. Soft-archived (stays functional
+// until the engine cutover flag is enabled, then returns 410).
+import { legacyMayaRouteGuard } from "@/lib/maya/legacy-route-guard"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { checkCredits, deductCredits, getUserCredits, addCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
@@ -18,6 +21,8 @@ export const maxDuration = 300 // 5 minutes for image generation
  * Handles credit deduction and saves generated images to database.
  */
 export async function POST(req: NextRequest) {
+  const gone = legacyMayaRouteGuard("/api/maya/pro/generate-image")
+  if (gone) return gone
   console.log("[v0] [PRO MODE] Generate image API called")
 
   try {

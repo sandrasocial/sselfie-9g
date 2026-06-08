@@ -9,9 +9,14 @@ import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banan
 import { getUserCredits, deductCredits, addCredits } from "@/lib/credits"
 import { put } from "@vercel/blob"
 import { guardProModeRoute } from "@/lib/maya/type-guards"
+// Phase 1 Maya rebuild: LEGACY Nano Banana / Pro generation route. Soft-archived —
+// stays functional until the engine cutover flag is enabled, then returns 410.
+import { legacyMayaRouteGuard } from "@/lib/maya/legacy-route-guard"
 
 
 export async function POST(req: NextRequest) {
+  const gone = legacyMayaRouteGuard("/api/maya/generate-studio-pro")
+  if (gone) return gone
   try {
     // AUTHENTICATION (use helper for consistent cookie handling)
     const supabase = await createServerClient()

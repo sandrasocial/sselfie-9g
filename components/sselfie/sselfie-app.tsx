@@ -96,10 +96,12 @@ const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy"
 type MayaSubTab = StudioAppMayaSubTabItem["id"]
 
 const MAYA_SUB_TABS: StudioAppMayaSubTabItem[] = [
+  // Phase 1 Studio simplification: hide "Plan" (feed planning) and "My Look"
+  // (model training) from Maya's sub-nav to land on the simple flow:
+  // Chat → Upload reference selfie → Generate → Gallery. The tabs are not deleted;
+  // re-add these entries to restore them.
   { id: "photos", label: "Photos" },
-  { id: "plan", label: "Plan" },
   { id: "videos", label: "Videos" },
-  { id: "training", label: "My Look" },
 ]
 
 function resolveMayaSubTabFromHash(hash: string | null | undefined): MayaSubTab | null {
@@ -949,10 +951,14 @@ export default function SselfieApp({
       ? { ...tab, locked: true, lockMessage: STUDIO_LOCK_MSG }
       : tab,
   )
-  const isMayaConsolidated = isMayaConsolidatedExperienceEnabled()
-  const primaryTabs = isMayaConsolidated
-    ? tabs.filter((tab) => tab.id === "maya" || tab.id === "gallery" || tab.id === "academy" || tab.id === "account")
-    : tabs
+  // Phase 1 Studio simplification (Maya rebuild): collapse the primary nav to the
+  // simple mental model — Maya (Chat → Upload → Generate) → Gallery → Account.
+  // Feed Planner is removed from the primary nav and Academy is demoted to the
+  // secondary menu. Neither is deleted; both stay reachable via secondaryTabs so
+  // paid Feed Planner / Academy buyers keep access.
+  const primaryTabs = tabs.filter(
+    (tab) => tab.id === "maya" || tab.id === "gallery" || tab.id === "account",
+  )
   const secondaryTabs = tabs.filter((tab) => !primaryTabs.some((primaryTab) => primaryTab.id === tab.id))
 
   const user: UserType = {

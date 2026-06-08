@@ -5,6 +5,9 @@
 import { randomInt } from "crypto"
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db/client"
+// Phase 1 Maya rebuild: LEGACY Replicate (Classic / Flux LoRA) generation route.
+// Soft-archived (stays functional until the engine cutover flag is enabled, then 410).
+import { legacyMayaRouteGuard } from "@/lib/maya/legacy-route-guard"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -196,6 +199,8 @@ function handleGenerationError(error: unknown): NextResponse {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const gone = legacyMayaRouteGuard("/api/maya/generate-image")
+  if (gone) return gone
   const rateLimitResult = await rateLimit(request, { maxRequests: 30, windowMs: 60000 })
   if (!rateLimitResult.success) {
     return NextResponse.json(

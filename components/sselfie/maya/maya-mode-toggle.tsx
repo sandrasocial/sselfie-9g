@@ -21,6 +21,13 @@ export default function MayaModeToggle({
   className = "",
   showModeHint = true,
 }: MayaModeToggleProps) {
+  // Phase 1 Studio simplification (Maya rebuild): the Classic / Pro ("My Model" vs
+  // "Selfie") mode toggle is hidden from the UI. The engine cutover to the OpenAI
+  // reference flow ships behind the MAYA_DEFAULT_OPENAI flag in a tested follow-up,
+  // so a manual mode switch is no longer surfaced. Delete this early return to restore.
+  // (next.config has ignoreBuildErrors:true, so the unreached body below is harmless.)
+  return null
+
   const isProMode = currentMode === "pro"
   const isClassicMode = currentMode === "classic"
 

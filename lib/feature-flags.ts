@@ -54,6 +54,23 @@ export function isOpenAIImageEnabled(): boolean {
 }
 
 /**
+ * Maya rebuild — Phase 1 engine cutover flag (SCAFFOLD, default OFF).
+ * When true, the Maya generation UI should default to the synchronous OpenAI
+ * reference flow (app/api/maya/generate-image-openai) instead of the legacy async
+ * job-and-poll Replicate/Nano routes. The actual call-site wiring, user_avatar_images
+ * → referenceImageUrl mapping, contract adaptation, and LoRA fallback ship in a
+ * separate TESTED follow-up PR. This flag is plumbing only and changes nothing while OFF.
+ * Enable with MAYA_DEFAULT_OPENAI=true (server) and NEXT_PUBLIC_MAYA_DEFAULT_OPENAI=true (client).
+ */
+export function isMayaDefaultOpenAiEnabled(): boolean {
+  const value =
+    typeof window !== 'undefined'
+      ? process.env.NEXT_PUBLIC_MAYA_DEFAULT_OPENAI
+      : process.env.MAYA_DEFAULT_OPENAI
+  return value === 'true'
+}
+
+/**
  * When true, untrained users (no Flux LoRA model) are auto-routed to OpenAI
  * instead of legacy provider flows. Only takes effect when OpenAI image generation is enabled.
  * Default: true for Phase H. Set FEATURE_OPENAI_DEFAULT_FOR_UNTRAINED=false to rollback.
