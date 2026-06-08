@@ -65,10 +65,14 @@ export interface MayaChatRequestExtras {
   aestheticIntent: string
   /** Display name of the chosen aesthetic. */
   aestheticName: string
+  /** Front-door aesthetic id (lets the look recipe stay consistent). */
+  aestheticId?: string
   /** What the user is creating. */
   format: OutputFormat
   /** The uploaded reference selfie URL (identity anchor source). */
   referenceSelfieUrl?: string | null
+  /** Optional inspiration image — Maya reads its pose + wardrobe into the briefs. */
+  inspirationImageUrl?: string | null
   /** Optional saved brand kit. */
   brandKit?: BrandKit | null
 }
@@ -77,6 +81,11 @@ export interface MayaChatRequestExtras {
 export interface MayaGenerateConceptRequest {
   brief: CreativeBrief
   format: OutputFormat
+  /** Front-face selfie — required identity anchor. */
   referenceSelfieUrl: string
+  /** Optional extra identity angles (side profile, full body) for better fidelity. */
+  referenceSelfieUrls?: string[]
+  /** Front-door aesthetic id, so the compiler injects the vision-extracted look. */
+  aestheticId?: string
   conceptTitle?: string
 }

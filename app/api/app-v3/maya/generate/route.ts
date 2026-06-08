@@ -124,8 +124,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Compile the brief into a production prompt (Nano Banana order, identity anchor first).
-    const prompt = compileConceptPrompt(body.brief, format)
+    // Front face first, then any optional angles (side profile, full body). Dedup + cap at 4
+    // so identity/body fidelity improves without bloating the edit request.
+    const referenceUrls = Array.from(
+      new Set(
+        [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
+          isAllowedReferenceUrl,
+        ),
+      ),
+    ).slice(0, 4)
+
+    // Compile the brief into a production prompt (Nano Banana order, identity anchor first),
+    // injecting the vision-extracted look for the chosen aesthetic.
+    const prompt = compileConceptPrompt(body.brief, format, { aestheticId: body.aestheticId })
     const size = toOpenAIEditSize(conceptRequestSize(format))
 
     // ── Neon user ──
@@ -180,12 +191,17 @@ export async function POST(request: NextRequest) {
     // ── Identity-anchored generation via the EDIT endpoint (selfie attached) ──
     let imageBuffer: Buffer
     try {
-      const refBuffer = await normalizeReferenceForOpenAI(await readReferenceImage(referenceSelfieUrl))
-      const refFile = await toFile(refBuffer, "maya-reference.png", { type: "image/png" })
+      const refFiles = await Promise.all(
+        referenceUrls.map(async (url, i) => {
+          const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
+          return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
+        }),
+      )
 
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
-        image: refFile,
+        // gpt-image accepts an array of reference images; a single file also works.
+        image: refFiles.length === 1 ? refFiles[0] : refFiles,
         prompt,
         n: 1,
         size,

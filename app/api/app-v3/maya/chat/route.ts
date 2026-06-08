@@ -70,8 +70,52 @@ interface ChatBody {
   messages?: UIMessage[]
   aestheticName?: string
   aestheticIntent?: string
+  aestheticId?: string
   format?: OutputFormat
+  inspirationImageUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
+}
+
+/** Only public Vercel Blob https URLs are accepted as an inspiration image. */
+function isAllowedInspirationUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}
+
+/**
+ * If an inspiration image is attached, append it (plus a one-line instruction) to the most
+ * recent user message so the multimodal model can read its pose + wardrobe. Mutates a copy.
+ */
+function attachInspiration(messages: any[], url: string): any[] {
+  const next = [...messages]
+  for (let i = next.length - 1; i >= 0; i--) {
+    if (next[i]?.role !== "user") continue
+    const existing = next[i].content
+    const textParts =
+      typeof existing === "string"
+        ? [{ type: "text", text: existing }]
+        : Array.isArray(existing)
+          ? existing
+          : []
+    next[i] = {
+      ...next[i],
+      content: [
+        ...textParts,
+        {
+          type: "text",
+          text: "Inspiration image attached — use its pose and wardrobe/styling in the concepts (do not copy the face).",
+        },
+        { type: "image", image: new URL(url) },
+      ],
+    }
+    return next
+  }
+  return next
 }
 
 export async function POST(req: Request) {
@@ -99,7 +143,10 @@ export async function POST(req: Request) {
       brandKit: body?.brandKit ?? null,
     })
 
-    const modelMessages = await convertToModelMessages(uiMessages)
+    let modelMessages = await convertToModelMessages(uiMessages)
+    if (isAllowedInspirationUrl(body?.inspirationImageUrl)) {
+      modelMessages = attachInspiration(modelMessages, body.inspirationImageUrl)
+    }
 
     const result = streamText({
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5

@@ -25,6 +25,8 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "story-slide", label: "Story slide" },
 ]
 
+type UploadSlot = "face" | "side" | "body" | "inspiration"
+
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming). */
 function extractConcepts(part: any): ConceptCardData[] | null {
   if (!part || typeof part !== "object") return null
@@ -39,21 +41,39 @@ function extractConcepts(part: any): ConceptCardData[] | null {
 export function MayaConcierge() {
   const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, close } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
+  const sideInput = useRef<HTMLInputElement>(null)
+  const bodyInput = useRef<HTMLInputElement>(null)
+  const inspoInput = useRef<HTMLInputElement>(null)
   const threadEndRef = useRef<HTMLDivElement>(null)
 
-  const [uploading, setUploading] = useState(false)
+  const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
 
+  // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
+  const [showMore, setShowMore] = useState(false)
+  const [sideProfileUrl, setSideProfileUrl] = useState<string | null>(null)
+  const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null)
+  const [inspirationUrl, setInspirationUrl] = useState<string | null>(null)
+
   // Latest context for the chat transport (read fresh on every send).
   const extrasRef = useRef<{
     aestheticName: string
     aestheticIntent: string
+    aestheticId: string
     format: OutputFormat
     referenceSelfieUrl: string | null
-  }>({ aestheticName: "", aestheticIntent: "", format: "photo", referenceSelfieUrl: null })
+    inspirationImageUrl: string | null
+  }>({
+    aestheticName: "",
+    aestheticIntent: "",
+    aestheticId: "",
+    format: "photo",
+    referenceSelfieUrl: null,
+    inspirationImageUrl: null,
+  })
 
   const transport = useMemo(
     () =>
@@ -82,24 +102,29 @@ export function MayaConcierge() {
   extrasRef.current = {
     aestheticName: aesthetic.name,
     aestheticIntent: aesthetic.intent,
+    aestheticId: aesthetic.id,
     format,
     referenceSelfieUrl,
+    inspirationImageUrl: inspirationUrl,
   }
 
-  async function handleUpload(file: File) {
+  async function handleUpload(slot: UploadSlot, file: File) {
     setUploadError(null)
-    setUploading(true)
+    setUploadingSlot(slot)
     try {
       const form = new FormData()
       form.append("file", file)
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
-      setReferenceSelfieUrl(data.url)
+      if (slot === "face") setReferenceSelfieUrl(data.url)
+      else if (slot === "side") setSideProfileUrl(data.url)
+      else if (slot === "body") setFullBodyUrl(data.url)
+      else setInspirationUrl(data.url)
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
-      setUploading(false)
+      setUploadingSlot(null)
     }
   }
 
@@ -127,6 +152,8 @@ export function MayaConcierge() {
           brief: concept.brief,
           format,
           referenceSelfieUrl,
+          referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          aestheticId: aesthetic.id,
           conceptTitle: concept.title,
         }),
       })
@@ -188,14 +215,15 @@ export function MayaConcierge() {
             })}
           </div>
 
+          {/* Required: front-face selfie */}
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              disabled={uploading}
+              disabled={uploadingSlot === "face"}
               className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
             >
-              {referenceSelfieUrl ? "✓ Selfie added" : uploading ? "Uploading…" : "Add your selfie"}
+              {referenceSelfieUrl ? "✓ Selfie added" : uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
             </button>
             {referenceSelfieUrl && (
               <span className="text-[11px] text-[#818283]">Maya will keep your face.</span>
@@ -207,10 +235,58 @@ export function MayaConcierge() {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]
-                if (f) void handleUpload(f)
+                if (f) void handleUpload("face", f)
               }}
             />
           </div>
+
+          {/* Optional extras — tucked away so a single selfie still just works */}
+          <button
+            type="button"
+            onClick={() => setShowMore((v) => !v)}
+            className="text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
+          >
+            {showMore ? "Hide extras" : "Add more for a better match (optional)"}
+          </button>
+
+          {showMore && (
+            <div className="space-y-2">
+              <p className="text-[11px] leading-relaxed text-[#818283]">
+                Full-body looks come out best with a few angles. All optional.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { slot: "side" as const, ref: sideInput, added: !!sideProfileUrl, label: "Side profile" },
+                    { slot: "body" as const, ref: bodyInput, added: !!fullBodyUrl, label: "Full body" },
+                    { slot: "inspiration" as const, ref: inspoInput, added: !!inspirationUrl, label: "Inspiration pose/vibe" },
+                  ]
+                ).map(({ slot, ref, added, label }) => (
+                  <span key={slot}>
+                    <button
+                      type="button"
+                      onClick={() => ref.current?.click()}
+                      disabled={uploadingSlot === slot}
+                      className="rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+                    >
+                      {added ? `✓ ${label}` : uploadingSlot === slot ? "Uploading…" : `+ ${label}`}
+                    </button>
+                    <input
+                      ref={ref}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) void handleUpload(slot, f)
+                      }}
+                    />
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
         </div>
 
@@ -218,10 +294,18 @@ export function MayaConcierge() {
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
           {/* Static opener */}
           <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-            <p>{aesthetic.name} — beautiful choice. {aesthetic.blurb}</p>
+            <p>{aesthetic.name} — gorgeous choice. ✨</p>
+            <p className="mt-2">{aesthetic.blurb}</p>
             <p className="mt-2">
-              Tell me what you're making and who it's for. I'll give you three directions to pick from.
+              Tell me what you're making and who it's for, and I'll give you three directions to pick from.
             </p>
+            {!referenceSelfieUrl && (
+              <p className="mt-3 text-[14px] text-[#4F5052]">
+                When you're ready, drop a selfie facing a window with soft, even light.
+                <br />
+                For full-body looks, a side profile and a full-body shot help too — all optional. 🤍
+              </p>
+            )}
           </div>
 
           {messages.map((m: any) => {

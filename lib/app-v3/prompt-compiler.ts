@@ -12,6 +12,7 @@ import {
   cameraForText,
   lightingForText,
 } from "@/lib/app-v3/maya/ingredients"
+import { getAestheticRecipe, recipeToPromptBlock } from "@/lib/app-v3/maya/ingredients/aesthetic-recipes"
 import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
@@ -103,6 +104,8 @@ function buildGraphicLayer(
 
 export interface CompileConceptOptions {
   brandKit?: BrandKit | null
+  /** Front-door aesthetic id, used to inject the vision-extracted look (color grade, lighting, film). */
+  aestheticId?: string | null
 }
 
 /**
@@ -119,6 +122,8 @@ export function compileConceptPrompt(
   const positioningText = `${brief.outfit} ${brief.setting} ${brief.mood}`
   const camera = clean(brief.cameraSpec) || cameraForText(positioningText)
   const lighting = clean(brief.lighting) || lightingForText(positioningText)
+  // Vision-extracted look for the chosen collection (authoritative grade/lighting/film).
+  const recipe = getAestheticRecipe(opts?.aestheticId)
 
   const layers: string[] = []
 
@@ -139,11 +144,17 @@ export function compileConceptPrompt(
 
   if (format === "photo") {
     layers.push(REALISM_TOKENS + ".")
+    // Authoritative look from the Vault thumbnail DNA — locks the grade so it isn't guessed.
+    if (recipe) layers.push(recipeToPromptBlock(recipe))
     layers.push(
       "Fill the frame edge to edge with the final photo — no white border, mat, mockup, phone screen, or app UI.",
     )
   } else {
     layers.push(buildGraphicLayer(brief, format, opts?.brandKit))
+    // Person-featuring graphics still grade the photo behind the text (carousels are text-led).
+    if (recipe && format !== "carousel") {
+      layers.push(`The photo of the person uses this grade — ${recipeToPromptBlock(recipe)}`)
+    }
   }
 
   return layers.filter(Boolean).join("\n")
