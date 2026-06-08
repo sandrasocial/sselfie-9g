@@ -27,7 +27,9 @@ import { compileConceptPrompt, conceptRequestSize } from "@/lib/app-v3/prompt-co
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
 
-export const maxDuration = 60
+// gpt-image edit calls (1024x1536, medium quality, reference selfie attached) routinely
+// run 60-120s. 60s was killing them with a 504. Match the Pro image route's 300s ceiling.
+export const maxDuration = 300
 
 const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
