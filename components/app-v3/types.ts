@@ -24,6 +24,22 @@ export interface Aesthetic {
   intent: string
 }
 
+/** On-image text for the graphic formats (reel-cover, story-slide, carousel). */
+export interface GraphicTextSpec {
+  headline?: string
+  subline?: string
+  /** Carousel: one entry per slide (capped at MAX_CAROUSEL_SLIDES). */
+  slides?: { heading: string; body?: string }[]
+  cta?: string
+}
+
+/** A finished generation returned by the engine. Carousels hold multiple images. */
+export interface GeneratedResult {
+  images: string[]
+  outputFormat: OutputFormat
+  createdAt: number
+}
+
 /** State carried through the Concierge Handoff once a vibe is chosen. */
 export interface ConciergeSession {
   aesthetic: Aesthetic
@@ -31,6 +47,8 @@ export interface ConciergeSession {
   outputFormat: OutputFormat | null
   /** URL of the uploaded reference selfie (written to user_avatar_images server-side). */
   referenceSelfieUrl: string | null
+  /** On-image text for graphic formats. */
+  graphicText: GraphicTextSpec | null
   startedAt: number
 }
 
@@ -41,5 +59,6 @@ export interface ConciergeContextValue {
   openWithAesthetic: (aesthetic: Aesthetic) => void
   setOutputFormat: (format: OutputFormat) => void
   setReferenceSelfieUrl: (url: string | null) => void
+  setGraphicText: (spec: GraphicTextSpec) => void
   close: () => void
 }
