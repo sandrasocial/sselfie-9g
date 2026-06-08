@@ -5,7 +5,13 @@
 // that session so the front door and the concierge panel stay in sync.
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
-import type { Aesthetic, ConciergeContextValue, ConciergeSession, OutputFormat } from "./types"
+import type {
+  Aesthetic,
+  ConciergeContextValue,
+  ConciergeSession,
+  GraphicTextSpec,
+  OutputFormat,
+} from "./types"
 
 const ConciergeContext = createContext<ConciergeContextValue | null>(null)
 
@@ -18,6 +24,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       aesthetic,
       outputFormat: null,
       referenceSelfieUrl: null,
+      graphicText: null,
       startedAt: Date.now(),
     })
     setIsOpen(true)
@@ -31,11 +38,23 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     setSession((prev) => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
   }, [])
 
+  const setGraphicText = useCallback((spec: GraphicTextSpec) => {
+    setSession((prev) => (prev ? { ...prev, graphicText: spec } : prev))
+  }, [])
+
   const close = useCallback(() => setIsOpen(false), [])
 
   const value = useMemo<ConciergeContextValue>(
-    () => ({ session, isOpen, openWithAesthetic, setOutputFormat, setReferenceSelfieUrl, close }),
-    [session, isOpen, openWithAesthetic, setOutputFormat, setReferenceSelfieUrl, close],
+    () => ({
+      session,
+      isOpen,
+      openWithAesthetic,
+      setOutputFormat,
+      setReferenceSelfieUrl,
+      setGraphicText,
+      close,
+    }),
+    [session, isOpen, openWithAesthetic, setOutputFormat, setReferenceSelfieUrl, setGraphicText, close],
   )
 
   return <ConciergeContext.Provider value={value}>{children}</ConciergeContext.Provider>
