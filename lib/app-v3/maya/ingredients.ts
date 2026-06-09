@@ -68,16 +68,47 @@ export const ELEVATION =
   "Enhance; do not change who she is."
 
 /**
- * The identity anchor (Nano Banana rule #1). The compiler puts this on the FIRST line of
- * every prompt so gpt-image keeps the user's likeness before anything else. Wording is kept
- * natural and non-forensic on purpose: phrases like "exact face / bone structure / strict
- * replication" read to OpenAI moderation like face-cloning and were causing content_policy
- * rejections. This says the same thing in a softer, tasteful way.
+ * The identity anchor (gpt-image rule #1). The compiler puts this on the FIRST line of every
+ * prompt so the model keeps the user's likeness before anything else. This is Sandra's PROVEN
+ * universal identity lock (her Pinterest Photoshoot Lab workflow), adapted to third person
+ * because the server attaches the selfie via the edit endpoint. It names the features that
+ * matter without the forensic words ("exact face / bone structure / strict replication") that
+ * tripped OpenAI moderation. The reference defines the person; the prompt defines the styling.
  */
 export const IDENTITY_ANCHOR =
-  "Use the attached photo to keep the person looking like herself, with a natural, consistent " +
-  "resemblance in her face, hair, and skin tone so she stays clearly recognizable. Create a fresh, " +
-  "tasteful editorial photograph of her in this scene. Keep her hair color the same."
+  "Use the attached reference photo as the only source for her face and identity. Preserve her " +
+  "facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair " +
+  "color, and overall look from the reference. The reference defines the person; this prompt " +
+  "defines only the styling, outfit, location, pose, mood, and editorial look. Keep the result " +
+  "realistic, editorial, sharp, and clearly recognizable as the same woman."
+
+/**
+ * Accessories discipline (Sandra's proven rule): the phone is the main accessory; don't over-
+ * accessorize; only use brand logos when specified and naturally fitting, never random ones.
+ */
+export const ACCESSORIES_NOTE =
+  "Use the phone as the main accessory when it fits the scene. Do not over-accessorize, simple is " +
+  "better. Only include brand logos or branded items when specified and naturally fitting; never " +
+  "add random logos or extra branded items."
+
+/**
+ * The universal technical avoid list (Sandra's proven workflow). Targets the artifacts that make
+ * an image read as AI: warped anatomy/props, plastic over-smoothed skin, CGI, blur, compression.
+ */
+export const AVOID_LIST =
+  "Avoid: distorted hands, extra fingers, warped phone, warped sunglasses, warped shoes, " +
+  "unrealistic body proportions, plastic skin, over-smoothed beauty filter, heavy glam makeup, " +
+  "cartoonish AI style, CGI, fantasy lighting, messy anatomy, blur, low-resolution softness, " +
+  "compression haze, overly staged stock-photo look, cluttered props, random logos, " +
+  "fake-looking brand marks."
+
+/** Output quality + format block per aspect (Sandra's proven 9:16 / 4:5, 2K, anti-blur rules). */
+export const PORTRAIT_QUALITY =
+  "Image quality: vertical 9:16 portrait, 2K quality, crisp editorial sharpness, realistic depth " +
+  "and detail, no blur, no low-resolution softness, no compression haze."
+export const CAROUSEL_QUALITY =
+  "Image quality: vertical 4:5 Instagram format, 2K quality, crisp editorial sharpness, no blur, " +
+  "no low-resolution softness, no compression haze."
 
 /**
  * Even softer identity wording used only on a content_policy retry, plus a styling note that

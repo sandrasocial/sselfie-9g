@@ -7,7 +7,7 @@ import type { OutputFormat } from "@/components/app-v3/types"
 
 /**
  * The structured creative brief Maya produces for ONE concept.
- * Every field feeds the Nano-Banana-order compiler (see prompt-compiler.compileConceptPrompt).
+ * Every field feeds the Vault-aligned compiler (see prompt-compiler.compileConceptJobs).
  * Maya MUST fill these with specific, named language — exact brand names, a named camera
  * body, a named lighting setup — never generic ("luxury sweater", "soft light").
  */

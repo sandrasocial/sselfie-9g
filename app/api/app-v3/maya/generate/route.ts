@@ -23,9 +23,8 @@ import {
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import { compileConceptPrompts, conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
+import { compileConceptJobs, conceptOpenAISize, type TextRenderMode } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
-import { getAestheticById } from "@/components/app-v3/aesthetics"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
 
@@ -40,17 +39,13 @@ const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
 
-// Vault style anchor: attach the chosen aesthetic's Vault example to the edit call so the
-// model has the actual benchmark to match (lighting, grade, finish), not just words. The
-// Vault images ARE portraits, so identity bleed is the risk — selfies stay first + sole
-// identity source, and this directive makes the anchor style-only. Kill switch:
-// set APP_V3_VAULT_STYLE_ANCHOR=0 to disable without a code change.
-const VAULT_STYLE_ANCHOR_ENABLED = !/^(0|false|off)$/i.test(process.env.APP_V3_VAULT_STYLE_ANCHOR || "1")
-const STYLE_ANCHOR_DIRECTIVE =
-  "\n\nThe FINAL attached image is a STYLE REFERENCE ONLY, an example from the SSELFIE Vault. " +
-  "Match its photographic quality, lighting, color grade, depth of field, and editorial finish to that standard. " +
-  "Do NOT copy the person, face, hair, body, pose, or background from that style reference. " +
-  "The woman's identity, face, and likeness come ONLY from the earlier selfie photo(s)."
+// Image quality (low | medium | high). gpt-image-2 supports all three; default medium to stay
+// inside the time budget, override to "high" for maximum finish via env.
+const IMAGE_QUALITY = (process.env.APP_V3_IMAGE_QUALITY || "medium") as "low" | "medium" | "high"
+
+// On-image text rendering: "two_pass" (clean photo, then a preserve-and-overlay edit, Sandra's
+// proven workflow) or "one_pass" (text baked in a single call). Two-pass is the quality default.
+const TEXT_RENDER_MODE: TextRenderMode = process.env.APP_V3_TEXT_RENDER_MODE === "one_pass" ? "one_pass" : "two_pass"
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
 function isContentPolicyError(err: unknown): boolean {
@@ -77,11 +72,6 @@ const RISKY_WARDROBE =
 function sanitizePromptForModeration(prompt: string): string {
   const softened = prompt.split(IDENTITY_ANCHOR).join(IDENTITY_ANCHOR_SAFE).replace(RISKY_WARDROBE, "elegant")
   return `${softened}\nKeep the styling modest, fully clothed, elegant, and tasteful.`
-}
-
-/** Map our RequestSize to the gpt-image edit size param. */
-function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
-  return size === "1024x1024" ? "1024x1024" : "1024x1536"
 }
 
 /** Only public Vercel Blob https URLs (or data: images) are accepted as the identity ref. */
@@ -168,40 +158,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vault style anchor: load the chosen aesthetic's Vault example as a STYLE/quality
-    // reference (never identity). Best-effort — a load failure must not block generation.
-    let styleAnchorBuffer: Buffer | null = null
-    if (VAULT_STYLE_ANCHOR_ENABLED) {
-      try {
-        const aesthetic = body.aestheticId ? getAestheticById(body.aestheticId) : undefined
-        const anchorPath = aesthetic?.coverImage
-        if (anchorPath && anchorPath.startsWith("/")) {
-          const anchorUrl = new URL(anchorPath, request.nextUrl.origin).toString()
-          styleAnchorBuffer = await normalizeReferenceForOpenAI(await readReferenceImage(anchorUrl))
-        }
-      } catch (e) {
-        console.error("[app-v3 generate] Vault style anchor load skipped:", e)
-        styleAnchorBuffer = null
-      }
-    }
-
-    // Front face first, then any optional angles (side profile, full body). Dedup + cap so the
-    // edit request stays at <=4 images total; when a style anchor is attached, leave room for it.
-    const maxSelfies = styleAnchorBuffer ? 3 : 4
+    // Front face first, then any optional angles (side profile, full body). Dedup + cap at 4.
+    // The selfie is the ONLY image input; the Vault connects as text DNA, never as an attached
+    // example image (that would make gpt-image-2 copy the inspiration person's face).
     const referenceUrls = Array.from(
       new Set(
         [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
           isAllowedReferenceUrl,
         ),
       ),
-    ).slice(0, maxSelfies)
+    ).slice(0, 4)
 
-    // Compile into one prompt per image (carousel = one per slide; others = single),
-    // injecting the vision-extracted look for the chosen aesthetic.
-    const prompts = compileConceptPrompts(body.brief, format, { aestheticId: body.aestheticId })
-    const size = toOpenAIEditSize(conceptRequestSize(format))
-    const imageCount = prompts.length
+    // Compile into image JOBS: photo = one pass; carousel/reel-cover/story = a clean editorial
+    // photo then a preserve-and-overlay text pass (two_pass), or text baked in one pass.
+    const jobs = compileConceptJobs(body.brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
+    const size = conceptOpenAISize(format)
+    // Charge once per final image (slide), regardless of how many passes produce it.
+    const imageCount = jobs.length
     const totalCost = CREDIT_COSTS.IMAGE * imageCount
+    // What we store as the image's prompt (all passes, so photo descriptors + overlay text are searchable).
+    const recordPrompts = jobs.map((j) => j.passes.map((p) => p.prompt).join("\n\n--- pass ---\n\n"))
 
     // ── Neon user ──
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
@@ -249,34 +225,29 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // One generation attempt for a given prompt: read refs, call the edit endpoint, return bytes.
-    const attemptEdit = async (promptText: string): Promise<Buffer> => {
-      const refFiles = await Promise.all(
-        referenceUrls.map(async (url, i) => {
-          const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
-          return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
-        }),
-      )
+    // Prepare the selfie reference file(s) once, reused across every pass and job.
+    const selfieFiles = await Promise.all(
+      referenceUrls.map(async (url, i) => {
+        const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
+        return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
+      }),
+    )
 
-      // Selfies first (identity), Vault style anchor LAST (quality reference only).
-      const images = [...refFiles]
-      let prompt = promptText
-      if (styleAnchorBuffer) {
-        images.push(await toFile(styleAnchorBuffer, "vault-style-reference.png", { type: "image/png" }))
-        prompt = `${promptText}${STYLE_ANCHOR_DIRECTIVE}`
-      }
-
+    // One edit call: prompt + image input(s) — the selfie(s), or the prior pass's clean photo.
+    const runEdit = async (
+      promptText: string,
+      images: Awaited<ReturnType<typeof toFile>>[],
+    ): Promise<Buffer> => {
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
-        // gpt-image accepts an array of reference images; a single file also works.
         image: images.length === 1 ? images[0] : images,
-        prompt,
+        prompt: promptText,
         n: 1,
         size,
-        quality: "medium",
+        quality: IMAGE_QUALITY,
         output_format: "png",
       }
-      // Higher identity fidelity on models that support it (gpt-image-2 does not).
+      // gpt-image-2 processes every input at high fidelity automatically; older models need the flag.
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 
       const response = await openai.images.edit(editInput as any)
@@ -285,22 +256,39 @@ export async function POST(request: NextRequest) {
       return Buffer.from(b64, "base64")
     }
 
-    // One image, with a single graceful retry on a content-policy rejection.
-    const generateOne = async (promptText: string): Promise<Buffer> => {
+    // One edit call with a single graceful retry on a content-policy rejection.
+    const runEditWithRetry = async (
+      promptText: string,
+      images: Awaited<ReturnType<typeof toFile>>[],
+    ): Promise<Buffer> => {
       try {
-        return await attemptEdit(promptText)
+        return await runEdit(promptText, images)
       } catch (firstError) {
         if (isContentPolicyError(firstError)) {
-          return await attemptEdit(sanitizePromptForModeration(promptText))
+          return await runEdit(sanitizePromptForModeration(promptText), images)
         }
         throw firstError
       }
     }
 
-    // ── Generate every image (carousels run in parallel to stay within the time budget) ──
+    // Run one image JOB end to end. Passes run in order: pass 1 uses the selfie (clean photo),
+    // an optional pass 2 edits THAT photo to add the text overlay (preserve-and-overlay).
+    const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
+      let current: Buffer | null = null
+      for (const pass of job.passes) {
+        const images = pass.useSelfie
+          ? selfieFiles
+          : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
+        current = await runEditWithRetry(pass.prompt, images)
+      }
+      if (!current) throw new Error("Job produced no image")
+      return current
+    }
+
+    // ── Generate every image (jobs run in parallel; passes within a job run sequentially) ──
     let buffers: Buffer[]
     try {
-      buffers = await Promise.all(prompts.map((p) => generateOne(p)))
+      buffers = await Promise.all(jobs.map((j) => runJob(j)))
     } catch (genError) {
       await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(() => {})
       if (isContentPolicyError(genError)) {
@@ -334,7 +322,7 @@ export async function POST(request: NextRequest) {
                 user_id, image_url, prompt, generated_prompt, prediction_id,
                 generation_status, source, category, created_at
               ) VALUES (
-                ${neonUser.id}, ${blob.url}, ${prompts[i]}, ${prompts[i]},
+                ${neonUser.id}, ${blob.url}, ${recordPrompts[i]}, ${recordPrompts[i]},
                 ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
               ) RETURNING id
             `
