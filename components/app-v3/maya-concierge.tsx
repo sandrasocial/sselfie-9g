@@ -90,10 +90,19 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   "story-slide": "Perfect. Tell me the goal, like a poll, a sale, a moment, or a quick reminder, and I'll design the slide.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
-  photo: "Gorgeous choice. Your selfie's in. Tap a direction below and I'll start your brand shoot.",
-  "reel-cover": "Gorgeous choice. Your selfie's in. Tell me what your reel is about and I'll start your cover.",
-  carousel: "Love this. Your selfie's in. Tell me the topic and I'll start your slides.",
-  "story-slide": "Perfect. Your selfie's in. Tell me the goal and I'll design your slide.",
+  photo: "Your selfie's in, and I'll keep your face. Hit create and I'll pull three photo directions from this look, so you can pick the one that feels most like your brand.",
+  "reel-cover": "Your selfie's in, and I'll keep your face. Hit create and I'll pull three cover directions, then tell me what the reel's about.",
+  carousel: "Your selfie's in, and I'll keep your face. Hit create for a few cohesive slides, then tell me the topic.",
+  "story-slide": "Your selfie's in, and I'll keep your face. Hit create and I'll design the slide, then tell me the goal.",
+}
+
+// The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
+// so the customer never has to type to move forward.
+const CTA_LABEL: Record<OutputFormat, string> = {
+  photo: "Create my 3 photo directions",
+  "reel-cover": "Create my 3 cover directions",
+  carousel: "Create my 3 carousel directions",
+  "story-slide": "Create my 3 story directions",
 }
 
 type UploadSlot = "face" | "side" | "body" | "inspiration"
@@ -514,37 +523,67 @@ export function MayaConcierge() {
             })}
           </div>
 
-          {/* Required: front-face selfie */}
-          <div className="flex items-center gap-3">
+          {/* Front-face selfie: an action before upload, a calm status after. */}
+          {referenceSelfieUrl ? (
+            <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-medium text-[#0D0E10]">Selfie added</span>
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={uploadingSlot === "face"}
+                  className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                >
+                  {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                Maya will keep your face, skin tone, and natural features recognizable.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                disabled={uploadingSlot === "face"}
+                className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+              >
+                {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLibraryOpen(true)}
+                className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+              >
+                Use a past selfie
+              </button>
+            </div>
+          )}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void handleUpload("face", f)
+            }}
+          />
+
+          {/* Primary "go": before Maya has pulled directions, one obvious next action so the
+              customer never has to type or guess. Reuses handlePickFormat (commits the format,
+              which triggers the pull). Hidden once directions exist. */}
+          {!hasStarted && (
             <button
               type="button"
-              onClick={() => fileInput.current?.click()}
-              disabled={uploadingSlot === "face"}
-              className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+              onClick={() => handlePickFormat(format)}
+              disabled={isThinking}
+              className="w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {referenceSelfieUrl ? "✓ Selfie added" : uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+              {isThinking ? "Creating…" : CTA_LABEL[format]}
             </button>
-            <button
-              type="button"
-              onClick={() => setLibraryOpen(true)}
-              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-            >
-              Use a past selfie
-            </button>
-            {referenceSelfieUrl && (
-              <span className="text-[11px] text-[#818283]">Maya will keep your face.</span>
-            )}
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void handleUpload("face", f)
-              }}
-            />
-          </div>
+          )}
 
           {/* Optional extras — tucked away so a single selfie still just works */}
           <button
