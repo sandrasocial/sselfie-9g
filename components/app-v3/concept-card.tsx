@@ -1,55 +1,71 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Concept Card (MAYA-REBUILD-03, restyled in 05 Phase A).
-// One of the 3 concept directions Maya proposes inline in the thread. Holds its own Generate
-// button, a per-card spinner while the synchronous OpenAI call runs, and the finished image
-// (tap to open fullscreen). Presentational: generation state is owned by the concierge.
+// SSELFIE Studio 3.0 — Concept Card (03, restyled 05A, multi-image 05D).
+// One of the 3 concept directions Maya proposes inline. Holds its own Generate button, a
+// spinner while the synchronous OpenAI call runs, and the finished result. Carousels return
+// multiple slide images: the card shows the cover with a slide count, and tapping opens the
+// swipeable lightbox. The preview frame matches the output format (square / vertical / 4:5).
 
 import Image from "next/image"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
 export interface ConceptGenState {
   status: ConceptGenStatus
-  imageUrl?: string
+  imageUrls?: string[]
   error?: string
 }
 
 interface ConceptCardProps {
   concept: ConceptCardData
   gen: ConceptGenState
+  format: OutputFormat
   onGenerate: () => void
-  /** Open the finished image fullscreen. */
-  onOpen?: (imageUrl: string) => void
+  /** Open the finished image(s) fullscreen (carousels pass all slides). */
+  onOpen?: (imageUrls: string[]) => void
   disabled?: boolean
 }
 
-export function ConceptCard({ concept, gen, onGenerate, onOpen, disabled }: ConceptCardProps) {
+const FRAME_ASPECT: Record<OutputFormat, string> = {
+  photo: "aspect-[4/5]",
+  "reel-cover": "aspect-[9/16]",
+  "story-slide": "aspect-[9/16]",
+  carousel: "aspect-square",
+}
+
+export function ConceptCard({ concept, gen, format, onGenerate, onOpen, disabled }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
-  const isDone = gen.status === "done" && gen.imageUrl
+  const images = gen.imageUrls ?? []
+  const isDone = gen.status === "done" && images.length > 0
 
   return (
     <div className="overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white">
       {/* Visual area: result (tap to open), spinner, or empty */}
-      <div className="relative aspect-[4/5] w-full bg-[#F1F2F2]">
+      <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
         {isDone ? (
           <button
             type="button"
-            onClick={() => onOpen?.(gen.imageUrl as string)}
+            onClick={() => onOpen?.(images)}
             className="group absolute inset-0 cursor-zoom-in"
             aria-label="View full size"
           >
             <Image
-              src={gen.imageUrl as string}
+              src={images[0]}
               alt={concept.title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               sizes="(max-width:480px) 90vw, 360px"
             />
+            {images.length > 1 && (
+              <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
+                {images.length} slides
+              </span>
+            )}
             <span className="absolute bottom-2 right-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              View
+              {images.length > 1 ? "Swipe" : "View"}
             </span>
           </button>
         ) : isGenerating ? (

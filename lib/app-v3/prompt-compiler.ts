@@ -160,6 +160,53 @@ export function compileConceptPrompt(
   return layers.filter(Boolean).join("\n")
 }
 
+/**
+ * Compile a brief into ONE prompt per image. Photos/covers/stories return a single prompt;
+ * a carousel returns one prompt PER slide (capped at MAX_CAROUSEL_SLIDES), each a cohesive
+ * photo of the person in the look with that slide's text rendered. The generate route loops
+ * these (1 credit per image, per Sandra's decision).
+ */
+export function compileConceptPrompts(
+  brief: CreativeBrief,
+  format: OutputFormat,
+  opts?: CompileConceptOptions,
+): string[] {
+  if (format !== "carousel") return [compileConceptPrompt(brief, format, opts)]
+
+  const recipe = getAestheticRecipe(opts?.aestheticId)
+  const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
+  const camera = clean(brief.cameraSpec) || cameraForText(positioning)
+  const lighting = clean(brief.lighting) || lightingForText(positioning)
+
+  const slides = (brief.graphic?.slides ?? []).filter((s) => clean(s.heading)).slice(0, MAX_CAROUSEL_SLIDES)
+  const safe = slides.length > 0 ? slides : [{ heading: clean(brief.graphic?.headline) || "Slide 1" }]
+  const total = safe.length
+
+  const bk = opts?.brandKit
+  const palette =
+    bk?.colors?.length || bk?.fonts?.length
+      ? `Use the brand kit — colors: ${(bk.colors ?? []).join(", ") || "as provided"}; type: ${(bk.fonts ?? []).join(", ") || "elegant serif headline, clean sans body"}.`
+      : `Use the Quiet Luxury palette so it reads high-end: ${QUIET_LUXURY_FALLBACK.colors.join(", ")}; ${QUIET_LUXURY_FALLBACK.fonts.join(" and ")}; ${QUIET_LUXURY_FALLBACK.vibe}.`
+
+  return safe.map((slide, i) => {
+    const layers: string[] = [
+      IDENTITY_ANCHOR,
+      clean(brief.outfit),
+      [clean(brief.setting), clean(brief.mood), clean(brief.pose)].filter(Boolean).join(". ") + ".",
+      `Shot on ${camera}.`,
+      `Lighting: ${lighting}.`,
+    ]
+    if (recipe) layers.push(recipeToPromptBlock(recipe))
+    layers.push(
+      `This is slide ${i + 1} of ${total} in one cohesive Instagram carousel. Keep the SAME palette, type treatment, and overall look across every slide so they read as one set. ` +
+        `${palette} Render this text crisply and perfectly legible, spelled exactly as given, with generous safe-zone margins so nothing is cropped: ` +
+        `heading "${clean(slide.heading)}"${slide.body ? `, body "${clean(slide.body)}"` : ""}. ` +
+        "No emojis, no clip-art, no gradients, no clutter.",
+    )
+    return layers.filter(Boolean).join("\n")
+  })
+}
+
 /** Vertical for photos/covers/stories, square for carousels (keeps text safe from cropping). */
 export function conceptRequestSize(format: OutputFormat): RequestSize {
   return format === "carousel" ? "1024x1024" : "1024x1792"

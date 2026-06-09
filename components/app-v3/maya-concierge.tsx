@@ -237,7 +237,7 @@ export function MayaConcierge() {
         }),
       })
       const data = (await res.json().catch(() => null)) as
-        | { imageUrl?: string; error?: string; code?: string; current?: number }
+        | { imageUrl?: string; imageUrls?: string[]; error?: string; code?: string; current?: number }
         | null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         // Graceful path: reset the card and open the top-up modal instead of a raw error.
@@ -245,8 +245,14 @@ export function MayaConcierge() {
         setCreditModal({ open: true, balance: typeof data?.current === "number" ? data.current : null })
         return
       }
-      if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Generation failed")
-      setGenState((s) => ({ ...s, [key]: { status: "done", imageUrl: data.imageUrl } }))
+      const urls =
+        Array.isArray(data?.imageUrls) && data.imageUrls.length > 0
+          ? data.imageUrls
+          : data?.imageUrl
+            ? [data.imageUrl]
+            : []
+      if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
+      setGenState((s) => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
     } catch (e) {
       setGenState((s) => ({
         ...s,
@@ -467,8 +473,9 @@ export function MayaConcierge() {
                           key={key}
                           concept={concept}
                           gen={genState[key] ?? { status: "idle" }}
+                          format={format}
                           onGenerate={() => void generateConcept(key, concept)}
-                          onOpen={(url) => setLightbox([url])}
+                          onOpen={(urls) => setLightbox(urls)}
                           disabled={!referenceSelfieUrl}
                         />
                       )

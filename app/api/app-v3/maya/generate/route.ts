@@ -23,7 +23,7 @@ import {
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import { compileConceptPrompt, conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
+import { compileConceptPrompts, conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -164,10 +164,12 @@ export async function POST(request: NextRequest) {
       ),
     ).slice(0, 4)
 
-    // Compile the brief into a production prompt (Nano Banana order, identity anchor first),
+    // Compile into one prompt per image (carousel = one per slide; others = single),
     // injecting the vision-extracted look for the chosen aesthetic.
-    const prompt = compileConceptPrompt(body.brief, format, { aestheticId: body.aestheticId })
+    const prompts = compileConceptPrompts(body.brief, format, { aestheticId: body.aestheticId })
     const size = toOpenAIEditSize(conceptRequestSize(format))
+    const imageCount = prompts.length
+    const totalCost = CREDIT_COSTS.IMAGE * imageCount
 
     // ── Neon user ──
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
@@ -176,8 +178,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
-    // ── Credits: check → deduct (refund on any downstream failure) ──
-    const hasEnough = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
+    // ── Credits: deduct the FULL set up front (1 per image). All-or-nothing: any failure
+    //    refunds the whole set, so a broken carousel never charges the user. ──
+    const hasEnough = await checkCredits(neonUser.id, totalCost)
     if (!hasEnough) {
       const current = await getUserCredits(neonUser.id)
       return NextResponse.json(
@@ -185,7 +188,7 @@ export async function POST(request: NextRequest) {
           error: "Insufficient credits",
           code: "insufficient_credits",
           action: "open_credits_topup",
-          required: CREDIT_COSTS.IMAGE,
+          required: totalCost,
           current,
         },
         { status: 402 },
@@ -193,12 +196,7 @@ export async function POST(request: NextRequest) {
     }
 
     const label = body.conceptTitle || body.brief.outfit.slice(0, 60)
-    const deduction = await deductCredits(
-      neonUser.id,
-      CREDIT_COSTS.IMAGE,
-      "image",
-      `app-v3 concept: ${label}`,
-    )
+    const deduction = await deductCredits(neonUser.id, totalCost, "image", `app-v3 ${format}: ${label}`)
     if (!deduction.success) {
       return NextResponse.json(
         { error: deduction.error ?? "Credit deduction failed. Please try again.", code: "credit_deduction_failed" },
@@ -209,7 +207,7 @@ export async function POST(request: NextRequest) {
     const refundRef = `app-v3-fail-${neonUser.id}-${Date.now()}`
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI API key not configured", refundRef).catch(() => {})
+      await refundCredits(neonUser.id, totalCost, "OpenAI API key not configured", refundRef).catch(() => {})
       return NextResponse.json(
         { error: "Image generation is temporarily unavailable. Please try again later." },
         { status: 500 },
@@ -246,82 +244,85 @@ export async function POST(request: NextRequest) {
       return Buffer.from(b64, "base64")
     }
 
-    // ── Identity-anchored generation, with ONE graceful retry on a content-policy rejection ──
-    let imageBuffer: Buffer
-    try {
-      imageBuffer = await attemptEdit(prompt)
-    } catch (firstError) {
-      if (isContentPolicyError(firstError)) {
-        // Soften the wording once and try again before surfacing anything to the user.
-        try {
-          imageBuffer = await attemptEdit(sanitizePromptForModeration(prompt))
-        } catch (retryError) {
-          await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef).catch(() => {})
-          if (isContentPolicyError(retryError)) {
-            return NextResponse.json(
-              {
-                error:
-                  "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you.",
-                code: "content_policy",
-              },
-              { status: 400 },
-            )
-          }
-          console.error("[app-v3 generate] Generation failed on retry:", retryError)
-          return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+    // One image, with a single graceful retry on a content-policy rejection.
+    const generateOne = async (promptText: string): Promise<Buffer> => {
+      try {
+        return await attemptEdit(promptText)
+      } catch (firstError) {
+        if (isContentPolicyError(firstError)) {
+          return await attemptEdit(sanitizePromptForModeration(promptText))
         }
-      } else {
-        await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI generation failed", refundRef).catch(() => {})
-        console.error("[app-v3 generate] Generation failed:", firstError)
-        return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+        throw firstError
       }
     }
 
-    // ── Persist to Vercel Blob ──
-    let blob: { url: string }
+    // ── Generate every image (carousels run in parallel to stay within the time budget) ──
+    let buffers: Buffer[]
     try {
-      blob = await put(`maya-app-v3/${neonUser.id}/${Date.now()}.png`, imageBuffer, {
-        access: "public",
-        contentType: "image/png",
-      })
+      buffers = await Promise.all(prompts.map((p) => generateOne(p)))
+    } catch (genError) {
+      await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(() => {})
+      if (isContentPolicyError(genError)) {
+        return NextResponse.json(
+          {
+            error:
+              "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you.",
+            code: "content_policy",
+          },
+          { status: 400 },
+        )
+      }
+      console.error("[app-v3 generate] Generation failed:", genError)
+      return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+    }
+
+    // ── Persist each image to Blob + gallery (ai_images). Blob failure refunds the set. ──
+    const stamp = Date.now()
+    let persisted: { url: string; id: number | null }[]
+    try {
+      persisted = await Promise.all(
+        buffers.map(async (buf, i) => {
+          const blob = await put(`maya-app-v3/${neonUser.id}/${stamp}-${i}.png`, buf, {
+            access: "public",
+            contentType: "image/png",
+          })
+          let id: number | null = null
+          try {
+            const inserted = await sql`
+              INSERT INTO ai_images (
+                user_id, image_url, prompt, generated_prompt, prediction_id,
+                generation_status, source, category, created_at
+              ) VALUES (
+                ${neonUser.id}, ${blob.url}, ${prompts[i]}, ${prompts[i]},
+                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
+              ) RETURNING id
+            `
+            id = inserted[0]?.id ?? null
+          } catch (dbError) {
+            console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
+          }
+          return { url: blob.url, id }
+        }),
+      )
     } catch (blobError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef).catch(() => {})
+      await refundCredits(neonUser.id, totalCost, "Blob upload failed", refundRef).catch(() => {})
       console.error("[app-v3 generate] Blob upload failed:", blobError)
       return NextResponse.json({ error: "Failed to save image. Please try again." }, { status: 500 })
     }
 
-    // ── Save to gallery (ai_images, completed) — same query the gallery already reads ──
-    let aiImageId: number | null = null
-    try {
-      const inserted = await sql`
-        INSERT INTO ai_images (
-          user_id, image_url, prompt, generated_prompt, prediction_id,
-          generation_status, source, category, created_at
-        ) VALUES (
-          ${neonUser.id}, ${blob.url}, ${prompt}, ${prompt},
-          ${"app-v3-" + Date.now()}, 'completed', 'openai', 'concept', NOW()
-        ) RETURNING id
-      `
-      aiImageId = inserted[0]?.id ?? null
-    } catch (dbError) {
-      console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
-      return NextResponse.json({
-        success: true,
-        imageUrl: blob.url,
-        aiImageId: null,
-        promptUsed: prompt,
-        creditsDeducted: CREDIT_COSTS.IMAGE,
-        newBalance: deduction.newBalance,
-        warning: "Image generated but gallery save was delayed.",
-      })
+    const imageUrls = persisted.map((p) => p.url)
+    if (imageUrls.length === 0) {
+      await refundCredits(neonUser.id, totalCost, "No images saved", refundRef).catch(() => {})
+      return NextResponse.json({ error: "Failed to save image. Please try again." }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      imageUrl: blob.url,
-      aiImageId,
-      promptUsed: prompt,
-      creditsDeducted: CREDIT_COSTS.IMAGE,
+      imageUrl: imageUrls[0],
+      imageUrls,
+      imageCount: imageUrls.length,
+      aiImageId: persisted[0]?.id ?? null,
+      creditsDeducted: totalCost,
       newBalance: deduction.newBalance,
     })
   } catch (error) {
