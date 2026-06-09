@@ -111,6 +111,8 @@ export function MayaConcierge() {
   const inspoInput = useRef<HTMLInputElement>(null)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
+  const lastPulledFormatRef = useRef<string | null>(null)
+  const sessionStartRef = useRef<number | null>(null)
 
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -208,6 +210,27 @@ export function MayaConcierge() {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [messages, isThinking])
 
+  // When a new look (or a Content idea) opens Maya, allow its format to pull fresh directions.
+  // Kept minimal on purpose: no message/chat mutation here, so it can't race the pull below.
+  useEffect(() => {
+    if (!session) return
+    if (session.startedAt === sessionStartRef.current) return
+    sessionStartRef.current = session.startedAt
+    lastPulledFormatRef.current = null
+  }, [session])
+
+  // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
+  // pulls directions automatically. One pull per format; resets on a new chat or new session.
+  useEffect(() => {
+    if (!isOpen || !session) return
+    const fmt = session.outputFormat
+    if (!fmt || isThinking) return
+    if (lastPulledFormatRef.current === fmt) return
+    lastPulledFormatRef.current = fmt
+    extrasRef.current = { ...extrasRef.current, format: fmt }
+    sendMessage({ text: FORMAT_PHRASE[fmt] })
+  }, [isOpen, session, isThinking, sendMessage])
+
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const format: OutputFormat = outputFormat ?? "photo"
@@ -252,6 +275,7 @@ export function MayaConcierge() {
   function handleNewChat() {
     if (isThinking) return
     savedCountRef.current = 0
+    lastPulledFormatRef.current = null // let the current format re-pull fresh directions
     setMessages([])
     setGenState({})
     setInput("")
@@ -327,10 +351,8 @@ export function MayaConcierge() {
 
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
-    if (isThinking || id === outputFormat) return
-    setOutputFormat(id)
-    extrasRef.current = { ...extrasRef.current, format: id }
-    sendMessage({ text: FORMAT_PHRASE[id] })
+    if (isThinking) return
+    setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
   }
 
   function focusComposer() {
