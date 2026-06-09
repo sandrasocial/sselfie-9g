@@ -22,6 +22,9 @@ export const CHECKOUT_EMAIL_CAPTURE_PARAM_KEYS = [
   "entry_post_slug",
   "buyer_stage",
   "freebie_token",
+  "vault_credit",
+  "starter_kit_credit",
+  "upgrade_credit",
 ] as const
 
 function cleanParam(value?: string | null): string | null {
@@ -51,7 +54,16 @@ export function shouldShowPromptVaultCheckoutEmailCapture(input: {
 }): boolean {
   if (input.hasRecoverableEmail || input.hasAuthUser || input.hasFreebieToken) return false
   if (input.params.skip_email_capture === "1") return false
-  return hasSocialDmCheckoutSignal(input.params)
+  return true
+}
+
+export function shouldShowCheckoutEmailCapture(input: {
+  params: CheckoutEmailCaptureParams
+  hasRecoverableEmail: boolean
+  hasAuthUser: boolean
+  hasFreebieToken: boolean
+}): boolean {
+  return shouldShowPromptVaultCheckoutEmailCapture(input)
 }
 
 export function buildCheckoutEmailCaptureHiddenParams(

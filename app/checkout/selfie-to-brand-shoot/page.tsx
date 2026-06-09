@@ -2,8 +2,10 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
+import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { createServerClient } from "@/lib/supabase/server"
 import {
   buildCheckoutRedirectUrl,
@@ -164,6 +166,7 @@ export default async function SelfieToBrandShootCheckoutPage({
     upgrade_credit?: string
     checkout_email?: string
     email?: string
+    skip_email_capture?: string
     returnTo?: string
     return_to?: string
   }>
@@ -180,6 +183,44 @@ export default async function SelfieToBrandShootCheckoutPage({
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
+
+  if (
+    shouldShowCheckoutEmailCapture({
+      params,
+      hasRecoverableEmail: Boolean(checkoutEmail),
+      hasAuthUser: Boolean(authUser?.id),
+      hasFreebieToken: Boolean(params.freebie_token),
+    })
+  ) {
+    await logAnalyticsEvent({
+      eventName: "selfie_to_brand_shoot_checkout_email_capture_view",
+      userId: authUser?.id || null,
+      path: "/checkout/selfie-to-brand-shoot",
+      utm: {
+        source: attribution.utmSource,
+        medium: attribution.utmMedium,
+        campaign: attribution.utmCampaign,
+        content: attribution.utmContent,
+      },
+      properties: checkoutStartProperties(params, attribution, {
+        has_auth_user: Boolean(authUser?.id),
+        has_prefill_email: false,
+        prefill_email_source: "none",
+      }),
+    })
+
+    return (
+      <PromptVaultCheckoutEmailCapture
+        params={params}
+        actionPath="/checkout/selfie-to-brand-shoot"
+        eyebrow="SELFIE TO BRAND SHOOT"
+        title="Where should I send your System access?"
+        copy="Add your email before checkout so your course access, Prompt Vault, and receipt go to the right place. If you already bought the Vault or Starter Kit, this also lets me check your credit."
+        inputId="selfie-to-brand-shoot-checkout-email"
+      />
+    )
+  }
+
   const vaultCreditEligible = await hasPromptVaultBuyerAccess({
     token: params.freebie_token,
     email: checkoutEmail,
