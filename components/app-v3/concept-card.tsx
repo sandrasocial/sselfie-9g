@@ -146,7 +146,7 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
             disabled={disabled || isGenerating}
             className="w-full rounded-[4px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
           >
-            {isGenerating ? "Creating…" : "Generate this"}
+            {isGenerating ? "Creating…" : format === "photo" ? "Start my brand shoot" : "Create this"}
           </button>
         )}
       </div>

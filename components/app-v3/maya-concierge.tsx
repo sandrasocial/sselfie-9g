@@ -385,6 +385,10 @@ export function MayaConcierge() {
   }
 
   const hasStarted = messages.length > 0
+  // Are Maya's direction cards already on screen? Drives the loading-vs-typing copy.
+  const hasConcepts = messages.some(
+    (m: any) => Array.isArray(m?.parts) && m.parts.some((p: any) => !!extractConcepts(p)),
+  )
   const agentLabel = memory?.agentName?.trim() || "Maya"
 
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
@@ -467,7 +471,7 @@ export function MayaConcierge() {
         className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl animate-in slide-in-from-right duration-300 ease-out motion-reduce:animate-none"
       >
         {/* Header */}
-        <header className="flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
+        <header className="shrink-0 flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
           <div className="min-w-0">
             <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
             <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
@@ -501,7 +505,7 @@ export function MayaConcierge() {
         </header>
 
         {/* Setup row: format + selfie (compact, always available) */}
-        <div className="space-y-3 border-b border-[#C5C6C8]/40 px-6 py-4">
+        <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-6 py-4">
           <div className="flex flex-wrap gap-2">
             {FORMAT_OPTIONS.map((opt) => {
               const selected = format === opt.id
@@ -635,8 +639,10 @@ export function MayaConcierge() {
           {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
         </div>
 
-        {/* Thread */}
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+        {/* Thread — the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
+            actually scrolls (without it, content overflowed and the direction cards were
+            unreachable below the fold). */}
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
           {/* Static opener */}
           <div className="flex items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
@@ -777,7 +783,7 @@ export function MayaConcierge() {
 
                 {conceptPart && conceptPart.length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-[12px] text-[#818283]">Tap the one that feels most like you. 🤍</p>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">Choose your direction</p>
                     {conceptPart.map((concept) => {
                       const key = `${m.id}:${concept.id}`
                       return (
@@ -837,19 +843,33 @@ export function MayaConcierge() {
             </div>
           )}
 
-          {isThinking && <TypingDots />}
+          {isThinking && (
+            <div className="flex items-center gap-3">
+              <TypingDots />
+              {!hasConcepts && (
+                <span className="text-[13px] text-[#818283]">Maya is preparing your directions…</span>
+              )}
+            </div>
+          )}
 
-          {error && (
-            <p className="rounded-[4px] bg-[#282728]/5 px-4 py-3 text-[13px] text-[#282728]">
-              Maya couldn't reply just now. Try sending that again.
-            </p>
+          {error && !isThinking && (
+            <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
+              <p className="text-[13px] text-[#282728]">Maya hit a snag creating your directions.</p>
+              <button
+                type="button"
+                onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
+                className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+              >
+                Try again
+              </button>
+            </div>
           )}
 
           <div ref={threadEndRef} />
         </div>
 
         {/* Composer — secondary: refinement only, the happy path is the taps above */}
-        <div className="border-t border-[#C5C6C8]/40 px-6 py-4">
+        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-6 py-4">
           <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#818283]">Refine with Maya</p>
           <div className="flex gap-2">
             <input
