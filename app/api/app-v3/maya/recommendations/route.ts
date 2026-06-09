@@ -24,8 +24,12 @@ interface Recommendation {
   format: OutputFormat
 }
 
-function stripFences(s: string): string {
-  return s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim()
+// Pull the JSON object out of the model's reply even if it wrapped it in prose or code fences.
+function extractJson(s: string): string {
+  const t = s.replace(/```(?:json)?/gi, "").trim()
+  const start = t.indexOf("{")
+  const end = t.lastIndexOf("}")
+  return start >= 0 && end > start ? t.slice(start, end + 1) : t
 }
 
 export async function GET() {
@@ -91,8 +95,9 @@ export async function GET() {
 
     let parsed: { greeting?: unknown; recommendations?: unknown } | null = null
     try {
-      parsed = JSON.parse(stripFences(text))
+      parsed = JSON.parse(extractJson(text))
     } catch {
+      console.error("[app-v3 recommendations] JSON parse failed. Raw model output:", text.slice(0, 400))
       parsed = null
     }
 
