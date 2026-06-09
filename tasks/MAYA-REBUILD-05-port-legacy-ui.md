@@ -120,8 +120,54 @@ Each phase is its own PR into `studio-v3-staging` (not main), reviewed, tsc + bu
 
 ---
 
+## Appendix — full Maya surface inventory (port ratings)
+
+★ PORT (bring it) - ◐ ADAPT (rewire to new engine) - ○ LEAVE (legacy-coupled / out of scope now)
+
+### Added to scope after the inventory check (were missing above)
+
+| Item | Source | Rating | Why it matters to customers |
+|---|---|---|---|
+| Memory + identity | `lib/maya/memory-store.ts`, `user-snapshot.ts`, `user-preferences.ts`, `maya/maya-identity-notes.tsx`, `agent_profiles` | ★ | The differentiator. "The AI that already knows your brand and gets smarter every time." /app has none today. |
+| Named-agent onboarding | North Star (confirm if built) | ★ | Ownership. People do not cancel a relationship they named. |
+| Guided first generation | `maya/welcome-first-generation-flow.tsx` | ★ | Gets a first win fast, lowers drop-off. |
+| Quick-prompt chips | `maya/maya-quick-prompts.tsx` | ★ | Fast starts (empty-state + scrollable chip row). |
+| Inline styled markdown | `react-markdown` in `maya-chat-interface.tsx` | ★ | Maya's replies render bold + bullets, scannable. /app is plain text now. |
+| Image lightbox / fullscreen | `image-lightbox.tsx`, `sselfie/fullscreen-image-modal.tsx` | ★ | Tap a result to view it big. |
+| Carousel preview card | `sselfie/instagram-carousel-card.tsx` | ★ | We generate carousels; needs a swipeable premium preview. |
+| Reel cover preview | `sselfie/instagram-reel-card.tsx` + `instagram-reel-preview.tsx` | ★ | We generate reel covers; needs a real preview. |
+| Caption + asset cards | `maya/maya-caption-card.tsx`, `maya/maya-generated-asset-card.tsx` | ★ | In-thread captions and saved-asset display. |
+| Credit top-up modal | `credits/low-credit-modal.tsx`, `zero-credits-upgrade-modal.tsx`, `sselfie/buy-credits-modal.tsx` | ★ | Generate returns `insufficient_credits`; there is no UI for it on /app today. |
+| Image library / reuse | `sselfie/pro-mode/ImageLibraryModal.tsx`, `image-gallery-modal.tsx` | ◐ | Reuse past selfies and pick references without re-uploading. |
+| Settings (aspect ratio) | `maya/maya-settings-panel.tsx` | ◐ | Per-generation controls. |
+| Onboarding warmth | `maya/maya-welcome-panel.tsx`, `maya-energy-check-in.tsx` | ◐ | Optional warmth, only if it does not clutter. |
+| Monetization cards | `maya/maya-upsell-card.tsx`, `membership-home-card.tsx` | ◐ | In-thread upgrade nudges, later. |
+
+### Explicitly LEAVE (do not port)
+
+`maya-mode-toggle` (Classic/Pro), `maya-tab-switcher` + `maya-videos-tab` + `maya-training-tab` +
+`maya-prompts-tab` (the 5-tab shell the North Star collapses), `ConceptCardPro` + legacy
+`concept-card.tsx` (Flux/poll-coupled), `retrain-model-modal` (no LoRA on /app),
+`schedule-post-modal`, `feed-planner/*` (separate live product), `maya-week-plan-card`,
+`calendar-post-card`.
+
+### Revised phasing (folds the inventory in)
+
+- Phase 0: voice + content-policy fix (unchanged).
+- Phase A: inline-card primitive, loading, **inline markdown**, **image lightbox/fullscreen**, card restyle.
+- Phase B: composer (attachments + **image library** reuse), **quick-prompt chips**, **credit top-up modal**.
+- Phase C: app-v3 chat persistence + New Chat + History.
+- Phase D: **carousel / reel / caption preview cards** wired to the matching output formats.
+- Phase E: **memory + identity layer** (cross-session brand memory, identity notes) and **named-agent + guided first-generation onboarding**. This is the highest-value differentiator and gets its own phase.
+- Phase F: polish pass (spacing, motion, empty states, mobile), then Sandra sign-off.
+
+---
+
 ## Open questions for Sandra
 
 1. History scope: just you (admin) for now, or build it ready for members from day one?
 2. Do you want the old "tabs" feeling (Photos / Videos) inside /app eventually, or stay single-surface
    conversational per the North Star vision? (Affects how much composer chrome we port.)
+3. Memory + named-agent (Phase E) is the biggest differentiator but also the biggest lift. Include it in
+   THIS cycle, or ship Phases 0 to D first (Maya looks and feels premium and generates well), then do
+   memory as its own follow-up so you can test sooner?
