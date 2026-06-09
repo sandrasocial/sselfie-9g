@@ -1,13 +1,13 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Concept Card (MAYA-REBUILD-03).
-// One of the 3 concept directions Maya proposes inline in the chat thread. Holds its own
-// Generate button, per-card skeleton while the synchronous OpenAI call runs, and the
-// finished image with a save-to-gallery note. Presentational — generation state is owned
-// by the concierge and passed in.
+// SSELFIE Studio 3.0 — Concept Card (MAYA-REBUILD-03, restyled in 05 Phase A).
+// One of the 3 concept directions Maya proposes inline in the thread. Holds its own Generate
+// button, a per-card spinner while the synchronous OpenAI call runs, and the finished image
+// (tap to open fullscreen). Presentational: generation state is owned by the concierge.
 
 import Image from "next/image"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import { Spinner } from "./loading"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -21,28 +21,40 @@ interface ConceptCardProps {
   concept: ConceptCardData
   gen: ConceptGenState
   onGenerate: () => void
+  /** Open the finished image fullscreen. */
+  onOpen?: (imageUrl: string) => void
   disabled?: boolean
 }
 
-export function ConceptCard({ concept, gen, onGenerate, disabled }: ConceptCardProps) {
+export function ConceptCard({ concept, gen, onGenerate, onOpen, disabled }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
   const isDone = gen.status === "done" && gen.imageUrl
 
   return (
-    <div className="overflow-hidden rounded-[6px] border border-[#C5C6C8]/60 bg-white">
-      {/* Visual area: result, skeleton, or empty */}
+    <div className="overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white">
+      {/* Visual area: result (tap to open), spinner, or empty */}
       <div className="relative aspect-[4/5] w-full bg-[#F1F2F2]">
         {isDone ? (
-          <Image
-            src={gen.imageUrl as string}
-            alt={concept.title}
-            fill
-            className="object-cover"
-            sizes="(max-width:480px) 90vw, 360px"
-          />
+          <button
+            type="button"
+            onClick={() => onOpen?.(gen.imageUrl as string)}
+            className="group absolute inset-0 cursor-zoom-in"
+            aria-label="View full size"
+          >
+            <Image
+              src={gen.imageUrl as string}
+              alt={concept.title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              sizes="(max-width:480px) 90vw, 360px"
+            />
+            <span className="absolute bottom-2 right-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+              View
+            </span>
+          </button>
         ) : isGenerating ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#C5C6C8] border-t-[#0D0E10]" />
+            <Spinner className="h-7 w-7" />
             <p className="text-[11px] uppercase tracking-[0.22em] text-[#818283]">Creating…</p>
           </div>
         ) : (
@@ -57,10 +69,11 @@ export function ConceptCard({ concept, gen, onGenerate, disabled }: ConceptCardP
       {/* Copy + action */}
       <div className="space-y-3 p-4">
         <div>
-          <h4 className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Concept</p>
+          <h4 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">{concept.description}</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{concept.description}</p>
         </div>
 
         {gen.status === "error" && (

@@ -15,6 +15,9 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
+import { Markdown } from "./markdown"
+import { TypingDots } from "./loading"
+import { ImageLightbox } from "./image-lightbox"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 
@@ -51,6 +54,8 @@ export function MayaConcierge() {
   const [input, setInput] = useState("")
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
+  // Fullscreen viewer: the set of image urls currently open (null = closed).
+  const [lightbox, setLightbox] = useState<string[] | null>(null)
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
@@ -321,17 +326,16 @@ export function MayaConcierge() {
 
             return (
               <div key={m.id} className="space-y-4">
-                {text.trim() && (
-                  <div
-                    className={
-                      isUser
-                        ? "ml-auto max-w-[88%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white"
-                        : "max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]"
-                    }
-                  >
-                    {text}
-                  </div>
-                )}
+                {text.trim() &&
+                  (isUser ? (
+                    <div className="ml-auto max-w-[88%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white">
+                      {text}
+                    </div>
+                  ) : (
+                    <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4">
+                      <Markdown>{text}</Markdown>
+                    </div>
+                  ))}
 
                 {conceptPart && conceptPart.length > 0 && (
                   <div className="space-y-3">
@@ -343,6 +347,7 @@ export function MayaConcierge() {
                           concept={concept}
                           gen={genState[key] ?? { status: "idle" }}
                           onGenerate={() => void generateConcept(key, concept)}
+                          onOpen={(url) => setLightbox([url])}
                           disabled={!referenceSelfieUrl}
                         />
                       )
@@ -353,16 +358,7 @@ export function MayaConcierge() {
             )
           })}
 
-          {isThinking && (
-            <div className="flex items-center gap-2 text-[#818283]">
-              <span className="flex gap-1">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8] [animation-delay:-0.2s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8] [animation-delay:-0.1s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#A6A7A8]" />
-              </span>
-              <span className="text-[13px]">Maya is thinking…</span>
-            </div>
-          )}
+          {isThinking && <TypingDots />}
 
           {error && (
             <p className="rounded-[4px] bg-[#282728]/5 px-4 py-3 text-[13px] text-[#282728]">
@@ -409,6 +405,8 @@ export function MayaConcierge() {
           </button>
         </div>
       </aside>
+
+      {lightbox && <ImageLightbox images={lightbox} onClose={() => setLightbox(null)} />}
     </div>
   )
 }
