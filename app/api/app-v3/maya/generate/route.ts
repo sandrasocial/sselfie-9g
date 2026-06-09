@@ -25,6 +25,7 @@ import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { compileConceptPrompts, conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
+import { getAestheticById } from "@/components/app-v3/aesthetics"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
 
@@ -38,6 +39,18 @@ const sql = getDbClient()
 // production sets OPENAI_IMAGE_MODEL explicitly so the default only matters as a safe fallback.
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+
+// Vault style anchor: attach the chosen aesthetic's Vault example to the edit call so the
+// model has the actual benchmark to match (lighting, grade, finish), not just words. The
+// Vault images ARE portraits, so identity bleed is the risk — selfies stay first + sole
+// identity source, and this directive makes the anchor style-only. Kill switch:
+// set APP_V3_VAULT_STYLE_ANCHOR=0 to disable without a code change.
+const VAULT_STYLE_ANCHOR_ENABLED = !/^(0|false|off)$/i.test(process.env.APP_V3_VAULT_STYLE_ANCHOR || "1")
+const STYLE_ANCHOR_DIRECTIVE =
+  "\n\nThe FINAL attached image is a STYLE REFERENCE ONLY, an example from the SSELFIE Vault. " +
+  "Match its photographic quality, lighting, color grade, depth of field, and editorial finish to that standard. " +
+  "Do NOT copy the person, face, hair, body, pose, or background from that style reference. " +
+  "The woman's identity, face, and likeness come ONLY from the earlier selfie photo(s)."
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
 function isContentPolicyError(err: unknown): boolean {
@@ -155,15 +168,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Front face first, then any optional angles (side profile, full body). Dedup + cap at 4
-    // so identity/body fidelity improves without bloating the edit request.
+    // Vault style anchor: load the chosen aesthetic's Vault example as a STYLE/quality
+    // reference (never identity). Best-effort — a load failure must not block generation.
+    let styleAnchorBuffer: Buffer | null = null
+    if (VAULT_STYLE_ANCHOR_ENABLED) {
+      try {
+        const aesthetic = body.aestheticId ? getAestheticById(body.aestheticId) : undefined
+        const anchorPath = aesthetic?.coverImage
+        if (anchorPath && anchorPath.startsWith("/")) {
+          const anchorUrl = new URL(anchorPath, request.nextUrl.origin).toString()
+          styleAnchorBuffer = await normalizeReferenceForOpenAI(await readReferenceImage(anchorUrl))
+        }
+      } catch (e) {
+        console.error("[app-v3 generate] Vault style anchor load skipped:", e)
+        styleAnchorBuffer = null
+      }
+    }
+
+    // Front face first, then any optional angles (side profile, full body). Dedup + cap so the
+    // edit request stays at <=4 images total; when a style anchor is attached, leave room for it.
+    const maxSelfies = styleAnchorBuffer ? 3 : 4
     const referenceUrls = Array.from(
       new Set(
         [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
           isAllowedReferenceUrl,
         ),
       ),
-    ).slice(0, 4)
+    ).slice(0, maxSelfies)
 
     // Compile into one prompt per image (carousel = one per slide; others = single),
     // injecting the vision-extracted look for the chosen aesthetic.
@@ -227,11 +258,19 @@ export async function POST(request: NextRequest) {
         }),
       )
 
+      // Selfies first (identity), Vault style anchor LAST (quality reference only).
+      const images = [...refFiles]
+      let prompt = promptText
+      if (styleAnchorBuffer) {
+        images.push(await toFile(styleAnchorBuffer, "vault-style-reference.png", { type: "image/png" }))
+        prompt = `${promptText}${STYLE_ANCHOR_DIRECTIVE}`
+      }
+
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
         // gpt-image accepts an array of reference images; a single file also works.
-        image: refFiles.length === 1 ? refFiles[0] : refFiles,
-        prompt: promptText,
+        image: images.length === 1 ? images[0] : images,
+        prompt,
         n: 1,
         size,
         quality: "medium",
