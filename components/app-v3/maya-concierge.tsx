@@ -21,8 +21,28 @@ import { ImageLightbox } from "./image-lightbox"
 import { QuickPrompts } from "./quick-prompts"
 import { CreditModal } from "./credit-modal"
 import { ReferenceLibraryModal } from "./reference-library-modal"
+import { ChatHistoryModal } from "./chat-history-modal"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
+
+/** Stable conversation id (client-side). */
+function newChatId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID()
+  return `c_${Date.now()}_${Math.floor(Math.random() * 1e6)}`
+}
+
+/** Title a conversation from its first user message. */
+function deriveTitle(msgs: any[]): string | null {
+  const firstUser = msgs.find((m) => m?.role === "user")
+  if (!firstUser) return null
+  const parts = Array.isArray(firstUser.parts) ? firstUser.parts : []
+  const text = parts
+    .filter((p: any) => p?.type === "text" && typeof p.text === "string")
+    .map((p: any) => p.text)
+    .join(" ")
+    .trim()
+  return text ? text.slice(0, 80) : null
+}
 
 const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "photo", label: "Photo" },
@@ -101,9 +121,27 @@ export function MayaConcierge() {
     [],
   )
 
-  const { messages, sendMessage, status, error } = useChat({ transport })
+  const { messages, sendMessage, status, error, setMessages } = useChat({ transport })
 
   const isThinking = status === "submitted" || status === "streaming"
+
+  // Conversation persistence (Phase C). Client-driven save on each completed turn.
+  const [chatId, setChatId] = useState<string>(() => newChatId())
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const savedCountRef = useRef(0)
+
+  useEffect(() => {
+    if (status !== "ready") return
+    if (messages.length === 0 || messages.length === savedCountRef.current) return
+    const last = messages[messages.length - 1] as { role?: string } | undefined
+    if (last?.role !== "assistant") return
+    savedCountRef.current = messages.length
+    void fetch("/api/app-v3/maya/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: chatId, messages, title: deriveTitle(messages) }),
+    }).catch(() => {})
+  }, [status, messages, chatId])
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
@@ -148,6 +186,32 @@ export function MayaConcierge() {
     if (!text || isThinking) return
     sendMessage({ text })
     setInput("")
+  }
+
+  function handleNewChat() {
+    if (isThinking) return
+    savedCountRef.current = 0
+    setMessages([])
+    setGenState({})
+    setInput("")
+    setChatId(newChatId())
+    setHistoryOpen(false)
+  }
+
+  async function handleSelectChat(id: string) {
+    try {
+      const res = await fetch(`/api/app-v3/maya/chats/${id}`)
+      if (!res.ok) return
+      const data = (await res.json().catch(() => null)) as { messages?: unknown[] } | null
+      const loaded = Array.isArray(data?.messages) ? data.messages : []
+      savedCountRef.current = loaded.length
+      setChatId(id)
+      setGenState({})
+      setMessages(loaded as any)
+      setHistoryOpen(false)
+    } catch {
+      /* leave history open so the user can retry */
+    }
   }
 
   async function generateConcept(key: string, concept: ConceptCardData) {
@@ -213,11 +277,30 @@ export function MayaConcierge() {
         className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl"
       >
         {/* Header */}
-        <header className="border-b border-[#C5C6C8]/40 px-6 py-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Maya</p>
-          <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
-            {aesthetic.name}
-          </h2>
+        <header className="flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Maya</p>
+            <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
+              {aesthetic.name}
+            </h2>
+          </div>
+          <div className="flex shrink-0 items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              disabled={isThinking}
+              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
+            >
+              New chat
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(true)}
+              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+            >
+              History
+            </button>
+          </div>
         </header>
 
         {/* Setup row: format + selfie (compact, always available) */}
@@ -456,6 +539,13 @@ export function MayaConcierge() {
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
         onPick={(url) => setReferenceSelfieUrl(url)}
+      />
+
+      <ChatHistoryModal
+        open={historyOpen}
+        currentChatId={chatId}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={(id) => void handleSelectChat(id)}
       />
     </div>
   )
