@@ -117,27 +117,27 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
                   rel="noreferrer"
                   className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
                 >
-                  Use this photo
+                  Download
                 </a>
               )}
-              <button
-                type="button"
-                onClick={onGenerate}
-                disabled={disabled}
-                className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
-              >
-                Regenerate
-              </button>
+              {onEdit && !isCarousel && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="rounded-[4px] border border-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04]"
+                >
+                  Edit this photo
+                </button>
+              )}
             </div>
-            {onEdit && (
-              <button
-                type="button"
-                onClick={onEdit}
-                className="text-[11px] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
-              >
-                Ask Maya to tweak it
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={disabled}
+              className="text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052] disabled:opacity-40"
+            >
+              Make another version
+            </button>
           </div>
         ) : (
           <button
