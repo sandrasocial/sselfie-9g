@@ -80,6 +80,22 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   "story-slide": "Let's make a Story slide.",
 }
 
+// Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
+// mismatch). BEFORE a selfie is added it guides the next step; AFTER, it shifts to a "start your
+// brand shoot" framing so the system status is clear (the photo case is the one that changes most).
+const FORMAT_OPENER: Record<OutputFormat, string> = {
+  photo: "Gorgeous choice. Upload one selfie and I'll create three photo directions for you.",
+  "reel-cover": "Gorgeous choice. Tell me what your reel is about and I'll create a polished cover direction.",
+  carousel: "Love this. Tell me the topic and I'll create a few cohesive slides that teach, tell your story, or sell softly.",
+  "story-slide": "Perfect. Tell me the goal, like a poll, a sale, a moment, or a quick reminder, and I'll design the slide.",
+}
+const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
+  photo: "Gorgeous choice. Your selfie's in. Tap a direction below and I'll start your brand shoot.",
+  "reel-cover": "Gorgeous choice. Your selfie's in. Tell me what your reel is about and I'll start your cover.",
+  carousel: "Love this. Your selfie's in. Tell me the topic and I'll start your slides.",
+  "story-slide": "Perfect. Your selfie's in. Tell me the goal and I'll design your slide.",
+}
+
 type UploadSlot = "face" | "side" | "body" | "inspiration"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming). */
@@ -445,7 +461,7 @@ export function MayaConcierge() {
         <header className="flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
           <div className="min-w-0">
             <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
-            <h2 className="mt-2 truncate font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
+            <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
           </div>
@@ -536,7 +552,7 @@ export function MayaConcierge() {
             onClick={() => setShowMore((v) => !v)}
             className="text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
           >
-            {showMore ? "Hide extras" : "Add more for a better match (optional)"}
+            {showMore ? "Hide extras" : "Add a side profile or full-body photo for a better match (optional)"}
           </button>
 
           {showMore && (
@@ -586,16 +602,14 @@ export function MayaConcierge() {
           <div className="flex items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
             <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-              <p>{aesthetic.name}. Gorgeous choice. ✨</p>
+              <p>{aesthetic.name}.</p>
               <p className="mt-2">{aesthetic.blurb}</p>
-              <p className="mt-2">
-                What are we making? Pick one above and I'll pull three directions for you.
-              </p>
+              <p className="mt-2">{referenceSelfieUrl ? FORMAT_OPENER_READY[format] : FORMAT_OPENER[format]}</p>
               {!referenceSelfieUrl && (
                 <p className="mt-3 text-[14px] text-[#4F5052]">
-                  When you're ready, drop a selfie facing a window with soft, even light.
+                  For the best match, face a window with soft, even light.
                   <br />
-                  For full-body looks, a side profile and a full-body shot help too. All optional. 🤍
+                  For full-body looks, a side profile and a full-body photo help too. All optional. 🤍
                 </p>
               )}
             </div>
@@ -655,9 +669,9 @@ export function MayaConcierge() {
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
           {!referenceSelfieUrl && hasStarted && (
             <div className="rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4">
-              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">Add your selfie first</p>
+              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">Start your brand shoot</p>
               <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-                Maya needs one photo of you before she can create these.
+                Add one clear selfie and Maya turns it into your first brand shoot.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

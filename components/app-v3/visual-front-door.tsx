@@ -67,6 +67,9 @@ export function VisualFrontDoor() {
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">
           Choose the look you want. Maya takes it from there: one selfie becomes a full brand shoot.
         </p>
+        <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">
+          Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · gallery · feed planning
+        </p>
       </header>
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
