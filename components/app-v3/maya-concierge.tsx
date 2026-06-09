@@ -24,6 +24,7 @@ import { CreditModal } from "./credit-modal"
 import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
+import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 
@@ -121,6 +122,8 @@ export function MayaConcierge() {
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<string[] | null>(null)
+  // True Edit Mode target: which generated image we're refining.
+  const [editTarget, setEditTarget] = useState<{ key: string; url: string; format: OutputFormat } | null>(null)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
     open: false,
@@ -729,7 +732,10 @@ export function MayaConcierge() {
                           format={format}
                           onGenerate={() => void generateConcept(key, concept)}
                           onOpen={(urls) => setLightbox(urls)}
-                          onTweak={focusComposer}
+                          onEdit={() => {
+                            const url = (genState[key]?.imageUrls ?? [])[0]
+                            if (url) setEditTarget({ key, url, format })
+                          }}
                           disabled={!referenceSelfieUrl}
                         />
                       )
@@ -845,6 +851,20 @@ export function MayaConcierge() {
       />
 
       <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} onSaved={(m) => setMemory(m)} />
+
+      {editTarget && (
+        <EditMode
+          imageUrl={editTarget.url}
+          format={editTarget.format}
+          onClose={() => setEditTarget(null)}
+          onResult={(newUrl) =>
+            setGenState((s) => {
+              const prev = s[editTarget.key]?.imageUrls ?? []
+              return { ...s, [editTarget.key]: { status: "done", imageUrls: [newUrl, ...prev] } }
+            })
+          }
+        />
+      )}
     </div>
   )
 }

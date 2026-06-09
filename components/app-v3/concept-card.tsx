@@ -26,8 +26,8 @@ interface ConceptCardProps {
   onGenerate: () => void
   /** Open the finished image(s) fullscreen (carousels pass all slides). */
   onOpen?: (imageUrls: string[]) => void
-  /** Move focus to the composer so the user can ask Maya for a change. */
-  onTweak?: () => void
+  /** Open true Edit Mode on the finished image. */
+  onEdit?: () => void
   disabled?: boolean
 }
 
@@ -38,7 +38,7 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   carousel: "aspect-square",
 }
 
-export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onTweak, disabled }: ConceptCardProps) {
+export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, disabled }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
   const images = gen.imageUrls ?? []
   const isDone = gen.status === "done" && images.length > 0
@@ -129,10 +129,10 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onTweak,
                 Regenerate
               </button>
             </div>
-            {onTweak && (
+            {onEdit && (
               <button
                 type="button"
-                onClick={onTweak}
+                onClick={onEdit}
                 className="text-[11px] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
               >
                 Ask Maya to tweak it
