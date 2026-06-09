@@ -4,10 +4,38 @@
 // "Where did my photo go?" — every image she's made, newest first. Tap to open fullscreen.
 // Reuses the existing ai_images data so her past SSELFIE shoots show up here too.
 
-import { startTransition, useEffect, useState } from "react"
+import { memo, startTransition, useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import { ImageLightbox } from "./image-lightbox"
 import { OverlayComposer } from "./overlay-composer"
+
+// Memoized with a STABLE onOpen, so opening the lightbox/composer (a state change) does not
+// re-render every gallery image at once (that synchronous commit tripped INP).
+const GalleryTile = memo(function GalleryTile({
+  url,
+  index,
+  onOpen,
+}: {
+  url: string
+  index: number
+  onOpen: (i: number) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(index)}
+      className="group relative aspect-[4/5] overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]"
+    >
+      <Image
+        src={url}
+        alt={`Gallery image ${index + 1}`}
+        fill
+        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        sizes="(max-width:640px) 45vw, 240px"
+      />
+    </button>
+  )
+})
 
 export function GalleryView() {
   const [images, setImages] = useState<string[] | null>(null)
@@ -15,6 +43,9 @@ export function GalleryView() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   // Mode C composer: { url } starts from a Library image; { url: null } starts in upload mode.
   const [composer, setComposer] = useState<{ url: string | null } | null>(null)
+
+  // Stable so the memoized tiles don't re-render when the lightbox/composer opens.
+  const openLightbox = useCallback((i: number) => startTransition(() => setLightboxIndex(i)), [])
 
   useEffect(() => {
     fetch("/api/app-v3/gallery")
@@ -51,20 +82,7 @@ export function GalleryView() {
       {images && images.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((url, i) => (
-            <button
-              key={url}
-              type="button"
-              onClick={() => startTransition(() => setLightboxIndex(i))}
-              className="group relative aspect-[4/5] overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]"
-            >
-              <Image
-                src={url}
-                alt={`Gallery image ${i + 1}`}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                sizes="(max-width:640px) 45vw, 240px"
-              />
-            </button>
+            <GalleryTile key={url} url={url} index={i} onOpen={openLightbox} />
           ))}
         </div>
       )}
