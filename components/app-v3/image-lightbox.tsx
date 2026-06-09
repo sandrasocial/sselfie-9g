@@ -31,7 +31,7 @@ export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightbox
   if (!url) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[#0D0E10]/95 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
       <button
         type="button"
         onClick={onClose}

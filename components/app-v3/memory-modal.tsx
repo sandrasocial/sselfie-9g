@@ -84,8 +84,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm">
-      <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
+      <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Memory</p>

@@ -345,41 +345,41 @@ export function MayaConcierge() {
         type="button"
         aria-label="Close"
         onClick={close}
-        className="absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px] animate-in fade-in duration-200 motion-reduce:animate-none"
       />
       <aside
         role="dialog"
         aria-label={`${agentLabel}, ${aesthetic.name}`}
-        className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl"
+        className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl animate-in slide-in-from-right duration-300 ease-out motion-reduce:animate-none"
       >
         {/* Header */}
         <header className="flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
-            <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
+            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
+            <h2 className="mt-2 truncate font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
           </div>
-          <div className="flex shrink-0 items-center gap-3 pt-1">
+          <div className="-my-1 flex shrink-0 items-center gap-2.5 pt-1">
             <button
               type="button"
               onClick={handleNewChat}
               disabled={isThinking}
-              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
+              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
             >
               New chat
             </button>
             <button
               type="button"
               onClick={() => setHistoryOpen(true)}
-              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               History
             </button>
             <button
               type="button"
               onClick={() => setMemoryOpen(true)}
-              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               Memory
             </button>
@@ -513,7 +513,7 @@ export function MayaConcierge() {
 
           {/* First-run: name your agent (the ownership moment). Skippable. */}
           {showNaming && (
-            <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+            <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <p className="text-[14px] leading-relaxed text-[#282728]">
                 One quick thing: what would you like to call me? It makes this ours. 🤍
               </p>
@@ -552,7 +552,7 @@ export function MayaConcierge() {
 
           {/* Maya acknowledges her new name */}
           {justNamed && (
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={justNamed.charAt(0)} />
               <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
                 Love it. I'm {justNamed} now. Let's make something beautiful. 🤍
@@ -581,7 +581,10 @@ export function MayaConcierge() {
               | undefined
 
             return (
-              <div key={m.id} className="space-y-4">
+              <div
+                key={m.id}
+                className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
+              >
                 {text.trim() &&
                   (isUser ? (
                     <div className="flex flex-row-reverse items-end gap-2">

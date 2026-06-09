@@ -13,8 +13,8 @@ interface CreditModalProps {
 export function CreditModal({ open, balance, onClose }: CreditModalProps) {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-7 shadow-xl">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
+      <div className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-7 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none">
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Credits</p>
         <h3 className="mt-3 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
           You're out of credits
