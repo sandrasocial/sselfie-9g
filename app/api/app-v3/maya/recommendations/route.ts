@@ -70,7 +70,7 @@ export async function GET() {
     "- Each idea TITLE is a creator-specific content angle in HER voice, tied to her real story/brand (e.g. 'The Selfie I Almost Didn't Post'), NEVER a generic mood ('Authentic Moment', 'Boss Energy').",
     "- Each idea has a one-line rationale: why this, now (what is missing from her feed, what her audience needs).",
     "- Each idea has a format: one of photo, reel-cover, carousel, story-slide. Pick the format that fits the idea.",
-    "- A warm one-line greeting that, when it makes sense, references her recent activity (e.g. she has mostly posted selfies lately, or her audience hasn't heard a personal story in a while).",
+    "- greeting: short and sharp, not a paragraph. One warm opener plus at most one observation about her recent activity (e.g. 'You've mostly posted selfie tutorials lately.' or 'Your audience hasn't heard a personal story in a while.'). Keep it to one or two short sentences.",
     "- Never use the long dash (em dash). Short, warm, human. No hype words.",
     "Return ONLY raw JSON, no prose, no code fences, in exactly this shape:",
     `{"greeting": string, "recommendations": [{"title": string, "rationale": string, "format": "photo|reel-cover|carousel|story-slide"}]}`,
