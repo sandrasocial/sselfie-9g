@@ -88,10 +88,15 @@ export interface CompileConceptOptions {
 /** How on-image text is produced: a clean photo + an overlay edit pass, or baked in one pass. */
 export type TextRenderMode = "two_pass" | "one_pass"
 
-/** A single OpenAI edit call. useSelfie = attach the user's selfie(s); false = edit the prior pass output. */
+/**
+ * A single OpenAI edit call. The input image source:
+ * - "selfie": attach the user's selfie(s) (identity) — new-photo generation.
+ * - "prev": edit the previous pass's output (two-pass overlay).
+ * - "base": edit a user-provided image (their upload or a Library image) — overlay-only.
+ */
 export interface PromptPass {
   prompt: string
-  useSelfie: boolean
+  input: "selfie" | "prev" | "base"
 }
 
 /** One final image. Photos have one pass; two-pass graphics have [clean photo, text overlay]. */
@@ -241,7 +246,8 @@ function compileOverlayPrompt(
     role === "cta"
       ? `${layout.place} Call-to-action text: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`
       : `${layout.place} Headline: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`,
-    "Render the text crisply and perfectly legible, spelled exactly as given, with generous safe-zone margins. " +
+    "Render the text verbatim, in the exact characters given, with no extra or missing letters and no " +
+      "misspellings, crisp and perfectly legible, with generous safe-zone margins. " +
       "Do not cover her face, eyes, phone, hands, or strongest outfit details. Keep it easy to read in the Instagram grid.",
   ]
     .filter(Boolean)
@@ -269,7 +275,8 @@ function compileBakedGraphicPrompt(
     role === "cta"
       ? `${layout.place} Call-to-action: "${heading}".${body ? ` Supporting line: "${body}".` : ""}`
       : `${layout.place} Headline: "${heading}".${body ? ` Supporting line: "${body}".` : ""}`,
-    "Render the text crisply and legible, spelled exactly as given, with generous margins. Do not cover her face, eyes, phone, or hands.",
+    "Render the text verbatim, in the exact characters given, with no extra or missing letters and no misspellings, " +
+      "crisp and legible, with generous margins. Do not cover her face, eyes, phone, or hands.",
   ]
     .filter(Boolean)
     .join("\n")
@@ -289,7 +296,7 @@ export function compileConceptJobs(
   mode: TextRenderMode = "two_pass",
 ): ImageJob[] {
   if (format === "photo") {
-    return [{ label: "photo", passes: [{ prompt: compilePhotoPrompt(brief, format, opts), useSelfie: true }] }]
+    return [{ label: "photo", passes: [{ prompt: compilePhotoPrompt(brief, format, opts), input: "selfie" }] }]
   }
 
   // Graphic formats: build the slide list (carousel = many; cover/story = one).
@@ -312,17 +319,47 @@ export function compileConceptJobs(
     const label = format === "carousel" ? `slide ${i + 1}/${total} (${role})` : format
 
     if (mode === "one_pass") {
-      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, overlayStyle, opts), useSelfie: true }] }
+      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, overlayStyle, opts), input: "selfie" }] }
     }
     // two_pass: clean photo (selfie), then overlay edit (prior output).
     return {
       label,
       passes: [
-        { prompt: compilePhotoPrompt(brief, format, opts, layout.space), useSelfie: true },
-        { prompt: compileOverlayPrompt(text, layout, role, format, overlayStyle, opts), useSelfie: false },
+        { prompt: compilePhotoPrompt(brief, format, opts, layout.space), input: "selfie" },
+        { prompt: compileOverlayPrompt(text, layout, role, format, overlayStyle, opts), input: "prev" },
       ],
     }
   })
+}
+
+/** Layout for an overlay placed on a user-provided image (we don't control its composition). */
+const OVERLAY_ONLY_LAYOUT: RoleLayout = {
+  space: "",
+  place:
+    "Place the text in the cleanest open area of the photo (the calm negative space, typically the " +
+    "top third or lower third), where it does not cover the main subject's face, eyes, hands, or key details.",
+}
+
+/**
+ * MODE C — overlay-only on an image the user provides (their upload or a Library image). One edit
+ * pass: preserve the photo exactly, add the chosen text-overlay style. The route supplies the base
+ * image; this only builds the prompt. `role` lets a call-to-action read as a CTA.
+ */
+export function compileOverlayOnlyJob(
+  text: { heading: string; body?: string },
+  format: OutputFormat,
+  overlayStyleId?: string | null,
+  opts?: CompileConceptOptions,
+  role: "hook" | "value" | "cta" = "hook",
+): ImageJob {
+  const style = resolveOverlayStyle(overlayStyleId)
+  const graphicFormat: OutputFormat = format === "photo" ? "story-slide" : format
+  return {
+    label: `overlay (${style.id})`,
+    passes: [
+      { prompt: compileOverlayPrompt(text, OVERLAY_ONLY_LAYOUT, role, graphicFormat, style, opts), input: "base" },
+    ],
+  }
 }
 
 /** Vertical for photos/covers/stories, square for carousels (keeps text safe from cropping). */

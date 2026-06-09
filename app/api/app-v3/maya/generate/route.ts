@@ -23,7 +23,13 @@ import {
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import { compileConceptJobs, conceptOpenAISize, type TextRenderMode } from "@/lib/app-v3/prompt-compiler"
+import {
+  compileConceptJobs,
+  compileOverlayOnlyJob,
+  conceptOpenAISize,
+  type ImageJob,
+  type TextRenderMode,
+} from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -43,9 +49,11 @@ const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story
 // inside the time budget, override to "high" for maximum finish via env.
 const IMAGE_QUALITY = (process.env.APP_V3_IMAGE_QUALITY || "medium") as "low" | "medium" | "high"
 
-// On-image text rendering: "two_pass" (clean photo, then a preserve-and-overlay edit, Sandra's
-// proven workflow) or "one_pass" (text baked in a single call). Two-pass is the quality default.
-const TEXT_RENDER_MODE: TextRenderMode = process.env.APP_V3_TEXT_RENDER_MODE === "one_pass" ? "one_pass" : "two_pass"
+// On-image text rendering for NEW photos (Mode B). gpt-image-2 renders photoreal + accurate text
+// in a single pass (~99% character accuracy), so one_pass is the default: faster, cheaper, and it
+// avoids the quality drop from stacking edits. Set APP_V3_TEXT_RENDER_MODE=two_pass to force the
+// clean-photo-then-overlay route when tighter text placement is needed (e.g. complex carousels).
+const TEXT_RENDER_MODE: TextRenderMode = process.env.APP_V3_TEXT_RENDER_MODE === "two_pass" ? "two_pass" : "one_pass"
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
 function isContentPolicyError(err: unknown): boolean {
@@ -141,37 +149,74 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = (await request.json().catch(() => null)) as MayaGenerateConceptRequest | null
-    if (!body || !isValidBrief(body.brief)) {
-      return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
+    const body = (await request.json().catch(() => null)) as
+      | (MayaGenerateConceptRequest & {
+          /** MODE C: overlay text onto this existing image (their upload or a Library image). */
+          baseImageUrl?: string
+          overlay?: { headline?: string; subline?: string; overlayStyle?: string; role?: "hook" | "value" | "cta" }
+        })
+      | null
+    if (!body) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 })
     }
 
     const format: OutputFormat =
       body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
 
-    const referenceSelfieUrl = body.referenceSelfieUrl
-    if (typeof referenceSelfieUrl !== "string" || !isAllowedReferenceUrl(referenceSelfieUrl)) {
-      // The selfie IS the identity anchor — we never text-only generate on this route.
-      return NextResponse.json(
-        { error: "A reference selfie is required to keep your likeness." },
-        { status: 400 },
-      )
+    const baseImageUrl = typeof body.baseImageUrl === "string" ? body.baseImageUrl : null
+
+    // Per mode: Mode C overlays text on a provided image; Modes A/B generate from the selfie.
+    let jobs: ImageJob[]
+    let referenceUrls: string[] = []
+    let baseImageSource: string | null = null
+
+    if (baseImageUrl) {
+      // ── MODE C: overlay-only on the user's own / Library image (no selfie, no full brief). ──
+      if (!isAllowedReferenceUrl(baseImageUrl)) {
+        return NextResponse.json({ error: "That image can't be used here." }, { status: 400 })
+      }
+      const heading = (body.overlay?.headline ?? body.brief?.graphic?.headline ?? "").trim()
+      if (!heading) {
+        return NextResponse.json({ error: "Add the text you want on the image." }, { status: 400 })
+      }
+      const overlayText = {
+        heading,
+        body: (body.overlay?.subline ?? body.brief?.graphic?.subline ?? "").trim(),
+      }
+      jobs = [
+        compileOverlayOnlyJob(
+          overlayText,
+          format,
+          body.overlay?.overlayStyle ?? body.brief?.graphic?.overlayStyle,
+          { aestheticId: body.aestheticId },
+          body.overlay?.role ?? "hook",
+        ),
+      ]
+      baseImageSource = baseImageUrl
+    } else {
+      // ── MODE A / B: generate from the selfie (identity anchor). ──
+      if (!isValidBrief(body.brief)) {
+        return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
+      }
+      const referenceSelfieUrl = body.referenceSelfieUrl
+      if (typeof referenceSelfieUrl !== "string" || !isAllowedReferenceUrl(referenceSelfieUrl)) {
+        return NextResponse.json(
+          { error: "A reference selfie is required to keep your likeness." },
+          { status: 400 },
+        )
+      }
+      // Front face first, then any optional angles. Dedup + cap at 4. The selfie is the ONLY image
+      // input; the Vault connects as text DNA, never as an attached example image.
+      referenceUrls = Array.from(
+        new Set(
+          [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
+            isAllowedReferenceUrl,
+          ),
+        ),
+      ).slice(0, 4)
+      jobs = compileConceptJobs(body.brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
     }
 
-    // Front face first, then any optional angles (side profile, full body). Dedup + cap at 4.
-    // The selfie is the ONLY image input; the Vault connects as text DNA, never as an attached
-    // example image (that would make gpt-image-2 copy the inspiration person's face).
-    const referenceUrls = Array.from(
-      new Set(
-        [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
-          isAllowedReferenceUrl,
-        ),
-      ),
-    ).slice(0, 4)
-
-    // Compile into image JOBS: photo = one pass; carousel/reel-cover/story = a clean editorial
-    // photo then a preserve-and-overlay text pass (two_pass), or text baked in one pass.
-    const jobs = compileConceptJobs(body.brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
     const size = conceptOpenAISize(format)
     // Charge once per final image (slide), regardless of how many passes produce it.
     const imageCount = jobs.length
@@ -203,7 +248,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const label = body.conceptTitle || body.brief.outfit.slice(0, 60)
+    const label = body.conceptTitle || body.brief?.outfit?.slice(0, 60) || `${format} overlay`
     const deduction = await deductCredits(neonUser.id, totalCost, "image", `app-v3 ${format}: ${label}`)
     if (!deduction.success) {
       return NextResponse.json(
@@ -225,13 +270,24 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // Prepare the selfie reference file(s) once, reused across every pass and job.
+    // Prepare the selfie reference file(s) once, reused across every pass and job (Modes A/B).
     const selfieFiles = await Promise.all(
       referenceUrls.map(async (url, i) => {
         const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
         return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
       }),
     )
+
+    // Prepare the user-provided base image once (Mode C overlay-only).
+    const baseFiles = baseImageSource
+      ? [
+          await toFile(
+            await normalizeReferenceForOpenAI(await readReferenceImage(baseImageSource)),
+            "maya-base-input.png",
+            { type: "image/png" },
+          ),
+        ]
+      : []
 
     // One edit call: prompt + image input(s) — the selfie(s), or the prior pass's clean photo.
     const runEdit = async (
@@ -271,14 +327,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Run one image JOB end to end. Passes run in order: pass 1 uses the selfie (clean photo),
-    // an optional pass 2 edits THAT photo to add the text overlay (preserve-and-overlay).
+    // Run one image JOB end to end. Each pass draws its input from its source: the selfie (Mode
+    // A/B clean photo), the user's base image (Mode C overlay), or the prior pass's output (the
+    // two-pass overlay edit).
     const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
-        const images = pass.useSelfie
-          ? selfieFiles
-          : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
+        const images =
+          pass.input === "selfie"
+            ? selfieFiles
+            : pass.input === "base"
+              ? baseFiles
+              : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
         current = await runEditWithRetry(pass.prompt, images)
       }
       if (!current) throw new Error("Job produced no image")

@@ -11,9 +11,11 @@ interface ImageLightboxProps {
   images: string[]
   startIndex?: number
   onClose: () => void
+  /** Optional: offer "Add text" on the current image (opens the overlay composer with it). */
+  onAddText?: (url: string) => void
 }
 
-export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
 
@@ -78,6 +80,15 @@ export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightbox
         >
           Download
         </a>
+        {onAddText && (
+          <button
+            type="button"
+            onClick={() => onAddText(url)}
+            className="text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+          >
+            Add text
+          </button>
+        )}
         {count > 1 && (
           <span className="text-[11px] text-white/50">
             {index + 1} / {count}

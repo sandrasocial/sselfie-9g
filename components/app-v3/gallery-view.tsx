@@ -7,11 +7,14 @@
 import { startTransition, useEffect, useState } from "react"
 import Image from "next/image"
 import { ImageLightbox } from "./image-lightbox"
+import { OverlayComposer } from "./overlay-composer"
 
 export function GalleryView() {
   const [images, setImages] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // Mode C composer: { url } starts from a Library image; { url: null } starts in upload mode.
+  const [composer, setComposer] = useState<{ url: string | null } | null>(null)
 
   useEffect(() => {
     fetch("/api/app-v3/gallery")
@@ -22,9 +25,18 @@ export function GalleryView() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8">
-      <header className="mb-6">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Gallery</p>
-        <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">Everything you've made</h1>
+      <header className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Gallery</p>
+          <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">Everything you've made</h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => startTransition(() => setComposer({ url: null }))}
+          className="shrink-0 rounded-[6px] border border-[#0D0E10] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] transition-colors hover:bg-[#0D0E10] hover:text-white"
+        >
+          Add text to a photo
+        </button>
       </header>
 
       {images === null && !error && <p className="text-[13px] text-[#818283]">Loading your gallery…</p>}
@@ -58,8 +70,20 @@ export function GalleryView() {
       )}
 
       {lightboxIndex !== null && images && (
-        <ImageLightbox images={images} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+        <ImageLightbox
+          images={images}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onAddText={(url) =>
+            startTransition(() => {
+              setLightboxIndex(null)
+              setComposer({ url })
+            })
+          }
+        />
       )}
+
+      {composer && <OverlayComposer initialImageUrl={composer.url} onClose={() => setComposer(null)} />}
     </div>
   )
 }
