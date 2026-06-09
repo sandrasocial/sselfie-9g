@@ -19,7 +19,6 @@ import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
-import { QuickPrompts } from "./quick-prompts"
 import { CreditModal } from "./credit-modal"
 import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
@@ -71,6 +70,14 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "story-slide", label: "Story slide" },
 ]
 
+// Tapping a format is the first guided step: it asks Maya (in natural words) to pull 3 directions.
+const FORMAT_PHRASE: Record<OutputFormat, string> = {
+  photo: "Let's create photos.",
+  "reel-cover": "Let's make a Reel cover.",
+  carousel: "Let's make a carousel.",
+  "story-slide": "Let's make a Story slide.",
+}
+
 type UploadSlot = "face" | "side" | "body" | "inspiration"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming). */
@@ -91,6 +98,7 @@ export function MayaConcierge() {
   const bodyInput = useRef<HTMLInputElement>(null)
   const inspoInput = useRef<HTMLInputElement>(null)
   const threadEndRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLInputElement>(null)
 
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -303,13 +311,19 @@ export function MayaConcierge() {
   }
 
   const hasStarted = messages.length > 0
-  const starterPrompts = [
-    "Founder photos for my launch",
-    `${aesthetic.name} headshots`,
-    "A cozy at-home brand shoot",
-    "Photos for my next reel",
-  ]
   const agentLabel = memory?.agentName?.trim() || "Maya"
+
+  // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
+  function handlePickFormat(id: OutputFormat) {
+    if (isThinking || id === outputFormat) return
+    setOutputFormat(id)
+    extrasRef.current = { ...extrasRef.current, format: id }
+    sendMessage({ text: FORMAT_PHRASE[id] })
+  }
+
+  function focusComposer() {
+    composerRef.current?.focus()
+  }
   const userAvatar = memory?.userAvatarUrl ?? null
   const showNaming = memory !== null && !memory.agentName && !namingDismissed && !hasStarted
 
@@ -395,8 +409,9 @@ export function MayaConcierge() {
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setOutputFormat(opt.id)}
-                  className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                  onClick={() => handlePickFormat(opt.id)}
+                  disabled={isThinking}
+                  className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors disabled:opacity-50 ${
                     selected
                       ? "border-[#0D0E10] bg-[#0D0E10] text-white"
                       : "border-[#C5C6C8]/60 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
@@ -499,7 +514,7 @@ export function MayaConcierge() {
               <p>{aesthetic.name}. Gorgeous choice. ✨</p>
               <p className="mt-2">{aesthetic.blurb}</p>
               <p className="mt-2">
-                Tell me what you're making and who it's for, and I'll give you three directions to pick from.
+                What are we making? Pick one above and I'll pull three directions for you.
               </p>
               {!referenceSelfieUrl && (
                 <p className="mt-3 text-[14px] text-[#4F5052]">
@@ -560,14 +575,6 @@ export function MayaConcierge() {
             </div>
           )}
 
-          {/* Starter chips: one-tap ways to begin, only before the conversation starts */}
-          {!hasStarted && (
-            <QuickPrompts
-              prompts={starterPrompts}
-              onSelect={(p) => sendMessage({ text: p })}
-              disabled={isThinking}
-            />
-          )}
 
           {messages.map((m: any) => {
             const isUser = m.role === "user"
@@ -604,6 +611,7 @@ export function MayaConcierge() {
 
                 {conceptPart && conceptPart.length > 0 && (
                   <div className="space-y-3">
+                    <p className="text-[12px] text-[#818283]">Tap the one that feels most like you. 🤍</p>
                     {conceptPart.map((concept) => {
                       const key = `${m.id}:${concept.id}`
                       return (
@@ -614,6 +622,7 @@ export function MayaConcierge() {
                           format={format}
                           onGenerate={() => void generateConcept(key, concept)}
                           onOpen={(urls) => setLightbox(urls)}
+                          onTweak={focusComposer}
                           disabled={!referenceSelfieUrl}
                         />
                       )
@@ -635,10 +644,12 @@ export function MayaConcierge() {
           <div ref={threadEndRef} />
         </div>
 
-        {/* Composer */}
+        {/* Composer — secondary: refinement only, the happy path is the taps above */}
         <div className="border-t border-[#C5C6C8]/40 px-6 py-4">
+          <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#818283]">Refine with Maya</p>
           <div className="flex gap-2">
             <input
+              ref={composerRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -648,9 +659,7 @@ export function MayaConcierge() {
                   handleSend()
                 }
               }}
-              placeholder={
-                hasStarted ? "Tweak it, or ask for something new…" : "e.g. founder photos for my coaching launch"
-              }
+              placeholder="Want something different? Ask Maya. e.g. darker, closer, more founder energy…"
               className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
             <button

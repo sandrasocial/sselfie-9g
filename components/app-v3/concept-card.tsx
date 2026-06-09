@@ -1,10 +1,10 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Concept Card (03, restyled 05A, multi-image 05D).
-// One of the 3 concept directions Maya proposes inline. Holds its own Generate button, a
-// spinner while the synchronous OpenAI call runs, and the finished result. Carousels return
-// multiple slide images: the card shows the cover with a slide count, and tapping opens the
-// swipeable lightbox. The preview frame matches the output format (square / vertical / 4:5).
+// SSELFIE Studio 3.0 — Concept Card (03, restyled 05A, multi-image 05D, guided 05F).
+// One of the 3 directions Maya pulls. Maya-guided + tap-first: BEFORE generating it is a clean
+// text card (title + one line + "Generate this") — no empty image frame that looks broken.
+// While generating, a framed spinner. When done, the result (tap to open) with a confident
+// success state: Use/Download primary, Regenerate secondary, "Ask Maya to tweak" tiny.
 
 import Image from "next/image"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
@@ -26,6 +26,8 @@ interface ConceptCardProps {
   onGenerate: () => void
   /** Open the finished image(s) fullscreen (carousels pass all slides). */
   onOpen?: (imageUrls: string[]) => void
+  /** Move focus to the composer so the user can ask Maya for a change. */
+  onTweak?: () => void
   disabled?: boolean
 }
 
@@ -36,56 +38,53 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   carousel: "aspect-square",
 }
 
-export function ConceptCard({ concept, gen, format, onGenerate, onOpen, disabled }: ConceptCardProps) {
+export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onTweak, disabled }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
   const images = gen.imageUrls ?? []
   const isDone = gen.status === "done" && images.length > 0
+  const isCarousel = images.length > 1
 
   return (
     <div className="overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white">
-      {/* Visual area: result (tap to open), spinner, or empty */}
-      <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
-        {isDone ? (
-          <button
-            type="button"
-            onClick={() => onOpen?.(images)}
-            className="group absolute inset-0 cursor-zoom-in"
-            aria-label="View full size"
-          >
-            <Image
-              src={images[0]}
-              alt={concept.title}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-              sizes="(max-width:480px) 90vw, 360px"
-            />
-            {images.length > 1 && (
-              <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
-                {images.length} slides
+      {/* Visual area ONLY exists once we're generating or done — never an empty placeholder box. */}
+      {(isGenerating || isDone) && (
+        <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
+          {isDone ? (
+            <button
+              type="button"
+              onClick={() => onOpen?.(images)}
+              className="group absolute inset-0 cursor-zoom-in"
+              aria-label="View full size"
+            >
+              <Image
+                src={images[0]}
+                alt={concept.title}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                sizes="(max-width:480px) 90vw, 360px"
+              />
+              {isCarousel && (
+                <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
+                  {images.length} slides
+                </span>
+              )}
+              <span className="absolute bottom-2 right-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {isCarousel ? "Swipe" : "View"}
               </span>
-            )}
-            <span className="absolute bottom-2 right-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {images.length > 1 ? "Swipe" : "View"}
-            </span>
-          </button>
-        ) : isGenerating ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <Spinner className="h-7 w-7" />
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#818283]">Creating…</p>
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="px-6 text-center text-[12px] uppercase tracking-[0.22em] text-[#A6A7A8]">
-              {concept.title}
-            </p>
-          </div>
-        )}
-      </div>
+            </button>
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <Spinner className="h-7 w-7" />
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#818283]">Creating…</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Copy + action */}
       <div className="space-y-3 p-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Concept</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Direction</p>
           <h4 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>
@@ -99,16 +98,46 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, disabled
         )}
 
         {isDone ? (
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Saved to gallery</p>
-            <button
-              type="button"
-              onClick={onGenerate}
-              disabled={disabled}
-              className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline disabled:opacity-40"
-            >
-              Regenerate
-            </button>
+          <div className="space-y-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">Saved to your gallery</p>
+            <div className="flex items-center gap-3">
+              {isCarousel ? (
+                <button
+                  type="button"
+                  onClick={() => onOpen?.(images)}
+                  className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
+                >
+                  View all slides
+                </button>
+              ) : (
+                <a
+                  href={images[0]}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
+                >
+                  Use this photo
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={disabled}
+                className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
+              >
+                Regenerate
+              </button>
+            </div>
+            {onTweak && (
+              <button
+                type="button"
+                onClick={onTweak}
+                className="text-[11px] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
+              >
+                Ask Maya to tweak it
+              </button>
+            )}
           </div>
         ) : (
           <button
