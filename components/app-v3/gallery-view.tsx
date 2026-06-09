@@ -4,7 +4,7 @@
 // "Where did my photo go?" — every image she's made, newest first. Tap to open fullscreen.
 // Reuses the existing ai_images data so her past SSELFIE shoots show up here too.
 
-import { useEffect, useState } from "react"
+import { startTransition, useEffect, useState } from "react"
 import Image from "next/image"
 import { ImageLightbox } from "./image-lightbox"
 
@@ -42,7 +42,7 @@ export function GalleryView() {
             <button
               key={url}
               type="button"
-              onClick={() => setLightboxIndex(i)}
+              onClick={() => startTransition(() => setLightboxIndex(i))}
               className="group relative aspect-[4/5] overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]"
             >
               <Image
