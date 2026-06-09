@@ -15,6 +15,7 @@ import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/o
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { listChats } from "@/lib/app-v3/maya/chat-store"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
@@ -152,13 +153,24 @@ export async function POST(req: Request) {
     const format: OutputFormat =
       body?.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
 
-    // Cross-session memory: load what Maya already knows about this user (best-effort).
+    // Cross-session memory + recent activity: what Maya already knows + what she's been making.
+    // Both feed her confidence so she asks only when she genuinely doesn't know (best-effort).
     let memory = null
+    let recentActivity: string[] = []
     try {
       const neonUserId = await getUserIdFromSupabase(user.id)
-      if (neonUserId) memory = await getMemory(String(neonUserId))
+      if (neonUserId) {
+        memory = await getMemory(String(neonUserId))
+        const chats = await listChats(String(neonUserId))
+        recentActivity = chats
+          .map((c) => c.title)
+          .filter((t): t is string => !!t && t.trim().length > 0)
+          // Drop the generic format-phrase titles ("Let's create photos") so only real signal remains.
+          .filter((t) => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
+          .slice(0, 6)
+      }
     } catch (e) {
-      console.error("[app-v3 maya chat] memory load skipped:", e)
+      console.error("[app-v3 maya chat] memory/activity load skipped:", e)
     }
 
     const system = getAppV3MayaSystemPrompt({
@@ -169,6 +181,7 @@ export async function POST(req: Request) {
       format,
       brandKit: body?.brandKit ?? null,
       memory,
+      recentActivity,
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
