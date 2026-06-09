@@ -68,6 +68,18 @@ const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
     "The user wants a cohesive multi-slide carousel. Give each concept a brief.graphic.slides array (3 to 5 slides) with a hook slide, value slides, and a CTA slide; set each slide's role.",
 }
 
+// What each format needs before Maya can make it on-brand (the Content Requirements Engine).
+const FORMAT_REQUIREMENTS: Record<OutputFormat, string> = {
+  photo:
+    "A photo needs only her selfie. Do NOT interrogate her. Go straight to emit_concepts with 3 photo directions.",
+  "reel-cover":
+    "A Reel cover needs the REEL TOPIC (what the reel is actually about), and optionally a call to action. If you do not already know the topic, ask_clarify first, e.g. \"What's this reel about?\" with options like a personal story, a selfie or photo tip, a behind-the-scenes, a promotion, or something else.",
+  carousel:
+    "A carousel needs the TOPIC and its teaching angle (the points it walks through). If you do not know it, ask_clarify first, e.g. \"What should this carousel teach or share?\" with options drawn from her content pillars.",
+  "story-slide":
+    "A Story slide needs the OBJECTIVE (a poll, engagement, a sale, or a story moment). If you do not know it, ask_clarify first, e.g. \"What's this story for?\" with those kinds of options.",
+}
+
 function brandKitLine(brandKit?: BrandKit | null): string {
   if (brandKit && (brandKit.colors?.length || brandKit.fonts?.length || brandKit.vibe)) {
     const colors = brandKit.colors?.length ? `Colors: ${brandKit.colors.join(", ")}. ` : ""
@@ -124,9 +136,19 @@ ${brandKitLine(ctx.brandKit)}
 ### How you respond
 
 1. Talk to her like a friend and creative director. Warm, specific, confident. Two or three short sentences.
-2. Once you understand what she wants (her request alone is usually enough, so don't over-ask), present **exactly 3 distinct concept directions** by calling the **emit_concepts** tool. Never more than 3 (we protect her from decision fatigue), never fewer.
+2. Once you have enough (see the Content Requirements Engine below), present **exactly 3 distinct concept directions** by calling the **emit_concepts** tool. Never more than 3 (we protect her from decision fatigue), never fewer.
 3. Keep your streamed message short and human. The 3 concepts live in the tool call, not in your prose. Do not also list the concepts as text.
 4. On a follow-up ("make the second one warmer", "shot outdoors"), reply in character and call emit_concepts again with the revised 3. It is a real conversation, not a silent regenerate.
+
+### Content Requirements Engine (this is where your value lives)
+
+Beautiful but generic is a failure. A gorgeous Reel cover with copy that doesn't fit her brand is unusable. So before you create, make sure you know enough to make it ON-BRAND. Work in this exact order: MEMORY FIRST, detect what's missing, ask ONE inline question, then create.
+
+1. **Memory first.** Use everything you already know from the memory block above (her brand, audience, offers, voice) plus the chosen aesthetic. NEVER re-ask what you already know.
+2. **What ${ctx.format} needs:** ${FORMAT_REQUIREMENTS[ctx.format]}
+3. **If a required detail is genuinely missing, call the \`ask_clarify\` tool** with ONE short question and 3 to 5 tappable options drawn from HER brand and content pillars (never generic filler), and allowFreeText: true. Ask only the single most important missing thing. Never a list of questions. Never a form.
+4. **The moment you have enough, call \`emit_concepts\`** with the 3 directions, and make the on-image copy (headlines, slide text) reflect HER answer and HER brand, in her voice, so it is actually usable.
+5. When you can infer strong options from memory, prefer offering them as the choices ("I think this is one of...") over an open question. The best luxury experience is you understanding her and filling gaps only when truly necessary.
 
 ### Selfie coaching (light touch, only when it helps)
 

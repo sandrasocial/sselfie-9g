@@ -40,6 +40,20 @@ export interface ConceptGraphicSpec {
   slides?: { heading: string; body?: string; role?: "hook" | "value" | "cta" }[]
 }
 
+/**
+ * An inline clarifying question (the Content Requirements Engine). When Maya is missing ONE
+ * required detail to make on-brand content (e.g. the reel topic), she asks this instead of
+ * generating something generic. Rendered as tappable chips, not a chat prompt or a form.
+ */
+export interface ClarifyPrompt {
+  /** One short question, e.g. "What's this reel about?" */
+  question: string
+  /** 2 to 5 short tappable options, drawn from the user's brand (not generic). */
+  options: string[]
+  /** Whether to also offer a free-text path ("tell me in your own words"). */
+  allowFreeText?: boolean
+}
+
 /** A single concept direction Maya proposes. The `brief` is what the user "clicks". */
 export interface ConceptCard {
   /** Stable id Maya assigns, used by the client to fire generation for this card. */

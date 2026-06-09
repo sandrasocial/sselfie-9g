@@ -16,6 +16,7 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
+import { ClarifyCard } from "./clarify-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
@@ -23,7 +24,7 @@ import { CreditModal } from "./credit-modal"
 import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
-import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 
 /** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
@@ -89,6 +90,17 @@ function extractConcepts(part: any): ConceptCardData[] | null {
   return payload.filter(
     (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string",
   )
+}
+
+/** Pull an inline question out of an ask_clarify tool part. */
+function extractClarify(part: any): ClarifyPrompt | null {
+  if (!part || typeof part !== "object") return null
+  if (part.type !== "tool-ask_clarify" && part.type !== "dynamic-tool") return null
+  const payload = part.output ?? part.input
+  if (!payload || typeof payload.question !== "string" || !Array.isArray(payload.options)) return null
+  const options = payload.options.filter((o: any) => typeof o === "string" && o.trim().length > 0)
+  if (options.length === 0) return null
+  return { question: payload.question, options, allowFreeText: Boolean(payload.allowFreeText) }
 }
 
 export function MayaConcierge() {
@@ -586,6 +598,7 @@ export function MayaConcierge() {
             const conceptPart = parts.map(extractConcepts).find(Boolean) as
               | ConceptCardData[]
               | undefined
+            const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
 
             return (
               <div
@@ -608,6 +621,15 @@ export function MayaConcierge() {
                       </div>
                     </div>
                   ))}
+
+                {clarifyPart && (
+                  <ClarifyCard
+                    clarify={clarifyPart}
+                    onPick={(answer) => sendMessage({ text: answer })}
+                    onFreeText={focusComposer}
+                    disabled={isThinking}
+                  />
+                )}
 
                 {conceptPart && conceptPart.length > 0 && (
                   <div className="space-y-3">

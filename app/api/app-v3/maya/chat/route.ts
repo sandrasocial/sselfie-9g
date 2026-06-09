@@ -68,6 +68,22 @@ const emitConcepts = tool({
   execute: async ({ concepts }) => ({ concepts }),
 })
 
+const askClarify = tool({
+  description:
+    "Ask ONE inline clarifying question when you are missing a required detail to make on-brand " +
+    "content (e.g. the reel topic, the carousel teaching angle, the story objective). Use this " +
+    "INSTEAD of generating something generic. Offer 3 to 5 short tappable options drawn from what " +
+    "you know about HER brand (never generic), and set allowFreeText so she can answer in her own " +
+    "words. Ask only the single most important missing thing, never a list, never for a plain photo. " +
+    "After she answers, call emit_concepts.",
+  inputSchema: z.object({
+    question: z.string().describe("One short question, e.g. 'What's this reel about?'"),
+    options: z.array(z.string()).min(2).max(5).describe("Short tappable options drawn from her brand."),
+    allowFreeText: z.boolean().optional(),
+  }),
+  execute: async (input) => input,
+})
+
 interface ChatBody {
   messages?: UIMessage[]
   aestheticName?: string
@@ -164,7 +180,7 @@ export async function POST(req: Request) {
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: { emit_concepts: emitConcepts },
+      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify },
       temperature: 0.8,
       maxOutputTokens: getMayaMaxTokensForTask("chat_pro"),
     })
