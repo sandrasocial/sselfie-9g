@@ -235,9 +235,12 @@ export function MayaConcierge() {
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
     if (lastPulledFormatRef.current === fmt) return
+    const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
     extrasRef.current = { ...extrasRef.current, format: fmt }
-    sendMessage({ text: FORMAT_PHRASE[fmt] })
+    // First pull may carry a seeded idea (a Content recommendation); after that, plain format.
+    const text = isFirstPull && session.seedPrompt ? session.seedPrompt : FORMAT_PHRASE[fmt]
+    sendMessage({ text })
   }, [isOpen, session, isThinking, sendMessage])
 
   if (!isOpen || !session) return null

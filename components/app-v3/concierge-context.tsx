@@ -10,6 +10,7 @@ import type {
   ConciergeContextValue,
   ConciergeSession,
   GraphicTextSpec,
+  OpenConciergeOptions,
   OutputFormat,
 } from "./types"
 
@@ -19,12 +20,13 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
-  const openWithAesthetic = useCallback((aesthetic: Aesthetic) => {
+  const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
     setSession({
       aesthetic,
-      outputFormat: null,
+      outputFormat: opts?.format ?? null,
       referenceSelfieUrl: null,
       graphicText: null,
+      seedPrompt: opts?.seed ?? null,
       startedAt: Date.now(),
     })
     setIsOpen(true)

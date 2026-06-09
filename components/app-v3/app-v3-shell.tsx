@@ -12,6 +12,7 @@ import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
 import { GalleryView } from "./gallery-view"
+import { ContentView } from "./content-view"
 import type { Aesthetic, OutputFormat } from "./types"
 
 export interface AppV3ShellProps {
@@ -38,43 +39,11 @@ const MAYA_GENERAL: Aesthetic = {
   intent: "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
 }
 
-const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
-  { format: "photo", label: "A photo", line: "An editorial brand shot." },
-  { format: "reel-cover", label: "A Reel cover", line: "A scroll-stopping cover with your words." },
-  { format: "carousel", label: "A carousel", line: "A few cohesive slides that teach or tell." },
-  { format: "story-slide", label: "A Story slide", line: "A vertical slide for polls, sales, or moments." },
-]
-
-function ContentView({ onCreate, onBrowse }: { onCreate: (f: OutputFormat) => void; onBrowse: () => void }) {
-  return (
-    <div className="mx-auto max-w-3xl px-5 py-8">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Content</p>
-      <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">What should you post?</h1>
-      <p className="mt-2 text-[15px] text-[#4F5052]">Pick what you want to make and Maya takes it from there.</p>
-
-      <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {CONTENT_TYPES.map((c) => (
-          <button
-            key={c.format}
-            type="button"
-            onClick={() => onCreate(c.format)}
-            className="rounded-[8px] border border-[#C5C6C8]/60 bg-white px-4 py-4 text-left transition-colors hover:border-[#0D0E10]/40"
-          >
-            <span className="block font-serif text-[19px] font-light text-[#0D0E10]">{c.label}</span>
-            <span className="mt-0.5 block text-[13px] text-[#818283]">{c.line}</span>
-          </button>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        onClick={onBrowse}
-        className="mt-4 text-[12px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-      >
-        Or reuse a photo from your library
-      </button>
-    </div>
-  )
+const FORMAT_LABEL: Record<OutputFormat, string> = {
+  photo: "photo",
+  "reel-cover": "Reel cover",
+  carousel: "carousel",
+  "story-slide": "Story slide",
 }
 
 function AccountView({ firstName, onManageBrand }: { firstName?: string | null; onManageBrand: () => void }) {
@@ -109,19 +78,33 @@ function AccountView({ firstName, onManageBrand }: { firstName?: string | null; 
 
 function ShellInner({ firstName }: AppV3ShellProps) {
   const [section, setSection] = useState<Section>("create")
-  const { openWithAesthetic, setOutputFormat } = useConcierge()
+  const { openWithAesthetic } = useConcierge()
 
-  // Maya woven in: start a general session, then preselect the format so she begins on it.
+  // Maya woven in: open a general session preset to a format, so she begins on it.
   function createFormat(format: OutputFormat) {
-    openWithAesthetic(MAYA_GENERAL)
-    setOutputFormat(format)
+    openWithAesthetic(MAYA_GENERAL, { format })
+  }
+
+  // From a Content recommendation: open Maya seeded with that exact idea.
+  function createIdea(format: OutputFormat, title: string) {
+    openWithAesthetic(MAYA_GENERAL, {
+      format,
+      seed: `Let's create a ${FORMAT_LABEL[format]} about: ${title}.`,
+    })
   }
 
   return (
     <main className="min-h-screen bg-[#F8FAFA] pb-20 text-[#0D0E10]">
       {section === "create" && <VisualFrontDoor />}
       {section === "library" && <GalleryView />}
-      {section === "content" && <ContentView onCreate={createFormat} onBrowse={() => setSection("library")} />}
+      {section === "content" && (
+        <ContentView
+          firstName={firstName}
+          onCreateIdea={createIdea}
+          onCreate={createFormat}
+          onBrowse={() => setSection("library")}
+        />
+      )}
       {section === "account" && (
         <AccountView firstName={firstName} onManageBrand={() => openWithAesthetic(MAYA_GENERAL)} />
       )}
