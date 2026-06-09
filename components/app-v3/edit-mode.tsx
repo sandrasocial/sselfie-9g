@@ -81,7 +81,7 @@ export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps)
         {/* Image */}
         <div className="relative flex min-h-0 flex-1 items-center justify-center p-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={current} alt="Editing" className="max-h-full max-w-full rounded-[6px] object-contain" />
+          <img src={current} alt="Editing" decoding="async" className="max-h-full max-w-full rounded-[6px] object-contain" />
           {busy && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0D0E10]/40">
               <Spinner className="h-8 w-8 border-white/40 border-t-white" />

@@ -113,6 +113,7 @@ export function OverlayComposer({
               <img
                 src={result || imageUrl || ""}
                 alt={result ? "Your image with text" : "Your photo"}
+                decoding="async"
                 className="max-h-[46vh] w-auto rounded-[6px] object-contain"
               />
             ) : (

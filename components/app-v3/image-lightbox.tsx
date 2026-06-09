@@ -67,6 +67,7 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
       <img
         src={url}
         alt={`Result ${index + 1}`}
+        decoding="async"
         className="mx-auto max-h-[80vh] w-auto max-w-3xl rounded-[6px] object-contain"
       />
 
