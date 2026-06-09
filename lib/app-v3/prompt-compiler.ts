@@ -51,6 +51,24 @@ function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
 }
 
+// The Vault is the quality benchmark for every output.
+const VAULT_BENCHMARK =
+  "Deliver at professional editorial brand-shoot quality, the SSELFIE Vault standard: intentional " +
+  "composition, refined natural retouching, true-to-life skin, magazine-grade finish. Never a flat or obvious AI render."
+
+// Distinct per-slide compositions so a carousel reads like a real shoot (same look, varied shots),
+// not the same frame with different text. Cohesion comes from outfit + palette + aesthetic recipe.
+const COVER_COMPOSITION =
+  "COVER slide: a striking full-frame hero portrait of her, confident presence, strong gaze. Set the headline large and bold with generous safe margins."
+const VALUE_COMPOSITIONS = [
+  "she stands off to one side in a wider three-quarter shot, leaving clean negative space on the opposite side where the text sits",
+  "a candid mid-moment, medium crop, eyes off-camera, with the text in a calm band across the top third",
+  "a quieter seated or leaning moment at a softer angle, with the text resting in the lower third",
+  "a profile or over-the-shoulder angle, she is smaller in the frame, the text dominant in the open space",
+]
+const CTA_COMPOSITION =
+  "CLOSING slide: a calm, resolved composition, she sits a touch smaller in frame, with the call-to-action centered, clear, and inviting."
+
 // ─── MAYA-REBUILD-03: concept compiler (Nano Banana order) ──────────────────────
 // Stage 2 of the two-stage pipeline. Takes the LLM-authored CreativeBrief and lays its
 // ingredients down in the order gpt-image responds to best (it is instruction-following
@@ -148,6 +166,7 @@ export function compileConceptPrompt(
     layers.push(ELEVATION) // best, most confident version of her — not a tired selfie
     // Authoritative look from the Vault thumbnail DNA — locks the grade so it isn't guessed.
     if (recipe) layers.push(recipeToPromptBlock(recipe))
+    layers.push(VAULT_BENCHMARK)
     layers.push(
       "Fill the frame edge to edge with the final photo — no white border, mat, mockup, phone screen, or app UI.",
     )
@@ -157,6 +176,7 @@ export function compileConceptPrompt(
     if (recipe && format !== "carousel") {
       layers.push(`The photo of the person uses this grade — ${recipeToPromptBlock(recipe)}`)
     }
+    layers.push(VAULT_BENCHMARK)
   }
 
   return layers.filter(Boolean).join("\n")
@@ -190,24 +210,42 @@ export function compileConceptPrompts(
       ? `Use the brand kit — colors: ${(bk.colors ?? []).join(", ") || "as provided"}; type: ${(bk.fonts ?? []).join(", ") || "elegant serif headline, clean sans body"}.`
       : `Use the Quiet Luxury palette so it reads high-end: ${QUIET_LUXURY_FALLBACK.colors.join(", ")}; ${QUIET_LUXURY_FALLBACK.fonts.join(" and ")}; ${QUIET_LUXURY_FALLBACK.vibe}.`
 
+  let valueCount = 0
   return safe.map((slide, i) => {
+    // Distinct role + composition per slide so they aren't the same frame with new text.
+    const role = slide.role ?? (i === 0 ? "hook" : i === total - 1 ? "cta" : "value")
+    let composition: string
+    if (role === "hook") composition = COVER_COMPOSITION
+    else if (role === "cta") composition = CTA_COMPOSITION
+    else composition = VALUE_COMPOSITIONS[valueCount++ % VALUE_COMPOSITIONS.length]
+
     const layers: string[] = [
       IDENTITY_ANCHOR,
       clean(brief.outfit),
-      [clean(brief.setting), clean(brief.mood), clean(brief.pose)].filter(Boolean).join(". ") + ".",
+      // Same styling world for cohesion; the COMPOSITION below is what varies per slide.
+      [clean(brief.setting), clean(brief.mood)].filter(Boolean).join(". ") + ".",
       `Shot on ${camera}.`,
       `Lighting: ${lighting}.`,
       ELEVATION,
     ]
     if (recipe) layers.push(recipeToPromptBlock(recipe))
     layers.push(
-      `This is slide ${i + 1} of ${total} in one cohesive Instagram carousel. Keep the SAME palette, type treatment, and overall look across every slide so they read as one set. ` +
-        `${palette} Render this text crisply and perfectly legible, spelled exactly as given, with generous safe-zone margins so nothing is cropped: ` +
+      `Slide ${i + 1} of ${total} in ONE cohesive Instagram carousel. ${composition} ` +
+        `This slide's framing, pose, and crop MUST be visibly different from the other slides; do NOT repeat the same shot. ` +
+        `Keep the SAME outfit, palette, type treatment, and ${aestheticLabel(opts)} look across all ${total} slides so they read as one set. ` +
+        `${palette} Render this text crisply and perfectly legible, spelled exactly as given, with generous text-safe margins so nothing is cropped: ` +
         `heading "${clean(slide.heading)}"${slide.body ? `, body "${clean(slide.body)}"` : ""}. ` +
         "No emojis, no clip-art, no gradients, no clutter.",
     )
+    layers.push(VAULT_BENCHMARK)
     return layers.filter(Boolean).join("\n")
   })
+}
+
+/** The aesthetic label for cohesion wording (recipe name if known, else a neutral word). */
+function aestheticLabel(opts?: CompileConceptOptions): string {
+  const recipe = getAestheticRecipe(opts?.aestheticId)
+  return recipe ? recipe.name : "editorial"
 }
 
 /** Vertical for photos/covers/stories, square for carousels (keeps text safe from cropping). */
