@@ -22,6 +22,7 @@ import { QuickPrompts } from "./quick-prompts"
 import { CreditModal } from "./credit-modal"
 import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
+import { MemoryModal, type Memory } from "./memory-modal"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 
@@ -86,6 +87,25 @@ export function MayaConcierge() {
   })
   // Past-selfie picker.
   const [libraryOpen, setLibraryOpen] = useState(false)
+  // Cross-session memory (Phase E): what Maya already knows + the name she was given.
+  const [memory, setMemory] = useState<Memory | null>(null)
+  const [memoryOpen, setMemoryOpen] = useState(false)
+  const [nameDraft, setNameDraft] = useState("")
+  const [namingDismissed, setNamingDismissed] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    fetch("/api/app-v3/maya/memory")
+      .then((r) => r.json())
+      .then((d) =>
+        setMemory({
+          agentName: d?.agentName ?? null,
+          brandNotes: d?.brandNotes ?? null,
+          preferences: d?.preferences ?? null,
+        }),
+      )
+      .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null }))
+  }, [isOpen])
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
@@ -268,6 +288,32 @@ export function MayaConcierge() {
     "A cozy at-home brand shoot",
     "Photos for my next reel",
   ]
+  const agentLabel = memory?.agentName?.trim() || "Maya"
+  const showNaming = memory !== null && !memory.agentName && !namingDismissed && !hasStarted
+
+  async function saveName() {
+    const n = nameDraft.trim()
+    if (!n) return
+    setNamingDismissed(true)
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentName: n }),
+      })
+      const d = (await res.json().catch(() => null)) as Memory | null
+      if (res.ok && d) {
+        setMemory({
+          agentName: d.agentName ?? n,
+          brandNotes: d.brandNotes ?? null,
+          preferences: d.preferences ?? null,
+        })
+      }
+    } catch {
+      /* ignore; she can name later from Memory */
+    }
+    setNameDraft("")
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -279,13 +325,13 @@ export function MayaConcierge() {
       />
       <aside
         role="dialog"
-        aria-label={`Maya, ${aesthetic.name}`}
+        aria-label={`${agentLabel}, ${aesthetic.name}`}
         className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl"
       >
         {/* Header */}
         <header className="flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Maya</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
             <h2 className="mt-2 font-serif text-[26px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
@@ -305,6 +351,13 @@ export function MayaConcierge() {
               className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               History
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemoryOpen(true)}
+              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+            >
+              Memory
             </button>
           </div>
         </header>
@@ -431,6 +484,45 @@ export function MayaConcierge() {
             )}
           </div>
 
+          {/* First-run: name your agent (the ownership moment). Skippable. */}
+          {showNaming && (
+            <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+              <p className="text-[14px] leading-relaxed text-[#282728]">
+                One quick thing: what would you like to call me? It makes this ours. 🤍
+              </p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      void saveName()
+                    }
+                  }}
+                  placeholder="e.g. Aria"
+                  className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveName()}
+                  disabled={nameDraft.trim().length === 0}
+                  className="rounded-[4px] bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                >
+                  Save
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNamingDismissed(true)}
+                className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
+              >
+                Maybe later
+              </button>
+            </div>
+          )}
+
           {/* Starter chips: one-tap ways to begin, only before the conversation starts */}
           {!hasStarted && (
             <QuickPrompts
@@ -554,6 +646,8 @@ export function MayaConcierge() {
         onClose={() => setHistoryOpen(false)}
         onSelect={(id) => void handleSelectChat(id)}
       />
+
+      <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} onSaved={(m) => setMemory(m)} />
     </div>
   )
 }

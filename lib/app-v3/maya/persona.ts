@@ -21,6 +21,40 @@ export interface AppV3SystemPromptContext {
   aestheticIntent: string
   format: OutputFormat
   brandKit?: BrandKit | null
+  /** Cross-session memory: the name she gave you + what you already know about her brand. */
+  memory?: { agentName?: string | null; brandNotes?: string | null; preferences?: string | null } | null
+}
+
+/**
+ * Render the memory block injected into every session. This is what makes Maya feel like she
+ * "already knows your brand". Returns empty when there's nothing remembered yet.
+ */
+function memoryBlock(memory?: AppV3SystemPromptContext["memory"]): string {
+  if (!memory) return ""
+  const lines: string[] = []
+  if (memory.agentName?.trim()) {
+    lines.push(
+      `The user named you "${memory.agentName.trim()}". Answer warmly to that name. It is the relationship you two share, and it is why she keeps coming back.`,
+    )
+  }
+  if (memory.brandNotes?.trim()) {
+    lines.push(
+      `What you already know about her brand (do not re-ask what you already know): ${memory.brandNotes.trim()}`,
+    )
+  }
+  if (memory.preferences?.trim()) {
+    lines.push(`Her style preferences and the things she avoids (respect these in every concept): ${memory.preferences.trim()}`)
+  }
+  if (lines.length === 0) return ""
+  return [
+    "---",
+    "",
+    "## WHAT YOU ALREADY KNOW ABOUT HER (memory)",
+    "",
+    ...lines,
+    "",
+    'If she corrects you ("that is not me", "I never wear that"), treat it as a lasting note about her brand, not a one-off.',
+  ].join("\n")
 }
 
 const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
@@ -141,7 +175,10 @@ export function getAppV3MayaSystemPrompt(ctx: AppV3SystemPromptContext): string 
     MAYA_VOICE,
     MAYA_CORE_INTELLIGENCE,
     MAYA_PROMPT_PHILOSOPHY,
+    memoryBlock(ctx.memory),
     appV3OutputContract(ctx),
-  ].join("\n\n")
+  ]
+    .filter(Boolean)
+    .join("\n\n")
   return stripEmDashes(assembled)
 }

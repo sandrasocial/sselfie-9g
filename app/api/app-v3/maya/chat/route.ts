@@ -13,6 +13,8 @@ import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
+import { getUserIdFromSupabase } from "@/lib/user-mapping"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
@@ -134,6 +136,15 @@ export async function POST(req: Request) {
     const format: OutputFormat =
       body?.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
 
+    // Cross-session memory: load what Maya already knows about this user (best-effort).
+    let memory = null
+    try {
+      const neonUserId = await getUserIdFromSupabase(user.id)
+      if (neonUserId) memory = await getMemory(String(neonUserId))
+    } catch (e) {
+      console.error("[app-v3 maya chat] memory load skipped:", e)
+    }
+
     const system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
@@ -141,6 +152,7 @@ export async function POST(req: Request) {
         "An editorial brand-shoot look: cohesive styling, refined light, brand-shoot quality.",
       format,
       brandKit: body?.brandKit ?? null,
+      memory,
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
