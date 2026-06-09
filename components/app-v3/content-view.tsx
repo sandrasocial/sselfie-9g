@@ -15,6 +15,10 @@ interface Recommendation {
   title: string
   rationale: string
   format: OutputFormat
+  /** Best-matching Library image chosen server-side (null = use the Vault fallback). */
+  imageUrl?: string | null
+  /** Short "why this image" from Maya. */
+  imageReason?: string | null
 }
 
 const FORMAT_LABEL: Record<OutputFormat, string> = {
@@ -44,7 +48,6 @@ interface ContentViewProps {
 export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: ContentViewProps) {
   const [greeting, setGreeting] = useState<string | null>(null)
   const [recs, setRecs] = useState<Recommendation[] | null>(null)
-  const [library, setLibrary] = useState<string[]>([])
 
   useEffect(() => {
     fetch("/api/app-v3/maya/recommendations")
@@ -57,15 +60,11 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
         setGreeting("")
         setRecs([])
       })
-    fetch("/api/app-v3/gallery")
-      .then((r) => r.json())
-      .then((d) => setLibrary(Array.isArray(d?.images) ? d.images : []))
-      .catch(() => setLibrary([]))
   }, [])
 
-  // Her own photo first; the editorial Vault image as the aspirational fallback.
-  function heroFor(index: number): string | null {
-    if (library.length > 0) return library[index % library.length]
+  // Maya's contextually matched Library image; the editorial Vault image as the fallback.
+  function heroFor(rec: Recommendation, index: number): string | null {
+    if (rec.imageUrl) return rec.imageUrl
     if (MOOD_IMAGES.length > 0) return MOOD_IMAGES[index % MOOD_IMAGES.length]
     return null
   }
@@ -105,7 +104,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
           <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Maya recommends today</p>
           <div className="space-y-3">
             {recs.map((r, i) => {
-              const hero = heroFor(i)
+              const hero = heroFor(r, i)
               return (
                 <button
                   key={`${i}-${r.title}`}
@@ -130,6 +129,9 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
                     </span>
                     <h3 className="mt-2 font-serif text-[20px] font-light leading-tight text-[#0D0E10]">{r.title}</h3>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{r.rationale}</p>
+                    {r.imageReason && (
+                      <span className="mt-1.5 block text-[11px] italic text-[#818283]">{r.imageReason}</span>
+                    )}
                     <span className="mt-auto pt-2 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
                       Create this
                     </span>
