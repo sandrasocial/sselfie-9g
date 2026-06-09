@@ -134,19 +134,25 @@ export function MayaConcierge() {
   const [nameDraft, setNameDraft] = useState("")
   const [namingDismissed, setNamingDismissed] = useState(false)
   const [justNamed, setJustNamed] = useState<string | null>(null)
+  // Progressive onboarding: only for members Maya doesn't already know, after first value.
+  const [hasBrandProfile, setHasBrandProfile] = useState(true)
+  const [generatedOnce, setGeneratedOnce] = useState(false)
+  const [brandDraft, setBrandDraft] = useState("")
+  const [brandPromptDismissed, setBrandPromptDismissed] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
     fetch("/api/app-v3/maya/memory")
       .then((r) => r.json())
-      .then((d) =>
+      .then((d) => {
         setMemory({
           agentName: d?.agentName ?? null,
           brandNotes: d?.brandNotes ?? null,
           preferences: d?.preferences ?? null,
           userAvatarUrl: d?.userAvatarUrl ?? null,
-        }),
-      )
+        })
+        setHasBrandProfile(d?.hasBrandProfile ?? true)
+      })
       .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }))
   }, [isOpen])
 
@@ -338,6 +344,7 @@ export function MayaConcierge() {
             : []
       if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
       setGenState((s) => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
+      setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
     } catch (e) {
       setGenState((s) => ({
         ...s,
@@ -360,6 +367,34 @@ export function MayaConcierge() {
   }
   const userAvatar = memory?.userAvatarUrl ?? null
   const showNaming = memory !== null && !memory.agentName && !namingDismissed && !hasStarted
+  // Tiny, value-first: only after she's generated, only if Maya doesn't already know her brand.
+  const showBrandPrompt =
+    generatedOnce && !hasBrandProfile && !memory?.brandNotes?.trim() && !brandPromptDismissed
+
+  async function saveBrand() {
+    const text = brandDraft.trim()
+    if (!text) return
+    setBrandPromptDismissed(true)
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandNotes: text }),
+      })
+      const d = (await res.json().catch(() => null)) as Memory | null
+      if (res.ok && d) {
+        setMemory({
+          agentName: d.agentName ?? null,
+          brandNotes: d.brandNotes ?? null,
+          preferences: d.preferences ?? null,
+          userAvatarUrl: d.userAvatarUrl ?? null,
+        })
+      }
+    } catch {
+      /* ignore; she can add it later in Memory */
+    }
+    setBrandDraft("")
+  }
 
   async function saveName() {
     const n = nameDraft.trim()
@@ -676,6 +711,41 @@ export function MayaConcierge() {
               </div>
             )
           })}
+
+          {showBrandPrompt && (
+            <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
+              <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+              <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4">
+                <p className="text-[15px] leading-relaxed text-[#282728]">
+                  Love that. So I can make these really yours, tell me a little about your brand: what you do and who you help. 🤍
+                </p>
+                <textarea
+                  value={brandDraft}
+                  onChange={(e) => setBrandDraft(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. I'm a founder coach for women starting an online business"
+                  className="mt-3 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
+                />
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void saveBrand()}
+                    disabled={brandDraft.trim().length === 0}
+                    className="rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBrandPromptDismissed(true)}
+                    className="text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {isThinking && <TypingDots />}
 

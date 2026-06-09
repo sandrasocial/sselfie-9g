@@ -7,21 +7,34 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 
 export const dynamic = "force-dynamic"
+
+const EMPTY = { agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null, hasBrandProfile: true }
 
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const neonUserId = await getUserIdFromSupabase(user.id)
-  if (!neonUserId) return NextResponse.json({ agentName: null, brandNotes: null, preferences: null })
+  if (!neonUserId) return NextResponse.json(EMPTY)
 
   try {
-    return NextResponse.json(await getMemory(String(neonUserId)))
+    const mem = await getMemory(String(neonUserId))
+    // Does she already have a real brand profile in the existing SSELFIE system? If so, we never
+    // run progressive onboarding (Maya already knows her). Default to true on any doubt = don't nag.
+    let hasBrandProfile = true
+    try {
+      const ctx = await getUserContextForMaya(user.id)
+      hasBrandProfile = typeof ctx === "string" && ctx.trim().length > 200
+    } catch {
+      /* leave true */
+    }
+    return NextResponse.json({ ...mem, hasBrandProfile })
   } catch (e) {
     console.error("[app-v3 memory] read failed:", e)
-    return NextResponse.json({ agentName: null, brandNotes: null, preferences: null })
+    return NextResponse.json(EMPTY)
   }
 }
 
