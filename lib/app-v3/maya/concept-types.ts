@@ -38,6 +38,8 @@ export interface ConceptGraphicSpec {
   subline?: string
   /** Per-slide copy for carousels (one entry per slide). */
   slides?: { heading: string; body?: string; role?: "hook" | "value" | "cta" }[]
+  /** Chosen text-overlay style id (lib/app-v3/maya/overlay-styles). Maya picks per brand + emotion. */
+  overlayStyle?: string
 }
 
 /**

@@ -40,6 +40,10 @@ const graphicSpec = z
         }),
       )
       .optional(),
+    overlayStyle: z
+      .enum(["editorial-serif-center", "lower-third-accent", "top-band-minimal", "quote-statement", "series-cover"])
+      .optional()
+      .describe("Text-overlay style for this concept, chosen to fit her brand and the post's emotion."),
   })
   .optional()
 

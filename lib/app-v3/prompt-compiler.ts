@@ -18,6 +18,7 @@ import {
 } from "@/lib/app-v3/maya/ingredients"
 import { getAestheticRecipe, recipeToPromptBlock } from "@/lib/app-v3/maya/ingredients/aesthetic-recipes"
 import { getVaultSignatureDna } from "@/lib/app-v3/maya/vault-styles"
+import { resolveOverlayStyle, styleTypographyLines, type OverlayStyle } from "@/lib/app-v3/maya/overlay-styles"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -218,6 +219,7 @@ function compileOverlayPrompt(
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
   format: OutputFormat,
+  style: OverlayStyle,
   opts?: CompileConceptOptions,
 ): string {
   const heading = clean(text.heading)
@@ -232,9 +234,10 @@ function compileOverlayPrompt(
   return [
     `Add a text overlay to this ${surface}. ` +
       "Preserve the original image exactly: do not change her identity, face, body, outfit, pose, lighting, background, colors, or composition. Add the overlay only.",
-    "Design a clean luxury editorial overlay in the SSELFIE style: minimal, polished, feminine, high-end, image-led. " +
+    `Overlay style: ${style.name}. Clean luxury editorial, minimal, polished, feminine, image-led. ` +
       "No loud colors, no childish stickers, no clip-art, no gradients, no clutter, no Canva-template look, no heavy icons.",
     paletteLine(opts?.brandKit),
+    ...styleTypographyLines(style),
     role === "cta"
       ? `${layout.place} Call-to-action text: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`
       : `${layout.place} Headline: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`,
@@ -252,6 +255,7 @@ function compileBakedGraphicPrompt(
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
   format: OutputFormat,
+  style: OverlayStyle,
   opts?: CompileConceptOptions,
 ): string {
   const photo = compilePhotoPrompt(brief, format, opts, layout.space)
@@ -259,8 +263,9 @@ function compileBakedGraphicPrompt(
   const body = clean(text.body)
   return [
     photo.replace("Do not render any text, letters, or graphics in this image; text is added in a later step.", ""),
-    "Then add a clean luxury editorial text overlay in the SSELFIE style (minimal, polished, neutral tones, elegant serif headline, clean sans support).",
+    `Then add a clean luxury editorial text overlay in the SSELFIE style (${style.name}): minimal, polished, neutral tones.`,
     paletteLine(opts?.brandKit),
+    ...styleTypographyLines(style),
     role === "cta"
       ? `${layout.place} Call-to-action: "${heading}".${body ? ` Supporting line: "${body}".` : ""}`
       : `${layout.place} Headline: "${heading}".${body ? ` Supporting line: "${body}".` : ""}`,
@@ -296,6 +301,9 @@ export function compileConceptJobs(
   const slides = rawSlides.length > 0 ? rawSlides : [{ heading: clean(g?.headline) || "Slide 1" } as (typeof rawSlides)[number]]
   const total = slides.length
 
+  // One overlay style across the whole concept (cohesion); Maya picks it per brand + emotion.
+  const overlayStyle = resolveOverlayStyle(g?.overlayStyle)
+
   let valueIdx = 0
   return slides.map((slide, i) => {
     const role = resolveRole(slide.role, i, total)
@@ -304,14 +312,14 @@ export function compileConceptJobs(
     const label = format === "carousel" ? `slide ${i + 1}/${total} (${role})` : format
 
     if (mode === "one_pass") {
-      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, opts), useSelfie: true }] }
+      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, overlayStyle, opts), useSelfie: true }] }
     }
     // two_pass: clean photo (selfie), then overlay edit (prior output).
     return {
       label,
       passes: [
         { prompt: compilePhotoPrompt(brief, format, opts, layout.space), useSelfie: true },
-        { prompt: compileOverlayPrompt(text, layout, role, format, opts), useSelfie: false },
+        { prompt: compileOverlayPrompt(text, layout, role, format, overlayStyle, opts), useSelfie: false },
       ],
     }
   })

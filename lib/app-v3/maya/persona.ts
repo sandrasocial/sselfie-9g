@@ -12,6 +12,7 @@ import {
 import type { OutputFormat } from "@/components/app-v3/types"
 import type { BrandKit } from "./concept-types"
 import { CAMERA_SPECS, LIGHTING_OPTIONS, QUIET_LUXURY_FALLBACK } from "./ingredients"
+import { getOverlayStyleGuide } from "./overlay-styles"
 
 // Re-export the brain so app-v3 imports it from one place.
 export { MAYA_VOICE, MAYA_CORE_INTELLIGENCE, MAYA_PROMPT_PHILOSOPHY }
@@ -123,6 +124,7 @@ Chosen styling intent: ${ctx.aestheticIntent}
 **The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
 ${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
+${ctx.format !== "photo" ? `\n${getOverlayStyleGuide()}\n` : ""}
 
 ${brandKitLine(ctx.brandKit)}
 ${
