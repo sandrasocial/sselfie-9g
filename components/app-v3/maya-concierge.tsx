@@ -645,6 +645,34 @@ export function MayaConcierge() {
           )}
 
 
+          {/* Prominent selfie requirement: once Maya has proposed directions but there's no
+              face yet, make the requirement obvious instead of a quietly-disabled button. */}
+          {!referenceSelfieUrl && hasStarted && (
+            <div className="rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4">
+              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">Add your selfie first</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                Maya needs one photo of you before she can create these.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={uploadingSlot === "face"}
+                  className="rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
+                >
+                  {uploadingSlot === "face" ? "Uploading…" : "Upload selfie"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
+                  className="rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+                >
+                  Use existing
+                </button>
+              </div>
+            </div>
+          )}
+
           {messages.map((m: any) => {
             const isUser = m.role === "user"
             const parts = Array.isArray(m.parts) ? m.parts : []

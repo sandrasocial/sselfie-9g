@@ -8,6 +8,7 @@ import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 import {
   IDENTITY_ANCHOR,
   REALISM_TOKENS,
+  ELEVATION,
   QUIET_LUXURY_FALLBACK,
   cameraForText,
   lightingForText,
@@ -144,6 +145,7 @@ export function compileConceptPrompt(
 
   if (format === "photo") {
     layers.push(REALISM_TOKENS + ".")
+    layers.push(ELEVATION) // best, most confident version of her — not a tired selfie
     // Authoritative look from the Vault thumbnail DNA — locks the grade so it isn't guessed.
     if (recipe) layers.push(recipeToPromptBlock(recipe))
     layers.push(
@@ -195,6 +197,7 @@ export function compileConceptPrompts(
       [clean(brief.setting), clean(brief.mood), clean(brief.pose)].filter(Boolean).join(". ") + ".",
       `Shot on ${camera}.`,
       `Lighting: ${lighting}.`,
+      ELEVATION,
     ]
     if (recipe) layers.push(recipeToPromptBlock(recipe))
     layers.push(

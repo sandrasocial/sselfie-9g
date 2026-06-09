@@ -57,6 +57,17 @@ export const REALISM_TOKENS =
   "natural skin texture with pores visible, fine film grain, muted colors, candid editorial feel, not plastic, not over-smoothed"
 
 /**
+ * Elevation: SSELFIE doesn't reproduce a tired selfie, it shows the best, most confident
+ * version of her. Beauty + styling + brand elevation while keeping her clearly recognizable.
+ * Identity-preserving, not face-changing (stays moderation-safe and on-brand).
+ */
+export const ELEVATION =
+  "Show the most polished, confident, editorial version of her: flattering light, refined and " +
+  "healthy skin, tasteful natural makeup, great hair, elegant on-brand styling, strong posture, " +
+  "magazine-quality finish. Elevate her while keeping her clearly recognizable as the same person. " +
+  "Enhance; do not change who she is."
+
+/**
  * The identity anchor (Nano Banana rule #1). The compiler puts this on the FIRST line of
  * every prompt so gpt-image keeps the user's likeness before anything else. Wording is kept
  * natural and non-forensic on purpose: phrases like "exact face / bone structure / strict
