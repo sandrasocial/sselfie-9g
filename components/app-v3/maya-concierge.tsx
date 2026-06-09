@@ -11,6 +11,7 @@
 // 2,237-line legacy chat interface or any Flux/Pro-mode wiring.
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
@@ -25,6 +26,24 @@ import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
+
+/** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
+const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+
+/** Small round avatar for the chat thread (texting-a-friend feel). */
+function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
+  return (
+    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50 bg-[#ECEDED]">
+      {src ? (
+        <Image src={src} alt="" fill className="object-cover" sizes="28px" />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-[10px] uppercase text-[#818283]">
+          {fallback}
+        </span>
+      )}
+    </div>
+  )
+}
 
 /** Stable conversation id (client-side). */
 function newChatId(): string {
@@ -92,6 +111,7 @@ export function MayaConcierge() {
   const [memoryOpen, setMemoryOpen] = useState(false)
   const [nameDraft, setNameDraft] = useState("")
   const [namingDismissed, setNamingDismissed] = useState(false)
+  const [justNamed, setJustNamed] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -102,9 +122,10 @@ export function MayaConcierge() {
           agentName: d?.agentName ?? null,
           brandNotes: d?.brandNotes ?? null,
           preferences: d?.preferences ?? null,
+          userAvatarUrl: d?.userAvatarUrl ?? null,
         }),
       )
-      .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null }))
+      .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }))
   }, [isOpen])
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
@@ -289,6 +310,7 @@ export function MayaConcierge() {
     "Photos for my next reel",
   ]
   const agentLabel = memory?.agentName?.trim() || "Maya"
+  const userAvatar = memory?.userAvatarUrl ?? null
   const showNaming = memory !== null && !memory.agentName && !namingDismissed && !hasStarted
 
   async function saveName() {
@@ -307,11 +329,13 @@ export function MayaConcierge() {
           agentName: d.agentName ?? n,
           brandNotes: d.brandNotes ?? null,
           preferences: d.preferences ?? null,
+          userAvatarUrl: d.userAvatarUrl ?? null,
         })
       }
     } catch {
       /* ignore; she can name later from Memory */
     }
+    setJustNamed(n)
     setNameDraft("")
   }
 
@@ -469,19 +493,22 @@ export function MayaConcierge() {
         {/* Thread */}
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
           {/* Static opener */}
-          <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-            <p>{aesthetic.name}. Gorgeous choice. ✨</p>
-            <p className="mt-2">{aesthetic.blurb}</p>
-            <p className="mt-2">
-              Tell me what you're making and who it's for, and I'll give you three directions to pick from.
-            </p>
-            {!referenceSelfieUrl && (
-              <p className="mt-3 text-[14px] text-[#4F5052]">
-                When you're ready, drop a selfie facing a window with soft, even light.
-                <br />
-                For full-body looks, a side profile and a full-body shot help too. All optional. 🤍
+          <div className="flex items-end gap-2">
+            <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+            <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
+              <p>{aesthetic.name}. Gorgeous choice. ✨</p>
+              <p className="mt-2">{aesthetic.blurb}</p>
+              <p className="mt-2">
+                Tell me what you're making and who it's for, and I'll give you three directions to pick from.
               </p>
-            )}
+              {!referenceSelfieUrl && (
+                <p className="mt-3 text-[14px] text-[#4F5052]">
+                  When you're ready, drop a selfie facing a window with soft, even light.
+                  <br />
+                  For full-body looks, a side profile and a full-body shot help too. All optional. 🤍
+                </p>
+              )}
+            </div>
           </div>
 
           {/* First-run: name your agent (the ownership moment). Skippable. */}
@@ -523,6 +550,16 @@ export function MayaConcierge() {
             </div>
           )}
 
+          {/* Maya acknowledges her new name */}
+          {justNamed && (
+            <div className="flex items-end gap-2">
+              <Avatar src={MAYA_AVATAR} fallback={justNamed.charAt(0)} />
+              <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
+                Love it. I'm {justNamed} now. Let's make something beautiful. 🤍
+              </div>
+            </div>
+          )}
+
           {/* Starter chips: one-tap ways to begin, only before the conversation starts */}
           {!hasStarted && (
             <QuickPrompts
@@ -547,12 +584,18 @@ export function MayaConcierge() {
               <div key={m.id} className="space-y-4">
                 {text.trim() &&
                   (isUser ? (
-                    <div className="ml-auto max-w-[88%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white">
-                      {text}
+                    <div className="flex flex-row-reverse items-end gap-2">
+                      <Avatar src={userAvatar} fallback="You" />
+                      <div className="max-w-[80%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white">
+                        {text}
+                      </div>
                     </div>
                   ) : (
-                    <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4">
-                      <Markdown>{text}</Markdown>
+                    <div className="flex items-end gap-2">
+                      <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+                      <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4">
+                        <Markdown>{text}</Markdown>
+                      </div>
                     </div>
                   ))}
 

@@ -1,15 +1,17 @@
 "use client"
 
-// SSELFIE Studio 3.0 — "What Maya remembers" editor (MAYA-REBUILD-05 Phase E).
-// View and edit the cross-session memory: the agent's name, brand notes, and style
-// preferences. Saved to /api/app-v3/maya/memory and injected into every chat session.
+// SSELFIE Studio 3.0 — "What Maya remembers" editor (MAYA-REBUILD-05 Phase E, +05.1 avatar).
+// View and edit cross-session memory: the agent's name, your profile photo, brand notes, and
+// style preferences. Saved to /api/app-v3/maya/memory and injected into every chat session.
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
 
 export interface Memory {
   agentName: string | null
   brandNotes: string | null
   preferences: string | null
+  userAvatarUrl: string | null
 }
 
 interface MemoryModalProps {
@@ -22,8 +24,11 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [name, setName] = useState("")
   const [brand, setBrand] = useState("")
   const [prefs, setPrefs] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -34,10 +39,24 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         setName(d?.agentName ?? "")
         setBrand(d?.brandNotes ?? "")
         setPrefs(d?.preferences ?? "")
+        setAvatarUrl(d?.userAvatarUrl ?? null)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [open])
+
+  async function uploadAvatar(file: File) {
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append("file", file)
+      const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
+      const d = (await res.json().catch(() => null)) as { url?: string } | null
+      if (res.ok && d?.url) setAvatarUrl(d.url)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function save() {
     setSaving(true)
@@ -45,11 +64,16 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentName: name, brandNotes: brand, preferences: prefs }),
+        body: JSON.stringify({ agentName: name, brandNotes: brand, preferences: prefs, userAvatarUrl: avatarUrl }),
       })
       const d = (await res.json().catch(() => null)) as Memory | null
       if (res.ok && d) {
-        onSaved({ agentName: d.agentName ?? null, brandNotes: d.brandNotes ?? null, preferences: d.preferences ?? null })
+        onSaved({
+          agentName: d.agentName ?? null,
+          brandNotes: d.brandNotes ?? null,
+          preferences: d.preferences ?? null,
+          userAvatarUrl: d.userAvatarUrl ?? null,
+        })
       }
       onClose()
     } finally {
@@ -61,7 +85,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl">
+      <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Memory</p>
@@ -79,6 +103,38 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         </div>
 
         <div className="mt-5 space-y-4">
+          {/* Your photo */}
+          <div className="flex items-center gap-3">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/60 bg-white">
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt="Your photo" fill className="object-cover" sizes="56px" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[12px] text-[#A6A7A8]">You</span>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Your photo</p>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="mt-1 text-[12px] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-50"
+              >
+                {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Upload a photo"}
+              </button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void uploadAvatar(f)
+              }}
+            />
+          </div>
+
           <label className="block">
             <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Her name</span>
             <input

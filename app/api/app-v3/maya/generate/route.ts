@@ -33,9 +33,10 @@ import type { OutputFormat } from "@/components/app-v3/types"
 export const maxDuration = 300
 
 const sql = getDbClient()
-// Default to the real GA image model. The previous "gpt-image-2" fallback is not a GA model id;
-// production sets OPENAI_IMAGE_MODEL explicitly, this just keeps a missing env from hitting a phantom.
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1"
+// Keep the default matching what the live env already runs ("gpt-image-2"). Switching the
+// default also flips the input_fidelity branch below, which was an unintended behavior change;
+// production sets OPENAI_IMAGE_MODEL explicitly so the default only matters as a safe fallback.
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
@@ -207,9 +208,10 @@ export async function POST(request: NextRequest) {
     const refundRef = `app-v3-fail-${neonUser.id}-${Date.now()}`
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
+      console.error("[app-v3 generate] OPENAI_API_KEY is not set in this environment.")
       await refundCredits(neonUser.id, totalCost, "OpenAI API key not configured", refundRef).catch(() => {})
       return NextResponse.json(
-        { error: "Image generation is temporarily unavailable. Please try again later." },
+        { error: "Image generation is temporarily unavailable. Please try again later.", code: "openai_not_configured" },
         { status: 500 },
       )
     }

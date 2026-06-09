@@ -30,7 +30,12 @@ export async function PUT(request: Request) {
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = (await request.json().catch(() => null)) as
-    | { agentName?: string | null; brandNotes?: string | null; preferences?: string | null }
+    | {
+        agentName?: string | null
+        brandNotes?: string | null
+        preferences?: string | null
+        userAvatarUrl?: string | null
+      }
     | null
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 })
@@ -44,6 +49,7 @@ export async function PUT(request: Request) {
       agentName: body.agentName,
       brandNotes: body.brandNotes,
       preferences: body.preferences,
+      userAvatarUrl: body.userAvatarUrl,
     })
     return NextResponse.json(await getMemory(String(neonUserId)))
   } catch (e) {

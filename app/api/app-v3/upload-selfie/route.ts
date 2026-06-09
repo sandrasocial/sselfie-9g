@@ -50,13 +50,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Upload failed, please try again" }, { status: 500 })
   }
 
-  // Best-effort: record as the active reference selfie. Never block the upload if this fails.
+  // Best-effort: record as an active selfie so it shows up in "use a past selfie".
+  // image_type MUST be one of the values allowed by the table's CHECK constraint
+  // ('selfie','lifestyle','mirror','casual','professional') — 'selfie' is correct here.
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (neonUserId) {
       await sql`
         INSERT INTO user_avatar_images (user_id, image_url, image_type, is_active, uploaded_at)
-        VALUES (${String(neonUserId)}, ${blob.url}, ${"app_v3_reference"}, ${true}, NOW())
+        VALUES (${String(neonUserId)}, ${blob.url}, ${"selfie"}, ${true}, NOW())
       `
     }
   } catch (e) {

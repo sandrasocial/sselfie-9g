@@ -10,9 +10,10 @@ export interface AppV3Memory {
   agentName: string | null
   brandNotes: string | null
   preferences: string | null
+  userAvatarUrl: string | null
 }
 
-const EMPTY: AppV3Memory = { agentName: null, brandNotes: null, preferences: null }
+const EMPTY: AppV3Memory = { agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }
 
 let ensured: Promise<void> | null = null
 
@@ -28,6 +29,8 @@ export function ensureMemoryTable(): Promise<void> {
           updated_at  timestamptz NOT NULL DEFAULT now()
         )
       `
+      // Added after the initial Phase E table; ADD COLUMN IF NOT EXISTS is idempotent.
+      await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS user_avatar_url text`
     })().catch((e) => {
       ensured = null
       throw e
@@ -40,19 +43,25 @@ export function ensureMemoryTable(): Promise<void> {
 export async function getMemory(userId: string): Promise<AppV3Memory> {
   await ensureMemoryTable()
   const rows = await sql`
-    SELECT agent_name, brand_notes, preferences
+    SELECT agent_name, brand_notes, preferences, user_avatar_url
     FROM app_v3_memory
     WHERE user_id = ${userId}
     LIMIT 1
   `
   const row = rows[0] as
-    | { agent_name: string | null; brand_notes: string | null; preferences: string | null }
+    | {
+        agent_name: string | null
+        brand_notes: string | null
+        preferences: string | null
+        user_avatar_url: string | null
+      }
     | undefined
   if (!row) return { ...EMPTY }
   return {
     agentName: row.agent_name ?? null,
     brandNotes: row.brand_notes ?? null,
     preferences: row.preferences ?? null,
+    userAvatarUrl: row.user_avatar_url ?? null,
   }
 }
 
@@ -75,21 +84,28 @@ function resolve(patchVal: string | null | undefined, currentVal: string | null)
  */
 export async function saveMemory(
   userId: string,
-  patch: { agentName?: string | null; brandNotes?: string | null; preferences?: string | null },
+  patch: {
+    agentName?: string | null
+    brandNotes?: string | null
+    preferences?: string | null
+    userAvatarUrl?: string | null
+  },
 ): Promise<void> {
   await ensureMemoryTable()
   const current = await getMemory(userId)
   const agentName = resolve(patch.agentName, current.agentName)
   const brandNotes = resolve(patch.brandNotes, current.brandNotes)
   const preferences = resolve(patch.preferences, current.preferences)
+  const userAvatarUrl = resolve(patch.userAvatarUrl, current.userAvatarUrl)
 
   await sql`
-    INSERT INTO app_v3_memory (user_id, agent_name, brand_notes, preferences, updated_at)
-    VALUES (${userId}, ${agentName}, ${brandNotes}, ${preferences}, now())
+    INSERT INTO app_v3_memory (user_id, agent_name, brand_notes, preferences, user_avatar_url, updated_at)
+    VALUES (${userId}, ${agentName}, ${brandNotes}, ${preferences}, ${userAvatarUrl}, now())
     ON CONFLICT (user_id) DO UPDATE SET
-      agent_name  = EXCLUDED.agent_name,
-      brand_notes = EXCLUDED.brand_notes,
-      preferences = EXCLUDED.preferences,
-      updated_at  = now()
+      agent_name      = EXCLUDED.agent_name,
+      brand_notes     = EXCLUDED.brand_notes,
+      preferences     = EXCLUDED.preferences,
+      user_avatar_url = EXCLUDED.user_avatar_url,
+      updated_at      = now()
   `
 }

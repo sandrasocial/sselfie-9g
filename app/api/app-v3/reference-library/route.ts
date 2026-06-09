@@ -19,11 +19,12 @@ export async function GET() {
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (!neonUserId) return NextResponse.json({ images: [] })
 
+    // All of the user's active reference selfies (any type), newest first — so their
+    // existing selfies from elsewhere in SSELFIE are reusable here too, not just /app uploads.
     const rows = await sql`
       SELECT image_url
       FROM user_avatar_images
       WHERE user_id = ${String(neonUserId)}
-        AND image_type = ${"app_v3_reference"}
         AND is_active = ${true}
       ORDER BY uploaded_at DESC
       LIMIT 24

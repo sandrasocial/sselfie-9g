@@ -6,9 +6,13 @@
 -- record and the formal production apply. No legacy table touched.
 
 CREATE TABLE IF NOT EXISTS app_v3_memory (
-  user_id     text PRIMARY KEY,
-  agent_name  text,
-  brand_notes text,
-  preferences text,
-  updated_at  timestamptz NOT NULL DEFAULT now()
+  user_id         text PRIMARY KEY,
+  agent_name      text,
+  brand_notes     text,
+  preferences     text,
+  user_avatar_url text,
+  updated_at      timestamptz NOT NULL DEFAULT now()
 );
+
+-- For environments where the table already exists without the avatar column.
+ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS user_avatar_url text;
