@@ -24,6 +24,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { compileConceptPrompt, conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
+import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
 
@@ -32,8 +33,37 @@ import type { OutputFormat } from "@/components/app-v3/types"
 export const maxDuration = 300
 
 const sql = getDbClient()
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
+// Default to the real GA image model. The previous "gpt-image-2" fallback is not a GA model id;
+// production sets OPENAI_IMAGE_MODEL explicitly, this just keeps a missing env from hitting a phantom.
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+
+/** True when an OpenAI error looks like a moderation / content-policy rejection. */
+function isContentPolicyError(err: unknown): boolean {
+  const m = (err instanceof Error ? err.message : String(err)).toLowerCase()
+  return (
+    m.includes("content_policy") ||
+    m.includes("content policy") ||
+    m.includes("safety") ||
+    m.includes("moderation") ||
+    m.includes("violat") ||
+    m.includes("rejected") ||
+    m.includes("not allowed")
+  )
+}
+
+// Wardrobe words that read as suggestive to OpenAI moderation; softened only on a retry.
+const RISKY_WARDROBE =
+  /\b(sheer|see-?through|lace|lingerie|bodysuit|bikini|swimsuit|underwear|undergarment|bra|cleavage|topless|nude|naked|bare(?:\s+(?:skin|shoulders|legs))?|body-conscious|wet)\b/gi
+
+/**
+ * Soften a compiled prompt for a single content-policy retry: swap in the gentler identity
+ * wording, neutralize suggestive wardrobe terms, and add a modest-styling nudge.
+ */
+function sanitizePromptForModeration(prompt: string): string {
+  const softened = prompt.split(IDENTITY_ANCHOR).join(IDENTITY_ANCHOR_SAFE).replace(RISKY_WARDROBE, "elegant")
+  return `${softened}\nKeep the styling modest, fully clothed, elegant, and tasteful.`
+}
 
 /** Map our RequestSize to the gpt-image edit size param. */
 function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
@@ -188,9 +218,8 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // ── Identity-anchored generation via the EDIT endpoint (selfie attached) ──
-    let imageBuffer: Buffer
-    try {
+    // One generation attempt for a given prompt: read refs, call the edit endpoint, return bytes.
+    const attemptEdit = async (promptText: string): Promise<Buffer> => {
       const refFiles = await Promise.all(
         referenceUrls.map(async (url, i) => {
           const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
@@ -202,35 +231,50 @@ export async function POST(request: NextRequest) {
         model: OPENAI_IMAGE_MODEL,
         // gpt-image accepts an array of reference images; a single file also works.
         image: refFiles.length === 1 ? refFiles[0] : refFiles,
-        prompt,
+        prompt: promptText,
         n: 1,
         size,
         quality: "medium",
         output_format: "png",
       }
-      // Higher identity fidelity on models that support it (not gpt-image-2).
+      // Higher identity fidelity on models that support it (gpt-image-2 does not).
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 
       const response = await openai.images.edit(editInput as any)
       const b64 = response.data?.[0]?.b64_json
       if (!b64) throw new Error("No image data returned from OpenAI")
-      imageBuffer = Buffer.from(b64, "base64")
-    } catch (openaiError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI generation failed", refundRef).catch(() => {})
-      const message = openaiError instanceof Error ? openaiError.message : String(openaiError)
-      const isContentPolicy =
-        message.includes("content_policy") ||
-        message.includes("safety") ||
-        message.includes("violates") ||
-        message.includes("rejected")
-      if (isContentPolicy) {
-        return NextResponse.json(
-          { error: "This photo direction isn't available. Try a different concept.", code: "content_policy" },
-          { status: 400 },
-        )
+      return Buffer.from(b64, "base64")
+    }
+
+    // ── Identity-anchored generation, with ONE graceful retry on a content-policy rejection ──
+    let imageBuffer: Buffer
+    try {
+      imageBuffer = await attemptEdit(prompt)
+    } catch (firstError) {
+      if (isContentPolicyError(firstError)) {
+        // Soften the wording once and try again before surfacing anything to the user.
+        try {
+          imageBuffer = await attemptEdit(sanitizePromptForModeration(prompt))
+        } catch (retryError) {
+          await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef).catch(() => {})
+          if (isContentPolicyError(retryError)) {
+            return NextResponse.json(
+              {
+                error:
+                  "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you.",
+                code: "content_policy",
+              },
+              { status: 400 },
+            )
+          }
+          console.error("[app-v3 generate] Generation failed on retry:", retryError)
+          return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+        }
+      } else {
+        await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI generation failed", refundRef).catch(() => {})
+        console.error("[app-v3 generate] Generation failed:", firstError)
+        return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
       }
-      console.error("[app-v3 generate] Generation failed:", openaiError)
-      return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
     }
 
     // ── Persist to Vercel Blob ──
