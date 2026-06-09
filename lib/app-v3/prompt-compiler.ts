@@ -8,7 +8,6 @@ import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 import {
   IDENTITY_ANCHOR,
   REALISM_TOKENS,
-  ELEVATION,
   QUIET_LUXURY_FALLBACK,
   ACCESSORIES_NOTE,
   AVOID_LIST,
@@ -18,6 +17,17 @@ import {
   lightingForText,
 } from "@/lib/app-v3/maya/ingredients"
 import { getAestheticRecipe, recipeToPromptBlock } from "@/lib/app-v3/maya/ingredients/aesthetic-recipes"
+import { getVaultSignatureDna } from "@/lib/app-v3/maya/vault-styles"
+
+// Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
+// studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
+// styling) but flip the posing to a real caught moment.
+const CANDID_EDITORIAL =
+  "Make this a candid, caught-in-the-moment editorial photograph, like a real on-location shoot: " +
+  "natural movement and a relaxed, unposed moment (walking, sitting, reaching for a coffee, glancing " +
+  "away), never a stiff studio pose or a forced smile straight at the camera. Flattering light, " +
+  "refined healthy skin, tasteful natural makeup, great hair, elegant on-brand styling. Elevate her " +
+  "while keeping her clearly recognizable as the same person."
 import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
@@ -174,9 +184,13 @@ function compilePhotoPrompt(
     ? `Composition: shot on ${camera}. ${safeSpace} Do not render any text, letters, or graphics in this image; text is added in a later step.`
     : `Composition: shot on ${camera}, fill the frame edge to edge with the final photo, no border, mockup, phone screen, or app UI.`
 
+  // Ground the photo in the chosen Vault collection's real DNA (auto-derived, stays in sync).
+  const signature = getVaultSignatureDna(opts?.aestheticId)
+
   return [
     "Create an ultra-realistic editorial brand photograph of the same woman.",
     IDENTITY_ANCHOR,
+    signature || "",
     clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
     "Hair: keep her natural hair color and texture from the reference photo.",
@@ -186,7 +200,7 @@ function compilePhotoPrompt(
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
     `Lighting: ${lighting}.`,
-    ELEVATION,
+    CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     quality,
     AVOID_LIST,

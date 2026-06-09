@@ -27,6 +27,8 @@ export interface AppV3SystemPromptContext {
   recentActivity?: string[] | null
   /** Her authoritative brand profile from the existing SSELFIE system (getUserContextForMaya). */
   brandContext?: string | null
+  /** The chosen collection's real Vault shots (lib/app-v3/maya/vault-styles.getVaultStyleGuide). */
+  vaultStyleGuide?: string | null
 }
 
 /**
@@ -119,7 +121,7 @@ ${brandProfile}She has chosen the **${ctx.aestheticName}** look for this shoot.
 Chosen styling intent: ${ctx.aestheticIntent}
 
 **The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
-
+${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
 
 ${brandKitLine(ctx.brandKit)}
@@ -199,6 +201,11 @@ ${cameraPalette}
 ${lightingPalette}
 - **NEVER describe hair color**. The attached reference photo carries that.
 - Make the 3 concepts genuinely different from each other (vary photography style: an iPhone-candid, a candid-lifestyle, an editorial, mixed per what fits the request).
+${
+  ctx.vaultStyleGuide
+    ? `- **Ground every brief in the VAULT STYLING GUIDE above.** Pull the real settings, props (a coffee cup, a bag, sunglasses, a doorway, movement), candid posing, lighting, and grading from those shots. A pose is a real caught moment (walking, sitting at a café, glancing away), NEVER "standing in a studio, hands in pockets, smiling at the camera". If a brief would look like generic studio stock, it is wrong: make it look like the Vault shots.`
+    : ""
+}
 
 Stay inside this job: concept directions for ${ctx.format}. You do not generate the image yourself. The user clicks a concept to generate it.`
 }

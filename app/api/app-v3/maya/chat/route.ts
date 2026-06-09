@@ -13,6 +13,7 @@ import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
+import { getVaultStyleGuide } from "@/lib/app-v3/maya/vault-styles"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
@@ -193,6 +194,8 @@ export async function POST(req: Request) {
       memory,
       recentActivity,
       brandContext,
+      // The real Vault shots for the chosen vibe — Maya's styling source of truth.
+      vaultStyleGuide: getVaultStyleGuide(body?.aestheticId),
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
