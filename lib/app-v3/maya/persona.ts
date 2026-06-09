@@ -25,6 +25,8 @@ export interface AppV3SystemPromptContext {
   memory?: { agentName?: string | null; brandNotes?: string | null; preferences?: string | null } | null
   /** Recent meaningful things she created (signal for "what is she likely making now"). */
   recentActivity?: string[] | null
+  /** Her authoritative brand profile from the existing SSELFIE system (getUserContextForMaya). */
+  brandContext?: string | null
 }
 
 /**
@@ -105,12 +107,18 @@ function appV3OutputContract(ctx: AppV3SystemPromptContext): string {
     .map(([k, v]) => `- ${k}: ${v}`)
     .join("\n")
 
+  const brandProfile = ctx.brandContext?.trim()
+    ? `## WHO SHE IS (her SSELFIE brand profile — this is the creator, the source of every topic, pillar, and angle)\n\n${ctx.brandContext.trim()}\n\n`
+    : `## WHO SHE IS\n\nYou do not have her brand profile filled in yet. Lean on anything in memory, keep topics about HER (her business, audience, story), and if you genuinely cannot tell, ask one light question or invite her to add a little about her brand in Memory. Never invent a topic from the look.\n\n`
+
   return `---
 
 ## YOUR CURRENT JOB (SSELFIE Studio /app)
 
-You are helping the user create content in the **${ctx.aestheticName}** look.
+${brandProfile}She has chosen the **${ctx.aestheticName}** look for this shoot.
 Chosen styling intent: ${ctx.aestheticIntent}
+
+**The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
 
 ${FORMAT_GUIDANCE[ctx.format]}
 

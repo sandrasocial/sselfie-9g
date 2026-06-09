@@ -16,6 +16,7 @@ import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
@@ -153,6 +154,15 @@ export async function POST(req: Request) {
     const format: OutputFormat =
       body?.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
 
+    // Her authoritative brand profile from the EXISTING SSELFIE system (reuse, don't rebuild).
+    // This is what makes Maya know the creator (not just the look). Best-effort; never blocks chat.
+    let brandContext = ""
+    try {
+      brandContext = await getUserContextForMaya(user.id)
+    } catch (e) {
+      console.error("[app-v3 maya chat] brand context load skipped:", e)
+    }
+
     // Cross-session memory + recent activity: what Maya already knows + what she's been making.
     // Both feed her confidence so she asks only when she genuinely doesn't know (best-effort).
     let memory = null
@@ -182,6 +192,7 @@ export async function POST(req: Request) {
       brandKit: body?.brandKit ?? null,
       memory,
       recentActivity,
+      brandContext,
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
