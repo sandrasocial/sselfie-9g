@@ -18,6 +18,9 @@ import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
+import { QuickPrompts } from "./quick-prompts"
+import { CreditModal } from "./credit-modal"
+import { ReferenceLibraryModal } from "./reference-library-modal"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 
@@ -56,6 +59,13 @@ export function MayaConcierge() {
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<string[] | null>(null)
+  // Out-of-credits modal (opened when /generate returns 402).
+  const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
+    open: false,
+    balance: null,
+  })
+  // Past-selfie picker.
+  const [libraryOpen, setLibraryOpen] = useState(false)
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
@@ -163,8 +173,14 @@ export function MayaConcierge() {
         }),
       })
       const data = (await res.json().catch(() => null)) as
-        | { imageUrl?: string; error?: string }
+        | { imageUrl?: string; error?: string; code?: string; current?: number }
         | null
+      if (res.status === 402 || data?.code === "insufficient_credits") {
+        // Graceful path: reset the card and open the top-up modal instead of a raw error.
+        setGenState((s) => ({ ...s, [key]: { status: "idle" } }))
+        setCreditModal({ open: true, balance: typeof data?.current === "number" ? data.current : null })
+        return
+      }
       if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Generation failed")
       setGenState((s) => ({ ...s, [key]: { status: "done", imageUrl: data.imageUrl } }))
     } catch (e) {
@@ -176,6 +192,12 @@ export function MayaConcierge() {
   }
 
   const hasStarted = messages.length > 0
+  const starterPrompts = [
+    "Founder photos for my launch",
+    `${aesthetic.name} headshots`,
+    "A cozy at-home brand shoot",
+    "Photos for my next reel",
+  ]
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -187,7 +209,7 @@ export function MayaConcierge() {
       />
       <aside
         role="dialog"
-        aria-label={`Maya — ${aesthetic.name}`}
+        aria-label={`Maya, ${aesthetic.name}`}
         className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl"
       >
         {/* Header */}
@@ -229,6 +251,13 @@ export function MayaConcierge() {
               className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
             >
               {referenceSelfieUrl ? "✓ Selfie added" : uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(true)}
+              className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+            >
+              Use a past selfie
             </button>
             {referenceSelfieUrl && (
               <span className="text-[11px] text-[#818283]">Maya will keep your face.</span>
@@ -299,7 +328,7 @@ export function MayaConcierge() {
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
           {/* Static opener */}
           <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-            <p>{aesthetic.name} — gorgeous choice. ✨</p>
+            <p>{aesthetic.name}. Gorgeous choice. ✨</p>
             <p className="mt-2">{aesthetic.blurb}</p>
             <p className="mt-2">
               Tell me what you're making and who it's for, and I'll give you three directions to pick from.
@@ -308,10 +337,19 @@ export function MayaConcierge() {
               <p className="mt-3 text-[14px] text-[#4F5052]">
                 When you're ready, drop a selfie facing a window with soft, even light.
                 <br />
-                For full-body looks, a side profile and a full-body shot help too — all optional. 🤍
+                For full-body looks, a side profile and a full-body shot help too. All optional. 🤍
               </p>
             )}
           </div>
+
+          {/* Starter chips: one-tap ways to begin, only before the conversation starts */}
+          {!hasStarted && (
+            <QuickPrompts
+              prompts={starterPrompts}
+              onSelect={(p) => sendMessage({ text: p })}
+              disabled={isThinking}
+            />
+          )}
 
           {messages.map((m: any) => {
             const isUser = m.role === "user"
@@ -407,6 +445,18 @@ export function MayaConcierge() {
       </aside>
 
       {lightbox && <ImageLightbox images={lightbox} onClose={() => setLightbox(null)} />}
+
+      <CreditModal
+        open={creditModal.open}
+        balance={creditModal.balance}
+        onClose={() => setCreditModal({ open: false, balance: null })}
+      />
+
+      <ReferenceLibraryModal
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onPick={(url) => setReferenceSelfieUrl(url)}
+      />
     </div>
   )
 }
