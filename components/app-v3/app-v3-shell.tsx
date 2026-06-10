@@ -13,6 +13,7 @@ import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
 import { GalleryView } from "./gallery-view"
 import { ContentView } from "./content-view"
+import { AccountView } from "./account-view"
 import type { Aesthetic, OutputFormat } from "./types"
 
 export interface AppV3ShellProps {
@@ -46,36 +47,6 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "story-slide": "Story slide",
 }
 
-function AccountView({ firstName, onManageBrand }: { firstName?: string | null; onManageBrand: () => void }) {
-  return (
-    <div className="mx-auto max-w-3xl px-5 py-8">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Account</p>
-      <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
-        {firstName ? `Hi ${firstName}` : "Your account"}
-      </h1>
-      <p className="mt-2 text-[15px] text-[#4F5052]">Manage your brand, billing, and training.</p>
-
-      <div className="mt-6 space-y-2">
-        <button
-          type="button"
-          onClick={onManageBrand}
-          className="block w-full rounded-[6px] border border-[#C5C6C8]/60 bg-white px-4 py-4 text-left text-[15px] text-[#0D0E10] transition-colors hover:border-[#0D0E10]/40"
-        >
-          Brand &amp; memory
-          <span className="mt-0.5 block text-[12px] text-[#818283]">Tell Maya what she should remember about you.</span>
-        </button>
-        <a
-          href="/studio?legacy=1"
-          className="block w-full rounded-[6px] border border-[#C5C6C8]/60 bg-white px-4 py-4 text-[15px] text-[#0D0E10] transition-colors hover:border-[#0D0E10]/40"
-        >
-          Billing, training &amp; settings
-          <span className="mt-0.5 block text-[12px] text-[#818283]">Open the classic Studio for account settings.</span>
-        </a>
-      </div>
-    </div>
-  )
-}
-
 function ShellInner({ firstName }: AppV3ShellProps) {
   const [section, setSection] = useState<Section>("create")
   const { openWithAesthetic } = useConcierge()
@@ -105,9 +76,7 @@ function ShellInner({ firstName }: AppV3ShellProps) {
           onBrowse={() => setSection("library")}
         />
       )}
-      {section === "account" && (
-        <AccountView firstName={firstName} onManageBrand={() => openWithAesthetic(MAYA_GENERAL)} />
-      )}
+      {section === "account" && <AccountView firstName={firstName} />}
 
       <MayaConcierge />
 

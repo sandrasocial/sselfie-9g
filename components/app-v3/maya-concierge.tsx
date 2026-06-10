@@ -196,6 +196,12 @@ export function MayaConcierge() {
       .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }))
   }, [isOpen])
 
+  // Identity persistence (QA P1-3): returning members shouldn't re-upload their face. When Maya
+  // opens with no active selfie, quietly restore the newest saved one (user_avatar_images).
+  const [selfieRestored, setSelfieRestored] = useState(false)
+  const activeSelfieRef = useRef<string | null>(null)
+  const restoreTriedRef = useRef<number | null>(null)
+
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
   const [sideProfileUrl, setSideProfileUrl] = useState<string | null>(null)
@@ -266,6 +272,32 @@ export function MayaConcierge() {
     seedRetiredRef.current = false
   }, [session])
 
+  // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
+  useEffect(() => {
+    activeSelfieRef.current = session?.referenceSelfieUrl ?? null
+  }, [session])
+
+  // Identity persistence (QA P1-3): one quiet restore attempt per session. New members with no
+  // saved selfies are unaffected (empty library keeps the identity-first gate in place).
+  useEffect(() => {
+    if (!isOpen || !session) return
+    if (session.referenceSelfieUrl) return
+    if (restoreTriedRef.current === session.startedAt) return
+    restoreTriedRef.current = session.startedAt
+    fetch("/api/app-v3/reference-library")
+      .then((r) => r.json())
+      .then((d) => {
+        const latest = Array.isArray(d?.images)
+          ? d.images.find((u: unknown): u is string => typeof u === "string" && u.length > 0)
+          : null
+        if (latest && !activeSelfieRef.current) {
+          setSelfieRestored(true)
+          setReferenceSelfieUrl(latest)
+        }
+      })
+      .catch(() => {})
+  }, [isOpen, session, setReferenceSelfieUrl])
+
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
   // pulls directions automatically. One pull per format; resets on a new chat or new session.
   // IDENTITY FIRST (P0): nothing streams until the selfie exists — the moment it's added,
@@ -308,8 +340,10 @@ export function MayaConcierge() {
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
-      if (slot === "face") setReferenceSelfieUrl(data.url)
-      else if (slot === "side") setSideProfileUrl(data.url)
+      if (slot === "face") {
+        setSelfieRestored(false) // she chose this one herself
+        setReferenceSelfieUrl(data.url)
+      } else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
       else setInspirationUrl(data.url)
     } catch (e) {
@@ -554,7 +588,14 @@ export function MayaConcierge() {
           {referenceSelfieUrl ? (
             <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[13px] font-medium text-[#0D0E10]">Selfie added</span>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                    <Image src={referenceSelfieUrl} alt="Your selfie" fill className="object-cover" sizes="32px" />
+                  </span>
+                  <span className="truncate text-[13px] font-medium text-[#0D0E10]">
+                    {selfieRestored ? "Using your saved selfie" : "Selfie added"}
+                  </span>
+                </span>
                 <button
                   type="button"
                   onClick={() => fileInput.current?.click()}
@@ -961,7 +1002,10 @@ export function MayaConcierge() {
       <ReferenceLibraryModal
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
-        onPick={(url) => setReferenceSelfieUrl(url)}
+        onPick={(url) => {
+          setSelfieRestored(false) // she chose this one herself
+          setReferenceSelfieUrl(url)
+        }}
       />
 
       <ChatHistoryModal

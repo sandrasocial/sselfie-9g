@@ -87,6 +87,16 @@ async function handleCreatePortalSession({
     const origin = request.headers.get("origin")
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
 
+    // Optional caller-provided return path (allowlisted). Legacy /studio callers send no body
+    // and keep the classic Studio account tab; the new /app Account passes returnPath: "/app".
+    let returnPath = buildStudioTabPath("account")
+    try {
+      const body = (await request.json()) as { returnPath?: string } | null
+      if (body?.returnPath === "/app") returnPath = "/app"
+    } catch {
+      // No/invalid JSON body — legacy caller, default return path stands.
+    }
+
     console.log("[v0] Create portal session: Creating Stripe session for customer:", stripeCustomerId)
 
     try {
@@ -105,7 +115,7 @@ async function handleCreatePortalSession({
     // Create Stripe customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${baseUrl}${buildStudioTabPath("account")}`,
+      return_url: `${baseUrl}${returnPath}`,
       configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID,
     })
 
