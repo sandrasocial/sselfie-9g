@@ -20,6 +20,11 @@ const PUBLIC_MIDDLEWARE_BYPASSES = [
     prefix: "/api/webhooks/instagram",
     reason: "Meta webhook verification requires no auth — route handles HMAC signature validation.",
   },
+  {
+    prefix: "/.well-known/",
+    reason:
+      "Domain verification files (Apple Pay merchant validation for Stripe embedded checkout) must be served raw, with no session work or CSP headers.",
+  },
 ] as const
 
 function getPublicBypass(pathname: string) {
