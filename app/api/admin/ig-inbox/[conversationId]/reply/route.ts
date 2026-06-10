@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
 import { sendInstagramDm } from "@/lib/ig-agent/send-dm"
+import { sendManychatDm } from "@/lib/ig-agent/send-manychat"
 
 export const dynamic = "force-dynamic"
 
@@ -41,12 +42,11 @@ export async function POST(
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
   }
 
-  const result = await sendInstagramDm({
-    igUserId,
-    message,
-    conversationId,
-    fromType: "sandra",
-  })
+  // Bridge-originated contacts (mc:<subscriber_id>) send via ManyChat — the app Meta
+  // actually delivers DMs to. Native IG contacts keep the Graph sender.
+  const result = igUserId.startsWith("mc:")
+    ? await sendManychatDm({ igUserId, message, conversationId, fromType: "sandra" })
+    : await sendInstagramDm({ igUserId, message, conversationId, fromType: "sandra" })
 
   await sql`
     UPDATE ig_conversations

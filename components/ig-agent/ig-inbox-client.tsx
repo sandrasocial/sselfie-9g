@@ -191,7 +191,15 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                       className={`min-h-28 w-full resize-none border bg-transparent p-3 text-sm outline-none ${mobile ? "border-[#E5E5E5]" : "border-[#C5C6C8]/50"}`}
                     />
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={sendReply} className="min-h-11 bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.18em] text-white">Save Reply</button>
+                      <button
+                      type="button"
+                      onClick={() => {
+                        const draft = [...data.messages].reverse().find((m) => m.send_status === "draft" && m.ai_generated)
+                        if (draft) setReply(draft.content)
+                      }}
+                      className="min-h-11 border border-[#C5C6C8] px-4 text-[11px] uppercase tracking-[0.18em]"
+                    >Use AI draft</button>
+                    <button onClick={sendReply} className="min-h-11 bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.18em] text-white">Send reply</button>
                       <button onClick={() => action("mark_handled")} className="min-h-11 border border-current/20 px-4 text-[11px] uppercase tracking-[0.18em]">Handled</button>
                       <button onClick={() => action("snooze")} className="min-h-11 border border-current/20 px-4 text-[11px] uppercase tracking-[0.18em]">Snooze</button>
                     </div>
