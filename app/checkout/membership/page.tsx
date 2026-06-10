@@ -42,7 +42,15 @@ export default async function MembershipCheckoutPage({
         ...attribution,
       })
       if (clientSecret) {
-        redirect(`/checkout?client_secret=${clientSecret}`)
+        // product_type lets the embedded checkout page show membership copy and fire the
+        // membership funnel event (it previously arrived as product_type "unknown").
+        const forwarded = new URLSearchParams({ client_secret: clientSecret, product_type: productId })
+        if (params.source) forwarded.set("source", params.source)
+        if (params.utm_source) forwarded.set("utm_source", params.utm_source)
+        if (params.utm_medium) forwarded.set("utm_medium", params.utm_medium)
+        if (params.utm_campaign) forwarded.set("utm_campaign", params.utm_campaign)
+        if (params.utm_content) forwarded.set("utm_content", params.utm_content)
+        redirect(`/checkout?${forwarded.toString()}`)
       }
     } catch (error: any) {
       if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error

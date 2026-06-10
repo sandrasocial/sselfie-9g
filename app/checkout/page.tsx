@@ -87,6 +87,20 @@ const CHECKOUT_COPY: Record<
     blurb: "You are buying the guided $197 system for turning one selfie into a cohesive personal brand shoot, with the full Prompt Vault included.",
     footer: "One-time digital purchase. Your System access link is delivered right after payment.",
   },
+  sselfie_studio_membership: {
+    heroTitle: "Complete your SSELFIE SUITE order",
+    heroBody: "Your membership starts the moment payment goes through.",
+    heading: "Secure checkout",
+    blurb: "You are joining SSELFIE SUITE with encrypted Stripe checkout. Monthly membership, cancel anytime.",
+    footer: "Your access is delivered right after payment. Cancel anytime from your account.",
+  },
+  sselfie_studio_membership_annual: {
+    heroTitle: "Complete your SSELFIE SUITE order",
+    heroBody: "Your membership starts the moment payment goes through.",
+    heading: "Secure checkout",
+    blurb: "You are joining SSELFIE SUITE with encrypted Stripe checkout.",
+    footer: "Your access is delivered right after payment.",
+  },
 }
 
 const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
@@ -177,6 +191,20 @@ function CheckoutContent() {
         .then(({ trackAnalyticsEvent }) =>
           trackAnalyticsEvent({
             event: "starter_kit_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
+    if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "studio_membership_payment_form_rendered",
             properties: {
               product_type: productType,
               checkout_session_id: secret.split("_secret_")[0] || null,
