@@ -19,6 +19,12 @@ import {
 import { getAestheticRecipe, recipeToPromptBlock } from "@/lib/app-v3/maya/ingredients/aesthetic-recipes"
 import { getVaultSignatureDna } from "@/lib/app-v3/maya/vault-styles"
 import { resolveOverlayStyle, styleTypographyLines, type OverlayStyle } from "@/lib/app-v3/maya/overlay-styles"
+import {
+  resolveDesignSystem,
+  defaultSlideVisual,
+  type CarouselDesignSystem,
+  type SlideVisual,
+} from "@/lib/app-v3/maya/carousel-design-systems"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -49,7 +55,7 @@ export interface CompiledPrompt {
   size: RequestSize
 }
 
-export const MAX_CAROUSEL_SLIDES = 5
+export const MAX_CAROUSEL_SLIDES = 6
 
 const BRAND_PHOTO_STYLE =
   "Editorial brand photograph. Keep the person's face and likeness from the reference image accurate and natural. " +
@@ -89,14 +95,16 @@ export interface CompileConceptOptions {
 export type TextRenderMode = "two_pass" | "one_pass"
 
 /**
- * A single OpenAI edit call. The input image source:
- * - "selfie": attach the user's selfie(s) (identity) — new-photo generation.
- * - "prev": edit the previous pass's output (two-pass overlay).
+ * A single OpenAI call. The input image source:
+ * - "selfie": attach the user's selfie(s) (identity) — new-photo generation (images.edit).
+ * - "prev": edit the previous pass's output (two-pass overlay, images.edit).
  * - "base": edit a user-provided image (their upload or a Library image) — overlay-only.
+ * - "none": NO image input — pure generation (images.generate). Used for carousel detail and
+ *   text-only slides so her face physically cannot appear or drift on slides without her.
  */
 export interface PromptPass {
   prompt: string
-  input: "selfie" | "prev" | "base"
+  input: "selfie" | "prev" | "base" | "none"
 }
 
 /** One final image. Photos have one pass; two-pass graphics have [clean photo, text overlay]. */
@@ -282,12 +290,125 @@ function compileBakedGraphicPrompt(
     .join("\n")
 }
 
+// ─── MAYA-REBUILD-16: carousel design systems (per-slide visual roles) ─────────
+// A carousel is a mini editorial design system (QA §10 + Sandra's reference grids): 1-2
+// identity slides max, detail slides from her world (no people), and text-first slides —
+// all sharing one design system's palette, type, and decoration language.
+
+const VERBATIM_TEXT =
+  "Render all text verbatim, in the exact characters given, with no extra or missing letters and no " +
+  "misspellings, crisp and perfectly legible, with generous safe-zone margins so nothing is cropped."
+
+const NO_PEOPLE =
+  "No people, no faces, no bodies, no hands, no human figures or silhouettes anywhere in the image."
+
+/** Identity slide (input: selfie) — she appears, treated per the design system, text in the same pass. */
+function compileCarouselIdentityPrompt(
+  brief: CreativeBrief,
+  system: CarouselDesignSystem,
+  text: { heading: string; body?: string },
+  layout: RoleLayout,
+  role: "hook" | "value" | "cta",
+  opts?: CompileConceptOptions,
+): string {
+  const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
+  const lighting = clean(brief.lighting) || lightingForText(positioning)
+  const signature = getVaultSignatureDna(opts?.aestheticId)
+  const heading = clean(text.heading)
+  const body = clean(text.body)
+  return [
+    "Create an editorial brand image for an Instagram carousel slide (4:5) featuring the same woman.",
+    IDENTITY_ANCHOR,
+    signature || "",
+    clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
+    clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
+    "Hair: keep her natural hair color and texture from the reference photo.",
+    ACCESSORIES_NOTE,
+    clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
+    system.identityTreatment,
+    system.setDna,
+    clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
+    gradeLine(opts),
+    `Lighting: ${lighting}.`,
+    CANDID_EDITORIAL,
+    REALISM_TOKENS + ".",
+    paletteLine(opts?.brandKit),
+    role === "cta"
+      ? `${layout.place} Call-to-action text: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`
+      : `${layout.place} Headline: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`,
+    VERBATIM_TEXT + " Do not cover her face or eyes.",
+    CAROUSEL_QUALITY,
+    AVOID_LIST,
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+/** Detail slide (input: none — pure generation): an object shot from her world, never a person. */
+function compileCarouselDetailPrompt(
+  brief: CreativeBrief,
+  system: CarouselDesignSystem,
+  text: { heading: string; body?: string },
+  subject: string | undefined,
+  opts?: CompileConceptOptions,
+): string {
+  const heading = clean(text.heading)
+  const body = clean(text.body)
+  const resolvedSubject =
+    clean(subject) ||
+    `a beautiful real-life detail that belongs to this scene (a coffee cup, a notebook and pen, a phone on the table, fabric, or an interior corner): ${clean(brief.setting)}`
+  return [
+    "Create a premium editorial DETAIL photograph for an Instagram carousel slide (4:5).",
+    NO_PEOPLE,
+    `Subject: ${resolvedSubject}.`,
+    `It belongs to the same world as the rest of the set: ${clean(brief.setting)}. Mood: ${clean(brief.mood)}.`,
+    system.detailTreatment,
+    system.setDna,
+    gradeLine(opts),
+    paletteLine(opts?.brandKit),
+    `Then add the slide text. Headline: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`,
+    VERBATIM_TEXT,
+    "Real textures and believable light, like a beautiful phone photo, never stock-photo gloss or CGI.",
+    CAROUSEL_QUALITY,
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+/** Text-only slide (input: none): a designed typographic slide; the copy is the hero. */
+function compileCarouselTextPrompt(
+  brief: CreativeBrief,
+  system: CarouselDesignSystem,
+  text: { heading: string; body?: string },
+  role: "hook" | "value" | "cta",
+  opts?: CompileConceptOptions,
+): string {
+  const heading = clean(text.heading)
+  const body = clean(text.body)
+  return [
+    "Design a typographic Instagram carousel slide (4:5). The text is the hero of this slide.",
+    NO_PEOPLE,
+    system.textOnlyTreatment,
+    system.setDna,
+    paletteLine(opts?.brandKit),
+    role === "cta"
+      ? `Call-to-action text, the largest element: "${heading}".${body ? ` Smaller supporting line: "${body}".` : ""}`
+      : `Headline: "${heading}".${body ? ` Supporting text (may be a short list; render every line): "${body}".` : ""}`,
+    VERBATIM_TEXT,
+    "Generous margins, calm spacing, premium print quality.",
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
 /**
  * Compile a brief into the list of image JOBS the generate route runs.
  * - photo: one pass (selfie -> editorial photo).
- * - reel-cover / story-slide / carousel: per slide, two passes in two_pass mode
+ * - carousel: a designed SET — per slide, one pass routed by its visual role
+ *   (identity -> selfie edit; detail / text-only -> pure generation, no selfie attached).
+ * - reel-cover / story-slide: per slide, two passes in two_pass mode
  *   (selfie -> clean photo, then photo -> text overlay), or one baked pass in one_pass mode.
- * Carousels stay cohesive (same outfit + grade) while each slide varies its composition.
+ * Carousels stay cohesive (one design system + grade) while each slide varies its type.
  */
 export function compileConceptJobs(
   brief: CreativeBrief,
@@ -311,22 +432,63 @@ export function compileConceptJobs(
   // One overlay style across the whole concept (cohesion); Maya picks it per brand + emotion.
   const overlayStyle = resolveOverlayStyle(g?.overlayStyle)
 
+  // ── Carousel: a designed set with per-slide visual roles (MAYA-REBUILD-16). ──
+  if (format === "carousel") {
+    const system = resolveDesignSystem(g?.designSystem)
+    let valueIdx = 0
+    let identityCount = 0
+    return slides.map((slide, i) => {
+      const role = resolveRole(slide.role, i, total)
+      const layout =
+        role === "hook" ? HOOK_LAYOUT : role === "cta" ? CTA_LAYOUT : VALUE_LAYOUTS[valueIdx % VALUE_LAYOUTS.length]
+      const valueIndex = role === "value" ? valueIdx++ : 0
+      // Maya tags the visual; untagged slides get the doctrine-safe default mix. Hard cap:
+      // identity slides max 2 per set — extras downgrade to detail so her face never floods the set.
+      let visual: SlideVisual = (slide as { visual?: SlideVisual }).visual ?? defaultSlideVisual(role, valueIndex)
+      if (visual === "identity") {
+        identityCount += 1
+        if (identityCount > 2) visual = "detail"
+      }
+      const text = { heading: clean(slide.heading), body: clean(slide.body) }
+      const label = `slide ${i + 1}/${total} (${role} · ${visual})`
+
+      if (visual === "identity") {
+        return {
+          label,
+          passes: [{ prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, opts), input: "selfie" as const }],
+        }
+      }
+      if (visual === "detail") {
+        const subject = (slide as { detailSubject?: string }).detailSubject
+        return {
+          label,
+          passes: [{ prompt: compileCarouselDetailPrompt(brief, system, text, subject, opts), input: "none" as const }],
+        }
+      }
+      return {
+        label,
+        passes: [{ prompt: compileCarouselTextPrompt(brief, system, text, role, opts), input: "none" as const }],
+      }
+    })
+  }
+
+  // ── Reel cover / Story slide: single-image graphics (unchanged path). ──
   let valueIdx = 0
   return slides.map((slide, i) => {
     const role = resolveRole(slide.role, i, total)
     const layout = role === "hook" ? HOOK_LAYOUT : role === "cta" ? CTA_LAYOUT : VALUE_LAYOUTS[valueIdx++ % VALUE_LAYOUTS.length]
     const text = { heading: clean(slide.heading), body: clean(slide.body) }
-    const label = format === "carousel" ? `slide ${i + 1}/${total} (${role})` : format
+    const label = format
 
     if (mode === "one_pass") {
-      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, overlayStyle, opts), input: "selfie" }] }
+      return { label, passes: [{ prompt: compileBakedGraphicPrompt(brief, text, layout, role, format, overlayStyle, opts), input: "selfie" as const }] }
     }
     // two_pass: clean photo (selfie), then overlay edit (prior output).
     return {
       label,
       passes: [
-        { prompt: compilePhotoPrompt(brief, format, opts, layout.space), input: "selfie" },
-        { prompt: compileOverlayPrompt(text, layout, role, format, overlayStyle, opts), input: "prev" },
+        { prompt: compilePhotoPrompt(brief, format, opts, layout.space), input: "selfie" as const },
+        { prompt: compileOverlayPrompt(text, layout, role, format, overlayStyle, opts), input: "prev" as const },
       ],
     }
   })

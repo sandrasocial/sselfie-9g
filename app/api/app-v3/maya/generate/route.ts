@@ -337,12 +337,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Pure generation (no image input) for "none" passes — carousel detail and text-only
+    // slides. No selfie attached means her face physically cannot appear or drift there.
+    const runGenerate = async (promptText: string): Promise<Buffer> => {
+      const response = await openai.images.generate({
+        model: OPENAI_IMAGE_MODEL,
+        prompt: promptText,
+        n: 1,
+        size,
+        quality: IMAGE_QUALITY,
+        output_format: "png",
+      } as any)
+      const b64 = response.data?.[0]?.b64_json
+      if (!b64) throw new Error("No image data returned from OpenAI")
+      return Buffer.from(b64, "base64")
+    }
+
+    const runGenerateWithRetry = async (promptText: string): Promise<Buffer> => {
+      try {
+        return await runGenerate(promptText)
+      } catch (firstError) {
+        if (isContentPolicyError(firstError)) {
+          return await runGenerate(sanitizePromptForModeration(promptText))
+        }
+        throw firstError
+      }
+    }
+
     // Run one image JOB end to end. Each pass draws its input from its source: the selfie (Mode
-    // A/B clean photo), the user's base image (Mode C overlay), or the prior pass's output (the
-    // two-pass overlay edit).
+    // A/B clean photo), the user's base image (Mode C overlay), the prior pass's output (the
+    // two-pass overlay edit), or nothing at all (pure generation).
     const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
+        if (pass.input === "none") {
+          current = await runGenerateWithRetry(pass.prompt)
+          continue
+        }
         const images =
           pass.input === "selfie"
             ? selfieFiles

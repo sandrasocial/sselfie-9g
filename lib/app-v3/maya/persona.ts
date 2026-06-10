@@ -13,6 +13,7 @@ import type { OutputFormat } from "@/components/app-v3/types"
 import type { BrandKit } from "./concept-types"
 import { CAMERA_SPECS, LIGHTING_OPTIONS, QUIET_LUXURY_FALLBACK } from "./ingredients"
 import { getOverlayStyleGuide } from "./overlay-styles"
+import { getCarouselDesignGuide } from "./carousel-design-systems"
 
 // Re-export the brain so app-v3 imports it from one place.
 export { MAYA_VOICE, MAYA_CORE_INTELLIGENCE, MAYA_PROMPT_PHILOSOPHY }
@@ -72,7 +73,7 @@ const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
   "story-slide":
     "The user wants a vertical Story slide with on-image text. Each concept's brief.graphic.headline (and optional subline) must hold the exact words to render.",
   carousel:
-    "The user wants a cohesive multi-slide carousel. Give each concept a brief.graphic.slides array (3 to 5 slides) with a hook slide, value slides, and a CTA slide; set each slide's role.",
+    "The user wants a cohesive multi-slide carousel. Give each concept a brief.graphic.slides array (4 to 6 slides) with a hook slide, value slides, and a CTA slide; set each slide's role AND visual type, pick ONE designSystem per concept, and give every detail slide a concrete detailSubject (see CAROUSEL DESIGN SYSTEMS below).",
 }
 
 // The ONE variable usually still open per format — a guide for judgment, NOT a mandate to ask.
@@ -125,6 +126,7 @@ Chosen styling intent: ${ctx.aestheticIntent}
 ${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
 ${ctx.format !== "photo" ? `\n${getOverlayStyleGuide()}\n` : ""}
+${ctx.format === "carousel" ? `\n${getCarouselDesignGuide()}\n` : ""}
 
 ${brandKitLine(ctx.brandKit)}
 ${

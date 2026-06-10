@@ -43,6 +43,19 @@ const graphicSpec = z
           heading: z.string(),
           body: z.string().optional(),
           role: z.enum(["hook", "value", "cta"]).optional(),
+          visual: z
+            .enum(["identity", "detail", "text-only"])
+            .optional()
+            .describe(
+              "Slide type: identity = she appears (MAX 2 per carousel), detail = object shot from " +
+                "her world with no people, text-only = designed typographic slide.",
+            ),
+          detailSubject: z
+            .string()
+            .optional()
+            .describe(
+              'For detail slides: the concrete subject, e.g. "cappuccino on a marble table beside her phone".',
+            ),
         }),
       )
       .optional(),
@@ -50,6 +63,10 @@ const graphicSpec = z
       .enum(["editorial-serif-center", "lower-third-accent", "top-band-minimal", "quote-statement", "series-cover"])
       .optional()
       .describe("Text-overlay style for this concept, chosen to fit her brand and the post's emotion."),
+    designSystem: z
+      .enum(["cutout-editorial", "full-bleed-editorial", "soft-minimal"])
+      .optional()
+      .describe("Carousel design system for the WHOLE set. Default to cutout-editorial unless the look says otherwise."),
   })
   .optional()
 

@@ -36,10 +36,20 @@ export interface ConceptGraphicSpec {
   headline?: string
   /** Optional supporting line. */
   subline?: string
-  /** Per-slide copy for carousels (one entry per slide). */
-  slides?: { heading: string; body?: string; role?: "hook" | "value" | "cta" }[]
+  /** Per-slide copy for carousels (one entry per slide). `visual` picks the slide type
+   *  (identity = she appears, max 1-2 per set; detail = object shot from her world, no people;
+   *  text-only = designed typographic slide). `detailSubject` grounds detail slides. */
+  slides?: {
+    heading: string
+    body?: string
+    role?: "hook" | "value" | "cta"
+    visual?: "identity" | "detail" | "text-only"
+    detailSubject?: string
+  }[]
   /** Chosen text-overlay style id (lib/app-v3/maya/overlay-styles). Maya picks per brand + emotion. */
   overlayStyle?: string
+  /** Carousel design system id (lib/app-v3/maya/carousel-design-systems). Maya picks per concept. */
+  designSystem?: string
 }
 
 /**
