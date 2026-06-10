@@ -11,9 +11,9 @@
 import { streamText, tool, convertToModelMessages, type UIMessage } from "ai"
 import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
-import { getVaultStyleGuide } from "@/lib/app-v3/maya/vault-styles"
+import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
@@ -24,6 +24,12 @@ import { NextResponse } from "next/server"
 export const maxDuration = 60
 
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+
+// Concept turns are token-heavy: Maya's prose + an emit_concepts call with 3 full briefs (and,
+// for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
+// tool call mid-stream — the user watched cards stream in, then they vanished at finish (P0).
+// app-v3 sets its own budget; the shared map stays untouched for legacy /studio.
+const APP_V3_MAX_OUTPUT_TOKENS = 8192
 
 // Zod schema for one concept brief. Mirrors lib/app-v3/maya/concept-types.CreativeBrief.
 const graphicSpec = z
@@ -198,8 +204,10 @@ export async function POST(req: Request) {
       memory,
       recentActivity,
       brandContext,
-      // The real Vault shots for the chosen vibe — Maya's styling source of truth.
-      vaultStyleGuide: getVaultStyleGuide(body?.aestheticId),
+      // The real Vault shots for the chosen vibe — Maya's styling source of truth. General
+      // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
+      // EVERY generation path carries Vault DNA, never a generic posed-studio default.
+      vaultStyleGuide: getVaultStyleGuide(body?.aestheticId) ?? getVaultOverviewGuide(),
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
@@ -213,7 +221,19 @@ export async function POST(req: Request) {
       messages: modelMessages,
       tools: { emit_concepts: emitConcepts, ask_clarify: askClarify },
       temperature: 0.8,
-      maxOutputTokens: getMayaMaxTokensForTask("chat_pro"),
+      maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+      // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
+      // tool call was cut mid-stream and its cards may not survive validation.
+      onFinish: ({ finishReason }) => {
+        if (finishReason !== "stop" && finishReason !== "tool-calls") {
+          console.error(
+            `[app-v3 maya chat] stream ended early: finishReason=${finishReason} format=${format} — concept cards may be lost`,
+          )
+        }
+      },
+      onError: ({ error }) => {
+        console.error("[app-v3 maya chat] stream error:", error)
+      },
     })
 
     return result.toUIMessageStreamResponse()

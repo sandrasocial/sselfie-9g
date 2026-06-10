@@ -113,6 +113,36 @@ export function getVaultStyleGuide(aestheticId?: string | null, maxShots = 8): s
 }
 
 /**
+ * The fallback styling guide for GENERAL sessions (a Content idea, Brand & memory, any aesthetic
+ * id that maps to no collection — e.g. "maya-general"). Without this, those paths injected NO
+ * Vault DNA at all and Maya drifted to generic posed-studio output. Maya is told to pick the one
+ * collection that best fits her brand + the topic, then ground every brief in that collection.
+ * One full example shot per collection keeps the token cost close to a single-collection guide.
+ */
+export function getVaultOverviewGuide(maxPerCollection = 1): string | null {
+  const sections = VAULT_STYLES.filter((s) => s.cards.length > 0).map((style) => {
+    const signature = getVaultSignatureDna(style.id)
+    const shots = style.cards
+      .slice(0, maxPerCollection)
+      .map((card) => `Example — ${tidy(card.title)}: ${stripIdentityParagraph(card.prompt)}`)
+    return [`### ${style.name}`, signature ?? "", ...shots].filter(Boolean).join("\n")
+  })
+  if (sections.length === 0) return null
+  return [
+    `## VAULT STYLING GUIDE — all collections (she has not picked one look yet)`,
+    "",
+    "These are the real, tested SSELFIE Vault collections. She started from an idea or topic",
+    "instead of a chosen look, so FIRST pick the ONE collection that best fits her brand, the",
+    "topic, and the mood she's describing. Then ground every concept brief in that collection's",
+    "DNA: scene, setting, outfit, props, pose energy, lighting, and color grading. Candid, on",
+    "location, real props, photographed like an editorial day. Never invent a generic posed",
+    "studio look; every brief must read like it belongs to one of these collections.",
+    "",
+    sections.join("\n\n"),
+  ].join("\n")
+}
+
+/**
  * A compact style signature for the compiler: the recurring mood/styling tokens across the whole
  * collection (from each card's `mood` line). Auto-derived so it stays in sync, used to ground the
  * generated photo in the collection's real DNA even if a brief is thin.

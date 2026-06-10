@@ -117,17 +117,26 @@ async function normalizeReferenceForOpenAI(buffer: Buffer): Promise<Buffer> {
     .toBuffer()
 }
 
-function isValidBrief(brief: unknown): brief is CreativeBrief {
-  if (!brief || typeof brief !== "object") return false
+/**
+ * Normalize a concept brief, tolerating salvaged ones (a truncated concept stream can lose the
+ * tail fields). Only outfit + setting are hard requirements — the compiler drops empty lines and
+ * has NAMED fallbacks for camera/lighting, so a partial brief still produces a Vault-level shot.
+ */
+function normalizeBrief(brief: unknown): CreativeBrief | null {
+  if (!brief || typeof brief !== "object") return null
   const b = brief as Record<string, unknown>
-  return (
-    typeof b.outfit === "string" &&
-    typeof b.setting === "string" &&
-    typeof b.mood === "string" &&
-    typeof b.pose === "string" &&
-    typeof b.cameraSpec === "string" &&
-    typeof b.lighting === "string"
-  )
+  if (typeof b.outfit !== "string" || b.outfit.trim().length === 0) return null
+  if (typeof b.setting !== "string" || b.setting.trim().length === 0) return null
+  const str = (v: unknown) => (typeof v === "string" ? v : "")
+  return {
+    outfit: b.outfit,
+    setting: b.setting,
+    mood: str(b.mood),
+    pose: str(b.pose),
+    cameraSpec: str(b.cameraSpec),
+    lighting: str(b.lighting),
+    graphic: b.graphic && typeof b.graphic === "object" ? (b.graphic as CreativeBrief["graphic"]) : undefined,
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -195,7 +204,8 @@ export async function POST(request: NextRequest) {
       baseImageSource = baseImageUrl
     } else {
       // ── MODE A / B: generate from the selfie (identity anchor). ──
-      if (!isValidBrief(body.brief)) {
+      const brief = normalizeBrief(body.brief)
+      if (!brief) {
         return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
       }
       const referenceSelfieUrl = body.referenceSelfieUrl
@@ -214,7 +224,7 @@ export async function POST(request: NextRequest) {
           ),
         ),
       ).slice(0, 4)
-      jobs = compileConceptJobs(body.brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
+      jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
     }
 
     const size = conceptOpenAISize(format)

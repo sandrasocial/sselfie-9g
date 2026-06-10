@@ -107,15 +107,24 @@ const CTA_LABEL: Record<OutputFormat, string> = {
 
 type UploadSlot = "face" | "side" | "body" | "inspiration"
 
-/** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming). */
+/** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
+ *  `rawInput` is the salvage path: if the tool call finished but failed schema validation (a
+ *  truncated stream, a missing field), the SDK clears `input` and keeps the raw payload there —
+ *  without this fallback the cards a user watched stream in would vanish when Maya finishes. */
 function extractConcepts(part: any): ConceptCardData[] | null {
   if (!part || typeof part !== "object") return null
   if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
-  const payload = part.output?.concepts ?? part.input?.concepts
+  const payload = part.output?.concepts ?? part.input?.concepts ?? part.rawInput?.concepts
   if (!Array.isArray(payload)) return null
   return payload.filter(
     (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string",
   )
+}
+
+/** Did this assistant part attempt emit_concepts at all? (Drives the lost-cards retry state.) */
+function isConceptToolPart(part: any): boolean {
+  if (!part || typeof part !== "object") return false
+  return part.type === "tool-emit_concepts" || (part.type === "dynamic-tool" && part.toolName === "emit_concepts")
 }
 
 /** Pull an inline question out of an ask_clarify tool part. */
@@ -139,6 +148,9 @@ export function MayaConcierge() {
   const composerRef = useRef<HTMLInputElement>(null)
   const lastPulledFormatRef = useRef<string | null>(null)
   const sessionStartRef = useRef<number | null>(null)
+  // "New chat" retires the session's seeded idea (a Content recommendation) without mutating
+  // the session itself; a genuinely new session re-arms it.
+  const seedRetiredRef = useRef(false)
 
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -251,20 +263,25 @@ export function MayaConcierge() {
     if (session.startedAt === sessionStartRef.current) return
     sessionStartRef.current = session.startedAt
     lastPulledFormatRef.current = null
+    seedRetiredRef.current = false
   }, [session])
 
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
   // pulls directions automatically. One pull per format; resets on a new chat or new session.
+  // IDENTITY FIRST (P0): nothing streams until the selfie exists — the moment it's added,
+  // this same effect fires and pulls the committed format, so upload completes the flow.
   useEffect(() => {
     if (!isOpen || !session) return
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
+    if (!session.referenceSelfieUrl) return
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
     extrasRef.current = { ...extrasRef.current, format: fmt }
     // First pull may carry a seeded idea (a Content recommendation); after that, plain format.
-    const text = isFirstPull && session.seedPrompt ? session.seedPrompt : FORMAT_PHRASE[fmt]
+    const seed = !seedRetiredRef.current ? session.seedPrompt : null
+    const text = isFirstPull && seed ? seed : FORMAT_PHRASE[fmt]
     sendMessage({ text })
   }, [isOpen, session, isThinking, sendMessage])
 
@@ -312,12 +329,16 @@ export function MayaConcierge() {
   function handleNewChat() {
     if (isThinking) return
     savedCountRef.current = 0
-    lastPulledFormatRef.current = null // let the current format re-pull fresh directions
+    lastPulledFormatRef.current = null
+    seedRetiredRef.current = true // a clean session never replays the old seeded idea
     setMessages([])
     setGenState({})
     setInput("")
     setChatId(newChatId())
     setHistoryOpen(false)
+    // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
+    // directions (which made "New chat" look like it did nothing). Selfie + memory are kept.
+    setOutputFormat(null)
   }
 
   async function handleSelectChat(id: string) {
@@ -508,7 +529,9 @@ export function MayaConcierge() {
         <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-6 py-4">
           <div className="flex flex-wrap gap-2">
             {FORMAT_OPTIONS.map((opt) => {
-              const selected = format === opt.id
+              // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
+              // display fallback) — after "New chat" no chip is selected until she picks again.
+              const selected = outputFormat === opt.id
               return (
                 <button
                   key={opt.id}
@@ -581,11 +604,16 @@ export function MayaConcierge() {
           {!hasStarted && (
             <button
               type="button"
-              onClick={() => handlePickFormat(format)}
+              onClick={() => {
+                // Identity first (P0): with no selfie the CTA commits the format and opens the
+                // upload — the gated auto-pull then starts the moment her selfie is in.
+                handlePickFormat(format)
+                if (!referenceSelfieUrl) fileInput.current?.click()
+              }}
               disabled={isThinking}
               className="w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isThinking ? "Creating…" : CTA_LABEL[format]}
+              {isThinking ? "Creating…" : referenceSelfieUrl ? CTA_LABEL[format] : "Add my selfie to start"}
             </button>
           )}
 
@@ -749,6 +777,10 @@ export function MayaConcierge() {
               | ConceptCardData[]
               | undefined
             const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
+            // Maya tried to present directions but none survived (truncated/failed tool call):
+            // never leave a dead end — offer a one-tap re-pull instead.
+            const conceptsLost =
+              !isUser && !isThinking && parts.some(isConceptToolPart) && (conceptPart?.length ?? 0) === 0
 
             return (
               <div
@@ -779,6 +811,19 @@ export function MayaConcierge() {
                     onFreeText={focusComposer}
                     disabled={isThinking}
                   />
+                )}
+
+                {conceptsLost && (
+                  <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
+                    <p className="text-[13px] text-[#282728]">Your directions didn't come through cleanly.</p>
+                    <button
+                      type="button"
+                      onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
+                      className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+                    >
+                      Pull fresh directions
+                    </button>
+                  </div>
                 )}
 
                 {conceptPart && conceptPart.length > 0 && (

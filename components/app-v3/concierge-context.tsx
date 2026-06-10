@@ -37,7 +37,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  const setOutputFormat = useCallback((format: OutputFormat) => {
+  const setOutputFormat = useCallback((format: OutputFormat | null) => {
     setSession((prev) => (prev ? { ...prev, outputFormat: format } : prev))
   }, [])
 
