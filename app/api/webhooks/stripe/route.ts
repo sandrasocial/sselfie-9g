@@ -56,6 +56,7 @@ import { handleBrandStrategyPackCheckout } from "@/lib/payments/handlers/brand-s
 import { handleMasterclassCheckout } from "@/lib/payments/handlers/masterclass"
 import { handleSelfieGuideCheckout } from "@/lib/payments/handlers/selfie-guide"
 import { handleOneTimeSessionCheckout } from "@/lib/payments/handlers/one-time-session"
+import { handleTransformCheckout, isTransformProductType } from "@/lib/payments/handlers/transform"
 import { generatePasswordSetupLinkForPurchase, markRevenueEnginePurchase, markEmailLogConversionForCheckout } from "@/lib/payments/shared"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
@@ -76,9 +77,6 @@ import {
   buildAiPhotoshootResendTags,
 } from "@/lib/audience/ai-photoshoot-segment"
 
-function isTransformProductType(productType: unknown): productType is "transform_starter" | "transform_topup" {
-  return productType === "transform_starter" || productType === "transform_topup"
-}
 
 async function sendTransformPurchaseEmail(params: {
   customerEmail: string
@@ -1657,144 +1655,8 @@ export async function POST(request: NextRequest) {
           } else if (productType === "one_time_session") {
             await handleOneTimeSessionCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source, credits })
           } else if (isTransformProductType(productType)) {
-            if (!isPaymentPaid) {
-              console.log(
-                `[v0] ⚠️ Transform checkout completed but payment is not confirmed yet (status: '${session.payment_status}').`
-              )
-            } else {
-              const isTestMode = !event.livemode
-              const paymentIntentId =
-                typeof session.payment_intent === "string"
-                  ? session.payment_intent
-                  : session.payment_intent?.id
-              const paymentIdForTransform = paymentIntentId || session.id
-
-              let paymentAmountCents = session.amount_total || 0
-              let customerId =
-                typeof session.customer === "string"
-                  ? session.customer
-                  : session.customer?.id || null
-
-              if (paymentIntentId) {
-                try {
-                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
-                  customerId =
-                    typeof paymentIntent.customer === "string"
-                      ? paymentIntent.customer
-                      : paymentIntent.customer?.id || customerId
-                } catch (piError: any) {
-                  console.error(`[v0] Error retrieving payment intent for Transform:`, piError.message)
-                }
-              }
-
-              const transformCustomerIdForStorage = customerId || session.id
-
-              if (transformCustomerIdForStorage) {
-                try {
-                  await sql`
-                    INSERT INTO stripe_payments (
-                      stripe_payment_id,
-                      stripe_customer_id,
-                      user_id,
-                      amount_cents,
-                      currency,
-                      status,
-                      payment_type,
-                      product_type,
-                      description,
-                      metadata,
-                      payment_date,
-                      is_test_mode,
-                      created_at,
-                      updated_at
-                    )
-                    VALUES (
-                      ${paymentIdForTransform},
-                      ${transformCustomerIdForStorage},
-                      ${userId},
-                      ${paymentAmountCents},
-                      'usd',
-                      'succeeded',
-                      'transform',
-                      ${productType},
-                      ${productType === "transform_topup" ? "SSELFIE Transform top-up" : "SSELFIE Transform starter pack"},
-                      ${JSON.stringify(session.metadata || {})},
-                      NOW(),
-                      ${isTestMode},
-                      NOW(),
-                      NOW()
-                    )
-                    ON CONFLICT (stripe_payment_id) 
-                    DO UPDATE SET
-                      status = 'succeeded',
-                      amount_cents = ${paymentAmountCents},
-                      product_type = ${productType},
-                      updated_at = NOW()
-                  `
-                } catch (paymentError: any) {
-                  console.error(`[v0] Error storing Transform payment:`, paymentError.message)
-                }
-              }
-
-              const creditResult = await addCredits(
-                userId,
-                credits,
-                "purchase",
-                `${productType === "transform_topup" ? "Transform top-up" : "Transform starter pack"} (${credits} credits)`,
-                paymentIdForTransform,
-                isTestMode,
-                { source: `stripe_webhook:${productType}` }
-              )
-
-              if (!creditResult.success) {
-                console.error(`[v0] ❌ Failed to grant Transform credits: ${creditResult.error}`)
-                await markEventFailed("stripe", event.id, new Error(`Failed to grant Transform credits: ${creditResult.error}`)).catch((statusError) => {
-                  console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
-                })
-                return NextResponse.json(
-                  { error: "Failed to grant Transform credits", details: creditResult.error },
-                  { status: 500 }
-                )
-              }
-
-              await sql`
-                UPDATE credit_transactions
-                SET 
-                  product_type = ${productType},
-                  payment_amount_cents = ${paymentAmountCents}
-                WHERE user_id = ${userId}
-                  AND stripe_payment_id = ${paymentIdForTransform}
-                  AND (product_type IS NULL OR payment_amount_cents IS NULL)
-              `
-
-              try {
-                await logAnalyticsEvent({
-                  eventName: "purchase",
-                  userId: String(userId),
-                  properties: {
-                    source: "stripe_webhook",
-                    payment_type: "transform",
-                    product_type: productType,
-                    value: paymentAmountCents / 100,
-                    currency: "usd",
-                    credits,
-                    stripe_payment_id: paymentIdForTransform,
-                    stripe_session_id: session.id,
-                    offer_slug: "transform",
-                    buyer_stage: session.metadata?.buyer_stage || "aesthetic_editing",
-                    attribution_source: session.metadata?.source || null,
-                    is_test_mode: isTestMode,
-                  },
-                })
-              } catch {
-                // ignore analytics failures
-              }
-
-              console.log(
-                `[v0] ✅ Granted Transform credits (${credits}) for ${productType} with payment ID: ${paymentIdForTransform}`
-              )
-            }
+            const transformResponse = await handleTransformCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source, credits, ...({ productType } as any) })
+            if (transformResponse) return transformResponse
           } else if (productType === "credit_topup") {
             await handleCreditTopupCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source, credits })
           } else if (productType === "brand_strategy_pack") {
