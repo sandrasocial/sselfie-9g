@@ -35,6 +35,9 @@ export function CopyButton({
 }) {
   const [copied, setCopied] = useState(false)
   const [showAfterCopyCta, setShowAfterCopyCta] = useState(false)
+  // She copies, switches to ChatGPT to paste, then comes back. The CTA used to auto-hide after
+  // 16s, so it was usually gone by the time she returned. Now it stays until she dismisses it.
+  const [ctaDismissed, setCtaDismissed] = useState(false)
 
   function fireTrack() {
     try {
@@ -54,7 +57,7 @@ export function CopyButton({
   function handleCopy() {
     const markCopied = () => {
       setCopied(true)
-      if (afterCopyHref) {
+      if (afterCopyHref && !ctaDismissed && !showAfterCopyCta) {
         setShowAfterCopyCta(true)
         if (afterCopyViewEvent) {
           try {
@@ -66,7 +69,6 @@ export function CopyButton({
             // Tracking is fire-and-forget — never block copy.
           }
         }
-        setTimeout(() => setShowAfterCopyCta(false), 16000)
       }
       fireTrack()
       setTimeout(() => setCopied(false), 2000)
@@ -109,13 +111,23 @@ export function CopyButton({
       <button onClick={handleCopy} className="copy-btn" aria-label="Copy prompt to clipboard">
         {copied ? "Copied" : "Copy"}
       </button>
-      {showAfterCopyCta && afterCopyHref && (
+      {showAfterCopyCta && !ctaDismissed && afterCopyHref && (
         <div className="copy-after-cta">
           {afterCopyTitle && <p className="copy-after-title">{afterCopyTitle}</p>}
           {afterCopyNote && <p className="copy-after-note">{afterCopyNote}</p>}
           <Link href={afterCopyHref} className="copy-after-link" onClick={handleAfterCopyClick}>
             {afterCopyLabel || "Get the full shoot"}
           </Link>
+          <button
+            type="button"
+            className="copy-after-dismiss"
+            onClick={() => {
+              setCtaDismissed(true)
+              setShowAfterCopyCta(false)
+            }}
+          >
+            Not now
+          </button>
           {afterCopyFootnote && <p className="copy-after-footnote">{afterCopyFootnote}</p>}
         </div>
       )}

@@ -177,9 +177,9 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
             text={card.prompt}
             afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
             afterCopyLabel="Get the full Vault · $27"
-            afterCopyTitle="Love how that came out?"
-            afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
-            afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+            afterCopyTitle="That was just the opening shot."
+            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+            afterCopyFootnote="One payment. Yours for good."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{
@@ -279,9 +279,9 @@ export default function AiPromptsDemoPage() {
                 text={REUSABLE_STARTER}
                 afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
                 afterCopyLabel="Get the full Vault · $27"
-                afterCopyTitle="Love how that came out?"
-                afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
-                afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+                afterCopyTitle="That was just the opening shot."
+                afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+                afterCopyFootnote="One payment. Yours for good."
                 afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
                 afterCopyTrackEvent="ai_prompts_prompt_vault_click"
                 afterCopyTrackProperties={{
@@ -713,6 +713,25 @@ export default function AiPromptsDemoPage() {
           letter-spacing: 0.18em;
           text-transform: uppercase;
           text-decoration: none;
+        }
+
+        .copy-after-dismiss {
+          display: block;
+          margin: 10px auto 0;
+          padding: 4px 8px;
+          border: 0;
+          background: none;
+          color: #818283;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+
+        .copy-after-dismiss:hover {
+          color: #4F5052;
         }
 
         .copy-after-footnote {

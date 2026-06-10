@@ -72,7 +72,16 @@ async function isCurrentUserAdmin(): Promise<boolean> {
 // Prompt card component (server — CopyButton is the only client leaf)
 // ---------------------------------------------------------------------------
 
-function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boolean }) {
+function PromptCardEl({
+  card,
+  isWorkflow,
+  upgradeHref,
+}: {
+  card: PromptCard
+  isWorkflow?: boolean
+  /** When present, copying shows the persistent Vault bridge (the after-copy moment). */
+  upgradeHref?: string
+}) {
   return (
     <article id={card.id} className={`pc ${isWorkflow ? "pc-workflow" : ""}`}>
       {card.exampleImage && (
@@ -96,7 +105,33 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
       <div className="pc-prompt-wrap">
         <p className="pc-prompt-text">{card.prompt}</p>
         <div className="pc-copy-row">
-          <CopyButton text={card.prompt} promptTitle={card.title} promptNumber={card.number} />
+          <CopyButton
+            text={card.prompt}
+            promptTitle={card.title}
+            promptNumber={card.number}
+            {...(upgradeHref && !isWorkflow
+              ? {
+                  afterCopyHref: upgradeHref,
+                  afterCopyTitle: "That's one photo. Want the whole shoot?",
+                  afterCopyLabel: "Get the full Vault · $27",
+                  afterCopyNote:
+                    "One good photo is a start. The Vault gives you the full shoot for every look: matching shots, same light, same mood, so your feed looks like a real photoshoot. New shoots added all the time.",
+                  afterCopyFootnote: "One payment. Yours for good.",
+                  afterCopyViewEvent: "ai_prompts_after_copy_vault_cta_view",
+                  afterCopyTrackEvent: "ai_prompts_prompt_vault_click",
+                  afterCopyTrackProperties: {
+                    source: "ai-prompts",
+                    destination: "checkout-prompt-vault",
+                    utm_campaign: "ai_prompts_to_prompt_vault",
+                    utm_content: `copy_${card.id}`,
+                    checkout_source: "after_copy_free_prompt",
+                    cta_position: "after_copy_free_prompt",
+                    prompt_id: card.id,
+                    prompt_title: card.title,
+                  },
+                }
+              : {})}
+          />
         </div>
       </div>
     </article>
@@ -138,10 +173,10 @@ function PreviewCardEl({
             promptTitle={card.title}
             promptNumber={card.number}
             afterCopyHref={upgradeHref}
-            afterCopyTitle="Love how that came out?"
+            afterCopyTitle="That was just the opening shot."
             afterCopyLabel="Get the full Vault · $27"
-            afterCopyNote="That was one shot. The full Vault has every collection: the prompts, the example images, the whole shoot sequence. One selfie, unlimited photoshoots."
-            afterCopyFootnote="One payment. Every collection, plus the new ones I keep adding."
+            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+            afterCopyFootnote="One payment. Yours for good."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{
@@ -521,7 +556,11 @@ export default async function AiPromptsAccessPage({
                 </h2>
                 <div className="ap-cards ap-main-grid">
                   {MAIN_LOOKS.map(card => (
-                    <PromptCardEl key={card.id} card={card} />
+                    <PromptCardEl
+                      key={card.id}
+                      card={card}
+                      upgradeHref={buildPromptVaultFreebieCheckoutHref({ promptId: card.id, accessToken: token })}
+                    />
                   ))}
                 </div>
               </div>
@@ -533,7 +572,11 @@ export default async function AiPromptsAccessPage({
                 </h2>
                 <div className="ap-cards">
                   {BONUS_LOOKS.map(card => (
-                    <PromptCardEl key={card.id} card={card} />
+                    <PromptCardEl
+                      key={card.id}
+                      card={card}
+                      upgradeHref={buildPromptVaultFreebieCheckoutHref({ promptId: card.id, accessToken: token })}
+                    />
                   ))}
                 </div>
               </div>
@@ -1048,6 +1091,25 @@ export default async function AiPromptsAccessPage({
           letter-spacing: 0.18em;
           line-height: 1.35;
           text-transform: uppercase;
+        }
+
+        .copy-after-dismiss {
+          display: block;
+          margin: 10px auto 0;
+          padding: 4px 8px;
+          border: 0;
+          background: none;
+          color: #818283;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+
+        .copy-after-dismiss:hover {
+          color: #4F5052;
         }
 
         .copy-after-footnote {
