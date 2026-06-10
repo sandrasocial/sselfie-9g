@@ -12,4 +12,6 @@ export interface CheckoutFulfillmentContext {
   userId: string | null | undefined
   referralPurchaseUserId: string | null | undefined
   source: string | null | undefined
+  /** Parsed from session.metadata.credits by the dispatcher (credit-granting products). */
+  credits?: number
 }
