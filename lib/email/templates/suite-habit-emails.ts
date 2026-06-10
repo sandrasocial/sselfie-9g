@@ -9,7 +9,7 @@ export const SUITE_DAY0_EMAIL_TYPE = "suite-day0-first-shoot"
 export const SUITE_NUDGE_EMAIL_TYPE = "suite-48h-first-shoot-nudge"
 export const SUITE_WEEKLY_DROP_EMAIL_TYPE = "suite-weekly-drop"
 
-const STUDIO_URL = "https://sselfie.ai/studio"
+const STUDIO_URL = "https://sselfie.ai/app"  // APP-CUTOVER-01: members now land in the new app
 
 /** Day 0 — right after joining. One action: first brand shoot today. */
 export function generateSuiteDay0Email({ firstName }: { firstName: string }) {

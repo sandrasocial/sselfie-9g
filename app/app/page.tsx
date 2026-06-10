@@ -35,9 +35,31 @@ export default async function StudioV3Page() {
     redirect(`/auth/login?returnTo=${encodeURIComponent("/app")}`)
   }
 
-  // Phase 1 gate: only the admin opens Studio 3.0. The 7 members remain on legacy /studio.
+  // APP-CUTOVER-01 Phase 2 gate: admin always; active members when the rollout env is on.
+  // Rollback is one env flip (APP_V3_MEMBERS_ENABLED=false returns members to /studio).
   if (!isAdminEmail(user.email)) {
-    redirect("/studio")
+    let isActiveMember = false
+    if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
+      try {
+        const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
+        const { sql } = await import("@/lib/db/client")
+        const neonUserId = await getUserIdFromSupabase(user.id)
+        if (neonUserId) {
+          const rows = await sql`
+            SELECT 1 FROM subscriptions
+            WHERE user_id = ${String(neonUserId)}
+              AND product_type = 'sselfie_studio_membership'
+              AND status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            LIMIT 1
+          `
+          isActiveMember = rows.length > 0
+        }
+      } catch (e) {
+        console.error("[/app gate] membership check failed, falling back to /studio:", e)
+      }
+    }
+    if (!isActiveMember) redirect("/studio")
   }
 
   const firstName =
