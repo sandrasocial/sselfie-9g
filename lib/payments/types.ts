@@ -14,4 +14,6 @@ export interface CheckoutFulfillmentContext {
   source: string | null | undefined
   /** Parsed from session.metadata.credits by the dispatcher (credit-granting products). */
   credits?: number
+  /** Memoized line-items expander owned by the dispatcher (shared across handlers). */
+  getExpandedSession?: () => Promise<any>
 }
