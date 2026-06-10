@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     username?: string
     full_name?: string
     text?: string
+    channel?: string
   } | null
+
+  // Same bridge serves comment triggers later: add "channel": "comment" in the ManyChat body.
+  const channel = body?.channel === "comment" ? "comment" : body?.channel === "story_reply" ? "story_reply" : "dm"
 
   const subscriberId = body?.subscriber_id ? String(body.subscriber_id) : ""
   const text = (body?.text || "").trim()
@@ -68,8 +72,8 @@ export async function POST(request: NextRequest) {
         username: body?.username?.replace(/^\{\{.*\}\}$/, "") || null,
         fullName: body?.full_name?.replace(/^\{\{.*\}\}$/, "") || null,
         messageId: null,
-        threadId: `mc-dm:${subscriberId}`,
-        channel: "dm",
+        threadId: `mc-${channel}:${subscriberId}`,
+        channel,
         text,
         timestamp: Date.now(),
         rawPayload: { source: "manychat_bridge", manychat_subscriber_id: subscriberId },
