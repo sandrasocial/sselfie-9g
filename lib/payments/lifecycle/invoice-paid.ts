@@ -10,7 +10,7 @@ import { sql } from "@/lib/db/client"
 import { addCredits, grantMonthlyCredits, SUBSCRIPTION_CREDITS } from "@/lib/credits"
 import { sendEmail } from "@/lib/email/send-email"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
-import { completeReferralForPurchase } from "@/lib/referrals/service"
+import { completeReferralForPurchase, isReferralPurchaseEligible } from "@/lib/referrals/service"
 import { markRevenueEnginePurchase } from "../shared"
 
 export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
