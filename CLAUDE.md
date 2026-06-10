@@ -196,7 +196,8 @@ Target: €197/month minimum. Not €97. Not €27.
 | `app/api/maya/feed/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/feed-chat/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/feed-progress/` | Only called by the disabled Maya Feed Tab |
-| `app/api/maya/generate-feed/` | Only called by the disabled Maya Feed Tab |
+| ~~app/api/maya/generate-feed~~ | **NOT DEAD (corrected 2026-06-10):** called by `components/sselfie/maya-chat-screen.tsx` — keep |
+
 | `app/api/maya/generate-feed-prompt/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/generate-all-feed-prompts/` | Only called by the disabled Maya Feed Tab |
 | `app/brand-engine/`, `app/apply/brand-engine/`, `app/brand-engine/vip/` | Brand Engine retired, no routes/redirects |
@@ -221,6 +222,15 @@ Target: €197/month minimum. Not €97. Not €27.
 - `lib/maya/feed-generation-handler.ts` — until Feed Planner refactor is done
 
 ---
+
+## Payments architecture (WEBHOOK-01, 2026-06-10)
+
+Stripe fulfillment is split out of the webhook monolith: `app/api/webhooks/stripe/route.ts` is
+the dispatcher (verify -> route by event/product); per-product fulfillment lives in
+`lib/payments/handlers/*` and subscription lifecycle in `lib/payments/lifecycle/*`, with shared
+helpers in `lib/payments/shared.ts`. Every extraction was verbatim and byte-proven. When touching
+ANY payment behavior: edit the handler module, never re-inline into the route. Money numbers come
+from `stripe_payments` / Stripe API only — never analytics events.
 
 ## Technical Constants (Use These — Don't Guess)
 
