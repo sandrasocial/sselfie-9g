@@ -11,14 +11,25 @@
 import { streamText, tool, convertToModelMessages, type UIMessage } from "ai"
 import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
+import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles"
+import { getUserIdFromSupabase } from "@/lib/user-mapping"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { listChats } from "@/lib/app-v3/maya/chat-store"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
 export const maxDuration = 60
 
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+
+// Concept turns are token-heavy: Maya's prose + an emit_concepts call with 3 full briefs (and,
+// for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
+// tool call mid-stream — the user watched cards stream in, then they vanished at finish (P0).
+// app-v3 sets its own budget; the shared map stays untouched for legacy /studio.
+const APP_V3_MAX_OUTPUT_TOKENS = 8192
 
 // Zod schema for one concept brief. Mirrors lib/app-v3/maya/concept-types.CreativeBrief.
 const graphicSpec = z
@@ -32,9 +43,30 @@ const graphicSpec = z
           heading: z.string(),
           body: z.string().optional(),
           role: z.enum(["hook", "value", "cta"]).optional(),
+          visual: z
+            .enum(["identity", "detail", "text-only"])
+            .optional()
+            .describe(
+              "Slide type: identity = she appears (MAX 2 per carousel), detail = object shot from " +
+                "her world with no people, text-only = designed typographic slide.",
+            ),
+          detailSubject: z
+            .string()
+            .optional()
+            .describe(
+              'For detail slides: the concrete subject, e.g. "cappuccino on a marble table beside her phone".',
+            ),
         }),
       )
       .optional(),
+    overlayStyle: z
+      .enum(["editorial-serif-center", "lower-third-accent", "top-band-minimal", "quote-statement", "series-cover"])
+      .optional()
+      .describe("Text-overlay style for this concept, chosen to fit her brand and the post's emotion."),
+    designSystem: z
+      .enum(["cutout-editorial", "full-bleed-editorial", "soft-minimal"])
+      .optional()
+      .describe("Carousel design system for the WHOLE set. Default to cutout-editorial unless the look says otherwise."),
   })
   .optional()
 
@@ -64,6 +96,22 @@ const emitConcepts = tool({
   // Echo the concepts as the tool output so the client renders them from part.output.concepts,
   // matching the app's existing tool-part convention. Default stop-after-step keeps this terminal.
   execute: async ({ concepts }) => ({ concepts }),
+})
+
+const askClarify = tool({
+  description:
+    "Ask ONE inline clarifying question when you are missing a required detail to make on-brand " +
+    "content (e.g. the reel topic, the carousel teaching angle, the story objective). Use this " +
+    "INSTEAD of generating something generic. Offer 3 to 5 short tappable options drawn from what " +
+    "you know about HER brand (never generic), and set allowFreeText so she can answer in her own " +
+    "words. Ask only the single most important missing thing, never a list, never for a plain photo. " +
+    "After she answers, call emit_concepts.",
+  inputSchema: z.object({
+    question: z.string().describe("One short question, e.g. 'What's this reel about?'"),
+    options: z.array(z.string()).min(2).max(5).describe("Short tappable options drawn from her brand."),
+    allowFreeText: z.boolean().optional(),
+  }),
+  execute: async (input) => input,
 })
 
 interface ChatBody {
@@ -134,6 +182,35 @@ export async function POST(req: Request) {
     const format: OutputFormat =
       body?.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
 
+    // Her authoritative brand profile from the EXISTING SSELFIE system (reuse, don't rebuild).
+    // This is what makes Maya know the creator (not just the look). Best-effort; never blocks chat.
+    let brandContext = ""
+    try {
+      brandContext = await getUserContextForMaya(user.id)
+    } catch (e) {
+      console.error("[app-v3 maya chat] brand context load skipped:", e)
+    }
+
+    // Cross-session memory + recent activity: what Maya already knows + what she's been making.
+    // Both feed her confidence so she asks only when she genuinely doesn't know (best-effort).
+    let memory = null
+    let recentActivity: string[] = []
+    try {
+      const neonUserId = await getUserIdFromSupabase(user.id)
+      if (neonUserId) {
+        memory = await getMemory(String(neonUserId))
+        const chats = await listChats(String(neonUserId))
+        recentActivity = chats
+          .map((c) => c.title)
+          .filter((t): t is string => !!t && t.trim().length > 0)
+          // Drop the generic format-phrase titles ("Let's create photos") so only real signal remains.
+          .filter((t) => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
+          .slice(0, 6)
+      }
+    } catch (e) {
+      console.error("[app-v3 maya chat] memory/activity load skipped:", e)
+    }
+
     const system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
@@ -141,6 +218,13 @@ export async function POST(req: Request) {
         "An editorial brand-shoot look: cohesive styling, refined light, brand-shoot quality.",
       format,
       brandKit: body?.brandKit ?? null,
+      memory,
+      recentActivity,
+      brandContext,
+      // The real Vault shots for the chosen vibe — Maya's styling source of truth. General
+      // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
+      // EVERY generation path carries Vault DNA, never a generic posed-studio default.
+      vaultStyleGuide: getVaultStyleGuide(body?.aestheticId) ?? getVaultOverviewGuide(),
     })
 
     let modelMessages = await convertToModelMessages(uiMessages)
@@ -152,9 +236,21 @@ export async function POST(req: Request) {
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: { emit_concepts: emitConcepts },
+      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify },
       temperature: 0.8,
-      maxOutputTokens: getMayaMaxTokensForTask("chat_pro"),
+      maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+      // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
+      // tool call was cut mid-stream and its cards may not survive validation.
+      onFinish: ({ finishReason }) => {
+        if (finishReason !== "stop" && finishReason !== "tool-calls") {
+          console.error(
+            `[app-v3 maya chat] stream ended early: finishReason=${finishReason} format=${format} — concept cards may be lost`,
+          )
+        }
+      },
+      onError: ({ error }) => {
+        console.error("[app-v3 maya chat] stream error:", error)
+      },
     })
 
     return result.toUIMessageStreamResponse()

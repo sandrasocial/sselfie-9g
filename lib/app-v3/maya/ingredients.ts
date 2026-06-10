@@ -57,13 +57,66 @@ export const REALISM_TOKENS =
   "natural skin texture with pores visible, fine film grain, muted colors, candid editorial feel, not plastic, not over-smoothed"
 
 /**
- * The strict identity anchor — Nano Banana rule #1. The compiler puts this on the FIRST
- * line of every prompt so gpt-image locks the user's likeness before anything else.
+ * Elevation: SSELFIE doesn't reproduce a tired selfie, it shows the best, most confident
+ * version of her. Beauty + styling + brand elevation while keeping her clearly recognizable.
+ * Identity-preserving, not face-changing (stays moderation-safe and on-brand).
+ */
+export const ELEVATION =
+  "Show the most polished, confident, editorial version of her: flattering light, refined and " +
+  "healthy skin, tasteful natural makeup, great hair, elegant on-brand styling, strong posture, " +
+  "magazine-quality finish. Elevate her while keeping her clearly recognizable as the same person. " +
+  "Enhance; do not change who she is."
+
+/**
+ * The identity anchor (gpt-image rule #1). The compiler puts this on the FIRST line of every
+ * prompt so the model keeps the user's likeness before anything else. This is Sandra's PROVEN
+ * universal identity lock (her Pinterest Photoshoot Lab workflow), adapted to third person
+ * because the server attaches the selfie via the edit endpoint. It names the features that
+ * matter without the forensic words ("exact face / bone structure / strict replication") that
+ * tripped OpenAI moderation. The reference defines the person; the prompt defines the styling.
  */
 export const IDENTITY_ANCHOR =
-  "Use the attached photo as a strict identity reference. Preserve this exact person's face, " +
-  "facial structure, bone structure, skin tone, and recognizable likeness. Do not turn them " +
-  "into a different person and do not change their hair color."
+  "Use the attached reference photo as the only source for her face and identity. Preserve her " +
+  "facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair " +
+  "color, and overall look from the reference. The reference defines the person; this prompt " +
+  "defines only the styling, outfit, location, pose, mood, and editorial look. Keep the result " +
+  "realistic, editorial, sharp, and clearly recognizable as the same woman."
+
+/**
+ * Accessories discipline (Sandra's proven rule): the phone is the main accessory; don't over-
+ * accessorize; only use brand logos when specified and naturally fitting, never random ones.
+ */
+export const ACCESSORIES_NOTE =
+  "Use the phone as the main accessory when it fits the scene. Do not over-accessorize, simple is " +
+  "better. Only include brand logos or branded items when specified and naturally fitting; never " +
+  "add random logos or extra branded items."
+
+/**
+ * The universal technical avoid list (Sandra's proven workflow). Targets the artifacts that make
+ * an image read as AI: warped anatomy/props, plastic over-smoothed skin, CGI, blur, compression.
+ */
+export const AVOID_LIST =
+  "Avoid: distorted hands, extra fingers, warped phone, warped sunglasses, warped shoes, " +
+  "unrealistic body proportions, plastic skin, over-smoothed beauty filter, heavy glam makeup, " +
+  "cartoonish AI style, CGI, fantasy lighting, messy anatomy, blur, low-resolution softness, " +
+  "compression haze, overly staged stock-photo look, cluttered props, random logos, " +
+  "fake-looking brand marks."
+
+/** Output quality + format block per aspect (Sandra's proven 9:16 / 4:5, 2K, anti-blur rules). */
+export const PORTRAIT_QUALITY =
+  "Image quality: vertical 9:16 portrait, 2K quality, crisp editorial sharpness, realistic depth " +
+  "and detail, no blur, no low-resolution softness, no compression haze."
+export const CAROUSEL_QUALITY =
+  "Image quality: vertical 4:5 Instagram format, 2K quality, crisp editorial sharpness, no blur, " +
+  "no low-resolution softness, no compression haze."
+
+/**
+ * Even softer identity wording used only on a content_policy retry, plus a styling note that
+ * nudges the model toward a moderation-safe, classy result.
+ */
+export const IDENTITY_ANCHOR_SAFE =
+  "Keep the person resembling the woman in the attached photo, in a natural and tasteful way. " +
+  "Create a classy, fully-clothed editorial portrait with elegant, modest styling."
 
 /**
  * Hardcoded "Quiet Luxury" fallback palette (per Sandra's spec answer). Used for the

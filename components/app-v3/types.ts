@@ -49,15 +49,25 @@ export interface ConciergeSession {
   referenceSelfieUrl: string | null
   /** On-image text for graphic formats. */
   graphicText: GraphicTextSpec | null
+  /** Optional first message to seed Maya with (e.g. a Content recommendation idea). */
+  seedPrompt?: string | null
   startedAt: number
+}
+
+/** Options when opening the concierge from a surface (format preselect + an idea to start on). */
+export interface OpenConciergeOptions {
+  format?: OutputFormat
+  /** A specific idea Maya should create (the first turn), e.g. a Content recommendation. */
+  seed?: string
 }
 
 export interface ConciergeContextValue {
   session: ConciergeSession | null
   isOpen: boolean
   /** Open the concierge with a chosen aesthetic preloaded (the Handoff). */
-  openWithAesthetic: (aesthetic: Aesthetic) => void
-  setOutputFormat: (format: OutputFormat) => void
+  openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
+  /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */
+  setOutputFormat: (format: OutputFormat | null) => void
   setReferenceSelfieUrl: (url: string | null) => void
   setGraphicText: (spec: GraphicTextSpec) => void
   close: () => void

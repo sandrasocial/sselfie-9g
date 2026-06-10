@@ -4,12 +4,13 @@
 // Clicking an aesthetic tile opens Maya with that vibe preloaded. This context holds
 // that session so the front door and the concierge panel stay in sync.
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react"
+import { createContext, startTransition, useCallback, useContext, useMemo, useState } from "react"
 import type {
   Aesthetic,
   ConciergeContextValue,
   ConciergeSession,
   GraphicTextSpec,
+  OpenConciergeOptions,
   OutputFormat,
 } from "./types"
 
@@ -19,18 +20,24 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
-  const openWithAesthetic = useCallback((aesthetic: Aesthetic) => {
-    setSession({
-      aesthetic,
-      outputFormat: null,
-      referenceSelfieUrl: null,
-      graphicText: null,
-      startedAt: Date.now(),
+  const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
+    // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
+    // so the tap paints immediately instead of blocking the main thread (fixes the INP stall).
+    const startedAt = Date.now()
+    startTransition(() => {
+      setSession({
+        aesthetic,
+        outputFormat: opts?.format ?? null,
+        referenceSelfieUrl: null,
+        graphicText: null,
+        seedPrompt: opts?.seed ?? null,
+        startedAt,
+      })
+      setIsOpen(true)
     })
-    setIsOpen(true)
   }, [])
 
-  const setOutputFormat = useCallback((format: OutputFormat) => {
+  const setOutputFormat = useCallback((format: OutputFormat | null) => {
     setSession((prev) => (prev ? { ...prev, outputFormat: format } : prev))
   }, [])
 

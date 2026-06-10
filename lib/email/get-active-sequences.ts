@@ -41,6 +41,11 @@ const SEQUENCE_SEGMENTS: Array<{
     segmentKeys: [],
   },
   {
+    jobName: "starter-kit-checkout-recovery",
+    label: "Starter Kit Checkout Recovery",
+    segmentKeys: [],
+  },
+  {
     jobName: "nurture-sequence",
     label: "Selfie to Brand Shoot Activation",
     segmentKeys: [],

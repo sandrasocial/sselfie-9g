@@ -7,7 +7,7 @@ import type { OutputFormat } from "@/components/app-v3/types"
 
 /**
  * The structured creative brief Maya produces for ONE concept.
- * Every field feeds the Nano-Banana-order compiler (see prompt-compiler.compileConceptPrompt).
+ * Every field feeds the Vault-aligned compiler (see prompt-compiler.compileConceptJobs).
  * Maya MUST fill these with specific, named language — exact brand names, a named camera
  * body, a named lighting setup — never generic ("luxury sweater", "soft light").
  */
@@ -36,8 +36,34 @@ export interface ConceptGraphicSpec {
   headline?: string
   /** Optional supporting line. */
   subline?: string
-  /** Per-slide copy for carousels (one entry per slide). */
-  slides?: { heading: string; body?: string; role?: "hook" | "value" | "cta" }[]
+  /** Per-slide copy for carousels (one entry per slide). `visual` picks the slide type
+   *  (identity = she appears, max 1-2 per set; detail = object shot from her world, no people;
+   *  text-only = designed typographic slide). `detailSubject` grounds detail slides. */
+  slides?: {
+    heading: string
+    body?: string
+    role?: "hook" | "value" | "cta"
+    visual?: "identity" | "detail" | "text-only"
+    detailSubject?: string
+  }[]
+  /** Chosen text-overlay style id (lib/app-v3/maya/overlay-styles). Maya picks per brand + emotion. */
+  overlayStyle?: string
+  /** Carousel design system id (lib/app-v3/maya/carousel-design-systems). Maya picks per concept. */
+  designSystem?: string
+}
+
+/**
+ * An inline clarifying question (the Content Requirements Engine). When Maya is missing ONE
+ * required detail to make on-brand content (e.g. the reel topic), she asks this instead of
+ * generating something generic. Rendered as tappable chips, not a chat prompt or a form.
+ */
+export interface ClarifyPrompt {
+  /** One short question, e.g. "What's this reel about?" */
+  question: string
+  /** 2 to 5 short tappable options, drawn from the user's brand (not generic). */
+  options: string[]
+  /** Whether to also offer a free-text path ("tell me in your own words"). */
+  allowFreeText?: boolean
 }
 
 /** A single concept direction Maya proposes. The `brief` is what the user "clicks". */
@@ -79,6 +105,8 @@ export interface MayaChatRequestExtras {
 
 /** Request body posted to /api/app-v3/maya/generate when a concept card is generated. */
 export interface MayaGenerateConceptRequest {
+  /** Single-image jobs only: stream progressive partial previews over SSE. */
+  stream?: boolean
   brief: CreativeBrief
   format: OutputFormat
   /** Front-face selfie — required identity anchor. */

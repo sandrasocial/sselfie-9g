@@ -2,8 +2,10 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
+import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { createServerClient } from "@/lib/supabase/server"
 import { buildCheckoutRedirectUrl, getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
 
@@ -49,11 +51,15 @@ export default async function StarterKitCheckoutPage({
     guide_cta?: string
     freebie_source?: string
     checkout_source?: string
+    cta_keyword?: string
+    entry_post_slug?: string
+    buyer_stage?: string
     returnTo?: string
     return_to?: string
     freebie_token?: string
     checkout_email?: string
     email?: string
+    skip_email_capture?: string
   }>
 }) {
   const params = await searchParams
@@ -75,6 +81,46 @@ export default async function StarterKitCheckoutPage({
       : urlEmail
         ? "url"
         : "none"
+
+  if (
+    shouldShowCheckoutEmailCapture({
+      params,
+      hasRecoverableEmail: Boolean(checkoutEmail),
+      hasAuthUser: Boolean(authUser?.id),
+      hasFreebieToken: Boolean(params.freebie_token),
+    })
+  ) {
+    await logAnalyticsEvent({
+      eventName: "starter_kit_checkout_email_capture_view",
+      path: "/checkout/starter-kit",
+      properties: {
+        product_type: "starter_kit",
+        source: attribution.source,
+        utm_source: attribution.utmSource,
+        utm_medium: attribution.utmMedium,
+        utm_campaign: attribution.utmCampaign,
+        utm_content: attribution.utmContent,
+        email_type: attribution.emailType,
+        checkout_source: attribution.checkoutSource,
+        guide_cta: attribution.guideCta,
+        freebie_source: attribution.freebieSource,
+        cta_keyword: attribution.ctaKeyword,
+        entry_post_slug: attribution.entryPostSlug,
+        buyer_stage: attribution.buyerStage,
+      },
+    })
+
+    return (
+      <PromptVaultCheckoutEmailCapture
+        params={params}
+        actionPath="/checkout/starter-kit"
+        eyebrow="SELFIE STARTER KIT"
+        title="Where should I send your Starter Kit?"
+        copy="Add your email before checkout so your Starter Kit, receipt, and access link go to the right place. If anything pauses, I can help you find your order faster."
+        inputId="starter-kit-checkout-email"
+      />
+    )
+  }
 
   try {
     await logAnalyticsEvent({

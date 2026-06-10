@@ -10,34 +10,45 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 
 export function PromptVaultCheckoutEmailCapture({
   params,
+  actionPath = "/checkout/prompt-vault",
+  eyebrow = "AI PHOTO PROMPT VAULT",
+  title = "Where should I send your Vault access?",
+  copy = "Add your email before checkout so your access link and receipt go to the right place. If anything pauses, I can also help you find your purchase faster.",
+  inputId = "prompt-vault-checkout-email",
+  buttonLabel = "Continue to checkout",
 }: {
   params: CheckoutEmailCaptureParams
+  actionPath?: string
+  eyebrow?: string
+  title?: string
+  copy?: string
+  inputId?: string
+  buttonLabel?: string
 }) {
   const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params)
-  const skipHref = buildSkipCheckoutEmailCaptureHref("/checkout/prompt-vault", params)
+  const skipHref = buildSkipCheckoutEmailCaptureHref(actionPath, params)
 
   return (
     <main className={inter.className}>
       <section className="pv-email-capture">
         <div className="pv-email-card">
-          <p className="pv-eyebrow">AI PHOTO PROMPT VAULT</p>
+          <p className="pv-eyebrow">{eyebrow}</p>
           <h1 className={`${cormorant.className} pv-title`}>
-            Where should I send your Vault access?
+            {title}
           </h1>
           <p className="pv-copy">
-            Add your email before checkout so your access link and receipt go to the right place.
-            If anything pauses, I can also help you find your purchase faster.
+            {copy}
           </p>
 
-          <form action="/checkout/prompt-vault" method="get" className="pv-form">
+          <form action={actionPath} method="get" className="pv-form">
             {hiddenParams.map((item) => (
               <input key={item.name} type="hidden" name={item.name} value={item.value} />
             ))}
-            <label htmlFor="prompt-vault-checkout-email" className="pv-label">
+            <label htmlFor={inputId} className="pv-label">
               Email address
             </label>
             <input
-              id="prompt-vault-checkout-email"
+              id={inputId}
               name="checkout_email"
               type="email"
               autoComplete="email"
@@ -47,7 +58,7 @@ export function PromptVaultCheckoutEmailCapture({
               className="pv-input"
             />
             <button type="submit" className="pv-button">
-              Continue to checkout
+              {buttonLabel}
             </button>
           </form>
 

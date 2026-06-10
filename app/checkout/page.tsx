@@ -28,7 +28,9 @@ const ATTRIBUTION_KEYS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "checkout_email",
   "vault_credit",
+  "starter_kit_credit",
   "upgrade_credit",
 ] as const
 

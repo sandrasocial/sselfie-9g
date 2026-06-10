@@ -133,6 +133,13 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 
 Users never navigate. They just talk to their agent — and their agent surfaces everything they need, right there in the conversation.
 
+### Interaction model refinement (Locked 2026-06-09 — supersedes "chat-first" for /app)
+Maya stays the face and creative director, but the happy path is **Maya-guided and tap-first, optimized for completion, not conversation.** The customer is buying "give me amazing brand photos without having to think," which is a workflow problem, not a conversation problem. Like a high-end stylist: "I pulled three looks for you. Which feels most like you?"
+- Primary interaction is **selection-based and visual**: look → format → concept → generate → use. Zero typing required to reach the core outcome.
+- Chat is **refinement only**: "Want something different? Ask Maya." It must never be required to get value.
+- Distinction: ❌ chat-first ("talk to Maya to figure out what to create") vs ✅ Maya-guided ("Maya already pulled options, I just pick what I like"). The second is closer to luxury.
+- This refines, does not abandon, the North Star: Maya is still everywhere and still the relationship. She just leads with curated taps instead of a blank prompt.
+
 ### The Experience
 ```
 User: "I want to create a photo for my new offer"

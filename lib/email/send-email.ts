@@ -38,6 +38,39 @@ try {
   console.error("[v0] ⚠️ Failed to initialize Resend client:", error)
 }
 
+function normalizeOutboundRecipient(value: string): string | null {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/^mailto:/, "")
+    .replace(/[.,;:]+$/g, "")
+
+  if (!normalized) return null
+  if (normalized.length > 254) return null
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return null
+  return normalized
+}
+
+function normalizeOutboundRecipients(to: string | string[]): {
+  recipients: string[]
+  invalid: string[]
+} {
+  const rawRecipients = Array.isArray(to) ? to : [to]
+  const recipients: string[] = []
+  const invalid: string[] = []
+
+  for (const raw of rawRecipients) {
+    const normalized = normalizeOutboundRecipient(raw)
+    if (normalized) {
+      recipients.push(normalized)
+    } else {
+      invalid.push(raw)
+    }
+  }
+
+  return { recipients, invalid }
+}
+
 async function sendEmailWithRetry(
   options: EmailOptions,
   maxRetries = 3,
@@ -234,9 +267,22 @@ async function getRecipientSuppression(email: string): Promise<{ suppressed: boo
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const recipient = Array.isArray(options.to) ? options.to[0] : options.to
+  const normalized = normalizeOutboundRecipients(options.to)
+  const recipient = normalized.recipients[0] || normalized.invalid[0] || ""
   const emailType = options.emailType || "general"
-  let preparedOptions = options
+  let preparedOptions: EmailOptions = {
+    ...options,
+    to: Array.isArray(options.to) ? normalized.recipients : normalized.recipients[0] || "",
+  }
+
+  if (normalized.invalid.length > 0 || normalized.recipients.length === 0) {
+    const errorMessage = `Invalid recipient email: ${normalized.invalid.join(", ") || "missing recipient"}`
+    await logEmailSend(recipient || "unknown", emailType, "failed", undefined, errorMessage, options.campaignId)
+    return {
+      success: false,
+      error: errorMessage,
+    }
+  }
 
   if (!options.subject || options.subject.trim().length === 0) {
     const errorMessage = "Missing subject field"
@@ -314,7 +360,7 @@ export async function sendEmail(
     const compliantBody = addMarketingUnsubscribeFooter(options.html, options.text, unsubscribeUrl)
 
     preparedOptions = {
-      ...options,
+      ...preparedOptions,
       from: options.from || EMAIL_CONFIG.marketing.from,
       replyTo: options.replyTo || EMAIL_CONFIG.marketing.replyTo,
       html: compliantBody.html,

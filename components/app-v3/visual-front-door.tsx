@@ -6,19 +6,30 @@
 // Design system: light luxury editorial — Seasalt surfaces, Night for contrast, Cormorant
 // display, generous spacing, no icons/emojis, no gradients/color.
 
+import { memo } from "react"
 import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
 import type { Aesthetic } from "./types"
 
-function AestheticTile({ aesthetic, index }: { aesthetic: Aesthetic; index: number }) {
-  const { openWithAesthetic } = useConcierge()
+// Memoized + receives onOpen as a STABLE prop, so opening the concierge (which changes the
+// concierge context value) does NOT re-render every image tile. Subscribing each tile to the
+// context made all tiles re-render on open, a long synchronous commit that tripped INP.
+const AestheticTile = memo(function AestheticTile({
+  aesthetic,
+  index,
+  onOpen,
+}: {
+  aesthetic: Aesthetic
+  index: number
+  onOpen: (a: Aesthetic) => void
+}) {
   // Vary tile height slightly for an editorial, non-uniform masonry rhythm.
   const tall = index % 3 === 0
   return (
     <button
       type="button"
-      onClick={() => openWithAesthetic(aesthetic)}
+      onClick={() => onOpen(aesthetic)}
       className="group relative block w-full overflow-hidden rounded-[2px] bg-[#FFFFFF] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
       aria-label={`Start a shoot in the ${aesthetic.name} look`}
     >
@@ -40,9 +51,12 @@ function AestheticTile({ aesthetic, index }: { aesthetic: Aesthetic; index: numb
       </div>
     </button>
   )
-}
+})
 
 export function VisualFrontDoor() {
+  // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
+  // useCallback, so the memoized tiles below never re-render when the concierge opens.
+  const { openWithAesthetic } = useConcierge()
   return (
     <section className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
       <header className="mb-8 sm:mb-12">
@@ -53,13 +67,16 @@ export function VisualFrontDoor() {
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">
           Choose the look you want. Maya takes it from there: one selfie becomes a full brand shoot.
         </p>
+        <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">
+          Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · gallery · feed planning
+        </p>
       </header>
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
       <div className="[column-fill:_balance] columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
         {AESTHETICS.map((aesthetic, i) => (
           <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">
-            <AestheticTile aesthetic={aesthetic} index={i} />
+            <AestheticTile aesthetic={aesthetic} index={i} onOpen={openWithAesthetic} />
           </div>
         ))}
       </div>
