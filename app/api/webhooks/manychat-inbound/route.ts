@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
   }
   // Guardrails: ManyChat templates can leak literal placeholders when a field is empty.
   if (text.startsWith("{{") || text.length > 4000) {
-    return NextResponse.json({ received: true, skipped: "placeholder_or_oversized" })
+    // Unsubstituted placeholder or oversized — acknowledge in ManyChat's dynamic format, send nothing.
+    return NextResponse.json({ version: "v2", content: { messages: [] }, skipped: "placeholder_or_oversized" })
   }
 
   after(async () => {
@@ -78,5 +79,7 @@ export async function POST(request: NextRequest) {
     }
   })
 
-  return NextResponse.json({ received: true })
+  // ManyChat dynamic-block response: empty messages = no visible auto-reply (the voice draft
+  // waits for Sandra's approval in /admin/ig-inbox instead).
+  return NextResponse.json({ version: "v2", content: { messages: [] } })
 }
