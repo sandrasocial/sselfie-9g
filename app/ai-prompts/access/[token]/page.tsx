@@ -115,7 +115,7 @@ function PromptCardEl({
                   afterCopyTitle: "That's one photo. Want the whole shoot?",
                   afterCopyLabel: "Get the full Vault · $27",
                   afterCopyNote:
-                    "One good photo is a start. The Vault gives you the full shoot for every look: matching shots, same light, same mood, so your feed looks like a real photoshoot. New shoots added all the time.",
+                    "One good photo is a start. The Vault gives you the full shoot for every look: matching shots, same light, same mood, so your feed finally feels like one brand. New shoots added all the time.",
                   afterCopyFootnote: "One payment. Yours for good.",
                   afterCopyViewEvent: "ai_prompts_after_copy_vault_cta_view",
                   afterCopyTrackEvent: "ai_prompts_prompt_vault_click",
@@ -175,7 +175,7 @@ function PreviewCardEl({
             afterCopyHref={upgradeHref}
             afterCopyTitle="That was just the opening shot."
             afterCopyLabel="Get the full Vault · $27"
-            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, like a real shoot day, with you recognizable in every frame. You get every collection, plus each new drop I add."
             afterCopyFootnote="One payment. Yours for good."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"

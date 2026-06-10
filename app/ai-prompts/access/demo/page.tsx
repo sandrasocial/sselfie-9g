@@ -178,7 +178,7 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
             afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
             afterCopyLabel="Get the full Vault · $27"
             afterCopyTitle="That was just the opening shot."
-            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, like a real shoot day, with you recognizable in every frame. You get every collection, plus each new drop I add."
             afterCopyFootnote="One payment. Yours for good."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
@@ -280,7 +280,7 @@ export default function AiPromptsDemoPage() {
                 afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
                 afterCopyLabel="Get the full Vault · $27"
                 afterCopyTitle="That was just the opening shot."
-                afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, so it looks like you booked a photographer, not like one lucky AI photo. You get every collection, plus each new drop I add."
+                afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, like a real shoot day, with you recognizable in every frame. You get every collection, plus each new drop I add."
                 afterCopyFootnote="One payment. Yours for good."
                 afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
                 afterCopyTrackEvent="ai_prompts_prompt_vault_click"
