@@ -45,9 +45,16 @@ const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
 
-// Image quality (low | medium | high). gpt-image-2 supports all three; default medium to stay
-// inside the time budget, override to "high" for maximum finish via env.
-const IMAGE_QUALITY = (process.env.APP_V3_IMAGE_QUALITY || "medium") as "low" | "medium" | "high"
+// Image quality (low | medium | high). MEASURED 2026-06-10 on real prompts: medium ~82s/$0.06,
+// high ~191s/$0.22 per image. Members buy "premium presence", so single images default HIGH
+// (the streamed preview keeps the longer wait alive). Carousels run up to 6 parallel jobs, so
+// they stay MEDIUM for cost + time sanity. APP_V3_IMAGE_QUALITY overrides both.
+type ImgQuality = "low" | "medium" | "high"
+const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
+function qualityForFormat(format: OutputFormat): ImgQuality {
+  if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high") return QUALITY_OVERRIDE
+  return format === "carousel" ? "medium" : "high"
+}
 
 // On-image text rendering for NEW photos (Mode B). gpt-image-2 renders photoreal + accurate text
 // in a single pass (~99% character accuracy), so one_pass is the default: faster, cheaper, and it
@@ -228,6 +235,7 @@ export async function POST(request: NextRequest) {
     }
 
     const size = conceptOpenAISize(format)
+    const IMAGE_QUALITY = qualityForFormat(format)
     // Charge once per final image (slide), regardless of how many passes produce it.
     const imageCount = jobs.length
     const totalCost = CREDIT_COSTS.IMAGE * imageCount
@@ -386,6 +394,150 @@ export async function POST(request: NextRequest) {
       return current
     }
 
+    // Persist buffers to Blob + gallery. Throws on blob failure (caller refunds).
+    const persistBuffers = async (bufs: Buffer[]): Promise<{ url: string; id: number | null }[]> => {
+      const stamp = Date.now()
+      return Promise.all(
+        bufs.map(async (buf, i) => {
+          const blob = await put(`maya-app-v3/${neonUser.id}/${stamp}-${i}.png`, buf, {
+            access: "public",
+            contentType: "image/png",
+          })
+          let id: number | null = null
+          try {
+            const inserted = await sql`
+              INSERT INTO ai_images (
+                user_id, image_url, prompt, generated_prompt, prediction_id,
+                generation_status, source, category, created_at
+              ) VALUES (
+                ${neonUser.id}, ${blob.url}, ${recordPrompts[i] ?? recordPrompts[0]}, ${recordPrompts[i] ?? recordPrompts[0]},
+                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
+              ) RETURNING id
+            `
+            id = inserted[0]?.id ?? null
+          } catch (dbError) {
+            console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
+          }
+          return { url: blob.url, id }
+        }),
+      )
+    }
+
+    // One streaming pass: partial frames go to onPartial as they form; resolves the final image.
+    const runStreamingPass = async (
+      promptText: string,
+      images: Awaited<ReturnType<typeof toFile>>[] | null,
+      onPartial: (b64: string) => void,
+    ): Promise<Buffer> => {
+      const base: Record<string, unknown> = {
+        model: OPENAI_IMAGE_MODEL,
+        prompt: promptText,
+        n: 1,
+        size,
+        quality: IMAGE_QUALITY,
+        output_format: "png",
+        stream: true,
+        partial_images: 2,
+      }
+      if (images && OPENAI_IMAGE_MODEL !== "gpt-image-2") base.input_fidelity = "high"
+      const events = images
+        ? await openai.images.edit({ ...base, image: images.length === 1 ? images[0] : images } as any)
+        : await openai.images.generate(base as any)
+      let final: Buffer | null = null
+      for await (const event of events as unknown as AsyncIterable<{ type?: string; b64_json?: string }>) {
+        if (typeof event?.b64_json !== "string") continue
+        if (event.type?.endsWith("partial_image")) onPartial(event.b64_json)
+        else if (event.type?.endsWith("completed")) final = Buffer.from(event.b64_json, "base64")
+      }
+      if (!final) throw new Error("No image data returned from OpenAI")
+      return final
+    }
+
+    const runStreamingPassWithRetry = async (
+      promptText: string,
+      images: Awaited<ReturnType<typeof toFile>>[] | null,
+      onPartial: (b64: string) => void,
+    ): Promise<Buffer> => {
+      try {
+        return await runStreamingPass(promptText, images, onPartial)
+      } catch (firstError) {
+        if (isContentPolicyError(firstError)) {
+          return await runStreamingPass(sanitizePromptForModeration(promptText), images, onPartial)
+        }
+        throw firstError
+      }
+    }
+
+    // ── Streaming path (single-image jobs): progressive previews over SSE so the 60-120s
+    // wait becomes a photo developing in front of her instead of a spinner. Carousels and
+    // multi-job runs keep the JSON path. Credit checks already happened (402s stay JSON). ──
+    const wantsStream = (body as { stream?: boolean }).stream === true && jobs.length === 1
+    if (wantsStream) {
+      const job = jobs[0]
+      const encoder = new TextEncoder()
+      const sse = (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)
+      const streamBody = new ReadableStream({
+        start: async (controller) => {
+          try {
+            let current: Buffer | null = null
+            for (let pi = 0; pi < job.passes.length; pi++) {
+              const pass = job.passes[pi]
+              const isFinal = pi === job.passes.length - 1
+              const images: Awaited<ReturnType<typeof toFile>>[] | null =
+                pass.input === "none"
+                  ? null
+                  : pass.input === "selfie"
+                    ? selfieFiles
+                    : pass.input === "base"
+                      ? baseFiles
+                      : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
+              if (!isFinal) {
+                current = images ? await runEditWithRetry(pass.prompt, images) : await runGenerateWithRetry(pass.prompt)
+                continue
+              }
+              current = await runStreamingPassWithRetry(pass.prompt, images, (b64) =>
+                controller.enqueue(sse({ type: "partial", b64 })),
+              )
+            }
+            if (!current) throw new Error("Job produced no image")
+            const persisted = await persistBuffers([current])
+            controller.enqueue(
+              sse({
+                type: "done",
+                success: true,
+                imageUrl: persisted[0].url,
+                imageUrls: [persisted[0].url],
+                imageCount: 1,
+                aiImageId: persisted[0].id,
+                creditsDeducted: totalCost,
+                newBalance: deduction.newBalance,
+              }),
+            )
+          } catch (err) {
+            await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(() => {})
+            console.error("[app-v3 generate] Streaming generation failed:", err)
+            controller.enqueue(
+              sse({
+                type: "error",
+                error: isContentPolicyError(err)
+                  ? "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you."
+                  : "Failed to generate image. Please try again.",
+              }),
+            )
+          } finally {
+            controller.close()
+          }
+        },
+      })
+      return new Response(streamBody, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      })
+    }
+
     // ── Generate every image (jobs run in parallel; passes within a job run sequentially) ──
     let buffers: Buffer[]
     try {
@@ -407,33 +559,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Persist each image to Blob + gallery (ai_images). Blob failure refunds the set. ──
-    const stamp = Date.now()
     let persisted: { url: string; id: number | null }[]
     try {
-      persisted = await Promise.all(
-        buffers.map(async (buf, i) => {
-          const blob = await put(`maya-app-v3/${neonUser.id}/${stamp}-${i}.png`, buf, {
-            access: "public",
-            contentType: "image/png",
-          })
-          let id: number | null = null
-          try {
-            const inserted = await sql`
-              INSERT INTO ai_images (
-                user_id, image_url, prompt, generated_prompt, prediction_id,
-                generation_status, source, category, created_at
-              ) VALUES (
-                ${neonUser.id}, ${blob.url}, ${recordPrompts[i]}, ${recordPrompts[i]},
-                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
-              ) RETURNING id
-            `
-            id = inserted[0]?.id ?? null
-          } catch (dbError) {
-            console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
-          }
-          return { url: blob.url, id }
-        }),
-      )
+      persisted = await persistBuffers(buffers)
     } catch (blobError) {
       await refundCredits(neonUser.id, totalCost, "Blob upload failed", refundRef).catch(() => {})
       console.error("[app-v3 generate] Blob upload failed:", blobError)

@@ -105,6 +105,8 @@ export interface MayaChatRequestExtras {
 
 /** Request body posted to /api/app-v3/maya/generate when a concept card is generated. */
 export interface MayaGenerateConceptRequest {
+  /** Single-image jobs only: stream progressive partial previews over SSE. */
+  stream?: boolean
   brief: CreativeBrief
   format: OutputFormat
   /** Front-face selfie — required identity anchor. */

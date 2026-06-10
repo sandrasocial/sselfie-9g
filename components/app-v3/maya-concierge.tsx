@@ -411,8 +411,52 @@ export function MayaConcierge() {
           referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
+          // Single-image formats stream progressive previews; carousels keep the JSON path.
+          stream: format !== "carousel",
         }),
       })
+
+      // ── Streaming path: the photo develops in the card as partial frames arrive. ──
+      const contentType = res.headers.get("content-type") || ""
+      if (res.ok && contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ""
+        let settled = false
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const chunks = buffer.split("\n\n")
+          buffer = chunks.pop() ?? ""
+          for (const chunk of chunks) {
+            const line = chunk.trim()
+            if (!line.startsWith("data: ")) continue
+            let evt: { type?: string; b64?: string; imageUrls?: string[]; error?: string } | null = null
+            try {
+              evt = JSON.parse(line.slice(6))
+            } catch {
+              continue
+            }
+            if (evt?.type === "partial" && evt.b64) {
+              const previewUrl = `data:image/png;base64,${evt.b64}`
+              setGenState((s) => ({ ...s, [key]: { status: "generating", previewUrl } }))
+            } else if (evt?.type === "done" && Array.isArray(evt.imageUrls) && evt.imageUrls.length > 0) {
+              setGenState((s) => ({ ...s, [key]: { status: "done", imageUrls: evt!.imageUrls } }))
+              setGeneratedOnce(true)
+              settled = true
+            } else if (evt?.type === "error") {
+              setGenState((s) => ({ ...s, [key]: { status: "error", error: evt!.error || "Generation failed" } }))
+              settled = true
+            }
+          }
+        }
+        if (!settled) {
+          setGenState((s) => ({ ...s, [key]: { status: "error", error: "Generation failed" } }))
+        }
+        return
+      }
+
       const data = (await res.json().catch(() => null)) as
         | { imageUrl?: string; imageUrls?: string[]; error?: string; code?: string; current?: number }
         | null

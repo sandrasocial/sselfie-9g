@@ -17,6 +17,8 @@ export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
   error?: string
+  /** Progressive partial frame (data URL) while streaming — the photo "develops" in place. */
+  previewUrl?: string
 }
 
 interface ConceptCardProps {
@@ -72,6 +74,19 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
                 {isCarousel ? "Swipe" : "View"}
               </span>
             </button>
+          ) : gen.previewUrl ? (
+            <div className="absolute inset-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={gen.previewUrl}
+                alt="Developing preview"
+                decoding="async"
+                className="h-full w-full object-cover opacity-95"
+              />
+              <span className="absolute bottom-2 left-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
+                Developing…
+              </span>
+            </div>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
               <Spinner className="h-7 w-7" />
