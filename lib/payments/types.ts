@@ -16,4 +16,7 @@ export interface CheckoutFulfillmentContext {
   credits?: number
   /** Memoized line-items expander owned by the dispatcher (shared across handlers). */
   getExpandedSession?: () => Promise<any>
+  /** Set by the dispatcher's account-creation step (academy delivery email branching). */
+  isNewUserForEmail?: boolean
+  purchasePasswordSetupLink?: string
 }
