@@ -1163,7 +1163,11 @@ export function MasterclassPageContent() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function StudioPageContent() {
+export function StudioPageContent({ checkoutSource }: { checkoutSource?: string } = {}) {
+  // A door elsewhere (free prompts page, Vault access) may hand us its source so the
+  // checkout attribution survives the landing-page hop. Defaults stay unchanged.
+  const sourceTop = checkoutSource || "studio_page"
+  const sourceBottom = checkoutSource ? `${checkoutSource}_bottom` : "studio_page_bottom"
   return (
     <PublicPageShell>
       <PublicNav />
@@ -1173,7 +1177,7 @@ export function StudioPageContent() {
         eyebrow="Studio · €97/mo"
         title={<>Maya helps you show up every week.</>}
         body={<p>You know your look. You know your edit. Studio keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
-        primary={{ href: "/checkout/membership?interval=month&source=studio_page", label: "Join Studio" }}
+        primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join Studio" }}
         secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
         imageSrc={IMG.feed}
       />
@@ -1213,7 +1217,7 @@ export function StudioPageContent() {
       {/* CTA — dark */}
       <CtaClose
         title="When you want Maya to help you execute every week, this is it."
-        primary={{ href: "/checkout/membership?interval=month&source=studio_page_bottom", label: "Join Studio · €97/mo" }}
+        primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join Studio · €97/mo" }}
         secondary={{ href: "/starter-kit",       label: "Start smaller" }}
         dark
       />
