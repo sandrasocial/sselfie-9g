@@ -3,6 +3,32 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // DELETE-01 (2026-06-10): 18 retired marketing pages became framework-level redirects so the
+  // page directories could be deleted. External links (ManyChat, old IG posts) keep working.
+  async redirects() {
+    return [
+      { source: "/visibility-suite", destination: "/masterclass", permanent: true },
+      { source: "/concept-cards", destination: "/masterclass", permanent: true },
+      { source: "/captions", destination: "/masterclass", permanent: true },
+      { source: "/feed-reset", destination: "/masterclass", permanent: true },
+      { source: "/what-to-say", destination: "/masterclass", permanent: true },
+      { source: "/show-up", destination: "/masterclass", permanent: true },
+      { source: "/ai-brand-photos", destination: "/selfie-guide", permanent: true },
+      { source: "/transform", destination: "/selfie-guide", permanent: true },
+      { source: "/transform/studio", destination: "/studio", permanent: true },
+      { source: "/quiz/post-to-paid", destination: "/selfie-guide", permanent: true },
+      { source: "/quiz/post-to-paid/results", destination: "/selfie-guide", permanent: true },
+      { source: "/prompt-guides", destination: "/why-studio", permanent: true },
+      { source: "/prompt-guides/:slug", destination: "/selfie-guide", permanent: true },
+      { source: "/whats-new", destination: "/why-studio", permanent: true },
+      { source: "/sselfie-vs-aragon", destination: "/why-studio", permanent: true },
+      { source: "/paid-blueprint", destination: "/why-studio", permanent: true },
+      { source: "/ai-photo-refresh", destination: "/starter-kit", permanent: true },
+      { source: "/private-shoot", destination: "/work-with-me", permanent: true },
+      { source: "/checkout/transform", destination: "/checkout/membership", permanent: true },
+      { source: "/checkout/visibility-suite", destination: "/checkout/masterclass", permanent: true },
+    ]
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

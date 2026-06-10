@@ -150,8 +150,8 @@ importers:
         specifier: ^10.4.20
         version: 10.4.22(postcss@8.5.6)
       canvas:
-        specifier: latest
-        version: 3.2.1
+        specifier: ^3.2.3
+        version: 3.2.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -332,7 +332,7 @@ importers:
         version: 15.1.0(eslint@8.57.1)(typescript@5.9.3)
       jsdom:
         specifier: ^23.0.1
-        version: 23.2.0(bufferutil@4.0.9)(canvas@3.2.1)
+        version: 23.2.0(bufferutil@4.0.9)(canvas@3.2.3)
       knip:
         specifier: ^5.82.1
         version: 5.82.1(@types/node@22.19.1)(typescript@5.9.3)
@@ -362,7 +362,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.1.3
-        version: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.1))(lightningcss@1.30.2)(terser@5.44.1)
+        version: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.3))(lightningcss@1.30.2)(terser@5.44.1)
 
 packages:
 
@@ -3596,8 +3596,8 @@ packages:
   caniuse-lite@1.0.30001761:
     resolution: {integrity: sha512-JF9ptu1vP2coz98+5051jZ4PwQgd2ni8A+gYSN7EA7dPKIMf0pDlSUxhdmVOaV3/fYK5uWBkgSXJaRLr4+3A6g==}
 
-  canvas@3.2.1:
-    resolution: {integrity: sha512-ej1sPFR5+0YWtaVp6S1N1FVz69TQCqmrkGeRvQxZeAB1nAIcjNTHVwrZtYtWFFBmQsF40/uDLehsW5KuYC99mg==}
+  canvas@3.2.3:
+    resolution: {integrity: sha512-PzE5nJZPz72YUAfo8oTp0u3fqqY7IzlTubneAihqDYAUcBk7ryeCmBbdJBEdaH0bptSOe2VT2Zwcb3UaFyaSWw==}
     engines: {node: ^18.12.0 || >= 20.9.0}
 
   ccount@2.0.1:
@@ -5349,8 +5349,8 @@ packages:
       sass:
         optional: true
 
-  node-abi@3.85.0:
-    resolution: {integrity: sha512-zsFhmbkAzwhTft6nd3VxcG0cvJsT70rL+BIGHWVq5fi6MwGrHwzqKaxXE+Hl2GmnGItnDKPPkO5/LQqjVkIdFg==}
+  node-abi@3.92.0:
+    resolution: {integrity: sha512-KdHvFWZjEKDf0cakgFjebl371GPsISX2oZHcuyKqM7DtogIsHrqKeLTo8wBHxaXRAQlY2PsPlZmfo+9ZCxEREQ==}
     engines: {node: '>=10'}
 
   node-addon-api@7.1.1:
@@ -5734,8 +5734,8 @@ packages:
   psl@1.15.0:
     resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==}
 
-  pump@3.0.3:
-    resolution: {integrity: sha512-todwxLMY7/heScKmntwQG8CXVkWUOdYxIvY2s0VWAAMh/nd8SoYiRaKjlr7+iCs984f2P8zvrfWcDDYVb73NfA==}
+  pump@3.0.4:
+    resolution: {integrity: sha512-VS7sjc6KR7e1ukRFhQSY5LM2uBWAUPiOPa/A3mkKmiMwSmRFUITt0xuj+/lesgnCv+dPIEYlkzrcyXgquIHMcA==}
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -9637,7 +9637,7 @@ snapshots:
       std-env: 3.10.0
       strip-literal: 2.1.1
       test-exclude: 6.0.0
-      vitest: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.1))(lightningcss@1.30.2)(terser@5.44.1)
+      vitest: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.3))(lightningcss@1.30.2)(terser@5.44.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -9672,7 +9672,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.1))(lightningcss@1.30.2)(terser@5.44.1)
+      vitest: 1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.3))(lightningcss@1.30.2)(terser@5.44.1)
 
   '@vitest/utils@1.6.1':
     dependencies:
@@ -10081,7 +10081,7 @@ snapshots:
 
   caniuse-lite@1.0.30001761: {}
 
-  canvas@3.2.1:
+  canvas@3.2.3:
     dependencies:
       node-addon-api: 7.1.1
       prebuild-install: 7.1.3
@@ -11582,7 +11582,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.1):
+  jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.3):
     dependencies:
       '@asamuzakjp/dom-selector': 2.0.2
       cssstyle: 4.6.0
@@ -11606,7 +11606,7 @@ snapshots:
       ws: 8.18.3(bufferutil@4.0.9)
       xml-name-validator: 5.0.0
     optionalDependencies:
-      canvas: 3.2.1
+      canvas: 3.2.3
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -12163,7 +12163,7 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  node-abi@3.85.0:
+  node-abi@3.92.0:
     dependencies:
       semver: 7.7.3
 
@@ -12499,8 +12499,8 @@ snapshots:
       minimist: 1.2.8
       mkdirp-classic: 0.5.3
       napi-build-utils: 2.0.0
-      node-abi: 3.85.0
-      pump: 3.0.3
+      node-abi: 3.92.0
+      pump: 3.0.4
       rc: 1.2.8
       simple-get: 4.0.1
       tar-fs: 2.1.4
@@ -12567,7 +12567,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  pump@3.0.3:
+  pump@3.0.4:
     dependencies:
       end-of-stream: 1.4.5
       once: 1.4.0
@@ -13271,7 +13271,7 @@ snapshots:
     dependencies:
       chownr: 1.1.4
       mkdirp-classic: 0.5.3
-      pump: 3.0.3
+      pump: 3.0.4
       tar-stream: 2.2.0
 
   tar-stream@2.2.0:
@@ -13643,7 +13643,7 @@ snapshots:
       lightningcss: 1.30.2
       terser: 5.44.1
 
-  vitest@1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.1))(lightningcss@1.30.2)(terser@5.44.1):
+  vitest@1.6.1(@types/node@22.19.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(canvas@3.2.3))(lightningcss@1.30.2)(terser@5.44.1):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -13668,7 +13668,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.19.1
       '@vitest/ui': 1.6.1(vitest@1.6.1)
-      jsdom: 23.2.0(bufferutil@4.0.9)(canvas@3.2.1)
+      jsdom: 23.2.0(bufferutil@4.0.9)(canvas@3.2.3)
     transitivePeerDependencies:
       - less
       - lightningcss
