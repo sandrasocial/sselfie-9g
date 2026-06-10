@@ -422,7 +422,7 @@ export function PublicNav({ loginHref = "/login" }: { loginHref?: string }) {
         {[
           { href: "/selfie-guide",  label: "Free Guide"     },
           { href: "/masterclass",   label: "Masterclass"    },
-          { href: "/join/studio",   label: "Studio"         },
+          { href: "/join/studio",   label: "SSELFIE SUITE"  },
           { href: "/work-with-me",  label: "Work With Me" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
@@ -453,7 +453,7 @@ export function PublicFooter() {
             "/selfie-guide:Free Selfie Guide",
             "/starter-kit:Starter Kit",
             "/masterclass:Masterclass",
-            "/join/studio:Studio",
+            "/join/studio:SSELFIE SUITE",
             "/work-with-me:Work With Me",
           ].map((s) => {
             const [href, label] = s.split(":")
@@ -672,13 +672,13 @@ const FAQS = {
       answer: "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
     { question: "How long does it take?",
       answer: "Start with the strategy foundation, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
-    { question: "How is this different from Studio?",
-      answer: "The Masterclass is the education. You do the work once and it's yours. Studio is the AI layer for when you want the tools to keep running it weekly." },
+    { question: "How is this different from SSELFIE SUITE?",
+      answer: "The Masterclass is the education. You do the work once and it's yours. SSELFIE SUITE is the AI layer for when you want the tools to keep running it weekly." },
     { question: "What if I've never posted consistently?",
       answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
   ],
   studio: [
-    { question: "Who is Studio for?",
+    { question: "Who is SSELFIE SUITE for?",
       answer: "For people who already know the look and direction they want, and need speed, consistency, and memory built into the workflow." },
     { question: "What does Maya actually do?",
       answer: "She generates brand photos, plans your feed, writes captions. And she remembers your style, so you're not starting from zero every time." },
@@ -747,7 +747,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
             { step: "01", title: "Clarify", body: "Find the words." },
             { step: "02", title: "Create", body: "Plan the content." },
             { step: "03", title: "Convert", body: "Build the offer path." },
-            { step: "04", title: "Studio", body: "Create and execute." },
+            { step: "04", title: "SSELFIE SUITE", body: "Create and execute." },
           ].map((item) => (
             <article key={item.step} className="mf" style={{ ...cardSx(false), minHeight: "170px" }}>
               <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>{item.step}</span>
@@ -781,7 +781,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
             { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day: light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
             { title: "Masterclass", price: "$147", body: "Clearer content direction, captions, offer clarity, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
-            { title: "Studio", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
+            { title: "SSELFIE SUITE", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -1152,7 +1152,7 @@ export function MasterclassPageContent() {
       <CtaClose
         title="Do this once. Then you'll know exactly what you're building."
         primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
-        secondary={{ href: "/join/studio",          label: "See Studio" }}
+        secondary={{ href: "/join/studio",          label: "See SSELFIE SUITE" }}
         dark
       />
 
@@ -1174,16 +1174,16 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
       {/* HERO — dark */}
       <Hero
-        eyebrow="Studio · €97/mo"
+        eyebrow="SSELFIE SUITE · €97/mo"
         title={<>Maya helps you show up every week.</>}
-        body={<p>You know your look. You know your edit. Studio keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
-        primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join Studio" }}
+        body={<p>You know your look. You know your edit. SSELFIE SUITE keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
+        primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join SSELFIE SUITE" }}
         secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
         imageSrc={IMG.feed}
       />
 
       {/* INSIDE STUDIO — cream */}
-      <Section eyebrow="Inside Studio" title="Your weekly execution room." dark={false}>
+      <Section eyebrow="Inside SSELFIE SUITE" title="Your weekly execution room." dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <FCard dark={false} title="Weekly Plan" body="Maya helps you decide what to post this week and what to create first." />
           <FCard dark={false} title="Photo Direction" body="Turn selfies, references, and brand context into postable photo ideas." />
@@ -1195,12 +1195,12 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* POSITIONING — dark */}
       <Split
         eyebrow="The honest version"
-        title={<>Studio comes after the basics. Not before.</>}
+        title={<>SSELFIE SUITE comes after the basics. Not before.</>}
         body={
           <div className="space-y-4">
-            <p>The education teaches the method. Studio helps you run it every week.</p>
-            <p>Studio is for the person who is tired of starting from zero every time she needs to post.</p>
-            <p>If you&apos;re still figuring out your positioning, start with the Masterclass. If you need weekly execution, join Studio.</p>
+            <p>The education teaches the method. SSELFIE SUITE helps you run it every week.</p>
+            <p>SSELFIE SUITE is for the person who is tired of starting from zero every time she needs to post.</p>
+            <p>If you&apos;re still figuring out your positioning, start with the Masterclass. If you need weekly execution, join SSELFIE SUITE.</p>
           </div>
         }
         imgSrc={IMG.dark}
@@ -1217,7 +1217,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* CTA — dark */}
       <CtaClose
         title="When you want Maya to help you execute every week, this is it."
-        primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join Studio · €97/mo" }}
+        primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join SSELFIE SUITE · €97/mo" }}
         secondary={{ href: "/starter-kit",       label: "Start smaller" }}
         dark
       />
