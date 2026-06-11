@@ -83,17 +83,18 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 // Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
 // mismatch). BEFORE a selfie is added it guides the next step; AFTER, it shifts to a "start your
 // brand shoot" framing so the system status is clear (the photo case is the one that changes most).
+// Sandra-approved short openers (2026-06-11): two lines max before anything happens.
 const FORMAT_OPENER: Record<OutputFormat, string> = {
-  photo: "Gorgeous choice. Upload one selfie and I'll create three photo directions for you.",
-  "reel-cover": "Gorgeous choice. Tell me what your reel is about and I'll create a polished cover direction.",
-  carousel: "Love this. Tell me the topic and I'll create a few cohesive slides that teach, tell your story, or sell softly.",
-  "story-slide": "Perfect. Tell me the goal, like a poll, a sale, a moment, or a quick reminder, and I'll design the slide.",
+  photo: "Add one selfie and I'll pull three directions. Soft window light works best. 🤍",
+  "reel-cover": "Tell me what your reel's about and I'll design the cover.",
+  carousel: "Give me the topic and I'll build slides that feel like you.",
+  "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
-  photo: "Your selfie's in, and I'll keep your face. Hit create and I'll pull three photo directions from this look, so you can pick the one that feels most like your brand.",
-  "reel-cover": "Your selfie's in, and I'll keep your face. Hit create and I'll pull three cover directions, then tell me what the reel's about.",
-  carousel: "Your selfie's in, and I'll keep your face. Hit create for a few cohesive slides, then tell me the topic.",
-  "story-slide": "Your selfie's in, and I'll keep your face. Hit create and I'll design the slide, then tell me the goal.",
+  photo: "Your selfie's in, and your face stays yours. Hit create and pick the direction that feels most like you.",
+  "reel-cover": "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
+  carousel: "Your selfie's in, and your face stays yours. Hit create, then give me the topic.",
+  "story-slide": "Your selfie's in, and your face stays yours. Hit create, then tell me the goal.",
 }
 
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
@@ -839,16 +840,10 @@ export function MayaConcierge() {
           <div className="flex items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
             <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-              <p>{aesthetic.name}.</p>
-              <p className="mt-2">{aesthetic.blurb}</p>
+              <p>
+                {aesthetic.name}. {aesthetic.blurb}
+              </p>
               <p className="mt-2">{referenceSelfieUrl ? FORMAT_OPENER_READY[format] : FORMAT_OPENER[format]}</p>
-              {!referenceSelfieUrl && (
-                <p className="mt-3 text-[14px] text-[#4F5052]">
-                  For the best match, face a window with soft, even light.
-                  <br />
-                  For full-body looks, a side profile and a full-body photo help too. All optional. 🤍
-                </p>
-              )}
             </div>
           </div>
 
