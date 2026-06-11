@@ -108,3 +108,23 @@ We run gpt-image-2 ourselves, so the moat is NOT the engine — it is everything
 3. Quick wins: reconnect Feed Planner/Academy for members who own them (or fix the front-door claim) — Sandra decision, the omission was deliberate design.
 4. Memory auto-learn (MEMORY-01).
 5. VIDEO-01 (Kling/HeyGen in v3) as the next visible "only at SSELFIE" wow after BRIDGE-01.
+
+---
+
+## Addendum 3 — usage truth + direction decisions (2026-06-11, Sandra + Claude)
+
+Member usage verified in Neon (8 active members):
+- **Video (legacy)**: 4/8 members, 48 videos, latest 2026-05-30. Most-used + most-recent legacy feature.
+- **Academy**: 4/8 members enrolled (7 enrollments; 30 users all-time). The "members never used Academy" claim that justified dropping it from v3 was FALSE. What was never used: `academy_monthly_drops` — **0 drops ever published**.
+- **Feed Planner**: 3/8 members ever, latest member activity 2026-02-07 (dead 4 months for members). 236 users all-time = mostly Blueprint buyers (product stays untouched at /feed-planner).
+
+### Decisions
+- **Feed Planner for members: LEAVE BEHIND.** Do not port the complex planner into v3. Legacy stays alive for Blueprint owners. Member replacement (later, post-BRIDGE): "Maya plans your week" inside the Content tab — 3 planned posts (photo + cover + caption) from memory + gallery, tap to make each. Planner mentality out, outcome mentality in.
+- **VIDEO-01 (approved, into v3, phased):**
+  - Phase 1 — "Bring this photo to life" button in Library lightbox + concept cards: 5–10s cinematic motion via image-to-video. Engine: **Kling 3.0** (face-locked Reference/identity embeddings, ~$0.075–0.112/sec → ~$0.75–1.12 per 10s clip) primary; **Seedance 2.0** (~$0.022/sec) for cheap b-roll/drafts; legacy Wan 2.5 retired with the old app. Suggest 5 credits/clip (cost covered ~2–4x at €97/200 credits).
+  - Phase 2 — "Maya hands you a finished Reel": server-side composition (ffmpeg/Remotion class): hook cover with on-screen text (reuse the existing overlay-styles system) → 2–3 motion clips → CTA end card, assembled from a template, refined by taps ("slower", "different hook line"). **Explicitly NOT a timeline editor** — Canva/CapCut sell tools, Maya delivers outcomes. Text-on-screen and stitching are feasible server-side; freeform editing is out of scope permanently.
+- **Academy: REBUILD INSIDE v3 as "Library".** Same editorial tile language as the front door: courses (incl. Masterclass via D3), workbooks, 23 existing templates, flatlays, and drops. Wire the never-used monthly-drops into the weekly member drop (Content Engine supplies it). This is the membership's accumulating-value retention surface.
+- **Landing page: REWRITE /join/studio** (not new build). Keep hero. Image-led (Sandra's own lookbooks/galleries), copy: "creative director who already knows your brand" + everything-included (D3) + No-Fake doctrine. Copy requires Sandra approval before live. Part of BRIDGE-01.
+
+### Updated build order
+BRIDGE-01 (landing rewrite + welcome emails + "Your SSELFIE"/Library surface in v3 + one-time buyers limited mode + 7-day trial) → VIDEO-01 Phase 1 → MEMORY-01 auto-learn → VIDEO-01 Phase 2 (Reel composer) → "Maya plans your week" → ENTITLE-01 / Masterclass 15–17 / EMAIL-01 continue in parallel where small.
