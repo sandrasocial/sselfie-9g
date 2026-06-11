@@ -99,7 +99,7 @@ Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plum
 
 ---
 
-# Appendix 1 — Email copy drafts (DRAFT, pending Sandra approval)
+# Appendix 1 — Email copy (APPROVED by Sandra 2026-06-11; 1.1-1.3 shipped in Phase A)
 
 ## 1.1 Membership welcome (new user)
 **Subject:** You're in. Let's make your first photos today
