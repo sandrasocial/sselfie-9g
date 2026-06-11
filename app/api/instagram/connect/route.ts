@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const provider = searchParams.get('provider')
+    // redirect=1: send the browser straight into Meta's OAuth dialog (used by the
+    // admin Connect Instagram button, which is a plain link, not a fetch).
+    const wantsRedirect = searchParams.get('redirect') === '1'
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -84,6 +87,7 @@ export async function GET(request: NextRequest) {
         scope,
       })
 
+      if (wantsRedirect) return NextResponse.redirect(authUrl.toString())
       return NextResponse.json({ authUrl: authUrl.toString(), provider: 'instagram_login' })
     }
 
@@ -110,6 +114,7 @@ export async function GET(request: NextRequest) {
 
     console.log('[v0] Instagram OAuth URL (Standard Access):', { authUrl: authUrl.toString(), redirectUri: REDIRECT_URI, scope })
 
+    if (wantsRedirect) return NextResponse.redirect(authUrl.toString())
     return NextResponse.json({ authUrl: authUrl.toString(), provider: 'facebook_page' })
   } catch (error) {
     console.error('[Instagram Connect Error]:', error)

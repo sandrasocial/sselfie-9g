@@ -4,6 +4,7 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { getAdminHomeReport } from "@/lib/admin/home-report"
+import { sql } from "@/lib/db/client"
 
 export const dynamic = "force-dynamic"
 
@@ -55,6 +56,26 @@ export default async function AdminPage({
   const params = await searchParams
   const report = await getAdminHomeReport()
 
+  // Instagram connection status for the content engine (source: instagram_connections).
+  // The Connect button lives here because the OAuth callback redirects back to /admin.
+  let igConnection: { instagram_username: string; token_expires_at: Date | null } | null = null
+  try {
+    const rows = (await sql`
+      SELECT instagram_username, token_expires_at
+      FROM instagram_connections
+      WHERE is_active = true
+      ORDER BY id DESC
+      LIMIT 1
+    `) as Array<{ instagram_username: string; token_expires_at: Date | null }>
+    igConnection = rows[0] || null
+  } catch (error) {
+    console.error("[admin] instagram connection lookup failed:", error)
+  }
+  const igTokenExpiresSoon = Boolean(
+    igConnection?.token_expires_at &&
+      new Date(igConnection.token_expires_at).getTime() - Date.now() < 14 * 24 * 60 * 60 * 1000,
+  )
+
   const needsTotal =
     report.needsMe.flaggedConversations +
     report.needsMe.webhookReviews +
@@ -75,6 +96,29 @@ export default async function AdminPage({
             {params.detail ? ` (${decodeURIComponent(params.detail)})` : ""}
           </p>
         )}
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3">
+          <p className="text-sm text-stone-600">
+            Instagram:{" "}
+            {igConnection ? (
+              <>
+                @{igConnection.instagram_username} connected
+                {igTokenExpiresSoon ? " · token expires soon" : ""}
+              </>
+            ) : (
+              "not connected"
+            )}
+            <span className="ml-2 align-middle">
+              <SourceTag label="instagram_connections" />
+            </span>
+          </p>
+          <a
+            href={`/api/instagram/connect?userId=${neonUser.id}&redirect=1`}
+            className="text-xs uppercase tracking-wide text-stone-950 underline underline-offset-4"
+          >
+            {igConnection ? "Reconnect" : "Connect Instagram"}
+          </a>
+        </div>
 
         <h1 className="font-serif text-3xl font-light tracking-tight text-stone-950">
           Hey Sandra
