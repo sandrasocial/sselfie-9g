@@ -1,0 +1,222 @@
+# SSELFIE Design Census & Convergence Audit
+
+Date: 2026-06-10
+Scope: `app/` + `components/` + styling files in `lib/` (read-only audit, no code changed)
+Reference authority: `docs/SSELFIE_DESIGN_SYSTEM.md` (2026-05-21)
+
+---
+
+## Executive Summary
+
+The codebase is not running one design system. It is running **four** at the same time, plus an undecided email family and an ad-hoc admin look. The good news: the newest customer-facing work (the prompt funnel, the new `/app` member app, the selfie-to-brand-shoot page) already follows the official documented palette from `docs/SSELFIE_DESIGN_SYSTEM.md` (light Seasalt background, cool grays, Night black). The bad news: the single biggest palette by raw usage is a **warm cream-on-dark "stone" look** (`#f0ede8` cream text on near-black `#0d0c0b`) that the design system document explicitly forbids twice: "Avoid warm beige/cream drift" and "no dark-first defaults." It dominates because the old member app (`/maya`, `/studio`), checkout success/failure, credits, academy, brand strategy, and the free selfie guide were all built in it.
+
+There is also a dangerous naming trap: the words "porcelain," "pearl," "smoke," and "obsidian" mean **different colors in different files**. In `tailwind.config.ts`, porcelain is warm cream `#f0ede8` and pearl is a *dark* gray `#2e2c29`. In `lib/design-tokens.ts` and `app/globals.css`, porcelain is white `#ffffff` and pearl is light `#f5f5f5`. So two developers (or two AI agents) using "the tokens" can produce opposite-looking pages while both believing they're compliant. On top of that, the marketing pages (homepage, starter kit, masterclass, studio, work-with-me) default every section to **dark** unless someone remembers to pass `dark={false}` — the opposite of the "light luxury editorial" direction.
+
+Recommendation in one line: **make the documented Cool Editorial palette (Seasalt / Silver / Gray / Davy / Raisin / Night) the only palette**, since it's both the official doc AND what the newest revenue pages already use, then migrate the warm-cream surfaces in the ranked order below, and add a small CI script that fails the build when a new non-approved hex color appears. Total cleanup surface: 141 distinct hex colors in UI code today; target is roughly 9 (7 palette colors + white + one error red).
+
+---
+
+## 1. Palette Map — the de-facto design systems
+
+| # | Name | Core colors | Defined in | Light/Dark | Status vs doc |
+|---|------|-------------|-----------|------------|---------------|
+| 1 | **Cool Editorial palette** (the documented one) | Seasalt `#F8FAFA`, White `#FFFFFF`, Silver `#C5C6C8`, Gray `#818283`, Davy `#4F5052`, Raisin `#282728`, Night `#0D0E10` | `docs/SSELFIE_DESIGN_SYSTEM.md`; `--ss-*` vars in `app/globals.css` (lines 154-160); mostly hardcoded hex in newer files | Light-first | ✅ Compliant — this IS the official system |
+| 2 | **Warm Stone palette** (cream-on-dark, biggest by usage) | Cream `#f0ede8` (325×), warm gray `#8a8780` (272×), limestone `#a8a49c`, pale `#c8c4bb`, near-blacks `#0d0c0b` / `#1c1b19` / `#2e2c29` | `tailwind.config.ts` (colors block), `lib/maya/pro/design-system.ts` (`Colors`), hardcoded Tailwind arbitrary values everywhere in legacy app | Dark-first | ❌ Violates "no warm beige/cream drift" + "no dark-first" |
+| 3 | **Workbook Token palette** (CLAUDE.md table) | Obsidian `#0A0A0A`, Porcelain `#FFFFFF`, Pearl `#F5F5F5`, Smoke `#666666`, Whisper `#E5E5E5`, Stone `#8A8780`, StoneDark `#2C2B29`, StoneSoft `#D4D1CC` | `app/globals.css` `:root` (`--color-obsidian` etc., `--ink`/`--cream` aliases), `lib/design-tokens.ts` `COLORS` | Mixed (marketing sections default dark) | ⚠️ Superseded by #1 per the doc's own "this file wins" rule, but still drives the homepage family |
+| 4 | **Academy warm-taupe variant** | `#0f0d0b`, taupe `#c4b5a0`, `#ede9e2`, `#7a6f63`, `#9b9189`, `#6b6762` | Hardcoded only, in `app/academy/**` + `components/academy/**` | Mixed | ❌ Undocumented third warm family |
+| 5 | **Email stone family** (out of UI scope but noted) | Tailwind stone defaults `#1c1917`, `#fafaf9`, `#292524`, `#57534e` etc. (~160 uses inside `lib/email/`) | `lib/email/templates/stone-email.ts` (dark shell — doc already flags it for replacement) | Dark | ⚠️ Known debt, already documented |
+| 6 | **Admin ad-hoc** | Bootstrap alert colors (`#f8d7da`, `#d4edda`, `#721c24`…) | Inline in `app/admin/**` | Light | Low priority |
+
+### The token name collision (highest-confusion finding)
+
+Same name, three different answers:
+
+| Token name | `tailwind.config.ts` | `lib/design-tokens.ts` | `app/globals.css` `:root` |
+|------------|----------------------|------------------------|---------------------------|
+| `obsidian` | `#0d0c0b` (warm) | `#0a0a0a` | `#0a0a0a` |
+| `porcelain` | **`#f0ede8` (warm cream!)** | `#ffffff` | `#ffffff` |
+| `pearl` | **`#2e2c29` (dark!)** | `#f5f5f5` | `#f5f5f5` |
+| `smoke` | `#8a8780` (warm) | `#666666` | `#666666` |
+| `whisper` | `#c8c4bb` (warm) | `#e5e5e5` | `#e5e5e5` |
+
+Mitigating fact: the project is on **Tailwind v4** (`@import "tailwindcss"` in `globals.css`, no `@config` directive), so `tailwind.config.ts` is very likely **not loaded at all**, and a class scan confirms **zero usages** of `bg-porcelain` / `text-smoke` style classes. The file is dead-but-misleading config — it should be flagged for removal (separate decision, not done in this audit).
+
+### Where colors actually come from
+
+| Source | What it defines | Loaded? |
+|--------|-----------------|---------|
+| `app/globals.css` (1,534 lines) | All CSS variables: `--stone-*`, `--color-*` tokens, `--ss-*` (documented palette), `--app-*` (light app shell), `--glass-*` (glassmorphism), shadcn semantic tokens, `--ink`/`--cream` legacy aliases, dark `body` background gradient | ✅ Globally |
+| `tailwind.config.ts` | Warm stone color names | ❌ Almost certainly dead (Tailwind v4, no `@config`, zero class usage) |
+| `lib/design-tokens.ts` | `COLORS`, `GLASS`, `TYPOGRAPHY`, class bundles for the light app shell | ✅ Imported by app components |
+| `lib/maya/pro/design-system.ts` | Warm Stone dark palette (`Colors.background: '#0d0c0b'`, `Colors.primary: '#f0ede8'`) for Maya Pro mode | ✅ Live in legacy app |
+| Hardcoded hex in TSX | 141 distinct hex values across `app/` + `components/` | ✅ The real majority |
+
+---
+
+## 2. Route Census
+
+Styling method legend: **inline** = `style={{}}` objects; **tw-arb** = Tailwind arbitrary values like `bg-[#F8FAFA]`; **vars** = CSS variables; **styled-jsx** = `<style>` blocks in the page.
+
+| Route | Real component(s) | Palette | Fonts | Styling method | Radius habit | Gradients | Light/Dark |
+|-------|-------------------|---------|-------|----------------|--------------|-----------|------------|
+| `/` homepage | `components/sselfie/public-marketing.tsx` → `HomePageContent` (via `landing-page-education.tsx`) | #3 Workbook tokens via CSS vars (`var(--color-obsidian)` etc.) | Hardcoded `'Cormorant Garamond'` + `var(--font-inter)` | inline styles (entire 1,487-line file) | Square (no radius; editorial) | Hero scrim + section fades (overlay-type, allowed) | ⚠️ **Sections default `dark = true`** |
+| `/starter-kit`, `/masterclass`, `/join/studio`, `/work-with-me` | Same file (`public-marketing.tsx` exports) | Same as homepage | Same | inline | Square | Same | ⚠️ Dark-default sections |
+| `/prompt-vault` | `app/prompt-vault/page.tsx` + `components/prompt-vault/*` | #1 Cool Editorial (`#F8FAFA` bg, `#0D0E10` text) — hardcoded hex | `next/font` Cormorant + Inter (page-local) | inline + styled-jsx | Square / minimal | 0 on buttons | ✅ Light |
+| `/ai-prompts` (+ `/access/[token]`, `/demo`) | `app/ai-prompts/*` | #1 Cool Editorial, hardcoded hex | `next/font` Cormorant 300 + Inter (page-local) | inline + styled-jsx | `border-radius: 0` explicit | Hero image overlays only | ✅ Light |
+| `/selfie-to-brand-shoot` | `components/selfie-to-brand-shoot/*` | #1 Cool Editorial | `next/font` page-local | inline/tw mix | minimal | image overlays | ✅ Light |
+| `/checkout/*` (most: blueprint, membership→`/checkout`, prompt-vault, starter-kit, masterclass…) | Embedded Stripe + `PromptVaultCheckoutEmailCapture` | #1 Cool Editorial (email capture) + Stripe iframe | mixed | mixed | minimal | minor | ✅ Mostly light |
+| `/checkout/success`, `/checkout/failure`, `/checkout/credits` | page files themselves | ❌ #2 Warm Stone dark (`#0d0c0b` bg, `#f0ede8` text) | hardcoded | tw-arb | rounded-lg/xl | panel gradients | ⚠️ Dark money pages |
+| `/selfie-guide` (free landing) | `components/freebie/selfie-guide-free-landing.tsx` | #3 tokens but **page bg = `C.ink` (full dark)** | hardcoded serif + F.sans | inline | square-ish | 1 overlay | ⚠️ Fully dark |
+| `/brand-strategy` | `components/brand-strategy/brand-strategy-landing.tsx` | ❌ #2 Warm Stone dark (`#0d0c0b`, `#1c1b19`, `#111010`) | hardcoded | styled-jsx + tw | mixed | dark panels | ⚠️ Fully dark |
+| `/app` (member app v3 — Studio 3.0) | `components/app-v3/*` (`app-v3-shell.tsx`) | ✅ #1 Cool Editorial (`bg-[#F8FAFA]`, `text-[#0D0E10]`, `#818283`, `#C5C6C8`) | `next/font` Cormorant + **Manrope** (`--font-app-serif` / `--font-app-sans`) | Tailwind + tw-arb | Small radii: `rounded-[4px]`/`[6px]`/`[8px]` | minimal; 1 `backdrop-blur` on bottom nav | ✅ Light |
+| `/maya`, `/studio` (legacy member app) | `components/sselfie/sselfie-app.tsx` + `components/sselfie/maya/*`, `credits/*`, `upgrade/*` | ❌ #2 Warm Stone dark + light-shell override layer (`.sselfie-app-shell` in globals.css remaps `text-[#f0ede8]` etc. to light vars via attribute-selector hacks) | Google-Fonts @import Cormorant + Inter | tw-arb + design-system.ts constants | Large rounded: `rounded-full`, `lg`, `xl`, `2xl` | 26 gradient uses, **62 backdrop-blur** | ⚠️ Dark base, light overrides on top |
+| `/academy` | `app/academy/**` + `components/academy/*` | ❌ #4 Academy warm-taupe (`#0f0d0b`, `#c4b5a0`, `#ede9e2`) + some Warm Stone | `next/font` page-local + hardcoded | tw-arb mix | mixed (`rounded-full`, `[4px]`, `[16px]`) | few | Mixed |
+| `/strategy/[token]` (result) | `app/strategy/*` | minimal hex; inherits global dark body | `next/font` | tw | — | — | inherits dark |
+| `/access` hub, `/access/*/[token]` | `app/access/*` | ❌ Mixed: `#0a0a0a` + Cool `#0d0e10` + warm `#9b9189`/`#3a3632`/`#f0ede8` in the same folder | `next/font` page-local | mixed | mixed | few | mixed |
+| `/auth/sign-up` | `app/auth/sign-up/page.tsx` | ❌ Heaviest single-file warm offender (24 warm hex uses) | hardcoded | tw-arb | rounded | 3 | dark |
+| `/feed-planner` | **PROTECTED — listed only, no edits proposed** | #2 Warm Stone dark (`#f0ede8`/`#0d0c0b`) + extra creams (`#f4f0e6`, `#d4c5b9`, `#f5e6d3`) | hardcoded | tw-arb | rounded | 4 | dark |
+| `/admin/*` | `app/admin/**` | #6 ad-hoc Bootstrap alert colors + neutral grays | system | mixed | — | 3 | light. Low priority; internal only |
+
+Global gotcha affecting every route: `app/globals.css` sets the `<body>` to a **dark `#0a0a0a` background with a layered gradient** (`@layer base`). Light pages only look light because each one re-paints its own background. Any new page that forgets inherits the dark SaaS look the doc forbids.
+
+---
+
+## 3. Violations vs the locked rules
+
+| Rule | Verdict | Evidence |
+|------|---------|----------|
+| No gradients on buttons | ✅ **Pass** — no gradient backgrounds found on button/CTA elements | grep across `app/`+`components/` |
+| No gradient text | ✅ **Pass** — zero `bg-clip-text` / `background-clip: text` | grep |
+| Gradients generally (149 occurrences in UII code) | ⚠️ Mostly **allowed** image-hero scrims and section fades; but the global `body` gradient (dark) and decorative panel gradients in the legacy app shell (`.stone-stage`, `.stone-panel::before`) are mood-setting gradients, not image overlays | `app/globals.css` lines ~530-560; `components/sselfie/` (26), `app/auth` (3) |
+| Gold `#c9a96e` retired | ✅ **Pass in UI.** One occurrence total, inside an AI image-generation prompt string (`app/api/maya/generate-concepts/route.ts:1949` — instructs the model to render gold accents *in a generated carousel image*). Not user-visible UI, but worth a content decision | grep |
+| No glassmorphism | ❌ **Fail in legacy app.** 62 `backdrop-blur` uses in `components/sselfie/`, 23 in protected feed-planner, plus a whole `--glass-*` variable suite and `GLASS` export in `lib/design-tokens.ts`. New `/app` v3 is nearly clean (1 nav blur) | `app/globals.css` lines 168-176; `lib/design-tokens.ts` 60-71 |
+| Light luxury editorial as default (no dark-first marketing) | ❌ **Fail on the front door.** Homepage + starter-kit + masterclass + join/studio + work-with-me: `Section` component defaults `dark = true`. `/selfie-guide` free landing is a fully dark page (`background: C.ink`). `/brand-strategy` is fully dark warm. `/checkout/success`, `/failure`, `/credits` are dark warm. The global `body` is dark | `components/sselfie/public-marketing.tsx:521`, `components/freebie/selfie-guide-free-landing.tsx:148`, `components/brand-strategy/brand-strategy-landing.tsx:188` |
+| No warm beige/cream drift | ❌ **Fail at scale.** `#f0ede8` is the single most-used color in the codebase (325×), plus `#a8a49c`, `#c8c4bb`, `#c4b5a0`, `#f4f0e6`, `#d4c5b9`, `#ede9e2`… | census above |
+| Rounded product UI stays | ✅ Pass in product (`/app` uses 4-10px radii; legacy app rounded-lg+). Marketing is square-edged by design — acceptable as editorial style, but it *is* a second radius language |
+| No new colors/fonts without approval | ❌ 141 distinct hex in UI code; **Manrope** loaded in `/app` (never approved in the doc, which names Cormorant + Neue Einstellung/clean sans + tolerated Inter) | `app/app/layout.tsx:6` |
+
+---
+
+## 4. Font Reality
+
+### What actually loads
+
+| Mechanism | Fonts | Where |
+|-----------|-------|-------|
+| Google Fonts CSS `@import` (render-blocking) | Cormorant Garamond 300/400/500 + Inter 300/400/500 | `app/globals.css` line 1 — global, every page pays for it |
+| `next/font/google`, page-local | Inter (36 imports), Cormorant_Garamond (34 imports) | ~20 page files: `/prompt-vault`, `/ai-prompts/*`, `/academy/*`, `/access/*`, `/bio`, `/strategy/*`, `/selfie-to-brand-shoot`, `/selfie-guide/access/*` — each page re-declares its own font instances |
+| `next/font/google`, layout-scoped | Cormorant_Garamond + **Manrope** | `app/app/layout.tsx` only (`/app` member app) |
+| Never loaded anywhere | **Neue Einstellung** (named in the design doc as the body font) | — |
+
+### Font variables
+
+| Variable | Defined in | Resolves to |
+|----------|-----------|-------------|
+| `--font-display` | `globals.css :root` | `'Cormorant Garamond', serif` |
+| `--font-body` | `globals.css :root` | `'Inter', sans-serif` |
+| `--font-serif` | `globals.css :root` | alias of `--font-display` |
+| `--font-sans` | `globals.css :root` | alias of `--font-body` |
+| `--font-mono` | `globals.css :root` | Geist Mono fallback chain (Geist itself is commented out in `app/layout.tsx`) |
+| `--font-app-serif` / `--font-app-sans` | `app/app/layout.tsx` via next/font | Cormorant / Manrope — `/app` only, with a scoped `.studio-3-root .font-serif` override |
+| `--font-inter` | referenced by `public-marketing.tsx` (`var(--font-inter, Inter, ...)`) | **never defined anywhere** — silently falls back to the literal `Inter` |
+
+### Hardcoded font strings
+
+- `'Cormorant Garamond'` hardcoded in **118 files** (including `lib/maya/pro/design-system.ts`, `lib/design-tokens.ts`, marketing, academy, emails).
+- `Inter` hardcoded in **81 files**.
+- Net effect: the doc's "Neue Einstellung" body font is fiction today; the real body fonts are Inter (everywhere) and Manrope (`/app` only). The doc's Inter tolerance clause makes this technically legal, but Manrope is an unapproved third sans.
+
+---
+
+## 5. Convergence Proposal
+
+### Pick one canonical set
+
+Two candidates and the honest tradeoff:
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **A. Cool Editorial palette (recommended)** — Seasalt `#F8FAFA`, White `#FFFFFF`, Silver `#C5C6C8`, Gray `#818283`, Davy `#4F5052`, Raisin `#282728`, Night `#0D0E10` | It is already the **official documented system** ("this file wins"); it's what every *new* revenue surface uses (`/ai-prompts`, `/prompt-vault`, `/app` v3, selfie-to-brand-shoot, checkout capture); light-first matches the locked brand direction; converging here means zero rework on the newest pages | Requires migrating the high-volume legacy surfaces (legacy member app, academy, brand strategy, free selfie guide, checkout success/failure) |
+| **B. Warm Stone palette** — `#f0ede8` / `#0d0c0b` family | Wins raw usage count (would mean fewer total line changes); the legacy member app and feed-planner already live in it | Directly violates the locked design doc ("avoid warm beige/cream drift", dark-first ban); the warm look is concentrated in *old* code that's already slated for replacement (legacy Maya app → `/app` v3, stone-email → light shell); choosing B means rewriting the doc, the prompt funnel, and the new app |
+
+**Recommendation: Option A.** Usage volume is misleading here — the warm family's 325× cream count lives mostly in the legacy `/maya` app that Studio 3.0 (`/app`) is already superseding, and in the protected feed-planner which we are not touching. The trend line of every page shipped since May 2026 is already cool/light. Canonical set = the 7 documented colors + `#FFFFFF` + one approved status red.
+
+**Proposed canonical tokens (9 total):**
+`--ss-seasalt #F8FAFA` · `--ss-white #FFFFFF` · `--ss-silver #C5C6C8` · `--ss-gray #818283` · `--ss-davy #4F5052` · `--ss-raisin #282728` · `--ss-night #0D0E10` · `--ss-error #DC2626` (already the de-facto error red, 11×) · borders as `rgba(197,198,200,0.35)` (silver alpha, already the prompt-vault habit).
+
+### Mapping table — top colors by usage → proposed token
+
+| Old hex | Uses | What it is today | Proposed token |
+|---------|------|------------------|----------------|
+| `#f0ede8` | 325 | warm cream text/bg (legacy app) | `#F8FAFA` seasalt (bg) / `#FFFFFF` (text on dark) |
+| `#8a8780` | 272 | warm muted gray | `#818283` gray |
+| `#0d0e10` | 267 | Night | ✅ keep (canonical) |
+| `#ffffff` | 171 | white | ✅ keep |
+| `#818283` | 148 | gray | ✅ keep |
+| `#f8fafa` | 144 | seasalt | ✅ keep |
+| `#4f5052` | 134 | Davy's gray | ✅ keep |
+| `#a8a49c` | 85 | warm limestone accent | `#C5C6C8` silver |
+| `#0a0a0a` | 84 | workbook obsidian | `#0D0E10` night |
+| `#0d0c0b` | 76 | warm deepest stone | `#0D0E10` night |
+| `#c8c4bb` | 69 | warm pale stone | `#C5C6C8` silver |
+| `#282728` | 62 | raisin | ✅ keep |
+| `#c5c6c8` | 47 | silver | ✅ keep |
+| `#e5e5e5` | 42 | whisper border | `rgba(197,198,200,0.35)` border, or `#C5C6C8` |
+| `#f5f5f5` | 25 | pearl surface | `#F8FAFA` seasalt |
+| `#666666` | 25 | smoke text | `#4F5052` davy |
+| `#0f0d0b` | 22 | academy near-black | `#0D0E10` night |
+| `#1c1b19` | 20 | warm granite | `#282728` raisin |
+| `#7a6f63` | 18 | academy warm gray | `#4F5052` davy |
+| `#f4f0e6` | 14 | warm cream alt | `#F8FAFA` seasalt |
+| `#9b9189` | 12 | warm gray | `#818283` gray |
+| `#dc2626` | 11 | error red | ✅ keep as `--ss-error` |
+| `#3a3632` | 10 | warm dark gray | `#282728` raisin |
+| `#ede9e2` | 9 | academy cream | `#F8FAFA` seasalt |
+| `#c4b5a0` | 7 | academy taupe | `#C5C6C8` silver |
+| `#6b6762` | 7 | brand-strategy gray | `#4F5052` davy |
+| `#2e2c29` | 7 | "pearl" (dark, tailwind config) | `#282728` raisin |
+| `#2c2b29` | 7 | stoneDark | `#282728` raisin |
+| `#1c1917` | 7 (UI) | Tailwind stone-900 | `#0D0E10` or `#282728` |
+| `#f1f2f2` | 6 | off-white | `#F8FAFA` seasalt |
+| `#3d3830` | 6 | warm dark | `#282728` raisin |
+| `#a79b8b` | 5 | warm taupe-gray | `#818283` gray |
+| `#d7d7d7` | 4 | light gray | `#C5C6C8` silver |
+| `#d4c5b9` | 4 | feed-planner cream (protected — map only when feed-planner refactor is approved) | `#C5C6C8` |
+
+Also fix as part of convergence (config-level, one-time):
+1. Delete or empty `tailwind.config.ts` colors block (dead in Tailwind v4, and its `porcelain`/`pearl` definitions are actively wrong).
+2. Re-point `lib/design-tokens.ts` `COLORS` and the `--color-*` / `--ink` / `--cream` vars in `globals.css` at the 9 canonical values, so `public-marketing.tsx` re-skins itself for free (it already reads vars).
+3. Change the global `body` background from dark gradient to `#F8FAFA`.
+4. Decide the sans font: either bless Manrope app-wide or standardize on Inter; load fonts once in root layout via `next/font` and delete the render-blocking Google Fonts `@import` plus the ~20 per-page font declarations.
+
+### Ranked fix order (worst-drifted customer-facing first)
+
+| Rank | Surface | Why this order | Files |
+|------|---------|----------------|-------|
+| 1 | **Marketing family: `/`, `/starter-kit`, `/masterclass`, `/join/studio`, `/work-with-me`** | The brand's front door is dark-first; but it reads CSS vars, so flipping `Section`'s `dark` default + re-pointing vars converges 5 routes in one file | `components/sselfie/public-marketing.tsx`, `globals.css` vars |
+| 2 | **`/selfie-guide` free landing** | Lead-magnet entry point, fully dark page | `components/freebie/selfie-guide-free-landing.tsx` |
+| 3 | **Checkout `/success`, `/failure`, `/credits`** | Money-moment pages in the forbidden warm-dark palette; small files | `app/checkout/success|failure|credits` |
+| 4 | **`/brand-strategy` landing** | Active $19 product, fully dark warm | `components/brand-strategy/*` |
+| 5 | **`/auth/sign-up` + `/access` hub** | First-session experience; heaviest single-file warm offender | `app/auth/sign-up/page.tsx`, `app/access/page.tsx` |
+| 6 | **`/academy`** | Paid-customer surface with its own undocumented taupe family | `app/academy/**`, `components/academy/**` |
+| 7 | **Legacy member app `/maya`, `/studio`** | Biggest volume, but strategically lower urgency: Studio 3.0 (`/app`) is the successor — converge by *migration*, not restyling, where possible; remove the `.sselfie-app-shell` override hacks when done | `components/sselfie/**` (excl. protected) |
+| 8 | **Global `body` dark gradient + dead `tailwind.config.ts` + font consolidation** | Infrastructure; do alongside ranks 1-3 | `app/globals.css`, `tailwind.config.ts`, layouts |
+| 9 | **Email shell** | Already documented as a future batch (`stone-email.ts` → light editorial) | `lib/email/templates/**` |
+| — | **Feed Planner** | PROTECTED. Warm palette noted for the record; no edits proposed until the approved refactor | `app/feed-planner`, `components/feed-planner`, `lib/feed-planner`, `app/api/feed*`, `lib/maya/feed-generation-handler.ts` |
+| 10 | **Admin** | Internal only; align opportunistically | `app/admin/**` |
+
+---
+
+## 6. Enforcement Sketch (describe-only, not built)
+
+A single Node script, e.g. `scripts/check-design-tokens.mjs`, run in CI and optionally pre-commit:
+
+1. **Hex allowlist check.** Scan `app/**` and `components/**` (`.tsx`, `.ts`, `.css`) for `#[0-9a-fA-F]{3,8}` and `rgb(a)` literals. Fail if a color is not in `design-allowlist.json` (the 9 canonical tokens + approved alpha border values). Exclusions: `app/api/**` (prompt strings), protected feed-planner paths, `lib/email/**` until the email batch lands.
+2. **Banned-pattern check.** Fail on: `c9a96e` (gold), `#f0ede8`/`#0d0c0b`/`#a8a49c`/`#c8c4bb` (warm family, once migrated), `bg-clip-text`, `bg-gradient-to-` on elements whose nearby text matches `button|btn|cta`, and new `@import url("https://fonts.googleapis`.
+3. **Font check.** Fail on hardcoded `'Cormorant Garamond'` / `'Inter'` / `'Manrope'` strings outside the two blessed layout files — everything else must use `var(--font-*)`.
+4. **Ratchet mode for rollout.** Until migration finishes, store a baseline count per file (`design-debt-baseline.json`); fail only if a file's violation count *increases*. This makes the check installable today without blocking unrelated work, and each migration PR shrinks the baseline.
+5. Wire-up: `"check:design": "node scripts/check-design-tokens.mjs"` in `package.json`, called from the existing CI workflow next to lint. Roughly 80-120 lines of script; no dependencies beyond `fs`/`glob`.
+
+---
+
+*Audit produced read-only on branch `studio-v3-staging`. No application code was modified.*

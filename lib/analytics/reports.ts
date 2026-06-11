@@ -1492,6 +1492,7 @@ export async function storeAnalyticsReport(input: {
     | "cohort_delivery_load_weekly"
     | "maya_instagram_trends_weekly"
     | "revenue_engine_weekly"
+    | "content_brief_weekly"
   periodStart: Date
   periodEnd: Date
   payload: any

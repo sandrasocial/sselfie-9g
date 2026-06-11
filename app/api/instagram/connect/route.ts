@@ -95,6 +95,8 @@ export async function GET(request: NextRequest) {
       'pages_messaging',
       'instagram_manage_messages',
       'instagram_manage_comments',
+      'instagram_manage_insights',
+      'read_insights',
     ].join(',')
 
     // Build URL with proper Instagram API Onboarding channel
