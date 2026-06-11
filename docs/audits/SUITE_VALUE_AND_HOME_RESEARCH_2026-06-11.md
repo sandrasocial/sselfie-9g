@@ -65,8 +65,20 @@ The answer to "why not ChatGPT" is already our brand: **ChatGPT makes someone wh
 
 Pricing: hold at €97. The €197 North Star price requires the Maya-guided experience + home + drops to be live first.
 
-## Decisions for Sandra
-- **D3**: include all one-time products in membership? (recommended: yes)
-- **D4**: 7-day full-SUITE trial unlock for Vault/Starter Kit buyers? (recommended: yes, with credit guardrails)
+## Decisions (Sandra, 2026-06-11)
+- **D3 — APPROVED + SHIPPED**: membership now includes ALL one-time products (Vault, Starter Kit, Masterclass, Selfie to Brand Shoot System). Flipped `membershipIncluded: true` in `lib/academy-entitlements.ts` AND in the `academy_products` DB rows (DB wins over code defaults — remember this for future product flags).
+- **D4 — APPROVED, shape adjusted**: 7-day full-SUITE trial unlock for Vault/Starter Kit buyers. NO training step — the app's flagship is Nano Banana Pro with up to 14 reference selfies (zero-shot, no LoRA). Trial guardrail = enough Pro credits for a first photoshoot (e.g. 10–16 credits at 2/Pro image), not "1 training + shoot".
 
-Build order stays: BRIDGE-01 (now = landing page + welcome emails + HOME-01 + trial unlock) → ENTITLE-01 → Masterclass lessons 15–17 → EMAIL-01 cleanup.
+## Addendum — generation model truth (researched 2026-06-11)
+
+Sandra confirmed Flux LoRA training is retired as the flagship; research confirms this was right:
+- Zero-shot reference generation (Nano Banana Pro: 95–98% identity consistency with 5–8 refs, ~$0.04–0.13/img) now beats LoRA (87–96%, >$1, minutes of training) for personal-brand photos. "LoRA for consistent character is dead" (Segmind 2026).
+- **App today**: Studio Pro = `google/nano-banana-pro` via Replicate host, up to 14 reference selfies (`lib/nano-banana-client.ts`). Classic Flux path still wired but legacy.
+- **⚠️ Policy risk (the one thing to watch)**: Google tightened real-person rules March 2026 — composites/edits of identifiable people can return `blockReason: OTHER`, server-side, unbypassable. Self-consented "this is me" sits in a gray zone. **Fallback if Google ever blocks us: FLUX.2 [max] (Black Forest Labs, ~$0.056/4MP img, multi-ref up to 10, Identity Persistence) — the only top-tier model whose commercial policy EXPLICITLY allows consented personal-brand photos.** GPT Image 2 is the quality/text-render leader but prohibits identifiable real people via API — not usable for our core flow.
+- **Video (when we build it)**: HeyGen Avatar IV ($4/min talking head from one photo), Kling 3.0 (multi-shot lifestyle motion, face-locked, ~$0.08–0.11/sec). Sora API is being discontinued Sept 2026 — never build on it.
+- **Cheap volume tier**: Seedream 5 (~$0.03/img, 14 refs) for drafts/previews.
+- **Watch next quarter**: Gemini Omni policy evolution, FLUX Kontext [max] (identity-preserving outfit/background edits), FASHN.ai try-on.
+- **How we keep up**: LMArena image/video arenas + Artificial Analysis + fal.ai explore (day-one new models). Re-check at the start of any generation-related build.
+- Retention asset reframe: with no trained model, the non-portable asset = the member's reference set + gallery + Maya's brand memory. Messaging: "Maya knows your brand and gets smarter every time" (matches the North Star pricing line).
+
+Build order stays: BRIDGE-01 (landing page + welcome emails + HOME-01 + D4 trial unlock) → ENTITLE-01 → Masterclass lessons 15–17 → EMAIL-01 cleanup.

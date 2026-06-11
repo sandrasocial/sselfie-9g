@@ -124,7 +124,7 @@ No navigation. No "go to settings, click generate, find the upload button." The 
 - Maya's personality + system prompt (Anthropic streaming, in character)
 - Brand profile context injected into every Maya response
 - Style preferences and aesthetic defaults from wizard
-- Classic generation (Flux LoRA / custom model) + Pro generation (NanoBanana Pro)
+- Pro generation (Nano Banana Pro, up to 14 reference selfies, zero-shot) = THE flagship. Classic (Flux LoRA training) is LEGACY, retired as flagship 2026-06-11. Model landscape + Google-policy fallback plan: `docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md`
 - **Concept cards** = the seed of the vision. `[GENERATE_CONCEPTS]` trigger → inline cards. This IS the pattern.
 - Training pipeline, Gallery, Feed Planner, Academy (as tabs — intermediate step)
 
@@ -263,7 +263,7 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
-| SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). |
+| SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). **Includes ALL one-time products (D3, 2026-06-11)**: flags in `academy_products` DB table (DB wins) + `lib/academy-entitlements.ts` defaults. |
 | Brand Strategy Pack | $19 | ❌ Retired standalone (2026-06-11 verified) | `/brand-strategy` + its checkout redirect to Masterclass; tool bundled into Masterclass. Selfie Guide order-bump path still fulfills. |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |
