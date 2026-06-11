@@ -10,7 +10,8 @@
 
 - **Frontend**: Next.js 16, React 19, Sonner for notifications, Recharts for charts, Tailwind + custom typography.
 - **Backend**: Edge API routes on Vercel, Neon Postgres (via `@neondatabase/serverless`), Stripe for billing, Resend for email, Replicate/Upstash for AI and caching, Vercel Blob for media.
-- **AI agents**: Claude/Clawdbot + Stella (via plugins), Codex Desktop, OpenAI/Anthropic APIs, Replicate for Maya, Gumloop/Loops integrations for automations.
+- **AI agents**: Claude (Cowork) + Codex, OpenAI/Anthropic APIs, Gumloop/Loops integrations for automations.
+- **⚠️ APP V3 IS LIVE (cutover 2026-06-10, APP-CUTOVER-01)**: members use `/app` (Studio 3.0) — code in `app/app/`, `components/app-v3/`, `lib/app-v3/`, `app/api/app-v3/`. **Image generation = `gpt-image-2` via OpenAI API** (reference-selfie edits, `OPENAI_IMAGE_MODEL` env). Legacy `/studio` (Replicate: Flux LoRA "Classic" + Nano Banana Pro "Pro") is retired but still in the repo — any Maya doc below that talks tabs/training/Replicate describes the LEGACY app. Check `app/api/app-v3/maya/generate/route.ts` before claiming stack facts.
 - **Tooling**: pnpm 10.23.0, tsx for scripts, Vitest/Playwright/Super + email scripts under `scripts/` for diagnostics, `knip.ts` cleanup configs.
 
 ## Key constraints / guardrails

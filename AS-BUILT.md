@@ -12,6 +12,10 @@
 | **Product** | SSELFIE Studio (mothership), live production |
 | **Architecture** | **`lib/maya/` is not compatible** with `agents-sselfie`. Do not copy Maya trees between repos. |
 
+## App v3 (verified 2026-06-11)
+
+Members use `/app` (Studio 3.0) since the APP-CUTOVER-01 Phase 2 cutover: `APP_V3_MEMBERS_ENABLED=true` set in Vercel production 2026-06-10 (verified via `vercel env ls`). Image generation flagship = **`gpt-image-2` via OpenAI API** (`app/api/app-v3/maya/generate/route.ts`). Legacy `/studio` (Replicate: Flux LoRA + Nano Banana Pro) is retired but still in the repo. Rollback = flip the env to `false`.
+
 ## Mechanical checks
 
 ```bash

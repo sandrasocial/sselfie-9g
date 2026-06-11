@@ -75,7 +75,15 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 ---
 
-## Maya UX — Locked State (DO NOT REVERSE)
+## App v3 — THE live member app (cutover 2026-06-10, APP-CUTOVER-01)
+
+**Members now use `/app` (Studio 3.0). Legacy `/studio` is retired but still in the repo.** Built via MAYA-REBUILD-03..17, merged to main, member access enabled via `APP_V3_MEMBERS_ENABLED=true` in Vercel prod (set 2026-06-10). Rollback = one env flip.
+
+- Code: `app/app/` (route) · `components/app-v3/` (UI: maya-concierge, visual front door, concept cards, edit mode, gallery, reference library, account) · `lib/app-v3/` (persona, prompt compiler, ingredients) · `app/api/app-v3/` (maya/generate, maya/edit, upload-selfie, gallery, reference-library, account).
+- **Image generation flagship: `gpt-image-2` (OpenAI API)** — `openai.images.edit` with the member's reference selfie attached; model switchable via `OPENAI_IMAGE_MODEL` env. **No training. No Replicate/Flux. No Nano Banana in v3.** Those belong to legacy `/studio` only.
+- Stack questions: code wins over docs — check `app/api/app-v3/maya/generate/route.ts` first. Model landscape research: `docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md`.
+
+## Maya UX — Locked State (LEGACY `/studio` only — superseded by App v3 for members)
 Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 
 - Maya top tabs: **Photos**, **Videos**, **Train** only. No Feed tab. No new top tabs.
@@ -124,7 +132,7 @@ No navigation. No "go to settings, click generate, find the upload button." The 
 - Maya's personality + system prompt (Anthropic streaming, in character)
 - Brand profile context injected into every Maya response
 - Style preferences and aesthetic defaults from wizard
-- Pro generation (Nano Banana Pro, up to 14 reference selfies, zero-shot) = THE flagship. Classic (Flux LoRA training) is LEGACY, retired as flagship 2026-06-11. Model landscape + Google-policy fallback plan: `docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md`
+- Image generation: see "App v3 — THE live member app" below. Flagship = gpt-image-2 (OpenAI). Legacy /studio stack (Nano Banana Pro "Pro mode" + Flux LoRA "Classic") still in repo but retired.
 - **Concept cards** = the seed of the vision. `[GENERATE_CONCEPTS]` trigger → inline cards. This IS the pattern.
 - Training pipeline, Gallery, Feed Planner, Academy (as tabs — intermediate step)
 
