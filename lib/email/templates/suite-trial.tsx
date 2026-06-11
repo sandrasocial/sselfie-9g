@@ -10,6 +10,8 @@ export interface TrialUnlockParams {
   /** "Prompt Vault" or "Starter Kit" — used in subject + body. */
   productLabel: string
   claimUrl: string
+  /** "purchase" = sent right after buying (default). "backfill" = past buyers (BRIDGE-01 one-time send). */
+  variant?: "purchase" | "backfill"
 }
 
 export function generateTrialUnlockEmail(params: TrialUnlockParams): {
@@ -17,13 +19,20 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
   text: string
   subject: string
 } {
-  const { customerName, customerEmail, productLabel, claimUrl } = params
+  const { customerName, customerEmail, productLabel, claimUrl, variant = "purchase" } = params
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
-  const subject = `A gift with your ${productLabel}: 7 days inside the SUITE`
+  const subject =
+    variant === "backfill"
+      ? `A gift for you: 7 days inside the SUITE`
+      : `A gift with your ${productLabel}: 7 days inside the SUITE`
+  const intro =
+    variant === "backfill"
+      ? `A while back you bought the ${productLabel}. This email is something extra.`
+      : `Your ${productLabel} is in your inbox. This email is something extra.`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your ${productLabel} is in your inbox. This email is something extra.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${intro}</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So here's your gift: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
@@ -40,7 +49,7 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
 
 Hey ${name},
 
-Your ${productLabel} is in your inbox. This email is something extra.
+${intro}
 
 The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.
 

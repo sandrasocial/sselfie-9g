@@ -114,6 +114,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "selfie_to_brand_shoot_testimonial_submitted",
   "selfie_to_brand_shoot_checkout_recovery_sent",
   "prompt_vault_system_upgrade_click",
+  // BRIDGE-01 — SUITE trial lifecycle (behavior only; conversion truth lives in subscriptions)
+  "trial_claimed",
+  "trial_first_generation",
+  "trial_expired",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]
