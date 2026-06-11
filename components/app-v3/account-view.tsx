@@ -35,7 +35,13 @@ const primaryBtn =
 const quietBtn =
   "text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
 
-export function AccountView({ firstName }: { firstName?: string | null }) {
+export function AccountView({
+  firstName,
+  onOpenLibrary,
+}: {
+  firstName?: string | null
+  onOpenLibrary?: () => void
+}) {
   const [data, setData] = useState<AccountData | null>(null)
   const [selfies, setSelfies] = useState<string[] | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
@@ -154,6 +160,21 @@ export function AccountView({ firstName }: { firstName?: string | null }) {
             </a>
           </div>
         </div>
+
+        {/* Your SSELFIE — pointer into the Library tab (BRIDGE-01 Phase C) */}
+        {onOpenLibrary && (
+          <div className={card}>
+            <p className={cardTitle}>Your SSELFIE</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
+              Every product you own, your courses, and the weekly drops live in your Library.
+            </p>
+            <div className="mt-4">
+              <button type="button" onClick={onOpenLibrary} className={primaryBtn}>
+                Open Library
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Brand & memory — straight to the Memory screen, never a chat (QA P1-6). */}
         <div className={card}>

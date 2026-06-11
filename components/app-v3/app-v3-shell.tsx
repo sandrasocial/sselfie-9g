@@ -1,10 +1,12 @@
 "use client"
 
 // SSELFIE Studio 3.0 — app shell + product navigation (MAYA-REBUILD-05 Phase H.2).
-// Maya is the product, not a tab. She is woven through every surface. The nav is the four
-// places content lives: Create · Library · Content · Account. No standalone "Maya" tab, and
-// no link to the legacy Instagram feed-planner (that planner mentality is the old SSELFIE;
-// the live Feed Planner stays untouched for members on /studio).
+// Maya is the product, not a tab. She is woven through every surface. The nav is the five
+// places content lives: Create · Photos · Content · Library · Account (BRIDGE-01 Phase C:
+// the photo gallery became "Photos" and "Library" is now everything she owns — courses,
+// products, drops). No standalone "Maya" tab, and no link to the legacy Instagram
+// feed-planner (that planner mentality is the old SSELFIE; the live Feed Planner stays
+// untouched for members on /studio).
 // Isolated tree: imports only from components/app-v3/ + lib/. No components/sselfie/.
 
 import { useState } from "react"
@@ -13,6 +15,7 @@ import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
 import { GalleryView } from "./gallery-view"
 import { ContentView } from "./content-view"
+import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, OutputFormat } from "./types"
 
@@ -20,12 +23,13 @@ export interface AppV3ShellProps {
   firstName?: string | null
 }
 
-type Section = "create" | "library" | "content" | "account"
+type Section = "create" | "photos" | "content" | "library" | "account"
 
 const NAV: { id: Section; label: string }[] = [
   { id: "create", label: "Create" },
-  { id: "library", label: "Library" },
+  { id: "photos", label: "Photos" },
   { id: "content", label: "Content" },
+  { id: "library", label: "Library" },
   { id: "account", label: "Account" },
 ]
 
@@ -67,16 +71,17 @@ function ShellInner({ firstName }: AppV3ShellProps) {
   return (
     <main className="min-h-screen bg-[#F8FAFA] pb-20 text-[#0D0E10]">
       {section === "create" && <VisualFrontDoor />}
-      {section === "library" && <GalleryView />}
+      {section === "photos" && <GalleryView />}
       {section === "content" && (
         <ContentView
           firstName={firstName}
           onCreateIdea={createIdea}
           onCreate={createFormat}
-          onBrowse={() => setSection("library")}
+          onBrowse={() => setSection("photos")}
         />
       )}
-      {section === "account" && <AccountView firstName={firstName} />}
+      {section === "library" && <LibraryView />}
+      {section === "account" && <AccountView firstName={firstName} onOpenLibrary={() => setSection("library")} />}
 
       <MayaConcierge />
 

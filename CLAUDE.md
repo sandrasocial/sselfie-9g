@@ -52,7 +52,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 | Workstream | Status |
 |------------|--------|
-| BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **In progress** — Phases A (welcome emails) + B (/join/studio rewrite) built 2026-06-11; next C (v3 Library tab), D (7-day trial), E (instrumentation); spec at `tasks/BRIDGE-01-suite-bridge.md` |
+| BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **In progress** — Phases A (welcome emails) + B (/join/studio rewrite) + C (v3 Library tab) built 2026-06-11; next D (7-day trial), E (instrumentation); spec at `tasks/BRIDGE-01-suite-bridge.md` |
 | ENTITLE-01 — audit access gates vs Stripe truth (subscriptions table has stale rows) | **Next up (approved)** |
 | Weekly newsletter drafted by Content Engine (Sandra approves) | Approved |
 | Support backlog triage (~34 old threads) | Approved |
