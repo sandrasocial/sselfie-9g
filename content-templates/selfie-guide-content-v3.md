@@ -2,32 +2,31 @@
 
 Before you take another selfie, check these settings. It takes 60 seconds and it makes a real difference.
 
-[IMAGE: iphone-settings-mockup.png — iPhone Settings → Camera screen showing Grid, Mirror Front Camera, Smart HDR enabled and Live Photos disabled]
+[IMAGE: iphone-settings-mockup.png · iPhone Settings, Camera screen showing Grid and Mirror Front Camera enabled and Live Photos disabled]
 
 ### Open Your Camera Settings
 Go to: **Settings → Camera**
 
 **Turn these ON:**
-- [ ] Grid — Helps you line up shots and keep your face centered
-- [ ] Mirror Front Camera — So your selfie looks the way you see yourself, not flipped
-- [ ] Smart HDR — Balances light automatically, especially in mixed lighting
+- [ ] Grid. Helps you line up shots and keep your face centered.
+- [ ] Mirror Front Camera. So your selfie looks the way you see yourself, not flipped.
+
+If you see a Smart HDR toggle, turn it on. On newer iPhones you won't find it, and that's fine. It's already working automatically.
 
 **Turn these OFF:**
-- [ ] Live Photos — Uses extra storage and you rarely need the motion
-- [ ] View Outside the Frame — Distracting while you are shooting
+- [ ] Live Photos. Uses extra storage and you rarely need the motion.
 
-### For iPhone 15 and 16 Users
-- Use **Photographic Styles** and try "Natural" or "Vibrant" for more control over skin tones
-- Enable **Action Mode** if you are filming video content
-- Use **Portrait Mode** for blurred backgrounds that look more polished
+### On a Newer iPhone?
+- Try **Photographic Styles** for more control over your skin tones. Start with "Natural". You can adjust it after you shoot, so nothing is locked in.
+- Use **Portrait Mode** for blurred backgrounds that look more polished.
 
 ### Quick Camera Access
-Swipe left from your lock screen. Or set a shortcut via Settings → Accessibility → Side Button.
+Swipe left from your lock screen. If your iPhone has the Camera Control button on the side, press it once. If you have the Action Button, set it to Camera in Settings.
 
 ### The One Setting Most People Miss
-**Video format matters.** For content you will post, shoot in 1080p at 30fps. It uploads faster, edits easier, and looks good on every platform.
+**Video format matters.** Go to **Settings → Camera → Record Video** and pick 4K at 30 fps. Your phone can handle it, every platform can handle it, and your videos will look sharper for it.
 
-Go to **Settings → Camera → Record Video** and select 1080p HD at 30 fps.
+If storage is tight, 1080p at 30 fps still works.
 
 ---
 
@@ -37,7 +36,7 @@ You can have the right settings, the right angles, and a good outfit. But if the
 
 Good light is not optional. It is the whole thing.
 
-[IMAGE: window-lighting-setup.png — Example of window lighting setup with subject standing beside a window facing natural light]
+[IMAGE: window-lighting-setup.png · Example of window lighting setup with subject standing beside a window facing natural light]
 
 ### The Free Light You Already Have
 Natural window light is the best light. It is soft, flattering, and completely free.
@@ -52,7 +51,7 @@ Here is how to use it:
 
 No ring light required.
 
-[IMAGE: lighting-comparison-grid.png — Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples]
+[IMAGE: lighting-comparison-grid.png · Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples]
 
 ### The 4 Lights Worth Knowing
 
@@ -65,9 +64,9 @@ No ring light required.
 **Ring light** works well for consistency indoors at night. Position it directly in front of you at eye level. Do not angle it from above or below.
 
 ### What to Avoid
-- Overhead lighting (fluorescent office lights, ceiling lights behind you) — creates harsh shadows under your eyes
-- Backlighting (window or lamp behind you) — turns your face into a silhouette
-- Mixed lighting (window on one side, lamp on the other) — creates uneven colour tones on your face
+- Overhead lighting (fluorescent office lights, ceiling lights behind you) creates harsh shadows under your eyes
+- Backlighting (window or lamp behind you) turns your face into a silhouette
+- Mixed lighting (window on one side, lamp on the other) creates uneven colour tones on your face
 
 ### Quick Test
 Take one selfie right now in your current light. Look at the photo. Are the shadows under your eyes soft or harsh? Is your skin tone even? If not, move closer to a window or step outside.
@@ -78,7 +77,7 @@ Take one selfie right now in your current light. Look at the photo. Are the shad
 
 You have found good light. Now let us talk about how you hold the camera, how you position your body, and why none of this has anything to do with being "photogenic."
 
-[IMAGE: angle-comparison-grid.png — Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions]
+[IMAGE: angle-comparison-grid.png · Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions]
 
 ### The Angle That Works Every Time
 Hold your phone **15 degrees above eye level**. Not high above your head. Just slightly higher than straight-on.
@@ -89,7 +88,7 @@ This combination does two things: it slims the face naturally, and it creates a 
 
 ### What to Do With Your Body
 
-[IMAGE: pose-guide-grid.png — Grid of four natural portrait pose variations for selfie practice]
+[IMAGE: pose-guide-grid.png · Grid of four natural portrait pose variations for selfie practice]
 
 You do not need to pose in a way that feels fake. You just need to break the "passport photo" stance.
 
@@ -177,7 +176,7 @@ The goal of editing is not to change how you look. It is to make the photo feel 
 
 ### The Apps Worth Using
 
-[IMAGE: editing-apps.png — Four editing apps: Lightroom Mobile, CapCut, Hypic, and VSCO with brief descriptions of each]
+[IMAGE: editing-apps.png · Four editing apps: Lightroom Mobile, CapCut, Hypic, and VSCO with brief descriptions of each]
 
 **Lightroom Mobile** (free) for consistent colour grading. This is your main editing tool.
 
@@ -189,19 +188,19 @@ The goal of editing is not to change how you look. It is to make the photo feel 
 
 ### Your 5-Step Edit in Lightroom
 
-[IMAGE: editing-before-after.png — Your 5-step Lightroom edit showing Exposure, Contrast, Highlights, Shadows, and Warmth adjustments]
+[IMAGE: editing-before-after.png · Your 5-step Lightroom edit showing Exposure, Contrast, Highlights, Shadows, and Warmth adjustments]
 
-1. **Exposure** — Lift shadows slightly if the photo looks dark. Do not blow out the highlights.
-2. **Contrast** — Small amount. Around +10 to +15 gives depth without making skin look harsh.
-3. **Highlights** — Pull down slightly (-15 to -25) to recover detail in bright areas.
-4. **Shadows** — Lift slightly (+10 to +20) to open up darker areas of the face.
-5. **Warmth** — A touch of warmth (around +10) gives skin a healthy, natural tone.
+1. **Exposure**: Lift shadows slightly if the photo looks dark. Do not blow out the highlights.
+2. **Contrast**: Small amount. Around +10 to +15 gives depth without making skin look harsh.
+3. **Highlights**: Pull down slightly (-15 to -25) to recover detail in bright areas.
+4. **Shadows**: Lift slightly (+10 to +20) to open up darker areas of the face.
+5. **Warmth**: A touch of warmth (around +10) gives skin a healthy, natural tone.
 
 That is your base edit. It takes 2 minutes and it works on almost any photo taken in good light.
 
 ### Save a Preset
 
-[IMAGE: editing-preset.png — Save a Preset: edit once, apply in one tap to keep your feed consistent]
+[IMAGE: editing-preset.png · Save a Preset: edit once, apply in one tap to keep your feed consistent]
 
 Once you find edits you like, save them as a preset in Lightroom. Then you can apply your entire edit to a new photo in one tap. This keeps your photos looking consistent without spending 20 minutes on every single one.
 
@@ -209,7 +208,7 @@ The Starter Kit presets do this in one tap. But running through it manually firs
 
 ### What Not to Do
 
-[IMAGE: editing-what-not.png — What not to do: over-smoothing, pushing saturation, inconsistent filters — plus the before/after test]
+[IMAGE: editing-what-not.png · What not to do: over-smoothing, pushing saturation, inconsistent filters, plus the before and after test]
 
 - Do not smooth skin to the point where texture disappears. It looks digital and unreal.
 - Do not push saturation. It makes skin look orange and backgrounds look fake.
@@ -217,6 +216,32 @@ The Starter Kit presets do this in one tap. But running through it manually firs
 
 ### The Before and After Test
 Before you post anything, zoom in to 100% on your face. Ask: does this still look like a real photo of a real person? If yes, you are done. If it looks retouched, pull back.
+
+---
+
+## One Selfie, Many Photos
+
+Here's something that changed in the last year: one good selfie isn't just one post anymore.
+
+AI tools like ChatGPT can take a single clear photo of you and restyle it into a whole photoshoot. Different outfit, different location, same you. Not a fake version of you. A framed version. Your face stays your face.
+
+[IMAGE: feed-post-1.png · Lookbook of real examples, one original selfie restyled into editorial brand photos that still look like Sandra]
+
+But the AI can only work with what you give it. A blurry, heavily filtered selfie gives you back a stranger. A strong original keeps you recognizable.
+
+### A Selfie Is AI-Ready When
+- [ ] Your face is sharp and well lit (window light, remember?)
+- [ ] Nothing covers your face. No sunglasses, no hands, no heavy shadows.
+- [ ] It's edited lightly or not at all. Skin texture still visible.
+- [ ] You're looking at or near the camera.
+
+Everything in this guide already gets you there. The same selfie that looks good on your feed is the one AI works best with.
+
+So take the photo once, properly. It'll work twice as hard for you.
+
+Want to try it? My free AI prompts show you exactly what to ask for.
+
+[Get the free prompts](/ai-prompts)
 
 ---
 

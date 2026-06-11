@@ -13,16 +13,16 @@ type OnboardingQuizProps = {
 }
 
 const PHONE_OPTIONS: { value: GuidePhoneType; label: string }[] = [
-  { value: "iphone-15-16", label: "iPhone 14, 15, or 16" },
-  { value: "iphone-13-14", label: "iPhone 11, 12, or 13" },
+  { value: "iphone-15-16", label: "iPhone 15 or newer" },
+  { value: "iphone-13-14", label: "An older iPhone" },
   { value: "android", label: "Android" },
   { value: "not-sure", label: "Not sure" },
 ]
 
 const FREQUENCY_OPTIONS: { value: GuidePostingFrequency; label: string }[] = [
-  { value: "never", label: "Never — I avoid the camera" },
-  { value: "sometimes", label: "Sometimes — when I feel ready" },
-  { value: "regularly", label: "Regularly — but I want better results" },
+  { value: "never", label: "Never. I avoid the camera" },
+  { value: "sometimes", label: "Sometimes, when I feel ready" },
+  { value: "regularly", label: "Regularly, but I want better results" },
 ]
 
 export default function OnboardingQuiz({ onComplete }: OnboardingQuizProps) {
