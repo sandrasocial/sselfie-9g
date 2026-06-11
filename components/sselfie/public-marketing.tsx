@@ -32,6 +32,17 @@ const IMG = {
   skBaDarkMoody:   "/images/starter-kit/ba-dark-moody.png",
 }
 
+// SUITE landing assets — Sandra-approved vault collection images (BRIDGE-01 Phase B)
+const SUITE_IMG = {
+  monday:      "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
+  photoshoots: "/images/ai-prompts/coastal-white-shot-2.jpg",
+  carousels:   "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
+  reelCovers:  "/images/ai-prompts/denim-street-shot-2.jpg",
+  captions:    "/images/ai-prompts/marble-wine-shot-1.jpg",
+  plan:        "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
+  honest:      "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+}
+
 // ─── Design tokens — SSELFIE workbook system ─────────────────────────────────
 const C = {
   // Core surfaces
@@ -582,9 +593,10 @@ function Split({
 
 // ─── CTA close ────────────────────────────────────────────────────────────────
 function CtaClose({
-  title, primary, secondary, dark = true,
+  title, body, primary, secondary, dark = true,
 }: {
   title:      ReactNode
+  body?:      ReactNode
   primary:    { href: string; label: string }
   secondary?: { href: string; label: string }
   dark?:      boolean
@@ -594,13 +606,29 @@ function CtaClose({
     <section style={{ position: "relative", background: surface, padding: "clamp(72px, 9vw, 100px) clamp(18px, 4vw, 24px)", borderTop: `1px solid ${dark ? C.divDark : C.divCream}`, overflow: "hidden" }}>
       <PaperTexture dark={dark} />
       <div className="max-w-xl mx-auto text-center relative" style={{ zIndex: 2 }}>
-        <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: "36px" }}>{title}</h2>
+        <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: body ? "16px" : "36px" }}>{title}</h2>
+        {body && <div className="mf" style={{ ...ty("body", dark), marginBottom: "34px" }}>{body}</div>}
         <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.05s" }}>
           <Btn href={primary.href} surface={dark ? "dark" : "cream"}>{primary.label}</Btn>
           {secondary && <Btn href={secondary.href} ghost surface={dark ? "dark" : "cream"}>{secondary.label}</Btn>}
         </div>
       </div>
     </section>
+  )
+}
+
+// ─── Image feature card (BRIDGE-01) ──────────────────────────────────────────
+function ImgCard({ src, title, body, dark = false }: { src: string; title: string; body: string; dark?: boolean }) {
+  return (
+    <article className="mf" style={{ ...cardSx(dark), padding: 0, overflow: "hidden" }}>
+      <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
+        <img src={src} alt={title} loading="lazy" className="w-full h-full object-cover" />
+      </div>
+      <div style={{ padding: "20px 22px 24px" }}>
+        <h3 style={{ ...ty("h3", dark), marginBottom: "8px" }}>{title}</h3>
+        <p style={{ ...ty("body", dark), fontSize: "14px" }}>{body}</p>
+      </div>
+    </article>
   )
 }
 
@@ -678,12 +706,16 @@ const FAQS = {
       answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
   ],
   studio: [
-    { question: "Who is SSELFIE SUITE for?",
-      answer: "For people who already know the look and direction they want, and need speed, consistency, and memory built into the workflow." },
-    { question: "What does Maya actually do?",
-      answer: "She generates brand photos, plans your feed, writes captions. And she remembers your style, so you're not starting from zero every time." },
+    { question: "Is this just another AI image generator?",
+      answer: "No. Image tools hand you a picture and leave. Maya builds the whole visual layer of your brand: photoshoots, carousels, reel covers, captions, and a plan for what to post. And she remembers your brand, so it gets easier every week." },
+    { question: "What makes this different from ChatGPT?",
+      answer: "Same class of engine money can rent. What you can't rent is a creative director who already knows your brand. Maya remembers your style, your colors, what you said no to, and she keeps your face in every photo." },
+    { question: "Will the photos actually look like me?",
+      answer: "Yes. That's the whole product. Maya works from your reference selfies. If something doesn't feel like you, you tell her and she remembers." },
+    { question: "Do I need to learn prompts?",
+      answer: "No. You tap. Maya does the prompt work." },
     { question: "Can I cancel?",
-      answer: "Yes. Cancel any time from your account. No forms, no friction." },
+      answer: "Anytime, from your account, no forms. Your gallery stays yours." },
   ],
 }
 
@@ -1172,39 +1204,97 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* HERO — dark */}
       <Hero
         eyebrow="SSELFIE SUITE · €97/mo"
-        title={<>Maya helps you show up every week.</>}
-        body={<p>You know your look. You know your edit. SSELFIE SUITE keeps it moving: photo ideas, captions, content plans, and next actions in one place so you&apos;re never starting from zero.</p>}
+        title={<>Your visual brand, built for you.</>}
+        body={<p>Maya is the creative director in your pocket. She turns one selfie into full photoshoots, carousels, reel covers, and captions that sound like you. You show up every week. She does the heavy lifting.</p>}
         primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join SSELFIE SUITE" }}
-        secondary={{ href: "/masterclass",       label: "Start with the Masterclass" }}
+        secondary={{ href: "#how-it-works", label: "See how it works" }}
         imageSrc={IMG.feed}
       />
 
-      {/* INSIDE STUDIO — cream */}
-      <Section eyebrow="Inside SSELFIE SUITE" title="Your weekly execution room." dark={false}>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark={false} title="Weekly Plan" body="Maya helps you decide what to post this week and what to create first." />
-          <FCard dark={false} title="Photo Direction" body="Turn selfies, references, and brand context into postable photo ideas." />
-          <FCard dark={false} title="Captions" body="Get caption angles and soft calls to action that match the post." />
-          <FCard dark={false} title="Method Library" body="Keep the education close, but let Maya help you execute it weekly." />
+      {/* THE PAIN — cream */}
+      <Section
+        eyebrow="Sound familiar?"
+        title={<>You already know you should be posting. That&apos;s not the problem.</>}
+        dark={false}
+        narrow
+      >
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>The problem is everything behind one post. You need a photo that doesn&apos;t look like a phone selfie. Words that don&apos;t sound like everyone else. A feed that looks like a brand and not a camera roll.</p>
+          <p>A photographer every month isn&apos;t realistic. And the AI tools you&apos;ve tried made you look like someone else, which is worse than not posting at all.</p>
+          <p>Showing up shouldn&apos;t cost you a whole evening. Or your face.</p>
         </div>
       </Section>
 
-      {/* POSITIONING — dark */}
+      {/* YOUR NEW MONDAY — dark */}
+      <div id="how-it-works">
+        <Split
+          eyebrow="How it works"
+          title={<>Here&apos;s your new Monday.</>}
+          body={
+            <div className="space-y-4">
+              <p>You open the app with your coffee. Maya already has three concepts pulled in your style: the photos, the reel cover, the caption.</p>
+              <p>You tap the one that feels most like you. By the time your coffee&apos;s done, this week&apos;s content is too.</p>
+              <p>You, looking like the brand you actually are. Every week.</p>
+            </div>
+          }
+          imgSrc={SUITE_IMG.monday}
+          imgAlt="Editorial morning photo made with Maya"
+          imgFirst
+          dark
+        />
+      </div>
+
+      {/* WHAT MAYA MAKES — cream */}
+      <Section eyebrow="What Maya makes" title={<>One selfie in. A visual brand out.</>} dark={false}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ImgCard src={SUITE_IMG.photoshoots} title="Photoshoots" body="Editorial photos from one selfie. Recognizably you, in every shot." />
+          <ImgCard src={SUITE_IMG.carousels} title="Carousels" body="Designed to be saved. Your words, your colors, ready to post." />
+          <ImgCard src={SUITE_IMG.reelCovers} title="Reel covers" body="Scroll-stopping covers with your hook line on them." />
+          <ImgCard src={SUITE_IMG.captions} title="Captions" body="Sounds like you wrote it on a good day." />
+          <ImgCard src={SUITE_IMG.plan} title="A plan" body="No more staring at a blank feed. She suggests, you tap." />
+        </div>
+      </Section>
+
+      {/* EVERYTHING INCLUDED — dark */}
+      <Section eyebrow="Everything included" title={<>The SUITE includes every product I&apos;ve ever made.</>}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <FCard title="Maya" body="Your creative director, plus 200 photos a month." />
+          <FCard title="The Prompt Vault" eyebrow="$27 value" body="Every prompt collection, included." />
+          <FCard title="The Starter Kit" eyebrow="$37 value" body="Presets, posing, captions. Included." />
+          <FCard title="The Masterclass" eyebrow="$147 value" body="The full brand education. Included." />
+          <FCard title="Every new drop" body="New collections and products land in your library every week." />
+        </div>
+        <p className="mf" style={{ ...ty("body", true), fontSize: "16px", marginTop: "32px" }}>
+          Buy nothing twice. Members get all of it.
+        </p>
+      </Section>
+
+      {/* HONEST AI — dark */}
       <Split
-        eyebrow="The honest version"
-        title={<>SSELFIE SUITE comes after the basics. Not before.</>}
+        eyebrow="The honest part"
+        title={<>These photos will look like you. That&apos;s the point.</>}
         body={
           <div className="space-y-4">
-            <p>The education teaches the method. SSELFIE SUITE helps you run it every week.</p>
-            <p>SSELFIE SUITE is for the person who is tired of starting from zero every time she needs to post.</p>
-            <p>If you&apos;re still figuring out your positioning, start with the Masterclass. If you need weekly execution, join SSELFIE SUITE.</p>
+            <p>No filtered stranger. No &quot;perfect&quot; face that isn&apos;t yours. Maya works from your real selfies and keeps what makes you recognizable.</p>
+            <p>AI should not erase you. It should frame you.</p>
           </div>
         }
-        imgSrc={IMG.dark}
-        imgFirst
+        imgSrc={SUITE_IMG.honest}
+        imgAlt="Realistic AI-assisted brand photo that keeps your face"
         dark
-        cta={<Btn href="/masterclass" surface="dark" ghost>See the Masterclass</Btn>}
       />
+
+      {/* PRICING — cream */}
+      <Section eyebrow="Pricing" title={<>€97 a month. Everything included.</>} dark={false} narrow>
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>200 photos a month. Every product I&apos;ve made. Cancel anytime, no forms.</p>
+        </div>
+        <div className="mf" style={{ marginTop: "32px" }}>
+          <Btn href={`/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`} surface="cream">
+            Join SSELFIE SUITE · €97/mo
+          </Btn>
+        </div>
+      </Section>
 
       {/* FAQ — cream */}
       <Section eyebrow="FAQ" title="A few things before you join." dark={false}>
@@ -1213,9 +1303,9 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
       {/* CTA — dark */}
       <CtaClose
-        title="When you want Maya to help you execute every week, this is it."
+        title="Stop producing your brand alone."
+        body={<p>Maya&apos;s ready. Your first photoshoot is minutes away.</p>}
         primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join SSELFIE SUITE · €97/mo" }}
-        secondary={{ href: "/starter-kit",       label: "Start smaller" }}
         dark
       />
 

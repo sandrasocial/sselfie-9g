@@ -95,7 +95,8 @@ Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plum
 ## Build status
 
 - **Phase A: BUILT 2026-06-11** — `lib/email/templates/membership-welcome.tsx` (new + existing variants, approved copy, exported subjects); webhook new-user path swapped to it for membership, existing-user path now sends the "existing" variant (livemode + paid gated, email_logs idempotent, `email_type='membership_welcome'`); onboarding cron rewired from Resend-segment broadcasts (env vars never set; the 503 was blocking ALL lifecycle emails in that route daily) to direct per-user sends; Day 0/2/7 CTAs → `/app`, Day 2 tap-first rewrite, Day 7 gallery-ownership line.
-- Phases B-E: not started. B blocked on Sandra approving the rewritten Appendix 2 below; C-E unblocked.
+- **Phase B: BUILT 2026-06-11** — Appendix 2 v2 approved by Sandra ("approved. Proceed Phase B"). `StudioPageContent` rewritten in `components/sselfie/public-marketing.tsx`: Hero (Visual Brand Builder H1, "#how-it-works" anchor secondary) → Pain → New Monday (Split, vault image) → What Maya makes (5 ImgCards, vault images, video tile held for VIDEO-01) → Everything included (D3, 5 FCards + "Buy nothing twice") → Honest block → Pricing (`_pricing` source) → new FAQ (5 items) → CtaClose with body. New `SUITE_IMG` constant (7 vault jpgs from `public/images/ai-prompts/`), new `ImgCard` component, `CtaClose` got optional body prop, old "comes after the basics" section removed, metadata description updated in `app/join/studio/page.tsx`. Verified in browser preview: all sections render, all 7 images 200, all 4 checkout/anchor links correct, zero console errors, tsc clean, no new voice violations (em-dash flags are code comments only).
+- Phases C-E: not started, unblocked.
 
 ---
 
@@ -171,7 +172,7 @@ Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plum
 
 ---
 
-# Appendix 2 — `/join/studio` rewrite copy (v2, Visual Brand Builder positioning — pending Sandra approval)
+# Appendix 2 — `/join/studio` rewrite copy (v2, Visual Brand Builder positioning — APPROVED by Sandra 2026-06-11, shipped in Phase B)
 
 *Rewritten 2026-06-11 per Sandra's direction: Maya is a Visual Brand Builder, not an image generator. Pain points named, desires named, picture painted. Video deliberately excluded until VIDEO-01 ships (honesty note above).*
 

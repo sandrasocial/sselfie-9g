@@ -3,7 +3,7 @@ import { StudioPageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
   title: "Join SSELFIE SUITE | SSELFIE",
-  description: "SSELFIE SUITE: Maya, brand-shoot photos, feed planning, and Academy for advanced creators.",
+  description: "Your visual brand, built for you. Maya turns one selfie into photoshoots, carousels, reel covers, and captions that sound like you. €97/mo, everything included.",
 }
 
 export default async function JoinStudioPage({
