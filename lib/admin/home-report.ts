@@ -18,6 +18,8 @@ export type AdminHomeReport = {
   members: {
     active: number
     mrr: number
+    grossMrr: number
+    discountedMembers: number
     new30d: number
     canceled30d: number
     live: boolean
@@ -120,6 +122,8 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     members: {
       active: memberMetrics?.activeSubscriptions ?? 0,
       mrr: memberMetrics?.mrr ?? 0,
+      grossMrr: memberMetrics?.grossMrr ?? memberMetrics?.mrr ?? 0,
+      discountedMembers: memberMetrics?.discountedMembers ?? 0,
       new30d: memberMetrics?.newSubscribers30d ?? 0,
       canceled30d: memberMetrics?.canceledSubscriptions30d ?? 0,
       live: Boolean(memberMetrics && !memberMetrics.cached) || Boolean(memberMetrics?.cached),

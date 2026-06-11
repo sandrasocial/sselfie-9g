@@ -10,6 +10,65 @@ import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { logWebhookError, alertWebhookError } from "@/lib/webhook-monitoring"
+import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
+
+/**
+ * Resolve a subscription's coupon for DB documentation (e.g. lifetime BETA 50%).
+ * Webhook payloads on newer Stripe API versions carry `discounts` as ID strings,
+ * so when a discount exists but isn't expanded we re-fetch with expansion —
+ * never write null over a real discount just because the payload was thin.
+ */
+async function resolveSubscriptionDiscount(
+  sub: any,
+): Promise<{ percent: number | null; coupon: string | null } | null> {
+  const toResult = (coupon: any) =>
+    coupon
+      ? {
+          percent: coupon.percent_off ?? null,
+          coupon: coupon.name || coupon.id || null,
+        }
+      : null
+
+  const direct = toResult(getSubscriptionCoupon(sub))
+  if (direct) return direct
+
+  // Webhook payloads carry discounts as IDs (or with unexpanded coupon IDs);
+  // when any discount exists but no coupon object is readable, re-fetch expanded.
+  const hasUnreadableDiscount =
+    (Array.isArray(sub?.discounts) && sub.discounts.length > 0) ||
+    (sub?.discount && !sub.discount.coupon)
+  if (hasUnreadableDiscount && sub?.id) {
+    try {
+      const fresh = await stripe.subscriptions.retrieve(sub.id, {
+        expand: ["discounts.source.coupon"],
+      })
+      const resolved = toResult(getSubscriptionCoupon(fresh))
+      if (resolved) return resolved
+    } catch (error: any) {
+      console.error("[v0] Failed to expand subscription discount:", error?.message)
+      // Unknown — caller must preserve whatever the DB already documents.
+      return null
+    }
+  }
+
+  return { percent: null, coupon: null }
+}
+
+/** Current documented discount for a subscription row (fallback when Stripe is unreachable). */
+async function currentDocumentedDiscount(
+  stripeSubscriptionId: string,
+): Promise<{ percent: number | null; coupon: string | null }> {
+  const [row] = await sql`
+    SELECT discount_percent, discount_coupon
+    FROM subscriptions
+    WHERE stripe_subscription_id = ${stripeSubscriptionId}
+    LIMIT 1
+  `
+  return {
+    percent: row?.discount_percent != null ? Number(row.discount_percent) : null,
+    coupon: row?.discount_coupon || null,
+  }
+}
 
 export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise<void> {
   const event = rawEvent as Stripe.Event & { data: { object: any } }
@@ -61,6 +120,14 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
     SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
   `
 
+  // Persist coupon state so the DB documents what each member actually pays
+  // (e.g. lifetime BETA 50%).
+  const resolvedDiscount =
+    (await resolveSubscriptionDiscount(subscription)) ??
+    (await currentDocumentedDiscount(subscription.id))
+  const discountPercent = resolvedDiscount.percent
+  const discountCoupon = resolvedDiscount.coupon
+
   if (existingSubscription.length > 0) {
     console.log(`[v0] Updating existing subscription for user ${userId}`)
     await sql`
@@ -73,6 +140,8 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
         current_period_start = to_timestamp(${subscription.current_period_start}),
         current_period_end = to_timestamp(${subscription.current_period_end}),
         is_test_mode = ${!event.livemode},
+        discount_percent = ${discountPercent},
+        discount_coupon = ${discountCoupon},
         updated_at = NOW()
       WHERE user_id = ${userId}
     `
@@ -80,15 +149,17 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
     console.log(`[v0] Inserting new subscription for user ${userId}`)
     await sql`
       INSERT INTO subscriptions (
-        user_id, 
+        user_id,
         product_type,
         plan,
-        status, 
+        status,
         stripe_subscription_id,
         stripe_customer_id,
         current_period_start,
         current_period_end,
-        is_test_mode
+        is_test_mode,
+        discount_percent,
+        discount_coupon
       )
       VALUES (
         ${userId},
@@ -99,7 +170,9 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
         ${subscription.customer},
         to_timestamp(${subscription.current_period_start}),
         to_timestamp(${subscription.current_period_end}),
-        ${!event.livemode}
+        ${!event.livemode},
+        ${discountPercent},
+        ${discountCoupon}
       )
     `
   }
@@ -327,15 +400,23 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
     }
   }
 
+  // Keep discount documentation in sync (lifetime BETA 50% etc.).
+  const updatedResolvedDiscount =
+    (await resolveSubscriptionDiscount(sub)) ?? (await currentDocumentedDiscount(sub.id))
+  const updatedDiscountPercent = updatedResolvedDiscount.percent
+  const updatedDiscountCoupon = updatedResolvedDiscount.coupon
+
   if (productType) {
     await sql`
       UPDATE subscriptions
-      SET 
+      SET
         product_type = ${productType},
         plan = ${productType},
         status = ${stripeStatus},
         current_period_start = ${currentPeriodStart},
         current_period_end = ${currentPeriodEnd},
+        discount_percent = ${updatedDiscountPercent},
+        discount_coupon = ${updatedDiscountCoupon},
         updated_at = NOW()
       WHERE stripe_subscription_id = ${sub.id}
     `
@@ -345,10 +426,12 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
   } else {
     await sql`
       UPDATE subscriptions
-      SET 
+      SET
         status = ${stripeStatus},
         current_period_start = ${currentPeriodStart},
         current_period_end = ${currentPeriodEnd},
+        discount_percent = ${updatedDiscountPercent},
+        discount_coupon = ${updatedDiscountCoupon},
         updated_at = NOW()
       WHERE stripe_subscription_id = ${sub.id}
     `

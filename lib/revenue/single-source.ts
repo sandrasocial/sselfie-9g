@@ -1,11 +1,16 @@
 import { getStripe } from "@/lib/stripe"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { CACHE_TTL, getCache, setCache } from "@/lib/cache"
-import { calculateSubscriptionAmount } from "@/lib/revenue/subscription-amount"
+import { calculateSubscriptionAmount, getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
 import { getConfiguredMembershipPriceIds, isMembershipSubscription } from "@/lib/revenue/membership-subscription-filter"
 
 export interface SingleSourceRevenueMetrics {
+  /** Net MRR: what members actually pay after lifetime/forever coupons. */
   mrr: number
+  /** What MRR would be at list price, before discounts. */
+  grossMrr: number
+  /** Active members on a forever/lifetime percent-off coupon (e.g. BETA 50%). */
+  discountedMembers: number
   activeSubscriptions: number
   totalSubscriptions: number
   canceledSubscriptions30d: number
@@ -30,6 +35,9 @@ async function listAllSubscriptions(params: Record<string, any>) {
   while (hasMore) {
     const response = await stripe.subscriptions.list({
       limit: 100,
+      // Discounts must be expanded down to the coupon or newer Stripe API
+      // versions return only IDs, which silently turns net MRR into gross MRR.
+      expand: ["data.discounts.source.coupon"],
       ...params,
       ...(startingAfter ? { starting_after: startingAfter } : {}),
     })
@@ -81,8 +89,25 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     activeMembershipSubs.reduce((sum, sub) => sum + calculateSubscriptionAmount(sub), 0),
   )
 
+  const grossMrr = Math.round(
+    activeMembershipSubs.reduce((sum, sub) => {
+      const item = sub.items?.data?.[0]
+      const price = item?.price
+      if (!price?.recurring) return sum
+      const base = (Number(price.unit_amount || 0) * Number(item?.quantity || 1)) / 100
+      return sum + (price.recurring.interval === "year" ? base / 12 : base)
+    }, 0),
+  )
+
+  const discountedMembers = activeMembershipSubs.filter((sub) => {
+    const coupon = getSubscriptionCoupon(sub)
+    return Number(coupon?.percent_off || 0) > 0 || Number(coupon?.amount_off || 0) > 0
+  }).length
+
   return {
     mrr,
+    grossMrr,
+    discountedMembers,
     activeSubscriptions,
     totalSubscriptions,
     canceledSubscriptions30d,

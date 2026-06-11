@@ -127,11 +127,19 @@ export default async function AdminPage({
               </div>
               <div>
                 <p className="font-serif text-3xl text-stone-950">{money(report.members.mrr)}</p>
-                <p className="text-xs uppercase tracking-wide text-stone-500">MRR</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">MRR · net of discounts</p>
               </div>
               <div className="text-sm text-stone-600">
                 +{report.members.new30d} new · {report.members.canceled30d} canceled (30d)
               </div>
+            </div>
+            <div className="mt-3 text-sm text-stone-600">
+              {report.members.discountedMembers > 0 && (
+                <>
+                  {report.members.discountedMembers} of {report.members.active} on a lifetime beta
+                  discount (BETA 50% forever) · {money(report.members.grossMrr)} at list price
+                </>
+              )}
             </div>
           </div>
         </section>

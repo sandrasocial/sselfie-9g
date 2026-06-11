@@ -1,3 +1,18 @@
+export function getSubscriptionCoupon(subscription: any): any | null {
+  // Coupon location varies by Stripe API version:
+  // - 2026+ ("clover"): subscription.discounts[].source.coupon (object when expanded)
+  // - earlier versions: subscription.discounts[].coupon or subscription.discount.coupon
+  if (Array.isArray(subscription?.discounts)) {
+    for (const d of subscription.discounts) {
+      if (!d || typeof d !== "object") continue
+      if (d.source?.coupon && typeof d.source.coupon === "object") return d.source.coupon
+      if (d.coupon && typeof d.coupon === "object") return d.coupon
+    }
+  }
+  const legacy = subscription?.discount?.coupon
+  return legacy && typeof legacy === "object" ? legacy : null
+}
+
 export function calculateSubscriptionAmount(subscription: any): number {
   const item = subscription.items?.data?.[0]
   const price = item?.price
@@ -7,7 +22,7 @@ export function calculateSubscriptionAmount(subscription: any): number {
 
   const quantity = Number(item?.quantity || 1)
   const baseAmount = Number(price.unit_amount || 0) * (Number.isFinite(quantity) ? quantity : 1)
-  const coupon = subscription?.discount?.coupon
+  const coupon = getSubscriptionCoupon(subscription)
   let discountedAmount = baseAmount
 
   if (coupon?.percent_off != null) {
