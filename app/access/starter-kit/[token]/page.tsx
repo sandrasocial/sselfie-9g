@@ -296,14 +296,14 @@ export default async function StarterKitAccessPage({
         </article>
 
         <article className="card">
-          <p className="card-label">Guide</p>
-          <h2 className={cormorant.className}>Open the full guide</h2>
+          <p className="card-label">7-Day Content Starter</p>
+          <h2 className={cormorant.className}>Your first week of content</h2>
           <p>
-            Your Starter Kit links straight into the Selfie Guide flow so you can move from the
-            quick-start into light, angles, confidence, and the 7-day posting challenge.
+            The 7-Day Content Starter lives inside your Selfie Guide: light, angles, confidence,
+            and one post per day for your first week. Open it and start with day one.
           </p>
           <Link href={guideAccessUrl} className="secondary-cta">
-            Open the Selfie Guide
+            Open the 7-Day Content Starter
           </Link>
         </article>
       </section>

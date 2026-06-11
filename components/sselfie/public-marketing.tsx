@@ -1073,23 +1073,20 @@ export function MasterclassPageContent() {
       <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
-            { num: "01", title: "Start Here: Your Foundation"         },
-            { num: "02", title: "Welcome & What This Changes"         },
-            { num: "03", title: "Starting to Show Up"                 },
-            { num: "04", title: "Your Energy on Camera"               },
-            { num: "05", title: "The Camera Hack"                     },
-            { num: "06", title: "Personal Branding 101"               },
-            { num: "07", title: "Design Your Brand"                   },
-            { num: "08", title: "Design Your Instagram Feed"          },
-            { num: "09", title: "Create Your Brand Pillars"           },
-            { num: "10", title: "Start Showing Up"                    },
-            { num: "11", title: "The Content System"                  },
-            { num: "12", title: "High Quality Selfies"                },
-            { num: "13", title: "Instagram Reels"                     },
-            { num: "14", title: "Content Planning"                    },
-            { num: "15", title: "Offer Map & What I Sell Script"      },
-            { num: "16", title: "Content-To-Cash Conversation System" },
-            { num: "17", title: "30-Day Revenue Readiness Sprint"     },
+            { num: "01", title: "Start Here: Welcome to Branded By SSELFIE" },
+            { num: "02", title: "Building Unshakable Selfie Confidence"    },
+            { num: "03", title: "Start Showing Up"                         },
+            { num: "04", title: "The Power Selfies Challenge"              },
+            { num: "05", title: "The Confidence Camera Hack"               },
+            { num: "06", title: "Brand Energy 101"                         },
+            { num: "07", title: "Design Your Brand"                        },
+            { num: "08", title: "Glow Up Your Bio + First Impressions"     },
+            { num: "09", title: "Creating Your Brand Pillars"              },
+            { num: "10", title: "Post Before You Feel Ready"               },
+            { num: "11", title: "Confidence Posting Formula"               },
+            { num: "12", title: "The Selfie CEO Shooting System"           },
+            { num: "13", title: "Real Reels Walkthrough"                   },
+            { num: "14", title: "CEO Content Planning"                     },
           ].map((l) => (
             <div key={l.num} className="mf flex items-baseline gap-5 py-4"
               style={{ borderBottom: `1px solid ${C.divCream}` }}>

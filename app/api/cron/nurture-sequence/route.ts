@@ -731,7 +731,11 @@ async function sendMasterclassTouchEmail(
 
   switch (emailType) {
     case "masterclass-day0-delivery":
-      email = generateMasterclassDay0DeliveryEmail({ firstName, accessUrl })
+      email = generateMasterclassDay0DeliveryEmail({
+        firstName,
+        courseUrl: `${SITE_URL}/academy/access/masterclass`,
+        brandStrategyUrl: `${SITE_URL}/academy/access/brand-strategy`,
+      })
       break
     case "masterclass-day2-checkin":
       email = generateMasterclassDay2CheckinEmail({ firstName, accessUrl })

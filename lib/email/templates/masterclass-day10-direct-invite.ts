@@ -9,7 +9,7 @@ export function generateMasterclassDay10DirectInviteEmail({ firstName }: { first
     <div style="margin:28px 0 14px;">${renderStoneButton("Send An Inquiry", workWithMeUrl())}</div>
   `
   return {
-    subject: "two spots open right now",
+    subject: "if you want private help, read this",
     html: renderStoneShell({
       eyebrow: "Masterclass",
       title: "If you want the private version, here it is.",

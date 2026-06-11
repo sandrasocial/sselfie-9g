@@ -15,11 +15,11 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "The Selfie to Brand Shoot Vault · SSELFIE",
+  title: "The AI Photo Prompt Vault · SSELFIE",
   description:
     "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds. $27.",
   openGraph: {
-    title: "The Selfie to Brand Shoot Vault · SSELFIE",
+    title: "The AI Photo Prompt Vault · SSELFIE",
     description:
       "Turn one selfie into editorial brand photoshoots. Full shot sequences, copy-paste prompts, and new visual worlds.",
     images: ["/academy/visibility-suite/sandra-hero.png"],

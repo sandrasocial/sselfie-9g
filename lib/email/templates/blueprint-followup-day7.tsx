@@ -20,7 +20,7 @@ export function generateBlueprintFollowupDay7Email(params: BlueprintFollowupDay7
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One week into your Visibility Reset. How's it going?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One week into your Feed Planner. How's it going?</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Reset gives you the plan: the <em>what to post and when</em>. But a lot of people reach this point and hit a wall: the photos don't look like them.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The SUITE gives you the AI that makes showing up feel lighter every single week. Inside, you get Maya, your personal AI that generates brand photos trained on <em>your</em> face and aesthetic. She gets smarter the longer you use her.</p>
     ${renderStonePanel(
@@ -38,16 +38,16 @@ export function generateBlueprintFollowupDay7Email(params: BlueprintFollowupDay7
 
   const html = renderStoneShell({
     title: "One week in: what's next?",
-    eyebrow: "Visibility Reset · Day 7",
+    eyebrow: "Feed Planner · Day 7",
     subtitle: "The strategy is there. Now let's make the visuals match.",
     bodyHtml,
   })
 
-  const text = `Visibility Reset · Day 7
+  const text = `Feed Planner · Day 7
 
 Hey ${displayName},
 
-One week into your Visibility Reset. How's it going?
+One week into your Feed Planner. How's it going?
 
 The Reset gives you the plan: the what to post and when. But a lot of people reach this point and hit a wall: the photos don't look like them.
 

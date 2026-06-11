@@ -78,7 +78,7 @@ const CHECKOUT_COPY: Record<
   prompt_vault: {
     heroTitle: "Get the full shoot + future drops",
     heroBody: "You tried the opening shot. Now unlock the remaining shots, newest drops, and future SSELFIE photoshoots.",
-    heading: "The Selfie to Brand Shoot Vault",
+    heading: "The AI Photo Prompt Vault",
     blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
     footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
   },

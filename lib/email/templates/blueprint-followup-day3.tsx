@@ -19,7 +19,7 @@ export function generateBlueprintFollowupDay3Email(params: BlueprintFollowupDay3
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Three days in. Here's something I've noticed with people who get the most out of the Visibility Reset:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Three days in. Here's something I've noticed with people who get the most out of the Feed Planner:</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">They don't try to make every post perfect. They pick a theme for the week, one story they want to tell, and let the captions flow from that.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">This week's theme exercise:</p>
@@ -33,16 +33,16 @@ export function generateBlueprintFollowupDay3Email(params: BlueprintFollowupDay3
 
   const html = renderStoneShell({
     title: "A trick for staying consistent",
-    eyebrow: "Visibility Reset · Day 3",
+    eyebrow: "Feed Planner · Day 3",
     subtitle: "One theme. Three posts. Done.",
     bodyHtml,
   })
 
-  const text = `Visibility Reset · Day 3
+  const text = `Feed Planner · Day 3
 
 Hey ${displayName},
 
-Three days in. Here's something I've noticed with people who get the most out of the Visibility Reset:
+Three days in. Here's something I've noticed with people who get the most out of the Feed Planner:
 
 They don't try to make every post perfect. They pick a theme for the week, one story they want to tell, and let the captions flow from that.
 

@@ -162,11 +162,12 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
 
       try {
         const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+        const courseAccessUrl = `${productionUrl}/academy/access/masterclass`
         const brandStrategyAccessUrl = `${productionUrl}/academy/access/brand-strategy`
         const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
           userId,
           customerEmail!,
-          "/academy/access/brand-strategy"
+          "/academy/access/masterclass"
         )
         const firstName = getFirstNameForEmail({
           fullName: session.customer_details?.name,
@@ -174,7 +175,8 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
         })
         const email = generateMasterclassDay0DeliveryEmail({
           firstName,
-          accessUrl: brandStrategyAccessUrl,
+          courseUrl: courseAccessUrl,
+          brandStrategyUrl: brandStrategyAccessUrl,
           passwordSetupUrl: passwordSetupLink,
         })
 

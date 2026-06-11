@@ -243,7 +243,8 @@ export async function POST(req: NextRequest) {
     } else if (productId === "masterclass") {
       const email = generateMasterclassDay0DeliveryEmail({
         firstName,
-        accessUrl: `${SITE_URL}/academy/access/masterclass`,
+        courseUrl: `${SITE_URL}/academy/access/masterclass`,
+        brandStrategyUrl: `${SITE_URL}/academy/access/brand-strategy`,
       })
       const result = await sendEmail({
         to: normalizedEmail,

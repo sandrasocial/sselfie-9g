@@ -81,7 +81,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${feedPlannerUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">
-                  Open your Visibility Reset &rarr;
+                  Open your Feed Planner &rarr;
                 </a>
               </div>
 
@@ -129,7 +129,7 @@ Step 2: Pick one post slot. Write the caption. Don't try to do all nine at once.
 
 Step 3: Come back tomorrow and do one more. In a week you'll have your whole month planned.
 
-Open your Visibility Reset: ${feedPlannerUrl}
+Open your Feed Planner: ${feedPlannerUrl}
 
 If you hit a wall or have questions, just reply here. I read every message.
 

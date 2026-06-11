@@ -29,7 +29,7 @@ export type PricingProductId =
   | "prompt_vault"
   | "selfie_to_brand_shoot_system"
 
-export type ProductLifecycleStatus = "live" | "archived"
+export type ProductLifecycleStatus = "live" | "archived" | "legacy_access_only"
 
 export interface PricingProduct {
   id: PricingProductId
@@ -383,8 +383,10 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "selfie_guide_delivery",
   },
   selfie_guide: {
-    lifecycleStatus: "live",
-    checkoutPath: "/checkout/selfie-guide",
+    // Retired as a paid product 2026-06-11: the guide is the free lead magnet.
+    // Checkout route redirects to /selfie-guide; webhook fulfillment kept for past buyers.
+    lifecycleStatus: "legacy_access_only",
+    checkoutPath: "legacy:checkout retired, redirects to /selfie-guide",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_guide",
     successNextAction: "/selfie-guide",
     lifecycleEmailEntryPoint: "selfie_guide_delivery",

@@ -208,7 +208,7 @@ from `stripe_payments` / Stripe API only — never analytics events.
 | Neon DB users | 603 unique emails (verified 2026-03-02) |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
-| Selfie Guide checkout URL | `https://sselfie.ai/checkout/selfie-guide` |
+| Selfie Guide checkout URL | RETIRED 2026-06-11 — redirects to free `/selfie-guide` |
 | Selfie Guide access URL | `https://sselfie.ai/selfie-guide/access/[token]` |
 | AI Prompts free opt-in URL | `https://sselfie.ai/ai-prompts` |
 | AI Prompts free access URL | `https://sselfie.ai/ai-prompts/access/[token]` |
@@ -223,8 +223,8 @@ from `stripe_payments` / Stripe API only — never analytics events.
 | Masterclass checkout URL | `https://sselfie.ai/checkout/masterclass` |
 | Studio join URL | `https://sselfie.ai/join/studio` |
 | Work With Me URL | `https://sselfie.ai/work-with-me` |
-| Brand Strategy landing URL | `https://sselfie.ai/brand-strategy` ($19 paid) |
-| Brand Strategy checkout URL | `https://sselfie.ai/checkout/brand-strategy-pack` |
+| Brand Strategy landing URL | RETIRED — `/brand-strategy` redirects to `/masterclass` |
+| Brand Strategy checkout URL | RETIRED — redirects to `/checkout/masterclass` |
 | Brand Strategy setup URL | `https://sselfie.ai/brand-strategy/setup/[setupToken]` |
 | Brand Strategy result URL | `https://sselfie.ai/strategy/[accessToken]` |
 | Blueprint price ID | `price_1SnlJEEVJvME7vkw1thdr7WK` |
@@ -260,13 +260,11 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
 | AI Photo Prompt Vault | $27 | ✅ Active low-ticket offer, launch next | Primary paid upgrade from AI Prompts. ChatGPT-ready editorial photoshoot prompts. |
-| Free Selfie Guide | Free | 🚧 Reposition in progress | Lead magnet + email capture front door |
+| Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
-| Masterclass | $147 | 🚧 Reposition in progress | One-time. Academy-style fulfillment planned |
-| Studio membership | €97/mo | ✅ Active | Cancel anytime |
-| Selfie Guide | €17 | ✅ Active | Interactive course, token access flow |
-| Selfie Guide Bundle | €27 | ✅ Active | Guide + extras |
-| Brand Strategy Pack | $19 | ✅ Active | Pay → questionnaire → Maya generates → `/strategy/[token]` |
+| Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
+| SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). |
+| Brand Strategy Pack | $19 | ❌ Retired standalone (2026-06-11 verified) | `/brand-strategy` + its checkout redirect to Masterclass; tool bundled into Masterclass. Selfie Guide order-bump path still fulfills. |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |
 | Website Agent V1 | €27/mo | 🔒 Planned | Standalone, not bundled — on hold |
