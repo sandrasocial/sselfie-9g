@@ -49,7 +49,7 @@
 
 ## Phase B — `/join/studio` rewrite
 
-Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plumbing, keep component system). Copy: Appendix 2. Image-led: needs 3-5 of Sandra's own images (hero stays; ask Sandra for lookbook/gallery picks — never stock). Sections: Hero → How it works (tap-first, 3 steps) → Everything included (D3 list with real product names/prices) → The honest-AI block → Pricing (€97 · cancel anytime · 200 photos a month) → FAQ (rewrite, Appendix 2.6) → CTA close. Remove the "comes after the basics, not before" positioning section (contradicts D3 everything-included; the SUITE is now the front door, not the graduation).
+Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plumbing, keep component system). Copy: Appendix 2 (v2, Visual Brand Builder). Images from `public/images/ai-prompts/` (88 approved vault collection images; new mockups allowed). Sections: Hero → The pain → Your new Monday → What Maya makes (photoshoots · carousels · reel covers · captions · plan; video tile held until VIDEO-01 ships) → Everything included (D3) → The honest-AI block → Pricing (€97 · cancel anytime · 200 photos a month) → FAQ → CTA close. Remove the "comes after the basics, not before" positioning section (contradicts D3 everything-included; the SUITE is now the front door, not the graduation).
 
 **Acceptance:** all CTAs → `/checkout/membership?interval=month&source=...` with attribution preserved; SuiteDoor placements unchanged; voice check passes; mobile clean; copy approved by Sandra before merge.
 
@@ -81,13 +81,21 @@ Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plum
 
 ---
 
-## Decisions for Sandra
+## Decisions — ANSWERED by Sandra 2026-06-11
 
-1. **Copy approval** — Appendices 1+2 (everything customer-facing). Nothing customer-facing merges before approval.
-2. **Tab naming** — rename current "library" (photo gallery) to "photos" and call the new products tab "library"? (Recommended; alternative: keep gallery as "library", call new tab "studio".)
-3. **Trial credits: 20?** (~20 images = a real first shoot. Cost ~cents on gpt-image-2.)
-4. **Landing images** — pick 3-5 of your own images for `/join/studio` (lookbooks/galleries).
-5. **Backfill** — invite past Vault/Kit buyers to the trial via one broadcast once the flow is live?
+1. **Copy: APPROVED** (emails as drafted in Appendix 1). Landing copy direction was then expanded — see note below — so Appendix 2 was rewritten and needs one more look from Sandra.
+2. **Tab naming: APPROVED** — gallery tab renamed "photos", new products tab is "library".
+3. **Trial credits: APPROVED** — 20 credits.
+4. **Landing images: APPROVED** — use `public/images/ai-prompts/` (88 vault collection images, all Sandra-approved vault content). Free to create new mockups where needed.
+5. **Backfill: APPROVED** — one broadcast to past Vault/Kit buyers once the trial flow is live (draft via resend-broadcast skill, Sandra approves the send).
+
+**Sandra's added direction for the landing page (2026-06-11):** Maya is more than an image generator — she's a **Visual Brand Builder**: full photoshoots, carousels, reel covers, captions. Copy must use buyer psychology: name her pain points, her desires, and paint the picture of what this does for her. Appendix 2 rewritten accordingly.
+⚠️ Honesty note (No-Fake doctrine applies to product claims too): **video is not in App v3 yet** (VIDEO-01 Phase 1 is next after BRIDGE-01). The landing rewrite keeps video out of the core promise until VIDEO-01 ships; the moment it does, add the "bring your photos to life" tile. Don't promise it before it exists.
+
+## Build status
+
+- **Phase A: BUILT 2026-06-11** — `lib/email/templates/membership-welcome.tsx` (new + existing variants, approved copy, exported subjects); webhook new-user path swapped to it for membership, existing-user path now sends the "existing" variant (livemode + paid gated, email_logs idempotent, `email_type='membership_welcome'`); onboarding cron rewired from Resend-segment broadcasts (env vars never set; the 503 was blocking ALL lifecycle emails in that route daily) to direct per-user sends; Day 0/2/7 CTAs → `/app`, Day 2 tap-first rewrite, Day 7 gallery-ownership line.
+- Phases B-E: not started. B blocked on Sandra approving the rewritten Appendix 2 below; C-E unblocked.
 
 ---
 
@@ -163,36 +171,55 @@ Rewrite `StudioPageContent` in place (keep hero structure, keep attribution plum
 
 ---
 
-# Appendix 2 — `/join/studio` rewrite copy (DRAFT, pending Sandra approval)
+# Appendix 2 — `/join/studio` rewrite copy (v2, Visual Brand Builder positioning — pending Sandra approval)
 
-**2.1 Hero (keep structure + image slot)**
+*Rewritten 2026-06-11 per Sandra's direction: Maya is a Visual Brand Builder, not an image generator. Pain points named, desires named, picture painted. Video deliberately excluded until VIDEO-01 ships (honesty note above).*
+
+**2.1 Hero (dark, keep structure, image-led from `public/images/ai-prompts/`)**
 Eyebrow: SSELFIE SUITE · €97/mo
-H1: A creative director who already knows your brand.
-Body: Maya pulls the looks, keeps your face, and turns one selfie into photos you'd actually post. No prompts. No learning curve. You just pick what feels like you.
-CTA: Join SSELFIE SUITE · Secondary: See how it works (anchor scroll)
+H1: Your visual brand, built for you.
+Body: Maya is the creative director in your pocket. She turns one selfie into full photoshoots, carousels, reel covers, and captions that sound like you. You show up every week. She does the heavy lifting.
+CTA: Join SSELFIE SUITE · Secondary: See how it works (anchor)
 
-**2.2 How it works (3 steps, tap-first)**
-1. Pick a look. Maya has them pulled and waiting.
-2. She shows you three concepts. You tap the one that feels like you.
-3. Your photos are done in minutes. Recognizably you, in every one.
+**2.2 The pain (new section — name what she's living)**
+H2: You already know you should be posting. That's not the problem.
+Body: The problem is everything behind one post. You need a photo that doesn't look like a phone selfie. Words that don't sound like everyone else. A feed that looks like a brand and not a camera roll. A photographer every month isn't realistic. And the AI tools you've tried made you look like someone else, which is worse than not posting at all.
+Closing line: Showing up shouldn't cost you a whole evening. Or your face.
 
-**2.3 Everything included (D3)**
-"The SUITE includes every product I've ever made."
-Tiles: Maya + 200 photos a month · The Prompt Vault ($27 value) · The Starter Kit ($37 value) · The Masterclass ($147 value) · Every new drop, every week
+**2.3 Paint the picture (light section — her new Monday)**
+H2: Here's your new Monday.
+Body: You open the app with your coffee. Maya already has three concepts pulled in your style: the photos, the reel cover, the caption. You tap the one that feels most like you. By the time your coffee's done, this week's content is too. You, looking like the brand you actually are. Every week.
 
-**2.4 The honest block (No-Fake doctrine, dark section)**
+**2.4 What Maya makes (Visual Brand Builder tiles, image-led)**
+H2: One selfie in. A visual brand out.
+Tiles:
+- Full photoshoots — editorial-level photos that keep your face. *(tile copy: "Photoshoots", body: "Editorial photos from one selfie. Recognizably you, in every shot.")*
+- Carousels — designed slides people save and share. *(body: "Designed to be saved. Your words, your colors, ready to post.")*
+- Reel covers — your words on your photos, on brand. *(body: "Scroll-stopping covers with your hook line on them.")*
+- Captions — in your voice, grounded in your brand. *(body: "Sounds like you wrote it on a good day.")*
+- A plan — Maya tells you what to post today. *(body: "No more staring at a blank feed. She suggests, you tap.")*
+*(+ "Videos" tile lands here the day VIDEO-01 Phase 1 ships — pre-written: "Bring this photo to life. Cinematic motion from a single shot.")*
+
+**2.5 Everything included (D3)**
+H2: The SUITE includes every product I've ever made.
+Tiles: Maya + 200 photos a month · The Prompt Vault · $27 value · The Starter Kit · $37 value · The Masterclass · $147 value · Every new drop, every week
+Line: Buy nothing twice. Members get all of it.
+
+**2.6 The honest block (No-Fake doctrine, dark section)**
 H2: These photos will look like you. That's the point.
 Body: No filtered stranger. No "perfect" face that isn't yours. Maya works from your real selfies and keeps what makes you recognizable. AI should not erase you. It should frame you.
 
-**2.5 Pricing**
+**2.7 Pricing**
 €97/mo · 200 photos a month · everything included · cancel anytime, no forms
 
-**2.6 FAQ (rewrite)**
+**2.8 FAQ (rewrite)**
+- "Is this just another AI image generator?" → No. Image tools hand you a picture and leave. Maya builds the whole visual layer of your brand: photoshoots, carousels, reel covers, captions, and a plan for what to post. And she remembers your brand, so it gets easier every week.
 - "What makes this different from ChatGPT?" → Same class of engine money can rent. What you can't rent is a creative director who already knows your brand. Maya remembers your style, your colors, what you said no to, and she keeps your face in every photo.
 - "Will the photos actually look like me?" → Yes. That's the whole product. Maya works from your reference selfies. If something doesn't feel like you, you tell her and she remembers.
 - "Do I need to learn prompts?" → No. You tap. Maya does the prompt work.
 - "Can I cancel?" → Anytime, from your account, no forms. Your gallery stays yours.
 
-**2.7 CTA close**
-H2: Your next photoshoot is a tap away.
+**2.9 CTA close**
+H2: Stop producing your brand alone.
+Body: Maya's ready. Your first photoshoot is minutes away.
 CTA: Join SSELFIE SUITE · €97/mo

@@ -14,6 +14,10 @@ import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import {
+  generateMembershipWelcomeEmail,
+  MEMBERSHIP_WELCOME_SUBJECTS,
+} from "@/lib/email/templates/membership-welcome"
+import {
   generatePaidBlueprintDeliveryEmail,
   PAID_BLUEPRINT_DELIVERY_SUBJECT,
 } from "@/lib/email/templates/paid-blueprint-delivery"
@@ -1797,17 +1801,22 @@ export async function POST(request: NextRequest) {
                   passwordSetupUrl: passwordSetupLink,
                 })
 
-                const emailContent = generateWelcomeEmail({
-                  customerName: welcomeCustomerName,
-                  customerEmail: customerEmail,
-                  creditsGranted: creditsGranted,
-                  packageName: productName,
-                  productType:
-                    productType === "sselfie_studio_membership"
-                      ? "sselfie_studio_membership"
-                      : "one_time_session",
-                  passwordSetupUrl: passwordSetupLink,
-                })
+                const isMembershipWelcome = productType === "sselfie_studio_membership"
+                const emailContent = isMembershipWelcome
+                  ? generateMembershipWelcomeEmail({
+                      variant: "new",
+                      customerName: session.customer_details?.name,
+                      customerEmail: customerEmail,
+                      passwordSetupUrl: passwordSetupLink,
+                    })
+                  : generateWelcomeEmail({
+                      customerName: welcomeCustomerName,
+                      customerEmail: customerEmail,
+                      creditsGranted: creditsGranted,
+                      packageName: productName,
+                      productType: "one_time_session",
+                      passwordSetupUrl: passwordSetupLink,
+                    })
 
                 console.log("[v0] Email content generated:", {
                   hasHtml: !!emailContent.html,
@@ -1817,12 +1826,17 @@ export async function POST(request: NextRequest) {
                 })
 
                 console.log(`[v0] Step 8: Sending welcome email via Resend...`)
+                const welcomeEmailLogType = isMembershipWelcome ? "membership_welcome" : "welcome"
                 const emailResult = await sendEmail({
                   to: customerEmail,
-                  subject: "Welcome to SSelfie! Set up your account",
+                  subject: isMembershipWelcome
+                    ? MEMBERSHIP_WELCOME_SUBJECTS.new
+                    : "Welcome to SSelfie! Set up your account",
                   html: emailContent.html,
                   text: emailContent.text,
-                  tags: ["welcome", "account-setup"],
+                  tags: isMembershipWelcome
+                    ? ["membership-welcome", "account-setup"]
+                    : ["welcome", "account-setup"],
                 })
 
                 if (emailResult.success) {
@@ -1840,7 +1854,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${customerEmail},
-                      'welcome',
+                      ${welcomeEmailLogType},
                       ${emailResult.messageId},
                       'sent',
                       NOW()
@@ -1859,7 +1873,7 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${customerEmail},
-                      'welcome',
+                      ${welcomeEmailLogType},
                       'failed',
                       ${emailResult.error},
                       NOW()
@@ -1963,6 +1977,57 @@ export async function POST(request: NextRequest) {
               console.log(
                 `[v0] Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`
               )
+
+              // BRIDGE-01: existing users who upgrade to membership used to get NO email at all.
+              // Send the membership welcome (existing variant), idempotent via email_logs.
+              if (event.livemode && isPaymentPaid && customerEmail) {
+                try {
+                  const alreadyWelcomed = await sql`
+                    SELECT 1 FROM email_logs
+                    WHERE user_email = ${customerEmail}
+                      AND email_type = 'membership_welcome'
+                      AND status IN ('sent', 'delivered')
+                      AND sent_at > NOW() - INTERVAL '7 days'
+                    LIMIT 1
+                  `
+
+                  if (alreadyWelcomed.length === 0) {
+                    const emailContent = generateMembershipWelcomeEmail({
+                      variant: "existing",
+                      customerName: session.customer_details?.name,
+                      customerEmail: customerEmail,
+                    })
+
+                    const emailResult = await sendEmail({
+                      to: customerEmail,
+                      subject: MEMBERSHIP_WELCOME_SUBJECTS.existing,
+                      html: emailContent.html,
+                      text: emailContent.text,
+                      emailType: "membership_welcome",
+                      tags: ["membership-welcome", "upgrade"],
+                    })
+
+                    if (emailResult.success) {
+                      console.log(
+                        `[v0] Membership welcome (existing user) sent to ${customerEmail}, message ID: ${emailResult.messageId}`
+                      )
+                    } else {
+                      console.error(
+                        `[v0] Failed to send membership welcome (existing user) to ${customerEmail}: ${emailResult.error}`
+                      )
+                    }
+                  } else {
+                    console.log(
+                      `[v0] Membership welcome already sent to ${customerEmail} in the last 7 days, skipping`
+                    )
+                  }
+                } catch (welcomeError: any) {
+                  console.error(
+                    `[v0] Error sending membership welcome (existing user) to ${customerEmail}:`,
+                    welcomeError?.message || welcomeError
+                  )
+                }
+              }
             } else if (!event.livemode) {
               console.log(
                 `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`

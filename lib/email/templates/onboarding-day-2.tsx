@@ -14,15 +14,15 @@ export function generateOnboardingDay2Email(params: OnboardingDay2Params): {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
     .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
     .replace(/\/+$/, "")
-  const studioUrl = `${siteUrl}/studio?tab=maya`
+  const studioUrl = `${siteUrl}/app`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick check-in. Have you made your first image yet?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, don't overthink it. Pick one photo. One mood. One prompt. The first output matters more than trying to understand the whole app.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, don't overthink it. You don't have to write anything or figure anything out.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">A simple prompt to start with:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Create a clean personal brand portrait with soft natural light, neutral styling, and a calm confident expression.</p>`,
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">The whole thing is three taps:</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are done in minutes.</p>`,
       "Quick Win",
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Create your first image", studioUrl)}</div>
@@ -42,10 +42,10 @@ Hey ${displayName},
 
 Quick check-in. Have you made your first image yet?
 
-If not, don't overthink it. Pick one photo. One mood. One prompt. The first output matters more than trying to understand the whole app.
+If not, don't overthink it. You don't have to write anything or figure anything out.
 
-A simple prompt to start with:
-Create a clean personal brand portrait with soft natural light, neutral styling, and a calm confident expression.
+The whole thing is three taps:
+Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are done in minutes.
 
 Create your first image: ${studioUrl}
 

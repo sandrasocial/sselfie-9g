@@ -14,7 +14,7 @@ export function generateOnboardingDay0Email(params: OnboardingDay0Params): {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
     .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
     .replace(/\/+$/, "")
-  const studioUrl = `${siteUrl}/studio?tab=maya`
+  const studioUrl = `${siteUrl}/app`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>

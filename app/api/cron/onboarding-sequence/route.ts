@@ -11,31 +11,25 @@ import { generatePostActivationUpgradeEmail } from "@/lib/email/templates/post-a
 import { generateFreeUserDay5Email } from "@/lib/email/templates/free-user-day5"
 import { generateFreeUserDay10Email } from "@/lib/email/templates/free-user-day10"
 import { logAdminError } from "@/lib/admin-error-log"
-import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
-import { EMAIL_CONFIG, MARKETING_SEGMENTS } from "@/lib/email/config"
-
-
-const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+import { EMAIL_CONFIG } from "@/lib/email/config"
 
 /**
- * Onboarding Sequence - Resend Broadcasts (Marketing)
- * 
- * Sends onboarding emails to new Studio members via Broadcast API.
- * 
+ * Onboarding Sequence - direct per-member sends (BRIDGE-01, 2026-06-11)
+ *
+ * Sends onboarding emails to new Studio members via direct Resend sends.
+ * Previously used the Broadcast API with RESEND_SEGMENT_ONBOARDING_DAY_* env vars;
+ * those were never configured in production, which 503'd this entire route daily
+ * and silently blocked ALL lifecycle emails below, not just Day 0/2/7.
+ *
  * GET /api/cron/onboarding-sequence
- * 
+ *
  * Protected by CRON_SECRET environment variable
  * Runs daily at 10 AM UTC (same as other email sequences)
- * 
- * Email templates:
- * - Day 0: "Welcome to The Visibility Studio — let's make you visible"
- * - Day 2: "Your first shoot is waiting — let's make it feel like you"
- * - Day 7: "You're building your brand beautifully — keep showing up"
- * 
+ *
  * Logic:
  * - Targets users with active Studio subscriptions
  * - Uses subscription.created_at to determine days since joining Studio
- * - Skips users who already received onboarding emails
+ * - Idempotency via email_logs (sendEmail writes the row when emailType is set)
  */
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("onboarding-sequence")
@@ -58,26 +52,6 @@ export async function GET(request: Request) {
         console.error("[v0] [CRON] Unauthorized: Invalid or missing CRON_SECRET")
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
-    }
-
-    // In production, require onboarding segment IDs so the cron fails visibly instead of at send time
-    const isProductionEnv = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
-    if (isProductionEnv) {
-      const missing = []
-      if (!MARKETING_SEGMENTS.onboardingDay0) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_0")
-      if (!MARKETING_SEGMENTS.onboardingDay2) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_2")
-      if (!MARKETING_SEGMENTS.onboardingDay7) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_7")
-      if (missing.length > 0) {
-        await cronLogger.error(new Error("Onboarding segment env vars missing"), { missing })
-        return NextResponse.json(
-          {
-            error: "Onboarding sequence cannot run: missing Resend segment configuration",
-            missingEnvVars: missing,
-            hint: "Set RESEND_SEGMENT_ONBOARDING_DAY_0, RESEND_SEGMENT_ONBOARDING_DAY_2, RESEND_SEGMENT_ONBOARDING_DAY_7 in Vercel (and create segments in Resend if needed).",
-          },
-          { status: 503 },
-        )
       }
     }
 
@@ -126,48 +100,38 @@ export async function GET(request: Request) {
     results.day0.found = day0Users.length
     console.log(`[v0] [CRON] Found ${day0Users.length} users for Day 0 onboarding email`)
 
-    if (day0Users.length > 0) {
+    for (const user of day0Users as any[]) {
       try {
-        if (!MARKETING_SEGMENTS.onboardingDay0) {
-          throw new Error("RESEND_SEGMENT_ONBOARDING_DAY_0 not configured")
-        }
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateOnboardingDay0Email({ firstName })
 
-        const contacts = day0Users.map((user: any) => ({
-          email: user.email,
-          firstName: user.display_name?.split(" ")[0],
-        }))
-
-        const emailContent = generateOnboardingDay0Email({
-          firstName: FIRST_NAME_PLACEHOLDER,
-        })
-
-        await enqueueAndProcessMarketingRun({
-          sequenceKey: "onboarding-day-0",
-          emailType: "onboarding-day-0",
-          tagKey: "sequence_onboarding_day_0",
-          segmentId: MARKETING_SEGMENTS.onboardingDay0,
-          campaignKey: "onboarding-day-0",
+        const result = await sendEmail({
+          to: user.email,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          recipients: contacts,
+          emailType: "onboarding-day-0",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          tags: ["lifecycle", "onboarding-day-0"],
+          marketing: true,
         })
 
-        results.day0.sent = day0Users.length
-      } catch (error: any) {
-        results.day0.failed = day0Users.length
-        results.errors.push({
-          email: "broadcast",
-          day: 0,
-          error: error.message || "Unknown error",
-        })
-        console.error("[v0] [CRON] ❌ Failed to send Day 0 onboarding broadcast:", error)
-        await logAdminError({
-          toolName: "cron:onboarding-sequence:day-0",
-          error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { recipients: day0Users.length },
-        }).catch(() => {})
+        if (result.success) {
+          results.day0.sent++
+          console.log(`[v0] [CRON] ✅ Day 0 onboarding sent to ${user.email}`)
+        } else {
+          results.day0.failed++
+          results.errors.push({ email: user.email, day: 0, error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Day 0 onboarding failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.day0.failed++
+        results.errors.push({ email: user.email, day: 0, error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Day 0 onboarding exception for ${user.email}:`, err)
       }
+      // Rate-limit: 150ms between sends to respect Resend limits
+      await new Promise((r) => setTimeout(r, 150))
     }
 
     // Onboarding Email Sequence Automation - Day 2 emails: subscription created ~2 days ago (cap window to avoid very-late sends)
@@ -199,48 +163,37 @@ export async function GET(request: Request) {
     results.day2.found = day2Users.length
     console.log(`[v0] [CRON] Found ${day2Users.length} users for Day 2 onboarding email`)
 
-    if (day2Users.length > 0) {
+    for (const user of day2Users as any[]) {
       try {
-        if (!MARKETING_SEGMENTS.onboardingDay2) {
-          throw new Error("RESEND_SEGMENT_ONBOARDING_DAY_2 not configured")
-        }
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateOnboardingDay2Email({ firstName })
 
-        const contacts = day2Users.map((user: any) => ({
-          email: user.email,
-          firstName: user.display_name?.split(" ")[0],
-        }))
-
-        const emailContent = generateOnboardingDay2Email({
-          firstName: FIRST_NAME_PLACEHOLDER,
-        })
-
-        await enqueueAndProcessMarketingRun({
-          sequenceKey: "onboarding-day-2",
-          emailType: "onboarding-day-2",
-          tagKey: "sequence_onboarding_day_2",
-          segmentId: MARKETING_SEGMENTS.onboardingDay2,
-          campaignKey: "onboarding-day-2",
+        const result = await sendEmail({
+          to: user.email,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          recipients: contacts,
+          emailType: "onboarding-day-2",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          tags: ["lifecycle", "onboarding-day-2"],
+          marketing: true,
         })
 
-        results.day2.sent = day2Users.length
-      } catch (error: any) {
-        results.day2.failed = day2Users.length
-        results.errors.push({
-          email: "broadcast",
-          day: 2,
-          error: error.message || "Unknown error",
-        })
-        console.error("[v0] [CRON] ❌ Failed to send Day 2 onboarding broadcast:", error)
-        await logAdminError({
-          toolName: "cron:onboarding-sequence:day-2",
-          error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { recipients: day2Users.length },
-        }).catch(() => {})
+        if (result.success) {
+          results.day2.sent++
+          console.log(`[v0] [CRON] ✅ Day 2 onboarding sent to ${user.email}`)
+        } else {
+          results.day2.failed++
+          results.errors.push({ email: user.email, day: 2, error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Day 2 onboarding failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.day2.failed++
+        results.errors.push({ email: user.email, day: 2, error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Day 2 onboarding exception for ${user.email}:`, err)
       }
+      await new Promise((r) => setTimeout(r, 150))
     }
 
     // Onboarding Email Sequence Automation - Day 7 emails: subscription created ~7 days ago (cap window to avoid very-late sends)
@@ -272,48 +225,37 @@ export async function GET(request: Request) {
     results.day7.found = day7Users.length
     console.log(`[v0] [CRON] Found ${day7Users.length} users for Day 7 onboarding email`)
 
-    if (day7Users.length > 0) {
+    for (const user of day7Users as any[]) {
       try {
-        if (!MARKETING_SEGMENTS.onboardingDay7) {
-          throw new Error("RESEND_SEGMENT_ONBOARDING_DAY_7 not configured")
-        }
+        const firstName = user.display_name?.split(" ")[0] || undefined
+        const emailContent = generateOnboardingDay7Email({ firstName })
 
-        const contacts = day7Users.map((user: any) => ({
-          email: user.email,
-          firstName: user.display_name?.split(" ")[0],
-        }))
-
-        const emailContent = generateOnboardingDay7Email({
-          firstName: FIRST_NAME_PLACEHOLDER,
-        })
-
-        await enqueueAndProcessMarketingRun({
-          sequenceKey: "onboarding-day-7",
-          emailType: "onboarding-day-7",
-          tagKey: "sequence_onboarding_day_7",
-          segmentId: MARKETING_SEGMENTS.onboardingDay7,
-          campaignKey: "onboarding-day-7",
+        const result = await sendEmail({
+          to: user.email,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          recipients: contacts,
+          emailType: "onboarding-day-7",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          tags: ["lifecycle", "onboarding-day-7"],
+          marketing: true,
         })
 
-        results.day7.sent = day7Users.length
-      } catch (error: any) {
-        results.day7.failed = day7Users.length
-        results.errors.push({
-          email: "broadcast",
-          day: 7,
-          error: error.message || "Unknown error",
-        })
-        console.error("[v0] [CRON] ❌ Failed to send Day 7 onboarding broadcast:", error)
-        await logAdminError({
-          toolName: "cron:onboarding-sequence:day-7",
-          error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { recipients: day7Users.length },
-        }).catch(() => {})
+        if (result.success) {
+          results.day7.sent++
+          console.log(`[v0] [CRON] ✅ Day 7 onboarding sent to ${user.email}`)
+        } else {
+          results.day7.failed++
+          results.errors.push({ email: user.email, day: 7, error: result.error || "unknown" })
+          console.error(`[v0] [CRON] ❌ Day 7 onboarding failed for ${user.email}:`, result.error)
+        }
+      } catch (err: any) {
+        results.day7.failed++
+        results.errors.push({ email: user.email, day: 7, error: err.message || "unknown" })
+        console.error(`[v0] [CRON] ❌ Day 7 onboarding exception for ${user.email}:`, err)
       }
+      await new Promise((r) => setTimeout(r, 150))
     }
 
     // Behavioral nudge: users created 24–48h ago who have zero image generations.
