@@ -141,6 +141,12 @@ export default async function AdminPage({
                 </>
               )}
             </div>
+            {(report.trials.active > 0 || report.trials.expired > 0) && (
+              <div className="mt-2 border-t border-stone-100 pt-2 text-sm text-stone-600">
+                Trials (not members, source: subscriptions): {report.trials.active} active ·{" "}
+                {report.trials.expired} expired · {report.trials.converted} converted to paid
+              </div>
+            )}
           </div>
         </section>
 

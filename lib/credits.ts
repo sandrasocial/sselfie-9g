@@ -128,7 +128,7 @@ export async function getUserCredits(userId: string): Promise<number> {
 export async function addCredits(
   userId: string,
   amount: number,
-  type: "purchase" | "subscription_grant" | "bonus" | "refund",
+  type: "purchase" | "subscription_grant" | "bonus" | "refund" | "trial_grant",
   description: string,
   stripePaymentId?: string,
   isTestMode = false,

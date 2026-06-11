@@ -35,31 +35,33 @@ export default async function StudioV3Page() {
     redirect(`/auth/login?returnTo=${encodeURIComponent("/app")}`)
   }
 
-  // APP-CUTOVER-01 Phase 2 gate: admin always; active members when the rollout env is on.
+  // APP-CUTOVER-01 Phase 2 gate + BRIDGE-01 Phase D access levels: admin always full;
+  // members full; active trials full (with badge); expired trials and one-time owners get
+  // the limited shell (Library + Photos stay open, generation locked server-side too).
   // Rollback is one env flip (APP_V3_MEMBERS_ENABLED=false returns members to /studio).
+  let accessLevel: "full" | "trial" | "limited" = "full"
+  let trialDaysLeft: number | null = null
   if (!isAdminEmail(user.email)) {
-    let isActiveMember = false
+    let resolved: "full" | "trial" | "limited" | "none" = "none"
     if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
       try {
         const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
-        const { sql } = await import("@/lib/db/client")
         const neonUserId = await getUserIdFromSupabase(user.id)
         if (neonUserId) {
-          const rows = await sql`
-            SELECT 1 FROM subscriptions
-            WHERE user_id = ${String(neonUserId)}
-              AND product_type = 'sselfie_studio_membership'
-              AND status = 'active'
-              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
-            LIMIT 1
-          `
-          isActiveMember = rows.length > 0
+          const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
+          const access = await getSuiteAccess(String(neonUserId))
+          if (access.level === "member") resolved = "full"
+          else if (access.level === "trial") {
+            resolved = "trial"
+            trialDaysLeft = access.trialDaysLeft
+          } else if (access.level === "limited") resolved = "limited"
         }
       } catch (e) {
-        console.error("[/app gate] membership check failed, falling back to /studio:", e)
+        console.error("[/app gate] access check failed, falling back to /studio:", e)
       }
     }
-    if (!isActiveMember) redirect("/studio")
+    if (resolved === "none") redirect("/studio")
+    accessLevel = resolved
   }
 
   const firstName =
@@ -67,5 +69,5 @@ export default async function StudioV3Page() {
     (user.user_metadata?.name as string | undefined) ||
     null
 
-  return <AppV3Shell firstName={firstName} />
+  return <AppV3Shell firstName={firstName} accessLevel={accessLevel} trialDaysLeft={trialDaysLeft} />
 }

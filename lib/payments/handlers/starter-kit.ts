@@ -270,6 +270,44 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
         console.error(`[v0] Error sending Starter Kit delivery email:`, emailError.message)
       }
 
+      // BRIDGE-01 Phase D: 7-day SUITE trial unlock, sent after delivery (livemode only —
+      // test checkouts must never email real buyers). Idempotent via email_logs.
+      if (event.livemode) {
+        try {
+          const alreadySent = await sql`
+            SELECT 1 FROM email_logs
+            WHERE user_email = ${customerEmail!}
+              AND email_type = 'suite_trial_unlock'
+              AND status IN ('sent', 'delivered')
+            LIMIT 1
+          `
+          if (alreadySent.length === 0) {
+            const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+            const subscriberForTrial = await upsertStarterKitSubscriber(
+              customerEmail!,
+              session.customer_details?.name
+            )
+            const { generateTrialUnlockEmail } = await import("@/lib/email/templates/suite-trial")
+            const trialEmail = generateTrialUnlockEmail({
+              customerName: session.customer_details?.name,
+              customerEmail: customerEmail!,
+              productLabel: "Starter Kit",
+              claimUrl: `${productionUrl}/claim/${subscriberForTrial.accessToken}`,
+            })
+            await sendEmail({
+              to: customerEmail!,
+              subject: trialEmail.subject,
+              html: trialEmail.html,
+              text: trialEmail.text,
+              emailType: "suite_trial_unlock",
+              tags: ["suite-trial", "unlock", "starter-kit"],
+            })
+          }
+        } catch (trialEmailError: any) {
+          console.error(`[v0] Error sending SUITE trial unlock email:`, trialEmailError.message)
+        }
+      }
+
       await updateTags(customerEmail!, {
         product: "starter-kit",
         journey: "starter_kit",

@@ -25,6 +25,15 @@ export type AdminHomeReport = {
     live: boolean
     source: "stripe_live" | "db_fallback"
   }
+  // BRIDGE-01: SUITE trials are NOT members and carry no money fields.
+  // Counts come from subscriptions suite_trial rows; converted = trial users
+  // who later hold a membership row.
+  trials: {
+    active: number
+    expired: number
+    converted: number
+    source: "subscriptions"
+  }
   needsMe: {
     flaggedConversations: number
     webhookReviews: number
@@ -60,7 +69,7 @@ function labelProduct(product: string | null) {
 }
 
 export async function getAdminHomeReport(): Promise<AdminHomeReport> {
-  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports] = await Promise.all([
+  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows] = await Promise.all([
     sql`
       SELECT
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days')::int AS week_payments,
@@ -93,6 +102,21 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     ` as unknown as Promise<any[]>,
     getSingleSourceRevenueMetrics().catch(() => null),
     getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 }).catch(() => []),
+    sql`
+      SELECT
+        COUNT(*) FILTER (WHERE t.status = 'active' AND t.trial_ends_at > NOW())::int AS active,
+        COUNT(*) FILTER (WHERE t.status = 'expired' OR t.trial_ends_at <= NOW())::int AS expired,
+        COUNT(*) FILTER (WHERE m.user_id IS NOT NULL)::int AS converted
+      FROM subscriptions t
+      LEFT JOIN LATERAL (
+        SELECT user_id FROM subscriptions m
+        WHERE m.user_id = t.user_id
+          AND m.product_type = 'sselfie_studio_membership'
+          AND m.created_at >= t.created_at
+        LIMIT 1
+      ) m ON TRUE
+      WHERE t.product_type = 'suite_trial'
+    `.catch(() => []) as unknown as Promise<any[]>,
   ])
 
   const money = moneyRows[0] || {}
@@ -128,6 +152,12 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       canceled30d: memberMetrics?.canceledSubscriptions30d ?? 0,
       live: Boolean(memberMetrics && !memberMetrics.cached) || Boolean(memberMetrics?.cached),
       source: memberMetrics ? "stripe_live" : "db_fallback",
+    },
+    trials: {
+      active: Number((trialRows as any[])[0]?.active || 0),
+      expired: Number((trialRows as any[])[0]?.expired || 0),
+      converted: Number((trialRows as any[])[0]?.converted || 0),
+      source: "subscriptions",
     },
     needsMe: {
       flaggedConversations: Number(needs.flagged_conversations || 0),

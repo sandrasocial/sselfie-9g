@@ -38,9 +38,12 @@ const quietBtn =
 export function AccountView({
   firstName,
   onOpenLibrary,
+  trialDaysLeft,
 }: {
   firstName?: string | null
   onOpenLibrary?: () => void
+  /** Set while on a SUITE trial (BRIDGE-01 Phase D) — shows the trial badge. */
+  trialDaysLeft?: number | null
 }) {
   const [data, setData] = useState<AccountData | null>(null)
   const [selfies, setSelfies] = useState<string[] | null>(null)
@@ -129,22 +132,45 @@ export function AccountView({
         {/* Membership */}
         <div className={card}>
           <p className={cardTitle}>Membership</p>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <p className="font-serif text-[22px] font-light text-[#0D0E10]">{data?.plan ?? "SSELFIE SUITE"}</p>
-            {data?.status === "active" && (
-              <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">Active</span>
-            )}
-          </div>
-          {data?.renewsAt && (
-            <p className="mt-1 text-[13px] text-[#818283]">Renews {formatDate(data.renewsAt)}</p>
+          {typeof trialDaysLeft === "number" ? (
+            <>
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <p className="font-serif text-[22px] font-light text-[#0D0E10]">SUITE trial</p>
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+                  {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left
+                </span>
+              </div>
+              <p className="mt-1 text-[13px] text-[#818283]">
+                When it ends, your photos stay yours. Members keep Maya and everything included.
+              </p>
+              <div className="mt-4">
+                <a href="/checkout/membership?interval=month&source=trial_account" className={primaryBtn}>
+                  Keep your Studio
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="font-serif text-[22px] font-light text-[#0D0E10]">{data?.plan ?? "SSELFIE SUITE"}</p>
+              {data?.status === "active" && (
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">Active</span>
+              )}
+            </div>
           )}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={openBilling} disabled={billingBusy} className={primaryBtn}>
-              {billingBusy ? "Opening…" : "Manage billing"}
-            </button>
-            <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
-          </div>
-          {billingError && <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>}
+          {typeof trialDaysLeft !== "number" && (
+            <>
+              {data?.renewsAt && (
+                <p className="mt-1 text-[13px] text-[#818283]">Renews {formatDate(data.renewsAt)}</p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={openBilling} disabled={billingBusy} className={primaryBtn}>
+                  {billingBusy ? "Opening…" : "Manage billing"}
+                </button>
+                <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
+              </div>
+              {billingError && <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>}
+            </>
+          )}
         </div>
 
         {/* Credits */}

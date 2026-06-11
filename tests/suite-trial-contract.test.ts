@@ -1,0 +1,56 @@
+// BRIDGE-01 Phase D — Admin Data Contract guard for the SUITE trial.
+// Trials are subscriptions rows (product_type='suite_trial') and must NEVER count as
+// members or MRR. These tests pin the exclusions at the source level so a refactor that
+// loosens a filter fails CI instead of inflating member counts.
+
+import { describe, expect, it } from "vitest"
+import { readFileSync } from "fs"
+import path from "path"
+
+import { isMembershipSubscription } from "@/lib/revenue/membership-subscription-filter"
+
+describe("suite_trial never counts as membership (Admin Data Contract)", () => {
+  it("isMembershipSubscription rejects a suite_trial-tagged subscription", () => {
+    const trialLike = {
+      livemode: true,
+      metadata: { product_type: "suite_trial" },
+      items: { data: [] },
+    }
+    expect(isMembershipSubscription(trialLike, ["price_membership"])).toBe(false)
+  })
+
+  it("isMembershipSubscription still accepts a real membership", () => {
+    const member = {
+      livemode: true,
+      metadata: { product_type: "sselfie_studio_membership" },
+      items: { data: [] },
+    }
+    expect(isMembershipSubscription(member, ["price_membership"])).toBe(true)
+  })
+
+  it("the /app gate resolves trials through getSuiteAccess, not the membership query", () => {
+    const src = readFileSync(path.join(process.cwd(), "app/app/page.tsx"), "utf8")
+    expect(src).toContain("getSuiteAccess")
+  })
+
+  it("trial rows use product_type='suite_trial' (never a membership type) in the grant", () => {
+    const src = readFileSync(path.join(process.cwd(), "lib/trial/suite-trial.ts"), "utf8")
+    expect(src).toContain("'suite_trial'")
+    // The INSERT must not create membership rows.
+    const insertStart = src.indexOf("INSERT INTO subscriptions")
+    const insertBlock = src.slice(insertStart, src.indexOf("RETURNING", insertStart))
+    expect(insertBlock).not.toContain("sselfie_studio_membership")
+    expect(insertBlock).toContain("'suite_trial'")
+  })
+
+  it("generation routes enforce the trial/member lock server-side", () => {
+    for (const route of [
+      "app/api/app-v3/maya/generate/route.ts",
+      "app/api/app-v3/maya/edit/route.ts",
+    ]) {
+      const src = readFileSync(path.join(process.cwd(), route), "utf8")
+      expect(/canGenerate|getSuiteAccess/.test(src), `${route} resolves suite access`).toBe(true)
+      expect(src, route).toContain("generation_locked")
+    }
+  })
+})

@@ -21,6 +21,7 @@ import {
   refundCredits,
 } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import {
@@ -247,6 +248,47 @@ export async function POST(request: NextRequest) {
     const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+    }
+
+    // ── BRIDGE-01 Phase D: generation is for members and active trials only. Limited mode
+    //    (expired trial, one-time owners) is enforced HERE, not just in the UI. Admin skips. ──
+    let isTrialUser = false
+    if (!isAdminEmail(user.email)) {
+      const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
+      const access = await getSuiteAccess(String(neonUser.id))
+      if (access.level !== "member" && access.level !== "trial") {
+        return NextResponse.json(
+          {
+            error: "Photo-making is paused. Join the SUITE to keep creating.",
+            code: "generation_locked",
+            action: "open_membership_checkout",
+          },
+          { status: 403 },
+        )
+      }
+      isTrialUser = access.level === "trial"
+    }
+
+    // BRIDGE-01 Phase E: first trial generation is the activation signal (behavior only).
+    if (isTrialUser) {
+      try {
+        const { sql: analyticsSql } = await import("@/lib/db/client")
+        const prior = await analyticsSql`
+          SELECT 1 FROM analytics_events
+          WHERE user_id = ${String(neonUser.id)} AND event_name = 'trial_first_generation'
+          LIMIT 1
+        `
+        if (prior.length === 0) {
+          const { logAnalyticsEvent } = await import("@/lib/analytics/events")
+          await logAnalyticsEvent({
+            eventName: "trial_first_generation",
+            userId: String(neonUser.id),
+            properties: { source: "app-v3-generate", format },
+          })
+        }
+      } catch {
+        // behavior tracking only — never block generation
+      }
     }
 
     // ── Credits: deduct the FULL set up front (1 per image). All-or-nothing: any failure

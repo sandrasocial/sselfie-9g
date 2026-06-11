@@ -105,6 +105,24 @@ export async function POST(request: NextRequest) {
     const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) return NextResponse.json({ error: "User not found in database" }, { status: 404 })
 
+    // BRIDGE-01 Phase D: members and active trials only (same lock as generate).
+    {
+      const { isAdminEmail } = await import("@/lib/admin-feature-flags")
+      if (!isAdminEmail(user.email)) {
+        const { canGenerate } = await import("@/lib/trial/suite-trial")
+        if (!(await canGenerate(String(neonUser.id)))) {
+          return NextResponse.json(
+            {
+              error: "Photo-making is paused. Join the SUITE to keep creating.",
+              code: "generation_locked",
+              action: "open_membership_checkout",
+            },
+            { status: 403 },
+          )
+        }
+      }
+    }
+
     const hasEnough = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
     if (!hasEnough) {
       const current = await getUserCredits(neonUser.id)
