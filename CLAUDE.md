@@ -204,7 +204,7 @@ from `stripe_payments` / Stripe API only — never analytics events.
 | What | Value |
 |------|-------|
 | Resend Main Audience ID | `3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd` |
-| Resend total contacts | ~3,082 (2,954 subscribers) — re-verify before broadcasts |
+| Resend total contacts | 6,589 in Main Audience (6,295 subscribed) — verified via API 2026-06-11; re-verify before broadcasts |
 | Neon DB users | 603 unique emails (verified 2026-03-02) |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
@@ -236,14 +236,19 @@ from `stripe_payments` / Stripe API only — never analytics events.
 
 ---
 
-## Resend Segments (Current State)
+## Resend Segments (verified via API 2026-06-11)
 
 | Segment | Count | Notes |
 |---------|-------|-------|
-| Main Audience | ~2,965 | ✅ Use for all broadcasts |
-| Brand Blueprint (legacy) | ~892 | Legacy freebie downloaders — no new entries |
-| Paid users | 93 | ⚠️ MIXED: one-time + beta + Studio members |
+| Main Audience | 6,589 (6,295 subscribed) | ✅ Use for all broadcasts |
+| AI Photoshoot Audience | 2,798 (2,701 subscribed) | Prompt-funnel segment |
+| Cold Users | 2,754 (2,556 subscribed) | Imported/cold — low engagement expected |
+| Brand Blueprint (legacy) | 901 | Legacy freebie downloaders — no new entries |
+| Paid users | 100 | ⚠️ MIXED: one-time + beta + Studio members |
 | Beta Customers | 73 | Old beta pricing (€47/€79/€99) |
+
+Resend also holds ~60 mechanical "Sequence:"/"Sequence History:" audiences (cron plumbing) — ignore for marketing counts.
+DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 241 DB-only (tests/invalid/old imports, zero real paying customers), 35 Resend-only (manual imports). No paying customer is missing from Main Audience.
 
 **Always send to Main Audience for full-list broadcasts — NOT smaller segments**
 
