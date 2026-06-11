@@ -53,7 +53,8 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 | Workstream | Status |
 |------------|--------|
 | BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **✅ COMPLETE 2026-06-11** — all phases A-E live + backfill broadcast sent (20 delivered, 6 suppressed). Trial conversion shows on /admin home. Video tile on /join/studio waits for VIDEO-01. Spec: `tasks/BRIDGE-01-suite-bridge.md` |
-| ENTITLE-01 — audit access gates vs Stripe truth (subscriptions table has stale rows) | **Next up (approved)** |
+| FUNNEL overhaul (8 moves, 2026-06-11) | **Built** — guide day-14 + new ai-prompts day-10 emails offer the trial; hourly `membership-checkout-recovery` cron (kill switch env `MEMBERSHIP_CHECKOUT_RECOVERY_DISABLED`); homepage repointed prompt-first; vault drops synced into Library (`scripts/sync-vault-drops.ts` — run after each new collection); trial day-0 email on claim. **Awaiting Sandra send approval: win-back broadcast to 31 ex-members (`scripts/winback-ex-members.ts`)** |
+| ENTITLE-01 — audit access gates vs Stripe truth (subscriptions table has stale rows; 26 test-mode "active" membership rows found 2026-06-11) | **Next up (approved)** |
 | Weekly newsletter drafted by Content Engine (Sandra approves) | Approved |
 | Support backlog triage (~34 old threads) | Approved |
 | CONTENT-01 weekly brief + /admin/content-brief | ✅ Live 2026-06-10 |
