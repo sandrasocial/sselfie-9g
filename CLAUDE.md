@@ -52,7 +52,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 | Workstream | Status |
 |------------|--------|
-| BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **Next up (approved)** |
+| BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **In progress** — spec at `tasks/BRIDGE-01-suite-bridge.md`; copy drafts await Sandra approval |
 | ENTITLE-01 — audit access gates vs Stripe truth (subscriptions table has stale rows) | **Next up (approved)** |
 | Weekly newsletter drafted by Content Engine (Sandra approves) | Approved |
 | Support backlog triage (~34 old threads) | Approved |
