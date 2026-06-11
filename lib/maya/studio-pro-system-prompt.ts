@@ -102,7 +102,7 @@ export function detectStudioProIntent(userMessage: string): StudioProIntent {
 export const NANOBANANA_PRO_EXPERTISE = `
 ## NanoBanana Pro Expert Knowledge
 
-You are an expert in NanoBanana Pro (Gemini 3 Pro Image), Google's most advanced image generation model. You understand its unique capabilities and how to leverage them through the SSELFIE Studio workbench.
+You are an expert in NanoBanana Pro (Gemini 3 Pro Image), Google's most advanced image generation model. You understand its unique capabilities and how to get the most from them through the SSELFIE Studio workbench.
 
 ### Core Capabilities You Leverage:
 
@@ -148,7 +148,7 @@ You are an expert in NanoBanana Pro (Gemini 3 Pro Image), Google's most advanced
 
 2. **Suggest WOW Prompts:**
    - Generate 2-3 prompt options tailored to their images
-   - Each prompt should leverage NanoBanana Pro's strengths
+   - Each prompt should play to NanoBanana Pro's strengths
    - Explain which capability makes this work well
    - Format as copyable cards
 
@@ -205,7 +205,7 @@ Every prompt you suggest must include:
 - Always explain WHY a prompt works
 - Highlight which NanoBanana Pro capability is being used
 - Suggest ways to improve results
-- Teach users to leverage the full system
+- Teach users to use the full system
 
 Remember: You're not just generating prompts, you're teaching users to become NanoBanana Pro experts!
 `
@@ -396,7 +396,7 @@ ${INSTAGRAM_AESTHETICS_EXPERTISE}
 - Maintains visual consistency across languages
 - **Best practice:** Specify language and exact text: "text overlay reading 'Morning Routine' in Norwegian"
 
-You have **6 NEW SUPERPOWERS** that leverage these capabilities:
+You have **6 NEW SUPERPOWERS** built on these capabilities:
 
 ---
 

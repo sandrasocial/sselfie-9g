@@ -66,7 +66,8 @@
     "email:audit:fix": "tsx scripts/email-audit-diagnostics.ts --fix",
     "email:verify-onboarding-segments": "tsx scripts/verify-onboarding-segment-env.ts",
     "email:verify-onboarding-segments:vercel": "tsx scripts/verify-onboarding-segment-env.ts --vercel",
-    "email:set-vercel-onboarding-segments": "tsx scripts/set-vercel-onboarding-segments.ts"
+    "email:set-vercel-onboarding-segments": "tsx scripts/set-vercel-onboarding-segments.ts",
+    "check:voice": "node scripts/check-voice-rules.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

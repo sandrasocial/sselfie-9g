@@ -85,7 +85,7 @@ MIXED-SOURCE FEED PLANNING:
 5. **ALWAYS** finish your conversational response first, then add the trigger and JSON at the end
 
 **Example CORRECT format:**
-"YES! 😍 I love this energy! Let's create a strategic ${DEFAULT_INLINE_MAYA_FEED_POST_COUNT}-post Instagram feed layout that matches your edgy, minimalist aesthetic perfectly. This is going to be such a game-changer for your personal brand!
+"Love this. Let's build a ${DEFAULT_INLINE_MAYA_FEED_POST_COUNT}-post feed that matches your edgy, minimalist aesthetic. Here's the plan.
 
 Aesthetic Choice: Clean & Minimalistic (Ethereal Pure White)
 User requested: Instagram feed layout
