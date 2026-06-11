@@ -91,7 +91,7 @@ export default async function MembershipCheckoutPage({
             letterSpacing: "-0.04em",
           }}
         >
-          Choose your Studio path.
+          Choose your SUITE path.
         </h1>
         <p
           style={{
@@ -102,8 +102,8 @@ export default async function MembershipCheckoutPage({
             color: "rgba(229,229,229,0.78)",
           }}
         >
-          Studio is the weekly execution layer with Maya. Join monthly when you are ready for the
-          recurring system, or start smaller if you still need the method first.
+          The SSELFIE SUITE is the weekly execution layer with Maya. Join monthly when you're ready
+          for the recurring system, or start smaller if you still need the method first.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>
           <Link
@@ -119,7 +119,7 @@ export default async function MembershipCheckoutPage({
               fontSize: 12,
             }}
           >
-            Join Studio Monthly
+            Join the SUITE Monthly
           </Link>
           <Link
             href="/masterclass"

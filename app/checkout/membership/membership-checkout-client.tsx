@@ -32,7 +32,7 @@ export default function MembershipCheckoutClient({ promoCode, bonus }: Props) {
       <div className="w-full max-w-sm">
         {/* Logo / Brand */}
         <p className="text-center font-['Cormorant_Garamond'] text-xs tracking-[0.35em] uppercase text-[#666666] mb-12">
-          SSELFIE Studio
+          SSELFIE SUITE
         </p>
 
         <h1 className="font-['Cormorant_Garamond'] font-light text-3xl tracking-[0.15em] uppercase text-[#f0ede8] text-center mb-2">
@@ -78,7 +78,7 @@ export default function MembershipCheckoutClient({ promoCode, bonus }: Props) {
             <>
               <p className="font-['Cormorant_Garamond'] text-4xl font-light text-[#f0ede8]">{annualPrice}</p>
               <p className="text-[#666666] font-['Inter'] text-xs tracking-[0.1em] mt-1">
-                per year — {annualMonthly}/mo
+                per year · {annualMonthly}/mo
               </p>
               <p className="text-[#c8c4bb] font-['Inter'] text-xs tracking-[0.1em] mt-2">
                 Save {annualSaving} vs monthly

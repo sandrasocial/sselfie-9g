@@ -524,7 +524,7 @@ export default async function PromptVaultPage({
               }}
             >
               The preview shows you the opening shot from every collection. The
-              Vault includes the complete shoot direction — the mood, styling,
+              Vault includes the complete shoot direction: the mood, styling,
               setting, feeling, and full shot sequence.
             </p>
             <ul className="pvf-upsell-list">

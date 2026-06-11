@@ -382,7 +382,7 @@ function IntroScreen() {
             letterSpacing: "0.42em",
           }}
         >
-          Studio
+          SUITE
         </p>
       </div>
       <style>{`
@@ -890,7 +890,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       <Hero
         eyebrow="Starter Kit · $37"
         title={<>AI-ready selfies, clean edits, captions, and your first week of content.</>}
-        body={<p>Before you ask ChatGPT, Gemini, or any AI tool to transform your photo, you need a strong original image. This is where the Starter Kit helps.</p>}
+        body={<p>Before you ask ChatGPT, Gemini, or any AI tool to restyle your photo, you need a strong original image. This is where the Starter Kit helps.</p>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.skHero}

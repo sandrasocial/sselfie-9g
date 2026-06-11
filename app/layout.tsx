@@ -10,7 +10,7 @@ import "./globals.css"
 export const metadata: Metadata = {
   metadataBase: new URL("https://sselfie.ai"),
   title: {
-    default: "SSELFIE | Selfie Education, Studio & Maya",
+    default: "SSELFIE | Selfie Education, the SUITE & Maya",
     template: "%s | SSELFIE",
   },
   description:
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://sselfie.ai",
     siteName: "SSELFIE",
-    title: "SSELFIE - Selfie Education, Studio & Maya",
+    title: "SSELFIE - Selfie Education, the SUITE & Maya",
     description:
       "From selfie to strategy: build a personal brand people understand, trust, and buy from, then use Maya to execute weekly.",
     images: [
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SSELFIE - Selfie Education, Studio & Maya",
+    title: "SSELFIE - Selfie Education, the SUITE & Maya",
     description:
       "Selfie-first personal branding, visibility systems, and weekly execution support inside SSELFIE.",
     images: ["https://sselfie.ai/og-image.png"],
@@ -159,7 +159,7 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Offer",
-                  name: "Studio Membership",
+                  name: "SSELFIE SUITE Membership",
                   price: "97",
                   priceCurrency: "EUR",
                   priceSpecification: {
@@ -235,7 +235,7 @@ export default function RootLayout({
                   name: "How much does SSELFIE cost?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "SSELFIE offers a simple path: start with the Selfie Guide, move into the Starter Kit for presets and a 7-day content starter, use the Masterclass for the deeper method, then continue inside Studio membership for Maya, Feed Planner, brand photo generation, and caption writing.",
+                    text: "SSELFIE offers a simple path: start with the Selfie Guide, move into the Starter Kit for presets and a 7-day content starter, use the Masterclass for the deeper method, then continue inside the SSELFIE SUITE membership for Maya, Feed Planner, brand photo generation, and caption writing.",
                   },
                 },
                 {
