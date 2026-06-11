@@ -88,6 +88,56 @@ export function renderStonePanel(contentHtml: string, eyebrow?: string): string 
   return `<div style="margin:26px 0;padding:22px 24px;background:${COLORS.panel};border-left:3px solid ${COLORS.text};">${eyebrowHtml}${normalizeLegacyStoneHtml(contentHtml)}</div>`
 }
 
+// Personal-note format — for recovery and early-nurture emails, where the 2025-26 evidence
+// says a personal-looking email beats branded HTML (better Primary-tab placement, 21% higher
+// click-to-open). Looks like a note from Sandra: white background, no card, no headline block,
+// serif body, plain underlined links, small italic signoff. Use renderPersonalNote for these;
+// keep renderStoneShell for delivery, offers, drops, and the newsletter.
+export interface PersonalNoteOptions {
+  /** <title> tag + preheader context only — never rendered as a visible headline. */
+  title: string
+  bodyHtml: string
+  signoff?: string
+}
+
+export function renderPersonalNote({ title, bodyHtml, signoff = "Sandra x" }: PersonalNoteOptions): string {
+  const signoffHtml = signoff
+    ? `<p style="margin:28px 0 0;color:${COLORS.text};font-family:Georgia,'Times New Roman',serif;font-size:17px;font-style:italic;">${escapeHtml(signoff)}</p>`
+    : ""
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ffffff;">
+    <tr>
+      <td align="center" style="padding:28px 20px 44px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;" align="center">
+          <tr>
+            <td style="color:${COLORS.body};font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.8;text-align:left;">
+              ${normalizeLegacyStoneHtml(bodyHtml)}
+              ${signoffHtml}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+/** Plain underlined text link for personal notes (a button would read as "brand", not "Sandra"). */
+export function renderPersonalLink(label: string, href: string): string {
+  return `<a href="${href}" style="color:${COLORS.text};text-decoration:underline;">${escapeHtml(label)}</a>`
+}
+
 const RESPONSIVE_STYLES = `
   @media screen and (max-width: 620px) {
     .st-outer-td  { padding: 0 !important; }

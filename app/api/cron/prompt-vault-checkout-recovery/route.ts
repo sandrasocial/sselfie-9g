@@ -14,7 +14,11 @@ import { stripe } from "@/lib/stripe"
 import { addContactToSegment, updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generatePromptVaultCheckoutRecoveryEmail,
+  generatePromptVaultRecovery2Email,
+  generatePromptVaultRecovery3Email,
   PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+  PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
+  PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE,
 } from "@/lib/email/templates/prompt-vault-checkout-recovery"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 
@@ -199,6 +203,160 @@ async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
   `) as RecoveryCandidate[]
 }
 
+// EMAIL-02: follow-up touches at +24h and +72h after the first recovery email. Klaviyo
+// benchmark: 3-email recovery sequences recover ~6.5x the revenue of a single email.
+// Hard buyer guard on stripe_payments (money truth) so no buyer ever gets a recovery email,
+// even when they purchased through a different checkout session.
+type FollowupStage = {
+  emailType: string
+  /** Hours after the stage-1 recovery email before this touch becomes eligible. */
+  afterHours: number
+  /** This stage only goes to people who already received the named earlier touch. */
+  requiresEmailType: string
+  generate: (input: { firstName: string; recipientEmail?: string | null }) => {
+    subject: string
+    html: string
+    text: string
+  }
+}
+
+const FOLLOWUP_STAGES: FollowupStage[] = [
+  {
+    emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
+    afterHours: 24,
+    requiresEmailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+    generate: generatePromptVaultRecovery2Email,
+  },
+  {
+    emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE,
+    afterHours: 72,
+    requiresEmailType: PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
+    generate: generatePromptVaultRecovery3Email,
+  },
+]
+
+async function getFollowupCandidates(stage: FollowupStage): Promise<RecoveryCandidate[]> {
+  return (await sql`
+    WITH eligible AS (
+      SELECT
+        session_id,
+        user_email,
+        source,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        campaign_id,
+        cta_keyword,
+        entry_post_slug,
+        buyer_stage,
+        created_at,
+        ROW_NUMBER() OVER (
+          PARTITION BY LOWER(BTRIM(user_email))
+          ORDER BY created_at ASC
+        ) AS email_rank
+      FROM checkout_attribution ca
+      WHERE product_type = 'prompt_vault'
+        AND status = 'abandoned'
+        AND user_email IS NOT NULL
+        AND BTRIM(user_email) <> ''
+        AND recovery_email_sent_at IS NOT NULL
+        AND recovery_email_sent_at <= NOW() - (${`${stage.afterHours} hours`}::interval)
+        AND recovery_email_sent_at > NOW() - INTERVAL '14 days'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM stripe_payments sp
+          WHERE LOWER(BTRIM(sp.customer_email)) = LOWER(BTRIM(ca.user_email))
+            AND sp.product_type = 'prompt_vault'
+            AND sp.status IN ('succeeded', 'paid')
+            AND sp.is_test_mode = FALSE
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM email_logs prev
+          WHERE LOWER(BTRIM(prev.user_email)) = LOWER(BTRIM(ca.user_email))
+            AND prev.email_type = ${stage.requiresEmailType}
+            AND prev.status IN ('sent', 'delivered')
+            AND prev.sent_at > NOW() - INTERVAL '14 days'
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM email_logs el
+          WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(ca.user_email))
+            AND el.email_type = ${stage.emailType}
+            AND el.status IN ('sent', 'delivered', 'suppressed')
+            AND el.sent_at > NOW() - INTERVAL '30 days'
+        )
+    )
+    SELECT
+      session_id,
+      user_email,
+      source,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      campaign_id,
+      cta_keyword,
+      entry_post_slug,
+      buyer_stage,
+      created_at
+    FROM eligible
+    WHERE email_rank = 1
+    ORDER BY created_at ASC
+    LIMIT 50
+  `) as RecoveryCandidate[]
+}
+
+async function sendFollowupStage(stage: FollowupStage) {
+  const candidates = await getFollowupCandidates(stage)
+  const results = { found: candidates.length, sent: 0, failed: 0 }
+
+  for (const candidate of candidates) {
+    const firstName = getFirstNameForEmail({ email: candidate.user_email })
+    const email = stage.generate({ firstName, recipientEmail: candidate.user_email })
+
+    const sent = await sendEmail({
+      to: candidate.user_email,
+      from: FROM_EMAIL,
+      replyTo: REPLY_TO_EMAIL,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      emailType: stage.emailType,
+      tags: ["prompt-vault", "checkout-recovery"],
+      marketing: true,
+    })
+
+    if (sent.success) {
+      results.sent += 1
+      await logAnalyticsEvent({
+        eventName: "prompt_vault_checkout_recovery_sent",
+        path: "/api/cron/prompt-vault-checkout-recovery",
+        utm: {
+          source: candidate.utm_source,
+          medium: candidate.utm_medium,
+          campaign: candidate.utm_campaign,
+          content: candidate.utm_content,
+        },
+        properties: {
+          session_id: candidate.session_id,
+          stage: stage.emailType,
+          source: candidate.source,
+          campaign_id: candidate.campaign_id,
+          buyer_stage: candidate.buyer_stage,
+        },
+      })
+    } else {
+      results.failed += 1
+    }
+
+    await sleep(SEND_DELAY_MS)
+  }
+
+  return results
+}
+
 async function markRecoverySent(candidate: RecoveryCandidate, messageId?: string) {
   await sql`
     UPDATE checkout_attribution
@@ -301,6 +459,7 @@ export async function GET(request: Request) {
       sent: 0,
       failed: 0,
       hydration,
+      followups: null as Record<string, { found: number; sent: number; failed: number }> | null,
     }
 
     for (const candidate of candidates) {
@@ -333,6 +492,14 @@ export async function GET(request: Request) {
       }
 
       await sleep(SEND_DELAY_MS)
+    }
+
+    // Stages 2 + 3 gated separately: copy is Sandra-approval-gated, flip the env to go live.
+    if (process.env.PROMPT_VAULT_RECOVERY_FOLLOWUPS_ENABLED === "true") {
+      results.followups = {}
+      for (const stage of FOLLOWUP_STAGES) {
+        results.followups[stage.emailType] = await sendFollowupStage(stage)
+      }
     }
 
     await cronLogger.success(results)
