@@ -10,8 +10,11 @@ export interface TrialUnlockParams {
   /** "Prompt Vault" or "Starter Kit" — used in subject + body. */
   productLabel: string
   claimUrl: string
-  /** "purchase" = sent right after buying (default). "backfill" = past buyers (BRIDGE-01 one-time send). */
-  variant?: "purchase" | "backfill"
+  /**
+   * "purchase" = sent right after buying (default). "backfill" = past Vault/Kit buyers
+   * (one-time send). "legacy" = past buyers of non-prompt products (Feed Planner, sessions).
+   */
+  variant?: "purchase" | "backfill" | "legacy"
 }
 
 export function generateTrialUnlockEmail(params: TrialUnlockParams): {
@@ -22,18 +25,22 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
   const { customerName, customerEmail, productLabel, claimUrl, variant = "purchase" } = params
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const subject =
-    variant === "backfill"
-      ? `A gift for you: 7 days inside the SUITE`
-      : `A gift with your ${productLabel}: 7 days inside the SUITE`
+    variant === "purchase"
+      ? `A gift with your ${productLabel}: 7 days inside the SUITE`
+      : `A gift for you: 7 days inside the SUITE`
   const intro =
-    variant === "backfill"
-      ? `A while back you bought the ${productLabel}. This email is something extra.`
-      : `Your ${productLabel} is in your inbox. This email is something extra.`
+    variant === "purchase"
+      ? `Your ${productLabel} is in your inbox. This email is something extra.`
+      : `A while back you bought the ${productLabel} from me. This email is something extra.`
+  const bridge =
+    variant === "legacy"
+      ? `What you bought still works. But my Studio has grown since then. Maya is the creative director inside it now. She pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.`
+      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${intro}</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${bridge}</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So here's your gift: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Whatever you make is yours to keep, trial or not.</p>
@@ -51,13 +58,58 @@ Hey ${name},
 
 ${intro}
 
-The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.
+${bridge}
 
 So here's your gift: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.
 
 Claim your 7 days: ${claimUrl}
 
 Whatever you make is yours to keep, trial or not.
+
+Sandra`
+
+  return { html, text, subject }
+}
+
+// FUNNEL-2026-06-11: day-0 activation for fresh trials (tap-first, mirrors member Day 0).
+export function generateTrialDay0Email(params: {
+  customerName?: string | null
+  customerEmail: string
+}): { html: string; text: string; subject: string } {
+  const { customerName, customerEmail } = params
+  const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const appUrl = `${siteUrl}/app`
+  const subject = "You're in. Here's your first 10 minutes"
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your 7 days just started. Here's all you need to do today:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the app. Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your first photos are done in minutes.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's it. No prompts to write. Nothing to figure out.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open your Studio", appUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">One promise before you start: these photos will look like you. AI should not erase you. It should frame you.</p>
+  `
+
+  const html = renderStoneShell({
+    title: "Meet Maya",
+    eyebrow: "SSELFIE SUITE",
+    bodyHtml,
+  })
+
+  const text = `SSELFIE SUITE
+
+Hey ${name},
+
+Your 7 days just started. Here's all you need to do today:
+
+Open the app. Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your first photos are done in minutes.
+
+That's it. No prompts to write. Nothing to figure out.
+
+Open your Studio: ${appUrl}
+
+One promise before you start: these photos will look like you. AI should not erase you. It should frame you.
 
 Sandra`
 

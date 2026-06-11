@@ -93,6 +93,27 @@ export default async function ClaimTrialPage({
         userId,
         properties: { source: "claim_page", subscriber_id: subscriber.id },
       }).catch(() => {})
+
+      // Day-0 activation email, sent the moment the trial starts (idempotent by design:
+      // grant.created is true exactly once per user, ever).
+      try {
+        const { sendEmail } = await import("@/lib/email/send-email")
+        const { generateTrialDay0Email } = await import("@/lib/email/templates/suite-trial")
+        const day0 = generateTrialDay0Email({
+          customerName: subscriber.name,
+          customerEmail: subscriber.email,
+        })
+        await sendEmail({
+          to: subscriber.email,
+          subject: day0.subject,
+          html: day0.html,
+          text: day0.text,
+          emailType: "suite_trial_day0",
+          tags: ["suite-trial", "day0"],
+        })
+      } catch (e) {
+        console.error("[claim] day-0 email failed (trial still granted):", e)
+      }
     }
 
     // She came from an email, so she almost certainly has no session. If she's never set a

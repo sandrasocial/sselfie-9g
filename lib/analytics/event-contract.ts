@@ -118,6 +118,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "trial_claimed",
   "trial_first_generation",
   "trial_expired",
+  "membership_checkout_recovery_sent",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

@@ -738,8 +738,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         body={
           <p>You already have the phone. You already have the story. SSELFIE helps you turn both into a personal brand people understand, trust, and can buy from.</p>
         }
-        primary={{ href: r("/selfie-guide"), label: "Start with the Free Guide" }}
-        secondary={{ href: r("/starter-kit"),   label: "Take the Starter Kit Next" }}
+        primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
+        secondary={{ href: r("/join/studio"),   label: "Meet Maya · SSELFIE SUITE" }}
         imageSrc={IMG.homeHero}
       />
 
@@ -803,17 +803,17 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgSrc={IMG.homeSelfie}
         imgFirst
         dark
-        cta={<Btn href={r("/starter-kit")} surface="dark" ghost>Start with the photo basics. See the Starter Kit</Btn>}
+        cta={<Btn href={r("/ai-prompts")} surface="dark" ghost>Start with the free AI prompts</Btn>}
       />
 
       {/* OFFER LADDER — cream */}
       <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Free Selfie Guide", price: "Free", body: "The photo basics Sandra uses every day: light, angle, phone settings, posing. Start here.", href: "/selfie-guide" },
+            { title: "Free AI Prompts", price: "Free", body: "Editorial photoshoot prompts that turn one selfie into photos you'd actually post. Start here.", href: "/ai-prompts" },
+            { title: "Prompt Vault", price: "$27", body: "Ten editorial collections, 88 prompts. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
-            { title: "Masterclass", price: "$147", body: "Clearer content direction, captions, offer clarity, and a 30-day plan. Sandra's full method, one time.", href: "/masterclass" },
-            { title: "SSELFIE SUITE", price: "€97/mo", body: "Weekly photo ideas, captions, and content plans with Maya. Cancel any time.", href: "/join/studio" },
+            { title: "SSELFIE SUITE", price: "€97/mo", body: "Maya builds your visual brand: photoshoots, carousels, reel covers, captions. Everything included.", href: "/join/studio" },
           ].map((p) => (
             <Link key={p.title} href={r(p.href)} className="mf block"
               style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
@@ -844,14 +844,14 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgSrc={IMG.homeFounder}
         imgFirst
         dark={false}
-        cta={<Btn href={r("/starter-kit")} surface="cream">Start with Starter Kit</Btn>}
+        cta={<Btn href={r("/join/studio")} surface="cream">See the SUITE</Btn>}
       />
 
       {/* CTA CLOSE — dark */}
       <CtaClose
         title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
-        primary={{ href: r("/starter-kit"), label: "Start with Starter Kit" }}
-        secondary={{ href: r("/selfie-guide"), label: "Start with the free guide" }}
+        primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
+        secondary={{ href: r("/join/studio"), label: "See the SUITE" }}
         dark
       />
 

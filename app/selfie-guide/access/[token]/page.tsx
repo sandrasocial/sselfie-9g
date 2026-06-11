@@ -43,7 +43,7 @@ async function getGuideMarkdown() {
     const markdown = await readFile(GUIDE_CONTENT_PATH, "utf8")
     cachedGuideMarkdown = markdown
       .replace(/\]\(#\)/g, "](/masterclass)")
-      .replace(/\]\(\/studio\?tab=maya\)/g, "](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)")
+      .replace(/\]\(\/studio\?tab=maya\)/g, "](/auth/sign-up?returnTo=%2Fapp)")
       .replace(/\]\(\/brand-strategy\)/g, "](/masterclass)")
       .replace(/\]\(\/checkout\/brand-strategy-pack\)/g, "](/starter-kit)")
     return cachedGuideMarkdown

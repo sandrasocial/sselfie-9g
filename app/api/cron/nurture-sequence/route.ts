@@ -148,6 +148,13 @@ function selfieToBrandShootAccessUrl(candidate: { access_token: string | null })
     : `${SITE_URL}/academy/access/selfie-to-brand-shoot`
 }
 
+// BRIDGE-01: the 7-day SUITE trial claim link (one trial per person, ever — the claim
+// page enforces it, so sending the link repeatedly is safe).
+function suiteTrialClaimUrl(candidate: { access_token: string | null }): string | undefined {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0 ? `${SITE_URL}/claim/${token}` : undefined
+}
+
 function aiPromptsNurtureStartDate(): string {
   const configured = process.env.AI_PROMPTS_NURTURE_START_DATE?.trim()
 
@@ -521,6 +528,7 @@ async function sendFreebieGuideTouchEmail(
         firstName,
         recipientEmail: candidate.email,
         accessUrl,
+        claimUrl: suiteTrialClaimUrl(candidate),
       })
       break
     default:

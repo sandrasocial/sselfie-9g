@@ -14,12 +14,17 @@ import { config } from "dotenv"
 config({ path: ".env.local" })
 
 const SEND = process.argv.includes("--send")
+// FUNNEL-2026-06-11: --legacy switches the audience to Feed Planner + one-time session
+// buyers (variant "legacy" copy). Default audience stays Vault/Kit ("backfill").
+const LEGACY = process.argv.includes("--legacy")
 
 const PRODUCT_LABEL: Record<string, string> = {
   prompt_vault: "Prompt Vault",
   starter_kit: "Starter Kit",
   "prompt-vault-paid": "Prompt Vault",
   "starter-kit-paid": "Starter Kit",
+  paid_blueprint: "Feed Planner",
+  one_time_session: "SSELFIE photoshoot",
 }
 
 async function main() {
@@ -32,25 +37,32 @@ async function main() {
   const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
   // Group 1: buyers with accounts, from the money truth source.
+  const productTypes = LEGACY ? ["paid_blueprint", "one_time_session"] : ["prompt_vault", "starter_kit"]
   const accountBuyers = await sql`
     SELECT DISTINCT ON (LOWER(u.email))
       LOWER(u.email) AS email, MIN(sp.product_type) AS product
     FROM stripe_payments sp
     JOIN users u ON u.id = sp.user_id
-    WHERE sp.product_type IN ('prompt_vault', 'starter_kit')
+    WHERE sp.product_type = ANY(${productTypes}::text[])
       AND sp.status IN ('succeeded', 'paid')
       AND (sp.is_test_mode = FALSE OR sp.is_test_mode IS NULL)
       AND u.email IS NOT NULL
+      AND u.email NOT ILIKE '%@yopmail.%'
+      AND u.email NOT ILIKE '%@sselfie.ai'
+      AND u.email NOT ILIKE '%@example.%'
+      AND LOWER(u.email) <> 'sandra@dibssocial.com'
     GROUP BY LOWER(u.email)
   `
 
-  // Group 2: paid buyers with a token but no account yet (claim creates it).
-  const tokenBuyers = await sql`
-    SELECT LOWER(fs.email) AS email, fs.source AS product
-    FROM freebie_subscribers fs
-    WHERE fs.source IN ('prompt-vault-paid', 'starter-kit-paid')
-      AND NOT EXISTS (SELECT 1 FROM users u WHERE LOWER(u.email) = LOWER(fs.email))
-  `
+  // Group 2 (Vault/Kit mode only): paid buyers with a token but no account yet.
+  const tokenBuyers = LEGACY
+    ? []
+    : await sql`
+        SELECT LOWER(fs.email) AS email, fs.source AS product
+        FROM freebie_subscribers fs
+        WHERE fs.source IN ('prompt-vault-paid', 'starter-kit-paid')
+          AND NOT EXISTS (SELECT 1 FROM users u WHERE LOWER(u.email) = LOWER(fs.email))
+      `
 
   const candidates = new Map<string, string>()
   for (const r of [...accountBuyers, ...tokenBuyers]) {
@@ -66,7 +78,8 @@ async function main() {
   `
   const sent = await sql`
     SELECT DISTINCT LOWER(user_email) AS email FROM email_logs
-    WHERE email_type = 'suite_trial_unlock' AND status IN ('sent', 'delivered')
+    WHERE email_type IN ('suite_trial_unlock', 'winback_ex_member_trial')
+      AND status IN ('sent', 'delivered')
   `
   for (const r of [...excluded, ...sent]) candidates.delete(r.email)
 
@@ -77,14 +90,28 @@ async function main() {
   `
   const tokenMap = new Map(subscribers.map((r: any) => [r.email, r]))
 
-  const recipients = [...candidates.entries()]
-    .map(([email, productLabel]) => {
-      const sub = tokenMap.get(email) as { access_token: string; name: string | null } | undefined
-      return sub ? { email, productLabel, name: sub.name, token: sub.access_token } : null
-    })
-    .filter(Boolean) as Array<{ email: string; productLabel: string; name: string | null; token: string }>
+  const recipients: Array<{ email: string; productLabel: string; name: string | null; token: string }> = []
+  for (const [email, productLabel] of candidates.entries()) {
+    const sub = tokenMap.get(email) as { access_token: string; name: string | null } | undefined
+    if (sub) {
+      recipients.push({ email, productLabel, name: sub.name, token: sub.access_token })
+      continue
+    }
+    // Legacy buyers often have no subscriber row — mint a claim token (send mode only).
+    if (!SEND) {
+      recipients.push({ email, productLabel, name: null, token: "(will be minted on send)" })
+      continue
+    }
+    const { randomUUID } = await import("crypto")
+    const token = randomUUID()
+    await sql`
+      INSERT INTO freebie_subscribers (email, name, source, access_token, created_at, updated_at)
+      VALUES (${email}, ${email.split("@")[0]}, 'trial-backfill-legacy', ${token}, NOW(), NOW())
+    `
+    recipients.push({ email, productLabel, name: null, token })
+  }
 
-  console.log(`${SEND ? "SENDING to" : "DRY RUN —"} ${recipients.length} recipients:\n`)
+  console.log(`${SEND ? "SENDING to" : "DRY RUN —"} ${recipients.length} recipients (${LEGACY ? "legacy" : "vault/kit"} mode):\n`)
   for (const r of recipients) console.log(`  ${r.email}  (${r.productLabel})`)
 
   if (!SEND) {
@@ -100,7 +127,7 @@ async function main() {
       customerEmail: r.email,
       productLabel: r.productLabel,
       claimUrl: `${SITE}/claim/${r.token}`,
-      variant: "backfill",
+      variant: LEGACY ? "legacy" : "backfill",
     })
     const result = await sendEmail({
       to: r.email,
