@@ -30,6 +30,31 @@ If storage is tight, 1080p at 30 fps still works.
 
 ---
 
+## Android Settings
+
+Android camera apps look different on every brand. Samsung, Pixel, OnePlus, they all name things their own way. But the settings worth checking are the same, and it still takes 60 seconds.
+
+[IMAGE: android-settings-mockup.png · Android camera settings overview showing grid lines, mirror selfies, photo size, and video resolution]
+
+### Open Your Camera Settings
+Open your Camera app and tap the gear icon. Everything below lives in there.
+
+**Turn these ON:**
+- [ ] Grid lines (pick 3 x 3). Helps you line up shots and keep your face centered.
+- [ ] "Save selfies as previewed". Sometimes called Mirror selfies. So your photo matches what you saw on screen, not flipped.
+
+### Check Your Photo Size
+Many Android phones ship with the front camera set below its best quality. Look for Photo size or Resolution in your camera settings and pick the highest option. It costs you nothing.
+
+### Quick Camera Access
+Double-press the power button. Works on most Android phones, even from the lock screen. No unlocking, no searching for the app.
+
+### One More Thing
+- Use **Portrait mode** for blurred backgrounds that look more polished.
+- For video, open your video settings and pick 4K at 30 fps if your phone has it. If storage is tight, 1080p at 30 fps still works.
+
+---
+
 ## Window Light
 
 You can have the right settings, the right angles, and a good outfit. But if the light is wrong, the photo will look wrong. Every time.

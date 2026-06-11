@@ -463,57 +463,67 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
   },
 ] as const
 
-const SETTINGS_WALKTHROUGH_IMAGES: readonly GuideImage[] = [
-  {
-    src: "/images/selfie-guide/sg-settings-01.jpg",
-    alt: "Steps 01–02: Open Settings app, scroll down and tap Camera",
-    caption: "01–02 · Go to Settings → Camera",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-02.jpg",
-    alt: "Steps 03–04: Tap Formats then tap Preserve Settings inside Camera settings",
-    caption: "03–04 · Formats + Preserve Settings",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-03.jpg",
-    alt: "Step 05: Back in main Camera settings, check Record Video and Photographic Styles",
-    caption: "05 · Back in Camera Settings",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-04.jpg",
-    alt: "Step 06: Turn Grid and Mirror Front Camera on, turn Live Photos off",
-    caption: "06 · Turn ON / Turn OFF",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-05.jpg",
-    alt: "Step 07: On a newer iPhone, try Photographic Styles and Portrait Mode",
-    caption: "07 · Newer iPhones",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-06.jpg",
-    alt: "Step 08: Quick Camera Access, swipe left from the lock screen or use the Camera Control or Action Button",
-    caption: "08 · Quick Camera Access",
-    width: 1055,
-    height: 1491,
-  },
-  {
-    src: "/images/selfie-guide/sg-settings-07.jpg",
-    alt: "Step 09: Video format, go to Settings then Camera then Record Video and pick your quality",
-    caption: "09 · Record Video Settings",
-    width: 1055,
-    height: 1491,
-  },
-] as const
+interface CheatSheetRow {
+  label: string
+  detail?: string
+  control: { kind: "toggle"; on: boolean } | { kind: "value"; text: string }
+}
+
+interface CheatSheetGroup {
+  heading: string
+  rows: readonly CheatSheetRow[]
+}
+
+interface CheatSheetSpec {
+  frameLabel: string
+  caption: string
+  groups: readonly CheatSheetGroup[]
+}
+
+const IPHONE_CHEAT_SHEET: CheatSheetSpec = {
+  frameLabel: "IPHONE CHEAT SHEET",
+  caption: "Your iPhone camera settings in 60 seconds. Everything lives in Settings → Camera.",
+  groups: [
+    {
+      heading: "Settings → Camera",
+      rows: [
+        { label: "Grid", detail: "Lines up your shot", control: { kind: "toggle", on: true } },
+        { label: "Mirror Front Camera", detail: "Your selfie, the way you see yourself", control: { kind: "toggle", on: true } },
+        { label: "Live Photos", detail: "You rarely need the motion", control: { kind: "toggle", on: false } },
+      ],
+    },
+    {
+      heading: "Worth checking",
+      rows: [
+        { label: "Photographic Styles", detail: "Newer iPhones, adjustable after you shoot", control: { kind: "value", text: "Natural" } },
+        { label: "Record Video", detail: "Settings → Camera → Record Video", control: { kind: "value", text: "4K · 30 fps" } },
+        { label: "Quick access", detail: "Camera Control or Action Button", control: { kind: "value", text: "Set to Camera" } },
+      ],
+    },
+  ],
+}
+
+const ANDROID_CHEAT_SHEET: CheatSheetSpec = {
+  frameLabel: "ANDROID CHEAT SHEET",
+  caption: "Wording varies by brand, but these live behind the gear icon in your Camera app.",
+  groups: [
+    {
+      heading: "Camera app → gear icon",
+      rows: [
+        { label: "Grid lines", detail: "Pick 3 x 3", control: { kind: "toggle", on: true } },
+        { label: "Save selfies as previewed", detail: "Sometimes called Mirror selfies", control: { kind: "toggle", on: true } },
+      ],
+    },
+    {
+      heading: "Worth checking",
+      rows: [
+        { label: "Photo size", detail: "Front camera often ships below its best", control: { kind: "value", text: "Highest" } },
+        { label: "Video resolution", detail: "If your phone has it", control: { kind: "value", text: "4K · 30 fps" } },
+        { label: "Quick access", detail: "Works from the lock screen on most phones", control: { kind: "value", text: "Double-press power" } },
+      ],
+    },
+  ],
+}
 
 const LIGHTING_COMPARISON_IMAGES: readonly ComparisonImage[] = [
   {
@@ -787,27 +797,30 @@ function ProseVisualFrame({
   )
 }
 
-function SettingsWalkthroughVisual() {
+function SettingsCheatSheet({ spec }: { spec: CheatSheetSpec }) {
   return (
-    <ProseVisualFrame
-      label="SETTINGS CHEAT SHEET"
-      caption="Your iPhone camera settings in 60 seconds. These three screenshots are the exact original guide walkthrough."
-    >
-      <div className="settings-visual-grid">
-        {SETTINGS_WALKTHROUGH_IMAGES.map(image => (
-          <figure key={image.src} className="settings-visual-item">
-            <div className="settings-visual-wrap">
-              <Image
-                src={image.src}
-                alt={image.alt}
-                width={image.width}
-                height={image.height}
-                sizes="(max-width: 900px) 100vw, 33vw"
-                className="settings-visual-image"
-              />
-            </div>
-            <figcaption className="settings-visual-step">{image.caption}</figcaption>
-          </figure>
+    <ProseVisualFrame label={spec.frameLabel} caption={spec.caption}>
+      <div className="cheat-groups">
+        {spec.groups.map(group => (
+          <div key={group.heading} className="cheat-card">
+            <p className="cheat-heading">{group.heading}</p>
+            {group.rows.map(row => (
+              <div key={row.label} className="cheat-row">
+                <div className="cheat-row-text">
+                  <span className="cheat-label">{row.label}</span>
+                  {row.detail ? <span className="cheat-detail">{row.detail}</span> : null}
+                </div>
+                {row.control.kind === "toggle" ? (
+                  <span className={`cheat-toggle ${row.control.on ? "is-on" : "is-off"}`} aria-label={row.control.on ? "On" : "Off"}>
+                    <span className="cheat-toggle-dot" />
+                    <span className="cheat-toggle-state">{row.control.on ? "ON" : "OFF"}</span>
+                  </span>
+                ) : (
+                  <span className="cheat-value">{row.control.text}</span>
+                )}
+              </div>
+            ))}
+          </div>
         ))}
       </div>
     </ProseVisualFrame>
@@ -859,16 +872,25 @@ export default function SelfieGuideExperience({
   hasBrandStrategyAccess = false,
   token,
 }: SelfieGuideExperienceProps) {
-  const chapters = useMemo(() => {
-    const parsed = parseSelfieGuideChapters(guideMarkdown)
-    if (parsed.length > 0) return parsed
-    return [{ id: "guide-1", title: "Guide", markdown: guideMarkdown }] satisfies SelfieGuideChapter[]
-  }, [guideMarkdown])
-
   const [activeChapterIndex, setActiveChapterIndex] = useState(0)
   const [completedChapters, setCompletedChapters] = useState<number[]>([])
   const [challengeDays, setChallengeDays] = useState<number[]>([])
   const [personalization, setPersonalization] = useState<GuidePersonalization | null>(null)
+
+  const chapters = useMemo(() => {
+    const parsed = parseSelfieGuideChapters(guideMarkdown)
+    const all =
+      parsed.length > 0
+        ? parsed
+        : ([{ id: "guide-1", title: "Guide", markdown: guideMarkdown }] satisfies SelfieGuideChapter[])
+    // Show the settings chapter that matches the reader's phone. "Not sure" keeps both.
+    const phone = personalization?.phoneType
+    if (phone === "android") return all.filter(chapter => !/^iphone settings/i.test(chapter.title))
+    if (phone === "iphone-15-16" || phone === "iphone-13-14") {
+      return all.filter(chapter => !/^android settings/i.test(chapter.title))
+    }
+    return all
+  }, [guideMarkdown, personalization?.phoneType])
   const [guideComplete, setGuideComplete] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
@@ -982,7 +1004,8 @@ export default function SelfieGuideExperience({
 
         if (!imageMarker) return <p className="prose-p">{children}</p>
 
-        if (imageMarker === "iphone-settings-mockup.png") return <SettingsWalkthroughVisual />
+        if (imageMarker === "iphone-settings-mockup.png") return <SettingsCheatSheet spec={IPHONE_CHEAT_SHEET} />
+        if (imageMarker === "android-settings-mockup.png") return <SettingsCheatSheet spec={ANDROID_CHEAT_SHEET} />
         if (imageMarker === "lighting-comparison-grid.png") return <LightingComparisonVisual />
         if (imageMarker === "feed-post-1.png") return <MayaGallery />
         if (imageMarker === "img-editorial-dark.png") return <FeedPreview />
@@ -2103,6 +2126,124 @@ export default function SelfieGuideExperience({
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
           padding: 0 24px;
+        }
+
+        /* ── Settings cheat sheet ────────────── */
+        .cheat-groups {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          padding: 0 24px;
+        }
+
+        .cheat-card {
+          border: 1px solid var(--c-border);
+          background: rgba(28, 27, 25, 0.92);
+          padding: 18px 18px 8px;
+        }
+
+        .cheat-heading {
+          margin: 0 0 14px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+        }
+
+        .cheat-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 12px 0;
+          border-top: 1px solid var(--c-border);
+        }
+
+        .cheat-row-text {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+        }
+
+        .cheat-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #f3f1ee;
+          line-height: 1.3;
+        }
+
+        .cheat-detail {
+          font-size: 11px;
+          color: var(--c-smoke);
+          line-height: 1.4;
+        }
+
+        .cheat-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          flex-shrink: 0;
+        }
+
+        .cheat-toggle-dot {
+          width: 30px;
+          height: 17px;
+          border-radius: 999px;
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .cheat-toggle.is-on .cheat-toggle-dot {
+          background: #f3f1ee;
+        }
+
+        .cheat-toggle.is-off .cheat-toggle-dot {
+          background: rgba(243, 241, 238, 0.18);
+        }
+
+        .cheat-toggle-dot::after {
+          content: "";
+          position: absolute;
+          top: 2.5px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+        }
+
+        .cheat-toggle.is-on .cheat-toggle-dot::after {
+          right: 2.5px;
+          background: #0a0a0a;
+        }
+
+        .cheat-toggle.is-off .cheat-toggle-dot::after {
+          left: 2.5px;
+          background: rgba(243, 241, 238, 0.55);
+        }
+
+        .cheat-toggle-state {
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.14em;
+          color: var(--c-smoke);
+        }
+
+        .cheat-value {
+          flex-shrink: 0;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.06em;
+          color: #f3f1ee;
+          border: 1px solid var(--c-border);
+          padding: 5px 10px;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 700px) {
+          .cheat-groups {
+            grid-template-columns: 1fr;
+          }
         }
 
         /* ── Maya gallery ────────────── */
