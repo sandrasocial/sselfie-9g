@@ -56,7 +56,7 @@ export function GalleryView() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8">
-      <header className="mb-6 flex items-end justify-between gap-4">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Photos</p>
           <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">Everything you've made</h1>

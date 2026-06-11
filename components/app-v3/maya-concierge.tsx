@@ -168,6 +168,11 @@ export function MayaConcierge() {
   })
   // Past-selfie picker.
   const [libraryOpen, setLibraryOpen] = useState(false)
+  // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
+  const [menuOpen, setMenuOpen] = useState(false)
+  // Once the conversation starts, the setup block collapses to a one-line strip so the thread
+  // owns the screen (the stacked chips/selfie/CTA were hiding Maya's output on phones).
+  const [setupOpen, setSetupOpen] = useState(false)
   // Cross-session memory (Phase E): what Maya already knows + the name she was given.
   const [memory, setMemory] = useState<Memory | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
@@ -343,6 +348,7 @@ export function MayaConcierge() {
       if (slot === "face") {
         setSelfieRestored(false) // she chose this one herself
         setReferenceSelfieUrl(data.url)
+        setSetupOpen(false) // replacement done: give the screen back to the thread
       } else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
       else setInspirationUrl(data.url)
@@ -362,6 +368,8 @@ export function MayaConcierge() {
 
   function handleNewChat() {
     if (isThinking) return
+    setMenuOpen(false)
+    setSetupOpen(false)
     savedCountRef.current = 0
     lastPulledFormatRef.current = null
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
@@ -494,6 +502,7 @@ export function MayaConcierge() {
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
     setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
+    setSetupOpen(false) // a committed pick collapses setup so the directions are visible
   }
 
   function focusComposer() {
@@ -567,44 +576,102 @@ export function MayaConcierge() {
       <aside
         role="dialog"
         aria-label={`${agentLabel}, ${aesthetic.name}`}
-        className="relative flex h-full w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl animate-in slide-in-from-right duration-300 ease-out motion-reduce:animate-none"
+        className="relative flex h-[100dvh] w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl animate-in slide-in-from-right duration-300 ease-out motion-reduce:animate-none"
       >
-        {/* Header */}
-        <header className="shrink-0 flex items-start justify-between gap-3 border-b border-[#C5C6C8]/40 px-6 py-5">
+        {/* Header — one calm row. Actions live in a quiet menu, and Close is always visible
+            (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
+        <header className="shrink-0 flex items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
-            <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+            <h2 className="mt-0.5 truncate font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
           </div>
-          <div className="-my-1 flex shrink-0 items-center gap-2.5 pt-1">
+          <div className="relative flex shrink-0 items-center gap-4">
             <button
               type="button"
-              onClick={handleNewChat}
-              disabled={isThinking}
-              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
-            >
-              New chat
-            </button>
-            <button
-              type="button"
-              onClick={() => setHistoryOpen(true)}
+              onClick={() => setMenuOpen((v) => !v)}
               className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
-              History
+              Menu
             </button>
             <button
               type="button"
-              onClick={() => setMemoryOpen(true)}
+              onClick={close}
               className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
-              Memory
+              Close
             </button>
+            {menuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMenuOpen(false)}
+                  className="fixed inset-0 z-10 cursor-default"
+                />
+                <div className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={handleNewChat}
+                    disabled={isThinking}
+                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
+                  >
+                    New chat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setHistoryOpen(true)
+                    }}
+                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                  >
+                    History
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setMemoryOpen(true)
+                    }}
+                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                  >
+                    Memory
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
-        {/* Setup row: format + selfie (compact, always available) */}
-        <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-6 py-4">
+        {/* Setup — full block before the conversation starts (the guided beginning), then it
+            collapses to a one-line status strip so Maya's output owns the screen. "Change"
+            re-opens it for a format switch or a selfie swap. */}
+        {hasStarted && !setupOpen && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
+            <span className="flex min-w-0 items-center gap-2.5">
+              {referenceSelfieUrl && (
+                <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                  <Image src={referenceSelfieUrl} alt="Your selfie" fill className="object-cover" sizes="28px" />
+                </span>
+              )}
+              <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#818283]">
+                {FORMAT_OPTIONS.find((o) => o.id === format)?.label ?? "Photo"}
+                {referenceSelfieUrl ? " · Selfie in" : " · No selfie yet"}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSetupOpen(true)}
+              className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+            >
+              Change
+            </button>
+          </div>
+        )}
+        {(!hasStarted || setupOpen) && (
+        <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
           <div className="flex flex-wrap gap-2">
             {FORMAT_OPTIONS.map((opt) => {
               // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
@@ -708,7 +775,7 @@ export function MayaConcierge() {
             onClick={() => setShowMore((v) => !v)}
             className="text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
           >
-            {showMore ? "Hide extras" : "Add a side profile or full-body photo for a better match (optional)"}
+            {showMore ? "Hide extras" : "Add more angles (optional)"}
           </button>
 
           {showMore && (
@@ -750,12 +817,24 @@ export function MayaConcierge() {
           )}
 
           {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
+
+          {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
+          {hasStarted && (
+            <button
+              type="button"
+              onClick={() => setSetupOpen(false)}
+              className="w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+            >
+              Back to the conversation
+            </button>
+          )}
         </div>
+        )}
 
         {/* Thread — the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-6 sm:px-6">
           {/* Static opener */}
           <div className="flex items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
@@ -998,9 +1077,10 @@ export function MayaConcierge() {
           <div ref={threadEndRef} />
         </div>
 
-        {/* Composer — secondary: refinement only, the happy path is the taps above */}
-        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-6 py-4">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#818283]">Refine with Maya</p>
+        {/* Composer — secondary: refinement only, the happy path is the taps above. One clean
+            row (the eyebrow label and the duplicate close button were eating thread space);
+            bottom padding respects the iPhone home-indicator safe area. */}
+        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-5 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-6">
           <div className="flex gap-2">
             <input
               ref={composerRef}
@@ -1013,8 +1093,8 @@ export function MayaConcierge() {
                   handleSend()
                 }
               }}
-              placeholder="Want something different? Ask Maya. e.g. darker, closer, more founder energy…"
-              className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+              placeholder="Want something different? Ask Maya…"
+              className="min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
             <button
               type="button"
@@ -1025,13 +1105,6 @@ export function MayaConcierge() {
               Send
             </button>
           </div>
-          <button
-            type="button"
-            onClick={close}
-            className="mt-3 text-[12px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
-          >
-            Back to looks
-          </button>
         </div>
       </aside>
 
