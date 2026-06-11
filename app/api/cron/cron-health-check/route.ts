@@ -15,6 +15,62 @@ const ANOMALY_THRESHOLDS = {
   errorsAny: process.env.CRON_ANOM_ERRORS_ANY !== "false",
 }
 
+// AI provider credits: Maya chat dies silently when OpenRouter prepaid credits hit zero
+// (every reply reserves an 8k-token budget), and the content briefs die with Anthropic.
+// Happened 2026-06-11 — members saw "Maya hit a snag" with zero warning.
+const AI_CREDITS_THRESHOLD_USD = Number(process.env.AI_CREDITS_ALERT_THRESHOLD_USD || 5)
+
+async function checkOpenRouterBalance(): Promise<{ remaining: number } | null> {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) return null
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/credits", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+    })
+    const json = await res.json()
+    const total = Number(json?.data?.total_credits)
+    const usage = Number(json?.data?.total_usage)
+    if (!Number.isFinite(total) || !Number.isFinite(usage)) return null
+    return { remaining: total - usage }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 1-token canary against the Anthropic API. There is no balance endpoint, so a real
+ * (sub-cent) call is the only reliable signal. Only a billing/credit error counts as
+ * failure — transient overloads must not page Sandra.
+ */
+async function checkAnthropicCanary(): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return { ok: true }
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 1,
+        messages: [{ role: "user", content: "ok" }],
+      }),
+      cache: "no-store",
+    })
+    if (res.ok) return { ok: true }
+    const json = await res.json().catch(() => null)
+    const message = String(json?.error?.message || "")
+    if (/credit|billing/i.test(message)) return { ok: false, error: message }
+    return { ok: true }
+  } catch {
+    return { ok: true }
+  }
+}
+
 function getRecipients(): string[] {
   const list = process.env.ADMIN_ALERT_EMAILS || ""
   const fromList = list
@@ -272,10 +328,46 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // AI provider credits (Maya chat + content engine).
+    const aiReasons: string[] = []
+    const openRouterBalance = await checkOpenRouterBalance()
+    if (openRouterBalance && openRouterBalance.remaining < AI_CREDITS_THRESHOLD_USD) {
+      aiReasons.push(
+        `OpenRouter balance is $${openRouterBalance.remaining.toFixed(2)} (alert threshold $${AI_CREDITS_THRESHOLD_USD}). Maya chat stops at zero. Top up: https://openrouter.ai/settings/credits`,
+      )
+    }
+    const anthropicCanary = await checkAnthropicCanary()
+    if (!anthropicCanary.ok) {
+      aiReasons.push(
+        `Anthropic API rejected a test call: ${anthropicCanary.error}. Content briefs and Maya's fallback are down. Top up: https://console.anthropic.com`,
+      )
+    }
+
+    if (aiReasons.length > 0) {
+      const aiAlertId = "ai-credits-low"
+      const shouldSend = !(await wasAlertSentRecently(aiAlertId))
+      if (shouldSend && recipients.length > 0) {
+        const subject = "AI CREDITS LOW: Maya at risk"
+        const text = ["AI credits alert", ...aiReasons.map((r) => `- ${r}`)].join("\n")
+        await sendEmail({
+          to: recipients,
+          subject,
+          text,
+          html: `<p><strong>AI credits alert</strong></p>
+            <ul>${aiReasons.map((r) => `<li>${r}</li>`).join("")}</ul>`,
+          emailType: "cron-alert",
+          tags: ["cron-alert", "ai-credits"],
+        })
+        await recordAlertSent(aiAlertId, "ai-credits", { reasons: aiReasons })
+        sentAlerts.push("ai-credits")
+      }
+    }
+
     await cronLogger.success({
       stale: isStale,
       failedRuns: failedRuns.length,
       alertsSent: sentAlerts.length,
+      aiCreditsRemaining: openRouterBalance?.remaining ?? null,
     })
 
     return NextResponse.json({
