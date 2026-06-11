@@ -250,7 +250,22 @@ Use these as the visible "result" images in PROMPT MY SELFIE reels. All follow t
 
 ---
 
-## 12. Brutal honesty section
+## 12. Vetted creator watchlist (added 2026-06-11 after live vetting)
+
+Searched Instagram's own discovery (keyword search + niche hashtags) for accounts in Sandra's exact lane and vetted every candidate with real numbers. Headline finding: **there is no dominant incumbent in "woman teaching women AI selfie photos for personal branding". The big prompt pages are faceless; the face-forward AI educators are tiny (under 2k followers). Sandra is positioned to BE the category leader, not to chase one.**
+
+Worth watching (for mechanics, not positioning):
+| Account | Size | Watch for | Ignore |
+|---|---|---|---|
+| @aicontentuniversity | ~30k, viral edu reels hit 20k+ likes | The "don't just type X, tell the AI: [specifics]" teaching format. Closest match to the PROMPT MY SELFIE rocket. | Their generic tech audience |
+| @nordic_scott | 3.9M | Format discipline, tutorial→keyword→course funnel | Travel/auto subject |
+| @prompts.ig | 449k | Credibility captions (how the AI was directed), weekly drop cadence, milestone highlights | Spectacle content, AI-bro audience |
+| @byjoeym | 64k, baseline ~1k views with 17k-76k spikes | "Founder, steal my system" positioning and his offer funnel | His reel execution (baseline weaker than Sandra's) |
+| @marcelaferreiraoficial | 90k (Brazil) | Female-audience ChatGPT photo edits going viral in another market; early signal of formats that travel | Portuguese-market specifics |
+
+Vetted and rejected: @prompty.ai (faceless, 15k views on 206k followers), keyword-squatter prompt accounts (under 100 followers), generic "AI for women business" coaches (under 2k, no content engine). Quarterly: re-run this scan, the lane is moving fast.
+
+## 13. Brutal honesty section
 
 1. Your grid already contains a 1.8M-view repeatable machine and you only run it at maybe 40% capacity. The biggest growth lever is boring: run the machine on schedule.
 2. The emotional reels you love posting are mostly invisible (3-6k). They have a job (depth for people who already found you) but they will not grow the account. Cap them at 20% and always pair with a story payoff.
