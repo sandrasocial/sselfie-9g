@@ -84,3 +84,27 @@ Research facts, reframed around the real stack:
 - Retention asset reframe: with no trained model, the non-portable asset = the member's reference set + gallery + Maya's brand memory. Messaging: "Maya knows your brand and gets smarter every time" (matches the North Star pricing line).
 
 Build order stays: BRIDGE-01 (landing page + welcome emails + HOME-01 + D4 trial unlock) → ENTITLE-01 → Masterclass lessons 15–17 → EMAIL-01 cleanup.
+
+---
+
+## Addendum 2 — App v3 re-inventory (2026-06-11, supersedes section 1 for the member experience)
+
+Section 1 inventoried the LEGACY `/studio` app. Members moved to App v3 (`/app`) on 2026-06-10. Full re-inventory done; what changes:
+
+### v3 is a much stronger answer to "worth $97"
+The live experience is exactly the locked interaction model: tap-first visual front door (10 Vault aesthetic tiles), format chips, Maya drawer producing exactly 3 concept cards (`emit_concepts`), zero typing to a finished photo. Plus things no competitor has: Daily Relevance Engine (Content tab: Claude-generated "what to post today" cards grounded in brand profile + memory + recent activity), cross-session memory (`app_v3_memory`: agent name, brand notes, preferences), Vault DNA injection (tested collection prompts feed Maya's system prompt), Edit Mode, Overlay Composer (text-on-photo, Mode C), carousel design systems, streaming photo previews, named agent. 1 credit per image (200/mo = 200 images).
+
+### The ChatGPT objection, restated for the real stack
+We run gpt-image-2 ourselves, so the moat is NOT the engine — it is everything wrapped around it: Maya's taste (Vault DNA + vision-extracted aesthetic recipes), brand memory, the 3-concept contract, zero prompt labor, and identity handling (reference-selfie edit flow; consumer ChatGPT still mangles/blocks self-likeness). Pitch: "Same engine money can rent. What you can't rent: a creative director who already knows your brand."
+
+### Three real gaps found in v3 (the "do something different" list)
+1. **Video is GONE.** Legacy had Replicate video (3 credits); v3 has zero video code. The €97 story claimed photos + video. Either ship VIDEO-01 in v3 (research verdict: Kling 3.0 for lifestyle motion ~$0.08–0.11/sec, HeyGen Avatar IV for talking head $4/min) or stop claiming video.
+2. **Members can't reach what they own.** No links from v3 to Feed Planner or Academy (deliberate per `app-v3-shell.tsx` comment), yet the front-door copy says "feed planning" is included, and D3 just made membership include ALL products. v3 needs a "Your SSELFIE" surface (Account tab or own tab): owned products open, unowned locked. **This replaces the separate HOME-01 page idea — App v3 IS the home.**
+3. **Memory doesn't auto-learn.** "She gets smarter every time" is the pitch, but `app_v3_memory` only stores what the member types into a form (name/brand/preferences prompts). Maya should save learnings from conversations automatically (with member visibility/edit in the Memory modal). This makes the North Star pricing line true.
+
+### Revised BRIDGE-01 shape
+1. SUITE landing page selling the v3 experience + real welcome emails (unchanged).
+2. HOME inside v3: products surface (owned + locked) + open `/app` to one-time buyers in limited mode so Vault buyers finally MEET Maya + D4 7-day trial unlock.
+3. Quick wins: reconnect Feed Planner/Academy for members who own them (or fix the front-door claim) — Sandra decision, the omission was deliberate design.
+4. Memory auto-learn (MEMORY-01).
+5. VIDEO-01 (Kling/HeyGen in v3) as the next visible "only at SSELFIE" wow after BRIDGE-01.
