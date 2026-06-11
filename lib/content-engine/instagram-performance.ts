@@ -13,6 +13,7 @@ export type InstagramPostPerformance = {
   hookLine: string
   likes: number
   comments: number
+  views: number | null
   reach: number | null
   saves: number | null
   shares: number | null
@@ -61,8 +62,9 @@ async function fetchMediaInsights(
   mediaId: string,
   productType: string | undefined,
   token: string,
-): Promise<{ reach: number | null; saves: number | null; shares: number | null } | null> {
-  const metrics = productType === "REELS" ? "reach,saved,shares" : "reach,saved,shares"
+): Promise<{ views: number | null; reach: number | null; saves: number | null; shares: number | null } | null> {
+  // "views" is only a valid metric for reels; other formats reject it.
+  const metrics = productType === "REELS" ? "views,reach,saved,shares" : "reach,saved,shares"
   try {
     const res = await fetch(
       `${GRAPH_BASE}/${mediaId}/insights?metric=${metrics}&access_token=${encodeURIComponent(token)}`,
@@ -75,6 +77,7 @@ async function fetchMediaInsights(
       byName[item.name] = Number(item?.values?.[0]?.value ?? 0)
     }
     return {
+      views: Number.isFinite(byName.views) ? byName.views : null,
       reach: Number.isFinite(byName.reach) ? byName.reach : null,
       saves: Number.isFinite(byName.saved) ? byName.saved : null,
       shares: Number.isFinite(byName.shares) ? byName.shares : null,
@@ -131,12 +134,14 @@ export async function collectInstagramPerformance(input?: {
     const caption = String(raw.caption || "")
     const likes = Number(raw.like_count || 0)
     const comments = Number(raw.comments_count || 0)
+    let views: number | null = null
     let reach: number | null = null
     let saves: number | null = null
     let shares: number | null = null
 
     if (insightsLevel === "full") {
       const insights = await fetchMediaInsights(raw.id, raw.media_product_type, token)
+      views = insights?.views ?? null
       reach = insights?.reach ?? null
       saves = insights?.saves ?? null
       shares = insights?.shares ?? null
@@ -155,6 +160,7 @@ export async function collectInstagramPerformance(input?: {
       hookLine: extractHookLine(caption),
       likes,
       comments,
+      views,
       reach,
       saves,
       shares,
