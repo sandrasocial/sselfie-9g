@@ -7,12 +7,12 @@ export interface PaymentRecoveryParams {
 
 // EMAIL 1: Payment Update Needed (Immediate)
 export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
-  const { firstName, email, planName = "Studio membership", amount = "€97" } = params
+  const { firstName, email, planName = "SSELFIE SUITE membership", amount = "€97" } = params
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const billingUrl = `${siteUrl}/studio?tab=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=update_payment`
 
-  const subject = "Quick heads up — your payment didn't go through"
+  const subject = "Quick heads up: your payment didn't go through"
 
   const html = `
 <!DOCTYPE html>
@@ -43,7 +43,7 @@ export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">Hey ${displayName},</p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
-                Your payment for ${planName} (${amount}) didn't go through. It happens — cards expire, banks flag things.
+                Your payment for ${planName} (${amount}) didn't go through. It happens. Cards expire, banks flag things.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
@@ -87,7 +87,7 @@ export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
 
 Hey ${displayName},
 
-Your payment for ${planName} (${amount}) didn't go through. It happens — cards expire, banks flag things.
+Your payment for ${planName} (${amount}) didn't go through. It happens. Cards expire, banks flag things.
 
 Your account is still active for now. Update your payment details to keep things running:
 
@@ -105,13 +105,13 @@ Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
 // EMAIL 2: Still hasn't updated (Day 3 — last nudge before access ends)
 export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
-  const { firstName, email, planName = "Studio membership" } = params
+  const { firstName, email, planName = "SSELFIE SUITE membership" } = params
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const billingUrl = `${siteUrl}/studio?tab=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=access_ending`
   const checkoutUrl = `${siteUrl}/checkout/membership?utm_source=email&utm_medium=payment_recovery&utm_campaign=rejoin`
 
-  const subject = "Your Studio access is about to end"
+  const subject = "Your SUITE access is about to end"
 
   const html = `
 <!DOCTYPE html>
@@ -119,7 +119,7 @@ export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Studio access is about to end</title>
+  <title>Your SUITE access is about to end</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -156,11 +156,11 @@ export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
               </div>
 
               <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #57534e;">
-                If you've decided to pause for now — no hard feelings at all. You can always come back when the timing works.
+                If you've decided to pause for now, no hard feelings at all. You can always come back when the timing works.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.7; color: #8a8780;">
-                <a href="${checkoutUrl}" style="color: #8a8780; text-decoration: underline;">Rejoin Studio whenever you're ready &rarr;</a>
+                <a href="${checkoutUrl}" style="color: #8a8780; text-decoration: underline;">Rejoin the SUITE whenever you're ready &rarr;</a>
               </p>
 
               <p style="margin: 0; font-size: 16px; color: #1c1917;">Sandra</p>
@@ -196,7 +196,7 @@ If you want to keep your account, just update your card. Takes about 30 seconds:
 
 ${billingUrl}
 
-If you've decided to pause for now — no hard feelings at all. You can always come back when the timing works:
+If you've decided to pause for now, no hard feelings at all. You can always come back when the timing works:
 ${checkoutUrl}
 
 Sandra

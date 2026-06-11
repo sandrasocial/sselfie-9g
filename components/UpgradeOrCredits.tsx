@@ -45,9 +45,9 @@ export function UpgradeOrCredits({
     : "OUT OF CREDITS"
   
   const message = requiresMembership
-    ? `${feature} is available exclusively for Studio Members. Upgrade to unlock ${feature} and all premium features.`
+    ? `${feature} comes with SSELFIE SUITE. Upgrade for ${feature} and all premium features.`
     : isPaidBlueprintUser
-      ? `You have access to Feed Planner. Upgrade to Studio Membership to unlock ${feature} and all features.`
+      ? `You have access to Feed Planner. Upgrade to SSELFIE SUITE for ${feature} and everything else.`
       : `You need credits to use ${feature}. Choose an option below to continue creating.`
 
   return (
@@ -93,7 +93,7 @@ export function UpgradeOrCredits({
 
           <div className="pt-6 space-y-2 text-xs text-white/70">
             <div className="flex items-center justify-between px-4 py-2 bg-[rgba(255,255,255,0.1)] rounded-lg border border-white/15">
-              <span>Studio Membership</span>
+              <span>SSELFIE SUITE</span>
               <span className="font-medium text-white">200 credits/month</span>
             </div>
             <div className="flex items-center justify-between px-4 py-2 bg-[rgba(255,255,255,0.06)] rounded-lg border border-white/10">

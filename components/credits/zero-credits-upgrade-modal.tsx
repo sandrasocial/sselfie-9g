@@ -93,9 +93,9 @@ export function ZeroCreditsUpgradeModal({ credits, onClose, suppress = false }: 
             </h2>
 
             <p className="text-center text-[#8a8780] font-['Inter'] text-sm mb-6">
-              Your guides, courses, and Vault purchases are still yours. Studio image generation uses credits, so add a credit pack or join Studio when you want to create images inside SSELFIE.
+              Your guides, courses, and Vault purchases are still yours. Image generation uses credits, so add a credit pack or join SSELFIE SUITE when you want to create images inside SSELFIE.
               <br /><br />
-              Studio includes 200 credits a month. A one-time credit pack is there if you want to keep it flexible.
+              The SUITE includes 200 credits a month. A one-time credit pack is there if you want to keep it flexible.
             </p>
 
             <div className="space-y-3 mb-8">
@@ -104,7 +104,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose, suppress = false }: 
                 disabled={isUpgrading}
                 className="w-full bg-[#c8c4bb] text-[#0d0c0b] px-6 py-3 rounded-full font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] hover:bg-[#f0ede8] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUpgrading ? "Processing..." : "Join Studio — 200 credits/mo"}
+                {isUpgrading ? "Processing..." : "Join SSELFIE SUITE · 200 credits/mo"}
               </button>
               <button
                 onClick={handleBuyCredits}

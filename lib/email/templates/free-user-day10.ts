@@ -59,7 +59,7 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
                 <tr>
                   <td style="padding:24px 28px;background:#fafaf9;border-radius:8px;">
                     <p style="margin:0 0 12px;font-size:18px;line-height:1.5;color:#1c1917;font-weight:400;">
-                      Studio is &euro;97/month.
+                      The SUITE is &euro;97/month.
                     </p>
                     <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#292524;">
                       That's 200 brand photos every month. No photographer. No shoot. No booking.
@@ -76,17 +76,17 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
               </p>
 
               <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#1c1917;">
-                If that's something you want — the door's open.
+                If that's something you want, the door's open.
               </p>
 
               <div style="text-align:center;margin:0 0 16px;">
                 <a href="${upgradeUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:14px 36px;font-size:14px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;border-radius:8px;">
-                  Join Studio &mdash; &euro;97/month &rarr;
+                  Join SSELFIE SUITE &middot; &euro;97/month &rarr;
                 </a>
               </div>
 
               <p style="margin:0 0 8px;font-size:13px;color:#8a8780;text-align:center;">
-                Or <a href="${studioUrl}" style="color:#57534e;">try your free credits first</a> — they're still there.
+                Or <a href="${studioUrl}" style="color:#57534e;">try your free credits first</a>. They're still there.
               </p>
 
               <p style="margin:40px 0 0;font-size:15px;color:#1c1917;">XoXo Sandra</p>
@@ -95,7 +95,7 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
 
           <tr>
             <td style="padding:24px 32px;background:#f5f5f5;border-top:1px solid #e7e5e4;text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &mdash; sselfie.ai</p>
+              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &middot; sselfie.ai</p>
               <p style="margin:0;font-size:12px;color:#8a8780;">
                 <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#8a8780;">Unsubscribe</a>
               </p>
@@ -118,15 +118,15 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
     ``,
     `Just wanted to say this one thing clearly before I go quiet:`,
     ``,
-    `Studio is €97/month.`,
+    `The SUITE is €97/month.`,
     `That's 200 brand photos every month. No photographer. No shoot. No booking.`,
     `Maya knows your face. She generates photos that actually look like you, in your aesthetic, whenever you need them. Cancel any time.`,
     ``,
     `I built this because I was spending thousands on photographers and still running out of content. I'm not running out anymore.`,
     ``,
-    `If that's something you want — the door's open.`,
+    `If that's something you want, the door's open.`,
     ``,
-    `Join Studio — €97/month: ${upgradeUrl}`,
+    `Join SSELFIE SUITE · €97/month: ${upgradeUrl}`,
     ``,
     `Or try your free credits first: ${studioUrl}`,
     ``,

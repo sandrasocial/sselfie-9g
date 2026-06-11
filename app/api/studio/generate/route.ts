@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Membership required",
-          message: "Studio image generation requires an active Studio Membership.",
+          message: "Studio image generation requires an active SSELFIE SUITE membership.",
         },
         { status: 403 },
       )

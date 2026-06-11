@@ -189,7 +189,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
 
       <section className="border-t border-brand-obsidian/10 px-6 py-14 md:px-16 md:py-20">
         <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
-          01 — Message
+          01 · Message
         </p>
         <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
@@ -243,7 +243,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
 
       <section className="bg-brand-obsidian px-6 py-14 text-brand-pearl md:px-16 md:py-20">
         <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone-soft">
-          02 — Content
+          02 · Content
         </p>
         <h2
           className={`${cormorant.className} mt-6 max-w-3xl text-[clamp(34px,5vw,64px)] uppercase leading-none`}
@@ -294,7 +294,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
 
       <section className="px-6 py-14 md:px-16 md:py-20">
         <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
-          03 — Sales
+          03 · Sales
         </p>
         <div className="mt-8 grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
@@ -349,7 +349,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
 
       <section className="border-t border-brand-obsidian/10 px-6 py-14 md:px-16 md:py-20">
         <p className="text-[10px] font-semibold uppercase tracking-[0.5em] text-stone">
-          04 — Next 7 Days
+          04 · Next 7 Days
         </p>
         <div className="mt-8 grid gap-3 md:grid-cols-7">
           {nextDays.map((day, index) => (

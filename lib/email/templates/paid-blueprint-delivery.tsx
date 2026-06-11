@@ -49,7 +49,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
-                Your Feed Planner access is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
+                Your Feed Planner access is live. You've got your 9-post grid, your content strategy, and your caption framework, all mapped out and ready to use.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.7; color: #1c1917;">
@@ -67,7 +67,7 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
                 <tr>
                   <td style="padding: 16px 20px; background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4;">
                     <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #8a8780; letter-spacing: 0.1em; text-transform: uppercase;">Step 2</p>
-                    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">Pick one post slot. Write the caption. Don't try to do all nine at once — one caption today builds the habit.</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">Pick one post slot. Write the caption. Don't try to do all nine at once. One caption today builds the habit.</p>
                   </td>
                 </tr>
                 <tr><td style="height: 10px;"></td></tr>
@@ -119,15 +119,15 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
 
 Hey ${displayName},
 
-Your Feed Blueprint is live. You've got your 9-post grid, your content strategy, and your caption framework — all mapped out and ready to use.
+Your Feed Blueprint is live. You've got your 9-post grid, your content strategy, and your caption framework, all mapped out and ready to use.
 
 Here's where to start:
 
-Step 1 — Open your Feed Planner and review your 9-post grid. Get familiar with the layout before you start filling it in.
+Step 1: Open your Feed Planner and review your 9-post grid. Get familiar with the layout before you start filling it in.
 
-Step 2 — Pick one post slot. Write the caption. Don't try to do all nine at once — one caption today builds the habit.
+Step 2: Pick one post slot. Write the caption. Don't try to do all nine at once. One caption today builds the habit.
 
-Step 3 — Come back tomorrow and do one more. In a week you'll have your whole month planned.
+Step 3: Come back tomorrow and do one more. In a week you'll have your whole month planned.
 
 Open your Visibility Reset: ${feedPlannerUrl}
 

@@ -28,16 +28,16 @@ export function generateNurtureStrategyN3Email({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You are not confused. You are too close to it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is why Studio exists.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is why the SUITE exists.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maya keeps the memory. Your voice. Your pillars. Your visual direction. So you are not rebuilding your brand from scratch every time you need to post.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Take a look at Studio", trackedMembershipUrl)}</div>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Take a look at the SUITE", trackedMembershipUrl)}</div>
     <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">If you are tired of doing every part of this alone, this is the next step.</p>
   `
 
   const html = renderStoneShell({
     title: "You are too close to it.",
-    eyebrow: "Studio",
-    subtitle: "Studio keeps the context, so you do not have to keep rebuilding it.",
+    eyebrow: "SSELFIE SUITE",
+    subtitle: "The SUITE keeps the context, so you do not have to keep rebuilding it.",
     bodyHtml,
     footerLead: "No pressure. Just making sure you know what the next layer is.",
     footerSignoff: "Sandra",
@@ -47,11 +47,11 @@ export function generateNurtureStrategyN3Email({
 
 You are not confused. You are too close to it.
 
-That is why Studio exists.
+That is why the SUITE exists.
 
 Maya keeps the memory. Your voice. Your pillars. Your visual direction. So you are not rebuilding your brand from scratch every time you need to post.
 
-Take a look at Studio: ${trackedMembershipUrl}
+Take a look at the SUITE: ${trackedMembershipUrl}
 
 If you are tired of doing every part of this alone, this is the next step.
 

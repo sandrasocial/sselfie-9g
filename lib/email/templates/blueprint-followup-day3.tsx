@@ -20,7 +20,7 @@ export function generateBlueprintFollowupDay3Email(params: BlueprintFollowupDay3
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Three days in. Here's something I've noticed with people who get the most out of the Visibility Reset:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">They don't try to make every post perfect. They pick a theme for the week — one story they want to tell — and let the captions flow from that.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">They don't try to make every post perfect. They pick a theme for the week, one story they want to tell, and let the captions flow from that.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">This week's theme exercise:</p>
        <p style="margin:0 0 8px;font-size:15px;line-height:1.8;color:#a8a49c;">Finish this sentence: <em style="color:#f0ede8;">"This week I want my audience to feel ___."</em></p>
@@ -44,7 +44,7 @@ Hey ${displayName},
 
 Three days in. Here's something I've noticed with people who get the most out of the Visibility Reset:
 
-They don't try to make every post perfect. They pick a theme for the week — one story they want to tell — and let the captions flow from that.
+They don't try to make every post perfect. They pick a theme for the week, one story they want to tell, and let the captions flow from that.
 
 This week's theme exercise:
 Finish this sentence: "This week I want my audience to feel ___."

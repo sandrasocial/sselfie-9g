@@ -69,15 +69,15 @@ export function generateWinBackDay14Email(params: WinBackDay14Params): {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                SSELFIE is built for the woman who wants to show up consistently online &mdash; without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
+                SSELFIE is built for the woman who wants to show up consistently online, without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                That's what it does. One selfie, and you have a week of content ready. Real photos, real you &mdash; not a stock image, not an AI that looks like a stranger.
+                That's what it does. One selfie, and you have a week of content ready. Real photos, real you. Not a stock image, not an AI that looks like a stranger.
               </p>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                If that's still something you want, and the timing just hasn't been right &mdash; I get it. Completely.
+                If that's still something you want, and the timing just hasn't been right, I get it. Completely.
               </p>
 
               <!-- What's waiting for her -->
@@ -86,7 +86,7 @@ export function generateWinBackDay14Email(params: WinBackDay14Params): {
                   When you're ready, here's what's waiting
                 </p>
                 <ul style="margin: 0; padding: 0 0 0 20px; color: #e7e5e4; font-size: 15px; line-height: 2;">
-                  <li>Brand photos that actually look like you &mdash; on Instagram, Reels, anywhere</li>
+                  <li>Brand photos that actually look like you, on Instagram, Reels, anywhere</li>
                   <li>A system that keeps you consistent without burning you out</li>
                   <li>Maya, who gets your style and makes every session faster</li>
                   <li>Me, building this with you, not just for you</li>
@@ -142,14 +142,14 @@ I've sent two emails already, and I don't want to be the person in your inbox wh
 
 But before I go, I want to say something honestly.
 
-SSELFIE is built for the woman who wants to show up consistently online — without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
+SSELFIE is built for the woman who wants to show up consistently online, without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
 
-That's what it does. One selfie, and you have a week of content ready. Real photos, real you — not a stock image, not an AI that looks like a stranger.
+That's what it does. One selfie, and you have a week of content ready. Real photos, real you. Not a stock image, not an AI that looks like a stranger.
 
-If that's still something you want, and the timing just hasn't been right — I get it. Completely.
+If that's still something you want, and the timing just hasn't been right, I get it. Completely.
 
 WHEN YOU'RE READY, HERE'S WHAT'S WAITING:
-- Brand photos that actually look like you — on Instagram, Reels, anywhere
+- Brand photos that actually look like you, on Instagram, Reels, anywhere
 - A system that keeps you consistent without burning you out
 - Maya, who gets your style and makes every session faster
 - Me, building this with you, not just for you

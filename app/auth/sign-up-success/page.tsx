@@ -32,7 +32,7 @@ export default function SignUpSuccessPage() {
                   What&apos;s Next?
                 </p>
                 <p className="text-sm leading-relaxed text-[color:var(--color-smoke)]">
-                  After confirming your email, start with the Selfie Guide or join Studio when you are ready for Maya.
+                  After confirming your email, start with the Selfie Guide or join the SUITE when you&apos;re ready for Maya.
                 </p>
               </div>
             </div>

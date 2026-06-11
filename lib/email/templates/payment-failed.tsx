@@ -13,7 +13,7 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
   const { firstName, recipientEmail, retryDate, manageBillingUrl } = params
   const displayName = firstName || recipientEmail.split("@")[0]
 
-  const subject = "Payment failed — update your card to keep access"
+  const subject = "Payment failed: update your card to keep access"
 
   const retryLine = retryDate ? `I'll retry on ${retryDate}.` : "I'll retry automatically soon."
 
@@ -47,7 +47,7 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
                 I couldn’t process your membership payment. ${retryLine}
               </p>
               <p style="margin: 0 0 16px;">
-                Please update your card to keep your Studio access active.
+                Please update your card to keep your SUITE access active.
               </p>
               <p style="margin: 0;">
                 <a href="${manageBillingUrl}" style="display: inline-block; background: #0a0a0a; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600;">
@@ -73,7 +73,7 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
 
 I couldn’t process your membership payment. ${retryLine}
 
-Please update your card to keep your Studio access active:
+Please update your card to keep your SUITE access active:
 ${manageBillingUrl}
 
 If you need help, just reply and I’ll sort it out.

@@ -49,7 +49,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
               <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#1c1917;">Hey ${firstName},</p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                It's been a few days since you signed up. I wanted to check in — did you get a chance to try your free photos?
+                It's been a few days since you signed up. I wanted to check in. Did you get a chance to try your free photos?
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -57,7 +57,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                If you haven't yet — no judgement, life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.
+                If you haven't yet, no judgement. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.
               </p>
 
               <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -96,9 +96,9 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
 
           <tr>
             <td style="padding:24px 32px;background:#f5f5f5;border-top:1px solid #e7e5e4;text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &mdash; sselfie.ai</p>
+              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &middot; sselfie.ai</p>
               <p style="margin:0;font-size:12px;color:#8a8780;">
-                Want 200 photos/month? <a href="${upgradeUrl}" style="color:#57534e;">See Studio plans</a>
+                Want 200 photos/month? <a href="${upgradeUrl}" style="color:#57534e;">See SSELFIE SUITE plans</a>
                 &nbsp;&middot;&nbsp;
                 <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#8a8780;">Unsubscribe</a>
               </p>
@@ -117,11 +117,11 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
     ``,
     `Hey ${firstName},`,
     ``,
-    `It's been a few days since you signed up. I wanted to check in — did you get a chance to try your free photos?`,
+    `It's been a few days since you signed up. I wanted to check in. Did you get a chance to try your free photos?`,
     ``,
     `If you did: I'd love to know what you thought. Just hit reply.`,
     ``,
-    `If you haven't yet — no judgement, life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.`,
+    `If you haven't yet, no judgement. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.`,
     ``,
     `Here's what a few women told me after their first photo:`,
     ``,

@@ -57,7 +57,7 @@ export function ReferralDashboard() {
     if (!data?.referralLink) return
 
     const shareData = {
-      title: "Join SSELFIE Studio",
+      title: "Join SSELFIE SUITE",
       text: "Get 25 free credits when you sign up with my referral link!",
       url: data.referralLink,
     }

@@ -71,7 +71,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
               </p>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                I'm not saying that to pitch you. I'm saying it because I know one of the hardest things about signing up for something new is not knowing if it'll actually work for you. And some of what made it harder — I've fixed.
+                I'm not saying that to pitch you. I'm saying it because I know one of the hardest things about signing up for something new is not knowing if it'll actually work for you. And some of what made it harder, I've fixed.
               </p>
 
               <!-- What changed -->
@@ -83,7 +83,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
                       Getting started
                     </p>
                     <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">
-                      You now get your first brand photo in under 2 minutes &mdash; without having to read a tutorial or figure out settings first.
+                      You now get your first brand photo in under 2 minutes. No tutorial, no settings to figure out first.
                     </p>
                   </td>
                 </tr>
@@ -96,7 +96,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
                       Maya, your AI stylist
                     </p>
                     <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">
-                      Maya now remembers your sessions &mdash; so you don't have to re-explain your style every time. She gets better the more you use her.
+                      Maya now remembers your sessions, so you don't have to re-explain your style every time. She gets better the more you use her.
                     </p>
                   </td>
                 </tr>
@@ -109,7 +109,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
                       The welcome flow
                     </p>
                     <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #292524;">
-                      No more guessing what to do next. The new onboarding walks you step by step &mdash; one action, one result, done.
+                      No more guessing what to do next. The new onboarding walks you step by step: one action, one result, done.
                     </p>
                   </td>
                 </tr>
@@ -121,7 +121,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
               </p>
 
               <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                So I want to make it easy to come back. ${offerCode ? `Use code <strong>${offerCode}</strong> at checkout for a 7-day free restart &mdash; no charge until you decide to stay.` : "No pitch. No awkward re-join process. Just click the button and you're back in."}
+                So I want to make it easy to come back. ${offerCode ? `Use code <strong>${offerCode}</strong> at checkout for a 7-day free restart. No charge until you decide to stay.` : "No pitch. No awkward re-join process. Just click the button and you're back in."}
               </p>
 
               <div style="text-align: center; margin: 0 0 32px;">
@@ -131,7 +131,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
               </div>
 
               <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.6; color: #57534e;">
-                If you've already moved on, I completely understand. But if there's still a part of you that wants consistent, beautiful content that actually looks and sounds like you &mdash; this is the moment.
+                If you've already moved on, I completely understand. But if there's still a part of you that wants consistent, beautiful content that actually looks and sounds like you, this is the moment.
               </p>
 
               <p style="margin: 24px 0 0; font-size: 16px; color: #1c1917;">
@@ -160,7 +160,7 @@ export function generateWinBackDay7Email(params: WinBackDay7Params): {
 </html>`
 
   const trialOffer = offerCode
-    ? `Use code ${offerCode} at checkout for a 7-day free restart — no charge until you decide to stay.`
+    ? `Use code ${offerCode} at checkout for a 7-day free restart. No charge until you decide to stay.`
     : "No pitch. No awkward re-join process. Just click the button and you're back in."
 
   const text = `S S E L F I E
@@ -169,16 +169,16 @@ Hey ${displayName},
 
 A few things have changed since you left.
 
-I'm not saying that to pitch you. I'm saying it because I know one of the hardest things about signing up for something new is not knowing if it'll actually work for you. And some of what made it harder — I've fixed.
+I'm not saying that to pitch you. I'm saying it because I know one of the hardest things about signing up for something new is not knowing if it'll actually work for you. And some of what made it harder, I've fixed.
 
 GETTING STARTED
-You now get your first brand photo in under 2 minutes — without having to read a tutorial or figure out settings first.
+You now get your first brand photo in under 2 minutes. No tutorial, no settings to figure out first.
 
 MAYA, YOUR AI STYLIST
-Maya now remembers your sessions — so you don't have to re-explain your style every time. She gets better the more you use her.
+Maya now remembers your sessions, so you don't have to re-explain your style every time. She gets better the more you use her.
 
 THE WELCOME FLOW
-No more guessing what to do next. The new onboarding walks you step by step — one action, one result, done.
+No more guessing what to do next. The new onboarding walks you step by step: one action, one result, done.
 
 These aren't feature updates for the sake of it. They're the exact things I know got in the way.
 
@@ -186,7 +186,7 @@ So I want to make it easy: come back and try it free. ${trialOffer}
 
 Come back and try it free: ${rejoinLink}
 
-If you've already moved on, I completely understand. But if there's still a part of you that wants consistent, beautiful content that actually looks and sounds like you — this is the moment.
+If you've already moved on, I completely understand. But if there's still a part of you that wants consistent, beautiful content that actually looks and sounds like you, this is the moment.
 
 XoXo Sandra
 

@@ -2585,7 +2585,7 @@ export default function MayaChatScreen({
           }
           setMayaTabAndHash("photos")
           toast({
-            title: "Perfect — using your linked selfies",
+            title: "Perfect. Using your linked selfies",
             description: "Starting now with your linked selfies.",
           })
           queueGenerationPrompt("Use my linked selfies and create one photo I can post this week.")

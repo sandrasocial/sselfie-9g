@@ -384,11 +384,11 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   } else if (hasMasterclass) {
     nextStep = {
       eyebrow: "Next Step",
-      title: "Activate Studio",
+      title: "Activate the SUITE",
       description:
-        "You have the method. Studio is the AI layer that helps you execute faster with Maya, Feed Planner, and image generation.",
+        "You have the method. The SUITE is the AI layer that helps you execute faster with Maya, Feed Planner, and image generation.",
       href: "/join/studio",
-      ctaLabel: "Join Studio",
+      ctaLabel: "Join the SUITE",
     }
   } else if (hasStarterKit) {
     nextStep = {
@@ -438,11 +438,11 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
     lockedProducts.push({
       id: "studio",
       eyebrow: "€97 / month",
-      title: "Studio",
+      title: "SSELFIE SUITE",
       description:
         "Maya, Feed Planner, and your AI execution layer when you're ready for the advanced step.",
       href: "/join/studio",
-      ctaLabel: "Join Studio",
+      ctaLabel: "Join the SUITE",
     })
   }
 
@@ -459,11 +459,11 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
           }
         : {
             eyebrow: "Maya",
-            title: "Maya lives inside Studio",
+            title: "Maya lives inside the SUITE",
             description:
-              "When you want AI help with image generation, planning, and execution, Studio is the next layer.",
+              "When you want AI help with image generation, planning, and execution, the SUITE is the next layer.",
             href: "/join/studio",
-            ctaLabel: "See Studio",
+            ctaLabel: "See the SUITE",
           }
       : null
 

@@ -24,11 +24,11 @@ export function generatePostActivationUpgradeEmail(input: {
       <p style="margin:0 0 16px 0;">You made your first brand photo with Maya. That\u2019s the hard part done.</p>
       ${imageHtml}
       <p style="margin:0 0 16px 0;">Most creators who make one photo end up making 10 more in the same week.</p>
-      <p style="margin:0 0 16px 0;">The Studio gives you 200 credits every month \u2014 that\u2019s roughly 100 brand photos, consistently, without worrying about running out.</p>
-      <p style="margin:0 0 24px 0;">If you liked what Maya made today, Studio just keeps it going.</p>
+      <p style="margin:0 0 16px 0;">The SUITE gives you 200 credits every month. That\u2019s roughly 100 brand photos, consistently, without worrying about running out.</p>
+      <p style="margin:0 0 24px 0;">If you liked what Maya made today, the SUITE just keeps it going.</p>
       <p style="margin:0 0 20px 0;">
         <a href="${ctaUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.05em;">
-          Join Studio \u2014 \u20ac97/month
+          Join SSELFIE SUITE \u00b7 \u20ac97/month
         </a>
       </p>
       <p style="margin:0 0 4px 0;font-size:13px;color:#57534e;">Not ready yet? No worries.</p>
@@ -42,9 +42,9 @@ export function generatePostActivationUpgradeEmail(input: {
     "You made your first brand photo with Maya. That\u2019s the hard part done.",
     "",
     "Most creators who make one photo end up making 10 more in the same week.",
-    "The Studio gives you 200 credits every month \u2014 roughly 100 brand photos, consistently.",
+    "The SUITE gives you 200 credits every month. Roughly 100 brand photos, consistently.",
     "",
-    `Join Studio: ${ctaUrl}`,
+    `Join SSELFIE SUITE: ${ctaUrl}`,
     `Go back to Maya: ${studioUrl}`,
   ].join("\n")
 

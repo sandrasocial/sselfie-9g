@@ -100,7 +100,7 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
             ? (
               <>
                 Creator Studio gives you{" "}
-                <strong className="text-[#f0ede8]">{targetCredits} credits a month</strong> — that&apos;s{" "}
+                <strong className="text-[#f0ede8]">{targetCredits} credits a month</strong>, that&apos;s{" "}
                 {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.
               </>
             ) : (
@@ -123,7 +123,7 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
             disabled={loading}
             className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Processing..." : isSubscription ? "Yes, join Studio" : `Get ${targetName}`}
+            {loading ? "Processing..." : isSubscription ? "Yes, join the SUITE" : `Get ${targetName}`}
           </button>
           <button
             onClick={onClose}

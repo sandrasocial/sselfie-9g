@@ -31,12 +31,12 @@ export function generateOnboardingDay2Email(params: OnboardingDay2Params): {
 
   const html = renderStoneShell({
     title: "Your first image is waiting",
-    eyebrow: "Studio Day 2",
+    eyebrow: "SUITE Day 2",
     subtitle: "Keep this simple. One image. One step.",
     bodyHtml,
   })
 
-  const text = `Studio Day 2
+  const text = `SUITE Day 2
 
 Hey ${displayName},
 
@@ -56,6 +56,6 @@ Sandra`
   return {
     html,
     text,
-    subject: "Your first shoot is waiting — let's make it feel like you",
+    subject: "Your first shoot is waiting. Let's make it feel like you",
   }
 }

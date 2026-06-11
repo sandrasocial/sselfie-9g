@@ -62,7 +62,7 @@ export function generateFeedbackReplyEmail({
                 <tr>
                   <td align="center">
                     <a href="https://sselfie.ai/studio" style="display: inline-block; padding: 14px 32px; background-color: #0c0a09; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                      Back to Studio
+                      Back to the SUITE
                     </a>
                   </td>
                 </tr>

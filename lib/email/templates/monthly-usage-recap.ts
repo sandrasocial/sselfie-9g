@@ -37,7 +37,7 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
             <td style="padding:28px 24px;">
               <p style="margin:0 0 14px;font-size:16px;color:#1c1917;line-height:1.5;">Hey ${firstName},</p>
               <p style="margin:0 0 10px;font-size:16px;color:#1c1917;line-height:1.5;"><strong>This works.</strong></p>
-              <p style="margin:0 0 18px;font-size:16px;color:#1c1917;line-height:1.5;">Here is your month in Studio.</p>
+              <p style="margin:0 0 18px;font-size:16px;color:#1c1917;line-height:1.5;">Here is your month in the SUITE.</p>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 18px;">
                 <tr>
@@ -66,7 +66,7 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
               <p style="margin:0 0 18px;font-size:16px;color:#1c1917;line-height:1.5;">No pressure. You&apos;ve got this.</p>
 
               <div style="margin:0 0 6px;">
-                <a href="${SITE_URL}/studio" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#fafaf9;text-decoration:none;border-radius:8px;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;">Open Studio</a>
+                <a href="${SITE_URL}/studio" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#fafaf9;text-decoration:none;border-radius:8px;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;">Open the SUITE</a>
               </div>
             </td>
           </tr>
@@ -87,7 +87,7 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
   const text = `Hey ${firstName},
 
 This works.
-Here is your month in Studio.
+Here is your month in the SUITE.
 
 Photos generated: ${photosGenerated}
 Credits used: ${creditsUsed}
@@ -100,7 +100,7 @@ Here's what I'd do next:
 
 No pressure. You've got this.
 
-Open Studio: ${SITE_URL}/studio
+Open the SUITE: ${SITE_URL}/studio
 Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return {

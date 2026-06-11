@@ -13,7 +13,7 @@ export function generateSubscriptionEndingSoonEmail(params: SubscriptionEndingSo
   const { firstName, recipientEmail, periodEndDate, manageBillingUrl } = params
   const displayName = firstName || recipientEmail.split("@")[0]
 
-  const subject = "Your Studio access is ending soon"
+  const subject = "Your SUITE access is ending soon"
 
   const html = `
 <!DOCTYPE html>
@@ -34,7 +34,7 @@ export function generateSubscriptionEndingSoonEmail(params: SubscriptionEndingSo
                 S S E L F I E
               </h1>
               <p style="margin: 0; color: #1c1917; font-size: 18px; font-weight: 500;">
-                Your Studio access is ending soon
+                Your SUITE access is ending soon
               </p>
             </td>
           </tr>
@@ -42,7 +42,7 @@ export function generateSubscriptionEndingSoonEmail(params: SubscriptionEndingSo
             <td style="padding: 0 30px 24px; color: #666666; font-size: 15px; line-height: 1.6;">
               <p style="margin: 0 0 12px;">Hi ${displayName},</p>
               <p style="margin: 0 0 12px;">
-                Your current Studio access is set to end on <strong>${periodEndDate}</strong>.
+                Your current SUITE access is set to end on <strong>${periodEndDate}</strong>.
               </p>
               <p style="margin: 0 0 16px;">
                 If you want to keep creating without interruption, you can manage your subscription below.
@@ -69,7 +69,7 @@ export function generateSubscriptionEndingSoonEmail(params: SubscriptionEndingSo
 
   const text = `Hi ${displayName},
 
-Your current Studio access is set to end on ${periodEndDate}.
+Your current SUITE access is set to end on ${periodEndDate}.
 
 If you want to keep creating without interruption, you can manage your subscription here:
 ${manageBillingUrl}

@@ -17,11 +17,11 @@ export function generateShopifyMigrationEmail(params: ShopifyMigrationWelcomePar
   const resolvedPasswordUrl = passwordSetupUrl || `${siteUrl}/auth/setup-password`
 
   const accountLine = isNewAccount
-    ? `Your account has been set up — click here to set your password: ${resolvedPasswordUrl}`
+    ? `Your account has been set up. Set your password here: ${resolvedPasswordUrl}`
     : "Log in with the email you used on Shopify"
 
   const htmlAccountLine = isNewAccount
-    ? `Your account has been set up — <a href="${resolvedPasswordUrl}" style="color: #1c1917; text-decoration: underline;">click here to set your password</a>.`
+    ? `Your account has been set up. <a href="${resolvedPasswordUrl}" style="color: #1c1917; text-decoration: underline;">Click here to set your password</a>.`
     : "Log in with the email you used on Shopify."
 
   const html = `
@@ -54,7 +54,7 @@ export function generateShopifyMigrationEmail(params: ShopifyMigrationWelcomePar
                 Hey ${safeName},
               </p>
               <p style="margin: 0 0 12px; color: #292524; font-size: 15px; line-height: 1.7;">
-                I wanted to reach out personally because I know this has been confusing — and that's on me.
+                I wanted to reach out personally because I know this has been confusing, and that's on me.
               </p>
               <p style="margin: 0 0 12px; color: #292524; font-size: 15px; line-height: 1.7;">
                 I moved everything from Shopify into my own app, SSELFIE Studio. Which means your ${courseName} is now inside there, waiting for you.
@@ -93,7 +93,7 @@ export function generateShopifyMigrationEmail(params: ShopifyMigrationWelcomePar
           <tr>
             <td style="padding: 0 32px 36px;">
               <p style="margin: 0; color: #292524; font-size: 15px; line-height: 1.7;">
-                — Sandra<br />
+                Sandra<br />
                 The Selfie Queen 🖤
               </p>
             </td>
@@ -109,7 +109,7 @@ export function generateShopifyMigrationEmail(params: ShopifyMigrationWelcomePar
   const text = `
 Hey ${safeName},
 
-I wanted to reach out personally because I know this has been confusing — and that's on me.
+I wanted to reach out personally because I know this has been confusing, and that's on me.
 
 I moved everything from Shopify into my own app, SSELFIE Studio. Which means your ${courseName} is now inside there, waiting for you.
 
@@ -125,7 +125,7 @@ I'm genuinely sorry for the confusion. Moving platforms is messy and you shouldn
 
 If anything doesn't work, just reply to this email. I'll sort it personally.
 
-— Sandra
+Sandra
 The Selfie Queen 🖤
   `
 

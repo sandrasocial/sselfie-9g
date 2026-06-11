@@ -413,7 +413,7 @@ export default async function VisibilitySuitePage() {
                     className="mt-5 text-[12px] leading-[1.6]"
                     style={{ color: "rgba(244,240,230,0.40)", fontWeight: 400 }}
                   >
-                    — {product.included[0]}, and more.
+                    · {product.included[0]}, and more.
                   </p>
                   <Link
                     href={product.purchaseUrl}

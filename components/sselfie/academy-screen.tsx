@@ -729,9 +729,9 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Studio access only</h3>
+              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">SUITE access only</h3>
               <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed">
-                Monthly drops are part of Studio membership.
+                Monthly drops are part of SSELFIE SUITE.
               </p>
             </div>
             <button
@@ -807,9 +807,9 @@ export default function AcademyScreen() {
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">Studio access only</h3>
+              <h3 className="font-serif text-2xl tracking-wider text-[color:var(--app-text-primary)]">SUITE access only</h3>
               <p className="text-sm text-[color:var(--app-text-secondary)] leading-relaxed">
-                Flatlay packs are included with Studio membership.
+                Flatlay packs are included with SSELFIE SUITE.
               </p>
             </div>
             <button

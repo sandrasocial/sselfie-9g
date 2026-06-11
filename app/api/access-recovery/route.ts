@@ -38,7 +38,7 @@ const PRODUCT_LABEL: Record<string, string> = {
   what_to_say: "What To Say",
   show_up: "Show Up",
   get_paid: "Get Paid",
-  sselfie_studio_membership: "SSELFIE Studio",
+  sselfie_studio_membership: "SSELFIE SUITE",
   paid_blueprint: "Legacy Feed Planner Access",
   prompt_vault: "AI Photo Prompt Vault",
   "prompt-vault-paid": "AI Photo Prompt Vault",

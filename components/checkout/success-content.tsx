@@ -74,7 +74,7 @@ function getProductLabel(productType: string | undefined) {
     case "paid_blueprint":
       return "Legacy Feed Planner Access"
     case "transform_starter":
-      return "SSELFIE Edit Studio — Starter Pack"
+      return "SSELFIE Edit Studio · Starter Pack"
     case "transform_topup":
       return "Edit Studio Credit Top-up"
     default:

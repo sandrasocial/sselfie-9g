@@ -169,7 +169,7 @@ export default function MayaTrainingTab({
                   onClick={onJoinStudio}
                   className="px-4 py-2 rounded-lg border border-[color:var(--glass-border)] text-[color:var(--color-porcelain)] text-xs font-medium tracking-[0.08em] uppercase hover:bg-[color:var(--glass-bg-mid)] transition-colors"
                 >
-                  Join Studio for Monthly Credits →
+                  Join the SUITE for Monthly Credits →
                 </button>
               )}
             </div>

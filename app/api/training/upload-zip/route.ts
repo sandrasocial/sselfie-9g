@@ -142,7 +142,7 @@ export async function POST(request: Request) {
           error: "Insufficient credits",
           required: CREDIT_COSTS.TRAINING,
           current: currentBalance,
-          message: `Training costs ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits. Buy credits or join Studio for monthly credits.`,
+          message: `Training costs ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits. Buy credits or join the SUITE for monthly credits.`,
         },
         { status: 402 },
       )

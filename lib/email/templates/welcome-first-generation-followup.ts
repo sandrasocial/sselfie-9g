@@ -11,7 +11,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
   const studioUrl = `${SITE_URL}/studio?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
   const upgradeUrl = `${SITE_URL}/checkout/membership?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
 
-  const subject = "your 2 free photos are inside — try one now"
+  const subject = "your 2 free photos are inside. Try one now"
 
   const html = `<!DOCTYPE html>
 <html>
@@ -36,7 +36,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
               <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#1c1917;">Hey ${firstName},</p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                You signed up for SSELFIE — and you've got <strong>2 free photos waiting for you right now</strong>.
+                You signed up for SSELFIE, and you've got <strong>2 free photos waiting for you right now</strong>.
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -63,9 +63,9 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
 
           <tr>
             <td style="padding:24px 32px;background:#f5f5f5;border-top:1px solid #e7e5e4;text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &mdash; sselfie.ai</p>
+              <p style="margin:0 0 6px;font-size:12px;color:#8a8780;">SSELFIE Studio &middot; sselfie.ai</p>
               <p style="margin:0;font-size:12px;color:#8a8780;">
-                Want 200 photos/month? <a href="${upgradeUrl}" style="color:#57534e;">See Studio plans</a>
+                Want 200 photos/month? <a href="${upgradeUrl}" style="color:#57534e;">See SSELFIE SUITE plans</a>
                 &nbsp;&middot;&nbsp;
                 <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#8a8780;">Unsubscribe</a>
               </p>
@@ -84,7 +84,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
     ``,
     `Hey ${firstName},`,
     ``,
-    `You signed up for SSELFIE — and you've got 2 free photos waiting for you right now.`,
+    `You signed up for SSELFIE, and you've got 2 free photos waiting for you right now.`,
     ``,
     `No photographer. No shoot. No setup. Just open Maya, describe what you want, and watch it generate a brand photo that actually looks like you.`,
     ``,

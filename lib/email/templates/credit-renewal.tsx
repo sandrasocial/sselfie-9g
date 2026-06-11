@@ -61,7 +61,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
               </div>
               
               <p style="margin: 24px 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                That means it's the perfect time for a new photoshoot or content drop. Your credits are waiting in The Studio.
+                That means it's the perfect time for a new photoshoot or content drop. Your credits are waiting in the SUITE.
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -112,7 +112,7 @@ ${creditsGranted} Credits
 Ready for your next photoshoot
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-That means it's the perfect time for a new photoshoot or content drop. Your credits are waiting in The Studio.
+That means it's the perfect time for a new photoshoot or content drop. Your credits are waiting in the SUITE.
 
 Open Maya: ${studioUrl}
 

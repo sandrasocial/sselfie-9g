@@ -584,8 +584,8 @@ export default function SselfieApp({
     const tabDef = tabs.find((t) => t.id === tabId)
     if (tabDef?.locked) {
       toast({
-        title: `${tabDef.label} · Studio`,
-        description: tabDef.lockMessage ?? "Available with Studio membership.",
+        title: `${tabDef.label} · SSELFIE SUITE`,
+        description: tabDef.lockMessage ?? "Available with SSELFIE SUITE.",
       })
       return
     }
@@ -923,7 +923,7 @@ export default function SselfieApp({
     }
   }, [myProductsData, isAcademyOnlyUser])
 
-  const STUDIO_LOCK_MSG = "Included with Studio membership"
+  const STUDIO_LOCK_MSG = "Included with SSELFIE SUITE"
 
   type AppTab = { id: StudioTab; label: string; locked?: boolean; lockMessage?: string }
 
@@ -1075,7 +1075,7 @@ export default function SselfieApp({
       {isWelcome && creditBalance === 0 && (
         <div className="hidden absolute top-0 left-0 right-0 z-50 bg-stone-900 text-white py-3 px-4 text-center">
           <p className="text-sm font-medium">
-            Your first brand photo is one selfie away. Get credits and let&apos;s get it done — it takes under 2 minutes.
+            Your first brand photo is one selfie away. Get credits and let&apos;s get it done. It takes under 2 minutes.
           </p>
         </div>
       )}
@@ -1101,13 +1101,13 @@ export default function SselfieApp({
         <div className="relative z-50 flex items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--color-porcelain)_6%,transparent)] border-b border-[color-mix(in_srgb,var(--color-porcelain)_12%,transparent)] px-4 py-2.5">
           <p className="text-xs text-[color:var(--color-whisper)] leading-snug">
             <span className="font-medium text-[color:var(--color-porcelain)]">You&apos;re out of credits.</span>{" "}
-            Get Studio to keep generating — 200 credits every month.
+            Get the SUITE to keep generating: 200 credits every month.
           </p>
           <a
             href="/checkout/membership"
             className="shrink-0 rounded-sm bg-[color:var(--color-porcelain)] hover:opacity-90 px-3 py-1 text-xs font-medium text-[color:var(--color-obsidian)] transition-opacity whitespace-nowrap"
           >
-            Get Studio →
+            Get the SUITE →
           </a>
         </div>
       )}
@@ -1117,7 +1117,7 @@ export default function SselfieApp({
         <div className="fixed top-0 left-0 right-0 z-[100] bg-[color:var(--app-overlay)] backdrop-blur-[42px] border-b border-[color:var(--glass-border-subtle)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
           <div>
             <p className="text-sm font-medium text-[color:var(--color-porcelain)]">Your first brand photo is done.</p>
-            <p className="text-xs text-[color:var(--color-smoke)] mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
+            <p className="text-xs text-[color:var(--color-smoke)] mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours. Go explore.</p>
           </div>
           <button onClick={() => setShowFirstPhotoToast(false)} className="text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] ml-4 shrink-0" aria-label="Dismiss">
             <span className="text-[10px] tracking-[0.2em] uppercase">Close</span>

@@ -596,7 +596,7 @@ export function LessonViewerClient({
               className={`${inter.className} text-[12px] uppercase tracking-[0.3em]`}
               style={{ color: C.stone, fontWeight: 600 }}
             >
-              ✓ Saved — Maya will use this in every session.
+              ✓ Saved. Maya will use this in every session.
             </p>
           ) : null}
         </div>

@@ -171,7 +171,7 @@ export default function PromptGuidePageClient({
           <div className="upsell-overlay" />
           <div className="upsell-content">
             <p className="upsell-eyebrow">READY FOR MORE?</p>
-            <h2 className={`upsell-heading ${cormorant.className}`}>Get SSELFIE Studio</h2>
+            <h2 className={`upsell-heading ${cormorant.className}`}>Get SSELFIE SUITE</h2>
             <p className="upsell-body">{page.upsell_text}</p>
             <a
               href={page.upsell_link}
@@ -186,7 +186,7 @@ export default function PromptGuidePageClient({
                 })
               }}
             >
-              Join Studio
+              Join the SUITE
             </a>
           </div>
         </section>

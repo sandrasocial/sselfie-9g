@@ -27,17 +27,17 @@ export function generateNurtureStrategyN5Email({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the last note I&apos;ll send you about Studio.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the last note I&apos;ll send you about the SUITE.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I do not know if it is the right time. Only you know that.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">What I do know is this. Doing all of this alone is heavier than most people admit.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want the system, the door is open. If not, keep your strategy and use it well.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Join Studio", trackedMembershipUrl)}</div>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Join the SUITE", trackedMembershipUrl)}</div>
     <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">No pressure. Just a clear door if you want it.</p>
   `
 
   const html = renderStoneShell({
     title: "The door is open.",
-    eyebrow: "Studio",
+    eyebrow: "SSELFIE SUITE",
     subtitle: "If you want the system, it is here. If not, use what you already have well.",
     bodyHtml,
     footerLead: "No pressure from me.",
@@ -46,7 +46,7 @@ export function generateNurtureStrategyN5Email({
 
   const text = `Hi ${name},
 
-This is the last note I'll send you about Studio.
+This is the last note I'll send you about the SUITE.
 
 I do not know if it is the right time. Only you know that.
 
@@ -54,7 +54,7 @@ What I do know is this. Doing all of this alone is heavier than most people admi
 
 If you want the system, the door is open. If not, keep your strategy and use it well.
 
-Join Studio: ${trackedMembershipUrl}
+Join the SUITE: ${trackedMembershipUrl}
 
 No pressure. Just a clear door if you want it.
 

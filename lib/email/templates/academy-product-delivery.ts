@@ -34,7 +34,7 @@ const PRODUCT_COPY: Record<
     eyebrow: "What To Say",
     title: "Start with clarity.",
     subtitle: "You know your product. Now let's make sure the right people understand it too.",
-    body: "Most people don't buy because the message is unclear — not because the product is wrong. Work through the positioning fix first. One clear offer line changes everything.",
+    body: "Most people don't buy because the message is unclear, not because the product is wrong. Work through the positioning fix first. One clear offer line changes everything.",
     whatToDoFirst: "Open the workbook and start with the message fix workflow.",
     upsell: { name: "Selfie Masterclass", price: "€147", url: `${SITE_URL}/masterclass` },
   },
@@ -44,15 +44,15 @@ const PRODUCT_COPY: Record<
     subtitle: "Stop posting when you feel like it. Start showing up on a schedule that actually works.",
     body: "The goal is simple: have your next week of content planned, written, and ready before Sunday. Open the workbook and use the 7-day posting workflow.",
     whatToDoFirst: "Start with the 7-day posting workflow inside the workbook.",
-    upsell: { name: "SSELFIE Studio", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
+    upsell: { name: "SSELFIE SUITE", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
   },
   get_paid: {
     eyebrow: "Get Paid",
     title: "Let's build your first offer.",
-    subtitle: "You're showing up. Now let's make sure the right people notice — and pay you.",
-    body: "Work through the buyer path workbook. One clear offer. One simple next step. That's what closes sales — not more posts.",
+    subtitle: "You're showing up. Now let's make sure the right people notice you, and pay you.",
+    body: "Work through the buyer path workbook. One clear offer. One simple next step. That's what closes sales, not more posts.",
     whatToDoFirst: "Open the buyer path workbook and start with your first offer outline.",
-    upsell: { name: "SSELFIE Studio", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
+    upsell: { name: "SSELFIE SUITE", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
   },
   concept_cards_pack: {
     eyebrow: "Concept Cards",
@@ -68,7 +68,7 @@ const PRODUCT_COPY: Record<
     subtitle: "Write a week of captions without starting from nothing.",
     body: "The caption workspace turns your offer, tone, and CTA into ready-to-edit captions. Work through the bank sprint and you'll have enough copy for your next week of posts.",
     whatToDoFirst: "Open the caption bank and start with your current offer.",
-    upsell: { name: "SSELFIE Studio", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
+    upsell: { name: "SSELFIE SUITE", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
   },
   feed_reset_9grid: {
     eyebrow: "Feed Reset",
@@ -76,12 +76,12 @@ const PRODUCT_COPY: Record<
     subtitle: "Your profile finally has a direction.",
     body: "The 9-grid workspace helps you clean up your visible message and plan your next posts so your profile makes sense the moment someone lands on it.",
     whatToDoFirst: "Open the grid workspace and set your profile direction first.",
-    upsell: { name: "SSELFIE Studio", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
+    upsell: { name: "SSELFIE SUITE", price: "€97/mo", url: `${SITE_URL}/checkout/membership` },
   },
   ai_photo_refresh: {
     eyebrow: "AI Photo Refresh",
     title: "Your visual direction is ready.",
-    subtitle: "Five usable photo ideas — no photographer needed.",
+    subtitle: "Five usable photo ideas. No photographer needed.",
     body: "Work through the visual workspace: set your direction, list your reference notes, and pick your first five image prompts. Your phone is enough.",
     whatToDoFirst: "Open the workspace and start with your visual direction statement.",
     upsell: { name: "Selfie Masterclass", price: "€147", url: `${SITE_URL}/masterclass` },
@@ -89,7 +89,7 @@ const PRODUCT_COPY: Record<
   ai_photo_prompts: {
     eyebrow: "AI Photo Prompt Pack",
     title: "50 prompts ready to use.",
-    subtitle: "Turn selfies into brand photos — no photographer needed.",
+    subtitle: "Turn selfies into brand photos. No photographer needed.",
     body: "50 done-for-you AI prompts across 10 brand scenarios. Pick a scenario that matches your current offer and use the prompts today.",
     whatToDoFirst: "Open the prompt pack and start with the scenario that fits your current offer.",
     upsell: { name: "Selfie Starter Kit", price: "€37", url: `${SITE_URL}/starter-kit` },
@@ -161,7 +161,7 @@ export function generateAcademyProductDeliveryEmail(params: AcademyProductDelive
   })
 
   const textUpsell = copy.upsell
-    ? `\n\nWhen you're ready for the next step: ${copy.upsell.name} (${copy.upsell.price}) — ${copy.upsell.url}`
+    ? `\n\nWhen you're ready for the next step: ${copy.upsell.name} (${copy.upsell.price}): ${copy.upsell.url}`
     : ""
 
   const text = [
@@ -181,7 +181,7 @@ export function generateAcademyProductDeliveryEmail(params: AcademyProductDelive
     "Sandra x",
   ].join("\n")
 
-  const subject = `${copy.eyebrow} — you're in`
+  const subject = `${copy.eyebrow}: you're in`
 
   return { html, text, subject }
 }

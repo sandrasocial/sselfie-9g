@@ -9,8 +9,8 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
     cta: "Open my suite",
   },
   sselfie_studio_membership: {
-    heading: "Welcome to The Studio.",
-    body: "Your 200 credits are ready. Tell Maya what to create — she already knows your brand.",
+    heading: "Welcome to the SUITE.",
+    body: "Your 200 credits are ready. Tell Maya what to create. She already knows your brand.",
     cta: "Let's make my first photo",
   },
   paid_blueprint: {
@@ -20,7 +20,7 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
   },
   selfie_guide: {
     heading: "Your Selfie Guide is here.",
-    body: "Start with Day 1 — five minutes that will change how you show up on camera.",
+    body: "Start with Day 1: five minutes that change how you show up on camera.",
     cta: "Open my guide",
   },
   selfie_guide_bundle: {

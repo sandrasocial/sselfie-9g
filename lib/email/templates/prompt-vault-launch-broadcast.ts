@@ -141,12 +141,12 @@ Most people open ChatGPT, type something vague, and get something forgettable. T
 
 The vault is the direction.
 
-GET THE VAULT — $27:
+GET THE VAULT · $27:
 ${ctaUrl}
 
 --- Inside The Vault ---
 
-Four full editorial photoshoot directions — the mood, the styling, the setting, and every shot in the series. Each prompt has an example image so you know exactly what you are creating before you copy it.
+Four full editorial photoshoot directions: the mood, the styling, the setting, and every shot in the series. Each prompt has an example image so you know exactly what you are creating before you copy it.
 
 Four collections in the vault right now:
 

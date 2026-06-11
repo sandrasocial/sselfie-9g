@@ -287,14 +287,14 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
               style={{ color: C.stone, fontWeight: 300 }}
             >
-              Studio is the weekly execution layer. Maya helps you plan, create, caption, and show up every week.
+              The SUITE is the weekly execution layer. Maya helps you plan, create, caption, and show up every week.
             </p>
             <Link
               href="/join/studio"
               className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
               style={{ color: C.stone, fontWeight: 600 }}
             >
-              → Join Studio
+              → Join the SUITE
             </Link>
           </section>
         ) : null}

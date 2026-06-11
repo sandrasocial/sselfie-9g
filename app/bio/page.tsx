@@ -155,7 +155,7 @@ export default function BioPage() {
                 />
               </span>
               <span className="bio-shop-text">
-                <span className="bio-shop-title">Join SSELFIE Studio</span>
+                <span className="bio-shop-title">Join SSELFIE SUITE</span>
                 <span className="bio-shop-desc">Your whole brand studio · cancel anytime</span>
               </span>
               <span className="bio-shop-price">€97<span className="bio-shop-per">/mo</span></span>
