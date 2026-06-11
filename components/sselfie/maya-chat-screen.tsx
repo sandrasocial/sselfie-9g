@@ -123,10 +123,7 @@ interface MayaChatScreenProps {
   userId?: string // User ID (optional, can be derived from user, also used for admin guide controls)
   initialChatId?: number // Initial chat ID to load
   proMode?: boolean // Force Pro Mode (for admin)
-  isAdmin?: boolean // Admin mode - enables save to guide functionality
-  selectedGuideId?: number | null // Selected guide ID for saving
-  selectedGuideCategory?: string | null // Selected guide category
-  onGuideChange?: (id: number | null, category: string | null) => void // Callback when guide selection changes
+  isAdmin?: boolean // Admin mode
   hasTrainedModel?: boolean // Whether user has a trained model
   isMembership?: boolean // Whether user has membership (for Pro/Classic toggle visibility)
   academyPurchaseProduct?: string
@@ -161,9 +158,6 @@ export default function MayaChatScreen({
   initialChatId,
   proMode: forcedProMode,
   isAdmin = false,
-  selectedGuideId = null,
-  selectedGuideCategory = null,
-  onGuideChange,
   hasTrainedModel = true, // Default to true to avoid breaking existing usage
   isMembership = false, // Default to false - only membership users see Pro/Classic toggle
   academyPurchaseProduct,
@@ -3007,91 +3001,6 @@ export default function MayaChatScreen({
   }, [baseHandleNewChat, clearSharedImages, clearAllVideoPolls])
 
   // Handle mode switching - creates a new chat when switching between Classic and Pro
-  // Handle saving concept to guide (admin mode)
-  const handleSaveToGuide = useCallback(async (concept: any, imageUrl?: string) => {
-    if (!isAdmin) return // Only available in admin mode
-    
-    if (!selectedGuideId) {
-      toast({
-        title: "No guide selected",
-        description: "Please select a guide from the dropdown at the top of the page",
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      const response = await fetch("/api/admin/prompt-guide/approve-item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          guideId: selectedGuideId,
-          // CRITICAL: Extract prompt text from all possible fields
-          // Concepts may have: fullPrompt, prompt, description, or prompt_text
-          promptText: concept.fullPrompt || concept.prompt || concept.prompt_text || concept.description || '',
-          conceptTitle: concept.title || concept.label || concept.concept_title || 'Untitled Concept',
-          conceptDescription: concept.description || concept.concept_description || concept.conceptDescription || '',
-          category: concept.category || selectedGuideCategory || "General",
-          imageUrl: imageUrl || concept.image_url || concept.imageUrl || null,
-          replicatePredictionId: concept.replicate_prediction_id || concept.replicatePredictionId || null,
-          generationSettings: concept.generation_settings || concept.generationSettings || {},
-        }),
-      })
-
-      // Handle duplicate (409 Conflict) - don't throw error, just show info toast
-      if (response.status === 409) {
-        const data = await response.json().catch(() => ({ message: "Already exists" }))
-        toast({
-          title: "Already saved",
-          description: data.message || "This prompt and image combination already exists in the guide",
-          variant: "default",
-        })
-        return // Exit early, don't throw error
-      }
-
-      // Handle success (200-299)
-      if (response.ok) {
-        const data = await response.json()
-        // Use same fallback chain as API call to ensure consistent concept name display
-        const conceptName = concept.title || concept.label || concept.concept_title || 'Untitled Concept'
-        toast({
-          title: "Saved to guide",
-          description: `Added "${conceptName}" ${imageUrl ? "with image" : ""} to your guide`,
-        })
-        return // Exit early on success
-      }
-
-      // Handle other errors (400, 401, 403, 500, etc.)
-      let errorMessage = `Failed to save (HTTP ${response.status})`
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorData.message || errorData.details || errorMessage
-      } catch (parseError) {
-        // If JSON parsing fails, use status text
-        errorMessage = response.statusText || errorMessage
-      }
-      
-      // Show error toast and throw (but don't let it propagate to outer catch)
-      toast({
-        title: "Failed to save",
-        description: errorMessage,
-        variant: "destructive",
-      })
-      // Don't throw - we've already shown the error toast
-      return
-    } catch (error) {
-      // Only catch network errors or unexpected errors
-      console.error("[v0] Error saving to guide:", error)
-      const errorMessage = error instanceof Error ? error.message : "Could not save prompt to guide. Please try again."
-      toast({
-        title: "Failed to save",
-        description: errorMessage,
-        variant: "destructive",
-      })
-      // Don't re-throw - we've handled the error
-    }
-  }, [isAdmin, selectedGuideId, selectedGuideCategory, toast])
-
   const handleModeSwitch = async (newMode: boolean) => {
     // Only create new chat if mode is actually changing
     if (proMode === newMode) {
@@ -4138,9 +4047,6 @@ export default function MayaChatScreen({
           setCreditBalance={setCreditBalance}
           onImageGenerated={onImageGenerated}
           isAdmin={isAdmin}
-          selectedGuideId={selectedGuideId}
-          selectedGuideCategory={selectedGuideCategory}
-          onSaveToGuide={handleSaveToGuide}
           userId={userId}
           user={user}
           promptSuggestions={promptSuggestions}

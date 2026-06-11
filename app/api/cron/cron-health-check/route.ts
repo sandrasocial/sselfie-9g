@@ -4,14 +4,14 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
 
 
-const ALERT_COOLDOWN_HOURS = Number(process.env.CRON_ALERT_COOLDOWN_HOURS || 6)
+const ALERT_COOLDOWN_HOURS = Number(process.env.CRON_ALERT_COOLDOWN_HOURS || 24)
 const STALE_THRESHOLD_HOURS = 26
 const ANOMALY_THRESHOLDS = {
-  welcomeCreditsMax: Number(process.env.CRON_ANOM_WELCOME_CREDITS_MAX || 20),
-  membershipReconcileMax: Number(process.env.CRON_ANOM_MEMBERSHIP_RECONCILE_MAX || 20),
-  backfillPaymentsMax: Number(process.env.CRON_ANOM_BACKFILL_PAYMENTS_MAX || 50),
+  welcomeCreditsMax: Number(process.env.CRON_ANOM_WELCOME_CREDITS_MAX || 40),
+  membershipReconcileMax: Number(process.env.CRON_ANOM_MEMBERSHIP_RECONCILE_MAX || 40),
+  backfillPaymentsMax: Number(process.env.CRON_ANOM_BACKFILL_PAYMENTS_MAX || 100),
   /** Min failed runs in 7d before emailing about failedRunsLast7d (reduces one-off noise). */
-  minFailedRunsForAlert: Number(process.env.CRON_ANOM_MIN_FAILED_RUNS || 2),
+  minFailedRunsForAlert: Number(process.env.CRON_ANOM_MIN_FAILED_RUNS || 4),
   errorsAny: process.env.CRON_ANOM_ERRORS_ANY !== "false",
 }
 
@@ -31,7 +31,7 @@ function getCronHealthLink(): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://sselfie.ai"
-  return `${base}/admin/cron-health`
+  return `${base}/admin`
 }
 
 const extractSummaryCounts = (summary: any) => ({

@@ -66,10 +66,24 @@ type GrowthReportLike = {
   attributionRows: ReportRow[]
 }
 
+export type DailyBriefingExtras = {
+  money?: {
+    yesterdayPayments: number
+    yesterdayRevenue: number
+    monthPayments: number
+    monthRevenue: number
+  }
+  inboxFlagged?: Array<{ username: string; message: string }>
+  inboxFlaggedCount?: number
+}
+
 export type DailySandraBriefing = {
   generatedAt: string
   windowDays: number
   subject: string
+  moneyHeader: string | null
+  inboxFlagged: Array<{ username: string; message: string }>
+  inboxFlaggedCount: number
   working: string[]
   leaking: string[]
   postToday: string[]
@@ -151,7 +165,10 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
 }
 
-export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraBriefing {
+export function buildDailySandraBriefing(
+  report: GrowthReportLike,
+  extras: DailyBriefingExtras = {},
+): DailySandraBriefing {
   const purchases = report.paymentCounts.purchases
   const buyers = report.buyerCounts.buyers || purchases
   const checkoutRate = percent(report.eventCounts.checkoutStarts, report.eventCounts.vaultVisits)
@@ -289,10 +306,17 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
 
   codexNext.push("Pull the Growth Intelligence report again tomorrow and compare the same four sections.")
 
+  const moneyHeader = extras.money
+    ? `Yesterday: ${extras.money.yesterdayPayments} payments, $${extras.money.yesterdayRevenue.toFixed(0)}. This month: ${extras.money.monthPayments} payments, $${extras.money.monthRevenue.toFixed(0)}.`
+    : null
+
   return {
     generatedAt: report.generatedAt,
     windowDays: report.windowDays,
     subject: "today's SSELFIE briefing",
+    moneyHeader,
+    inboxFlagged: (extras.inboxFlagged || []).slice(0, 5),
+    inboxFlaggedCount: extras.inboxFlaggedCount ?? (extras.inboxFlagged || []).length,
     working: working.slice(0, 4),
     leaking: leaking.slice(0, 4),
     postToday: postToday.slice(0, 3),
@@ -300,9 +324,9 @@ export function buildDailySandraBriefing(report: GrowthReportLike): DailySandraB
     sandraNext: sandraNext.slice(0, 3),
     supportThreads,
     links: {
-      growthIntelligence: `${SITE_URL}/admin/growth-intelligence`,
+      growthIntelligence: `${SITE_URL}/admin`,
       promptVault: `${SITE_URL}/admin/prompt-vault`,
-      inbox: `${SITE_URL}/my-inbox`,
+      inbox: `${SITE_URL}/admin/ig-inbox`,
       customerSupport: `${SITE_URL}/admin/customer-support`,
     },
   }
@@ -355,6 +379,17 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
       <p style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#818283;margin:0 0 20px;">SSELFIE Growth Intelligence</p>
       <h1 style="font-family:Georgia,serif;font-weight:400;font-size:34px;line-height:1.05;margin:0 0 10px;">Daily Sandra Briefing</h1>
       <p style="margin:0 0 28px;color:#4F5052;font-size:14px;line-height:1.6;">Last ${briefing.windowDays} days. Calm version. Only what matters today.</p>
+      ${briefing.moneyHeader ? `
+      <div style="background:#0D0E10;color:#fff;padding:18px 22px;margin:0 0 14px;">
+        <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Money · stripe_payments</p>
+        <p style="margin:6px 0 0;font-size:16px;line-height:1.5;">${escapeHtml(briefing.moneyHeader)}</p>
+      </div>` : ""}
+      ${briefing.inboxFlaggedCount > 0 ? `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Inbox: ${briefing.inboxFlaggedCount} flagged DM${briefing.inboxFlaggedCount === 1 ? "" : "s"}</h2>
+        ${briefing.inboxFlagged.map((item) => `<p style="margin:0 0 10px;font-size:14px;color:#4F5052;line-height:1.6;"><strong style="color:#0D0E10;">@${escapeHtml(item.username)}</strong> · ${escapeHtml(item.message)}</p>`).join("")}
+        <a href="${briefing.links.inbox}" style="color:#0D0E10;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Open inbox</a>
+      </div>` : ""}
 
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's working</h2>
@@ -387,7 +422,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
       </div>
 
       <p style="margin:0 0 12px;">
-        <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open Growth Intelligence</a>
+        <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open your admin</a>
       </p>
       <p style="margin:18px 0 0;color:#818283;font-size:12px;line-height:1.6;">
         Also useful: <a href="${briefing.links.inbox}" style="color:#4F5052;">my inbox</a> · <a href="${briefing.links.customerSupport}" style="color:#4F5052;">customer support</a> · <a href="${briefing.links.promptVault}" style="color:#4F5052;">Prompt Vault monitor</a>
@@ -396,7 +431,11 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
   </body>
 </html>`
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const inboxTextSection = briefing.inboxFlaggedCount > 0
+    ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
+    : ""
+
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

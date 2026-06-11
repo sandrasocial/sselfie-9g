@@ -181,46 +181,11 @@ export const CRON_ROUTE_OWNERSHIP: readonly CronRouteOwnership[] = [
     purpose: "Record cron heartbeat health.",
   },
   {
-    path: "/api/cron/funnel-report-daily",
-    bundle: "health_reporting",
-    lifecycle: "scheduled",
-    classification: "internal/admin",
-    purpose: "Generate daily funnel report.",
-  },
-  {
     path: "/api/cron/maya-instagram-trends-weekly",
     bundle: "health_reporting",
     lifecycle: "scheduled",
     classification: "internal/admin",
     purpose: "Refresh weekly Instagram trend intelligence for Maya.",
-  },
-  {
-    path: "/api/cron/revenue-engine-weekly",
-    bundle: "health_reporting",
-    lifecycle: "scheduled",
-    classification: "internal/admin",
-    purpose: "Generate weekly revenue engine report.",
-  },
-  {
-    path: "/api/cron/arpu-churn-weekly",
-    bundle: "health_reporting",
-    lifecycle: "manual",
-    classification: "internal/admin",
-    purpose: "Manual weekly ARPU and churn digest. Not scheduled in vercel.json.",
-  },
-  {
-    path: "/api/cron/cohort-delivery-load-weekly",
-    bundle: "health_reporting",
-    lifecycle: "manual",
-    classification: "internal/admin",
-    purpose: "Manual cohort delivery load digest. Not scheduled in vercel.json.",
-  },
-  {
-    path: "/api/cron/cohort-report-weekly",
-    bundle: "health_reporting",
-    lifecycle: "manual",
-    classification: "internal/admin",
-    purpose: "Manual weekly cohort report. Not scheduled in vercel.json.",
   },
   {
     path: "/api/cron/product-qa-daily",
@@ -239,6 +204,31 @@ export const CRON_ROUTE_OWNERSHIP: readonly CronRouteOwnership[] = [
 ] as const
 
 export const REMOVED_CRON_ROUTES: readonly RemovedCronRoute[] = [
+  {
+    path: "/api/cron/funnel-report-daily",
+    replacement: "/api/cron/daily-sandra-briefing",
+    proof: "Deleted in admin cleanup 2026-06-11 (docs/audits/ADMIN_AUDIT_2026-06-11.md). Was unscheduled; reporting consolidated into daily Sandra briefing.",
+  },
+  {
+    path: "/api/cron/revenue-engine-weekly",
+    replacement: "/api/cron/daily-sandra-briefing",
+    proof: "Deleted in admin cleanup 2026-06-11. Was unscheduled; scripts/revenue-engine-weekly-digest.ts remains for manual digests.",
+  },
+  {
+    path: "/api/cron/arpu-churn-weekly",
+    replacement: "/api/cron/daily-sandra-briefing",
+    proof: "Deleted in admin cleanup 2026-06-11. Manual route, never scheduled in vercel.json.",
+  },
+  {
+    path: "/api/cron/cohort-delivery-load-weekly",
+    replacement: "/api/cron/daily-sandra-briefing",
+    proof: "Deleted in admin cleanup 2026-06-11. Manual route, never scheduled in vercel.json.",
+  },
+  {
+    path: "/api/cron/cohort-report-weekly",
+    replacement: "/api/cron/daily-sandra-briefing",
+    proof: "Deleted in admin cleanup 2026-06-11. Manual route; scripts/cohort-report-weekly.ts remains for manual digests.",
+  },
   {
     path: "/api/cron/blueprint-email-sequence",
     replacement: "/api/cron/blueprint-followup-sequence",

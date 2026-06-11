@@ -68,9 +68,6 @@ interface MayaChatInterfaceProps {
   setCreditBalance: (balance: number) => void
   onImageGenerated?: () => void
   isAdmin: boolean
-  selectedGuideId: number | null
-  selectedGuideCategory: string | null
-  onSaveToGuide: (concept: any, imageUrl?: string) => void
   userId?: string
   user: any | null
 
@@ -151,9 +148,6 @@ interface ToolCtx {
   setCreditBalance: (balance: number) => void // NOSONAR
   onImageGenerated?: () => void // NOSONAR
   isAdmin: boolean // NOSONAR
-  selectedGuideId: number | null // NOSONAR
-  selectedGuideCategory: string | null // NOSONAR
-  onSaveToGuide: (concept: any, imageUrl?: string) => void // NOSONAR
   userId?: string // NOSONAR
   user: any | null // NOSONAR
   generationSettings?: { // NOSONAR
@@ -764,9 +758,6 @@ function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx):
       onImageGenerated={ctx.onImageGenerated}
       onToolPromptSelect={ctx.onToolPromptSelect}
       isAdmin={ctx.isAdmin}
-      selectedGuideId={ctx.selectedGuideId}
-      selectedGuideCategory={ctx.selectedGuideCategory}
-      onSaveToGuide={ctx.onSaveToGuide}
       userId={ctx.userId}
       user={ctx.user}
       userHasTrainedModel={ctx.userHasTrainedModel}
@@ -2080,9 +2071,6 @@ export default function MayaChatInterface({
   setCreditBalance,
   onImageGenerated,
   isAdmin,
-  selectedGuideId,
-  selectedGuideCategory,
-  onSaveToGuide,
   userId,
   user,
   promptSuggestions,
@@ -2111,9 +2099,6 @@ export default function MayaChatInterface({
     setCreditBalance,
     onImageGenerated,
     isAdmin,
-    selectedGuideId,
-    selectedGuideCategory,
-    onSaveToGuide,
     userId,
     user,
     generationSettings,

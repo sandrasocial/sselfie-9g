@@ -3,16 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type React from "react"
 import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { useToast } from '@/hooks/use-toast'
 import MayaTabSwitcher from "./maya-tab-switcher"
-
-interface Guide {
-  id: number
-  title: string
-  category: string
-  status?: string | null
-  page_slug?: string | null
-}
 
 interface MayaHeaderUnifiedProps {
   // Mode
@@ -34,12 +25,7 @@ interface MayaHeaderUnifiedProps {
   onEditIntent?: () => void
   onSwitchToClassic?: () => void
   onSettings?: () => void
-  isAdmin?: boolean
-  selectedGuideId?: number | null
-  selectedGuideCategory?: string | null
-  onGuideChange?: (id: number | null, category: string | null) => void
-  userId?: string
-  
+
   // Navigation & Actions
   onNavigation?: (tab: string) => void
   onNewProject?: () => void
@@ -82,7 +68,6 @@ interface MayaHeaderUnifiedProps {
  * - All Classic features, plus:
  * - Image library management (count, add, manage)
  * - Credits display
- * - Guide controls (admin only)
  * - Enhanced navigation menu
  * - Settings access
  */
@@ -99,12 +84,7 @@ export default function MayaHeaderUnified({
   onEditIntent,
   onSwitchToClassic,
   onSettings,
-  isAdmin = false,
   showModeToggle = true, // Default to true for backward compatibility
-  selectedGuideId = null,
-  selectedGuideCategory = null,
-  onGuideChange,
-  userId,
   onNavigation,
   onNewProject,
   onHistory,
@@ -118,87 +98,11 @@ export default function MayaHeaderUnified({
   disableFeedTab = false,
   hideMenuButton = false,
 }: MayaHeaderUnifiedProps) {
-  const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
   const [isDotsMenuOpen, setIsDotsMenuOpen] = useState(false)
   const dotsMenuRef = useRef<HTMLDivElement>(null)
-  const [guides, setGuides] = useState<Guide[]>([])
-  const [isLoadingGuides, setIsLoadingGuides] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const guidePanelRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
   const formattedCredits = Number.isFinite(credits) ? Math.round(credits).toLocaleString() : "0"
   const hasLibraryActions = Boolean(onManageLibrary || onAddImages || onEditIntent || onStartFresh)
-
-  useEffect(() => {
-    setIsMounted(true)
-    if (proMode && isAdmin && userId) {
-      loadGuides()
-    }
-  }, [proMode, isAdmin, userId])
-
-  const loadGuides = async () => {
-    if (!userId) return
-    setIsLoadingGuides(true)
-    try {
-      const response = await fetch("/api/admin/prompt-guides/list")
-      if (response.ok) {
-        const data = await response.json()
-        setGuides(data.guides || [])
-      }
-    } catch (error) {
-      console.error("Error loading guides:", error)
-      toast({
-        title: "Failed to load guides",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingGuides(false)
-    }
-  }
-
-  const handleCreateNewGuide = async () => {
-    const title = prompt("Enter guide title:")
-    if (!title) return
-
-    const category = prompt("Enter category (e.g., Luxury, Wellness, Fashion):")
-    if (!category) return
-
-    try {
-      const response = await fetch("/api/admin/prompt-guides/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title, 
-          category,
-          description: ""
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setGuides([...guides, data.guide])
-        if (onGuideChange) {
-          onGuideChange(data.guide.id, data.guide.category)
-        }
-        toast({ title: "Guide created!" })
-      }
-    } catch (error) {
-      toast({ title: "Failed to create guide", variant: "destructive" })
-    }
-  }
-
-  const handlePreviewGuide = () => {
-    if (!selectedGuideId) return
-    const guide = guides.find(g => g.id === selectedGuideId)
-    if (!guide) return
-
-    if (guide.page_slug) {
-      window.open(`/prompt-guides/${guide.page_slug}`, "_blank")
-    } else {
-      window.open(`/admin/prompt-guide-builder?guideId=${guide.id}`, "_blank")
-    }
-  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -208,15 +112,6 @@ export default function MayaHeaderUnified({
         const target = event.target as HTMLElement
         if (!target.closest('[data-menu-trigger]')) {
           // onToggleNavMenu will be called by the button itself, so don't close here
-        }
-      }
-    }
-
-    const handleGuidePanelClickOutside = (event: MouseEvent) => {
-      if (guidePanelRef.current && !guidePanelRef.current.contains(event.target as Node)) {
-        const target = event.target as HTMLElement
-        if (!target.closest('[data-guide-trigger]')) {
-          setIsGuideMenuOpen(false)
         }
       }
     }
@@ -233,19 +128,15 @@ export default function MayaHeaderUnified({
     if (showNavMenu) {
       document.addEventListener("mousedown", handleClickOutside)
     }
-    if (isGuideMenuOpen) {
-      document.addEventListener("mousedown", handleGuidePanelClickOutside)
-    }
     if (isDotsMenuOpen) {
       document.addEventListener("mousedown", handleDotsMenuClickOutside)
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("mousedown", handleGuidePanelClickOutside)
       document.removeEventListener("mousedown", handleDotsMenuClickOutside)
     }
-  }, [showNavMenu, isGuideMenuOpen, isDotsMenuOpen])
+  }, [showNavMenu, isDotsMenuOpen])
 
   // Single chrome row: Photos/Videos/Train (scroll) + quick menus (credits / mode / new chat live under the composer)
   const barClassName =
@@ -279,112 +170,6 @@ export default function MayaHeaderUnified({
         )}
 
         <div className={actionsClusterClass}>
-          {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
-          {/* Use suppressHydrationWarning to prevent mismatch from isMounted check */}
-          <div suppressHydrationWarning>
-            {isMounted && proMode && isAdmin && (
-              <>
-                <button
-                  data-guide-trigger
-                  onClick={() => setIsGuideMenuOpen((prev) => !prev)}
-                  className="touch-manipulation active:scale-95 flex items-center gap-2 px-3 py-2 rounded-full transition-colors border border-[color:var(--glass-input-border)] bg-transparent hover:bg-[color:var(--glass-bg-mid)] min-h-[36px]"
-                  style={{
-                    fontFamily: "var(--font-body, Inter)",
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    color: "var(--color-smoke)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.2em",
-                  }}
-                >
-                  <span className="hidden sm:inline">
-                    {selectedGuideId
-                      ? guides.find(g => g.id === selectedGuideId)?.title || 'Guide'
-                      : 'Guide'}
-                  </span>
-                  <span className="sm:hidden">Guide</span>
-                  <span>{isGuideMenuOpen ? "Close" : "Open"}</span>
-                </button>
-
-                {isGuideMenuOpen && (
-                  <div
-                    ref={guidePanelRef}
-                    className="absolute right-0 top-[calc(100%+8px)] w-[300px] rounded-2xl border border-[color:var(--glass-input-border)] bg-[color:var(--app-overlay)] backdrop-blur-[20px] p-4 z-[210] shadow-[var(--app-shadow-soft)]"
-                  >
-                    <div className="space-y-3">
-                      <div>
-                        <label
-                          className="block mb-2 text-[color:var(--color-smoke)]"
-                          style={{
-                            fontFamily: "var(--font-body, Inter)",
-                            fontSize: "10px",
-                            fontWeight: 500,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5em",
-                          }}
-                        >
-                          Active Guide
-                        </label>
-                        <select
-                          value={selectedGuideId?.toString() || "none"}
-                          onChange={(event) => {
-                            if (!onGuideChange) return
-                            const value = event.target.value
-                            if (value === "none") {
-                              onGuideChange(null, null)
-                              return
-                            }
-                            const guide = guides.find(g => g.id.toString() === value)
-                            if (guide) {
-                              onGuideChange(guide.id, guide.category)
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--glass-input-bg)] text-[color:var(--color-porcelain)] text-sm focus:outline-none focus:ring-1 focus:ring-[var(--app-focus-ring)]"
-                        >
-                          <option value="none">No guide selected</option>
-                          {guides.map((guide) => (
-                            <option key={guide.id} value={guide.id.toString()}>
-                              {guide.title} ({guide.category})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {selectedGuideId && (
-                        <div className="text-xs text-[color:var(--color-smoke)] pt-2 border-t border-[color:var(--glass-border-subtle)]">
-                          Prompts save to{" "}
-                          <span className="font-semibold text-[color:var(--color-porcelain)]">
-                            {guides.find(g => g.id === selectedGuideId)?.title}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 pt-2 border-t border-[color:var(--glass-border-subtle)]">
-                        <button
-                          onClick={handleCreateNewGuide}
-                          className="flex-1 h-9 rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--glass-input-bg)] text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-bg-mid)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
-                        >
-                          New
-                        </button>
-                        {selectedGuideId && (
-                          <button
-                            onClick={handlePreviewGuide}
-                            className="flex-1 h-9 rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--glass-input-bg)] text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-bg-mid)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
-                          >
-                            Preview
-                          </button>
-                        )}
-                      </div>
-                      {isLoadingGuides && (
-                        <p className="text-[11px] text-[color:var(--color-smoke)] uppercase tracking-[0.2em]">Loading guides</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
           {/* Dots Menu Button — desktop quick actions (History, etc.) */}
           {(onSettings || onHistory || onNavigation) && (
             <div className="relative hidden sm:block" ref={dotsMenuRef}>

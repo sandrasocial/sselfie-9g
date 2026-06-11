@@ -8,15 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { useToast } from '@/hooks/use-toast'
 import MayaModeToggle from '../maya/maya-mode-toggle'
 
 /**
@@ -32,14 +24,6 @@ import MayaModeToggle from '../maya/maya-mode-toggle'
  * - Minimal, editorial design
  */
 
-interface Guide {
-  id: number
-  title: string
-  category: string
-  status?: string | null
-  page_slug?: string | null
-}
-
 interface ProModeHeaderProps {
   libraryCount?: number
   credits?: number
@@ -52,12 +36,6 @@ interface ProModeHeaderProps {
   isLoggingOut?: boolean
   onSwitchToClassic?: () => void
   onSettings?: () => void // NEW: Callback to open settings
-  // Admin guide controls (only visible when isAdmin is true)
-  isAdmin?: boolean
-  selectedGuideId?: number | null
-  selectedGuideCategory?: string | null
-  onGuideChange?: (id: number | null, category: string | null) => void
-  userId?: string
 }
 
 export default function ProModeHeader({
@@ -72,90 +50,10 @@ export default function ProModeHeader({
   isLoggingOut = false,
   onSwitchToClassic,
   onSettings,
-  isAdmin = false,
-  selectedGuideId = null,
-  selectedGuideCategory = null,
-  onGuideChange,
-  userId,
 }: ProModeHeaderProps) {
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
-  const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
-  const [guides, setGuides] = useState<Guide[]>([])
-  const [isLoadingGuides, setIsLoadingGuides] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    setIsMounted(true)
-    if (isAdmin && userId) {
-      loadGuides()
-    }
-  }, [isAdmin, userId])
-
-  const loadGuides = async () => {
-    if (!userId) return
-    setIsLoadingGuides(true)
-    try {
-      const response = await fetch("/api/admin/prompt-guides/list")
-      if (response.ok) {
-        const data = await response.json()
-        setGuides(data.guides || [])
-      }
-    } catch (error) {
-      console.error("Error loading guides:", error)
-      toast({
-        title: "Failed to load guides",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingGuides(false)
-    }
-  }
-
-  const handleCreateNewGuide = async () => {
-    const title = prompt("Enter guide title:")
-    if (!title) return
-
-    const category = prompt("Enter category (e.g., Luxury, Wellness, Fashion):")
-    if (!category) return
-
-    try {
-      const response = await fetch("/api/admin/prompt-guides/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title, 
-          category,
-          description: ""
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setGuides([...guides, data.guide])
-        if (onGuideChange) {
-          onGuideChange(data.guide.id, data.guide.category)
-        }
-        toast({ title: "Guide created!" })
-      }
-    } catch (error) {
-      toast({ title: "Failed to create guide", variant: "destructive" })
-    }
-  }
-
-  const handlePreviewGuide = () => {
-    if (!selectedGuideId) return
-    const guide = guides.find(g => g.id === selectedGuideId)
-    if (!guide) return
-
-    if (guide.page_slug) {
-      window.open(`/prompt-guides/${guide.page_slug}`, "_blank")
-    } else {
-      window.open(`/admin/prompt-guide-builder?guideId=${guide.id}`, "_blank")
-    }
-  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -216,155 +114,8 @@ export default function ProModeHeader({
         )}
       </div>
 
-      {/* Right side: Guide Controls (Admin only), Manage dropdown, Credits, and Menu */}
+      {/* Right side: Manage dropdown, Credits, and Menu */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
-        {/* Guide Controls Dropdown - Admin only */}
-        {isAdmin && (
-          <DropdownMenu open={isGuideMenuOpen} onOpenChange={setIsGuideMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="touch-manipulation active:scale-95 flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors"
-                style={{
-                  fontFamily: Typography.ui.fontFamily,
-                  fontSize: 'clamp(11px, 2vw, 13px)',
-                  fontWeight: Typography.ui.weights.medium,
-                  color: Colors.textSecondary,
-                  backgroundColor: 'transparent',
-                  border: `1px solid ${Colors.border}`,
-                  minHeight: '36px',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = Colors.hover
-                  e.currentTarget.style.borderColor = Colors.primary
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                  e.currentTarget.style.borderColor = Colors.border
-                }}
-              >
-                <span className="text-[10px] uppercase tracking-[0.2em]">Guide</span>
-                <span className="hidden sm:inline">
-                  {selectedGuideId 
-                    ? guides.find(g => g.id === selectedGuideId)?.title || 'Guide'
-                    : 'Guide'}
-                </span>
-                <span
-                  style={{
-                    color: Colors.textSecondary,
-                    transition: 'transform 0.2s ease',
-                    transform: isGuideMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                    display: 'inline-block',
-                  }}
-                >
-                  ˅
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              style={{
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                borderRadius: BorderRadius.cardSm,
-                minWidth: '280px',
-                padding: '12px',
-              }}
-            >
-              <div className="space-y-3">
-                <div>
-                  <label
-                    style={{
-                      fontFamily: Typography.ui.fontFamily,
-                      fontSize: Typography.ui.sizes.xs,
-                      fontWeight: Typography.ui.weights.medium,
-                      color: Colors.textSecondary,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      marginBottom: '8px',
-                      display: 'block',
-                    }}
-                  >
-                    Active Guide
-                  </label>
-                  {isMounted ? (
-                    <Select
-                      value={selectedGuideId?.toString() || "none"}
-                      onValueChange={(value) => {
-                        if (onGuideChange) {
-                          if (value === "none") {
-                            onGuideChange(null, null)
-                          } else {
-                            const guide = guides.find(g => g.id.toString() === value)
-                            if (guide) {
-                              onGuideChange(guide.id, guide.category)
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full" style={{ minHeight: '36px' }}>
-                        <SelectValue placeholder="Select a guide..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No guide selected</SelectItem>
-                        {guides.map((guide) => (
-                          <SelectItem key={guide.id} value={guide.id.toString()}>
-                            {guide.title} ({guide.category})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="w-full h-9 rounded-md border border-stone-200 bg-white flex items-center px-3 text-sm text-stone-500">
-                      Loading...
-                    </div>
-                  )}
-                </div>
-
-                {selectedGuideId && (
-                  <div className="text-xs text-stone-500 pt-1 border-t" style={{ borderColor: Colors.border }}>
-                    Prompts will be saved to: <span className="font-medium text-stone-900">
-                      {guides.find(g => g.id === selectedGuideId)?.title}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2 border-t" style={{ borderColor: Colors.border }}>
-                  <button
-                    onClick={handleCreateNewGuide}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
-                    style={{
-                      fontFamily: Typography.ui.fontFamily,
-                      fontSize: Typography.ui.sizes.sm,
-                      fontWeight: Typography.ui.weights.medium,
-                      color: Colors.textPrimary,
-                      border: `1px solid ${Colors.border}`,
-                    }}
-                  >
-                    New Guide
-                  </button>
-                  {selectedGuideId && (
-                    <button
-                      onClick={handlePreviewGuide}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
-                      style={{
-                        fontFamily: Typography.ui.fontFamily,
-                        fontSize: Typography.ui.sizes.sm,
-                        fontWeight: Typography.ui.weights.medium,
-                        color: Colors.textPrimary,
-                        border: `1px solid ${Colors.border}`,
-                      }}
-                    >
-                      Preview
-                    </button>
-                  )}
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
         {/* Manage dropdown - hidden on small screens when menu is available */}
         {libraryCount > 0 && (
           <DropdownMenu open={isManageOpen} onOpenChange={setIsManageOpen}>

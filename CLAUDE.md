@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-05-26 — Read this at the start of every session*
+*Last updated: 2026-06-11 — Read this at the start of every session*
 
 ---
 
@@ -7,6 +7,18 @@
 Founder of SSELFIE Studio. Single mother, Iceland/Norway. ~30 active paying customers, 180K+ followers, 3K+ email list. Building AI-powered personal branding platform. Live at **sselfie.ai**.
 
 **For current MRR + exact paying counts — always pull from Stripe. Don't trust stale numbers in docs.**
+
+---
+
+## Admin Data Contract (LOCKED 2026-06-11 — every agent must obey)
+
+1. Every metric on an admin page or in an admin email must name its source: `Stripe`, `stripe_payments`, `subscriptions`, `analytics_events`, or `checkout_attribution`.
+2. **Money (revenue, purchases, refunds, MRR) may ONLY come from `stripe_payments`** (`status IN ('succeeded','paid')`, `is_test_mode` excluded, windowed on `payment_date`) **or the live Stripe API.** Code that derives money from `analytics_events` or `checkout_attribution` is a data-correctness bug — fix or delete on sight.
+3. **Member counts** may only come from `subscriptions` rows verified against Stripe (`lib/revenue/single-source.ts`) or Stripe directly. One-time products stored in `subscriptions` are "owners", never "members".
+4. `analytics_events` is for **behavior only** (views, clicks, copies, opens). `checkout_attribution` is for **where buyers came from**, never how much they paid.
+5. No new admin page, metric card, or admin email without removing or merging an existing one.
+6. Admin layout: `/admin` home answers money → members → needs-me → next content move (data layer: `lib/admin/home-report.ts`). Nav is Home · Inbox · Content · Support · Tools. The one daily email is the Daily Sandra Briefing; the weekly is the Content Brief; everything else is alert-only.
+7. Full reasoning: `docs/audits/ADMIN_AUDIT_2026-06-11.md`.
 
 ---
 
