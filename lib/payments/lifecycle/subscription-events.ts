@@ -54,6 +54,19 @@ async function resolveSubscriptionDiscount(
   return { percent: null, coupon: null }
 }
 
+/**
+ * Stripe API 2025-03+ (Basil/Clover) removed subscription.current_period_start/end —
+ * the billing period now lives per item at subscription.items.data[].current_period_*.
+ * Reading only the old shape nulled every member's period on 2026-06-10/11.
+ */
+function getSubscriptionPeriod(sub: any): { start: number | null; end: number | null } {
+  const item = sub?.items?.data?.[0]
+  return {
+    start: sub?.current_period_start ?? item?.current_period_start ?? null,
+    end: sub?.current_period_end ?? item?.current_period_end ?? null,
+  }
+}
+
 /** Current documented discount for a subscription row (fallback when Stripe is unreachable). */
 async function currentDocumentedDiscount(
   stripeSubscriptionId: string,
@@ -128,6 +141,8 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
   const discountPercent = resolvedDiscount.percent
   const discountCoupon = resolvedDiscount.coupon
 
+  const createdPeriod = getSubscriptionPeriod(subscription)
+
   if (existingSubscription.length > 0) {
     console.log(`[v0] Updating existing subscription for user ${userId}`)
     await sql`
@@ -137,8 +152,8 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
         status = ${subscription.status},
         stripe_subscription_id = ${subscription.id},
         stripe_customer_id = ${subscription.customer},
-        current_period_start = to_timestamp(${subscription.current_period_start}),
-        current_period_end = to_timestamp(${subscription.current_period_end}),
+        current_period_start = to_timestamp(${createdPeriod.start}),
+        current_period_end = to_timestamp(${createdPeriod.end}),
         is_test_mode = ${!event.livemode},
         discount_percent = ${discountPercent},
         discount_coupon = ${discountCoupon},
@@ -168,8 +183,8 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
         ${subscription.status},
         ${subscription.id},
         ${subscription.customer},
-        to_timestamp(${subscription.current_period_start}),
-        to_timestamp(${subscription.current_period_end}),
+        to_timestamp(${createdPeriod.start}),
+        to_timestamp(${createdPeriod.end}),
         ${!event.livemode},
         ${discountPercent},
         ${discountCoupon}
@@ -261,9 +276,13 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
   const event = rawEvent as Stripe.Event & { data: { object: any } }
   const invoice = event.data.object
 
-  if (!invoice.subscription) return
+  // Stripe API 2025-03+ removed invoice.subscription — read both shapes (see invoice-paid.ts).
+  const rawSubscription =
+    invoice.subscription ?? invoice.parent?.subscription_details?.subscription
+  if (!rawSubscription) return
 
-  const subscriptionId = invoice.subscription
+  const subscriptionId =
+    typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
 
   await sql`
     UPDATE subscriptions
@@ -372,12 +391,9 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
   const sub = event.data.object
 
   const stripeStatus = sub.status // active, trialing, past_due, unpaid, canceled
-  const currentPeriodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000)
-    : null
-  const currentPeriodStart = sub.current_period_start
-    ? new Date(sub.current_period_start * 1000)
-    : null
+  const updatedPeriod = getSubscriptionPeriod(sub)
+  const currentPeriodEnd = updatedPeriod.end ? new Date(updatedPeriod.end * 1000) : null
+  const currentPeriodStart = updatedPeriod.start ? new Date(updatedPeriod.start * 1000) : null
 
   // Derive product_type so upgrades (e.g. old product → membership) are reflected in our DB.
   // Only include price IDs that are actually set in env (empty string key would corrupt lookups).

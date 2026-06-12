@@ -19,13 +19,20 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   const event = rawEvent as Stripe.Event & { data: { object: any } }
   const invoice = event.data.object
 
-  if (!invoice.subscription) {
+  // Stripe API 2025-03+ (Basil/Clover) removed invoice.subscription — it now lives at
+  // invoice.parent.subscription_details.subscription. Read both shapes or every renewal
+  // gets skipped (this silently dropped all subscription revenue rows from 2026-05-20
+  // until the 2026-06-12 fix).
+  const rawSubscription =
+    invoice.subscription ?? invoice.parent?.subscription_details?.subscription
+
+  if (!rawSubscription) {
     console.log("[v0] Invoice payment succeeded but no subscription - skipping")
     return
   }
 
   const subscriptionId =
-    typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
+    typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
 
   if (!subscriptionId) {
     console.log("[v0] Invoice has no subscription ID - skipping")
@@ -43,13 +50,13 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   `
 
   // If subscription not found, try to create it from Stripe data
-  if (!sub && invoice.subscription) {
+  if (!sub) {
     console.log(`[v0] ⚠️ Subscription not found in database, retrieving from Stripe...`)
     try {
       const subscription =
-        typeof invoice.subscription === "string"
-          ? await stripe.subscriptions.retrieve(invoice.subscription)
-          : invoice.subscription
+        typeof rawSubscription === "string"
+          ? await stripe.subscriptions.retrieve(rawSubscription)
+          : rawSubscription
 
       // Look up user by customer email or ID
       const customerId =
@@ -68,10 +75,20 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           const productType =
             subscription.metadata.product_type || "sselfie_studio_membership"
 
+          // Billing period on Stripe API 2025-03+ lives at items.data[].current_period_*.
+          const periodStart =
+            subscription.current_period_start ??
+            subscription.items?.data?.[0]?.current_period_start ??
+            null
+          const periodEnd =
+            subscription.current_period_end ??
+            subscription.items?.data?.[0]?.current_period_end ??
+            null
+
           // Create subscription record
           await sql`
             INSERT INTO subscriptions (
-              user_id, product_type, plan, status, 
+              user_id, product_type, plan, status,
               stripe_subscription_id, stripe_customer_id,
               current_period_start, current_period_end,
               is_test_mode
@@ -79,14 +96,14 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             VALUES (
               ${userId}, ${productType}, ${productType}, ${subscription.status},
               ${subscription.id}, ${customerId},
-              to_timestamp(${subscription.current_period_start}),
-              to_timestamp(${subscription.current_period_end}),
+              to_timestamp(${periodStart}),
+              to_timestamp(${periodEnd}),
               ${!event.livemode}
             )
             ON CONFLICT (stripe_subscription_id) DO UPDATE SET
               status = ${subscription.status},
-              current_period_start = to_timestamp(${subscription.current_period_start}),
-              current_period_end = to_timestamp(${subscription.current_period_end}),
+              current_period_start = to_timestamp(${periodStart}),
+              current_period_end = to_timestamp(${periodEnd}),
               updated_at = NOW()
           `
 
@@ -379,7 +396,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             // Only grant on the first paid invoice for a new subscription.
             if (invoice.billing_reason === "subscription_create") {
               try {
-                const stripeSubscription = (await stripe.subscriptions.retrieve(invoice.subscription)) as any
+                const stripeSubscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
                 const bonusCredits = Number.parseInt(
                   String(stripeSubscription?.metadata?.bonus_credits || "0"),
                   10
@@ -487,14 +504,23 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
     }
   }
 
-  // Update subscription period
-  const subscription = (await stripe.subscriptions.retrieve(invoice.subscription)) as any
+  // Update subscription period. On Stripe API 2025-03+ the billing period lives at
+  // subscription.items.data[].current_period_* (top-level fields are gone).
+  const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+  const renewedPeriodStart =
+    subscription.current_period_start ??
+    subscription.items?.data?.[0]?.current_period_start ??
+    null
+  const renewedPeriodEnd =
+    subscription.current_period_end ??
+    subscription.items?.data?.[0]?.current_period_end ??
+    null
   await sql`
     UPDATE subscriptions
-    SET 
+    SET
       status = ${subscription.status},
-      current_period_start = to_timestamp(${subscription.current_period_start}),
-      current_period_end = to_timestamp(${subscription.current_period_end}),
+      current_period_start = to_timestamp(${renewedPeriodStart}),
+      current_period_end = to_timestamp(${renewedPeriodEnd}),
       is_test_mode = ${!event.livemode},
       updated_at = NOW()
     WHERE stripe_subscription_id = ${subscriptionId}

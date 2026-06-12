@@ -274,8 +274,13 @@ export async function GET(request: NextRequest) {
 
         const stripeStatus = sub.status || "canceled"
         const subAny = sub as any
-        const cps = subAny.current_period_start ? new Date(subAny.current_period_start * 1000) : null
-        const cpe = subAny.current_period_end ? new Date(subAny.current_period_end * 1000) : null
+        // Stripe API 2025-03+ moved the billing period to items.data[].current_period_*.
+        const rawCps =
+          subAny.current_period_start ?? subAny.items?.data?.[0]?.current_period_start ?? null
+        const rawCpe =
+          subAny.current_period_end ?? subAny.items?.data?.[0]?.current_period_end ?? null
+        const cps = rawCps ? new Date(rawCps * 1000) : null
+        const cpe = rawCpe ? new Date(rawCpe * 1000) : null
         const isTestMode = !subAny.livemode
 
         const existingByStripe = await sql`
