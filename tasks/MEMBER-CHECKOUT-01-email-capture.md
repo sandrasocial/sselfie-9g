@@ -49,6 +49,8 @@
 
 ## Phase B — Payment-moment fixes (found in 2026-06-12 live smoke test)
 
+> **✅ DONE 2026-06-12 by Claude (Sandra approved both).** Products renamed: `prod_TanGAx1h4bVl4C` → "SSELFIE SUITE", `prod_U8MsPytwYHIcJC` → "SSELFIE SUITE Annual". New EUR monthly price `price_1ThYxHEVJvME7vkw32NBHPXB` (€97/mo) created; `STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID` repointed in Vercel prod/preview/dev + `.env.local`; production redeployed and verified live (form shows "SSELFIE SUITE · 97,00 € hver måned", no FX fee). Annual was already €970 EUR. Old USD monthly price left active on purpose: April Miller's existing $97 subscription renews on it. Codex scope is now Phase A only.
+
 These are what a real buyer sees AFTER clicking "Join the SUITE":
 
 1. **Stripe product display name says "Content Creator Studio".** The page header says "You are joining SSELFIE SUITE", then Stripe's form says "Abonner på Content Creator Studio". Brand mismatch at the most trust-sensitive moment. Fix: rename the Stripe product (`prod_TanGAx1h4bVl4C`, the one behind `price_1SmN2HEVJvME7vkwuhz31FHC`) display name to "SSELFIE SUITE". Dashboard edit or API, no deploy. **Needs Sandra's one-word approval on the exact name.**
