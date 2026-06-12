@@ -73,8 +73,12 @@
    re-roll rate = friction; fresh app_v3_memory preference lines = what they want; recent
    edit asks = friction themes). Surfaced as a "Member pulse" collapsed section on
    /admin/content-brief and a section in the Monday content-brief email.
-4. Flow-stuck: conversational format switching (Maya tool or client intent detection so
-   "make me a carousel" mid-chat actually switches format without chips).
+4. ✅ SHIPPED 2026-06-12 — conversational format switching. New set_format tool on the chat
+   route; persona: chips are shortcuts not gates, call set_format (one short line, no
+   emit_concepts that turn) when she asks for a different format. Client commits the switch
+   from the tool part and the existing auto-pull fetches fresh directions with the right
+   format guidance. Each part applies once; loading an old chat pre-seeds its parts so
+   history never replays a switch.
 5. Overlay style example cards (member chat) + admin example manager.
 6. Home/front-door overhaul (design research -> build, image-first product cards:
    thumbnail_url on academy_product_overrides + admin Products tab w/ upload + Maya

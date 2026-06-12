@@ -128,6 +128,17 @@ function isConceptToolPart(part: any): boolean {
   return part.type === "tool-emit_concepts" || (part.type === "dynamic-tool" && part.toolName === "emit_concepts")
 }
 
+/** Pull the requested format out of a set_format tool part (SUITE-UX-02: conversational
+ *  format switching — "make me a carousel" mid-chat works without tapping a chip). */
+function extractFormatSwitch(part: any): OutputFormat | null {
+  if (!part || typeof part !== "object") return null
+  if (part.type !== "tool-set_format" && !(part.type === "dynamic-tool" && part.toolName === "set_format")) {
+    return null
+  }
+  const fmt = part.output?.format ?? part.input?.format
+  return FORMAT_OPTIONS.some((o) => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
 /** Pull an inline question out of an ask_clarify tool part. */
 function extractClarify(part: any): ClarifyPrompt | null {
   if (!part || typeof part !== "object") return null
@@ -148,6 +159,8 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const threadEndRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
   const lastPulledFormatRef = useRef<string | null>(null)
+  // set_format tool parts already acted on (`${messageId}:${format}`), so a switch fires once.
+  const formatSwitchAppliedRef = useRef<Set<string>>(new Set())
   const sessionStartRef = useRef<number | null>(null)
   // "New chat" retires the session's seeded idea (a Content recommendation) without mutating
   // the session itself; a genuinely new session re-arms it.
@@ -348,6 +361,27 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     sendMessage({ text })
   }, [isOpen, session, isThinking, sendMessage])
 
+  // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
+  // ("make me a carousel" typed, no chip), commit the switch here — the auto-pull effect
+  // above then fetches fresh directions for the new format. Each tool part applies once;
+  // loadChat pre-seeds historical parts so reopening an old chat never re-fires a switch.
+  useEffect(() => {
+    if (isThinking) return
+    let latest: OutputFormat | null = null
+    for (const m of messages as any[]) {
+      if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+      for (const p of m.parts) {
+        const fmt = extractFormatSwitch(p)
+        if (!fmt) continue
+        const key = `${m.id}:${fmt}`
+        if (formatSwitchAppliedRef.current.has(key)) continue
+        formatSwitchAppliedRef.current.add(key)
+        latest = fmt
+      }
+    }
+    if (latest && session?.outputFormat !== latest) setOutputFormat(latest)
+  }, [messages, isThinking, session, setOutputFormat])
+
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const format: OutputFormat = outputFormat ?? "photo"
@@ -417,6 +451,15 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
       const data = (await res.json().catch(() => null)) as { messages?: unknown[] } | null
       const loaded = Array.isArray(data?.messages) ? data.messages : []
       savedCountRef.current = loaded.length
+      // Historical set_format parts are already-acted-on: seed them so reopening an old
+      // chat never replays a format switch (and the auto-pull it triggers).
+      for (const m of loaded as any[]) {
+        if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+        for (const p of m.parts) {
+          const fmt = extractFormatSwitch(p)
+          if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+        }
+      }
       setChatId(id)
       setGenState({})
       setMessages(loaded as any)

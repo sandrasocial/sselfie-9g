@@ -105,6 +105,24 @@ const emitConcepts = tool({
   execute: async ({ concepts }) => ({ concepts }),
 })
 
+// SUITE-UX-02 slice 4: conversational format switching. The format chips are shortcuts, not
+// gates — when the user ASKS for a different format mid-chat, Maya calls this and the client
+// commits the switch, then auto-pulls fresh directions for it (the existing chip machinery).
+const setFormat = tool({
+  description:
+    "Switch the studio to a different output format when she asks for one in conversation " +
+    "(e.g. 'make me a carousel about this', 'turn that into a story slide', 'actually just a photo'). " +
+    "Call this INSTEAD of emit_concepts when her request is for a format other than the current one. " +
+    "The studio switches and asks you for fresh directions automatically, so keep any text to one " +
+    "short line and do not present concepts in the same turn.",
+  inputSchema: z.object({
+    format: z
+      .enum(["photo", "reel-cover", "carousel", "story-slide"])
+      .describe("The format she asked for."),
+  }),
+  execute: async (input) => input,
+})
+
 const askClarify = tool({
   description:
     "Ask ONE inline clarifying question when you are missing a required detail to make on-brand " +
@@ -316,7 +334,7 @@ export async function POST(req: Request) {
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify, remember },
+      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify, set_format: setFormat, remember },
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
