@@ -71,6 +71,23 @@ Two tracks, both on fal.ai (account exists):
    - Build shape: a `/seedance-demo` skill-style generator script + kit attachment. Gate on
      Phase 1+2 being used weekly first.
 
+## Visual format doctrine (audited live vs @prompts.ig, 2026-06-12)
+
+The AI-prompt niche is photo-first: @prompts.ig decks = full-bleed photo hook with one bold
+line, pure photo proof middles (often 2x2 grids of the same character across scenes), photo
+CTA slide with the comment keyword. Text-only slides have no thumb-stop power in this niche.
+BUT Sandra's 45k-save tutorials prove clean numbered steps drive saves. So the locked deck
+layout is a **hybrid**:
+
+photo hook (her face, scrim, one serif line) → photo proof block (demo/before-after images,
+no text) → clean teaching slides (steps/list, save-bait) → photo CTA (comment keyword).
+
+Differentiation, do not drift: her typography (Cormorant serif on scrim), her tokens, and HER
+recognizable face in every scene — "keeps your face" as visible proof, which faceless
+aggregators cannot copy. Implementation: `imageUrl` on slides + `photo` kind + PhotoFrame
+renderer; kit UI photo picker feeds on Phase 2 demo images + her selfies (tap order = hook →
+proof → CTA).
+
 ## Hard rules
 
 - No auto-posting, ever. Status flow ends at Sandra's hands.
