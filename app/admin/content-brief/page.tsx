@@ -3,8 +3,10 @@ import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { ContentBriefClient } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentDemoClient } from "@/components/admin/content-demo-client"
+import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies, listDemoPairs } from "@/lib/content-kit/demo-generator"
+import { listStorySequences } from "@/lib/content-kit/story-generator"
 
 export const dynamic = "force-dynamic"
 
@@ -16,6 +18,15 @@ export default async function ContentBriefPage() {
   const carousels = await listCarousels().catch(() => [])
   const demoPairs = await listDemoPairs().catch(() => [])
   const selfies = await listAdminSelfies().catch(() => [])
+  const stories = await listStorySequences().catch(() => [])
+
+  const availableImages = [
+    ...demoPairs.flatMap((pair) => [
+      { url: pair.afterUrl, label: `Demo: ${pair.title}` },
+      ...(pair.compositeUrl ? [{ url: pair.compositeUrl, label: `Before/after: ${pair.title}` }] : []),
+    ]),
+    ...selfies.slice(0, 8).map((url) => ({ url, label: "Your selfie" })),
+  ]
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -31,16 +42,8 @@ export default async function ContentBriefPage() {
           </p>
         </div>
         <ContentBriefClient initialReports={reports as any} />
-        <ContentKitClient
-          initialCarousels={carousels}
-          availableImages={[
-            ...demoPairs.flatMap((pair) => [
-              { url: pair.afterUrl, label: `Demo: ${pair.title}` },
-              ...(pair.compositeUrl ? [{ url: pair.compositeUrl, label: `Before/after: ${pair.title}` }] : []),
-            ]),
-            ...selfies.slice(0, 8).map((url) => ({ url, label: "Your selfie" })),
-          ]}
-        />
+        <ContentKitClient initialCarousels={carousels} availableImages={availableImages} />
+        <ContentStoryClient initialSequences={stories} availableImages={availableImages} />
         <ContentDemoClient initialPairs={demoPairs} selfies={selfies} />
       </main>
     </div>

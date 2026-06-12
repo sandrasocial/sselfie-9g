@@ -41,11 +41,15 @@ function Frame({
   dark,
   eyebrow,
   counter,
+  width,
+  height,
   children,
 }: {
   dark?: boolean
   eyebrow?: string
   counter: string
+  width: number
+  height: number
   children: React.ReactNode
 }) {
   const fg = dark ? PORCELAIN : OBSIDIAN
@@ -53,8 +57,8 @@ function Frame({
   return (
     <div
       style={{
-        width: WIDTH,
-        height: HEIGHT,
+        width,
+        height,
         display: "flex",
         flexDirection: "column",
         backgroundColor: dark ? OBSIDIAN : PORCELAIN,
@@ -100,9 +104,129 @@ function Frame({
   )
 }
 
+/** 2x2 photo grid (the prompts.ig signature: same person, four worlds), with the
+ * hook line over a bottom scrim when the slide has a title. */
+function GridFrame({
+  slide,
+  counter,
+  width,
+  height,
+}: {
+  slide: CarouselSlide
+  counter: string
+  width: number
+  height: number
+}) {
+  const urls = (slide.gridUrls || []).slice(0, 4)
+  const gap = 8
+  const cellW = (width - gap) / 2
+  const cellH = (height - gap) / 2
+  const hasText = Boolean(slide.title)
+
+  return (
+    <div
+      style={{
+        width,
+        height,
+        display: "flex",
+        flexWrap: "wrap",
+        position: "relative",
+        backgroundColor: OBSIDIAN,
+        fontFamily: "Inter",
+      }}
+    >
+      {urls.map((url, index) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={index}
+          src={url}
+          width={cellW}
+          height={cellH}
+          style={{
+            objectFit: "cover",
+            marginRight: index % 2 === 0 ? gap : 0,
+            marginBottom: index < 2 ? gap : 0,
+          }}
+        />
+      ))}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width,
+          height,
+          display: "flex",
+          background: hasText
+            ? "linear-gradient(180deg, rgba(10,10,10,0.28) 0%, rgba(10,10,10,0.00) 18%, rgba(10,10,10,0.00) 52%, rgba(10,10,10,0.85) 100%)"
+            : "linear-gradient(180deg, rgba(10,10,10,0.28) 0%, rgba(10,10,10,0.00) 18%, rgba(10,10,10,0.00) 80%, rgba(10,10,10,0.45) 100%)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 64,
+          left: 72,
+          width: width - 144,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", fontSize: 24, fontWeight: 600, letterSpacing: 6, textTransform: "uppercase", color: "rgba(255,255,255,0.92)" }}>
+          {slide.eyebrow || "SSELFIE"}
+        </div>
+        <div style={{ display: "flex", fontSize: 24, color: "rgba(255,255,255,0.8)", letterSpacing: 4 }}>{counter}</div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 64,
+          left: 72,
+          width: width - 144,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {hasText && (
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Cormorant Garamond",
+              fontWeight: 600,
+              fontSize: 100,
+              lineHeight: 1.05,
+              color: PORCELAIN,
+              marginBottom: 40,
+            }}
+          >
+            {slide.title}
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", fontSize: 24, fontWeight: 600, letterSpacing: 6, textTransform: "uppercase", color: "rgba(255,255,255,0.92)" }}>
+            @sandra.social
+          </div>
+          <div style={{ display: "flex", fontSize: 24, color: "rgba(255,255,255,0.8)", letterSpacing: 4 }}>sselfie.ai</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** Photo-first slide: full-bleed image, bottom scrim, white text. The niche-viral
  * format (@prompts.ig pattern) with Sandra's editorial typography on top. */
-function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string }) {
+function PhotoFrame({
+  slide,
+  counter,
+  width,
+  height,
+}: {
+  slide: CarouselSlide
+  counter: string
+  width: number
+  height: number
+}) {
   const isHook = slide.kind === "hook"
   const isCta = slide.kind === "cta"
   const isPlainPhoto = slide.kind === "photo"
@@ -111,8 +235,8 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
   return (
     <div
       style={{
-        width: WIDTH,
-        height: HEIGHT,
+        width,
+        height,
         display: "flex",
         flexDirection: "column",
         position: "relative",
@@ -123,8 +247,8 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={slide.imageUrl}
-        width={WIDTH}
-        height={HEIGHT}
+        width={width}
+        height={height}
         style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
       />
       <div
@@ -132,8 +256,8 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
           position: "absolute",
           top: 0,
           left: 0,
-          width: WIDTH,
-          height: HEIGHT,
+          width,
+          height,
           display: "flex",
           background: hasText
             ? "linear-gradient(180deg, rgba(10,10,10,0.30) 0%, rgba(10,10,10,0.00) 22%, rgba(10,10,10,0.00) 46%, rgba(10,10,10,0.82) 100%)"
@@ -145,7 +269,7 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
           position: "absolute",
           top: 64,
           left: 72,
-          width: WIDTH - 144,
+          width: width - 144,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -172,7 +296,7 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
           position: "absolute",
           bottom: 64,
           left: 72,
-          width: WIDTH - 144,
+          width: width - 144,
           display: "flex",
           flexDirection: "column",
           alignItems: isCta ? "center" : "flex-start",
@@ -223,7 +347,7 @@ function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string 
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            width: WIDTH - 144,
+            width: width - 144,
           }}
         >
           <div
@@ -437,20 +561,27 @@ export async function GET(
 
   const slide = deck.slides[slideIndex]
   const dark = slide.kind === "quote" || slide.kind === "cta"
-  const counter = `${slideIndex + 1} / ${deck.slides.length}`
+  // format=cover renders the same slide at story/reel-cover size (1080x1920),
+  // with the counter dropped (a cover is a standalone, not "1 / 11").
+  const isCover = new URL(request.url).searchParams.get("format") === "cover"
+  const width = WIDTH
+  const height = isCover ? 1920 : HEIGHT
+  const counter = isCover ? "" : `${slideIndex + 1} / ${deck.slides.length}`
   const fonts = await loadFonts()
 
   return new ImageResponse(
-    slide.imageUrl ? (
-      <PhotoFrame slide={slide} counter={counter} />
+    slide.kind === "grid" && slide.gridUrls?.length ? (
+      <GridFrame slide={slide} counter={counter} width={width} height={height} />
+    ) : slide.imageUrl ? (
+      <PhotoFrame slide={slide} counter={counter} width={width} height={height} />
     ) : (
-      <Frame dark={dark} eyebrow={slide.eyebrow} counter={counter}>
+      <Frame dark={dark} eyebrow={slide.eyebrow} counter={counter} width={width} height={height}>
         <SlideContent slide={slide} />
       </Frame>
     ),
     {
-      width: WIDTH,
-      height: HEIGHT,
+      width,
+      height,
       fonts: [
         { name: "Cormorant Garamond", data: fonts.serif, weight: 500, style: "normal" },
         { name: "Cormorant Garamond", data: fonts.serifSemi, weight: 600, style: "normal" },
@@ -458,7 +589,7 @@ export async function GET(
         { name: "Inter", data: fonts.sansSemi, weight: 600, style: "normal" },
       ],
       headers: {
-        "Content-Disposition": `inline; filename="${deck.slug}-${String(slideIndex + 1).padStart(2, "0")}.png"`,
+        "Content-Disposition": `inline; filename="${deck.slug}-${isCover ? "cover" : String(slideIndex + 1).padStart(2, "0")}.png"`,
         "Cache-Control": "private, max-age=300",
       },
     },

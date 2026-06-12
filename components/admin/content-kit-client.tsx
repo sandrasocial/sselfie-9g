@@ -84,7 +84,16 @@ function DeckCard({
               </a>
             ))}
           </div>
-          <p className="mt-1 text-xs text-stone-400">Click a slide to download it as PNG (1080x1350).</p>
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-xs text-stone-400">Click a slide to download it as PNG (1080x1350).</p>
+            <a
+              href={`/api/admin/content-kit/render/${deck.id}/0?format=cover`}
+              download={`${deck.slug}-cover.png`}
+              className="text-xs uppercase tracking-wide text-stone-950 underline underline-offset-4"
+            >
+              Reel cover (1080x1920)
+            </a>
+          </div>
 
           <div className="mt-4 rounded-xl bg-stone-50 p-4">
             <div className="flex items-center justify-between">

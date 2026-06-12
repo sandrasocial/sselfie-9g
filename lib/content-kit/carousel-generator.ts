@@ -1,16 +1,10 @@
 import "server-only"
 
-import Anthropic from "@anthropic-ai/sdk"
 import { sql } from "@/lib/db/client"
+import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
 import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
-
-// OpenRouter is primary because it's the funded key (Maya runs on it).
-// Direct Anthropic is the fallback when OpenRouter is down.
-const OPENROUTER_MODEL = "anthropic/claude-sonnet-4.5"
-const ANTHROPIC_MODEL = "claude-sonnet-4-5"
-const MAX_TOKENS = 8000
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
@@ -44,16 +38,30 @@ function isAllowedImageUrl(value: string): boolean {
 }
 
 /** Niche-viral layout (@prompts.ig pattern, hers by typography): photo hook ->
- * photo proof block -> clean teaching slides (save-bait) -> photo CTA. */
+ * photo proof block -> clean teaching slides (save-bait) -> photo CTA.
+ * With 4+ images the hook becomes the signature 2x2 grid (same person, four worlds). */
 function applyImages(slides: CarouselSlide[], imageUrls: string[]): CarouselSlide[] {
   if (imageUrls.length === 0) return slides
   const result = slides.map((slide) => ({ ...slide }))
-  result[0].imageUrl = imageUrls[0]
-  const last = result[result.length - 1]
-  if (imageUrls.length >= 2 && last.kind === "cta") {
-    last.imageUrl = imageUrls[imageUrls.length - 1]
+
+  let used = 1
+  if (imageUrls.length >= 4) {
+    result[0].kind = "grid"
+    result[0].gridUrls = imageUrls.slice(0, 4)
+    used = 4
+  } else {
+    result[0].imageUrl = imageUrls[0]
   }
-  const middles = imageUrls.slice(1, imageUrls.length >= 2 ? -1 : undefined)
+
+  const remaining = imageUrls.slice(used)
+  const last = result[result.length - 1]
+  let ctaImage: string | undefined
+  if (remaining.length > 0 && last.kind === "cta") {
+    ctaImage = remaining[remaining.length - 1]
+    last.imageUrl = ctaImage
+  }
+
+  const middles = ctaImage ? remaining.slice(0, -1) : remaining
   if (middles.length > 0) {
     const proofSlides: CarouselSlide[] = middles.map((url) => ({
       kind: "photo",
@@ -70,56 +78,6 @@ type RawCarousel = {
   slug: string
   caption: string
   slides: CarouselSlide[]
-}
-
-async function callLlm(prompt: string): Promise<string> {
-  const openrouterKey = process.env.OPENROUTER_API_KEY
-  if (openrouterKey) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openrouterKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          max_tokens: MAX_TOKENS,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        const text = data?.choices?.[0]?.message?.content
-        if (typeof text === "string" && text.trim()) return text
-      } else {
-        console.error("[content-kit] OpenRouter failed:", response.status, await response.text())
-      }
-    } catch (error) {
-      console.error("[content-kit] OpenRouter error, falling back to Anthropic:", error)
-    }
-  }
-
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) throw new Error("No LLM available: OPENROUTER_API_KEY failed and ANTHROPIC_API_KEY is not set")
-  const client = new Anthropic({ apiKey: anthropicKey })
-  const message = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: MAX_TOKENS,
-    messages: [{ role: "user", content: prompt }],
-  })
-  const block = message.content.find((item) => item.type === "text")
-  if (!block || block.type !== "text") throw new Error("Anthropic returned no text")
-  return block.text
-}
-
-function extractJson(text: string): any {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  const candidate = fenced ? fenced[1] : text
-  const start = candidate.indexOf("[")
-  const end = candidate.lastIndexOf("]")
-  if (start === -1 || end === -1) throw new Error("LLM response contained no JSON array")
-  return JSON.parse(candidate.slice(start, end + 1))
 }
 
 function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
@@ -203,8 +161,8 @@ Return ONLY a JSON array, no commentary:
   }
 ]`
 
-  const text = await callLlm(prompt)
-  const raw = extractJson(text) as RawCarousel[]
+  const text = await callContentKitLlm(prompt)
+  const raw = extractJsonArray(text) as RawCarousel[]
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned an empty carousel array")
 
   const decks: CarouselDeck[] = []

@@ -32,9 +32,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // CONTENT-VISUALS-01: the carousel render route reads these TTFs at runtime on Vercel
+  // CONTENT-VISUALS-01: the carousel + story render routes read these TTFs at runtime on Vercel
   outputFileTracingIncludes: {
-    "/api/admin/content-kit/render/**": ["./assets/fonts/*.ttf"],
+    "/api/admin/content-kit/**": ["./assets/fonts/*.ttf"],
   },
   // Enable Sentry instrumentation
   experimental: {
