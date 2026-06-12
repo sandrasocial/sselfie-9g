@@ -56,10 +56,25 @@
    value/CTA=detail, text-only only on request) + mobile (lightbox rebuilt flex/dvh/
    safe-area + swipe nav; edit-mode dvh; concierge drawer pins to visualViewport while
    keyboard is open) + inspiration attach button in the chat composer with preview chip.
-3. NEXT — flow-stuck: conversational format switching (Maya tool or client intent
-   detection so "make me a carousel" mid-chat actually switches format without chips).
-4. Overlay style example cards (member chat) + admin example manager.
-5. Home/front-door overhaul (design research -> build, image-first product cards:
+2b. ✅ SHIPPED 2026-06-12 (Sandra's 5th point): adaptive concept count + Maya learns.
+   - emit_concepts schema was `.length(3)` (hard lock). Now min 1 / max 9; persona sizes
+     the set to the ask: default 3 directions; 1-2 for one specific photo; 6-9 for a full
+     photoshoot as ONE cohesive world (same outfit/location/grade, varied shots: arrival,
+     action, hero, detail, closer). Client renders any count (validated per-card).
+   - New `remember` tool on the chat route: Maya silently appends lasting brand facts and
+     style preferences/aversions to app_v3_memory mid-conversation (dedup + 2000-char cap,
+     persona rule: never announce the save). This is the "learns how the user styles and
+     adapts" layer: every future session starts already knowing.
+3. NEXT — member insight loop (Sandra: "tell us what users are most happy with, what
+   they're not, what they're missing"): log behavior events (concept generated, image
+   downloaded, edit used, re-roll, clarify answers, remember notes volume) into
+   analytics_events (behavior only, per the Admin Data Contract), aggregate weekly into
+   a "Member pulse" section of the Monday content brief / daily briefing: loved looks,
+   friction points, asked-for-but-missing features.
+4. Flow-stuck: conversational format switching (Maya tool or client intent detection so
+   "make me a carousel" mid-chat actually switches format without chips).
+5. Overlay style example cards (member chat) + admin example manager.
+6. Home/front-door overhaul (design research -> build, image-first product cards:
    thumbnail_url on academy_product_overrides + admin Products tab w/ upload + Maya
    mockup generation; Kajabi-style owned/locked walls on /academy + /app Library).
 

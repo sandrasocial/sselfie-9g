@@ -2,9 +2,10 @@
 //
 // Stage 1 of the two-stage pipeline: Maya (Claude Sonnet 4.5) holds an in-character
 // conversation and, once she understands the request, calls the emit_concepts tool with
-// EXACTLY 3 production-grade concept briefs. The client renders her streamed prose plus the
-// 3 concept cards; generation happens later on the synchronous /generate route when the
-// user clicks a card. No image model is called here.
+// production-grade concept briefs sized to the ask (default 3; 1-2 for one specific photo;
+// 6-9 for a full photoshoot). The client renders her streamed prose plus the concept cards;
+// generation happens later on the synchronous /generate route when the user clicks a card.
+// No image model is called here.
 //
 // Isolated /app endpoint. Reuses shared auth + the persona-injected system prompt only.
 
@@ -15,7 +16,7 @@ import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
-import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -91,7 +92,13 @@ const emitConcepts = tool({
     "understand what they want. Each concept's brief must be production-grade with exact brand names, " +
     "a named camera body, and named lighting. Never more or fewer than 3.",
   inputSchema: z.object({
-    concepts: z.array(conceptSchema).length(3),
+    concepts: z
+      .array(conceptSchema)
+      .min(1)
+      .max(9)
+      .describe(
+        "Size the set to her ask: 3 distinct directions by default; 1-2 when she described one specific photo; 6-9 cohesive shots when she asked for a full photoshoot/series.",
+      ),
   }),
   // Echo the concepts as the tool output so the client renders them from part.output.concepts,
   // matching the app's existing tool-part convention. Default stop-after-step keeps this terminal.
@@ -197,9 +204,11 @@ export async function POST(req: Request) {
     // Both feed her confidence so she asks only when she genuinely doesn't know (best-effort).
     let memory = null
     let recentActivity: string[] = []
+    let memoryUserId: string | null = null
     try {
       const neonUserId = await getUserIdFromSupabase(user.id)
       if (neonUserId) {
+        memoryUserId = String(neonUserId)
         memory = await getMemory(String(neonUserId))
         const chats = await listChats(String(neonUserId))
         recentActivity = chats
@@ -244,11 +253,49 @@ export async function POST(req: Request) {
       modelMessages = attachInspiration(modelMessages, body.inspirationImageUrl)
     }
 
+    // SUITE-UX-02: Maya learns as she goes. When the user expresses a lasting brand fact or
+    // style preference, she appends it to cross-session memory (app_v3_memory) herself —
+    // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
+    const remember = tool({
+      description:
+        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Never announce the save in your reply.",
+      inputSchema: z.object({
+        brandNote: z
+          .string()
+          .optional()
+          .describe("Short lasting brand fact, e.g. 'Sells a 12-week pilates program for new moms'."),
+        preference: z
+          .string()
+          .optional()
+          .describe("Short lasting style preference or aversion, e.g. 'Hates studio backdrops; loves warm window light'."),
+      }),
+      execute: async ({ brandNote, preference }) => {
+        if (!memoryUserId || (!brandNote?.trim() && !preference?.trim())) return { saved: false }
+        try {
+          const current = await getMemory(memoryUserId)
+          const append = (cur: string | null, add?: string): string | undefined => {
+            const a = add?.trim()
+            if (!a) return undefined
+            if (cur && cur.toLowerCase().includes(a.toLowerCase())) return undefined
+            return (cur ? `${cur}\n${a}` : a).slice(-2000)
+          }
+          await saveMemory(memoryUserId, {
+            brandNotes: append(current.brandNotes, brandNote),
+            preferences: append(current.preferences, preference),
+          })
+          return { saved: true }
+        } catch (e) {
+          console.error("[app-v3 maya chat] remember tool failed:", e)
+          return { saved: false }
+        }
+      },
+    })
+
     const result = streamText({
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify },
+      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify, remember },
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
