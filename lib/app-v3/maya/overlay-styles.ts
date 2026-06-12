@@ -92,5 +92,9 @@ export function getOverlayStyleGuide(): string {
     "Rules: a polished founder or coach usually wants editorial-serif-center; a raw personal story wants",
     "lower-third-accent; a minimalist or wellness brand wants top-band-minimal; a recurring reel series",
     "wants series-cover. When unsure, use editorial-serif-center. Set the chosen id on graphic.overlayStyle.",
+    "",
+    "If she asks what styles you can do, or wants to choose the text look herself, call show_style_options",
+    "(kind 'overlay') so she can tap an example card. When she picks one, honor it on every following",
+    "concept until she changes it; if it sounds like a lasting preference, also save it with remember.",
   ].join("\n")
 }

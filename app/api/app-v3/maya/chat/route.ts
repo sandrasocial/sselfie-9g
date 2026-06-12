@@ -330,11 +330,44 @@ export async function POST(req: Request) {
       },
     })
 
+    // SUITE-UX-02 slice 6: the text styles become something she can SEE and tap, not guess
+    // from names. Cards carry the admin-curated example image per style (app_v3_style_examples).
+    const showStyleOptions = tool({
+      description:
+        "Show the text style options as tappable visual example cards. Call this when she asks what " +
+        "text/overlay styles exist, wants to choose how the text or the slides look, or asks for 'a " +
+        "different style' on a cover, story slide, or carousel. Keep your reply to one short line and " +
+        "do NOT call emit_concepts in the same turn; after she taps a style, use it (graphic.overlayStyle " +
+        "or graphic.designSystem) on every following concept until she changes it.",
+      inputSchema: z.object({
+        kind: z
+          .enum(["overlay", "carousel"])
+          .optional()
+          .describe(
+            "overlay = text styles for covers and story slides; carousel = whole-set design systems. " +
+              "Defaults to what fits the current format.",
+          ),
+      }),
+      execute: async ({ kind }) => {
+        const resolved = kind ?? (format === "carousel" ? "carousel" : "overlay")
+        const { listStyleOptions } = await import("@/lib/app-v3/maya/style-example-store")
+        const options = await listStyleOptions(resolved).catch(() => [])
+        logBehavior("suite_style_options_shown", { format, kind: resolved })
+        return { kind: resolved, options }
+      },
+    })
+
     const result = streamText({
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: { emit_concepts: emitConcepts, ask_clarify: askClarify, set_format: setFormat, remember },
+      tools: {
+        emit_concepts: emitConcepts,
+        ask_clarify: askClarify,
+        set_format: setFormat,
+        remember,
+        show_style_options: showStyleOptions,
+      },
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept

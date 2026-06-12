@@ -17,6 +17,7 @@ import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { ClarifyCard } from "./clarify-card"
+import { StyleOptionsCard } from "./style-options-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
@@ -137,6 +138,24 @@ function extractFormatSwitch(part: any): OutputFormat | null {
   }
   const fmt = part.output?.format ?? part.input?.format
   return FORMAT_OPTIONS.some((o) => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
+/** Pull the style picker out of a show_style_options tool part (SUITE-UX-02 slice 6). */
+function extractStyleOptions(part: any): { kind: "overlay" | "carousel"; options: any[] } | null {
+  if (!part || typeof part !== "object") return null
+  if (
+    part.type !== "tool-show_style_options" &&
+    !(part.type === "dynamic-tool" && part.toolName === "show_style_options")
+  ) {
+    return null
+  }
+  const payload = part.output
+  if (!payload || !Array.isArray(payload.options) || payload.options.length === 0) return null
+  const kind = payload.kind === "carousel" ? "carousel" : "overlay"
+  const options = payload.options.filter(
+    (o: any) => o && typeof o.id === "string" && typeof o.name === "string",
+  )
+  return options.length > 0 ? { kind, options } : null
 }
 
 /** Pull an inline question out of an ask_clarify tool part. */
@@ -1046,6 +1065,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               | ConceptCardData[]
               | undefined
             const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
+            const stylePart = parts.map(extractStyleOptions).find(Boolean) as
+              | { kind: "overlay" | "carousel"; options: any[] }
+              | undefined
             // Maya tried to present directions but none survived (truncated/failed tool call):
             // never leave a dead end — offer a one-tap re-pull instead.
             const conceptsLost =
@@ -1078,6 +1100,15 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                     clarify={clarifyPart}
                     onPick={(answer) => sendMessage({ text: answer })}
                     onFreeText={focusComposer}
+                    disabled={isThinking}
+                  />
+                )}
+
+                {stylePart && (
+                  <StyleOptionsCard
+                    kind={stylePart.kind}
+                    options={stylePart.options}
+                    onPick={(o) => sendMessage({ text: `Use the "${o.name}" style.` })}
                     disabled={isThinking}
                   />
                 )}

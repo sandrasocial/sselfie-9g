@@ -137,6 +137,7 @@ export function getCarouselDesignGuide(): string {
     "- Your 3 concepts must NOT all use the same design system: give at least two different systems across the set, so she sees genuinely different directions, not one style three times.",
     "- Match system to topic and look: moody or authority -> full-bleed-editorial; teaching or collage energy -> cutout-editorial; light, bright, checklist -> soft-minimal.",
     "- If she asks for a specific style, or repeats one she loved, honor that instead.",
+    "- If she asks what styles exist or wants to choose the look herself, call show_style_options (kind 'carousel') so she can tap an example card; then use her pick on every following concept until she changes it.",
     "",
     "Slide mix rules (non-negotiable):",
     '- Tag every slide with "visual": "identity" | "detail" | "text-only".',

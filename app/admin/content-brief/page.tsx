@@ -6,6 +6,8 @@ import { ContentBriefClient } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
+import { StyleExamplesClient } from "@/components/admin/style-examples-client"
+import { listStyleOptions } from "@/lib/app-v3/maya/style-example-store"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { listShoots } from "@/lib/content-kit/shoot-generator"
@@ -117,6 +119,7 @@ export default async function ContentBriefPage() {
   const selfies = await listAdminSelfies().catch(() => [])
   const stories = await listStorySequences().catch(() => [])
   const shoots = await listShoots().catch(() => [])
+  const styleOptions = await listStyleOptions().catch(() => [])
 
   const availableImages = [
     ...shoots.flatMap((shoot) =>
@@ -157,6 +160,9 @@ export default async function ContentBriefPage() {
           </Collapsed>
           <Collapsed title="Story sequences" hint="Doctrine story slides">
             <ContentStoryClient initialSequences={stories} availableImages={availableImages} />
+          </Collapsed>
+          <Collapsed title="Text style examples" hint="The cards members tap when picking a text style">
+            <StyleExamplesClient initialOptions={styleOptions} />
           </Collapsed>
         </div>
       </main>

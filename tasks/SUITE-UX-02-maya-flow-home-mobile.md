@@ -89,7 +89,19 @@
    restored as the member's face after refresh. Concierge restores all three alongside the
    selfie on open (never clobbering same-session state) and each slot has change (re-tap)
    + remove (×) controls; inspiration "Remove" clears the saved copy too.
-6. Overlay style example cards (member chat) + admin example manager.
+6. ✅ SHIPPED 2026-06-12 — overlay style example cards + admin example manager.
+   New show_style_options tool on the chat route: when a member asks what text styles
+   exist or wants to choose the look, Maya shows the overlay styles (covers/stories) or
+   carousel design systems as tappable visual cards (StyleOptionsCard); tapping one tells
+   Maya and she honors it on every following concept (persona guides updated in
+   overlay-styles.ts + carousel-design-systems.ts). Cards carry one admin-curated example
+   image per style from app_v3_style_examples (migration 60, run on Neon 2026-06-12;
+   lazy-ensure in lib/app-v3/maya/style-example-store.ts); styles without an example
+   render a typographic placeholder so the picker always works. Admin manager: "Text
+   style examples" collapsed section on /admin/content-brief (StyleExamplesClient +
+   /api/admin/style-examples): upload an example, "Maya example" generates a no-people
+   typography demo with the production image model, remove resets. Behavior event:
+   suite_style_options_shown.
 7. Home/front-door overhaul (design research -> build, image-first product cards:
    thumbnail_url on academy_product_overrides + admin Products tab w/ upload + Maya
    mockup generation; Kajabi-style owned/locked walls on /academy + /app Library).
