@@ -122,6 +122,8 @@ interface ChatBody {
   format?: OutputFormat
   inspirationImageUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
+  /** MAYA-ADMIN-01: the /admin surface sets this; only honored for the admin email. */
+  adminSession?: boolean
 }
 
 /** Only public Vercel Blob https URLs are accepted as an inspiration image. */
@@ -211,7 +213,7 @@ export async function POST(req: Request) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)
     }
 
-    const system = getAppV3MayaSystemPrompt({
+    let system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
         body?.aestheticIntent?.trim() ||
@@ -226,6 +228,16 @@ export async function POST(req: Request) {
       // EVERY generation path carries Vault DNA, never a generic posed-studio default.
       vaultStyleGuide: getVaultStyleGuide(body?.aestheticId) ?? getVaultOverviewGuide(),
     })
+
+    // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
+    // Server-gated on the admin email — the flag alone does nothing for anyone else.
+    if (body?.adminSession === true) {
+      const { isAdminEmail } = await import("@/lib/admin-feature-flags")
+      if (isAdminEmail(user.email)) {
+        const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
+        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}`
+      }
+    }
 
     let modelMessages = await convertToModelMessages(uiMessages)
     if (isAllowedInspirationUrl(body?.inspirationImageUrl)) {

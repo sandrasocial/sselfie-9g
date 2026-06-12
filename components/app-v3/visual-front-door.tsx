@@ -53,23 +53,39 @@ const AestheticTile = memo(function AestheticTile({
   )
 })
 
-export function VisualFrontDoor() {
+export function VisualFrontDoor({
+  // MAYA-ADMIN-01: header copy is overridable so the admin mount doesn't show member
+  // marketing lines. Defaults keep /app exactly as it was.
+  eyebrow = "SSELFIE Studio",
+  title = "Pick a vibe to begin.",
+  subtitle = "Choose the look you want. Maya takes it from there: one selfie becomes a full brand shoot.",
+  note = "Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · your gallery",
+  compact = false,
+}: {
+  eyebrow?: string
+  title?: string
+  subtitle?: string
+  note?: string | null
+  compact?: boolean
+} = {}) {
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
   const { openWithAesthetic } = useConcierge()
   return (
-    <section className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
-      <header className="mb-8 sm:mb-12">
-        <p className="text-[10px] uppercase tracking-[0.34em] text-[#818283]">SSELFIE Studio</p>
-        <h1 className="mt-3 font-serif text-[34px] sm:text-[46px] font-light leading-[1.05] text-[#0D0E10]">
-          Pick a vibe to begin.
+    <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16"}>
+      <header className={compact ? "mb-6" : "mb-8 sm:mb-12"}>
+        <p className="text-[10px] uppercase tracking-[0.34em] text-[#818283]">{eyebrow}</p>
+        <h1
+          className={`mt-3 font-serif font-light leading-[1.05] text-[#0D0E10] ${
+            compact ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[46px]"
+          }`}
+        >
+          {title}
         </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">
-          Choose the look you want. Maya takes it from there: one selfie becomes a full brand shoot.
-        </p>
-        <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">
-          Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · your gallery
-        </p>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">{subtitle}</p>
+        {note && (
+          <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">{note}</p>
+        )}
       </header>
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}

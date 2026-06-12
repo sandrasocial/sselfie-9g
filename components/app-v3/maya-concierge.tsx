@@ -139,7 +139,7 @@ function extractClarify(part: any): ClarifyPrompt | null {
   return { question: payload.question, options, allowFreeText: Boolean(payload.allowFreeText) }
 }
 
-export function MayaConcierge() {
+export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, close } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
   const sideInput = useRef<HTMLInputElement>(null)
@@ -222,6 +222,8 @@ export function MayaConcierge() {
     format: OutputFormat
     referenceSelfieUrl: string | null
     inspirationImageUrl: string | null
+    /** MAYA-ADMIN-01: set by the /admin mount; server-verified against the admin email. */
+    adminSession?: boolean
   }>({
     aestheticName: "",
     aestheticIntent: "",
@@ -229,6 +231,7 @@ export function MayaConcierge() {
     format: "photo",
     referenceSelfieUrl: null,
     inspirationImageUrl: null,
+    adminSession: admin || undefined,
   })
 
   const transport = useMemo(
@@ -335,6 +338,7 @@ export function MayaConcierge() {
     format,
     referenceSelfieUrl,
     inspirationImageUrl: inspirationUrl,
+    adminSession: admin || undefined,
   }
 
   async function handleUpload(slot: UploadSlot, file: File) {
