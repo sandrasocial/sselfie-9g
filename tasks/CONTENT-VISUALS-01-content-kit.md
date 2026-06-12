@@ -1,6 +1,6 @@
 # CONTENT-VISUALS-01 — Content Kit (automated content visuals, Sandra approves + posts manually)
 
-*Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Status: Phase 1 in progress.*
+*Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Status: Phases 1+2 LIVE 2026-06-12.*
 
 ## Why
 
@@ -17,7 +17,7 @@ Weekly content brief (exists, `analytics_reports.content_brief_weekly`)
 → `/admin/content-brief` shows the kit for review
 → Sandra downloads + posts.
 
-## Phase 1 — Carousel engine (BUILDING NOW)
+## Phase 1 — Carousel engine (✅ LIVE 2026-06-12, commit a3e0f584)
 
 - `content_carousels` table: id, created_at, title, slug, caption, slides jsonb, status
   ('draft'|'approved'|'posted'), source_period_start. Setup: `scripts/setup-content-carousels.ts`.
@@ -36,13 +36,18 @@ Weekly content brief (exists, `analytics_reports.content_brief_weekly`)
   "Carousel kit" section: generate button, slide previews, per-slide download, caption copy,
   approve/posted buttons.
 
-## Phase 2 — Demo image engine (NEXT)
+## Phase 2 — Demo image engine (✅ LIVE 2026-06-12, commit 18d028f5)
 
-- Sandra's reference selfie + editing-prompt topics (color grading, lens/camera looks, presets,
-  outfit/hair/location changes) → gpt-image-2 (`openai.images.edit`, same pipeline as app-v3)
-  → before/after pairs attached to the kit.
+- Sandra's reference selfies (her `user_avatar_images` rows, same library as /app) + an editing
+  prompt → gpt-image-2 (`openai.images.edit`, identical call shape to app-v3) → after image +
+  1080x1350 side-by-side composite, both in Vercel Blob, rows in `content_demo_pairs`.
+- Identity guard appended server-side to EVERY prompt: face stays natural/recognizable (no-fake
+  doctrine cannot be bypassed by prompt wording). Setup: `scripts/setup-content-demo-pairs.ts`.
+- `lib/content-kit/demo-generator.ts` · `/api/admin/content-kit/demos` (GET/POST/DELETE,
+  admin session or CRON_SECRET bearer) · UI section "Before · after demos" on
+  `/admin/content-brief` with selfie picker + 5 preset editing prompts (cinematic grade,
+  85mm lens, warm film, outfit, location).
 - Each pair doubles as: carousel slides, reel cover, story frame, and live proof of the product.
-- Reuses `OPENAI_IMAGE_MODEL` env. Cost: cents/image.
 
 ## Phase 3 — Motion + UGC-style teaching videos (RESEARCHED, NOT STARTED)
 
