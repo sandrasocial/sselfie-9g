@@ -1,6 +1,8 @@
 import { AdminNav } from "@/components/admin/admin-nav"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { ContentBriefClient } from "@/components/admin/content-brief-client"
+import { ContentKitClient } from "@/components/admin/content-kit-client"
+import { listCarousels } from "@/lib/content-kit/carousel-generator"
 
 export const dynamic = "force-dynamic"
 
@@ -9,6 +11,7 @@ export default async function ContentBriefPage() {
     reportType: "content_brief_weekly",
     limit: 8,
   })
+  const carousels = await listCarousels().catch(() => [])
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -24,6 +27,7 @@ export default async function ContentBriefPage() {
           </p>
         </div>
         <ContentBriefClient initialReports={reports as any} />
+        <ContentKitClient initialCarousels={carousels} />
       </main>
     </div>
   )

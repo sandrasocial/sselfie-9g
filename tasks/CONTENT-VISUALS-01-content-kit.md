@@ -1,0 +1,74 @@
+# CONTENT-VISUALS-01 — Content Kit (automated content visuals, Sandra approves + posts manually)
+
+*Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Status: Phase 1 in progress.*
+
+## Why
+
+Sandra's viral DNA (docs/strategy/IG_GROWTH_OS_2026-06-11.md) needs ~5 posts/week. Her filmed
+tutorials cannot and should not be automated (originality scoring + no-fake doctrine). Everything
+around them can: carousels, before/after demo images, reel covers, story slides, captions.
+Target: cut 60-70% of her content production time without one automated post going out
+un-approved. **Nothing ever auto-posts. Sandra posts manually. This is locked.**
+
+## Pipeline shape
+
+Weekly content brief (exists, `analytics_reports.content_brief_weekly`)
+→ Content Kit generator expands it into finished visuals
+→ `/admin/content-brief` shows the kit for review
+→ Sandra downloads + posts.
+
+## Phase 1 — Carousel engine (BUILDING NOW)
+
+- `content_carousels` table: id, created_at, title, slug, caption, slides jsonb, status
+  ('draft'|'approved'|'posted'), source_period_start. Setup: `scripts/setup-content-carousels.ts`.
+- `lib/content-kit/types.ts` — slide schema: kind 'hook'|'step'|'list'|'quote'|'cta', eyebrow,
+  title, body, items, footer.
+- `lib/content-kit/carousel-generator.ts` — reads latest weekly brief payload + top
+  `ig_media_snapshots` hooks, expands the brief's carousel pieces into full 7-9 slide decks.
+  LLM: **OpenRouter primary** (`anthropic/claude-sonnet-4.5`, funded), direct Anthropic fallback.
+  Voice: imports `SANDRA_VOICE_RULES` from `lib/content-engine/brief-generator.ts` (now exported).
+- Render: `app/api/admin/content-kit/render/[id]/[slide]` — `ImageResponse` from `next/og`
+  (satori, no chromium), 1080x1350 PNG, design-system tokens (porcelain/obsidian/stone),
+  Cormorant Garamond display + Inter detail. Fonts committed in `assets/fonts/`.
+- APIs: POST `/api/admin/content-kit/generate`, GET list + PATCH status on
+  `/api/admin/content-kit`. Admin-gated (ssa@ssasocial.com session).
+- UI: merged INTO `/admin/content-brief` (Admin Data Contract rule 5: no new admin page) —
+  "Carousel kit" section: generate button, slide previews, per-slide download, caption copy,
+  approve/posted buttons.
+
+## Phase 2 — Demo image engine (NEXT)
+
+- Sandra's reference selfie + editing-prompt topics (color grading, lens/camera looks, presets,
+  outfit/hair/location changes) → gpt-image-2 (`openai.images.edit`, same pipeline as app-v3)
+  → before/after pairs attached to the kit.
+- Each pair doubles as: carousel slides, reel cover, story frame, and live proof of the product.
+- Reuses `OPENAI_IMAGE_MODEL` env. Cost: cents/image.
+
+## Phase 3 — Motion + UGC-style teaching videos (RESEARCHED, NOT STARTED)
+
+Two tracks, both on fal.ai (account exists):
+
+1. **B-roll**: Kling 3.0 image-to-video on the best gpt-image-2 stills (multi-shot,
+   consistent elements).
+2. **Seedance 2.0 teaching/demo videos** — method from @byjoeym's guide
+   (https://joeymulcahyguides.notion.site/Hack-UGC-w-Claude-Seedance-2-0-3662b10bd516816e8ffbf73ed0393acc):
+   - Claude authors a structured multi-shot Seedance prompt: opening style line, scene,
+     reference tags (@Image1 headshot · @Image2 body · @Image3 product), timecoded action
+     beats, dialogue, close. One fal call returns the finished multi-shot video, no stitching.
+   - Cost ~$0.30/sec at 720p (15s ≈ $4.50).
+   - **Do NOT describe the product visually in the prompt** — the reference image is ground
+     truth; visual descriptors cause drift.
+   - **Seedance blocks realistic face uploads.** Talent features are described in text, so
+     likeness is approximate. Therefore: Sandra's face stays REAL filmed footage; Seedance
+     renders the OVERLAY/demo content (Maya walkthroughs, "what your brand video could look
+     like" examples for her audience's products/services). This keeps the no-fake doctrine
+     intact: AI makes the examples, Sandra stays Sandra.
+   - Build shape: a `/seedance-demo` skill-style generator script + kit attachment. Gate on
+     Phase 1+2 being used weekly first.
+
+## Hard rules
+
+- No auto-posting, ever. Status flow ends at Sandra's hands.
+- All copy obeys SANDRA_VOICE_RULES + no-fake doctrine. No em-dashes in any rendered slide.
+- Design system tokens only (docs/SSELFIE_DESIGN_SYSTEM.md). No gold, no gradients on buttons.
+- Money/metrics shown anywhere obey the Admin Data Contract.

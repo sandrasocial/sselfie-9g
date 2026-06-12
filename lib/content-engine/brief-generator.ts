@@ -58,7 +58,7 @@ export type ContentBrief = {
   researchNotes: string
 }
 
-const SANDRA_VOICE_RULES = `
+export const SANDRA_VOICE_RULES = `
 VOICE (non-negotiable):
 - Sandra's voice: like texting a close friend. Warm, honest, short sentences. Contractions always.
 - NEVER use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential.
