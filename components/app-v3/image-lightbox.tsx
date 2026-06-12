@@ -18,6 +18,8 @@ interface ImageLightboxProps {
 export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
+  // SUITE-UX-02 mobile: swipe left/right navigates multi-image sets (carousel slides).
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -33,45 +35,61 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
   if (!url) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-5 top-5 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
+    // SUITE-UX-02 mobile: flex column with a min-h-0 image region (no fixed 80vh), safe-area
+    // padding, full-height on the DYNAMIC viewport so phones never crop or letterbox oddly.
+    <div className="fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#0D0E10]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-[max(env(safe-area-inset-top),0.75rem)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:px-4">
+      <div className="flex shrink-0 justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-2 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
+        >
+          Close
+        </button>
+      </div>
+
+      <div
+        className="relative flex min-h-0 flex-1 items-center justify-center"
+        onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+        onTouchEnd={(e) => {
+          if (touchStartX === null || count < 2) return
+          const delta = (e.changedTouches[0]?.clientX ?? touchStartX) - touchStartX
+          if (delta > 48) setIndex((p) => (p > 0 ? p - 1 : count - 1))
+          if (delta < -48) setIndex((p) => (p < count - 1 ? p + 1 : 0))
+          setTouchStartX(null)
+        }}
       >
-        Close
-      </button>
+        {count > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={() => setIndex((p) => (p > 0 ? p - 1 : count - 1))}
+              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:left-1"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Next"
+              onClick={() => setIndex((p) => (p < count - 1 ? p + 1 : 0))}
+              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:right-1"
+            >
+              ›
+            </button>
+          </>
+        )}
 
-      {count > 1 && (
-        <>
-          <button
-            type="button"
-            aria-label="Previous"
-            onClick={() => setIndex((p) => (p > 0 ? p - 1 : count - 1))}
-            className="absolute left-3 top-1/2 -translate-y-1/2 px-4 py-3 text-3xl leading-none text-white/70 hover:text-white"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            aria-label="Next"
-            onClick={() => setIndex((p) => (p < count - 1 ? p + 1 : 0))}
-            className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-3 text-3xl leading-none text-white/70 hover:text-white"
-          >
-            ›
-          </button>
-        </>
-      )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={`Result ${index + 1}`}
+          decoding="async"
+          className="max-h-full max-w-full rounded-[6px] object-contain"
+        />
+      </div>
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt={`Result ${index + 1}`}
-        decoding="async"
-        className="mx-auto max-h-[80vh] w-auto max-w-3xl rounded-[6px] object-contain"
-      />
-
-      <div className="mt-4 flex items-center gap-4">
+      <div className="flex shrink-0 items-center justify-center gap-4 pt-3">
         <a
           href={url}
           download

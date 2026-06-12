@@ -213,6 +213,28 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const [sideProfileUrl, setSideProfileUrl] = useState<string | null>(null)
   const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null)
   const [inspirationUrl, setInspirationUrl] = useState<string | null>(null)
+  // SUITE-UX-02: inspiration attaches straight from the composer (no buried slot).
+  const attachInputRef = useRef<HTMLInputElement>(null)
+
+  // SUITE-UX-02 mobile: when the on-screen keyboard opens, iOS shrinks only the VISUAL
+  // viewport; a 100dvh drawer keeps its layout height and a dead dark gap opens under the
+  // composer. Track the visual viewport and pin the drawer to it while the keyboard is up.
+  const [keyboardBox, setKeyboardBox] = useState<{ height: number; top: number } | null>(null)
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null
+    if (!vv) return
+    const update = () => {
+      const keyboardLikely = window.innerHeight - vv.height > 80
+      setKeyboardBox(keyboardLikely ? { height: vv.height, top: vv.offsetTop } : null)
+    }
+    vv.addEventListener("resize", update)
+    vv.addEventListener("scroll", update)
+    update()
+    return () => {
+      vv.removeEventListener("resize", update)
+      vv.removeEventListener("scroll", update)
+    }
+  }, [])
 
   // Latest context for the chat transport (read fresh on every send).
   const extrasRef = useRef<{
@@ -581,6 +603,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
       <aside
         role="dialog"
         aria-label={`${agentLabel}, ${aesthetic.name}`}
+        style={
+          keyboardBox
+            ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
+            : undefined
+        }
         className="relative flex h-[100dvh] w-full max-w-md flex-col bg-[#F8FAFA] shadow-xl animate-in slide-in-from-right duration-300 ease-out motion-reduce:animate-none"
       >
         {/* Header — one calm row. Actions live in a quiet menu, and Close is always visible
@@ -1080,7 +1107,48 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
         <div className="shrink-0 border-t border-[#C5C6C8]/40 px-5 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-6">
+          {inspirationUrl && (
+            <div className="mb-2 flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={inspirationUrl}
+                alt="Inspiration"
+                className="h-9 w-9 rounded-[4px] object-cover"
+              />
+              <span className="min-w-0 flex-1 truncate text-[11px] text-[#818283]">
+                Inspiration attached. Maya uses its style, never its face.
+              </span>
+              <button
+                type="button"
+                onClick={() => setInspirationUrl(null)}
+                className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+              >
+                Remove
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
+            <input
+              ref={attachInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void handleUpload("inspiration", file)
+                if (attachInputRef.current) attachInputRef.current.value = ""
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Attach an inspiration image"
+              title="Attach an inspiration image"
+              onClick={() => attachInputRef.current?.click()}
+              disabled={uploadingSlot === "inspiration"}
+              className="shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 text-[20px] font-light leading-none text-[#4F5052] hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
+            >
+              {uploadingSlot === "inspiration" ? "…" : "+"}
+            </button>
             <input
               ref={composerRef}
               type="text"

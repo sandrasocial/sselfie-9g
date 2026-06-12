@@ -325,6 +325,8 @@ function compileCarouselIdentityPrompt(
     "Hair: keep her natural hair color and texture from the reference photo.",
     ACCESSORIES_NOTE,
     clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
+    // SUITE-UX-02: her moment should match the slide's copy, not just the set's scenery.
+    `This slide's message: "${heading}". Her expression, gesture and the captured moment should match that message.`,
     system.identityTreatment,
     system.setDna,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
@@ -360,6 +362,9 @@ function compileCarouselDetailPrompt(
   return [
     "Create a premium editorial DETAIL photograph for an Instagram carousel slide (4:5).",
     NO_PEOPLE,
+    // SUITE-UX-02: the image must express the slide's message, not just the set's scenery —
+    // this line is what keeps the photograph and the copy telling the same story.
+    `This slide's message: "${heading}".${body ? ` Supporting line: "${body}".` : ""} Compose and style the photograph so it visually expresses that message.`,
     `Subject: ${resolvedSubject}.`,
     `It belongs to the same world as the rest of the set: ${clean(brief.setting)}. Mood: ${clean(brief.mood)}.`,
     system.detailTreatment,

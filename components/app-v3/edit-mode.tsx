@@ -68,7 +68,7 @@ export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps)
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-[#0D0E10]/95 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
+    <div className="fixed inset-0 z-[80] flex h-[100dvh] flex-col bg-[#0D0E10]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
       <header className="flex shrink-0 items-center justify-between px-5 py-3.5">
         <p className="text-[11px] uppercase tracking-[0.22em] text-white/80">Edit with Maya</p>
         <button type="button" onClick={onClose} className="text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white">
@@ -91,7 +91,7 @@ export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps)
         </div>
 
         {/* Edit panel — pinned right on desktop, below (scrollable) on mobile. Always reachable. */}
-        <div className="max-h-[55vh] shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-[#0D0E10]/85 p-5 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
+        <div className="max-h-[55dvh] shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-[#0D0E10]/85 p-5 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
           {error && <p className="text-[12px] text-white/80">{error}</p>}
 
           <div>

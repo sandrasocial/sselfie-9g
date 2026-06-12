@@ -73,7 +73,7 @@ const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
   "story-slide":
     "The user wants a vertical Story slide with on-image text. Each concept's brief.graphic.headline (and optional subline) must hold the exact words to render.",
   carousel:
-    "The user wants a cohesive multi-slide carousel. Give each concept a brief.graphic.slides array (4 to 6 slides) with a hook slide, value slides, and a CTA slide; set each slide's role AND visual type, pick ONE designSystem per concept, and give every detail slide a concrete detailSubject (see CAROUSEL DESIGN SYSTEMS below).",
+    "The user wants a cohesive multi-slide carousel. Give each concept a brief.graphic.slides array (4 to 6 slides) with a hook slide, value slides, and a CTA slide; set each slide's role AND visual type, ALWAYS set designSystem per concept (your 3 concepts must not all share one design system), default every value and CTA slide to a photographed 'detail' visual whose detailSubject expresses that slide's message, and reserve 'text-only' for when the user asks or one long-list slide truly needs it (see CAROUSEL DESIGN SYSTEMS below).",
 }
 
 // The ONE variable usually still open per format — a guide for judgment, NOT a mandate to ask.

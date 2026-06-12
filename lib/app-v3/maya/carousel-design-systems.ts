@@ -35,7 +35,7 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
     id: "cutout-editorial",
     name: "Cutout Editorial",
     whenToUse:
-      "The default WOW. Instagram-native teaching and story carousels: collage energy, cutout stickers, " +
+      "Instagram-native teaching and story carousels: collage energy, cutout stickers, " +
       "handwritten notes. Feels saved-from-Pinterest, personal, and current.",
     setDna:
       "Design system: editorial collage, like a curated moodboard page. One muted palette across the whole set " +
@@ -112,13 +112,13 @@ export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
 
 /**
  * Default visual mix when Maya doesn't tag slides (back-compat + safety net).
- * Doctrine: 1-2 identity slides max. Hook carries her (the scroll-stopper), the CTA is
- * text-only, values alternate detail / text-only.
+ * Doctrine: 1-2 identity slides max; every other slide carries a photograph by default
+ * (SUITE-UX-02: image backgrounds are the default; text-only happens only when Maya
+ * deliberately tags it, e.g. because the user asked for text-led slides).
  */
-export function defaultSlideVisual(role: "hook" | "value" | "cta", valueIndex: number): SlideVisual {
+export function defaultSlideVisual(role: "hook" | "value" | "cta", _valueIndex: number): SlideVisual {
   if (role === "hook") return "identity"
-  if (role === "cta") return "text-only"
-  return valueIndex % 2 === 0 ? "detail" : "text-only"
+  return "detail"
 }
 
 /** The carousel design guide injected into Maya's system prompt (carousel format only). */
@@ -132,12 +132,19 @@ export function getCarouselDesignGuide(): string {
     "Pick ONE design system per concept (set brief.graphic.designSystem) that fits her brand and the topic:",
     systems,
     "",
+    "Design system VARIATION (non-negotiable):",
+    "- ALWAYS set brief.graphic.designSystem explicitly on every carousel concept. Never leave it blank.",
+    "- Your 3 concepts must NOT all use the same design system: give at least two different systems across the set, so she sees genuinely different directions, not one style three times.",
+    "- Match system to topic and look: moody or authority -> full-bleed-editorial; teaching or collage energy -> cutout-editorial; light, bright, checklist -> soft-minimal.",
+    "- If she asks for a specific style, or repeats one she loved, honor that instead.",
+    "",
     "Slide mix rules (non-negotiable):",
     '- Tag every slide with "visual": "identity" | "detail" | "text-only".',
+    "- IMAGE-FIRST DEFAULT: every slide carries a photograph unless she asks for text-led slides. Hook = identity; value and CTA slides = detail with a concrete photographed subject. Use text-only ONLY when she asks for it, or when the copy is a long list that genuinely needs a pure typographic page (at most one such slide per set).",
     "- MAX 2 identity slides per carousel (usually just the hook). She must stay clearly recognizable on them — never an idealized stranger.",
-    '- Detail slides show HER world, no people: give each a concrete "detailSubject" (e.g. "cappuccino on a marble table beside her phone", "open notebook with a pen and reading glasses", "leather bag on a cafe chair"). Draw subjects from her brand and the chosen look.',
-    "- Text-only slides carry lists, the big statement, or the CTA. The copy is the hero.",
+    '- Detail slides show HER world, no people: give each a concrete "detailSubject" that VISUALIZES that slide\'s message, not just the scene (the slide "stop using flash" -> a phone face-down by a window with soft daylight; "5 ways to boost confidence" -> a mirror, a written affirmation card). Pull subjects from her brand and the chosen look.',
+    "- Text-only slides (when used) carry lists, the big statement, or the CTA. The copy is the hero.",
     "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
-    "- The whole set shares one palette and one voice. Vary the slide types so the carousel feels designed, never repetitive.",
+    "- The whole set shares one palette and one voice. Vary the slide compositions so the carousel feels designed, never repetitive.",
   ].join("\n")
 }
