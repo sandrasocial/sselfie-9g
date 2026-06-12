@@ -13,6 +13,16 @@ export type CarouselSlide = {
   footer?: string
 }
 
+export type DemoPair = {
+  id: number
+  title: string
+  editPrompt: string
+  beforeUrl: string
+  afterUrl: string
+  compositeUrl: string | null
+  createdAt: string
+}
+
 export type CarouselDeck = {
   id: number
   title: string
