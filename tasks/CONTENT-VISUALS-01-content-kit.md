@@ -2,6 +2,11 @@
 
 *Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Status: Phases 1+2 LIVE 2026-06-12.*
 
+> **⚠️ SUPERSEDED 2026-06-12 by `tasks/SHOOT-STUDIO-01-admin-shoot-studio.md`.** Sandra
+> reviewed Phases 1+2 and they don't match her real workflow (shoot-first, not topic-first).
+> The demo engine UI is retired; carousel/story engines stay but get re-pointed at shoots.
+> Phase 3 video research below remains valid.
+
 ## Why
 
 Sandra's viral DNA (docs/strategy/IG_GROWTH_OS_2026-06-11.md) needs ~5 posts/week. Her filmed

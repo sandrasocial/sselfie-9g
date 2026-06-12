@@ -2,10 +2,11 @@ import { AdminNav } from "@/components/admin/admin-nav"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { ContentBriefClient } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
-import { ContentDemoClient } from "@/components/admin/content-demo-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
+import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
-import { listAdminSelfies, listDemoPairs } from "@/lib/content-kit/demo-generator"
+import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
+import { listShoots } from "@/lib/content-kit/shoot-generator"
 import { listStorySequences } from "@/lib/content-kit/story-generator"
 
 export const dynamic = "force-dynamic"
@@ -16,15 +17,17 @@ export default async function ContentBriefPage() {
     limit: 8,
   })
   const carousels = await listCarousels().catch(() => [])
-  const demoPairs = await listDemoPairs().catch(() => [])
   const selfies = await listAdminSelfies().catch(() => [])
   const stories = await listStorySequences().catch(() => [])
+  const shoots = await listShoots().catch(() => [])
 
+  // Photo pickers feed on shoot output first (the real content unit), selfies as fallback.
   const availableImages = [
-    ...demoPairs.flatMap((pair) => [
-      { url: pair.afterUrl, label: `Demo: ${pair.title}` },
-      ...(pair.compositeUrl ? [{ url: pair.compositeUrl, label: `Before/after: ${pair.title}` }] : []),
-    ]),
+    ...shoots.flatMap((shoot) =>
+      shoot.shots
+        .filter((shot) => shot.status !== "killed" && shot.imageUrl)
+        .map((shot) => ({ url: shot.imageUrl as string, label: shot.title })),
+    ),
     ...selfies.slice(0, 8).map((url) => ({ url, label: "Your selfie" })),
   ]
 
@@ -42,9 +45,9 @@ export default async function ContentBriefPage() {
           </p>
         </div>
         <ContentBriefClient initialReports={reports as any} />
+        <ShootStudioClient initialShoots={shoots} selfies={selfies} />
         <ContentKitClient initialCarousels={carousels} availableImages={availableImages} />
         <ContentStoryClient initialSequences={stories} availableImages={availableImages} />
-        <ContentDemoClient initialPairs={demoPairs} selfies={selfies} />
       </main>
     </div>
   )

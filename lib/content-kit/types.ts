@@ -55,6 +55,42 @@ export type StorySequence = {
   createdAt: string
 }
 
+// SHOOT-STUDIO-01: an inspiration-driven photoshoot — the content unit everything spins from.
+
+export type ShootShot = {
+  /** Stable per-shoot id, "shot-1".."shot-n". */
+  id: string
+  /** "Collection Name · Shot Name" (middle dot, vault card convention). */
+  title: string
+  /** Sandra-voice posting guidance (vault whenToUse convention). */
+  whenToUse: string
+  /** 5 dot-separated lowercase tags. */
+  mood: string
+  /** Full vault-anatomy prompt, shareable paste-into-ChatGPT form. */
+  prompt: string
+  /** Generated image (Vercel Blob URL). Absent until generation completes. */
+  imageUrl?: string
+  status: "draft" | "approved" | "killed"
+}
+
+export type ShootMessage = {
+  role: "sandra" | "agent"
+  text: string
+  at: string
+}
+
+export type Shoot = {
+  id: number
+  title: string
+  slug: string
+  status: "draft" | "approved" | "archived"
+  inspirationUrls: string[]
+  selfieUrl: string
+  shots: ShootShot[]
+  messages: ShootMessage[]
+  createdAt: string
+}
+
 export type DemoPair = {
   id: number
   title: string
