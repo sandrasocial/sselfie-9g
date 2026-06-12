@@ -35,9 +35,13 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json().catch(() => ({}))
+    const imageUrls = Array.isArray(body.imageUrls)
+      ? body.imageUrls.filter((url: unknown): url is string => typeof url === "string")
+      : []
     const carousels = await generateCarousels({
-      count: typeof body.count === "number" ? body.count : 2,
+      count: typeof body.count === "number" ? body.count : imageUrls.length > 0 ? 1 : 2,
       topic: typeof body.topic === "string" && body.topic.trim() ? body.topic.trim() : undefined,
+      imageUrls,
     })
     return NextResponse.json({ success: true, carousels })
   } catch (error: any) {

@@ -129,11 +129,25 @@ function DeckCard({
   )
 }
 
-export function ContentKitClient({ initialCarousels }: { initialCarousels: CarouselDeck[] }) {
+export function ContentKitClient({
+  initialCarousels,
+  availableImages = [],
+}: {
+  initialCarousels: CarouselDeck[]
+  /** Backgrounds she can build a photo-first deck around (demo images + selfies). */
+  availableImages?: Array<{ url: string; label: string }>
+}) {
   const [decks, setDecks] = useState<CarouselDeck[]>(initialCarousels)
   const [topic, setTopic] = useState("")
+  const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function toggleImage(url: string) {
+    setSelectedImages((current) =>
+      current.includes(url) ? current.filter((item) => item !== url) : [...current, url],
+    )
+  }
 
   async function generate() {
     setGenerating(true)
@@ -142,12 +156,16 @@ export function ContentKitClient({ initialCarousels }: { initialCarousels: Carou
       const response = await fetch("/api/admin/content-kit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 2, topic: topic.trim() || undefined }),
+        body: JSON.stringify({
+          topic: topic.trim() || undefined,
+          imageUrls: selectedImages,
+        }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setDecks([...data.carousels, ...decks])
       setTopic("")
+      setSelectedImages([])
     } catch (err: any) {
       setError(err?.message || "Generation failed")
     } finally {
@@ -190,9 +208,45 @@ export function ContentKitClient({ initialCarousels }: { initialCarousels: Carou
           disabled={generating}
           className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
         >
-          {generating ? "Writing your carousels (about a minute)" : "Generate 2 carousels"}
+          {generating
+            ? "Writing your carousels (about a minute)"
+            : selectedImages.length > 0
+              ? "Generate photo carousel"
+              : "Generate 2 carousels"}
         </button>
       </div>
+
+      {availableImages.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs uppercase tracking-wide text-stone-500">
+            Photo backgrounds (the viral format: tap in order, first = hook, last = CTA)
+          </p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
+            {availableImages.map((image) => {
+              const order = selectedImages.indexOf(image.url)
+              return (
+                <button
+                  key={image.url}
+                  type="button"
+                  onClick={() => toggleImage(image.url)}
+                  title={image.label}
+                  className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                    order >= 0 ? "border-stone-950" : "border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image.url} alt={image.label} className="h-24 w-[4.5rem] object-cover" loading="lazy" />
+                  {order >= 0 && (
+                    <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-stone-950 text-[10px] text-white">
+                      {order + 1}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-4 space-y-3">

@@ -28,6 +28,41 @@ SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect lim
 type GeneratorInput = {
   count?: number
   topic?: string
+  /** Background images (Vercel Blob URLs, e.g. Phase 2 demo images or her selfies).
+   * Applied photo-first: hook gets the first, extra images become pure photo proof
+   * slides after the hook, the CTA gets the last. */
+  imageUrls?: string[]
+}
+
+function isAllowedImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}
+
+/** Niche-viral layout (@prompts.ig pattern, hers by typography): photo hook ->
+ * photo proof block -> clean teaching slides (save-bait) -> photo CTA. */
+function applyImages(slides: CarouselSlide[], imageUrls: string[]): CarouselSlide[] {
+  if (imageUrls.length === 0) return slides
+  const result = slides.map((slide) => ({ ...slide }))
+  result[0].imageUrl = imageUrls[0]
+  const last = result[result.length - 1]
+  if (imageUrls.length >= 2 && last.kind === "cta") {
+    last.imageUrl = imageUrls[imageUrls.length - 1]
+  }
+  const middles = imageUrls.slice(1, imageUrls.length >= 2 ? -1 : undefined)
+  if (middles.length > 0) {
+    const proofSlides: CarouselSlide[] = middles.map((url) => ({
+      kind: "photo",
+      title: "",
+      imageUrl: url,
+    }))
+    result.splice(1, 0, ...proofSlides)
+  }
+  return result
 }
 
 type RawCarousel = {
@@ -101,7 +136,9 @@ function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
 }
 
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
-  const count = Math.min(Math.max(input.count ?? 2, 1), 4)
+  const imageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
+  // Selected images describe ONE deck's visuals, so image runs default to a single deck.
+  const count = Math.min(Math.max(input.count ?? (imageUrls.length > 0 ? 1 : 2), 1), 4)
 
   const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
   const brief = briefs[0]?.payload ?? null
@@ -173,7 +210,7 @@ Return ONLY a JSON array, no commentary:
   const decks: CarouselDeck[] = []
   for (const carousel of raw.slice(0, count)) {
     if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) continue
-    const slides = sanitizeSlides(carousel.slides)
+    const slides = applyImages(sanitizeSlides(carousel.slides), imageUrls)
     const slug = (carousel.slug || carousel.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)
     const caption = (carousel.caption || "").replace(/—/g, ":")
     const rows = (await sql`

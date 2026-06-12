@@ -100,6 +100,153 @@ function Frame({
   )
 }
 
+/** Photo-first slide: full-bleed image, bottom scrim, white text. The niche-viral
+ * format (@prompts.ig pattern) with Sandra's editorial typography on top. */
+function PhotoFrame({ slide, counter }: { slide: CarouselSlide; counter: string }) {
+  const isHook = slide.kind === "hook"
+  const isCta = slide.kind === "cta"
+  const isPlainPhoto = slide.kind === "photo"
+  const hasText = !isPlainPhoto && Boolean(slide.title)
+
+  return (
+    <div
+      style={{
+        width: WIDTH,
+        height: HEIGHT,
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        fontFamily: "Inter",
+        backgroundColor: OBSIDIAN,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={slide.imageUrl}
+        width={WIDTH}
+        height={HEIGHT}
+        style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: WIDTH,
+          height: HEIGHT,
+          display: "flex",
+          background: hasText
+            ? "linear-gradient(180deg, rgba(10,10,10,0.30) 0%, rgba(10,10,10,0.00) 22%, rgba(10,10,10,0.00) 46%, rgba(10,10,10,0.82) 100%)"
+            : "linear-gradient(180deg, rgba(10,10,10,0.30) 0%, rgba(10,10,10,0.00) 20%, rgba(10,10,10,0.00) 78%, rgba(10,10,10,0.45) 100%)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 64,
+          left: 72,
+          width: WIDTH - 144,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            fontSize: 24,
+            fontWeight: 600,
+            letterSpacing: 6,
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.92)",
+          }}
+        >
+          {slide.eyebrow || "SSELFIE"}
+        </div>
+        <div style={{ display: "flex", fontSize: 24, color: "rgba(255,255,255,0.8)", letterSpacing: 4 }}>
+          {counter}
+        </div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 64,
+          left: 72,
+          width: WIDTH - 144,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isCta ? "center" : "flex-start",
+        }}
+      >
+        {hasText && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: isCta ? "center" : "flex-start",
+              marginBottom: 40,
+            }}
+          >
+            <div style={{ display: "flex", width: 110, height: 2, backgroundColor: PORCELAIN, marginBottom: 40 }} />
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cormorant Garamond",
+                fontWeight: 600,
+                fontSize: isHook ? 96 : 80,
+                lineHeight: 1.06,
+                color: PORCELAIN,
+                textAlign: isCta ? "center" : "left",
+              }}
+            >
+              {slide.title}
+            </div>
+            {slide.body ? (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 32,
+                  color: "rgba(255,255,255,0.88)",
+                  marginTop: 28,
+                  lineHeight: 1.45,
+                  textAlign: isCta ? "center" : "left",
+                  maxWidth: 820,
+                }}
+              >
+                {slide.body}
+              </div>
+            ) : null}
+          </div>
+        )}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: WIDTH - 144,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: 24,
+              fontWeight: 600,
+              letterSpacing: 6,
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.92)",
+            }}
+          >
+            @sandra.social
+          </div>
+          <div style={{ display: "flex", fontSize: 24, color: "rgba(255,255,255,0.8)", letterSpacing: 4 }}>
+            sselfie.ai
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SlideContent({ slide }: { slide: CarouselSlide }) {
   if (slide.kind === "hook") {
     return (
@@ -294,7 +441,9 @@ export async function GET(
   const fonts = await loadFonts()
 
   return new ImageResponse(
-    (
+    slide.imageUrl ? (
+      <PhotoFrame slide={slide} counter={counter} />
+    ) : (
       <Frame dark={dark} eyebrow={slide.eyebrow} counter={counter}>
         <SlideContent slide={slide} />
       </Frame>

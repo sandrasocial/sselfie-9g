@@ -31,7 +31,16 @@ export default async function ContentBriefPage() {
           </p>
         </div>
         <ContentBriefClient initialReports={reports as any} />
-        <ContentKitClient initialCarousels={carousels} />
+        <ContentKitClient
+          initialCarousels={carousels}
+          availableImages={[
+            ...demoPairs.flatMap((pair) => [
+              { url: pair.afterUrl, label: `Demo: ${pair.title}` },
+              ...(pair.compositeUrl ? [{ url: pair.compositeUrl, label: `Before/after: ${pair.title}` }] : []),
+            ]),
+            ...selfies.slice(0, 8).map((url) => ({ url, label: "Your selfie" })),
+          ]}
+        />
         <ContentDemoClient initialPairs={demoPairs} selfies={selfies} />
       </main>
     </div>
