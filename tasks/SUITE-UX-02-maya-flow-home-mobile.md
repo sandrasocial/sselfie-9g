@@ -79,8 +79,18 @@
    from the tool part and the existing auto-pull fetches fresh directions with the right
    format guidance. Each part applies once; loading an old chat pre-seeds its parts so
    history never replays a switch.
-5. Overlay style example cards (member chat) + admin example manager.
-6. Home/front-door overhaul (design research -> build, image-first product cards:
+5. ✅ SHIPPED 2026-06-12 — optional reference uploads persist (Sandra's report: side
+   profile / full body / inspiration were lost on refresh while the face selfie survived).
+   Migration 59 extends user_avatar_images.image_type with side-profile/full-body/
+   inspiration (run on Neon 2026-06-12). Upload route takes a `slot` field and keeps ONE
+   active image per optional slot (new upload replaces old); DELETE handler clears a slot.
+   Reference-library returns `extras` (newest active per slot) and now excludes those types
+   from the face list — also fixes a real bug where the newest upload of ANY slot could be
+   restored as the member's face after refresh. Concierge restores all three alongside the
+   selfie on open (never clobbering same-session state) and each slot has change (re-tap)
+   + remove (×) controls; inspiration "Remove" clears the saved copy too.
+6. Overlay style example cards (member chat) + admin example manager.
+7. Home/front-door overhaul (design research -> build, image-first product cards:
    thumbnail_url on academy_product_overrides + admin Products tab w/ upload + Maya
    mockup generation; Kajabi-style owned/locked walls on /academy + /app Library).
 

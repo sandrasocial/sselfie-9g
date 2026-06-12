@@ -321,11 +321,12 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     activeSelfieRef.current = session?.referenceSelfieUrl ?? null
   }, [session])
 
-  // Identity persistence (QA P1-3): one quiet restore attempt per session. New members with no
-  // saved selfies are unaffected (empty library keeps the identity-first gate in place).
+  // Identity persistence (QA P1-3 + SUITE-UX-02): one quiet restore attempt per session.
+  // Brings back the newest saved face selfie AND the optional slots (side profile, full
+  // body, inspiration) so nothing has to be re-uploaded after a refresh. New members with
+  // no saved images are unaffected (empty library keeps the identity-first gate in place).
   useEffect(() => {
     if (!isOpen || !session) return
-    if (session.referenceSelfieUrl) return
     if (restoreTriedRef.current === session.startedAt) return
     restoreTriedRef.current = session.startedAt
     fetch("/api/app-v3/reference-library")
@@ -338,6 +339,15 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           setSelfieRestored(true)
           setReferenceSelfieUrl(latest)
         }
+        // Optional slots: restore only into empty state — never clobber something the
+        // member just uploaded or removed this session.
+        const asUrl = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null)
+        const side = asUrl(d?.extras?.sideProfile)
+        const body = asUrl(d?.extras?.fullBody)
+        const inspo = asUrl(d?.extras?.inspiration)
+        if (side) setSideProfileUrl((prev) => prev ?? side)
+        if (body) setFullBodyUrl((prev) => prev ?? body)
+        if (inspo) setInspirationUrl((prev) => prev ?? inspo)
       })
       .catch(() => {})
   }, [isOpen, session, setReferenceSelfieUrl])
@@ -403,6 +413,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     try {
       const form = new FormData()
       form.append("file", file)
+      form.append("slot", slot) // persisted under its own type so each slot survives refresh
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
@@ -418,6 +429,15 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     } finally {
       setUploadingSlot(null)
     }
+  }
+
+  // SUITE-UX-02: removing an optional image must stick across refreshes, so clear the
+  // saved copy too (best-effort — local state clears either way).
+  function clearSlot(slot: "side" | "body" | "inspiration") {
+    if (slot === "side") setSideProfileUrl(null)
+    else if (slot === "body") setFullBodyUrl(null)
+    else setInspirationUrl(null)
+    void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
   }
 
   function handleSend() {
@@ -870,15 +890,27 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                     { slot: "inspiration" as const, ref: inspoInput, added: !!inspirationUrl, label: "Inspiration pose/vibe" },
                   ]
                 ).map(({ slot, ref, added, label }) => (
-                  <span key={slot}>
+                  <span key={slot} className="inline-flex items-center">
                     <button
                       type="button"
                       onClick={() => ref.current?.click()}
                       disabled={uploadingSlot === slot}
-                      className="rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+                      title={added ? `Change ${label.toLowerCase()}` : undefined}
+                      className={`border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60 ${added ? "rounded-l-[4px]" : "rounded-[4px]"}`}
                     >
                       {added ? `✓ ${label}` : uploadingSlot === slot ? "Uploading…" : `+ ${label}`}
                     </button>
+                    {added && (
+                      <button
+                        type="button"
+                        onClick={() => clearSlot(slot)}
+                        aria-label={`Remove ${label.toLowerCase()}`}
+                        title={`Remove ${label.toLowerCase()}`}
+                        className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#818283] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                      >
+                        ×
+                      </button>
+                    )}
                     <input
                       ref={ref}
                       type="file"
@@ -1167,7 +1199,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               </span>
               <button
                 type="button"
-                onClick={() => setInspirationUrl(null)}
+                onClick={() => clearSlot("inspiration")}
                 className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
               >
                 Remove
