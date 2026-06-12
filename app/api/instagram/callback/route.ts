@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
+import { verifyInstagramOAuthState } from "@/lib/instagram/oauth-state"
 import {
   selectPageWithInstagramAccount,
   type FacebookPageCandidate,
@@ -19,18 +20,13 @@ const PREFERRED_INSTAGRAM_USERNAMES = [
   "sselfie",
 ].filter(Boolean) as string[]
 
+// State must carry a valid HMAC issued by /api/instagram/connect (session-authed).
+// A missing or forged state yields userId null, which the handler rejects — nobody
+// can attach a connection to an arbitrary userId by crafting the redirect.
 function parseOAuthState(rawState?: string | null) {
-  const state = rawState?.trim()
-  if (!state) return { provider: "facebook_page" as const, userId: null }
-
-  if (state.startsWith("instagram_login:")) {
-    return {
-      provider: "instagram_login" as const,
-      userId: state.replace("instagram_login:", "").trim() || null,
-    }
-  }
-
-  return { provider: "facebook_page" as const, userId: state }
+  const verified = verifyInstagramOAuthState(rawState)
+  if (!verified) return { provider: "facebook_page" as const, userId: null }
+  return { provider: verified.provider, userId: verified.userId }
 }
 
 async function exchangeInstagramLoginCode(code: string) {

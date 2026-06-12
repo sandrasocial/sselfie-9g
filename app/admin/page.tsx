@@ -113,7 +113,7 @@ export default async function AdminPage({
             </span>
           </p>
           <a
-            href={`/api/instagram/connect?userId=${neonUser.id}&redirect=1`}
+            href="/api/instagram/connect?redirect=1"
             className="text-xs uppercase tracking-wide text-stone-950 underline underline-offset-4"
           >
             {igConnection ? "Reconnect" : "Connect Instagram"}

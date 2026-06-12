@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getAuthenticatedUser } from '@/lib/auth-helper'
+import { createInstagramOAuthState } from '@/lib/instagram/oauth-state'
+import { getUserByAuthId } from '@/lib/user-mapping'
 
 const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'
 const FACEBOOK_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!
@@ -15,14 +18,26 @@ function shouldUseInstagramLogin(provider?: string | null) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
     const provider = searchParams.get('provider')
     // redirect=1: send the browser straight into Meta's OAuth dialog (used by the
     // admin Connect Instagram button, which is a plain link, not a fetch).
     const wantsRedirect = searchParams.get('redirect') === '1'
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+    // userId comes from the session, never from the query string — the callback
+    // writes an instagram_connections row for this id, so it must be the caller's own.
+    const { user: authUser } = await getAuthenticatedUser()
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const neonUser = await getUserByAuthId(authUser.id)
+    if (!neonUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const userId = neonUser.id
+
+    const requestedUserId = searchParams.get('userId')
+    if (requestedUserId && requestedUserId !== userId) {
+      return NextResponse.json({ error: 'userId does not match the signed-in user' }, { status: 403 })
     }
 
     if (!FACEBOOK_APP_SECRET) {
@@ -79,7 +94,7 @@ export async function GET(request: NextRequest) {
       authUrl.searchParams.append('redirect_uri', REDIRECT_URI)
       authUrl.searchParams.append('scope', scope)
       authUrl.searchParams.append('response_type', 'code')
-      authUrl.searchParams.append('state', `instagram_login:${userId}`)
+      authUrl.searchParams.append('state', createInstagramOAuthState('instagram_login', userId))
 
       console.log('[v0] Instagram OAuth URL (Instagram Login):', {
         authUrl: authUrl.toString(),
@@ -109,7 +124,7 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI)
     authUrl.searchParams.append('scope', scope)
     authUrl.searchParams.append('response_type', 'code')
-    authUrl.searchParams.append('state', userId)
+    authUrl.searchParams.append('state', createInstagramOAuthState('facebook_page', userId))
     authUrl.searchParams.append('display', 'page')
 
     console.log('[v0] Instagram OAuth URL (Standard Access):', { authUrl: authUrl.toString(), redirectUri: REDIRECT_URI, scope })
