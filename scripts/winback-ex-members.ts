@@ -64,10 +64,17 @@ async function main() {
     let token = (existing[0]?.access_token as string | undefined)?.trim()
     if (!token) {
       token = randomUUID()
-      await sql`
+      // A row can exist with a NULL/empty token — upsert so we never hit the
+      // unique(email) constraint, and never overwrite a real existing token.
+      const upserted = await sql`
         INSERT INTO freebie_subscribers (email, name, source, access_token, created_at, updated_at)
         VALUES (${r.email}, ${r.name || r.email.split("@")[0]}, 'winback-ex-member', ${token}, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET
+          access_token = COALESCE(NULLIF(freebie_subscribers.access_token, ''), EXCLUDED.access_token),
+          updated_at = NOW()
+        RETURNING access_token
       `
+      token = (upserted[0]?.access_token as string)?.trim() || token
     }
     const claimUrl = `${SITE}/claim/${token}`
     const name = getFirstNameForEmail({ fullName: r.name, email: r.email })
