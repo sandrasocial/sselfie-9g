@@ -71,6 +71,22 @@ Two tracks, both on fal.ai (account exists):
    - Build shape: a `/seedance-demo` skill-style generator script + kit attachment. Gate on
      Phase 1+2 being used weekly first.
 
+## Phase 1.5 — covers, grid hook, story engine (✅ LIVE 2026-06-12, commit dcaf4163)
+
+- **Reel covers**: any deck slide at 1080x1920 via `?format=cover` (counter dropped);
+  download link per deck.
+- **2x2 grid hook**: 4+ selected images → the prompts.ig signature grid (same person,
+  four worlds) with the serif hook over a scrim. `gridUrls` on the hook slide.
+- **Story sequence engine**: Sandra's Story Prompt Engineer doctrine
+  (docs/funnel/STORY_SLIDE_DOCTRINE_2026-06-12.md — wins on conflict) embedded in
+  `lib/content-kit/story-generator.ts`. Role arc hook→tension→shift→proof→desire→bridge→cta;
+  CTA architecture (desire question / DM me: / KEYWORD / reassurance). Renderer
+  `/api/admin/content-kit/story/[id]/[slide]` at 1080x1920: **photo never re-generated**
+  (untouched background layer = structural identity preservation), text + SVG hand-drawn
+  doodles (squiggle underline, double-stroke keyword ellipse, arrow) + Caveat handwritten
+  notes on top. Her old ChatGPT image-edit prompt flow stays valid for ad-hoc use.
+- Shared LLM helper: `lib/content-kit/llm.ts` (OpenRouter primary, Anthropic fallback).
+
 ## Visual format doctrine (audited live vs @prompts.ig, 2026-06-12)
 
 The AI-prompt niche is photo-first: @prompts.ig decks = full-bleed photo hook with one bold
