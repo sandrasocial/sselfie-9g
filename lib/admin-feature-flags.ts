@@ -14,6 +14,11 @@ export function isAdminEmail(email?: string | null): boolean {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
 }
 
+/** Lowercased admin emails, e.g. for excluding Sandra's own usage from member aggregates. */
+export function getAdminEmails(): string[] {
+  return [...ADMIN_EMAILS]
+}
+
 /**
  * Check if Pro Photoshoot feature is enabled (admin-only)
  */

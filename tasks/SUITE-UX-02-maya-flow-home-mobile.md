@@ -65,12 +65,14 @@
      style preferences/aversions to app_v3_memory mid-conversation (dedup + 2000-char cap,
      persona rule: never announce the save). This is the "learns how the user styles and
      adapts" layer: every future session starts already knowing.
-3. NEXT — member insight loop (Sandra: "tell us what users are most happy with, what
-   they're not, what they're missing"): log behavior events (concept generated, image
-   downloaded, edit used, re-roll, clarify answers, remember notes volume) into
-   analytics_events (behavior only, per the Admin Data Contract), aggregate weekly into
-   a "Member pulse" section of the Monday content brief / daily briefing: loved looks,
-   friction points, asked-for-but-missing features.
+3. ✅ SHIPPED 2026-06-12 — member insight loop. Six suite_* behavior events in the
+   analytics contract (concepts emitted w/ count, clarify asked, image generated w/
+   rerun+vibe+format, image downloaded, edit applied w/ instruction, memory note saved);
+   logged server-side in app-v3 chat/generate/edit routes (fail-open), downloads client-side.
+   Aggregated by lib/admin/member-pulse.ts (excludes admin user ids; download rate = loved,
+   re-roll rate = friction; fresh app_v3_memory preference lines = what they want; recent
+   edit asks = friction themes). Surfaced as a "Member pulse" collapsed section on
+   /admin/content-brief and a section in the Monday content-brief email.
 4. Flow-stuck: conversational format switching (Maya tool or client intent detection so
    "make me a carousel" mid-chat actually switches format without chips).
 5. Overlay style example cards (member chat) + admin example manager.

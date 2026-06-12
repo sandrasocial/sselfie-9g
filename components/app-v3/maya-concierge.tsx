@@ -434,6 +434,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
       }))
       return
     }
+    // "Make another version" on a finished card is a re-roll — a friction signal the
+    // member pulse tracks server-side (SUITE-UX-02).
+    const rerun = genState[key]?.status === "done"
     setGenState((s) => ({ ...s, [key]: { status: "generating" } }))
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
@@ -446,6 +449,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
+          rerun,
           // Single-image formats stream progressive previews; carousels keep the JSON path.
           stream: format !== "carousel",
         }),

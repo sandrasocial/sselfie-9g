@@ -209,6 +209,18 @@ export async function POST(request: NextRequest) {
       console.error("[app-v3 edit] DB insert failed (image saved to Blob):", dbError)
     }
 
+    // SUITE-UX-02 member pulse: edits are a strong engagement signal; the instruction text
+    // (truncated) lets the weekly aggregate surface what members keep wanting changed.
+    import("@/lib/analytics/events")
+      .then(({ logAnalyticsEvent }) =>
+        logAnalyticsEvent({
+          eventName: "suite_edit_applied",
+          userId: String(neonUser.id),
+          properties: { source: "app-v3-edit", format, instruction: instruction.slice(0, 120) },
+        }),
+      )
+      .catch(() => {})
+
     return NextResponse.json({
       success: true,
       imageUrl: blob.url,

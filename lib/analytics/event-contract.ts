@@ -119,6 +119,14 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "trial_first_generation",
   "trial_expired",
   "membership_checkout_recovery_sent",
+  // SUITE-UX-02 — member pulse: what members DO with Maya in /app (behavior only, never money).
+  // Aggregated weekly by lib/admin/member-pulse.ts into the Monday content brief.
+  "suite_concepts_emitted",
+  "suite_clarify_asked",
+  "suite_image_generated",
+  "suite_image_downloaded",
+  "suite_edit_applied",
+  "suite_memory_note_saved",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

@@ -95,6 +95,14 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
           download
           target="_blank"
           rel="noreferrer"
+          onClick={() => {
+            // Member pulse: downloads = "she loved it" (SUITE-UX-02).
+            import("@/lib/analytics/client")
+              .then(({ trackAnalyticsEvent }) =>
+                trackAnalyticsEvent({ event: "suite_image_downloaded", properties: { source: "lightbox" } }),
+              )
+              .catch(() => {})
+          }}
           className="text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
         >
           Download

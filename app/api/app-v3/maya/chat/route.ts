@@ -240,12 +240,29 @@ export async function POST(req: Request) {
 
     // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
     // Server-gated on the admin email — the flag alone does nothing for anyone else.
+    let isAdminSession = false
     if (body?.adminSession === true) {
       const { isAdminEmail } = await import("@/lib/admin-feature-flags")
       if (isAdminEmail(user.email)) {
+        isAdminSession = true
         const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
         system = `${system}\n\n${ADMIN_MAYA_CONTRACT}`
       }
+    }
+
+    // SUITE-UX-02 member pulse: behavior events only (Admin Data Contract), fail-open,
+    // admin sessions tagged so the weekly aggregate can exclude Sandra's own use.
+    const logBehavior = (eventName: string, properties: Record<string, unknown>) => {
+      if (!memoryUserId) return
+      import("@/lib/analytics/events")
+        .then(({ logAnalyticsEvent }) =>
+          logAnalyticsEvent({
+            eventName,
+            userId: memoryUserId,
+            properties: { ...properties, admin: isAdminSession },
+          }),
+        )
+        .catch(() => {})
     }
 
     let modelMessages = await convertToModelMessages(uiMessages)
@@ -283,6 +300,10 @@ export async function POST(req: Request) {
             brandNotes: append(current.brandNotes, brandNote),
             preferences: append(current.preferences, preference),
           })
+          logBehavior("suite_memory_note_saved", {
+            brandNote: !!brandNote?.trim(),
+            preference: !!preference?.trim(),
+          })
           return { saved: true }
         } catch (e) {
           console.error("[app-v3 maya chat] remember tool failed:", e)
@@ -300,11 +321,28 @@ export async function POST(req: Request) {
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
       // tool call was cut mid-stream and its cards may not survive validation.
-      onFinish: ({ finishReason }) => {
+      onFinish: ({ finishReason, steps }) => {
         if (finishReason !== "stop" && finishReason !== "tool-calls") {
           console.error(
             `[app-v3 maya chat] stream ended early: finishReason=${finishReason} format=${format} — concept cards may be lost`,
           )
+        }
+        // Member pulse: count what Maya actually did this turn (behavior only, fail-open).
+        try {
+          for (const step of steps ?? []) {
+            for (const call of step.toolCalls ?? []) {
+              if (call.toolName === "emit_concepts") {
+                const count = Array.isArray((call.input as any)?.concepts)
+                  ? (call.input as any).concepts.length
+                  : null
+                logBehavior("suite_concepts_emitted", { format, count })
+              } else if (call.toolName === "ask_clarify") {
+                logBehavior("suite_clarify_asked", { format })
+              }
+            }
+          }
+        } catch {
+          /* analytics never breaks chat */
         }
       },
       onError: ({ error }) => {

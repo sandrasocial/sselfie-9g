@@ -130,6 +130,14 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
                   download
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => {
+                    // Member pulse: a download is the strongest "she loved it" signal (SUITE-UX-02).
+                    import("@/lib/analytics/client")
+                      .then(({ trackAnalyticsEvent }) =>
+                        trackAnalyticsEvent({ event: "suite_image_downloaded", properties: { format, source: "concept-card" } }),
+                      )
+                      .catch(() => {})
+                  }}
                   className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
                 >
                   Download
