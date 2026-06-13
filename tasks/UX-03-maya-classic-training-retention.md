@@ -3,7 +3,11 @@
 Date: 2026-05-27
 Agent: Codex
 Priority: Now (no gates required)
-Status: Ready to implement
+Status: Still active, needs schema refresh before implementation
+
+> Status audit 2026-06-13: Genuinely unbuilt. No Studio Member Health admin/report
+> output was found. The old query references legacy training paths, so refresh it
+> against the current live schema before building.
 
 ## Context
 

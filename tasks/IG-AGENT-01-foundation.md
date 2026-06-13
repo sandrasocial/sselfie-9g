@@ -1,6 +1,11 @@
 # IG-AGENT-01 — Instagram DM Agent: Foundation
 
-*Created: 2026-05-28 | Status: Ready for Codex*
+> Status audit 2026-06-13: Partly built, not fully launched. Admin inbox, webhook,
+> draft/reply routes, and the `IG_AGENT_AUTO_SEND_ENABLED` gate exist. The acceptance
+> checklist still needs live validation and should be consolidated with
+> `DM-RELIEF-01-dm-triage-system.md` before more implementation.
+
+*Created: 2026-05-28 | Status: Partly built, needs launch QA*
 
 ---
 

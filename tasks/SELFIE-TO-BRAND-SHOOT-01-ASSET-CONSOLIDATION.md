@@ -2,7 +2,10 @@
 
 Date: 2026-06-01
 Owner: Codex
-Status: Ready
+Status: Complete/stale
+
+> Status audit 2026-06-13: Complete. Required output exists at
+> `docs/funnel/SELFIE_TO_BRAND_SHOOT_ASSET_MAP_2026-06-01.md`.
 
 ## Purpose
 

@@ -1,5 +1,10 @@
 # SHOOT-STUDIO-01 — Admin Shoot Studio (inspiration → photoshoot → every channel)
 
+> Status audit 2026-06-13: Mostly complete. Phase B and Phase C are built: 6+
+> shot generation, extend flow, DB-backed publish, freebie/Vault/Library/Maya
+> surfaces, and drop-email preview/test/dry-run/send workflow. Remaining work is
+> operational: queue enough new approved shoots and QA one live drop.
+
 *Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Supersedes the CONTENT-VISUALS-01
 Phase 1/2 demo + brief-driven carousel flow (Sandra reviewed those and they don't match how
 she actually creates; see "Why" below).*

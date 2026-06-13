@@ -1,6 +1,10 @@
 # MAYA-REBUILD-05 — Port the Live Maya UI onto the /app Engine
 
-Status: DRAFT for Sandra's approval. No code yet.
+> Status audit 2026-06-13: Stale/superseded. Many listed UI pieces now exist in
+> `components/app-v3/` and `app/api/app-v3/`. Rewrite this as a current polish
+> checklist before assigning it to Codex.
+
+Status: Superseded/stale. Do not execute as-is.
 Branch: `studio-v3-staging` (never merge to `main` until Sandra says it is flawless)
 Date: 2026-06-09
 

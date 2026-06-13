@@ -1,5 +1,10 @@
 # DM-RELIEF-01 — Instagram DM triage + ManyChat consistency
 
+> Status audit 2026-06-13: Partly built and overlapping with
+> `IG-AGENT-01-foundation.md`. Admin inbox, webhook, and sender pieces exist. Before
+> building more, consolidate both DM specs into one current launch checklist and
+> live-QA permissions/send behavior.
+
 *Spec by Claude (Cowork) 2026-06-10. Sandra's pain: DM overload + guilt about unanswered
 followers + customer-service questions buried in keyword traffic.*
 

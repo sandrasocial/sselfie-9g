@@ -1,5 +1,9 @@
 # MAYA-ADMIN-01 — Maya becomes the admin content surface
 
+> Status audit 2026-06-13: Mostly built. Slice 1, approve/publish tooling, admin
+> content tools, and weekly brief knowledge are live in code. Genuine remaining
+> build: admin-specific approval/rejection memory, plus final handoff/live QA polish.
+
 *Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Supersedes the standalone Shoot
 Studio UI direction (SHOOT-STUDIO-01 Phase A stays live as a collapsed support tool until
 absorbed).*

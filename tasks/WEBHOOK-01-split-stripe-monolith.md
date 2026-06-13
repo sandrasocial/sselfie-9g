@@ -1,5 +1,10 @@
 # WEBHOOK-01 — Split the Stripe webhook monolith (strangler extraction, zero rewrites)
 
+> Status audit 2026-06-13: Real unfinished work. Extraction has started, but
+> `app/api/webhooks/stripe/route.ts` is still about 2200 lines, above the spec's
+> target. Because this is live-money code, continue only as a dedicated payment
+> task with characterization tests and one handler per commit.
+
 *Spec by Claude (Cowork) 2026-06-10. Implementing agent: read this fully, then read
 docs/DEEP_AUDIT_AND_CLEAN_PLAN_2026-06-10.md §5.1 and the funnel-truth memory below.*
 

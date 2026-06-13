@@ -1,5 +1,10 @@
 # SUITE-UX-02 — Maya flow, carousels, home overhaul, mobile (Sandra's 4-point review, 2026-06-12)
 
+> Status audit 2026-06-13: Complete/stale. The remaining image-first home/library
+> item is shipped: product thumbnails, admin Academy product image controls,
+> image-first `/app` Library cards, and `/academy` product cards. Do not rerun
+> this as a broad UX spec; create a new focused bug spec for any regression.
+
 *Owner: Claude (Cowork). Source: Sandra's review after MAYA-ADMIN-01 slice 1 shipped.*
 
 ## 1. Home / front door overhaul (image-first homebase)

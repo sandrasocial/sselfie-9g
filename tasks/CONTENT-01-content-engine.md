@@ -1,6 +1,10 @@
 # CONTENT-01 — Weekly Content Intelligence Engine
 
-*Spec written 2026-06-10. Status: implementing.*
+> Status audit 2026-06-13: Complete enough in code. Weekly brief cron, admin route,
+> admin page, report type, generator, and Vercel cron exist. Treat future work as
+> quality QA or iteration, not the original build spec.
+
+*Spec written 2026-06-10. Status: implemented/stale.*
 
 ## Problem
 

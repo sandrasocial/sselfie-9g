@@ -1,5 +1,10 @@
 # MEMBER-CHECKOUT-01 — Membership checkout email capture + payment-moment fixes
 
+> Status audit 2026-06-13: Complete/stale. Email capture is implemented on
+> `/checkout/membership`, recovery cron exists, analytics event is registered, and
+> tests cover the capture flow. Stripe product name/currency fixes are also done.
+> Do not treat Phase A as pending unless live QA finds a regression.
+
 *Spec written 2026-06-12 by Claude. Approved by Sandra 2026-06-12 ("Yes please" to email capture spec).*
 
 **Why this exists (verified data, 30 days to 2026-06-12):**

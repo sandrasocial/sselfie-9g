@@ -1,5 +1,10 @@
 # APP-CUTOVER-01 — Move members from legacy /studio to the new /app
 
+> Status audit 2026-06-13: Partly complete and partly operational. App v3 is live, and
+> `app/app/page.tsx` gates member access behind `APP_V3_MEMBERS_ENABLED`. Do not rerun
+> this as a branch-merge spec. Remaining work is readiness QA, env verification,
+> member comms, and monitoring.
+
 *Spec by Claude (Cowork) 2026-06-10. Sandra's directive: "current members are not able to use
 the old app — make everything ready to go." This is the comeback move: ONE app, working e2e.*
 

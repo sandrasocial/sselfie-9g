@@ -1,6 +1,10 @@
 # MAYA-REBUILD-02 · Studio 3.0 Engine — wire `generateMayaImage()` into `/app`
 
-Status: Spec v2 (refined for the `/app` shell — supersedes the legacy-shell cutover plan below)
+> Status audit 2026-06-13: Superseded/complete. App v3 generate/edit routes,
+> prompt compiler, and concierge wiring exist. Do not execute this as a fresh task
+> unless a current failing test or QA bug points to a specific gap.
+
+Status: Superseded by shipped App v3 engine work
 Owner: Codex (implement) · Claude (review)
 Depends on: PR #49 (Studio 3.0 Phase 1 `/app` scaffold) merged.
 
