@@ -50,6 +50,10 @@ describe("membership checkout email capture", () => {
     const membershipPage = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
 
     expect(membershipPage).toContain("Where should I send your access?")
+    expect(membershipPage).toContain("Continue to secure payment")
     expect(membershipPage).toContain("Skip and go straight to payment")
+    expect(membershipPage).toContain("SSELFIE SUITE")
+    expect(membershipPage).toContain("97 EUR / month")
+    expect(membershipPage).toContain("/images/email/studio-visual-workspace.jpg")
   })
 })

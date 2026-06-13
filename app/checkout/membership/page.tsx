@@ -65,6 +65,7 @@ export default async function MembershipCheckoutPage({
     const productId = params.interval === "year"
       ? "sselfie_studio_membership_annual"
       : "sselfie_studio_membership"
+    const isAnnual = params.interval === "year"
     const captureParams = {
       ...params,
       checkout_source: params.checkout_source || "membership_email_capture",
@@ -107,10 +108,28 @@ export default async function MembershipCheckoutPage({
           actionPath="/checkout/membership"
           eyebrow="SSELFIE SUITE"
           title="Where should I send your access?"
-          copy="Add your email before checkout so your login and receipt go to the right place. If anything pauses, I can help you pick up where you left off."
+          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. No account setup here."
           inputId="membership-checkout-email"
-          buttonLabel="Continue to checkout"
+          buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"
+          productName="SSELFIE SUITE"
+          productMeta="Maya, weekly execution, and your content workspace"
+          productPrice={isAnnual ? "970 EUR / year" : "97 EUR / month"}
+          reassurance="Used only for your login, receipt, and access link."
+          visuals={[
+            {
+              src: "/images/email/studio-visual-workspace.jpg",
+              alt: "Sandra inside the SSELFIE visual workspace",
+            },
+            {
+              src: "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
+              alt: "Editorial brand portrait created from the SSELFIE system",
+            },
+            {
+              src: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+              alt: "Clean personal brand portrait created from the SSELFIE system",
+            },
+          ]}
         />
       )
     }
