@@ -40,7 +40,15 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   carousel: "aspect-square",
 }
 
-export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, disabled }: ConceptCardProps) {
+export function ConceptCard({
+  concept,
+  gen,
+  format,
+  onGenerate,
+  onOpen,
+  onEdit,
+  disabled,
+}: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
   const images = gen.imageUrls ?? []
   const isDone = gen.status === "done" && images.length > 0
@@ -114,13 +122,15 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
 
         {isDone ? (
           <div className="space-y-3">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">Saved to your gallery</p>
-            <div className="flex items-center gap-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
+              Saved to your gallery
+            </p>
+            <div className="flex flex-wrap items-center gap-2 min-[380px]:gap-3">
               {isCarousel ? (
                 <button
                   type="button"
                   onClick={() => onOpen?.(images)}
-                  className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   View all slides
                 </button>
@@ -134,11 +144,14 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
                     // Member pulse: a download is the strongest "she loved it" signal (SUITE-UX-02).
                     import("@/lib/analytics/client")
                       .then(({ trackAnalyticsEvent }) =>
-                        trackAnalyticsEvent({ event: "suite_image_downloaded", properties: { format, source: "concept-card" } }),
+                        trackAnalyticsEvent({
+                          event: "suite_image_downloaded",
+                          properties: { format, source: "concept-card" },
+                        })
                       )
                       .catch(() => {})
                   }}
-                  className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download
                 </a>
@@ -147,7 +160,7 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
                 <button
                   type="button"
                   onClick={onEdit}
-                  className="rounded-[4px] border border-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
                 >
                   Edit this photo
                 </button>
@@ -157,7 +170,7 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
               type="button"
               onClick={onGenerate}
               disabled={disabled}
-              className="text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052] disabled:opacity-40"
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052] disabled:opacity-40"
             >
               Make another version
             </button>
@@ -167,9 +180,13 @@ export function ConceptCard({ concept, gen, format, onGenerate, onOpen, onEdit, 
             type="button"
             onClick={onGenerate}
             disabled={disabled || isGenerating}
-            className="w-full rounded-[4px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
+            className="min-h-11 w-full rounded-[4px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40 sm:tracking-[0.2em]"
           >
-            {isGenerating ? "Creating…" : format === "photo" ? "Start my brand shoot" : "Create this"}
+            {isGenerating
+              ? "Creating…"
+              : format === "photo"
+                ? "Start my brand shoot"
+                : "Create this"}
           </button>
         )}
       </div>

@@ -44,7 +44,8 @@ const MAYA_GENERAL: Aesthetic = {
   coverImage: "",
   thumbnails: [],
   shotCount: 0,
-  intent: "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
+  intent:
+    "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
 }
 
 const FORMAT_LABEL: Record<OutputFormat, string> = {
@@ -54,7 +55,12 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "story-slide": "Story slide",
 }
 
-function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSection = "create" }: AppV3ShellProps) {
+function ShellInner({
+  firstName,
+  accessLevel = "full",
+  trialDaysLeft,
+  initialSection = "create",
+}: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const { openWithAesthetic } = useConcierge()
   const limited = accessLevel === "limited"
@@ -73,13 +79,16 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSec
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFA] pb-[calc(5rem+env(safe-area-inset-bottom))] text-[#0D0E10]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10]">
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
       {accessLevel === "trial" && typeof trialDaysLeft === "number" && (
         <div className="border-b border-[#C5C6C8]/50 bg-white px-5 py-2.5 text-center">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+          <span className="text-[11px] uppercase leading-relaxed tracking-[0.12em] text-[#4F5052] sm:tracking-[0.16em]">
             Trial · {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left ·{" "}
-            <a href="/checkout/membership?interval=month&source=trial_banner" className="text-[#0D0E10] underline underline-offset-2">
+            <a
+              href="/checkout/membership?interval=month&source=trial_banner"
+              className="text-[#0D0E10] underline underline-offset-2"
+            >
               Keep your Studio
             </a>
           </span>
@@ -87,9 +96,12 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSec
       )}
       {limited && (
         <div className="border-b border-[#C5C6C8]/50 bg-white px-5 py-2.5 text-center">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+          <span className="text-[11px] uppercase leading-relaxed tracking-[0.12em] text-[#4F5052] sm:tracking-[0.16em]">
             Photo-making is paused. Your photos are still yours. ·{" "}
-            <a href="/join/studio?source=app_limited" className="text-[#0D0E10] underline underline-offset-2">
+            <a
+              href="/join/studio?source=app_limited"
+              className="text-[#0D0E10] underline underline-offset-2"
+            >
               Join the SUITE
             </a>
           </span>
@@ -104,7 +116,9 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSec
             </div>
             <div className="absolute inset-x-0 top-0 z-10 mx-auto max-w-3xl px-5 pt-10">
               <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">SSELFIE SUITE</p>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                  SSELFIE SUITE
+                </p>
                 <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
                   Maya&apos;s ready when you are.
                 </h2>
@@ -133,21 +147,27 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSec
         />
       )}
       {section === "library" && <LibraryView />}
-      {section === "account" && <AccountView firstName={firstName} onOpenLibrary={() => setSection("library")} trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null} />}
+      {section === "account" && (
+        <AccountView
+          firstName={firstName}
+          onOpenLibrary={() => setSection("library")}
+          trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
+        />
+      )}
 
       {!limited && <MayaConcierge />}
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
-          {NAV.map((n) => {
+          {NAV.map(n => {
             const active = n.id === section
             return (
               <button
                 key={n.id}
                 type="button"
                 onClick={() => setSection(n.id)}
-                className={`flex-1 py-3.5 text-[11px] uppercase tracking-[0.16em] transition-colors ${
+                className={`min-h-[56px] flex-1 px-0.5 py-2 text-[9px] uppercase tracking-[0.08em] transition-colors sm:text-[11px] sm:tracking-[0.16em] ${
                   active ? "text-[#0D0E10]" : "text-[#818283] hover:text-[#4F5052]"
                 }`}
               >
@@ -161,7 +181,12 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSec
   )
 }
 
-export function AppV3Shell({ firstName, accessLevel, trialDaysLeft, initialSection }: AppV3ShellProps) {
+export function AppV3Shell({
+  firstName,
+  accessLevel,
+  trialDaysLeft,
+  initialSection,
+}: AppV3ShellProps) {
   return (
     <ConciergeProvider>
       <ShellInner

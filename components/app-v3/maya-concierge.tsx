@@ -56,7 +56,7 @@ function newChatId(): string {
 
 /** Title a conversation from its first user message. */
 function deriveTitle(msgs: any[]): string | null {
-  const firstUser = msgs.find((m) => m?.role === "user")
+  const firstUser = msgs.find(m => m?.role === "user")
   if (!firstUser) return null
   const parts = Array.isArray(firstUser.parts) ? firstUser.parts : []
   const text = parts
@@ -93,8 +93,10 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
-  photo: "Your selfie's in, and your face stays yours. Hit create and pick the direction that feels most like you.",
-  "reel-cover": "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
+  photo:
+    "Your selfie's in, and your face stays yours. Hit create and pick the direction that feels most like you.",
+  "reel-cover":
+    "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
   carousel: "Your selfie's in, and your face stays yours. Hit create, then give me the topic.",
   "story-slide": "Your selfie's in, and your face stays yours. Hit create, then tell me the goal.",
 }
@@ -120,25 +122,31 @@ function extractConcepts(part: any): ConceptCardData[] | null {
   const payload = part.output?.concepts ?? part.input?.concepts ?? part.rawInput?.concepts
   if (!Array.isArray(payload)) return null
   return payload.filter(
-    (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string",
+    (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string"
   )
 }
 
 /** Did this assistant part attempt emit_concepts at all? (Drives the lost-cards retry state.) */
 function isConceptToolPart(part: any): boolean {
   if (!part || typeof part !== "object") return false
-  return part.type === "tool-emit_concepts" || (part.type === "dynamic-tool" && part.toolName === "emit_concepts")
+  return (
+    part.type === "tool-emit_concepts" ||
+    (part.type === "dynamic-tool" && part.toolName === "emit_concepts")
+  )
 }
 
 /** Pull the requested format out of a set_format tool part (SUITE-UX-02: conversational
  *  format switching — "make me a carousel" mid-chat works without tapping a chip). */
 function extractFormatSwitch(part: any): OutputFormat | null {
   if (!part || typeof part !== "object") return null
-  if (part.type !== "tool-set_format" && !(part.type === "dynamic-tool" && part.toolName === "set_format")) {
+  if (
+    part.type !== "tool-set_format" &&
+    !(part.type === "dynamic-tool" && part.toolName === "set_format")
+  ) {
     return null
   }
   const fmt = part.output?.format ?? part.input?.format
-  return FORMAT_OPTIONS.some((o) => o.id === fmt) ? (fmt as OutputFormat) : null
+  return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
 }
 
 /** Pull the style picker out of a show_style_options tool part (SUITE-UX-02 slice 6). */
@@ -154,7 +162,7 @@ function extractStyleOptions(part: any): { kind: "overlay" | "carousel"; options
   if (!payload || !Array.isArray(payload.options) || payload.options.length === 0) return null
   const kind = payload.kind === "carousel" ? "carousel" : "overlay"
   const options = payload.options.filter(
-    (o: any) => o && typeof o.id === "string" && typeof o.name === "string",
+    (o: any) => o && typeof o.id === "string" && typeof o.name === "string"
   )
   return options.length > 0 ? { kind, options } : null
 }
@@ -180,12 +188,16 @@ function extractAdminContentTool(part: any): AdminContentToolResult | null {
   if (!isAdminTool) return null
   const payload = part.output
   if (!payload || typeof payload.kind !== "string") return null
-  if (payload.kind === "sources" && Array.isArray(payload.shoots)) return payload as AdminContentToolResult
+  if (payload.kind === "sources" && Array.isArray(payload.shoots))
+    return payload as AdminContentToolResult
   if (payload.kind === "carousel" && payload.deck) return payload as AdminContentToolResult
   if (payload.kind === "story" && payload.sequence) return payload as AdminContentToolResult
-  if (payload.kind === "vault-publish" && payload.dropEmail) return payload as AdminContentToolResult
-  if (payload.kind === "vault-drop-handoff" && payload.dropEmail) return payload as AdminContentToolResult
-  if (payload.kind === "error" && typeof payload.message === "string") return payload as AdminContentToolResult
+  if (payload.kind === "vault-publish" && payload.dropEmail)
+    return payload as AdminContentToolResult
+  if (payload.kind === "vault-drop-handoff" && payload.dropEmail)
+    return payload as AdminContentToolResult
+  if (payload.kind === "error" && typeof payload.message === "string")
+    return payload as AdminContentToolResult
   return null
 }
 
@@ -194,7 +206,8 @@ function extractClarify(part: any): ClarifyPrompt | null {
   if (!part || typeof part !== "object") return null
   if (part.type !== "tool-ask_clarify" && part.type !== "dynamic-tool") return null
   const payload = part.output ?? part.input
-  if (!payload || typeof payload.question !== "string" || !Array.isArray(payload.options)) return null
+  if (!payload || typeof payload.question !== "string" || !Array.isArray(payload.options))
+    return null
   const options = payload.options.filter((o: any) => typeof o === "string" && o.trim().length > 0)
   if (options.length === 0) return null
   return { question: payload.question, options, allowFreeText: Boolean(payload.allowFreeText) }
@@ -224,7 +237,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<string[] | null>(null)
   // True Edit Mode target: which generated image we're refining.
-  const [editTarget, setEditTarget] = useState<{ key: string; url: string; format: OutputFormat } | null>(null)
+  const [editTarget, setEditTarget] = useState<{
+    key: string
+    url: string
+    format: OutputFormat
+  } | null>(null)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
     open: false,
@@ -252,8 +269,8 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   useEffect(() => {
     if (!isOpen) return
     fetch("/api/app-v3/maya/memory")
-      .then((r) => r.json())
-      .then((d) => {
+      .then(r => r.json())
+      .then(d => {
         setMemory({
           agentName: d?.agentName ?? null,
           brandNotes: d?.brandNotes ?? null,
@@ -262,7 +279,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         })
         setHasBrandProfile(d?.hasBrandProfile ?? true)
       })
-      .catch(() => setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }))
+      .catch(() =>
+        setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null })
+      )
   }, [isOpen])
 
   // Identity persistence (QA P1-3): returning members shouldn't re-upload their face. When Maya
@@ -327,7 +346,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           body: { messages, ...extrasRef.current },
         }),
       }),
-    [],
+    []
   )
 
   const { messages, sendMessage, status, error, setMessages } = useChat({ transport })
@@ -380,8 +399,8 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     if (restoreTriedRef.current === session.startedAt) return
     restoreTriedRef.current = session.startedAt
     fetch("/api/app-v3/reference-library")
-      .then((r) => r.json())
-      .then((d) => {
+      .then(r => r.json())
+      .then(d => {
         const latest = Array.isArray(d?.images)
           ? d.images.find((u: unknown): u is string => typeof u === "string" && u.length > 0)
           : null
@@ -391,13 +410,14 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         }
         // Optional slots: restore only into empty state — never clobber something the
         // member just uploaded or removed this session.
-        const asUrl = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null)
+        const asUrl = (v: unknown): string | null =>
+          typeof v === "string" && v.length > 0 ? v : null
         const side = asUrl(d?.extras?.sideProfile)
         const body = asUrl(d?.extras?.fullBody)
         const inspo = asUrl(d?.extras?.inspiration)
-        if (side) setSideProfileUrl((prev) => prev ?? side)
-        if (body) setFullBodyUrl((prev) => prev ?? body)
-        if (inspo) setInspirationUrl((prev) => prev ?? inspo)
+        if (side) setSideProfileUrl(prev => prev ?? side)
+        if (body) setFullBodyUrl(prev => prev ?? body)
+        if (inspo) setInspirationUrl(prev => prev ?? inspo)
       })
       .catch(() => {})
   }, [isOpen, session, setReferenceSelfieUrl])
@@ -541,7 +561,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
   async function generateConcept(key: string, concept: ConceptCardData) {
     if (!referenceSelfieUrl) {
-      setGenState((s) => ({
+      setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
       }))
@@ -550,7 +570,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     // "Make another version" on a finished card is a re-roll — a friction signal the
     // member pulse tracks server-side (SUITE-UX-02).
     const rerun = genState[key]?.status === "done"
-    setGenState((s) => ({ ...s, [key]: { status: "generating" } }))
+    setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
@@ -584,7 +604,8 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           for (const chunk of chunks) {
             const line = chunk.trim()
             if (!line.startsWith("data: ")) continue
-            let evt: { type?: string; b64?: string; imageUrls?: string[]; error?: string } | null = null
+            let evt: { type?: string; b64?: string; imageUrls?: string[]; error?: string } | null =
+              null
             try {
               evt = JSON.parse(line.slice(6))
             } catch {
@@ -592,30 +613,44 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             }
             if (evt?.type === "partial" && evt.b64) {
               const previewUrl = `data:image/png;base64,${evt.b64}`
-              setGenState((s) => ({ ...s, [key]: { status: "generating", previewUrl } }))
-            } else if (evt?.type === "done" && Array.isArray(evt.imageUrls) && evt.imageUrls.length > 0) {
-              setGenState((s) => ({ ...s, [key]: { status: "done", imageUrls: evt!.imageUrls } }))
+              setGenState(s => ({ ...s, [key]: { status: "generating", previewUrl } }))
+            } else if (
+              evt?.type === "done" &&
+              Array.isArray(evt.imageUrls) &&
+              evt.imageUrls.length > 0
+            ) {
+              setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: evt!.imageUrls } }))
               setGeneratedOnce(true)
               settled = true
             } else if (evt?.type === "error") {
-              setGenState((s) => ({ ...s, [key]: { status: "error", error: evt!.error || "Generation failed" } }))
+              setGenState(s => ({
+                ...s,
+                [key]: { status: "error", error: evt!.error || "Generation failed" },
+              }))
               settled = true
             }
           }
         }
         if (!settled) {
-          setGenState((s) => ({ ...s, [key]: { status: "error", error: "Generation failed" } }))
+          setGenState(s => ({ ...s, [key]: { status: "error", error: "Generation failed" } }))
         }
         return
       }
 
-      const data = (await res.json().catch(() => null)) as
-        | { imageUrl?: string; imageUrls?: string[]; error?: string; code?: string; current?: number }
-        | null
+      const data = (await res.json().catch(() => null)) as {
+        imageUrl?: string
+        imageUrls?: string[]
+        error?: string
+        code?: string
+        current?: number
+      } | null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         // Graceful path: reset the card and open the top-up modal instead of a raw error.
-        setGenState((s) => ({ ...s, [key]: { status: "idle" } }))
-        setCreditModal({ open: true, balance: typeof data?.current === "number" ? data.current : null })
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setCreditModal({
+          open: true,
+          balance: typeof data?.current === "number" ? data.current : null,
+        })
         return
       }
       const urls =
@@ -625,10 +660,10 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             ? [data.imageUrl]
             : []
       if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
-      setGenState((s) => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
+      setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
       setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
     } catch (e) {
-      setGenState((s) => ({
+      setGenState(s => ({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
       }))
@@ -638,7 +673,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const hasStarted = messages.length > 0
   // Are Maya's direction cards already on screen? Drives the loading-vs-typing copy.
   const hasConcepts = messages.some(
-    (m: any) => Array.isArray(m?.parts) && m.parts.some((p: any) => !!extractConcepts(p)),
+    (m: any) => Array.isArray(m?.parts) && m.parts.some((p: any) => !!extractConcepts(p))
   )
   const agentLabel = memory?.agentName?.trim() || "Maya"
 
@@ -731,7 +766,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="shrink-0 flex items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
           <div className="min-w-0">
-            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">{agentLabel}</p>
+            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">
+              {agentLabel}
+            </p>
             <h2 className="mt-0.5 truncate font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
@@ -739,15 +776,15 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           <div className="relative flex shrink-0 items-center gap-4">
             <button
               type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+              onClick={() => setMenuOpen(v => !v)}
+              className="inline-flex min-h-11 items-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               Menu
             </button>
             <button
               type="button"
               onClick={close}
-              className="py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+              className="inline-flex min-h-11 items-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               Close
             </button>
@@ -764,7 +801,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                     type="button"
                     onClick={handleNewChat}
                     disabled={isThinking}
-                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
+                    className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
                     New chat
                   </button>
@@ -774,7 +811,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                       setMenuOpen(false)
                       setHistoryOpen(true)
                     }}
-                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                    className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                   >
                     History
                   </button>
@@ -784,7 +821,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                       setMenuOpen(false)
                       setMemoryOpen(true)
                     }}
-                    className="block w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                    className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                   >
                     Memory
                   </button>
@@ -802,208 +839,243 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             <span className="flex min-w-0 items-center gap-2.5">
               {referenceSelfieUrl && (
                 <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
-                  <Image src={referenceSelfieUrl} alt="Your selfie" fill className="object-cover" sizes="28px" />
+                  <Image
+                    src={referenceSelfieUrl}
+                    alt="Your selfie"
+                    fill
+                    className="object-cover"
+                    sizes="28px"
+                  />
                 </span>
               )}
               <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#818283]">
-                {FORMAT_OPTIONS.find((o) => o.id === format)?.label ?? "Photo"}
+                {FORMAT_OPTIONS.find(o => o.id === format)?.label ?? "Photo"}
                 {referenceSelfieUrl ? " · Selfie in" : " · No selfie yet"}
               </span>
             </span>
             <button
               type="button"
               onClick={() => setSetupOpen(true)}
-              className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+              className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
             >
               Change
             </button>
           </div>
         )}
         {(!hasStarted || setupOpen) && (
-        <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap gap-2">
-            {FORMAT_OPTIONS.map((opt) => {
-              // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
-              // display fallback) — after "New chat" no chip is selected until she picks again.
-              const selected = outputFormat === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => handlePickFormat(opt.id)}
-                  disabled={isThinking}
-                  className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors disabled:opacity-50 ${
-                    selected
-                      ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                      : "border-[#C5C6C8]/60 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
+          <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap gap-2">
+              {FORMAT_OPTIONS.map(opt => {
+                // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
+                // display fallback) — after "New chat" no chip is selected until she picks again.
+                const selected = outputFormat === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handlePickFormat(opt.id)}
+                    disabled={isThinking}
+                    className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] transition-colors disabled:opacity-50 ${
+                      selected
+                        ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                        : "border-[#C5C6C8]/60 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
 
-          {/* Front-face selfie: an action before upload, a calm status after. */}
-          {referenceSelfieUrl ? (
-            <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
-                    <Image src={referenceSelfieUrl} alt="Your selfie" fill className="object-cover" sizes="32px" />
+            {/* Front-face selfie: an action before upload, a calm status after. */}
+            {referenceSelfieUrl ? (
+              <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                      <Image
+                        src={referenceSelfieUrl}
+                        alt="Your selfie"
+                        fill
+                        className="object-cover"
+                        sizes="32px"
+                      />
+                    </span>
+                    <span className="truncate text-[13px] font-medium text-[#0D0E10]">
+                      {selfieRestored ? "Using your saved selfie" : "Selfie added"}
+                    </span>
                   </span>
-                  <span className="truncate text-[13px] font-medium text-[#0D0E10]">
-                    {selfieRestored ? "Using your saved selfie" : "Selfie added"}
-                  </span>
-                </span>
+                  <button
+                    type="button"
+                    onClick={() => fileInput.current?.click()}
+                    disabled={uploadingSlot === "face"}
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                  >
+                    {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                  Maya will keep your face, skin tone, and natural features recognizable.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => fileInput.current?.click()}
                   disabled={uploadingSlot === "face"}
-                  className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                  className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
                 >
-                  {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                  {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                >
+                  Use a past selfie
                 </button>
               </div>
-              <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
-                Maya will keep your face, skin tone, and natural features recognizable.
-              </p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => fileInput.current?.click()}
-                disabled={uploadingSlot === "face"}
-                className="flex items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
-              >
-                {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setLibraryOpen(true)}
-                className="text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-              >
-                Use a past selfie
-              </button>
-            </div>
-          )}
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void handleUpload("face", f)
-            }}
-          />
+            )}
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) void handleUpload("face", f)
+              }}
+            />
 
-          {/* Primary "go": before Maya has pulled directions, one obvious next action so the
+            {/* Primary "go": before Maya has pulled directions, one obvious next action so the
               customer never has to type or guess. Reuses handlePickFormat (commits the format,
               which triggers the pull). Hidden once directions exist. */}
-          {!hasStarted && (
+            {!hasStarted && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Identity first (P0): with no selfie the CTA commits the format and opens the
+                  // upload — the gated auto-pull then starts the moment her selfie is in.
+                  handlePickFormat(format)
+                  if (!referenceSelfieUrl) fileInput.current?.click()
+                }}
+                disabled={isThinking}
+                className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
+              >
+                {isThinking
+                  ? "Creating…"
+                  : referenceSelfieUrl
+                    ? CTA_LABEL[format]
+                    : "Add my selfie to start"}
+              </button>
+            )}
+
+            {/* Optional extras — tucked away so a single selfie still just works */}
             <button
               type="button"
-              onClick={() => {
-                // Identity first (P0): with no selfie the CTA commits the format and opens the
-                // upload — the gated auto-pull then starts the moment her selfie is in.
-                handlePickFormat(format)
-                if (!referenceSelfieUrl) fileInput.current?.click()
-              }}
-              disabled={isThinking}
-              className="w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => setShowMore(v => !v)}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
             >
-              {isThinking ? "Creating…" : referenceSelfieUrl ? CTA_LABEL[format] : "Add my selfie to start"}
+              {showMore ? "Hide extras" : "Add more angles (optional)"}
             </button>
-          )}
 
-          {/* Optional extras — tucked away so a single selfie still just works */}
-          <button
-            type="button"
-            onClick={() => setShowMore((v) => !v)}
-            className="text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
-          >
-            {showMore ? "Hide extras" : "Add more angles (optional)"}
-          </button>
-
-          {showMore && (
-            <div className="space-y-2">
-              <p className="text-[11px] leading-relaxed text-[#818283]">
-                Full-body looks come out best with a few angles. All optional.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { slot: "side" as const, ref: sideInput, added: !!sideProfileUrl, label: "Side profile" },
-                    { slot: "body" as const, ref: bodyInput, added: !!fullBodyUrl, label: "Full body" },
-                    { slot: "inspiration" as const, ref: inspoInput, added: !!inspirationUrl, label: "Inspiration pose/vibe" },
-                  ]
-                ).map(({ slot, ref, added, label }) => (
-                  <span key={slot} className="inline-flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => ref.current?.click()}
-                      disabled={uploadingSlot === slot}
-                      title={added ? `Change ${label.toLowerCase()}` : undefined}
-                      className={`border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60 ${added ? "rounded-l-[4px]" : "rounded-[4px]"}`}
-                    >
-                      {added ? `✓ ${label}` : uploadingSlot === slot ? "Uploading…" : `+ ${label}`}
-                    </button>
-                    {added && (
+            {showMore && (
+              <div className="space-y-2">
+                <p className="text-[11px] leading-relaxed text-[#818283]">
+                  Full-body looks come out best with a few angles. All optional.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    {
+                      slot: "side" as const,
+                      ref: sideInput,
+                      added: !!sideProfileUrl,
+                      label: "Side profile",
+                    },
+                    {
+                      slot: "body" as const,
+                      ref: bodyInput,
+                      added: !!fullBodyUrl,
+                      label: "Full body",
+                    },
+                    {
+                      slot: "inspiration" as const,
+                      ref: inspoInput,
+                      added: !!inspirationUrl,
+                      label: "Inspiration pose/vibe",
+                    },
+                  ].map(({ slot, ref, added, label }) => (
+                    <span key={slot} className="inline-flex items-center">
                       <button
                         type="button"
-                        onClick={() => clearSlot(slot)}
-                        aria-label={`Remove ${label.toLowerCase()}`}
-                        title={`Remove ${label.toLowerCase()}`}
-                        className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#818283] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                        onClick={() => ref.current?.click()}
+                        disabled={uploadingSlot === slot}
+                        title={added ? `Change ${label.toLowerCase()}` : undefined}
+                        className={`min-h-11 border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60 ${added ? "rounded-l-[4px]" : "rounded-[4px]"}`}
                       >
-                        ×
+                        {added
+                          ? `✓ ${label}`
+                          : uploadingSlot === slot
+                            ? "Uploading…"
+                            : `+ ${label}`}
                       </button>
-                    )}
-                    <input
-                      ref={ref}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        if (f) void handleUpload(slot, f)
-                      }}
-                    />
-                  </span>
-                ))}
+                      {added && (
+                        <button
+                          type="button"
+                          onClick={() => clearSlot(slot)}
+                          aria-label={`Remove ${label.toLowerCase()}`}
+                          title={`Remove ${label.toLowerCase()}`}
+                          className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#818283] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                        >
+                          ×
+                        </button>
+                      )}
+                      <input
+                        ref={ref}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0]
+                          if (f) void handleUpload(slot, f)
+                        }}
+                      />
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
+            {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
 
-          {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
-          {hasStarted && (
-            <button
-              type="button"
-              onClick={() => setSetupOpen(false)}
-              className="w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
-            >
-              Back to the conversation
-            </button>
-          )}
-        </div>
+            {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
+            {hasStarted && (
+              <button
+                type="button"
+                onClick={() => setSetupOpen(false)}
+                className="min-h-11 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+              >
+                Back to the conversation
+              </button>
+            )}
+          </div>
         )}
 
         {/* Thread — the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-6 sm:px-6">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {/* Static opener */}
           <div className="flex items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-            <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
+            <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] sm:max-w-[80%]">
               <p>
                 {aesthetic.name}. {aesthetic.blurb}
               </p>
-              <p className="mt-2">{referenceSelfieUrl ? FORMAT_OPENER_READY[format] : FORMAT_OPENER[format]}</p>
+              <p className="mt-2">
+                {referenceSelfieUrl ? FORMAT_OPENER_READY[format] : FORMAT_OPENER[format]}
+              </p>
             </div>
           </div>
 
@@ -1017,21 +1089,21 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 <input
                   type="text"
                   value={nameDraft}
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={e => setNameDraft(e.target.value)}
+                  onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault()
                       void saveName()
                     }
                   }}
                   placeholder="e.g. Aria"
-                  className="flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+                  className="min-h-11 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
                 />
                 <button
                   type="button"
                   onClick={() => void saveName()}
                   disabled={nameDraft.trim().length === 0}
-                  className="rounded-[4px] bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                  className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
                 >
                   Save
                 </button>
@@ -1039,7 +1111,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               <button
                 type="button"
                 onClick={() => setNamingDismissed(true)}
-                className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
               >
                 Maybe later
               </button>
@@ -1050,18 +1122,19 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           {justNamed && (
             <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={justNamed.charAt(0)} />
-              <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
+              <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] sm:max-w-[80%]">
                 Love it. I&apos;m {justNamed} now. Let&apos;s make something beautiful. 🤍
               </div>
             </div>
           )}
 
-
           {/* Prominent selfie requirement: once Maya has proposed directions but there's no
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
           {!referenceSelfieUrl && hasStarted && (
             <div className="rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4">
-              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">Start your brand shoot</p>
+              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
+                Start your brand shoot
+              </p>
               <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
                 Add one clear selfie and Maya turns it into your first brand shoot.
               </p>
@@ -1070,14 +1143,14 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   type="button"
                   onClick={() => fileInput.current?.click()}
                   disabled={uploadingSlot === "face"}
-                  className="rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
+                  className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
                 >
                   {uploadingSlot === "face" ? "Uploading…" : "Upload selfie"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLibraryOpen(true)}
-                  className="rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+                  className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
                 >
                   Use existing
                 </button>
@@ -1105,7 +1178,10 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             // Maya tried to present directions but none survived (truncated/failed tool call):
             // never leave a dead end — offer a one-tap re-pull instead.
             const conceptsLost =
-              !isUser && !isThinking && parts.some(isConceptToolPart) && (conceptPart?.length ?? 0) === 0
+              !isUser &&
+              !isThinking &&
+              parts.some(isConceptToolPart) &&
+              (conceptPart?.length ?? 0) === 0
 
             return (
               <div
@@ -1116,14 +1192,14 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   (isUser ? (
                     <div className="flex flex-row-reverse items-end gap-2">
                       <Avatar src={userAvatar} fallback="You" />
-                      <div className="max-w-[80%] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white">
+                      <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white sm:max-w-[80%]">
                         {text}
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-end gap-2">
                       <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                      <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4">
+                      <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 sm:max-w-[80%]">
                         <Markdown>{text}</Markdown>
                       </div>
                     </div>
@@ -1132,7 +1208,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 {clarifyPart && (
                   <ClarifyCard
                     clarify={clarifyPart}
-                    onPick={(answer) => sendMessage({ text: answer })}
+                    onPick={answer => sendMessage({ text: answer })}
                     onFreeText={focusComposer}
                     disabled={isThinking}
                   />
@@ -1142,7 +1218,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   <StyleOptionsCard
                     kind={stylePart.kind}
                     options={stylePart.options}
-                    onPick={(o) => sendMessage({ text: `Use the "${o.name}" style.` })}
+                    onPick={o => sendMessage({ text: `Use the "${o.name}" style.` })}
                     disabled={isThinking}
                   />
                 )}
@@ -1151,11 +1227,13 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
                 {conceptsLost && (
                   <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
-                    <p className="text-[13px] text-[#282728]">Your directions didn&apos;t come through cleanly.</p>
+                    <p className="text-[13px] text-[#282728]">
+                      Your directions didn&apos;t come through cleanly.
+                    </p>
                     <button
                       type="button"
                       onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
-                      className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+                      className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
                     >
                       Pull fresh directions
                     </button>
@@ -1164,8 +1242,10 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
                 {conceptPart && conceptPart.length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">Choose your direction</p>
-                    {conceptPart.map((concept) => {
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
+                      Choose your direction
+                    </p>
+                    {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
                       return (
                         <ConceptCard
@@ -1174,7 +1254,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                           gen={genState[key] ?? { status: "idle" }}
                           format={format}
                           onGenerate={() => void generateConcept(key, concept)}
-                          onOpen={(urls) => setLightbox(urls)}
+                          onOpen={urls => setLightbox(urls)}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format })
@@ -1192,13 +1272,14 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           {showBrandPrompt && (
             <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-              <div className="max-w-[88%] rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4">
+              <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4 sm:max-w-[88%]">
                 <p className="text-[15px] leading-relaxed text-[#282728]">
-                  Love that. So I can make these really yours, tell me a little about your brand: what you do and who you help. 🤍
+                  Love that. So I can make these really yours, tell me a little about your brand:
+                  what you do and who you help. 🤍
                 </p>
                 <textarea
                   value={brandDraft}
-                  onChange={(e) => setBrandDraft(e.target.value)}
+                  onChange={e => setBrandDraft(e.target.value)}
                   rows={2}
                   placeholder="e.g. I'm a founder coach for women starting an online business"
                   className="mt-3 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
@@ -1208,14 +1289,14 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                     type="button"
                     onClick={() => void saveBrand()}
                     disabled={brandDraft.trim().length === 0}
-                    className="rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                    className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setBrandPromptDismissed(true)}
-                    className="text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
                   >
                     Not now
                   </button>
@@ -1228,18 +1309,22 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             <div className="flex items-center gap-3">
               <TypingDots />
               {!hasConcepts && (
-                <span className="text-[13px] text-[#818283]">Maya is preparing your directions…</span>
+                <span className="text-[13px] text-[#818283]">
+                  Maya is preparing your directions…
+                </span>
               )}
             </div>
           )}
 
           {error && !isThinking && (
             <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
-              <p className="text-[13px] text-[#282728]">Maya hit a snag creating your directions.</p>
+              <p className="text-[13px] text-[#282728]">
+                Maya hit a snag creating your directions.
+              </p>
               <button
                 type="button"
                 onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
-                className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
               >
                 Try again
               </button>
@@ -1252,7 +1337,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         {/* Composer — secondary: refinement only, the happy path is the taps above. One clean
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
-        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-5 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-6">
+        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-6">
           {inspirationUrl && (
             <div className="mb-2 flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1267,7 +1352,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               <button
                 type="button"
                 onClick={() => clearSlot("inspiration")}
-                className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
               >
                 Remove
               </button>
@@ -1279,7 +1364,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
+              onChange={e => {
                 const file = e.target.files?.[0]
                 if (file) void handleUpload("inspiration", file)
                 if (attachInputRef.current) attachInputRef.current.value = ""
@@ -1291,7 +1376,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               title="Attach an inspiration image"
               onClick={() => attachInputRef.current?.click()}
               disabled={uploadingSlot === "inspiration"}
-              className="shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 text-[20px] font-light leading-none text-[#4F5052] hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
+              className="h-12 w-12 shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
             >
               {uploadingSlot === "inspiration" ? "…" : "+"}
             </button>
@@ -1299,21 +1384,21 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               ref={composerRef}
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleSend()
                 }
               }}
               placeholder="Want something different? Ask Maya…"
-              className="min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+              className="h-12 min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10] min-[380px]:px-4"
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={isThinking || input.trim().length === 0}
-              className="rounded-[4px] bg-[#0D0E10] px-5 text-[12px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+              className="h-12 rounded-[4px] bg-[#0D0E10] px-3 text-[11px] uppercase tracking-[0.1em] text-white disabled:opacity-40 min-[380px]:px-5 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
             >
               Send
             </button>
@@ -1332,7 +1417,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
       <ReferenceLibraryModal
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
-        onPick={(url) => {
+        onPick={url => {
           setSelfieRestored(false) // she chose this one herself
           setReferenceSelfieUrl(url)
         }}
@@ -1342,18 +1427,22 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         open={historyOpen}
         currentChatId={chatId}
         onClose={() => setHistoryOpen(false)}
-        onSelect={(id) => void handleSelectChat(id)}
+        onSelect={id => void handleSelectChat(id)}
       />
 
-      <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} onSaved={(m) => setMemory(m)} />
+      <MemoryModal
+        open={memoryOpen}
+        onClose={() => setMemoryOpen(false)}
+        onSaved={m => setMemory(m)}
+      />
 
       {editTarget && (
         <EditMode
           imageUrl={editTarget.url}
           format={editTarget.format}
           onClose={() => setEditTarget(null)}
-          onResult={(newUrl) =>
-            setGenState((s) => {
+          onResult={newUrl =>
+            setGenState(s => {
               const prev = s[editTarget.key]?.imageUrls ?? []
               return { ...s, [editTarget.key]: { status: "done", imageUrls: [newUrl, ...prev] } }
             })

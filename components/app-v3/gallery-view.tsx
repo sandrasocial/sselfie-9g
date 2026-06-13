@@ -49,33 +49,39 @@ export function GalleryView() {
 
   useEffect(() => {
     fetch("/api/app-v3/gallery")
-      .then((r) => r.json())
-      .then((d) => setImages(Array.isArray(d?.images) ? d.images : []))
+      .then(r => r.json())
+      .then(d => setImages(Array.isArray(d?.images) ? d.images : []))
       .catch(() => setError("Couldn't load your gallery. Try again."))
   }, [])
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Photos</p>
-          <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">Everything you've made</h1>
+          <h1 className="mt-2 font-serif text-[28px] font-light leading-tight text-[#0D0E10] sm:text-[30px]">
+            Everything you&apos;ve made
+          </h1>
         </div>
         <button
           type="button"
           onClick={() => startTransition(() => setComposer({ url: null }))}
-          className="shrink-0 rounded-[6px] border border-[#0D0E10] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] transition-colors hover:bg-[#0D0E10] hover:text-white"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-[6px] border border-[#0D0E10] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] transition-colors hover:bg-[#0D0E10] hover:text-white"
         >
           Add text to a photo
         </button>
       </header>
 
-      {images === null && !error && <p className="text-[13px] text-[#818283]">Loading your gallery…</p>}
+      {images === null && !error && (
+        <p className="text-[13px] text-[#818283]">Loading your gallery…</p>
+      )}
       {error && <p className="text-[13px] text-[#282728]">{error}</p>}
       {images && images.length === 0 && (
         <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
           <p className="text-[15px] text-[#282728]">Nothing here yet.</p>
-          <p className="mt-1 text-[13px] text-[#818283]">Create your first shot and it'll live here.</p>
+          <p className="mt-1 text-[13px] text-[#818283]">
+            Create your first shot and it&apos;ll live here.
+          </p>
         </div>
       )}
 
@@ -92,7 +98,7 @@ export function GalleryView() {
           images={images}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
-          onAddText={(url) =>
+          onAddText={url =>
             startTransition(() => {
               setLightboxIndex(null)
               setComposer({ url })
@@ -101,7 +107,9 @@ export function GalleryView() {
         />
       )}
 
-      {composer && <OverlayComposer initialImageUrl={composer.url} onClose={() => setComposer(null)} />}
+      {composer && (
+        <OverlayComposer initialImageUrl={composer.url} onClose={() => setComposer(null)} />
+      )}
     </div>
   )
 }

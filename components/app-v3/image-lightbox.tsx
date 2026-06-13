@@ -24,8 +24,8 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose()
-      if (e.key === "ArrowLeft") setIndex((p) => (p > 0 ? p - 1 : count - 1))
-      if (e.key === "ArrowRight") setIndex((p) => (p < count - 1 ? p + 1 : 0))
+      if (e.key === "ArrowLeft") setIndex(p => (p > 0 ? p - 1 : count - 1))
+      if (e.key === "ArrowRight") setIndex(p => (p < count - 1 ? p + 1 : 0))
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
@@ -42,7 +42,7 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
         <button
           type="button"
           onClick={onClose}
-          className="px-2 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
+          className="inline-flex min-h-11 items-center px-2 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
         >
           Close
         </button>
@@ -50,12 +50,12 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
 
       <div
         className="relative flex min-h-0 flex-1 items-center justify-center"
-        onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
-        onTouchEnd={(e) => {
+        onTouchStart={e => setTouchStartX(e.touches[0]?.clientX ?? null)}
+        onTouchEnd={e => {
           if (touchStartX === null || count < 2) return
           const delta = (e.changedTouches[0]?.clientX ?? touchStartX) - touchStartX
-          if (delta > 48) setIndex((p) => (p > 0 ? p - 1 : count - 1))
-          if (delta < -48) setIndex((p) => (p < count - 1 ? p + 1 : 0))
+          if (delta > 48) setIndex(p => (p > 0 ? p - 1 : count - 1))
+          if (delta < -48) setIndex(p => (p < count - 1 ? p + 1 : 0))
           setTouchStartX(null)
         }}
       >
@@ -64,16 +64,16 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
             <button
               type="button"
               aria-label="Previous"
-              onClick={() => setIndex((p) => (p > 0 ? p - 1 : count - 1))}
-              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:left-1"
+              onClick={() => setIndex(p => (p > 0 ? p - 1 : count - 1))}
+              className="absolute left-0 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:left-1"
             >
               ‹
             </button>
             <button
               type="button"
               aria-label="Next"
-              onClick={() => setIndex((p) => (p < count - 1 ? p + 1 : 0))}
-              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:right-1"
+              onClick={() => setIndex(p => (p < count - 1 ? p + 1 : 0))}
+              className="absolute right-0 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:right-1"
             >
               ›
             </button>
@@ -99,11 +99,14 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
             // Member pulse: downloads = "she loved it" (SUITE-UX-02).
             import("@/lib/analytics/client")
               .then(({ trackAnalyticsEvent }) =>
-                trackAnalyticsEvent({ event: "suite_image_downloaded", properties: { source: "lightbox" } }),
+                trackAnalyticsEvent({
+                  event: "suite_image_downloaded",
+                  properties: { source: "lightbox" },
+                })
               )
               .catch(() => {})
           }}
-          className="text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
         >
           Download
         </a>
@@ -111,7 +114,7 @@ export function ImageLightbox({ images, startIndex = 0, onClose, onAddText }: Im
           <button
             type="button"
             onClick={() => onAddText(url)}
-            className="text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
           >
             Add text
           </button>
