@@ -38,6 +38,9 @@ import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
+import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
+import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
+import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
@@ -568,8 +571,31 @@ async function sendAiPromptsTouchEmail(
       email = generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
       break
     case "ai-prompts-day7-prompt-vault-offer":
-      email = generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
+      email = generateAiPromptsDay7PromptVaultOfferEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
       break
+    case "ai-prompts-day9-prompt-vault-proof":
+      email = generateAiPromptsDay9PromptVaultProofEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
+      break
+    case "ai-prompts-day11-prompt-vault-why-now":
+      email = generateAiPromptsDay11PromptVaultWhyNowEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
+      break
+    case "ai-prompts-day10-suite-trial": {
+      const claimUrl = suiteTrialClaimUrl(candidate)
+      if (!claimUrl) {
+        throw new Error("Missing suite trial claim token")
+      }
+      email = generateAiPromptsDay10SuiteTrialEmail({ firstName, claimUrl })
+      break
+    }
     default:
       throw new Error(`Unknown AI Prompts email type: ${emailType}`)
   }
@@ -601,7 +627,11 @@ async function sendPromptVaultTouchEmail(
       email = generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
       break
     case "prompt-vault-day3-system-upgrade":
-      email = generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl, recipientEmail: candidate.email })
+      email = generatePromptVaultDay3SystemUpgradeEmail({
+        firstName,
+        accessUrl,
+        recipientEmail: candidate.email,
+      })
       break
     case "prompt-vault-day5-fix-bad-result":
       email = generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
@@ -703,10 +733,16 @@ async function sendStarterKitTouchEmail(
       email = generateStarterKitDay5ProofEmail({ firstName, accessUrl })
       break
     case "starter-kit-day7-soft-masterclass":
-      email = generateStarterKitDay7SoftMasterclassEmail({ firstName, recipientEmail: candidate.email })
+      email = generateStarterKitDay7SoftMasterclassEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
       break
     case "starter-kit-day10-masterclass-breakdown":
-      email = generateStarterKitDay10MasterclassBreakdownEmail({ firstName, recipientEmail: candidate.email })
+      email = generateStarterKitDay10MasterclassBreakdownEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
       break
     case "starter-kit-day14-masterclass-offer":
       email = generateStarterKitDay14MasterclassOfferEmail({ firstName })
@@ -830,6 +866,9 @@ export async function GET(request: Request) {
       aiPromptsDay2: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay9: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay11: { found: 0, sent: 0, failed: 0 },
+      aiPromptsDay14: { found: 0, sent: 0, failed: 0 },
       promptVaultDay2: { found: 0, sent: 0, failed: 0 },
       promptVaultDay3: { found: 0, sent: 0, failed: 0 },
       promptVaultDay5: { found: 0, sent: 0, failed: 0 },
@@ -900,7 +939,14 @@ export async function GET(request: Request) {
     const aiPromptsEnabled =
       process.env.AI_PROMPTS_NURTURE_ENABLED === "true" && legacyAiPromptsEnabled
     const aiPromptsStartDate = aiPromptsNurtureStartDate()
-    const aiPromptsTouchResultKeys = ["aiPromptsDay1", "aiPromptsDay5", "aiPromptsDay7"] as const
+    const aiPromptsTouchResultKeys = [
+      "aiPromptsDay1",
+      "aiPromptsDay5",
+      "aiPromptsDay7",
+      "aiPromptsDay9",
+      "aiPromptsDay11",
+      "aiPromptsDay14",
+    ] as const
 
     if (aiPromptsEnabled) {
       for (const [index, touch] of AI_PROMPTS_EMAIL_TOUCHES.entries()) {

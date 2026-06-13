@@ -1,7 +1,7 @@
 import { getEmailHeroImage } from "../email-image-assets"
 import { buildRevenueEmailLink } from "./revenue-links"
 import { promptVaultCheckoutUrl } from "./selfie-education-links"
-import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
+import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay7Params {
   firstName: string
@@ -10,7 +10,9 @@ export interface AiPromptsDay7Params {
 
 const EMAIL_TYPE = "ai-prompts-day7-prompt-vault-offer"
 
-export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail }: AiPromptsDay7Params): {
+export function generateAiPromptsDay7PromptVaultOfferEmail({
+  recipientEmail,
+}: AiPromptsDay7Params): {
   html: string
   text: string
   subject: string
@@ -22,55 +24,50 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipien
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "one prompt showed you the door"
+  const subject = "one shot each. the Vault is the whole story."
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That free prompt was not really about one AI photo.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It was the door.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The moment you see one normal selfie turn into something that feels more polished, more visible, more like the woman you are becoming, your brain starts to understand what is possible.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Prompt Vault gives you the full visual world, not just one prompt to try.</p>
-    ${renderStonePanel(
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#2c2924;">Inside the Vault, you get complete copy-paste photoshoot directions for ChatGPT.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Different collections. Different moods. Full shoot concepts you can use with your own selfie when you want your content to feel more intentional.</p>`,
-      "What the Vault gives you"
-    )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You do not need more random AI images. You need a direction you can recognize yourself inside.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Get the Prompt Vault", promptVaultUrl)}</div>
-    <p style="margin:0;font-size:14px;line-height:1.7;color:#7c766d;">Start with one collection. Use one clear selfie. Let it show you the visual world you want to step into.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">In the free pack, you got the opening shot of every world. The half-light close-up. The clean-girl morning. The denim street.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One shot each. Just the door.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's what most people miss. Each of those is shot 1 of a whole story.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Take Quiet Luxury London. It's not one café photo. It's nine. The arrival. The coffee run. The seated hero shot. The reel-cover exit. A whole day, from one selfie.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault has ten of those worlds. 92 shots, start to finish. Every one keeps your face. Still you, just on your best day.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You already know it works. You've watched your own selfie turn into something you'd actually post.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the rest of it.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $27 · one time", promptVaultUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one world. Use one clear selfie. See where it goes.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
 
   const html = renderStoneShell({
-    title: "One prompt showed you the door.",
+    title: "One shot each. The Vault is the whole story.",
     eyebrow: "Prompt Vault",
-    subtitle: "The Vault gives you the full visual world.",
+    subtitle: "The free pack opened the door. The Vault is the full shoot.",
     bodyHtml,
     ...heroImage,
-    footerLead: "One selfie can become more than one photo. It can become a direction.",
-    footerSignoff: "Sandra x",
+    footerLead: "Start with one world. Use one clear selfie.",
+    footerSignoff: "",
   })
 
-  const text = `Hi ${firstName},
+  const text = `In the free pack, you got the opening shot of every world. The half-light close-up. The clean-girl morning. The denim street.
 
-That free prompt was not really about one AI photo.
+One shot each. Just the door.
 
-It was the door.
+Here's what most people miss. Each of those is shot 1 of a whole story.
 
-The moment you see one normal selfie turn into something that feels more polished, more visible, more like the woman you are becoming, your brain starts to understand what is possible.
+Take Quiet Luxury London. It's not one café photo. It's nine. The arrival. The coffee run. The seated hero shot. The reel-cover exit. A whole day, from one selfie.
 
-The Prompt Vault gives you the full visual world, not just one prompt to try.
+The Vault has ten of those worlds. 92 shots, start to finish. Every one keeps your face. Still you, just on your best day.
 
-Inside the Vault, you get complete copy-paste photoshoot directions for ChatGPT.
+You already know it works. You've watched your own selfie turn into something you'd actually post.
 
-Different collections. Different moods. Full shoot concepts you can use with your own selfie when you want your content to feel more intentional.
+This is the rest of it.
 
-You do not need more random AI images. You need a direction you can recognize yourself inside.
-
-Get the Prompt Vault:
+Get the Vault · $27 · one time:
 ${promptVaultUrl}
 
-Start with one collection. Use one clear selfie. Let it show you the visual world you want to step into.
+Start with one world. Use one clear selfie. See where it goes.
 
 Sandra x`
 
