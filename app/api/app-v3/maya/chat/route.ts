@@ -22,7 +22,7 @@ import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
 
@@ -160,6 +160,91 @@ function summarizeBriefValue(value: unknown): string {
     return entries.map(([key, item]) => `${key}: ${summarizeBriefValue(item)}`).filter(Boolean).join("; ")
   }
   return ""
+}
+
+type AdminToolShoot = {
+  id: number
+  title: string
+  status: string
+  approvedShotCount: number
+  heroImageUrl: string | null
+}
+
+async function getAdminContentToolContext(): Promise<{
+  shoots: AdminToolShoot[]
+  summary: string
+}> {
+  try {
+    const { listShoots } = await import("@/lib/content-kit/shoot-generator")
+    const shoots = (await listShoots(12))
+      .map((shoot): AdminToolShoot => {
+        const approvedShots = shoot.shots.filter((shot) => shot.status === "approved" && shot.imageUrl)
+        return {
+          id: shoot.id,
+          title: shoot.title,
+          status: shoot.status,
+          approvedShotCount: approvedShots.length,
+          heroImageUrl: approvedShots[0]?.imageUrl ?? null,
+        }
+      })
+      .filter((shoot) => shoot.approvedShotCount >= 2)
+
+    const summary = shoots.length
+      ? shoots
+          .slice(0, 6)
+          .map((shoot) => `- ${shoot.id}: ${shoot.title} (${shoot.approvedShotCount} approved shots)`)
+          .join("\n")
+      : "- No approved shoots with at least 2 rendered shots yet."
+
+    return { shoots, summary }
+  } catch (error) {
+    console.error("[app-v3 maya chat] admin content tool context failed:", error)
+    return { shoots: [], summary: "- Shoot list unavailable right now." }
+  }
+}
+
+function pickAdminSourceShootId(inputId: number | undefined, shoots: AdminToolShoot[]): number | null {
+  if (inputId && shoots.some((shoot) => shoot.id === inputId)) return inputId
+  return shoots[0]?.id ?? null
+}
+
+function summarizeAdminCarouselDeck(deck: any) {
+  return {
+    id: Number(deck.id),
+    kind: "carousel" as const,
+    title: String(deck.title || "Carousel draft"),
+    status: String(deck.status || "draft"),
+    caption: String(deck.caption || ""),
+    sourceShootId: deck.sourceShootId ?? null,
+    sourceShootTitle: deck.sourceShootTitle ?? null,
+    slides: Array.isArray(deck.slides)
+      ? deck.slides.map((slide: any, index: number) => ({
+          index,
+          kind: String(slide?.kind || "slide"),
+          title: String(slide?.title || `Slide ${index + 1}`),
+        }))
+      : [],
+  }
+}
+
+function summarizeAdminStorySequence(sequence: any) {
+  return {
+    id: Number(sequence.id),
+    kind: "story" as const,
+    title: String(sequence.title || "Story sequence draft"),
+    status: String(sequence.status || "draft"),
+    sourceShootId: sequence.sourceShootId ?? null,
+    sourceShootTitle: sequence.sourceShootTitle ?? null,
+    slides: Array.isArray(sequence.slides)
+      ? sequence.slides.map((slide: any, index: number) => ({
+          index,
+          role: String(slide?.role || "slide"),
+          title: Array.isArray(slide?.lines)
+            ? slide.lines.map((line: any) => line?.text).filter(Boolean).slice(0, 2).join(" / ")
+            : `Story ${index + 1}`,
+        }))
+      : [],
+  }
 }
 
 async function getAdminBriefContext(): Promise<string> {
@@ -306,13 +391,23 @@ export async function POST(req: Request) {
     // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
     // Server-gated on the admin email — the flag alone does nothing for anyone else.
     let isAdminSession = false
+    let adminContentToolContext: Awaited<ReturnType<typeof getAdminContentToolContext>> | null = null
     if (body?.adminSession === true) {
       const { isAdminEmail } = await import("@/lib/admin-feature-flags")
       if (isAdminEmail(user.email)) {
         isAdminSession = true
         const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
         const briefContext = await getAdminBriefContext()
-        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}${briefContext ? `\n\n${briefContext}` : ""}`
+        adminContentToolContext = await getAdminContentToolContext()
+        const toolContext = [
+          "---",
+          "## ADMIN CONTENT TOOLS AVAILABLE",
+          "When Sandra asks for a carousel, story sequence, content tool, or wants to reuse an approved shoot, use the admin content tools instead of only explaining.",
+          "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
+          "Create drafts only. Never approve, publish, post, or send email from these tools.",
+          `Approved shoot sources:\n${adminContentToolContext.summary}`,
+        ].join("\n")
+        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}\n\n${toolContext}${briefContext ? `\n\n${briefContext}` : ""}`
       }
     }
 
@@ -405,17 +500,137 @@ export async function POST(req: Request) {
       },
     })
 
+    const showAdminContentSources = tool({
+      description:
+        "ADMIN ONLY. Show Sandra the approved Shoot Studio sources that can be used for shoot-based " +
+        "carousels and story sequences. Call this when she asks what shoots/content sources are ready " +
+        "or before making a content tool if the source is unclear.",
+      inputSchema: z.object({
+        format: z.enum(["carousel", "story-sequence"]).optional(),
+      }),
+      execute: async ({ format: requestedFormat }) => {
+        const context = adminContentToolContext ?? (await getAdminContentToolContext())
+        return {
+          kind: "sources" as const,
+          format: requestedFormat ?? null,
+          shoots: context.shoots,
+        }
+      },
+    })
+
+    const createAdminCarousel = tool({
+      description:
+        "ADMIN ONLY. Create one draft carousel from an approved Shoot Studio shoot using the existing " +
+        "content-kit carousel renderer. Use this when Sandra asks for a carousel, carousel kit, teaching " +
+        "deck, or reel-cover-ready carousel from the current/latest shoot. Draft only, never post.",
+      inputSchema: z.object({
+        topic: z.string().optional().describe("Sandra's teaching angle or carousel topic in her words."),
+        sourceShootId: z.number().optional().describe("Approved Shoot Studio id. Omit to use the newest ready shoot."),
+        overlayUrls: z.array(z.string()).optional().describe("Optional Vercel Blob screenshot/proof overlay URLs."),
+      }),
+      execute: async ({ topic, sourceShootId, overlayUrls }) => {
+        const context = adminContentToolContext ?? (await getAdminContentToolContext())
+        const resolvedShootId = pickAdminSourceShootId(sourceShootId, context.shoots)
+        if (!resolvedShootId) {
+          return {
+            kind: "error" as const,
+            tool: "carousel",
+            message: "Approve at least 2 rendered shots in Shoot Studio before I can make a carousel.",
+            shoots: context.shoots,
+          }
+        }
+
+        try {
+          const { generateCarousels } = await import("@/lib/content-kit/carousel-generator")
+          const decks = await generateCarousels({
+            count: 1,
+            topic: topic?.trim() || undefined,
+            sourceShootId: resolvedShootId,
+            overlayUrls: overlayUrls ?? [],
+          })
+          return {
+            kind: "carousel" as const,
+            deck: summarizeAdminCarouselDeck(decks[0]),
+            sourceShoot: context.shoots.find((shoot) => shoot.id === resolvedShootId) ?? null,
+          }
+        } catch (error) {
+          console.error("[app-v3 maya chat] admin carousel tool failed:", error)
+          return {
+            kind: "error" as const,
+            tool: "carousel",
+            message: error instanceof Error ? error.message : "Carousel generation failed.",
+            shoots: context.shoots,
+          }
+        }
+      },
+    })
+
+    const createAdminStorySequence = tool({
+      description:
+        "ADMIN ONLY. Create one draft Instagram story sequence from an approved Shoot Studio shoot " +
+        "using the existing story renderer. Use this when Sandra asks for story slides, a story sequence, " +
+        "or a Story Prompt Engineer sequence. Draft only, never post.",
+      inputSchema: z.object({
+        topic: z.string().describe("The story idea, angle, or CTA. Required."),
+        sourceShootId: z.number().optional().describe("Approved Shoot Studio id. Omit to use the newest ready shoot."),
+        overlayUrls: z.array(z.string()).optional().describe("Optional Vercel Blob screenshot/proof overlay URLs."),
+      }),
+      execute: async ({ topic, sourceShootId, overlayUrls }) => {
+        const context = adminContentToolContext ?? (await getAdminContentToolContext())
+        const resolvedShootId = pickAdminSourceShootId(sourceShootId, context.shoots)
+        if (!resolvedShootId) {
+          return {
+            kind: "error" as const,
+            tool: "story",
+            message: "Approve at least 2 rendered shots in Shoot Studio before I can make story slides.",
+            shoots: context.shoots,
+          }
+        }
+
+        try {
+          const { generateStorySequence } = await import("@/lib/content-kit/story-generator")
+          const sequence = await generateStorySequence({
+            topic,
+            sourceShootId: resolvedShootId,
+            overlayUrls: overlayUrls ?? [],
+          })
+          return {
+            kind: "story" as const,
+            sequence: summarizeAdminStorySequence(sequence),
+            sourceShoot: context.shoots.find((shoot) => shoot.id === resolvedShootId) ?? null,
+          }
+        } catch (error) {
+          console.error("[app-v3 maya chat] admin story tool failed:", error)
+          return {
+            kind: "error" as const,
+            tool: "story",
+            message: error instanceof Error ? error.message : "Story sequence generation failed.",
+            shoots: context.shoots,
+          }
+        }
+      },
+    })
+
+    const tools = {
+      emit_concepts: emitConcepts,
+      ask_clarify: askClarify,
+      set_format: setFormat,
+      remember,
+      show_style_options: showStyleOptions,
+      ...(isAdminSession
+        ? {
+            show_admin_content_sources: showAdminContentSources,
+            create_admin_carousel: createAdminCarousel,
+            create_admin_story_sequence: createAdminStorySequence,
+          }
+        : {}),
+    }
+
     const result = streamText({
       model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
       system,
       messages: modelMessages,
-      tools: {
-        emit_concepts: emitConcepts,
-        ask_clarify: askClarify,
-        set_format: setFormat,
-        remember,
-        show_style_options: showStyleOptions,
-      },
+      tools,
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
@@ -430,6 +645,7 @@ export async function POST(req: Request) {
         try {
           for (const step of steps ?? []) {
             for (const call of step.toolCalls ?? []) {
+              if (!call) continue
               if (call.toolName === "emit_concepts") {
                 const count = Array.isArray((call.input as any)?.concepts)
                   ? (call.input as any).concepts.length

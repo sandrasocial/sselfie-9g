@@ -18,6 +18,7 @@ import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { ClarifyCard } from "./clarify-card"
 import { StyleOptionsCard } from "./style-options-card"
+import { AdminContentToolCard, type AdminContentToolResult } from "./admin-content-tool-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
@@ -156,6 +157,26 @@ function extractStyleOptions(part: any): { kind: "overlay" | "carousel"; options
     (o: any) => o && typeof o.id === "string" && typeof o.name === "string",
   )
   return options.length > 0 ? { kind, options } : null
+}
+
+/** Pull admin-only content tool results out of Maya's stream (MAYA-ADMIN-01 slice 2). */
+function extractAdminContentTool(part: any): AdminContentToolResult | null {
+  if (!part || typeof part !== "object") return null
+  const toolName = part.toolName || ""
+  const isAdminTool =
+    part.type === "tool-show_admin_content_sources" ||
+    part.type === "tool-create_admin_carousel" ||
+    part.type === "tool-create_admin_story_sequence" ||
+    (part.type === "dynamic-tool" &&
+      ["show_admin_content_sources", "create_admin_carousel", "create_admin_story_sequence"].includes(toolName))
+  if (!isAdminTool) return null
+  const payload = part.output
+  if (!payload || typeof payload.kind !== "string") return null
+  if (payload.kind === "sources" && Array.isArray(payload.shoots)) return payload as AdminContentToolResult
+  if (payload.kind === "carousel" && payload.deck) return payload as AdminContentToolResult
+  if (payload.kind === "story" && payload.sequence) return payload as AdminContentToolResult
+  if (payload.kind === "error" && typeof payload.message === "string") return payload as AdminContentToolResult
+  return null
 }
 
 /** Pull an inline question out of an ask_clarify tool part. */
@@ -1020,7 +1041,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={justNamed.charAt(0)} />
               <div className="max-w-[80%] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728]">
-                Love it. I'm {justNamed} now. Let's make something beautiful. 🤍
+                Love it. I&apos;m {justNamed} now. Let&apos;s make something beautiful. 🤍
               </div>
             </div>
           )}
@@ -1068,6 +1089,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             const stylePart = parts.map(extractStyleOptions).find(Boolean) as
               | { kind: "overlay" | "carousel"; options: any[] }
               | undefined
+            const adminContentPart = parts.map(extractAdminContentTool).find(Boolean) as
+              | AdminContentToolResult
+              | undefined
             // Maya tried to present directions but none survived (truncated/failed tool call):
             // never leave a dead end — offer a one-tap re-pull instead.
             const conceptsLost =
@@ -1113,9 +1137,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   />
                 )}
 
+                {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
+
                 {conceptsLost && (
                   <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
-                    <p className="text-[13px] text-[#282728]">Your directions didn't come through cleanly.</p>
+                    <p className="text-[13px] text-[#282728]">Your directions didn&apos;t come through cleanly.</p>
                     <button
                       type="button"
                       onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}

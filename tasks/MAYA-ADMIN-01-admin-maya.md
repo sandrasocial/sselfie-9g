@@ -41,9 +41,13 @@ admin first; Sandra is customer zero of the real vision.
    as a draft vault collection (depends on SHOOT-STUDIO-01 Phase B DB-backed vault).
    Then Maya asks "ready to send the drop email?" with dry-run counts; send only on an
    explicit yes (engine: docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md step 10).
-2. **Content tools in chat**: carousel / story sequence / reel cover / captions as Maya
-   tools calling the existing content-kit renderers. Retire the collapsed sections as
-   each tool lands.
+2. **Content tools in chat**: ✅ BUILT 2026-06-13. Admin Maya now has server-gated tools
+   to show approved Shoot Studio sources and create draft carousels/story sequences from
+   the existing content-kit generators. Results render inline in the Maya thread with
+   source-shoot context and review/download links. Member Maya is unchanged because the
+   tools are only registered when `adminSession` is true and the user is the admin email.
+   Remaining follow-up: reel-cover/caption-specific tools can be added after Sandra tests
+   the carousel/story draft workflow.
 3. **Admin memory**: persist what she approves/rejects as admin-specific memory notes
    feeding the contract each session ("learn as we go").
 4. **Weekly brief as knowledge**: inject the latest content_brief_weekly payload into
