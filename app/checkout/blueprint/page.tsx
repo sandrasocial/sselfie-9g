@@ -4,6 +4,7 @@ import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 
 export default async function BlueprintCheckoutPage({
@@ -50,11 +51,13 @@ export default async function BlueprintCheckoutPage({
   if (authUser) {
     const user = await getUserByAuthId(authUser.id)
     if (user) {
+      const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
       const existing = await sql`
         SELECT id FROM subscriptions
         WHERE user_id = ${user.id}
           AND status = 'active'
           AND product_type = 'paid_blueprint'
+          AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         LIMIT 1
       `
       hasPaidBlueprint = existing.length > 0

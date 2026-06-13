@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { grantFreeUserCredits } from "@/lib/credits"
 import { sql } from "@/lib/db/client"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 /**
  * POST /api/credits/grant-free-welcome
@@ -86,10 +87,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has active subscription (only free users get welcome credits)
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const hasSubscription = await sql`
       SELECT COUNT(*) as count
       FROM subscriptions
       WHERE user_id = ${neonUser.id} AND status = 'active'
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
     `
     console.log(`[Credits] Subscription check: ${hasSubscription[0].count} active subscription(s)`)
 

@@ -26,6 +26,10 @@ type PickPreferredSubscriptionOptions = {
 
 const MEMBERSHIP_PRODUCT_TYPES: ProductType[] = ["sselfie_studio_membership", "brand_studio_membership", "pro"]
 
+export function shouldEnforceLiveSubscriptionRows(nodeEnv = process.env.NODE_ENV): boolean {
+  return nodeEnv === "production"
+}
+
 function isMembershipProduct(productType: string | null | undefined): boolean {
   if (!productType) return false
   return MEMBERSHIP_PRODUCT_TYPES.includes(productType as ProductType)

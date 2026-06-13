@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import Stripe from "stripe"
 import { createCronLogger } from "@/lib/cron-logger"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 
 const WELCOME_BONUS_DESC = "Free blueprint credits (welcome bonus)"
@@ -20,11 +21,13 @@ async function hasIsTestModeColumn() {
 }
 
 async function getMissingWelcomeUsers() {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
   return await sql`
     WITH active_subs AS (
       SELECT DISTINCT user_id
       FROM subscriptions
       WHERE status = 'active'
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
     ),
     paid_blueprint AS (
       SELECT DISTINCT user_id
@@ -113,12 +116,14 @@ async function grantWelcomeCredits(userId: string, hasTestMode: boolean) {
 }
 
 async function getEligibleMembers() {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
   return await sql`
     WITH active_members AS (
       SELECT DISTINCT user_id, product_type
       FROM subscriptions
       WHERE status = 'active'
         AND product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
     ),
     monthly_grants AS (
       SELECT user_id, MAX(created_at) AS last_grant

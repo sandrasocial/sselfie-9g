@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 type SupportedTier = "sselfie_studio_membership"
 
@@ -35,11 +36,13 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb()
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const activeSub =
       (await sql`
         SELECT id, product_type, stripe_subscription_id 
         FROM subscriptions 
         WHERE user_id = ${neonUser.id} AND status = 'active'
+          AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         ORDER BY created_at DESC
         LIMIT 1
       `) ?? []

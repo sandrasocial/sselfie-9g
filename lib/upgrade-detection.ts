@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { SUBSCRIPTION_CREDITS, getUserCredits } from "@/lib/credits"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 type UpgradeType = "high_usage" | "frequent_topups" | "credit_depletion" | "unknown_plan"
 type UpgradePriority = "high" | "medium" | "low"
@@ -99,11 +100,13 @@ export async function detectUpgradeOpportunities(userId: string): Promise<Upgrad
 }
 
 async function getActiveSubscription(userId: string) {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
   const result =
     (await sql`
       SELECT product_type, status 
       FROM subscriptions 
       WHERE user_id = ${userId} AND status = 'active'
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
       ORDER BY created_at DESC
       LIMIT 1
     `) ?? []

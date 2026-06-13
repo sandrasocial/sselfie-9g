@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
-import { getUserSubscription } from "@/lib/subscription"
+import { getUserSubscription, shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 import { parseStudioAcademyContext } from "@/lib/academy/studio-query-context"
@@ -113,10 +113,12 @@ export default async function StudioPage({
     console.log(`[Studio] ✅✅✅ Database connection established`)
     
     // Check if user has active subscription (only free users get welcome credits)
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const hasSubscription = await sql`
       SELECT COUNT(*) as count
       FROM subscriptions
       WHERE user_id = ${neonUser.id} AND status = 'active'
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
     `
     
     const subscriptionCount = Number(hasSubscription[0]?.count || 0)

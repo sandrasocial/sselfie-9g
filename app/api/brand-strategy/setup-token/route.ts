@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
 import { sessionIncludesProductType } from "@/lib/checkout/purchased-products"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 function resolveSessionEmail(session: {
   customer_details?: { email?: string | null } | null
@@ -40,12 +41,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Brand Strategy access is still syncing." }, { status: 409 })
     }
 
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const rows = await sql`
       SELECT s.setup_token
       FROM subscriptions s
       LEFT JOIN users u ON u.id::text = s.user_id
       WHERE s.product_type = 'brand_strategy_pack'
         AND s.status = 'active'
+        AND (${enforceLiveMode} = false OR COALESCE(s.is_test_mode, false) = false)
         AND s.setup_token IS NOT NULL
         AND (
           (${customerId}::text IS NOT NULL AND s.stripe_customer_id = ${customerId})
