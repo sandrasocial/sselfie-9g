@@ -231,7 +231,7 @@ describe("stripe webhook academy purchase branch", () => {
     expect(sendEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({
         subject: "Your Visibility To Paid Suite is ready",
-        text: expect.stringContaining("Open your Visibility To Paid Path"),
+        text: expect.stringContaining("Open your Visibility path"),
         tags: ["academy", "visibility_suite"],
       })
     )
