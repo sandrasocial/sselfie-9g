@@ -2,14 +2,22 @@ import { NextResponse } from "next/server"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
-import { AI_PROMPTS_EMAIL_TOUCHES, type AiPromptsEmailType } from "@/lib/email/ai-prompts-email-sequence"
-import { PROMPT_VAULT_EMAIL_TOUCHES, type PromptVaultEmailType } from "@/lib/email/prompt-vault-email-sequence"
+import {
+  AI_PROMPTS_EMAIL_TOUCHES,
+  type AiPromptsEmailType,
+} from "@/lib/email/ai-prompts-email-sequence"
+import {
+  PROMPT_VAULT_EMAIL_TOUCHES,
+  type PromptVaultEmailType,
+} from "@/lib/email/prompt-vault-email-sequence"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
+import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
+import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
 import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 import {
   generatePromptVaultDay10NextShootEmail,
@@ -55,7 +63,7 @@ interface TouchResult {
   skipped: number
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 function readIntEnv(name: string, fallback: number): number {
   const raw = process.env[name]?.trim()
@@ -82,21 +90,19 @@ function promptVaultAccessUrl(candidate: { access_token: string | null }): strin
 }
 
 function previousAiPromptTouch(emailType: AiPromptsEmailType): AiPromptsEmailType | null {
-  const index = AI_PROMPTS_EMAIL_TOUCHES.findIndex((touch) => touch.emailType === emailType)
+  const index = AI_PROMPTS_EMAIL_TOUCHES.findIndex(touch => touch.emailType === emailType)
   if (index <= 0) return null
   return AI_PROMPTS_EMAIL_TOUCHES[index - 1]?.emailType || null
 }
 
 function previousPromptVaultTouch(emailType: PromptVaultEmailType): PromptVaultEmailType | null {
-  const index = PROMPT_VAULT_EMAIL_TOUCHES.findIndex((touch) => touch.emailType === emailType)
+  const index = PROMPT_VAULT_EMAIL_TOUCHES.findIndex(touch => touch.emailType === emailType)
   if (index <= 0) return null
   return PROMPT_VAULT_EMAIL_TOUCHES[index - 1]?.emailType || null
 }
 
 function resultKey(emailType: string): string {
-  return emailType
-    .replace(/^ai-prompts-/, "aiPrompts-")
-    .replace(/^prompt-vault-/, "promptVault-")
+  return emailType.replace(/^ai-prompts-/, "aiPrompts-").replace(/^prompt-vault-/, "promptVault-")
 }
 
 async function getAiPromptsCandidates(input: {
@@ -107,8 +113,9 @@ async function getAiPromptsCandidates(input: {
   minTouchGapHours: number
   limit: number
 }): Promise<AiPromptsCandidate[]> {
-  const suppressIfSentTypes = AI_PROMPTS_EMAIL_TOUCHES.find((touch) => touch.emailType === input.emailType)
-    ?.suppressIfSentTypes || []
+  const suppressIfSentTypes =
+    AI_PROMPTS_EMAIL_TOUCHES.find(touch => touch.emailType === input.emailType)
+      ?.suppressIfSentTypes || []
   const sentEmailTypes = [input.emailType, ...suppressIfSentTypes]
 
   return (await sql`
@@ -223,10 +230,7 @@ async function getPromptVaultCandidates(input: {
   `) as PromptVaultCandidate[]
 }
 
-function generateAiPromptsEmail(
-  emailType: AiPromptsEmailType,
-  candidate: AiPromptsCandidate,
-) {
+function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiPromptsCandidate) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
   const accessUrl = aiPromptsAccessUrl(candidate)
 
@@ -238,7 +242,20 @@ function generateAiPromptsEmail(
     case "ai-prompts-day5-edit-makes-postable":
       return generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
     case "ai-prompts-day7-prompt-vault-offer":
-      return generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
+      return generateAiPromptsDay7PromptVaultOfferEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
+    case "ai-prompts-day9-prompt-vault-proof":
+      return generateAiPromptsDay9PromptVaultProofEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
+    case "ai-prompts-day11-prompt-vault-why-now":
+      return generateAiPromptsDay11PromptVaultWhyNowEmail({
+        firstName,
+        recipientEmail: candidate.email,
+      })
     case "ai-prompts-day10-suite-trial": {
       const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
       if (!token) return null
@@ -254,7 +271,7 @@ function generateAiPromptsEmail(
 
 function generatePromptVaultEmail(
   emailType: PromptVaultEmailType,
-  candidate: PromptVaultCandidate,
+  candidate: PromptVaultCandidate
 ) {
   const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
   const accessUrl = promptVaultAccessUrl(candidate)
@@ -263,7 +280,11 @@ function generatePromptVaultEmail(
     case "prompt-vault-day2-first-result":
       return generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
     case "prompt-vault-day3-system-upgrade":
-      return generatePromptVaultDay3SystemUpgradeEmail({ firstName, accessUrl, recipientEmail: candidate.email })
+      return generatePromptVaultDay3SystemUpgradeEmail({
+        firstName,
+        accessUrl,
+        recipientEmail: candidate.email,
+      })
     case "prompt-vault-day5-fix-bad-result":
       return generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
     case "prompt-vault-day10-next-shoot":
@@ -275,7 +296,7 @@ function generatePromptVaultEmail(
 
 async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPromptsCandidate) {
   const email = generateAiPromptsEmail(emailType, candidate)
-  // day-10 trial requires a claim token; subscribers without one are skipped, not failed.
+  // The SUITE trial touch requires a claim token; subscribers without one are skipped, not failed.
   if (!email) return { success: false, error: "skipped: no claim token" }
   return sendEmail({
     to: candidate.email,
@@ -290,7 +311,10 @@ async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPr
   })
 }
 
-async function sendPromptVaultTouch(emailType: PromptVaultEmailType, candidate: PromptVaultCandidate) {
+async function sendPromptVaultTouch(
+  emailType: PromptVaultEmailType,
+  candidate: PromptVaultCandidate
+) {
   const email = generatePromptVaultEmail(emailType, candidate)
   return sendEmail({
     to: candidate.email,
@@ -312,12 +336,12 @@ function emptyTouchResult(): TouchResult {
 function isTouchResult(value: unknown): value is TouchResult {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      "found" in value &&
-      "wouldSend" in value &&
-      "sent" in value &&
-      "failed" in value &&
-      "skipped" in value,
+    typeof value === "object" &&
+    "found" in value &&
+    "wouldSend" in value &&
+    "sent" in value &&
+    "failed" in value &&
+    "skipped" in value
   )
 }
 
@@ -343,7 +367,7 @@ export async function GET(request: Request) {
         })
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
-          { status: 401 },
+          { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
@@ -355,9 +379,15 @@ export async function GET(request: Request) {
     const aiPromptsEnabled = process.env.AI_PROMPTS_NURTURE_ENABLED === "true"
     const promptVaultEnabled = process.env.PROMPT_VAULT_NURTURE_ENABLED === "true"
     const maxPerTouch = readIntEnv("AI_PHOTOSHOOT_NURTURE_MAX_PER_TOUCH", MAX_PER_TOUCH_DEFAULT)
-    const maxTotalPerRun = readIntEnv("AI_PHOTOSHOOT_NURTURE_MAX_TOTAL_PER_RUN", MAX_TOTAL_PER_RUN_DEFAULT)
+    const maxTotalPerRun = readIntEnv(
+      "AI_PHOTOSHOOT_NURTURE_MAX_TOTAL_PER_RUN",
+      MAX_TOTAL_PER_RUN_DEFAULT
+    )
     const sendDelayMs = readIntEnv("AI_PHOTOSHOOT_NURTURE_SEND_DELAY_MS", DEFAULT_SEND_DELAY_MS)
-    const minTouchGapHours = readIntEnv("AI_PHOTOSHOOT_NURTURE_MIN_TOUCH_GAP_HOURS", MIN_TOUCH_GAP_HOURS_DEFAULT)
+    const minTouchGapHours = readIntEnv(
+      "AI_PHOTOSHOOT_NURTURE_MIN_TOUCH_GAP_HOURS",
+      MIN_TOUCH_GAP_HOURS_DEFAULT
+    )
     const startDate = aiPromptsStartDate()
     let remainingSends = maxTotalPerRun
 
@@ -469,15 +499,15 @@ export async function GET(request: Request) {
 
     const totalSent = Object.values(results).reduce<number>(
       (total, value) => total + (isTouchResult(value) ? value.sent : 0),
-      0,
+      0
     )
     const totalWouldSend = Object.values(results).reduce<number>(
       (total, value) => total + (isTouchResult(value) ? value.wouldSend : 0),
-      0,
+      0
     )
     const totalFailed = Object.values(results).reduce<number>(
       (total, value) => total + (isTouchResult(value) ? value.failed : 0),
-      0,
+      0
     )
 
     const summary = {
@@ -500,7 +530,7 @@ export async function GET(request: Request) {
         success: false,
         error: error instanceof Error ? error.message : "AI photoshoot nurture cron failed",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
