@@ -1,8 +1,9 @@
 # MAYA-ADMIN-01 — Maya becomes the admin content surface
 
 > Status audit 2026-06-13: Mostly built. Slice 1, approve/publish tooling, admin
-> content tools, and weekly brief knowledge are live in code. Genuine remaining
-> build: admin-specific approval/rejection memory, plus final handoff/live QA polish.
+> content tools, weekly brief knowledge, and admin-specific editorial memory are
+> live in code. Remaining work: final handoff/live QA polish and optional
+> reel-cover/caption tools after Sandra tests the carousel/story workflow.
 
 *Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Supersedes the standalone Shoot
 Studio UI direction (SHOOT-STUDIO-01 Phase A stays live as a collapsed support tool until
@@ -55,8 +56,12 @@ admin first; Sandra is customer zero of the real vision.
    tools are only registered when `adminSession` is true and the user is the admin email.
    Remaining follow-up: reel-cover/caption-specific tools can be added after Sandra tests
    the carousel/story draft workflow.
-3. **Admin memory**: persist what she approves/rejects as admin-specific memory notes
-   feeding the contract each session ("learn as we go").
+3. **Admin memory**: ✅ BUILT 2026-06-13. Admin Maya now loads recent
+   admin-specific editorial memory into the admin contract and has a server-gated
+   `remember_admin_decision` tool for lasting approval, rejection, voice,
+   workflow, and content signals. Shoot Studio approve/kill/full-approve/publish
+   actions also write compact taste-memory notes automatically. Member Maya is
+   unchanged.
 4. **Weekly brief as knowledge**: inject the latest content_brief_weekly payload into
    the admin contract so "what should I post this week?" answers from data; remove the
    collapsed brief row.

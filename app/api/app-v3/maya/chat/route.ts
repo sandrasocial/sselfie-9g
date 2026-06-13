@@ -309,6 +309,16 @@ async function getAdminBriefContext(): Promise<string> {
   }
 }
 
+async function getAdminEditorialMemoryContext(): Promise<string> {
+  try {
+    const { getAdminMemoryContext } = await import("@/lib/app-v3/maya/admin-memory-store")
+    return await getAdminMemoryContext()
+  } catch (e) {
+    console.error("[app-v3 maya chat] admin editorial memory load skipped:", e)
+    return ""
+  }
+}
+
 /** Only public Vercel Blob https URLs are accepted as an inspiration image. */
 function isAllowedInspirationUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false
@@ -424,7 +434,10 @@ export async function POST(req: Request) {
       if (isAdminEmail(user.email)) {
         isAdminSession = true
         const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
-        const briefContext = await getAdminBriefContext()
+        const [briefContext, adminMemoryContext] = await Promise.all([
+          getAdminBriefContext(),
+          getAdminEditorialMemoryContext(),
+        ])
         adminContentToolContext = await getAdminContentToolContext()
         const toolContext = [
           "---",
@@ -433,9 +446,10 @@ export async function POST(req: Request) {
           "When Sandra asks to approve, publish, add to the Vault, or send the drop email, use the admin publish and Vault drop handoff tools.",
           "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
           "Carousels and story sequences are drafts only. Publishing a shoot to the Vault is allowed only through the explicit publish tool. Email sends always stay behind the handoff card buttons.",
+          "When Sandra says why something is approved, rejected, too generic, off-voice, or finally feels like her, quietly call remember_admin_decision with that editorial signal.",
           `Approved shoot sources:\n${adminContentToolContext.summary}`,
         ].join("\n")
-        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}\n\n${toolContext}${briefContext ? `\n\n${briefContext}` : ""}`
+        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}\n\n${toolContext}${adminMemoryContext ? `\n\n${adminMemoryContext}` : ""}${briefContext ? `\n\n${briefContext}` : ""}`
       }
     }
 
@@ -542,6 +556,43 @@ export async function POST(req: Request) {
           kind: "sources" as const,
           format: requestedFormat ?? null,
           shoots: context.shoots,
+        }
+      },
+    })
+
+    const rememberAdminDecision = tool({
+      description:
+        "ADMIN ONLY. Quietly save Sandra's LASTING editorial signal: why she approved a shot, why " +
+        "she rejected/killed something, voice corrections, visual taste rules, or workflow preferences. " +
+        "Never announce the save. Use only for decisions that should guide future admin content.",
+      inputSchema: z.object({
+        kind: z
+          .enum(["approval", "rejection", "preference", "voice", "workflow", "content_signal"])
+          .describe("The type of editorial signal."),
+        note: z.string().describe("One clear sentence in simple words. No private speculation."),
+        sourceType: z
+          .enum(["maya_chat", "shoot", "shot", "carousel", "story", "vault_drop", "manual"])
+          .optional(),
+        sourceId: z.string().optional().describe("Optional shoot, shot, carousel, story, or collection id."),
+        sourceTitle: z.string().optional().describe("Optional human title of the source item."),
+      }),
+      execute: async ({ kind, note, sourceType, sourceId, sourceTitle }) => {
+        if (!isAdminSession) return { saved: false }
+        try {
+          const { addAdminMemoryNote } = await import("@/lib/app-v3/maya/admin-memory-store")
+          const result = await addAdminMemoryNote({
+            adminUserId: memoryUserId ?? user.id,
+            kind,
+            note,
+            sourceType: sourceType ?? "maya_chat",
+            sourceId: sourceId ?? null,
+            sourceTitle: sourceTitle ?? null,
+          })
+          logBehavior("suite_admin_memory_note_saved", { kind, saved: result.saved })
+          return { saved: result.saved }
+        } catch (e) {
+          console.error("[app-v3 maya chat] remember admin decision failed:", e)
+          return { saved: false }
         }
       },
     })
@@ -684,7 +735,17 @@ export async function POST(req: Request) {
         try {
           const { publishShootToVault } = await import("@/lib/content-kit/shoot-publisher")
           const { getVaultDropEmailPreview } = await import("@/lib/admin/vault-drop-email-workflow")
+          const { addAdminMemoryNote } = await import("@/lib/app-v3/maya/admin-memory-store")
           const result = await publishShootToVault(resolvedShoot.id)
+          await addAdminMemoryNote({
+            adminUserId: memoryUserId ?? user.id,
+            kind: "workflow",
+            note: `Published "${result.shoot.title}" to the Vault from Admin Maya after it had enough approved rendered shots.`,
+            sourceType: "shoot",
+            sourceId: result.shoot.id,
+            sourceTitle: result.shoot.title,
+            metadata: { vaultSlug: result.collection.slug },
+          }).catch((memoryError) => console.error("[app-v3 maya chat] publish memory skipped:", memoryError))
           const dropEmail = await getVaultDropEmailPreview()
           return {
             kind: "vault-publish" as const,
@@ -745,6 +806,7 @@ export async function POST(req: Request) {
       ...(isAdminSession
         ? {
             show_admin_content_sources: showAdminContentSources,
+            remember_admin_decision: rememberAdminDecision,
             create_admin_carousel: createAdminCarousel,
             create_admin_story_sequence: createAdminStorySequence,
             publish_admin_shoot_to_vault: publishAdminShootToVault,

@@ -8,10 +8,9 @@ This folder contains active build specs, completed historical specs, superseded 
 
 | Priority | Spec | Current truth | Next action |
 |---:|---|---|---|
-| 1 | `MAYA-ADMIN-01-admin-maya.md` | Mostly built. Weekly brief context and admin content tools are live. | Add admin-specific approval/rejection memory, then QA handoff polish. |
-| 2 | `APP-CUTOVER-01-members-to-new-app.md` | Core member gate exists and App v3 is live. | Treat remaining work as cutover QA, env verification, member comms, and monitoring. |
-| 3 | `WEBHOOK-01-split-stripe-monolith.md` | Extraction started but the Stripe webhook route is still too large. | Finish the zero-behavior-change split carefully, one handler at a time. |
-| 4 | `IG-AGENT-01-foundation.md` + `DM-RELIEF-01-dm-triage-system.md` | Partly built and overlapping. | Consolidate into one current DM launch checklist, then live-QA permissions and send flow. |
+| 1 | `APP-CUTOVER-01-members-to-new-app.md` | Core member gate exists and App v3 is live. | Treat remaining work as cutover QA, env verification, member comms, and monitoring. |
+| 2 | `WEBHOOK-01-split-stripe-monolith.md` | Extraction started but the Stripe webhook route is still too large. | Finish the zero-behavior-change split carefully, one handler at a time. |
+| 3 | `IG-AGENT-01-foundation.md` + `DM-RELIEF-01-dm-triage-system.md` | Partly built and overlapping. | Consolidate into one current DM launch checklist, then live-QA permissions and send flow. |
 
 ## Complete Or Stale
 
@@ -20,6 +19,7 @@ This folder contains active build specs, completed historical specs, superseded 
 | `BRIDGE-01-suite-bridge.md` | Complete | All phases A-E are marked built. |
 | `CONTENT-01-content-engine.md` | Complete enough | Weekly content brief cron, admin page, API, generator, and report type exist. Do quality QA only if needed. |
 | `MEMBER-CHECKOUT-01-email-capture.md` | Complete/stale | Email capture, recovery cron, analytics event, and tests exist. Payment name/currency fixes were also completed. |
+| `MAYA-ADMIN-01-admin-maya.md` | Mostly complete | Admin memory built 2026-06-13. Only final live QA polish and optional reel-cover/caption tools remain. |
 | `SHOOT-STUDIO-01-admin-shoot-studio.md` | Mostly complete | Phase B and C are built. Remaining issue is operational inventory: need enough queued shoots for live drop QA. |
 | `SUITE-UX-02-maya-flow-home-mobile.md` | Complete/stale | Product thumbnails, image-first library, and admin Academy product image controls are built and deployed. |
 | `MAYA-REBUILD-02-engine-cutover.md` | Superseded/complete | App v3 generate/edit routes and prompt compiler exist. Do not run as a fresh spec. |
