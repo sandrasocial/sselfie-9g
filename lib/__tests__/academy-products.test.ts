@@ -32,7 +32,7 @@ describe("getAcademyProducts", () => {
     expect(neonFactoryMock).toHaveBeenCalledWith("postgres://unit-test", {
       disableWarningInBrowsers: true,
     })
-    expect(products).toHaveLength(17)
+    expect(products).toHaveLength(18)
     expect(products.find(p => p.id === "what_to_say")?.name).toBe("What To Say")
     expect(products.find(p => p.id === "starter_kit")).toMatchObject({
       deliveryKind: "direct_private",
@@ -106,6 +106,7 @@ describe("getAcademyProducts", () => {
             tagline: "New tagline",
             description: "Updated description",
             price_cents: 2999,
+            thumbnail_url: "https://example.com/show-up-cover.jpg",
             active: false,
           },
         ]
@@ -122,8 +123,32 @@ describe("getAcademyProducts", () => {
       tagline: "New tagline",
       description: "Updated description",
       priceCents: 2999,
+      thumbnailUrl: "https://example.com/show-up-cover.jpg",
       active: false,
     })
     expect(showUp?.stripePriceId).toBeDefined()
+  })
+
+  it("returns default product thumbnails when no admin thumbnail override exists", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM academy_products")) {
+        throw new Error("missing table")
+      }
+      if (query.includes("FROM academy_product_overrides")) {
+        return []
+      }
+      return []
+    })
+
+    const { getAcademyProducts } = await import("@/lib/academy-products")
+    const products = await getAcademyProducts()
+
+    expect(products.find(p => p.id === "starter_kit")?.thumbnailUrl).toBe(
+      "/images/starter-kit/hero.png"
+    )
+    expect(products.find(p => p.id === "prompt_vault")?.thumbnailUrl).toBe(
+      "/images/ai-prompts/ai-prompts-hero.jpg"
+    )
   })
 })

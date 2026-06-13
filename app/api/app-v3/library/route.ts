@@ -68,10 +68,21 @@ export async function GET() {
         tagline: p.tagline,
         eyebrow: p.eyebrow,
         actionLabel: p.actionLabel,
+        thumbnailUrl: p.thumbnailUrl,
         accessUrl: p.accessUrl,
       })),
       // The membership tile is excluded: the Library's single upgrade CTA covers it.
-      lockedProducts: state.lockedProducts.filter((p) => p.id !== "studio"),
+      lockedProducts: state.lockedProducts
+        .filter((p) => p.id !== "studio")
+        .map((p) => ({
+          id: p.id,
+          eyebrow: p.eyebrow,
+          title: p.title,
+          description: p.description,
+          thumbnailUrl: p.thumbnailUrl,
+          href: p.href,
+          ctaLabel: p.ctaLabel,
+        })),
       drops: [
         ...vaultDrops.map((d) => ({
           id: `vault-${d.slug}`,

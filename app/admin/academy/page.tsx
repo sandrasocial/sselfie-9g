@@ -41,17 +41,36 @@ interface Lesson {
   order_index: number
 }
 
+interface AcademyProductAdmin {
+  id: string
+  name: string
+  tagline: string
+  description: string
+  priceCents: number | null
+  thumbnailUrl: string | null
+  active: boolean
+  accessUrl: string
+  purchaseUrl: string
+  deliveryKind: string
+}
+
 export default function AdminAcademyPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
 
   const [activeTab, setActiveTab] = useState<
-    "courses" | "templates" | "monthly-drops" | "flatlay-images" | "grant-access"
+    "courses" | "products" | "templates" | "monthly-drops" | "flatlay-images" | "grant-access"
   >("courses")
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
+
+  const [products, setProducts] = useState<AcademyProductAdmin[]>([])
+  const [savingProductId, setSavingProductId] = useState<string | null>(null)
+  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null)
+  const [generatingProductId, setGeneratingProductId] = useState<string | null>(null)
+  const [productMessage, setProductMessage] = useState<string>("")
 
   const [templates, setTemplates] = useState<any[]>([])
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
@@ -124,7 +143,14 @@ export default function AdminAcademyPage() {
   // Course state and form
   const [courseDialogOpen, setCourseDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
-  const [courseForm, setCourseForm] = useState({
+  const [courseForm, setCourseForm] = useState<{
+    product_id: string
+    title: string
+    description: string
+    thumbnail_url: string
+    order_index: number
+    status: string
+  }>({
     product_id: defaultCourseId,
     title: "",
     description: "",
@@ -151,6 +177,7 @@ export default function AdminAcademyPage() {
 
   useEffect(() => {
     fetchCourses()
+    fetchProducts()
     fetchTemplates()
     fetchMonthlyDrops()
     fetchFlatlayImages()
@@ -190,6 +217,139 @@ export default function AdminAcademyPage() {
       }
     } catch (error) {
       console.error("[v0] Error fetching lessons:", error)
+    }
+  }
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("/api/admin/academy/products", {
+        credentials: "include",
+      })
+
+      if (response.status === 403 || response.status === 401) {
+        router.push("/")
+        return
+      }
+
+      if (response.ok) {
+        const data = await response.json()
+        setProducts(data.products || [])
+      }
+    } catch (error) {
+      console.error("[academy admin] Error fetching products:", error)
+    }
+  }
+
+  const updateProduct = (productId: string, patch: Partial<AcademyProductAdmin>) => {
+    setProducts(current =>
+      current.map(product => (product.id === productId ? { ...product, ...patch } : product))
+    )
+  }
+
+  const saveProduct = async (
+    product: AcademyProductAdmin,
+    patch: Partial<AcademyProductAdmin> = {}
+  ) => {
+    const nextProduct = { ...product, ...patch }
+    setSavingProductId(product.id)
+    setProductMessage("")
+
+    try {
+      const response = await fetch("/api/admin/academy/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          productId: nextProduct.id,
+          name: nextProduct.name,
+          tagline: nextProduct.tagline,
+          description: nextProduct.description,
+          priceCents: nextProduct.priceCents,
+          thumbnailUrl: nextProduct.thumbnailUrl,
+          active: nextProduct.active,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Save failed")
+      }
+
+      updateProduct(product.id, patch)
+      setProductMessage("Product saved.")
+      setTimeout(() => setProductMessage(""), 2500)
+      await fetchProducts()
+    } catch (error) {
+      console.error("[academy admin] Error saving product:", error)
+      setProductMessage(error instanceof Error ? error.message : "Product save failed.")
+    } finally {
+      setSavingProductId(null)
+    }
+  }
+
+  const handleProductThumbnailUpload = async (
+    product: AcademyProductAdmin,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadingProductId(product.id)
+    setProductMessage(`Uploading product cover: ${file.name}...`)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload failed. Please try again.")
+      }
+
+      const data = await response.json()
+      await saveProduct(product, { thumbnailUrl: data.url })
+      setProductMessage("Product cover uploaded.")
+      setTimeout(() => setProductMessage(""), 2500)
+    } catch (error) {
+      console.error("[academy admin] Product cover upload failed:", error)
+      setProductMessage(error instanceof Error ? error.message : "Product cover upload failed.")
+    } finally {
+      setUploadingProductId(null)
+      event.target.value = ""
+    }
+  }
+
+  const generateProductMockup = async (product: AcademyProductAdmin) => {
+    setGeneratingProductId(product.id)
+    setProductMessage(`Generating ${product.name} mockup...`)
+
+    try {
+      const response = await fetch("/api/admin/academy/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "generate-mockup", productId: product.id }),
+      })
+
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(data?.error || "Mockup generation failed")
+      }
+
+      updateProduct(product.id, { thumbnailUrl: data.thumbnailUrl })
+      setProductMessage("Mockup generated.")
+      setTimeout(() => setProductMessage(""), 2500)
+      await fetchProducts()
+    } catch (error) {
+      console.error("[academy admin] Product mockup generation failed:", error)
+      setProductMessage(error instanceof Error ? error.message : "Mockup generation failed.")
+    } finally {
+      setGeneratingProductId(null)
     }
   }
 
@@ -928,6 +1088,16 @@ export default function AdminAcademyPage() {
             Courses
           </button>
           <button
+            onClick={() => setActiveTab("products")}
+            className={`px-6 py-3 text-sm tracking-wider uppercase transition-all ${
+              activeTab === "products"
+                ? "border-b-2 border-stone-950 text-stone-950"
+                : "text-stone-500 hover:text-stone-950"
+            }`}
+          >
+            Products
+          </button>
+          <button
             onClick={() => setActiveTab("templates")}
             className={`px-6 py-3 text-sm tracking-wider uppercase transition-all ${
               activeTab === "templates"
@@ -1106,6 +1276,195 @@ export default function AdminAcademyPage() {
                   Select a course to view lessons
                 </p>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "products" && (
+          <div className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6">
+              <div>
+                <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                  Products
+                </h2>
+                <p className="mt-1 text-xs tracking-[0.12em] uppercase font-light text-stone-500">
+                  Covers and copy for /app Library
+                </p>
+              </div>
+              {productMessage && (
+                <p className="rounded-full border border-stone-200 bg-white px-4 py-2 text-xs text-stone-600">
+                  {productMessage}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {products.map(product => {
+                const busy =
+                  savingProductId === product.id ||
+                  uploadingProductId === product.id ||
+                  generatingProductId === product.id
+
+                return (
+                  <div
+                    key={product.id}
+                    className="grid gap-4 rounded-xl border border-stone-200 bg-white/70 p-4 sm:grid-cols-[180px_1fr]"
+                  >
+                    <div className="space-y-3">
+                      <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+                        {product.thumbnailUrl ? (
+                          <img
+                            src={product.thumbnailUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center px-6 text-center text-xs uppercase tracking-[0.14em] text-stone-400">
+                            No cover
+                          </div>
+                        )}
+                      </div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={event => handleProductThumbnailUpload(product, event)}
+                        disabled={busy}
+                        className="border-stone-300 text-xs"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => generateProductMockup(product)}
+                        disabled={busy}
+                        className="w-full border-stone-300 text-xs uppercase tracking-wider"
+                      >
+                        {generatingProductId === product.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Generate Maya Mockup"
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                            {product.id} · {product.deliveryKind}
+                          </p>
+                          <h3 className="mt-1 text-sm font-medium text-stone-950">
+                            {product.name}
+                          </h3>
+                        </div>
+                        <label className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                          <input
+                            type="checkbox"
+                            checked={product.active}
+                            onChange={event =>
+                              updateProduct(product.id, { active: event.target.checked })
+                            }
+                          />
+                          Active
+                        </label>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase tracking-wider text-stone-500">
+                            Name
+                          </Label>
+                          <Input
+                            value={product.name}
+                            onChange={event => updateProduct(product.id, { name: event.target.value })}
+                            className="border-stone-300"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase tracking-wider text-stone-500">
+                            Price Cents
+                          </Label>
+                          <Input
+                            type="number"
+                            value={product.priceCents ?? ""}
+                            onChange={event =>
+                              updateProduct(product.id, {
+                                priceCents:
+                                  event.target.value === "" ? null : Number(event.target.value),
+                              })
+                            }
+                            className="border-stone-300"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-stone-500">
+                          Tagline
+                        </Label>
+                        <Input
+                          value={product.tagline || ""}
+                          onChange={event => updateProduct(product.id, { tagline: event.target.value })}
+                          className="border-stone-300"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-stone-500">
+                          Description
+                        </Label>
+                        <Textarea
+                          value={product.description || ""}
+                          onChange={event =>
+                            updateProduct(product.id, { description: event.target.value })
+                          }
+                          className="min-h-[88px] border-stone-300"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-stone-500">
+                          Cover URL
+                        </Label>
+                        <Input
+                          value={product.thumbnailUrl || ""}
+                          onChange={event =>
+                            updateProduct(product.id, { thumbnailUrl: event.target.value })
+                          }
+                          placeholder="https://... or /images/..."
+                          className="border-stone-300"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <Button
+                          type="button"
+                          onClick={() => saveProduct(product)}
+                          disabled={busy}
+                          className="bg-stone-950 text-white hover:bg-stone-800 text-xs tracking-wider uppercase"
+                        >
+                          {savingProductId === product.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Save Product"
+                          )}
+                        </Button>
+                        <a
+                          href={product.accessUrl}
+                          className="text-xs uppercase tracking-wider text-stone-500 underline underline-offset-4 hover:text-stone-950"
+                        >
+                          Access
+                        </a>
+                        <a
+                          href={product.purchaseUrl}
+                          className="text-xs uppercase tracking-wider text-stone-500 underline underline-offset-4 hover:text-stone-950"
+                        >
+                          Sales Page
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

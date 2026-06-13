@@ -65,6 +65,7 @@ export type AcademyCatalogProduct = {
   sortOrder: number
   deliveryKind: AcademyDeliveryKind
   accessTarget: string
+  thumbnailUrl: string | null
   accessUrl: string
   purchaseUrl: string
 }
@@ -87,6 +88,7 @@ type ProductOverrideRow = {
   tagline: string | null
   description: string | null
   price_cents: number | null
+  thumbnail_url: string | null
   active: boolean | null
 }
 
@@ -109,6 +111,7 @@ type FallbackMetadata = {
   tagline: string
   description: string
   priceCents: number | null
+  thumbnailUrl: string | null
   stripePriceId: string | null
   purchasable: boolean
   deliveryKind: AcademyDeliveryKind
@@ -127,6 +130,27 @@ const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
     "feed_reset_9grid",
     "ai_photo_refresh",
   ],
+}
+
+const PRODUCT_THUMBNAILS: Record<string, string> = {
+  what_to_say: "/academy/visibility-suite/what-to-say.png",
+  show_up: "/academy/visibility-suite/show-up.png",
+  get_paid: "/academy/visibility-suite/get-paid.png",
+  visibility_suite: "/academy/visibility-suite/hero.png",
+  concept_cards_pack: "/academy/sselfie-minimalism/academy-bonus-library.jpg",
+  caption_sprint: "/academy/sselfie-minimalism/academy-workbook.jpg",
+  feed_reset_9grid: "/academy/sselfie-minimalism/academy-course.jpg",
+  ai_photo_refresh: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
+  ai_photo_prompts: "/images/ai-prompts/ai-prompts-hero.jpg",
+  editing_masterclass: "/academy/sselfie-minimalism/academy-workbook.jpg",
+  branded_by_sselfie: "/academy/sselfie-minimalism/academy-course.jpg",
+  starter_kit: "/images/starter-kit/hero.png",
+  masterclass: "/academy/sselfie-minimalism/academy-masterclass.jpg",
+  prompt_vault: "/images/ai-prompts/ai-prompts-hero.jpg",
+  selfie_to_brand_shoot_system: "/landing/lookbook-on-location.png",
+  selfie_guide: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
+  selfie_guide_bundle: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
+  brand_strategy_pack: "/academy/sselfie-minimalism/academy-brand-strategy.jpg",
 }
 
 function priceFromCents(priceCents: number | null): number | null {
@@ -264,6 +288,7 @@ function getFallbackMetadata(productId: string): FallbackMetadata {
       tagline: academyProduct.tagline ?? "",
       description: academyProduct.description ?? "",
       priceCents: academyProduct.price ?? null,
+      thumbnailUrl: PRODUCT_THUMBNAILS[productId] ?? null,
       stripePriceId: academyProduct.stripePriceId || null,
       purchasable: true,
       deliveryKind: "academy_course",
@@ -289,6 +314,7 @@ function getFallbackMetadata(productId: string): FallbackMetadata {
       tagline: pricingProduct.description,
       description: pricingProduct.description,
       priceCents: pricingProduct.priceInCents,
+      thumbnailUrl: PRODUCT_THUMBNAILS[productId] ?? null,
       stripePriceId: pricingProduct.stripePriceId?.trim() || null,
       purchasable: true,
       deliveryKind: "direct_private",
@@ -301,6 +327,7 @@ function getFallbackMetadata(productId: string): FallbackMetadata {
     tagline: "",
     description: "",
     priceCents: null,
+    thumbnailUrl: PRODUCT_THUMBNAILS[productId] ?? null,
     stripePriceId: null,
     purchasable: false,
     deliveryKind: "academy_course",
@@ -360,13 +387,24 @@ function resolveAcademyProductPurchaseUrl(
 async function getAcademyProductOverrides(): Promise<Map<string, ProductOverrideRow>> {
   try {
     const overrides = (await sql`
-      SELECT product_id, name, tagline, description, price_cents, active
+      SELECT product_id, name, tagline, description, price_cents, thumbnail_url, active
       FROM academy_product_overrides
     `) as ProductOverrideRow[]
 
     return new Map(overrides.map(row => [row.product_id, row]))
   } catch {
-    return new Map()
+    try {
+      const legacyOverrides = (await sql`
+        SELECT product_id, name, tagline, description, price_cents, active
+        FROM academy_product_overrides
+      `) as Array<Omit<ProductOverrideRow, "thumbnail_url">>
+
+      return new Map(
+        legacyOverrides.map(row => [row.product_id, { ...row, thumbnail_url: null }])
+      )
+    } catch {
+      return new Map()
+    }
   }
 }
 
@@ -466,6 +504,7 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
     const tagline = override?.tagline ?? fallback.tagline
     const description = override?.description ?? fallback.description
     const priceCents = override?.price_cents ?? fallback.priceCents
+    const thumbnailUrl = override?.thumbnail_url ?? fallback.thumbnailUrl
     const active = product.active && (override?.active ?? true)
 
     const baseProduct: AcademyCatalogProduct = {
@@ -487,6 +526,7 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
       sortOrder: product.sortOrder,
       deliveryKind: product.deliveryKind,
       accessTarget: product.accessTarget,
+      thumbnailUrl,
       accessUrl: "",
       purchaseUrl: "",
     }

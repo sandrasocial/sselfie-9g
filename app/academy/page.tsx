@@ -347,62 +347,73 @@ export default async function AcademyPage() {
                   {home.ownedProducts.map((product) => (
                     <article
                       key={product.id}
-                      className="p-7"
+                      className="overflow-hidden"
                       style={{
                         background: product.id === "starter_kit" ? C.cream : C.inkSoft,
                         border: `1px solid ${product.id === "starter_kit" ? "rgba(15,13,11,0.14)" : C.divStrong}`,
                         color: product.id === "starter_kit" ? C.ink : C.cream,
                       }}
                     >
-                      <p
-                        className={`${inter.className} ${eyebrow}`}
-                        style={{
-                          color:
-                            product.id === "starter_kit"
-                              ? "rgba(15,13,11,0.55)"
-                              : C.muted,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {product.eyebrow}
-                      </p>
-                      <h2
-                        className={`${cormorant.className} mt-5 uppercase`}
-                        style={{
-                          fontWeight: 300,
-                          fontSize: "clamp(22px, 3vw, 32px)",
-                          lineHeight: 1.12,
-                          textShadow:
-                            product.id === "starter_kit"
-                              ? "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
-                              : LP,
-                          color: product.id === "starter_kit" ? C.ink : C.cream,
-                        }}
-                      >
-                        {product.name}
-                      </h2>
-                      <p
-                        className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
-                        style={{
-                          color:
-                            product.id === "starter_kit"
-                              ? "rgba(15,13,11,0.72)"
-                              : C.body,
-                          fontWeight: 400,
-                        }}
-                      >
-                        {product.tagline || product.description}
-                      </p>
-                      <Link
-                        href={product.accessUrl}
-                        className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
-                        style={{
-                          color: product.id === "starter_kit" ? C.ink : C.cream,
-                          fontWeight: 600,
-                        }}
-                      >
-                        → {product.actionLabel}
-                      </Link>
+                      <div className="aspect-[16/10] bg-black/20">
+                        {product.thumbnailUrl ? (
+                          <img
+                            src={product.thumbnailUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="p-7">
+                        <p
+                          className={`${inter.className} ${eyebrow}`}
+                          style={{
+                            color:
+                              product.id === "starter_kit"
+                                ? "rgba(15,13,11,0.55)"
+                                : C.muted,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {product.eyebrow}
+                        </p>
+                        <h2
+                          className={`${cormorant.className} mt-5 uppercase`}
+                          style={{
+                            fontWeight: 300,
+                            fontSize: "clamp(22px, 3vw, 32px)",
+                            lineHeight: 1.12,
+                            textShadow:
+                              product.id === "starter_kit"
+                                ? "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(60,50,38,0.09)"
+                                : LP,
+                            color: product.id === "starter_kit" ? C.ink : C.cream,
+                          }}
+                        >
+                          {product.name}
+                        </h2>
+                        <p
+                          className={`${inter.className} mt-4 text-[15px] leading-[1.78]`}
+                          style={{
+                            color:
+                              product.id === "starter_kit"
+                                ? "rgba(15,13,11,0.72)"
+                                : C.body,
+                            fontWeight: 400,
+                          }}
+                        >
+                          {product.tagline || product.description}
+                        </p>
+                        <Link
+                          href={product.accessUrl}
+                          className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+                          style={{
+                            color: product.id === "starter_kit" ? C.ink : C.cream,
+                            fontWeight: 600,
+                          }}
+                        >
+                          → {product.actionLabel}
+                        </Link>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -647,42 +658,59 @@ export default async function AcademyPage() {
                   {home.lockedProducts.map((product) => (
                     <article
                       key={product.id}
-                      className="p-7"
+                      className="overflow-hidden"
                       style={{
                         border: `1px solid ${C.div}`,
                       }}
                     >
-                      <p
-                        className={`${inter.className} ${eyebrow}`}
-                        style={{ color: C.muted, fontWeight: 600 }}
-                      >
-                        {product.eyebrow}
-                      </p>
-                      <h2
-                        className={`${cormorant.className} mt-5 uppercase`}
-                        style={{
-                          fontWeight: 300,
-                          fontSize: "clamp(19px, 2.5vw, 26px)",
-                          lineHeight: 1.18,
-                          textShadow: LP,
-                          color: C.cream,
-                        }}
-                      >
-                        {product.title}
-                      </h2>
-                      <p
-                        className={`${inter.className} mt-3 text-[15px] leading-[1.78]`}
-                        style={{ color: C.body, fontWeight: 400 }}
-                      >
-                        {product.description}
-                      </p>
-                      <Link
-                        href={product.href}
-                        className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
-                        style={{ color: C.stone, fontWeight: 600 }}
-                      >
-                        → {product.ctaLabel}
-                      </Link>
+                      <div className="relative aspect-[16/10] bg-white/5">
+                        {product.thumbnailUrl ? (
+                          <img
+                            src={product.thumbnailUrl}
+                            alt=""
+                            className="h-full w-full object-cover opacity-70 grayscale-[18%]"
+                          />
+                        ) : null}
+                        <span
+                          className={`${inter.className} absolute left-4 top-4 bg-black/55 px-3 py-1 text-[9px] uppercase tracking-[0.24em]`}
+                          style={{ color: C.cream }}
+                        >
+                          Locked
+                        </span>
+                      </div>
+                      <div className="p-7">
+                        <p
+                          className={`${inter.className} ${eyebrow}`}
+                          style={{ color: C.muted, fontWeight: 600 }}
+                        >
+                          {product.eyebrow}
+                        </p>
+                        <h2
+                          className={`${cormorant.className} mt-5 uppercase`}
+                          style={{
+                            fontWeight: 300,
+                            fontSize: "clamp(19px, 2.5vw, 26px)",
+                            lineHeight: 1.18,
+                            textShadow: LP,
+                            color: C.cream,
+                          }}
+                        >
+                          {product.title}
+                        </h2>
+                        <p
+                          className={`${inter.className} mt-3 text-[15px] leading-[1.78]`}
+                          style={{ color: C.body, fontWeight: 400 }}
+                        >
+                          {product.description}
+                        </p>
+                        <Link
+                          href={product.href}
+                          className={`${inter.className} mt-7 inline-flex text-[11px] uppercase tracking-[0.35em] transition-opacity hover:opacity-70`}
+                          style={{ color: C.stone, fontWeight: 600 }}
+                        >
+                          → {product.ctaLabel}
+                        </Link>
+                      </div>
                     </article>
                   ))}
                 </div>

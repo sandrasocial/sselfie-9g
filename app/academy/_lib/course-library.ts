@@ -48,7 +48,7 @@ export type AcademyHomeLink = {
 
 export type OwnedLibraryProduct = Pick<
   AcademyResolvedCatalogEntry,
-  "id" | "name" | "tagline" | "description" | "accessUrl" | "purchaseUrl" | "type"
+  "id" | "name" | "tagline" | "description" | "accessUrl" | "purchaseUrl" | "thumbnailUrl" | "type"
 > & {
   eyebrow: string
   actionLabel: string
@@ -71,6 +71,7 @@ export type AcademyHomeState = {
     eyebrow: string
     title: string
     description: string
+    thumbnailUrl: string | null
     href: string
     ctaLabel: string
   }>
@@ -300,6 +301,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
         ? "/academy/access/visibility-suite"
         : product.accessUrl,
       purchaseUrl: product.purchaseUrl,
+      thumbnailUrl: product.thumbnailUrl,
       type: product.type,
       eyebrow: getOwnedProductEyebrow(product.id),
       actionLabel: getOwnedProductActionLabel(product.id),
@@ -411,6 +413,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
   }
 
   const lockedProducts: AcademyHomeState["lockedProducts"] = []
+  const catalogById = new Map(entitlementState.catalog.map(product => [product.id, product]))
 
   if (!hasStarterKit) {
     lockedProducts.push({
@@ -418,6 +421,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       eyebrow: "$37 one-time",
       title: "Starter Kit",
       description: "Presets, quick-start, and the first practical step after the guide.",
+      thumbnailUrl: catalogById.get("starter_kit")?.thumbnailUrl ?? null,
       href: "/starter-kit",
       ctaLabel: "See Starter Kit",
     })
@@ -429,6 +433,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       eyebrow: "$147 one-time",
       title: "Selfie Masterclass",
       description: "The complete method, already waiting inside Academy once you unlock it.",
+      thumbnailUrl: catalogById.get("masterclass")?.thumbnailUrl ?? null,
       href: "/masterclass",
       ctaLabel: "See Masterclass",
     })
@@ -441,6 +446,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       title: "SSELFIE SUITE",
       description:
         "Maya, Feed Planner, and your AI execution layer when you're ready for the advanced step.",
+      thumbnailUrl: "/images/email/studio-visual-workspace.jpg",
       href: "/join/studio",
       ctaLabel: "Join the SUITE",
     })

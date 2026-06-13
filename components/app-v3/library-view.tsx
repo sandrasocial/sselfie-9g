@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 
 interface LibraryCourse {
   id: number
@@ -27,6 +28,7 @@ interface LibraryProduct {
   tagline: string | null
   eyebrow: string
   actionLabel: string
+  thumbnailUrl: string | null
   accessUrl: string
 }
 
@@ -35,6 +37,7 @@ interface LockedProduct {
   eyebrow: string
   title: string
   description: string
+  thumbnailUrl: string | null
   href: string
   ctaLabel: string
 }
@@ -57,6 +60,62 @@ interface LibraryData {
 }
 
 const card = "rounded-[8px] border border-[#C5C6C8]/60 bg-white"
+
+function ProductTile({
+  title,
+  eyebrow,
+  description,
+  thumbnailUrl,
+  href,
+  actionLabel,
+  locked = false,
+}: {
+  title: string
+  eyebrow: string
+  description: string | null
+  thumbnailUrl: string | null
+  href: string
+  actionLabel: string
+  locked?: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      className={`${card} group block overflow-hidden transition-colors hover:border-[#0D0E10]/40`}
+    >
+      <div className="relative aspect-[4/5] bg-[#F1F2F2]">
+        {thumbnailUrl ? (
+          <Image
+            src={thumbnailUrl}
+            alt=""
+            fill
+            className={`object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02] ${
+              locked ? "saturate-[0.82]" : ""
+            }`}
+            sizes="(max-width: 640px) 100vw, 50vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center px-6 text-center text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+            SSELFIE
+          </div>
+        )}
+        {locked && (
+          <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[9px] uppercase tracking-[0.16em] text-[#0D0E10]">
+            Locked
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <span className="text-[9px] uppercase tracking-[0.16em] text-[#818283]">{eyebrow}</span>
+        <h3 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">{title}</h3>
+        {description && <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{description}</p>}
+        <span className="mt-4 block text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
+          {actionLabel}
+        </span>
+      </div>
+    </Link>
+  )
+}
 
 export function LibraryView() {
   const [data, setData] = useState<LibraryData | null>(null)
@@ -131,20 +190,17 @@ export function LibraryView() {
           {products.length > 0 && (
             <section>
               <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Your products</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {products.map((p) => (
-                  <a
+                  <ProductTile
                     key={p.id}
+                    title={p.name}
+                    eyebrow={p.eyebrow}
+                    description={p.tagline}
+                    thumbnailUrl={p.thumbnailUrl}
                     href={p.accessUrl}
-                    className={`${card} flex flex-col p-4 transition-colors hover:border-[#0D0E10]/40`}
-                  >
-                    <span className="text-[9px] uppercase tracking-[0.16em] text-[#818283]">{p.eyebrow}</span>
-                    <h3 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">{p.name}</h3>
-                    {p.tagline && <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">{p.tagline}</p>}
-                    <span className="mt-auto pt-3 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
-                      {p.actionLabel}
-                    </span>
-                  </a>
+                    actionLabel={p.actionLabel}
+                  />
                 ))}
               </div>
             </section>
@@ -160,7 +216,7 @@ export function LibraryView() {
             {data.drops.length > 0 ? (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {data.drops.map((d) => (
-                  <a
+                  <Link
                     key={d.id}
                     href="/academy/access/monthly-drops"
                     className={`${card} flex gap-3 overflow-hidden p-3 transition-colors hover:border-[#0D0E10]/40`}
@@ -176,7 +232,7 @@ export function LibraryView() {
                         <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-[#818283]">{d.month}</p>
                       )}
                     </div>
-                  </a>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -192,13 +248,18 @@ export function LibraryView() {
               {data.lockedProducts.length > 0 && (
                 <>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Not yours yet</p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {data.lockedProducts.map((p) => (
-                      <div key={p.id} className={`${card} p-4 opacity-80`}>
-                        <span className="text-[9px] uppercase tracking-[0.16em] text-[#818283]">{p.eyebrow}</span>
-                        <h3 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">{p.title}</h3>
-                        <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">{p.description}</p>
-                      </div>
+                      <ProductTile
+                        key={p.id}
+                        title={p.title}
+                        eyebrow={p.eyebrow}
+                        description={p.description}
+                        thumbnailUrl={p.thumbnailUrl}
+                        href={p.href}
+                        actionLabel={p.ctaLabel}
+                        locked
+                      />
                     ))}
                   </div>
                 </>
