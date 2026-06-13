@@ -7,3 +7,7 @@ export function resolveAppV3InitialSection(view?: string | string[] | null): App
   if (typeof value !== "string") return "create"
   return APP_V3_SECTIONS.has(value as AppV3Section) ? (value as AppV3Section) : "create"
 }
+
+export function buildAppV3ReturnTo(section: AppV3Section): string {
+  return section === "create" ? "/app" : `/app?view=${section}`
+}

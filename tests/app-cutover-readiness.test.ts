@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest"
-import { resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
 import { generateCreditRenewalEmail } from "@/lib/email/templates/credit-renewal"
 import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
 import { generateMonthlyUsageRecapEmail } from "@/lib/email/templates/monthly-usage-recap"
@@ -51,5 +51,7 @@ describe("APP-CUTOVER-01 readiness", () => {
     expect(resolveAppV3InitialSection("content")).toBe("content")
     expect(resolveAppV3InitialSection("maya")).toBe("create")
     expect(resolveAppV3InitialSection(undefined)).toBe("create")
+    expect(buildAppV3ReturnTo("create")).toBe("/app")
+    expect(buildAppV3ReturnTo("account")).toBe("/app?view=account")
   })
 })

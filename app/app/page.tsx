@@ -11,7 +11,7 @@ import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
-import { resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -27,13 +27,14 @@ export default async function StudioV3Page({
 }) {
   const params = searchParams ? await searchParams : {}
   const initialSection = resolveAppV3InitialSection(params.view)
+  const returnTo = buildAppV3ReturnTo(initialSection)
 
   let supabase
   try {
     supabase = await createServerClient()
   } catch (error) {
     console.error("[app-v3] Supabase client error:", error)
-    redirect(`/auth/login?returnTo=${encodeURIComponent("/app")}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   const {
@@ -41,7 +42,7 @@ export default async function StudioV3Page({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/auth/login?returnTo=${encodeURIComponent("/app")}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   // APP-CUTOVER-01 Phase 2 gate + BRIDGE-01 Phase D access levels: admin always full;
