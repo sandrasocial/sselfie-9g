@@ -101,7 +101,10 @@ export type Shoot = {
   vaultPublishedAt?: string | null
   emailDropStatus?: "queued" | "included" | "skipped" | null
   inspirationUrls: string[]
+  /** First selfie, kept for the thumbnail + back-compat with older single-selfie shoots. */
   selfieUrl: string
+  /** All identity references (front, side profiles, full body). At least one. */
+  selfieUrls: string[]
   shots: ShootShot[]
   messages: ShootMessage[]
   createdAt: string

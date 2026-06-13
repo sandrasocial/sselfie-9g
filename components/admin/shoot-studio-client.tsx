@@ -405,12 +405,15 @@ export function ShootStudioClient({
 }) {
   const [shoots, setShoots] = useState<Shoot[]>(initialShoots)
   const [inspiration, setInspiration] = useState<string[]>([])
-  const [selfieUrl, setSelfieUrl] = useState<string>(selfies[0] ?? "")
+  const [selfieOptions, setSelfieOptions] = useState<string[]>(selfies)
+  const [selfieUrls, setSelfieUrls] = useState<string[]>(selfies[0] ? [selfies[0]] : [])
   const [notes, setNotes] = useState("")
   const [uploading, setUploading] = useState(false)
+  const [uploadingSelfie, setUploadingSelfie] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  const selfieInput = useRef<HTMLInputElement>(null)
 
   async function uploadInspiration(files: FileList | null) {
     if (!files || files.length === 0) return
@@ -433,6 +436,50 @@ export function ShootStudioClient({
     }
   }
 
+  function toggleSelfie(url: string) {
+    setSelfieUrls((current) =>
+      current.includes(url) ? current.filter((u) => u !== url) : [...current, url].slice(0, 4),
+    )
+  }
+
+  async function uploadSelfies(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploadingSelfie(true)
+    setError(null)
+    try {
+      const form = new FormData()
+      Array.from(files)
+        .slice(0, 6)
+        .forEach((file) => form.append("files", file))
+      const response = await fetch("/api/admin/content-kit/selfies", { method: "POST", body: form })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
+      const urls: string[] = Array.isArray(data.urls) ? data.urls : []
+      if (Array.isArray(data.selfies) && data.selfies.length) {
+        setSelfieOptions(data.selfies)
+      } else {
+        setSelfieOptions((current) => [...urls, ...current])
+      }
+      // Auto-select the new uploads, respecting the 4-image cap.
+      setSelfieUrls((current) => Array.from(new Set([...current, ...urls])).slice(0, 4))
+    } catch (err: any) {
+      setError(err?.message || "Upload failed")
+    } finally {
+      setUploadingSelfie(false)
+      if (selfieInput.current) selfieInput.current.value = ""
+    }
+  }
+
+  async function removeSelfie(url: string) {
+    setSelfieOptions((current) => current.filter((u) => u !== url))
+    setSelfieUrls((current) => current.filter((u) => u !== url))
+    await fetch("/api/admin/content-kit/selfies", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).catch(() => {})
+  }
+
   async function create() {
     if (creating) return
     setCreating(true)
@@ -444,7 +491,7 @@ export function ShootStudioClient({
         body: JSON.stringify({
           action: "create",
           inspirationUrls: inspiration,
-          selfieUrl,
+          selfieUrls,
           notes: notes.trim() || undefined,
         }),
       })
@@ -523,22 +570,61 @@ export function ShootStudioClient({
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-stone-500">2 · Your selfie</p>
+            <p className="text-xs uppercase tracking-wide text-stone-500">
+              2 · Your selfies (front, side profiles, full body)
+            </p>
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1" style={{ maxWidth: "24rem" }}>
-              {selfies.map((url) => (
-                <button
-                  key={url}
-                  type="button"
-                  onClick={() => setSelfieUrl(url)}
-                  className={`shrink-0 overflow-hidden rounded-lg border-2 ${
-                    selfieUrl === url ? "border-stone-950" : "border-transparent hover:border-stone-300"
-                  }`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="Selfie" className="h-24 w-[4.5rem] object-cover" loading="lazy" />
-                </button>
-              ))}
+              {selfieOptions.map((url) => {
+                const selected = selfieUrls.includes(url)
+                const order = selfieUrls.indexOf(url) + 1
+                return (
+                  <div key={url} className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleSelfie(url)}
+                      className={`block overflow-hidden rounded-lg border-2 ${
+                        selected ? "border-stone-950" : "border-transparent hover:border-stone-300"
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="Selfie" className="h-24 w-[4.5rem] object-cover" loading="lazy" />
+                    </button>
+                    {selected && (
+                      <span className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-stone-950 text-[10px] font-medium text-white">
+                        {order}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      title="Remove from your selfies"
+                      onClick={() => removeSelfie(url)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs leading-none text-stone-600 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => selfieInput.current?.click()}
+                disabled={uploadingSelfie}
+                className="flex h-24 w-[4.5rem] shrink-0 items-center justify-center rounded-lg border border-dashed border-stone-300 text-2xl font-light text-stone-400 hover:border-stone-950 hover:text-stone-950 disabled:opacity-50"
+              >
+                {uploadingSelfie ? "..." : "+"}
+              </button>
+              <input
+                ref={selfieInput}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(event) => uploadSelfies(event.target.files)}
+              />
             </div>
+            <p className="mt-1 text-[11px] text-stone-400">
+              Pick up to 4. Front, both side profiles, and full body give the truest likeness.
+            </p>
           </div>
         </div>
 
@@ -553,7 +639,7 @@ export function ShootStudioClient({
           <button
             type="button"
             onClick={create}
-            disabled={creating || inspiration.length === 0 || !selfieUrl}
+            disabled={creating || inspiration.length === 0 || selfieUrls.length === 0}
             className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
           >
             {creating ? "Creating your 6-shot shoot (3-4 minutes)" : "Create the shoot"}

@@ -22,11 +22,21 @@ const DEFAULT_SHOTS_PER_SHOOT = 6
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
 // attach selfie + inspiration together, so the image roles must be explicit or the model
 // could lift a face from the inspiration. Structural no-fake guard, not prompt-dependent.
-const IMAGE_ROLE_GUARD =
-  "Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. Never copy a face, skin, hair color or body from the style references."
+// Built per generation: the first `selfieCount` images are all the SAME woman (different
+// angles: front, side profiles, full body) and define identity; the rest are style only.
+function buildImageRoleGuard(selfieCount: number): string {
+  if (selfieCount <= 1) {
+    return "Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. Never copy a face, skin, hair color or body from the style references."
+  }
+  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading and mood. Never copy a face, skin, hair color or body from the style references.`
+}
 
-const IDENTITY_GUARD =
-  "Keep the face natural, recognizable and completely true to the first reference image. Do not alter facial features, skin texture or identity."
+function buildIdentityGuard(selfieCount: number): string {
+  if (selfieCount <= 1) {
+    return "Keep the face natural, recognizable and completely true to the first reference image. Do not alter facial features, skin texture or identity."
+  }
+  return `Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
+}
 
 function isAllowedUrl(value: string): boolean {
   try {
@@ -152,7 +162,7 @@ function toPromptShot({ imageUrl: _imageUrl, status: _status, ...rest }: ShootSh
 type ImgQuality = "low" | "medium" | "high"
 
 async function generateShotImage(input: {
-  selfieUrl: string
+  selfieUrls: string[]
   inspirationUrls: string[]
   prompt: string
   quality: ImgQuality
@@ -161,15 +171,17 @@ async function generateShotImage(input: {
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
   const openai = new OpenAI({ apiKey })
 
-  // Selfie FIRST (identity), inspiration after (style). Cap 4 total inputs.
-  const urls = [input.selfieUrl, ...input.inspirationUrls].slice(0, 4)
+  // Selfies FIRST (identity, up to 4 angles), inspiration after (style, up to 3).
+  const selfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
+  const styleUrls = input.inspirationUrls.slice(0, 3)
+  const urls = [...selfieUrls, ...styleUrls]
   const files = await Promise.all(
     urls.map(async (url, i) =>
       toFile(await normalizeForOpenAI(await readImage(url)), `shoot-input-${i}.png`, { type: "image/png" }),
     ),
   )
 
-  const fullPrompt = `${IMAGE_ROLE_GUARD}\n\n${input.prompt}\n\n${IDENTITY_GUARD}`
+  const fullPrompt = `${buildImageRoleGuard(selfieUrls.length)}\n\n${input.prompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
@@ -205,6 +217,13 @@ function mapRow(row: any): Shoot {
     emailDropStatus: row.email_drop_status ?? null,
     inspirationUrls: Array.isArray(row.inspiration_urls) ? row.inspiration_urls : [],
     selfieUrl: row.selfie_url,
+    // Older shoots predate selfie_urls; fall back to the single selfie_url.
+    selfieUrls:
+      Array.isArray(row.selfie_urls) && row.selfie_urls.length > 0
+        ? row.selfie_urls
+        : row.selfie_url
+          ? [row.selfie_url]
+          : [],
     shots: Array.isArray(row.shots) ? row.shots : [],
     messages: Array.isArray(row.messages) ? row.messages : [],
     createdAt: new Date(row.created_at).toISOString(),
@@ -260,14 +279,25 @@ export async function getShoot(id: number): Promise<Shoot | null> {
 
 // ── Actions ─────────────────────────────────────────────────────────────────────
 
+// Additive, idempotent: older content_shoots rows only have selfie_url.
+async function ensureSelfieUrlsColumn(): Promise<void> {
+  try {
+    await sql`ALTER TABLE content_shoots ADD COLUMN IF NOT EXISTS selfie_urls jsonb`
+  } catch (error) {
+    console.error("[shoot-studio] ensure selfie_urls column skipped:", error)
+  }
+}
+
 export async function createShoot(input: {
   inspirationUrls: string[]
-  selfieUrl: string
+  /** One or more identity references (front, side profiles, full body). */
+  selfieUrls: string[]
   notes?: string
 }): Promise<Shoot> {
   const inspirationUrls = input.inspirationUrls.filter(isAllowedUrl).slice(0, 3)
   if (inspirationUrls.length === 0) throw new Error("Add at least one inspiration image")
-  if (!isAllowedUrl(input.selfieUrl)) throw new Error("Pick one of your selfies")
+  const selfieUrls = input.selfieUrls.filter(isAllowedUrl).slice(0, 4)
+  if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
 
   const raw = await callContentKitVision(buildCreatePrompt(input.notes?.trim() || undefined), inspirationUrls)
   const parsed = extractJsonObject(raw)
@@ -286,9 +316,11 @@ export async function createShoot(input: {
     },
   ]
 
+  await ensureSelfieUrlsColumn()
   const rows = (await sql`
-    INSERT INTO content_shoots (title, slug, inspiration_urls, selfie_url, shots, messages)
-    VALUES (${title}, ${toSlug(title)}, ${JSON.stringify(inspirationUrls)}::jsonb, ${input.selfieUrl},
+    INSERT INTO content_shoots (title, slug, inspiration_urls, selfie_url, selfie_urls, shots, messages)
+    VALUES (${title}, ${toSlug(title)}, ${JSON.stringify(inspirationUrls)}::jsonb, ${selfieUrls[0]},
+            ${JSON.stringify(selfieUrls)}::jsonb,
             ${JSON.stringify(shots)}::jsonb, ${JSON.stringify(messages)}::jsonb)
     RETURNING *
   `) as any[]
@@ -297,7 +329,7 @@ export async function createShoot(input: {
   // Draft pass renders medium (~82s, ~$0.06/shot). Finals re-roll high per shot.
   const results = await Promise.allSettled(
     shoot.shots.map((shot) =>
-      generateShotImage({ selfieUrl: shoot.selfieUrl, inspirationUrls, prompt: shot.prompt, quality: "medium" }),
+      generateShotImage({ selfieUrls: shoot.selfieUrls, inspirationUrls, prompt: shot.prompt, quality: "medium" }),
     ),
   )
   shoot.shots = shoot.shots.map((shot, i) => {
@@ -370,7 +402,7 @@ ${REFINE_CONTRACT}`,
   const results = await Promise.allSettled(
     changedIdx.map((i) =>
       generateShotImage({
-        selfieUrl: shoot.selfieUrl,
+        selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: nextShots[i].prompt,
         quality: "medium",
@@ -397,7 +429,7 @@ export async function regenerateShot(id: number, shotId: string, quality: ImgQua
   if (idx === -1) throw new Error("Shot not found")
 
   const imageUrl = await generateShotImage({
-    selfieUrl: shoot.selfieUrl,
+    selfieUrls: shoot.selfieUrls,
     inspirationUrls: shoot.inspirationUrls,
     prompt: shoot.shots[idx].prompt,
     quality,
@@ -455,7 +487,7 @@ Exactly ${safeCount} new shots.`,
   const results = await Promise.allSettled(
     newShots.map((shot) =>
       generateShotImage({
-        selfieUrl: shoot.selfieUrl,
+        selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: shot.prompt,
         quality: "medium",
