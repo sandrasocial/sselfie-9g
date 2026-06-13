@@ -724,6 +724,7 @@ export async function POST(request: NextRequest) {
           const source = session.metadata.source
           const isPublicPaidCheckoutSource =
             source === "landing_page" ||
+            source === "selfie_guide_access" ||
             source === "selfie_guide_paid" ||
             source === "brand_strategy_paid" ||
             source === "strategy_result_upsell" ||
