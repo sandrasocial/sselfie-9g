@@ -13,9 +13,11 @@ function read(relativePath: string) {
 describe("Stripe webhook subscription period compatibility", () => {
   it("does not read legacy-only subscription period fields in inline checkout branches", () => {
     const routeSource = read("app/api/webhooks/stripe/route.ts")
+    const handlerSource = read("lib/payments/handlers/studio-membership.ts")
 
     expect(routeSource).not.toMatch(/subscriptionData\.current_period_(start|end)/)
-    expect(routeSource).toContain("getSubscriptionPeriod(subscriptionData)")
+    expect(handlerSource).not.toMatch(/subscriptionData\.current_period_(start|end)/)
+    expect(handlerSource).toContain("getSubscriptionPeriod(subscriptionData)")
   })
 
   it("keeps the Basil/Clover item-level period fallback in shared payment code", () => {

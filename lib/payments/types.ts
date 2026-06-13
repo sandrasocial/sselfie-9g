@@ -19,4 +19,10 @@ export interface CheckoutFulfillmentContext {
   /** Set by the dispatcher's account-creation step (academy delivery email branching). */
   isNewUserForEmail?: boolean
   purchasePasswordSetupLink?: string
+  /** Route-owned referral helper passed through for extracted subscription checkout code. */
+  maybeTrackCheckoutReferralSignup?: (
+    referredUserId: string | null | undefined,
+    referralCode: string | null | undefined,
+    source: string,
+  ) => Promise<void>
 }
