@@ -11,6 +11,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 import type {
@@ -21,14 +22,18 @@ import type {
   OpenConciergeOptions,
   OutputFormat,
 } from "./types"
-import { readConciergeSnapshot, saveConciergeSnapshot } from "./continuity"
+import {
+  cacheServerMayaDraftSnapshot,
+  readConciergeSnapshot,
+  saveConciergeSnapshot,
+} from "./continuity"
 
 const ConciergeContext = createContext<ConciergeContextValue | null>(null)
 
 export function ConciergeProvider({ children }: { children: React.ReactNode }) {
-  const restored = useMemo(() => readConciergeSnapshot(), [])
-  const [session, setSession] = useState<ConciergeSession | null>(() => restored?.session ?? null)
-  const [isOpen, setIsOpen] = useState(() => restored?.isOpen ?? false)
+  const restoredSavedAtRef = useRef<number | null>(null)
+  const [session, setSession] = useState<ConciergeSession | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
 
   const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
     // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
@@ -64,6 +69,32 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     saveConciergeSnapshot({ isOpen, session })
   }, [isOpen, session])
+
+  useEffect(() => {
+    const local = readConciergeSnapshot()
+    if (local) {
+      restoredSavedAtRef.current = local.savedAt
+      setSession(local.session)
+      setIsOpen(local.isOpen)
+    }
+
+    let cancelled = false
+    fetch("/api/app-v3/maya/draft")
+      .then(r => (r.ok ? r.json() : null))
+      .then(payload => {
+        if (cancelled) return
+        const serverDraft = cacheServerMayaDraftSnapshot(payload?.draft)
+        if (!serverDraft) return
+        if (restoredSavedAtRef.current && restoredSavedAtRef.current >= serverDraft.savedAt) return
+        restoredSavedAtRef.current = serverDraft.savedAt
+        setSession(serverDraft.session as ConciergeSession)
+        setIsOpen(serverDraft.isOpen)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const value = useMemo<ConciergeContextValue>(
     () => ({

@@ -1,0 +1,131 @@
+export type ServerOutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide"
+
+export type ServerAestheticSnapshot = {
+  id: string
+  name: string
+  blurb: string
+  coverImage: string
+  thumbnails: string[]
+  shotCount: number
+  intent: string
+}
+
+export type ServerConciergeSessionSnapshot = {
+  aesthetic: ServerAestheticSnapshot
+  outputFormat: ServerOutputFormat | null
+  referenceSelfieUrl: string | null
+  graphicText: unknown | null
+  seedPrompt?: string | null
+  startedAt: number
+}
+
+export type ServerConceptGenState = {
+  status: string
+  imageUrls?: string[]
+  error?: string
+  previewUrl?: string
+}
+
+export type ServerMayaDraftSnapshot = {
+  isOpen: boolean
+  chatId: string
+  session: ServerConciergeSessionSnapshot
+  savedAt: number
+  messages: unknown[]
+  genState: Record<string, ServerConceptGenState>
+  generatedOnce: boolean
+  setupOpen: boolean
+}
+
+const VALID_FORMATS: ServerOutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
+
+function nowish(value: unknown): value is number {
+  return (
+    typeof value === "number" && Number.isFinite(value) && Date.now() - value < MAX_SNAPSHOT_AGE_MS
+  )
+}
+
+function sanitizeAesthetic(value: unknown): ServerAestheticSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const aesthetic = value as Record<string, unknown>
+  if (typeof aesthetic.id !== "string" || typeof aesthetic.name !== "string") return null
+  if (typeof aesthetic.blurb !== "string" || typeof aesthetic.intent !== "string") return null
+  return {
+    id: aesthetic.id,
+    name: aesthetic.name,
+    blurb: aesthetic.blurb,
+    coverImage: typeof aesthetic.coverImage === "string" ? aesthetic.coverImage : "",
+    thumbnails: Array.isArray(aesthetic.thumbnails)
+      ? aesthetic.thumbnails.filter((item): item is string => typeof item === "string")
+      : [],
+    shotCount: typeof aesthetic.shotCount === "number" ? aesthetic.shotCount : 0,
+    intent: aesthetic.intent,
+  }
+}
+
+function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const session = value as Record<string, unknown>
+  const aesthetic = sanitizeAesthetic(session.aesthetic)
+  if (!aesthetic) return null
+  if (typeof session.startedAt !== "number" || !Number.isFinite(session.startedAt)) return null
+  if (
+    session.outputFormat !== null &&
+    !VALID_FORMATS.includes(session.outputFormat as ServerOutputFormat)
+  ) {
+    return null
+  }
+  return {
+    aesthetic,
+    outputFormat: (session.outputFormat as ServerOutputFormat | null) ?? null,
+    referenceSelfieUrl:
+      typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null,
+    graphicText:
+      session.graphicText && typeof session.graphicText === "object" ? session.graphicText : null,
+    seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,
+    startedAt: session.startedAt,
+  }
+}
+
+export function sanitizeServerGenState(value: unknown): Record<string, ServerConceptGenState> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  const out: Record<string, ServerConceptGenState> = {}
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (!item || typeof item !== "object") continue
+    const state = item as Record<string, unknown>
+    if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+      out[key] = {
+        status: "done",
+        imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
+      }
+    } else if (
+      state.status === "idle" ||
+      state.status === "generating" ||
+      state.status === "error"
+    ) {
+      out[key] = { status: "idle" }
+    }
+  }
+  return out
+}
+
+export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const draft = value as Record<string, unknown>
+  if (!nowish(draft.savedAt)) return null
+  if (typeof draft.chatId !== "string" || draft.chatId.length === 0) return null
+  if (!Array.isArray(draft.messages)) return null
+  const session = sanitizeSession(draft.session)
+  if (!session) return null
+  return {
+    isOpen: draft.isOpen === true,
+    chatId: draft.chatId,
+    session,
+    savedAt: draft.savedAt,
+    messages: draft.messages,
+    genState: sanitizeServerGenState(draft.genState),
+    generatedOnce: draft.generatedOnce === true,
+    setupOpen: draft.setupOpen === true,
+  }
+}

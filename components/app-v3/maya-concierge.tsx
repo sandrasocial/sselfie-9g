@@ -28,6 +28,7 @@ import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
+import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type { OutputFormat } from "./types"
 import {
   clearMayaDraft,
@@ -376,17 +377,62 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
   const [historyOpen, setHistoryOpen] = useState(false)
   const savedCountRef = useRef(restoredDraft?.messages.length ?? 0)
+  const appliedDraftSessionRef = useRef<number | null>(restoredDraft?.sessionStartedAt ?? null)
+
+  useEffect(() => {
+    if (!session) return
+    if (appliedDraftSessionRef.current === session.startedAt) return
+    const draft = readMayaDraftForSession(session.startedAt)
+    appliedDraftSessionRef.current = session.startedAt
+    if (!draft) return
+
+    restoredDraftRef.current = draft
+    savedCountRef.current = draft.messages.length
+    lastPulledFormatRef.current = draft.messages.length ? (session.outputFormat ?? null) : null
+    seedRetiredRef.current = Boolean(draft.messages.length)
+    sessionStartRef.current = session.startedAt
+    for (const m of draft.messages as any[]) {
+      if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+      for (const p of m.parts) {
+        const fmt = extractFormatSwitch(p)
+        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+      }
+    }
+    setChatId(draft.chatId)
+    setMessages(draft.messages as any)
+    setGenState(draft.genState)
+    setGeneratedOnce(draft.generatedOnce)
+    setSetupOpen(draft.setupOpen)
+  }, [session, setMessages])
 
   useEffect(() => {
     if (!isOpen || !session) return
-    saveMayaDraft({
+    const snapshot: ServerMayaDraftSnapshot = {
+      isOpen,
       chatId,
-      sessionStartedAt: session.startedAt,
+      session,
+      savedAt: Date.now(),
       messages,
       genState,
       generatedOnce,
       setupOpen,
+    }
+    saveMayaDraft({
+      chatId: snapshot.chatId,
+      sessionStartedAt: snapshot.session.startedAt,
+      messages: snapshot.messages,
+      genState,
+      generatedOnce: snapshot.generatedOnce,
+      setupOpen: snapshot.setupOpen,
     })
+    const timeout = window.setTimeout(() => {
+      void fetch("/api/app-v3/maya/draft", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: snapshot }),
+      }).catch(() => {})
+    }, 700)
+    return () => window.clearTimeout(timeout)
   }, [chatId, genState, generatedOnce, isOpen, messages, session, setupOpen])
 
   useEffect(() => {
@@ -551,6 +597,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   function handleNewChat() {
     if (isThinking) return
     clearMayaDraft()
+    void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
     const nextChatId = newChatId()
     setMenuOpen(false)
     setSetupOpen(false)
