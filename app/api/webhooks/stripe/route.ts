@@ -69,7 +69,12 @@ import {
   handleInvoicePaymentFailed,
   handleSubscriptionUpdated,
 } from "@/lib/payments/lifecycle/subscription-events"
-import { generatePasswordSetupLinkForPurchase, markRevenueEnginePurchase, markEmailLogConversionForCheckout } from "@/lib/payments/shared"
+import {
+  generatePasswordSetupLinkForPurchase,
+  getSubscriptionPeriod,
+  markRevenueEnginePurchase,
+  markEmailLogConversionForCheckout,
+} from "@/lib/payments/shared"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
   completeReferralForPurchase,
@@ -1640,6 +1645,7 @@ export async function POST(request: NextRequest) {
                   const subscriptionData = (await stripe.subscriptions.retrieve(
                     session.subscription as string
                   )) as any
+                  const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
 
                   console.log(`[v0] Creating subscription record for existing user ${userId}`)
 
@@ -1656,8 +1662,8 @@ export async function POST(request: NextRequest) {
                         status = ${subscriptionData.status},
                         stripe_subscription_id = ${subscriptionData.id},
                         stripe_customer_id = ${subscriptionData.customer},
-                        current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                        current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        current_period_start = to_timestamp(${subscriptionPeriod.start}),
+                        current_period_end = to_timestamp(${subscriptionPeriod.end}),
                         is_test_mode = ${!event.livemode},
                         updated_at = NOW()
                       WHERE user_id = ${userId}
@@ -1683,8 +1689,8 @@ export async function POST(request: NextRequest) {
                         ${subscriptionData.status},
                         ${subscriptionData.id},
                         ${subscriptionData.customer},
-                        to_timestamp(${subscriptionData.current_period_start}),
-                        to_timestamp(${subscriptionData.current_period_end}),
+                        to_timestamp(${subscriptionPeriod.start}),
+                        to_timestamp(${subscriptionPeriod.end}),
                         ${!event.livemode}
                       )
                     `
@@ -1907,6 +1913,7 @@ export async function POST(request: NextRequest) {
                   const subscriptionData = (await stripe.subscriptions.retrieve(
                     session.subscription as string
                   )) as any
+                  const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
 
                   console.log(`[v0] Creating subscription record in database for user ${userId}`)
 
@@ -1923,8 +1930,8 @@ export async function POST(request: NextRequest) {
                         status = ${subscriptionData.status},
                         stripe_subscription_id = ${subscriptionData.id},
                         stripe_customer_id = ${subscriptionData.customer},
-                        current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                        current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        current_period_start = to_timestamp(${subscriptionPeriod.start}),
+                        current_period_end = to_timestamp(${subscriptionPeriod.end}),
                         is_test_mode = ${!event.livemode},
                         updated_at = NOW()
                       WHERE user_id = ${userId}
@@ -1950,8 +1957,8 @@ export async function POST(request: NextRequest) {
                         ${subscriptionData.status},
                         ${subscriptionData.id},
                         ${subscriptionData.customer},
-                        to_timestamp(${subscriptionData.current_period_start}),
-                        to_timestamp(${subscriptionData.current_period_end}),
+                        to_timestamp(${subscriptionPeriod.start}),
+                        to_timestamp(${subscriptionPeriod.end}),
                         ${!event.livemode}
                       )
                     `
@@ -2041,6 +2048,7 @@ export async function POST(request: NextRequest) {
                 const subscriptionData = (await stripe.subscriptions.retrieve(
                   session.subscription as string
                 )) as any
+                const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
 
                 console.log(
                   `[v0] Creating subscription record in database for existing user ${userId}`
@@ -2059,8 +2067,8 @@ export async function POST(request: NextRequest) {
                       status = ${subscriptionData.status},
                       stripe_subscription_id = ${subscriptionData.id},
                       stripe_customer_id = ${subscriptionData.customer},
-                      current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                      current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                      current_period_start = to_timestamp(${subscriptionPeriod.start}),
+                      current_period_end = to_timestamp(${subscriptionPeriod.end}),
                       is_test_mode = ${!event.livemode},
                       updated_at = NOW()
                     WHERE user_id = ${userId}
@@ -2086,8 +2094,8 @@ export async function POST(request: NextRequest) {
                       ${subscriptionData.status},
                       ${subscriptionData.id},
                       ${subscriptionData.customer},
-                      to_timestamp(${subscriptionData.current_period_start}),
-                      to_timestamp(${subscriptionData.current_period_end}),
+                      to_timestamp(${subscriptionPeriod.start}),
+                      to_timestamp(${subscriptionPeriod.end}),
                       ${!event.livemode}
                     )
                   `

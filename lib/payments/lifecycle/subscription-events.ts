@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { logWebhookError, alertWebhookError } from "@/lib/webhook-monitoring"
 import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
+import { getSubscriptionPeriod } from "@/lib/payments/shared"
 
 /**
  * Resolve a subscription's coupon for DB documentation (e.g. lifetime BETA 50%).
@@ -52,19 +53,6 @@ async function resolveSubscriptionDiscount(
   }
 
   return { percent: null, coupon: null }
-}
-
-/**
- * Stripe API 2025-03+ (Basil/Clover) removed subscription.current_period_start/end —
- * the billing period now lives per item at subscription.items.data[].current_period_*.
- * Reading only the old shape nulled every member's period on 2026-06-10/11.
- */
-function getSubscriptionPeriod(sub: any): { start: number | null; end: number | null } {
-  const item = sub?.items?.data?.[0]
-  return {
-    start: sub?.current_period_start ?? item?.current_period_start ?? null,
-    end: sub?.current_period_end ?? item?.current_period_end ?? null,
-  }
 }
 
 /** Current documented discount for a subscription row (fallback when Stripe is unreachable). */

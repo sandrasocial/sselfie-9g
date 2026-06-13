@@ -5,6 +5,18 @@ import { sql } from "@/lib/db/client"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { markCheckoutAttributionCompleted } from "@/lib/revenue-engine/checkout-attribution"
 
+/**
+ * Stripe API 2025-03+ (Basil/Clover) moved subscription periods from the
+ * subscription object to subscription.items.data[].current_period_*.
+ */
+export function getSubscriptionPeriod(sub: any): { start: number | null; end: number | null } {
+  const item = sub?.items?.data?.[0]
+  return {
+    start: sub?.current_period_start ?? item?.current_period_start ?? null,
+    end: sub?.current_period_end ?? item?.current_period_end ?? null,
+  }
+}
+
 export async function generatePasswordSetupLinkForPurchase(
   userId: string | null | undefined,
   email: string,
