@@ -1,9 +1,11 @@
 # APP-CUTOVER-01 — Move members from legacy /studio to the new /app
 
-> Status audit 2026-06-13: Partly complete and partly operational. App v3 is live, and
-> `app/app/page.tsx` gates member access behind `APP_V3_MEMBERS_ENABLED`. Do not rerun
-> this as a branch-merge spec. Remaining work is readiness QA, env verification,
-> member comms, and monitoring.
+> Status audit 2026-06-13: Code readiness pass complete. App v3 is live, member access
+> is gated behind `APP_V3_MEMBERS_ENABLED`, member lifecycle links now point to `/app`,
+> payment recovery deep-links to `/app?view=account`, and the gallery reads shared
+> `ai_images` history. Do not rerun this as a branch-merge spec. Remaining work is
+> operational: Sandra mobile/member QA, approve/send the member note, and week-one monitoring.
+> See `docs/audits/APP_CUTOVER_READINESS_2026-06-13.md`.
 
 *Spec by Claude (Cowork) 2026-06-10. Sandra's directive: "current members are not able to use
 the old app — make everything ready to go." This is the comeback move: ONE app, working e2e.*

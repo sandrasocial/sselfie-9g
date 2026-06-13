@@ -8,7 +8,10 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
 } {
   const { customerName, customerEmail, creditsGranted, packageName, productType, passwordSetupUrl } = params
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const studioUrl = `${siteUrl}/studio?tab=maya`
+  const studioUrl =
+    productType === "sselfie_studio_membership" || productType === "credit_topup"
+      ? `${siteUrl}/app`
+      : `${siteUrl}/studio?tab=maya`
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
 
   if (productType === "credit_topup") {

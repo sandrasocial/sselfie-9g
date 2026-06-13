@@ -10,7 +10,7 @@ export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
   const { firstName, email, planName = "SSELFIE SUITE membership", amount = "€97" } = params
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const billingUrl = `${siteUrl}/studio?tab=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=update_payment`
+  const billingUrl = `${siteUrl}/app?view=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=update_payment`
 
   const subject = "Quick heads up: your payment didn't go through"
 
@@ -108,7 +108,7 @@ export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
   const { firstName, email, planName = "SSELFIE SUITE membership" } = params
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const billingUrl = `${siteUrl}/studio?tab=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=access_ending`
+  const billingUrl = `${siteUrl}/app?view=account&utm_source=email&utm_medium=payment_recovery&utm_campaign=access_ending`
   const checkoutUrl = `${siteUrl}/checkout/membership?utm_source=email&utm_medium=payment_recovery&utm_campaign=rejoin`
 
   const subject = "Your SUITE access is about to end"

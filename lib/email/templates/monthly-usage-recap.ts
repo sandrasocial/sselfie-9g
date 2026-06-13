@@ -1,4 +1,5 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+const APP_URL = `${SITE_URL}/app`
 
 export interface MonthlyUsageRecapParams {
   firstName?: string
@@ -66,7 +67,7 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
               <p style="margin:0 0 18px;font-size:16px;color:#1c1917;line-height:1.5;">No pressure. You&apos;ve got this.</p>
 
               <div style="margin:0 0 6px;">
-                <a href="${SITE_URL}/studio" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#fafaf9;text-decoration:none;border-radius:8px;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;">Open the SUITE</a>
+                <a href="${APP_URL}" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#fafaf9;text-decoration:none;border-radius:8px;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;">Open the SUITE</a>
               </div>
             </td>
           </tr>
@@ -100,7 +101,7 @@ Here's what I'd do next:
 
 No pressure. You've got this.
 
-Open the SUITE: ${SITE_URL}/studio
+Open the SUITE: ${APP_URL}
 Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return {

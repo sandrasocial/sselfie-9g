@@ -1,5 +1,5 @@
-const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
-  .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai")
+  .replace(/^https:\/\/www\.sselfie\.ai$/, "https://sselfie.ai")
   .replace(/\/+$/, "")
 
 export function generateDormantMemberReengagementEmail(input: {
@@ -11,7 +11,7 @@ export function generateDormantMemberReengagementEmail(input: {
     ? input.creditBalance
     : null
 
-  const studioUrl = `${SITE_URL}/studio?tab=maya&utm_source=email&utm_medium=lifecycle&utm_campaign=dormant_member_reengagement`
+  const studioUrl = `${SITE_URL}/app?utm_source=email&utm_medium=lifecycle&utm_campaign=dormant_member_reengagement`
 
   const creditsLine = creditBalance !== null
     ? `You still have ${creditBalance} credits waiting in your SUITE.`

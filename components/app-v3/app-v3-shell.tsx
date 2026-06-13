@@ -18,17 +18,17 @@ import { ContentView } from "./content-view"
 import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, OutputFormat } from "./types"
+import type { AppV3Section } from "@/lib/app-v3/navigation"
 
 export interface AppV3ShellProps {
   firstName?: string | null
   /** BRIDGE-01 Phase D: "full" member, "trial" (badge + days left), "limited" (no generation). */
   accessLevel?: "full" | "trial" | "limited"
   trialDaysLeft?: number | null
+  initialSection?: AppV3Section
 }
 
-type Section = "create" | "photos" | "content" | "library" | "account"
-
-const NAV: { id: Section; label: string }[] = [
+const NAV: { id: AppV3Section; label: string }[] = [
   { id: "create", label: "Create" },
   { id: "photos", label: "Photos" },
   { id: "content", label: "Content" },
@@ -54,8 +54,8 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "story-slide": "Story slide",
 }
 
-function ShellInner({ firstName, accessLevel = "full", trialDaysLeft }: AppV3ShellProps) {
-  const [section, setSection] = useState<Section>("create")
+function ShellInner({ firstName, accessLevel = "full", trialDaysLeft, initialSection = "create" }: AppV3ShellProps) {
+  const [section, setSection] = useState<AppV3Section>(initialSection)
   const { openWithAesthetic } = useConcierge()
   const limited = accessLevel === "limited"
 
@@ -106,7 +106,7 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft }: AppV3She
               <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">SSELFIE SUITE</p>
                 <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
-                  Maya's ready when you are.
+                  Maya&apos;s ready when you are.
                 </h2>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
                   Members get Maya, 200 photos a month, and every product included. Cancel anytime.
@@ -161,10 +161,15 @@ function ShellInner({ firstName, accessLevel = "full", trialDaysLeft }: AppV3She
   )
 }
 
-export function AppV3Shell({ firstName, accessLevel, trialDaysLeft }: AppV3ShellProps) {
+export function AppV3Shell({ firstName, accessLevel, trialDaysLeft, initialSection }: AppV3ShellProps) {
   return (
     <ConciergeProvider>
-      <ShellInner firstName={firstName} accessLevel={accessLevel} trialDaysLeft={trialDaysLeft} />
+      <ShellInner
+        firstName={firstName}
+        accessLevel={accessLevel}
+        trialDaysLeft={trialDaysLeft}
+        initialSection={initialSection}
+      />
     </ConciergeProvider>
   )
 }

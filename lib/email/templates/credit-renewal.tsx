@@ -11,7 +11,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
   const { firstName, creditsGranted } = params
   const displayName = firstName || "there"
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const studioUrl = `${siteUrl}/studio?tab=maya`
+  const studioUrl = `${siteUrl}/app`
 
   const html = `
 <!DOCTYPE html>

@@ -43,8 +43,8 @@ describe("email audit remediation", () => {
     expect(content.html).toContain("Open your guide")
     expect(content.html).toContain("See the Starter Kit")
     expect(content.html).not.toContain("Visibility Suite")
-    expect(content.html).toContain("#0d0c0b")
-    expect(content.html).toContain("#f0ede8")
+    expect(content.html).toContain("#0A0A0A")
+    expect(content.html).toContain("#F5EFE6")
   })
 
   it("uses Sandra as the Day 0 onboarding sign-off and earth-stone palette", () => {
@@ -53,8 +53,8 @@ describe("email audit remediation", () => {
     expect(content.html).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.text).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.html).toContain("Sandra")
-    expect(content.html).toContain("#0d0c0b")
-    expect(content.html).toContain("#f0ede8")
+    expect(content.html).toContain("#0A0A0A")
+    expect(content.html).toContain("#F5EFE6")
   })
 
   it("uses the canonical Studio URL in the welcome email template", () => {
@@ -66,10 +66,10 @@ describe("email audit remediation", () => {
       productType: "sselfie_studio_membership",
     })
 
-    expect(content.html).toContain("https://sselfie.ai/studio?tab=maya")
+    expect(content.html).toContain("https://sselfie.ai/app")
     expect(content.html).not.toContain("app.sselfie.ai")
-    expect(content.html).toContain("#0d0c0b")
-    expect(content.html).toContain("#f0ede8")
+    expect(content.html).toContain("#0A0A0A")
+    expect(content.html).toContain("#F5EFE6")
   })
 
   it("prefers a real customer name over the email local-part", () => {
@@ -96,7 +96,7 @@ describe("email audit remediation", () => {
 
     expect(sendMock).toHaveBeenCalledTimes(1)
     const payload = sendMock.mock.calls[0][0]
-    expect(payload.html).toContain("https://sselfie.ai/studio?tab=maya")
+    expect(payload.html).toContain("https://sselfie.ai/app")
     expect(payload.html).not.toContain("app.sselfie.ai")
   })
 })

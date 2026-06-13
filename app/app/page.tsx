@@ -1,15 +1,17 @@
 // SSELFIE Studio 3.0 — /app route (server component).
 //
-// Access (Phase 1):
+// Access (cutover state):
 // - Not authenticated  → /auth/login (returnTo=/app)
 // - Admin (ssa@ssasocial.com) → full unrestricted access to Studio 3.0
-// - Everyone else (incl. the 7 current members) → bounced to legacy /studio
-//   so the live members stay on the untouched app until the deliberate cutover.
+// - Active members and active trials → full Studio 3.0 access when APP_V3_MEMBERS_ENABLED=true
+// - Expired trials and one-time owners → limited shell; generation stays locked server-side
+// - No Suite access → bounced to legacy /studio
 
 import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
+import { resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -18,7 +20,14 @@ export const metadata = {
 // Auth-gated route: always rendered per-request (uses cookies via Supabase).
 export const dynamic = "force-dynamic"
 
-export default async function StudioV3Page() {
+export default async function StudioV3Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string | string[] }>
+}) {
+  const params = searchParams ? await searchParams : {}
+  const initialSection = resolveAppV3InitialSection(params.view)
+
   let supabase
   try {
     supabase = await createServerClient()
@@ -69,5 +78,12 @@ export default async function StudioV3Page() {
     (user.user_metadata?.name as string | undefined) ||
     null
 
-  return <AppV3Shell firstName={firstName} accessLevel={accessLevel} trialDaysLeft={trialDaysLeft} />
+  return (
+    <AppV3Shell
+      firstName={firstName}
+      accessLevel={accessLevel}
+      trialDaysLeft={trialDaysLeft}
+      initialSection={initialSection}
+    />
+  )
 }
