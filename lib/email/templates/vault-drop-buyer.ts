@@ -53,12 +53,12 @@ function imgSrc(path: string): string {
   return path.startsWith("http") ? path : `https://www.sselfie.ai${path}`
 }
 
+function collectionImage(collection: VaultDropCollection): string {
+  return collection.heroImage || "/images/ai-prompts/dark-balcony-shot-1.png"
+}
+
 function pickHeroImage(collections: VaultDropCollection[]): string {
-  return (
-    collections.find((c) => c.id === "dark-balcony")?.heroImage ??
-    collections[0]?.heroImage ??
-    "/images/ai-prompts/dark-balcony-shot-1.png"
-  )
+  return collections.find((collection) => Boolean(collection.heroImage))?.heroImage ?? "/images/ai-prompts/dark-balcony-shot-1.png"
 }
 
 function collectionCardsRow(collections: VaultDropCollection[]): string {
@@ -68,7 +68,7 @@ function collectionCardsRow(collections: VaultDropCollection[]): string {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;border-bottom:1px solid #E5DDD4;">
         <tr>
           <td style="padding:0 0 18px;line-height:0;font-size:0;">
-            <img src="${esc(imgSrc(collection.heroImage))}" alt="${esc(collection.name)}" width="560" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
+            <img src="${esc(imgSrc(collectionImage(collection)))}" alt="${esc(collection.name)}" width="560" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
           </td>
         </tr>
         <tr>

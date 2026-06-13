@@ -2,8 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
-describe("Vault drop email admin preview", () => {
-  it("renders both audience previews and only sends admin test emails from the admin route", () => {
+describe("Vault drop email admin workflow", () => {
+  it("renders both audience previews and supports the admin approved live workflow", () => {
     const root = process.cwd()
     const route = fs.readFileSync(path.join(root, "app/api/admin/vault-drop-email/route.ts"), "utf8")
     const component = fs.readFileSync(path.join(root, "components/admin/vault-drop-email-preview.tsx"), "utf8")
@@ -15,15 +15,34 @@ describe("Vault drop email admin preview", () => {
     expect(route).toContain("generateVaultDropNonbuyerEmail")
     expect(route).toContain("generateVaultDropBuyerEmail")
     expect(route).toContain("idempotencyKey")
-    expect(route).not.toContain("/api/vault/email-drop/process")
+    expect(route).toContain('action === "start_live_run"')
+    expect(route).toContain('action === "process_batch"')
+    expect(route).toContain("/api/vault/email-drop/process")
 
     expect(component).toContain("HTML preview")
     expect(component).toContain("Buyer email")
     expect(component).toContain("Free preview email")
     expect(component).toContain("sendTest(audience)")
+    expect(component).toContain("startLiveRun")
+    expect(component).toContain("processBatch")
+    expect(component).toContain("selectedCollectionIds")
     expect(component).toContain("srcDoc")
 
     expect(adminPage).toContain("VaultDropEmailPreview")
     expect(sendEmail).toContain("idempotencyKey?: string")
+  })
+
+  it("locks the live processor to the collections stored on the run", () => {
+    const root = process.cwd()
+    const processRoute = fs.readFileSync(path.join(root, "app/api/vault/email-drop/process/route.ts"), "utf8")
+    const dropLog = fs.readFileSync(path.join(root, "lib/vault/drop-log.ts"), "utf8")
+    const buyerTemplate = fs.readFileSync(path.join(root, "lib/email/templates/vault-drop-buyer.ts"), "utf8")
+    const nonbuyerTemplate = fs.readFileSync(path.join(root, "lib/email/templates/vault-drop-nonbuyer.ts"), "utf8")
+
+    expect(dropLog).toContain("getVaultDropCollectionsByIds")
+    expect(processRoute).toContain("getVaultDropCollectionsByIds(run.collection_slugs)")
+    expect(processRoute).not.toContain("const pendingCollections = await getPendingCollections()")
+    expect(buyerTemplate).not.toContain('c.id === "dark-balcony"')
+    expect(nonbuyerTemplate).not.toContain('c.id === "dark-balcony"')
   })
 })

@@ -4,10 +4,24 @@ import { useEffect, useMemo, useState } from "react"
 
 type Audience = "nonbuyer" | "buyer"
 
+type CollectionPreview = { id: string; name: string; heroImage: string; moodLine: string }
+
+type RunPreview = {
+  id: string
+  dropKey: string
+  status: string
+  collectionSlugs: string[]
+  nonBuyer: { total: number; sent: number; failed: number; skipped: number; processed: number; remaining: number }
+  buyer: { total: number; sent: number; failed: number; skipped: number; processed: number; remaining: number }
+}
+
 type PreviewPayload = {
   ready: boolean
   dropKey: string
-  collections: Array<{ id: string; name: string; heroImage: string; moodLine: string }>
+  selectedCollectionIds: string[]
+  missingCollectionIds: string[]
+  availableCollections: CollectionPreview[]
+  collections: CollectionPreview[]
   segments: {
     nonbuyers: { count: number; sampleRecipients: Array<{ email: string; name: string | null }> }
     buyers: { count: number; sampleRecipients: Array<{ email: string; name: string | null }> }
@@ -17,24 +31,34 @@ type PreviewPayload = {
     buyer: { subject: string; html: string; text: string }
   }
   totalRecipients: number
+  latestRun: RunPreview | null
 }
 
 export function VaultDropEmailPreview() {
   const [payload, setPayload] = useState<PreviewPayload | null>(null)
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([])
+  const [run, setRun] = useState<RunPreview | null>(null)
   const [audience, setAudience] = useState<Audience>("nonbuyer")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState<Audience | null>(null)
+  const [starting, setStarting] = useState(false)
+  const [processing, setProcessing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function load() {
+  async function load(ids = selectedCollectionIds) {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch("/api/admin/vault-drop-email", { cache: "no-store" })
+      const query = ids.length > 0 ? `?collectionIds=${encodeURIComponent(ids.join(","))}` : ""
+      const response = await fetch(`/api/admin/vault-drop-email${query}`, { cache: "no-store" })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || "Preview failed")
       setPayload(data)
+      setRun(data.latestRun || null)
+      if (ids.length === 0 && Array.isArray(data.selectedCollectionIds)) {
+        setSelectedCollectionIds(data.selectedCollectionIds)
+      }
     } catch (err: any) {
       setError(err?.message || "Preview failed")
     } finally {
@@ -50,7 +74,7 @@ export function VaultDropEmailPreview() {
       const response = await fetch("/api/admin/vault-drop-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audience: target }),
+        body: JSON.stringify({ action: "send_test", audience: target, collectionIds: selectedCollectionIds }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Test send failed")
@@ -62,8 +86,66 @@ export function VaultDropEmailPreview() {
     }
   }
 
+  async function startLiveRun() {
+    setStarting(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await fetch("/api/admin/vault-drop-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start_live_run", collectionIds: selectedCollectionIds }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Could not create live run")
+      setRun(data.run)
+      setMessage(data.existing ? "Using the existing live run for these collections." : "Live run created. No emails have sent yet.")
+    } catch (err: any) {
+      setError(err?.message || "Could not create live run")
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  async function processBatch() {
+    const runId = run?.id
+    if (!runId) return
+    setProcessing(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await fetch("/api/admin/vault-drop-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "process_batch",
+          runId,
+          audienceType: "all",
+          collectionIds: selectedCollectionIds,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Batch failed")
+      setMessage(data.done?.all ? "Drop complete." : "Batch processed. Keep going until both segments are done.")
+      await load(selectedCollectionIds)
+    } catch (err: any) {
+      setError(err?.message || "Batch failed")
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  function toggleCollection(id: string) {
+    const next = selectedCollectionIds.includes(id)
+      ? selectedCollectionIds.filter((collectionId) => collectionId !== id)
+      : [...selectedCollectionIds, id]
+    setSelectedCollectionIds(next)
+    void load(next)
+  }
+
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const activePreview = payload?.previews[audience]
@@ -111,18 +193,43 @@ export function VaultDropEmailPreview() {
 
       {!payload.ready && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          A live drop needs at least 2 pending collections. You can still inspect this panel after publishing more shoots.
+          A live drop needs at least 2 valid pending collections. Select two new shoots before starting a run.
         </div>
       )}
 
       <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <p className="text-xs uppercase tracking-wide text-stone-400">Pending collections</p>
+        <p className="text-xs uppercase tracking-wide text-stone-400">Pick collections for this drop</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {payload.collections.map((collection) => (
-            <div key={collection.id} className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-              <p className="text-sm font-medium text-stone-950">{collection.name}</p>
-              <p className="mt-1 text-xs text-stone-500">{collection.moodLine}</p>
-            </div>
+          {payload.availableCollections.map((collection) => (
+            <label
+              key={collection.id}
+              className={`grid cursor-pointer grid-cols-[72px_1fr_auto] gap-3 rounded-lg border p-2 ${
+                selectedCollectionIds.includes(collection.id)
+                  ? "border-stone-950 bg-stone-50"
+                  : "border-stone-100 bg-white"
+              }`}
+            >
+              {collection.heroImage ? (
+                <img
+                  src={collection.heroImage}
+                  alt=""
+                  className="h-[88px] w-[72px] rounded-md object-cover"
+                />
+              ) : (
+                <div className="h-[88px] w-[72px] rounded-md bg-stone-100" />
+              )}
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-stone-950">{collection.name}</span>
+                <span className="mt-1 block text-xs text-stone-500">{collection.moodLine}</span>
+                <span className="mt-2 block truncate text-[11px] text-stone-400">{collection.heroImage}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={selectedCollectionIds.includes(collection.id)}
+                onChange={() => toggleCollection(collection.id)}
+                className="mt-1 h-4 w-4 accent-stone-950"
+              />
+            </label>
           ))}
         </div>
       </div>
@@ -148,12 +255,39 @@ export function VaultDropEmailPreview() {
         </button>
         <button
           type="button"
-          onClick={load}
+          onClick={() => load(selectedCollectionIds)}
           className="rounded-full border border-stone-300 px-4 py-2 text-xs uppercase tracking-wide text-stone-600"
         >
           Refresh
         </button>
       </div>
+
+      {run && (
+        <div className="rounded-xl border border-stone-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-stone-400">Live run</p>
+              <p className="mt-1 text-sm font-medium text-stone-950">{run.status} · {run.id}</p>
+            </div>
+            <button
+              type="button"
+              onClick={processBatch}
+              disabled={!payload.ready || processing || run.status === "completed" || run.status === "partially_completed"}
+              className="rounded-full bg-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-40"
+            >
+              {processing ? "Processing" : "Process next batch"}
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg bg-stone-50 p-3 text-sm text-stone-700">
+              Free preview: {run.nonBuyer.processed}/{run.nonBuyer.total} processed · {run.nonBuyer.sent} sent
+            </div>
+            <div className="rounded-lg bg-stone-50 p-3 text-sm text-stone-700">
+              Buyers: {run.buyer.processed}/{run.buyer.total} processed · {run.buyer.sent} sent
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
         <p className="text-xs uppercase tracking-wide text-stone-400">Subject</p>
@@ -170,6 +304,14 @@ export function VaultDropEmailPreview() {
             className="rounded-full bg-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-40"
           >
             {sending === audience ? "Sending" : `Send ${audience === "buyer" ? "buyer" : "free"} test`}
+          </button>
+          <button
+            type="button"
+            onClick={startLiveRun}
+            disabled={!payload.ready || starting || Boolean(run)}
+            className="rounded-full border border-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-stone-950 disabled:opacity-40"
+          >
+            {starting ? "Starting" : "Start live run"}
           </button>
         </div>
         <iframe

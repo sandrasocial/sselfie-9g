@@ -48,12 +48,12 @@ import { sendEmail } from "@/lib/email/send-email"
 import { EMAIL_CONFIG } from "@/lib/email/config"
 import {
   VAULT_EMAIL_CONFIG,
-  getPendingCollections,
-  buildDropKey,
   buildDropEmailType,
+  getVaultDropCollectionsByIds,
 } from "@/lib/vault/drop-log"
 import { generateVaultDropNonbuyerEmail } from "@/lib/email/templates/vault-drop-nonbuyer"
 import { generateVaultDropBuyerEmail } from "@/lib/email/templates/vault-drop-buyer"
+import type { VaultDropCollection } from "@/lib/vault/drop-log"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -302,10 +302,9 @@ async function processBatch(
   audience: "nonbuyer" | "buyer",
   run: DropRunRow,
   dropEmailType: string,
+  collections: VaultDropCollection[],
 ): Promise<BatchResult> {
   const result: BatchResult = { sent: 0, failed: 0, skipped: 0 }
-
-  const pendingCollections = await getPendingCollections()
 
   for (const subscriber of subscribers) {
     const claimed = await claimRecipient(run.id, audience, dropEmailType, subscriber.email)
@@ -321,7 +320,7 @@ async function processBatch(
     if (audience === "nonbuyer") {
       emailPayload = generateVaultDropNonbuyerEmail({
         firstName,
-        newCollections: pendingCollections,
+        newCollections: collections,
         accessToken: subscriber.access_token,
       })
     } else {
@@ -336,7 +335,7 @@ async function processBatch(
       emailPayload = generateVaultDropBuyerEmail({
         firstName,
         accessToken: subscriber.access_token,
-        newCollections: pendingCollections,
+        newCollections: collections,
       })
     }
 
@@ -442,6 +441,15 @@ async function maybeCompleteRun(
     WHERE id = ${runId}
   `
 
+  await sql`
+    UPDATE vault_collections
+    SET email_drop_status = 'included',
+        email_drop_included_at = COALESCE(email_drop_included_at, NOW()),
+        updated_at = NOW()
+    WHERE slug = ANY(${run.collection_slugs})
+      AND email_drop_status <> 'skipped'
+  `
+
   return newStatus
 }
 
@@ -527,16 +535,15 @@ export async function POST(request: Request) {
   const nonbuyerEmailType = isTestMode ? testDropEmailType(baseNonbuyerEmailType) : baseNonbuyerEmailType
   const buyerEmailType = isTestMode ? testDropEmailType(baseBuyerEmailType) : baseBuyerEmailType
 
-  // Verify drop-log still matches (safety check)
-  const pendingCollections = await getPendingCollections()
-  const currentDropKey = buildDropKey(pendingCollections)
-  if (currentDropKey !== run.drop_key) {
+  const runCollections = await getVaultDropCollectionsByIds(run.collection_slugs)
+  if (runCollections.length !== run.collection_slugs.length) {
     return NextResponse.json(
       {
-        error: "Drop key mismatch.",
+        error: "Run collections could not be resolved.",
         runDropKey: run.drop_key,
-        currentDropKey,
-        hint: "The pending collections in drop-log.ts have changed since this run was created. Check if some collections were marked includedInEmailDrop:true prematurely.",
+        collectionSlugs: run.collection_slugs,
+        resolvedCollectionIds: runCollections.map((collection) => collection.id),
+        hint: "A run must render from the exact collection slugs stored on vault_drop_runs. Check that the referenced vault_collections still exist.",
       },
       { status: 409 },
     )
@@ -555,7 +562,7 @@ export async function POST(request: Request) {
     )
 
     if (subscribers.length > 0) {
-      const result = await processBatch(subscribers, "nonbuyer", run, nonbuyerEmailType)
+      const result = await processBatch(subscribers, "nonbuyer", run, nonbuyerEmailType, runCollections)
       batchSent.nonBuyer = result.sent
       batchFailed.nonBuyer = result.failed
       batchSkipped.nonBuyer = result.skipped
@@ -577,7 +584,7 @@ export async function POST(request: Request) {
     )
 
     if (subscribers.length > 0) {
-      const result = await processBatch(subscribers, "buyer", run, buyerEmailType)
+      const result = await processBatch(subscribers, "buyer", run, buyerEmailType, runCollections)
       batchSent.buyer = result.sent
       batchFailed.buyer = result.failed
       batchSkipped.buyer = result.skipped

@@ -59,11 +59,17 @@ Vault, exposes only the first approved shot to the freebie preview surfaces, fee
 dynamic vibe tiles and server-side Vault style guide, appears in member Library drops, and
 adds the collection to the existing approval-gated email-drop queue. No deploy per collection.
 
-## Phase C — Drop email button + auto-sync (AFTER B)
+## Phase C — Drop email button + auto-sync (✅ BUILT 2026-06-13)
 
-Admin button: pick 2 new collections → dry-run counts shown → Sandra approves → cron works
-the batches (same idempotent engine as docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md step 10).
-Auto Library-drop sync on publish. Guard test: every collection must resolve a Maya vibe.
+Admin button now supports picking collections, previewing exact buyer/freebie HTML, sending
+test emails to `ssa@ssasocial.com`, creating a live run after Sandra approval, and processing
+the existing idempotent batches from admin. Live sends are locked to the collection slugs saved
+on `vault_drop_runs`, so the email cannot swap to stale pending images mid-run. Email templates
+now use the selected collection hero images instead of hardcoding older drop imagery.
+
+Operational note: a live drop still requires at least 2 queued Shoot Studio collections. As of
+2026-06-13, production has 1 queued DB collection (`cafe-minimalist-paris-2`), so the admin panel
+correctly blocks live send until one more Shoot Studio collection is approved/published.
 
 ## Format spinners (carry over from CONTENT-VISUALS-01, re-pointed at shoots)
 

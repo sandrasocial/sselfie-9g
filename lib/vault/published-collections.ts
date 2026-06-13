@@ -197,16 +197,17 @@ export async function getPublishedFreebiePreviews(): Promise<PromptCard[]> {
   return collections.map((collection) => collection.cards[0]).filter(Boolean)
 }
 
-export async function getPublishedVaultDropCollections() {
+export async function getPublishedVaultDropCollections(options: { queuedOnly?: boolean } = {}) {
+  const queuedOnly = options.queuedOnly ?? true
   const collections = await getPublishedVaultCollections()
   return collections
-    .filter((collection) => collection.emailDropStatus === "queued")
+    .filter((collection) => !queuedOnly || collection.emailDropStatus === "queued")
     .map((collection) => ({
       id: collection.slug,
       name: collection.title,
       heroImage: collection.heroImage || collection.cards[0]?.exampleImage || "",
       moodLine: collection.moodLine,
-      includedInEmailDrop: false,
-      droppedAt: null,
+      includedInEmailDrop: collection.emailDropStatus === "included",
+      droppedAt: collection.emailDropIncludedAt?.slice(0, 10) ?? null,
     }))
 }

@@ -137,16 +137,46 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
 
 // ── Derived helpers ────────────────────────────────────────────────────────
 
-/** Collections not yet included in any email drop. Includes DB-published Shoot Studio drops. */
-export async function getPendingCollections(): Promise<VaultDropCollection[]> {
+async function getDbPublishedCollections(queuedOnly: boolean): Promise<VaultDropCollection[]> {
   let published: VaultDropCollection[] = []
   try {
     const { getPublishedVaultDropCollections } = await import("@/lib/vault/published-collections")
-    published = await getPublishedVaultDropCollections()
+    published = await getPublishedVaultDropCollections({ queuedOnly })
   } catch (error) {
     console.error("[vault-drop] DB-published collection load skipped:", error)
   }
-  return [...VAULT_COLLECTIONS.filter((c) => !c.includedInEmailDrop), ...published]
+  return published
+}
+
+/** All static and DB-backed collections known to the email drop system. */
+export async function getAllVaultDropCollections(): Promise<VaultDropCollection[]> {
+  return [...(await getDbPublishedCollections(false)), ...VAULT_COLLECTIONS]
+}
+
+/** Collections not yet included in any email drop. Includes DB-published Shoot Studio drops. */
+export async function getPendingCollections(): Promise<VaultDropCollection[]> {
+  return [...(await getDbPublishedCollections(true)), ...VAULT_COLLECTIONS.filter((c) => !c.includedInEmailDrop)]
+}
+
+function uniqueIds(ids: string[]): string[] {
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
+}
+
+function pickCollectionsById(collections: VaultDropCollection[], ids: string[]): VaultDropCollection[] {
+  const byId = new Map(collections.map((collection) => [collection.id, collection]))
+  return uniqueIds(ids)
+    .map((id) => byId.get(id))
+    .filter((collection): collection is VaultDropCollection => Boolean(collection))
+}
+
+/** Pending collections selected for a new dry run/live drop. */
+export async function getPendingCollectionsByIds(ids: string[]): Promise<VaultDropCollection[]> {
+  return pickCollectionsById(await getPendingCollections(), ids)
+}
+
+/** Collections locked onto an already-created run, even after their queued status changes. */
+export async function getVaultDropCollectionsByIds(ids: string[]): Promise<VaultDropCollection[]> {
+  return pickCollectionsById(await getAllVaultDropCollections(), ids)
 }
 
 /** Whether there are enough new collections to justify an email drop (2+). */
