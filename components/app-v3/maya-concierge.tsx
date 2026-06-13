@@ -29,6 +29,12 @@ import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
+import {
+  clearMayaDraft,
+  readMayaDraftForSession,
+  saveMayaDraft,
+  type MayaDraftSnapshot,
+} from "./continuity"
 
 /** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
@@ -221,19 +227,28 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const inspoInput = useRef<HTMLInputElement>(null)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
-  const lastPulledFormatRef = useRef<string | null>(null)
+  const restoredDraftRef = useRef<MayaDraftSnapshot | null>(null)
+  if (restoredDraftRef.current === null && session?.startedAt) {
+    restoredDraftRef.current = readMayaDraftForSession(session.startedAt)
+  }
+  const restoredDraft = restoredDraftRef.current
+  const lastPulledFormatRef = useRef<string | null>(
+    restoredDraft?.messages.length ? (session?.outputFormat ?? null) : null
+  )
   // set_format tool parts already acted on (`${messageId}:${format}`), so a switch fires once.
   const formatSwitchAppliedRef = useRef<Set<string>>(new Set())
-  const sessionStartRef = useRef<number | null>(null)
+  const sessionStartRef = useRef<number | null>(restoredDraft ? (session?.startedAt ?? null) : null)
   // "New chat" retires the session's seeded idea (a Content recommendation) without mutating
   // the session itself; a genuinely new session re-arms it.
-  const seedRetiredRef = useRef(false)
+  const seedRetiredRef = useRef(Boolean(restoredDraft?.messages.length))
 
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
-  const [genState, setGenState] = useState<Record<string, ConceptGenState>>({})
+  const [genState, setGenState] = useState<Record<string, ConceptGenState>>(
+    () => restoredDraft?.genState ?? {}
+  )
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<string[] | null>(null)
   // True Edit Mode target: which generated image we're refining.
@@ -253,7 +268,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const [menuOpen, setMenuOpen] = useState(false)
   // Once the conversation starts, the setup block collapses to a one-line strip so the thread
   // owns the screen (the stacked chips/selfie/CTA were hiding Maya's output on phones).
-  const [setupOpen, setSetupOpen] = useState(false)
+  const [setupOpen, setSetupOpen] = useState(() => restoredDraft?.setupOpen ?? false)
   // Cross-session memory (Phase E): what Maya already knows + the name she was given.
   const [memory, setMemory] = useState<Memory | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
@@ -262,7 +277,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const [justNamed, setJustNamed] = useState<string | null>(null)
   // Progressive onboarding: only for members Maya doesn't already know, after first value.
   const [hasBrandProfile, setHasBrandProfile] = useState(true)
-  const [generatedOnce, setGeneratedOnce] = useState(false)
+  const [generatedOnce, setGeneratedOnce] = useState(() => restoredDraft?.generatedOnce ?? false)
   const [brandDraft, setBrandDraft] = useState("")
   const [brandPromptDismissed, setBrandPromptDismissed] = useState(false)
 
@@ -349,14 +364,30 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     []
   )
 
-  const { messages, sendMessage, status, error, setMessages } = useChat({ transport })
+  // Conversation persistence (Phase C). Client-driven save on each completed turn.
+  const [chatId, setChatId] = useState<string>(() => restoredDraft?.chatId ?? newChatId())
+  const { messages, sendMessage, status, error, setMessages } = useChat({
+    transport,
+    id: chatId,
+    messages: (restoredDraft?.messages ?? []) as any[],
+  })
 
   const isThinking = status === "submitted" || status === "streaming"
 
-  // Conversation persistence (Phase C). Client-driven save on each completed turn.
-  const [chatId, setChatId] = useState<string>(() => newChatId())
   const [historyOpen, setHistoryOpen] = useState(false)
-  const savedCountRef = useRef(0)
+  const savedCountRef = useRef(restoredDraft?.messages.length ?? 0)
+
+  useEffect(() => {
+    if (!isOpen || !session) return
+    saveMayaDraft({
+      chatId,
+      sessionStartedAt: session.startedAt,
+      messages,
+      genState,
+      generatedOnce,
+      setupOpen,
+    })
+  }, [chatId, genState, generatedOnce, isOpen, messages, session, setupOpen])
 
   useEffect(() => {
     if (status !== "ready") return
@@ -519,6 +550,8 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
   function handleNewChat() {
     if (isThinking) return
+    clearMayaDraft()
+    const nextChatId = newChatId()
     setMenuOpen(false)
     setSetupOpen(false)
     savedCountRef.current = 0
@@ -526,8 +559,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
     setMessages([])
     setGenState({})
+    setGeneratedOnce(false)
     setInput("")
-    setChatId(newChatId())
+    setChatId(nextChatId)
     setHistoryOpen(false)
     // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
     // directions (which made "New chat" look like it did nothing). Selfie + memory are kept.
@@ -552,6 +586,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
       }
       setChatId(id)
       setGenState({})
+      setGeneratedOnce(false)
       setMessages(loaded as any)
       setHistoryOpen(false)
     } catch {

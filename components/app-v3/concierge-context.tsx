@@ -4,7 +4,15 @@
 // Clicking an aesthetic tile opens Maya with that vibe preloaded. This context holds
 // that session so the front door and the concierge panel stay in sync.
 
-import { createContext, startTransition, useCallback, useContext, useMemo, useState } from "react"
+import {
+  createContext,
+  startTransition,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 import type {
   Aesthetic,
   ConciergeContextValue,
@@ -13,12 +21,14 @@ import type {
   OpenConciergeOptions,
   OutputFormat,
 } from "./types"
+import { readConciergeSnapshot, saveConciergeSnapshot } from "./continuity"
 
 const ConciergeContext = createContext<ConciergeContextValue | null>(null)
 
 export function ConciergeProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<ConciergeSession | null>(null)
-  const [isOpen, setIsOpen] = useState(false)
+  const restored = useMemo(() => readConciergeSnapshot(), [])
+  const [session, setSession] = useState<ConciergeSession | null>(() => restored?.session ?? null)
+  const [isOpen, setIsOpen] = useState(() => restored?.isOpen ?? false)
 
   const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
     // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
@@ -38,18 +48,22 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setOutputFormat = useCallback((format: OutputFormat | null) => {
-    setSession((prev) => (prev ? { ...prev, outputFormat: format } : prev))
+    setSession(prev => (prev ? { ...prev, outputFormat: format } : prev))
   }, [])
 
   const setReferenceSelfieUrl = useCallback((url: string | null) => {
-    setSession((prev) => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
+    setSession(prev => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
   }, [])
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
-    setSession((prev) => (prev ? { ...prev, graphicText: spec } : prev))
+    setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
   }, [])
 
   const close = useCallback(() => setIsOpen(false), [])
+
+  useEffect(() => {
+    saveConciergeSnapshot({ isOpen, session })
+  }, [isOpen, session])
 
   const value = useMemo<ConciergeContextValue>(
     () => ({
@@ -61,7 +75,15 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       setGraphicText,
       close,
     }),
-    [session, isOpen, openWithAesthetic, setOutputFormat, setReferenceSelfieUrl, setGraphicText, close],
+    [
+      session,
+      isOpen,
+      openWithAesthetic,
+      setOutputFormat,
+      setReferenceSelfieUrl,
+      setGraphicText,
+      close,
+    ]
   )
 
   return <ConciergeContext.Provider value={value}>{children}</ConciergeContext.Provider>
