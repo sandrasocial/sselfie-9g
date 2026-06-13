@@ -151,6 +151,52 @@ interface ChatBody {
   adminSession?: boolean
 }
 
+function summarizeBriefValue(value: unknown): string {
+  if (typeof value === "string") return value.slice(0, 240)
+  if (typeof value === "number") return String(value)
+  if (Array.isArray(value)) return value.slice(0, 5).map(summarizeBriefValue).filter(Boolean).join(" / ")
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).slice(0, 8)
+    return entries.map(([key, item]) => `${key}: ${summarizeBriefValue(item)}`).filter(Boolean).join("; ")
+  }
+  return ""
+}
+
+async function getAdminBriefContext(): Promise<string> {
+  try {
+    const { getLatestAnalyticsReports } = await import("@/lib/analytics/reports")
+    const reports = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
+    const report = reports[0]
+    if (!report?.payload) return ""
+    const payload = report.payload as Record<string, unknown>
+    const period = report.period_start ? new Date(report.period_start).toISOString().slice(0, 10) : "latest"
+    const contentPlan = Array.isArray(payload.contentPlan)
+      ? payload.contentPlan
+          .slice(0, 6)
+          .map((piece: any) => {
+            const title = typeof piece?.title === "string" ? piece.title : "Untitled"
+            const format = typeof piece?.format === "string" ? piece.format : "content"
+            const hook = typeof piece?.hook === "string" ? piece.hook : ""
+            return `- ${format}: ${title}${hook ? ` | hook: ${hook}` : ""}`
+          })
+          .join("\n")
+      : ""
+    return [
+      "---",
+      "## CURRENT WEEKLY BRIEF CONTEXT",
+      `Period: ${period}. Use this as live context for Sandra's admin content ideas.`,
+      contentPlan ? `Content plan:\n${contentPlan}` : "",
+      `Other brief signals: ${summarizeBriefValue(payload).slice(0, 1400)}`,
+      "Write in Sandra's simple everyday voice: warm, friendly, clear, no corporate phrasing.",
+    ]
+      .filter(Boolean)
+      .join("\n")
+  } catch (e) {
+    console.error("[app-v3 maya chat] admin brief context load skipped:", e)
+    return ""
+  }
+}
+
 /** Only public Vercel Blob https URLs are accepted as an inspiration image. */
 function isAllowedInspirationUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false
@@ -265,7 +311,8 @@ export async function POST(req: Request) {
       if (isAdminEmail(user.email)) {
         isAdminSession = true
         const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
-        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}`
+        const briefContext = await getAdminBriefContext()
+        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}${briefContext ? `\n\n${briefContext}` : ""}`
       }
     }
 

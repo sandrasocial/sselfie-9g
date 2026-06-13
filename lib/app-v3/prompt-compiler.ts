@@ -447,12 +447,12 @@ export function compileConceptJobs(
       const layout =
         role === "hook" ? HOOK_LAYOUT : role === "cta" ? CTA_LAYOUT : VALUE_LAYOUTS[valueIdx % VALUE_LAYOUTS.length]
       const valueIndex = role === "value" ? valueIdx++ : 0
-      // Maya tags the visual; untagged slides get the doctrine-safe default mix. Hard cap:
-      // identity slides max 2 per set — extras downgrade to detail so her face never floods the set.
+      // Maya tags the visual; untagged slides get the photoshoot-first default mix. Keep a
+      // sanity cap so long carousels still have room for proof/details without going faceless.
       let visual: SlideVisual = (slide as { visual?: SlideVisual }).visual ?? defaultSlideVisual(role, valueIndex)
       if (visual === "identity") {
         identityCount += 1
-        if (identityCount > 2) visual = "detail"
+        if (identityCount > 4) visual = "detail"
       }
       const text = { heading: clean(slide.heading), body: clean(slide.body) }
       const label = `slide ${i + 1}/${total} (${role} · ${visual})`

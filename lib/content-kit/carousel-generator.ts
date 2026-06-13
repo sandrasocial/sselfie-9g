@@ -4,7 +4,8 @@ import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
-import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
+import { getShoot } from "@/lib/content-kit/shoot-generator"
+import type { CarouselDeck, CarouselSlide, ContentOverlayAsset } from "@/lib/content-kit/types"
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
@@ -22,10 +23,12 @@ SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect lim
 type GeneratorInput = {
   count?: number
   topic?: string
-  /** Background images (Vercel Blob URLs, e.g. Phase 2 demo images or her selfies).
-   * Applied photo-first: hook gets the first, extra images become pure photo proof
-   * slides after the hook, the CTA gets the last. */
+  /** Approved Shoot Studio row. When present, this is the source of visual truth. */
+  sourceShootId?: number
+  /** Optional additional background images, only used after the approved shoot images. */
   imageUrls?: string[]
+  /** Screenshots, product proof, or other assets layered above teaching slides. */
+  overlayUrls?: string[]
 }
 
 function isAllowedImageUrl(value: string): boolean {
@@ -37,40 +40,46 @@ function isAllowedImageUrl(value: string): boolean {
   }
 }
 
-/** Niche-viral layout (@prompts.ig pattern, hers by typography): photo hook ->
- * photo proof block -> clean teaching slides (save-bait) -> photo CTA.
- * With 4+ images the hook becomes the signature 2x2 grid (same person, four worlds). */
-function applyImages(slides: CarouselSlide[], imageUrls: string[]): CarouselSlide[] {
+async function resolveShootImages(sourceShootId?: number): Promise<{
+  imageUrls: string[]
+  title: string | null
+  id: number | null
+}> {
+  if (!sourceShootId) return { imageUrls: [], title: null, id: null }
+  const shoot = await getShoot(sourceShootId)
+  if (!shoot) throw new Error("Shoot not found")
+  const images = shoot.shots
+    .filter((shot) => shot.status === "approved" && shot.imageUrl)
+    .map((shot) => shot.imageUrl as string)
+  if (images.length < 2) {
+    throw new Error("Approve at least 2 rendered shoot images before building a carousel")
+  }
+  return { imageUrls: images, title: shoot.title, id: shoot.id }
+}
+
+function applyShootImages(
+  slides: CarouselSlide[],
+  imageUrls: string[],
+  overlayUrls: string[],
+): CarouselSlide[] {
   if (imageUrls.length === 0) return slides
-  const result = slides.map((slide) => ({ ...slide }))
+  const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
+    url,
+    label: `Overlay ${index + 1}`,
+    placement: index % 2 === 0 ? "middle-right" : "bottom-right",
+  }))
 
-  let used = 1
-  if (imageUrls.length >= 4) {
-    result[0].kind = "grid"
-    result[0].gridUrls = imageUrls.slice(0, 4)
-    used = 4
-  } else {
-    result[0].imageUrl = imageUrls[0]
-  }
-
-  const remaining = imageUrls.slice(used)
-  const last = result[result.length - 1]
-  let ctaImage: string | undefined
-  if (remaining.length > 0 && last.kind === "cta") {
-    ctaImage = remaining[remaining.length - 1]
-    last.imageUrl = ctaImage
-  }
-
-  const middles = ctaImage ? remaining.slice(0, -1) : remaining
-  if (middles.length > 0) {
-    const proofSlides: CarouselSlide[] = middles.map((url) => ({
-      kind: "photo",
-      title: "",
-      imageUrl: url,
-    }))
-    result.splice(1, 0, ...proofSlides)
-  }
-  return result
+  return slides.map((slide, index) => {
+    const next: CarouselSlide = {
+      ...slide,
+      imageUrl: imageUrls[index % imageUrls.length],
+    }
+    if (slide.kind === "step" || slide.kind === "list" || slide.kind === "quote") {
+      const overlay = overlays[(index - 1) % Math.max(overlays.length, 1)]
+      if (overlay) next.overlayAssets = [overlay]
+    }
+    return next
+  })
 }
 
 type RawCarousel = {
@@ -94,8 +103,13 @@ function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
 }
 
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
-  const imageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
-  // Selected images describe ONE deck's visuals, so image runs default to a single deck.
+  const sourceShoot = await resolveShootImages(input.sourceShootId)
+  const imageUrls = [
+    ...sourceShoot.imageUrls,
+    ...(input.imageUrls ?? []).filter(isAllowedImageUrl),
+  ].slice(0, 8)
+  const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
+  // Shoot-sourced runs describe one designed object, so default to one deck.
   const count = Math.min(Math.max(input.count ?? (imageUrls.length > 0 ? 1 : 2), 1), 4)
 
   const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
@@ -142,6 +156,7 @@ ${winners || "- (no snapshot data available)"}
 THIS WEEK'S BRIEF CAROUSEL IDEAS (expand these first${input.topic ? ", unless the requested topic overrides" : ""}):
 ${carouselPieces || "- (no weekly brief found: invent carousels from her winners and niche)"}
 ${input.topic ? `\nREQUESTED TOPIC (priority): ${input.topic}` : ""}
+${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this carousel as an extension of that exact shoot. The approved shoot photos will be the backgrounds on the rendered slides, so keep the copy short enough to sit on photos and make it feel like one finished shoot-based content piece.` : ""}
 
 Write ${count} complete carousel deck(s). Teach something stealable: her audience saves carousels that give them numbered, concrete steps they can use today (selfie angles, ChatGPT photo prompts, posing, editing prompts like color grading / lens looks / outfit changes).
 
@@ -168,12 +183,17 @@ Return ONLY a JSON array, no commentary:
   const decks: CarouselDeck[] = []
   for (const carousel of raw.slice(0, count)) {
     if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) continue
-    const slides = applyImages(sanitizeSlides(carousel.slides), imageUrls)
+    const slides = applyShootImages(sanitizeSlides(carousel.slides), imageUrls, overlayUrls)
     const slug = (carousel.slug || carousel.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)
     const caption = (carousel.caption || "").replace(/—/g, ":")
+    await sql`
+      ALTER TABLE content_carousels
+      ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+      ADD COLUMN IF NOT EXISTS source_shoot_title text
+    `
     const rows = (await sql`
-      INSERT INTO content_carousels (title, slug, caption, slides, source_period_start)
-      VALUES (${carousel.title}, ${slug}, ${caption}, ${JSON.stringify(slides)}, ${briefPeriodStart})
+      INSERT INTO content_carousels (title, slug, caption, slides, source_period_start, source_shoot_id, source_shoot_title)
+      VALUES (${carousel.title}, ${slug}, ${caption}, ${JSON.stringify(slides)}, ${briefPeriodStart}, ${sourceShoot.id}, ${sourceShoot.title})
       RETURNING id, created_at
     `) as Array<{ id: number; created_at: string }>
     decks.push({
@@ -183,6 +203,8 @@ Return ONLY a JSON array, no commentary:
       caption,
       slides,
       status: "draft",
+      sourceShootId: sourceShoot.id,
+      sourceShootTitle: sourceShoot.title,
       sourcePeriodStart: briefPeriodStart,
       createdAt: new Date(rows[0].created_at).toISOString(),
     })
@@ -193,8 +215,13 @@ Return ONLY a JSON array, no commentary:
 }
 
 export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {
+  await sql`
+    ALTER TABLE content_carousels
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
   const rows = (await sql`
-    SELECT id, title, slug, caption, slides, status, source_period_start, created_at
+    SELECT id, title, slug, caption, slides, status, source_period_start, source_shoot_id, source_shoot_title, created_at
     FROM content_carousels
     ORDER BY created_at DESC
     LIMIT ${limit}
@@ -206,6 +233,8 @@ export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {
     caption: row.caption,
     slides: row.slides,
     status: row.status,
+    sourceShootId: row.source_shoot_id ?? null,
+    sourceShootTitle: row.source_shoot_title ?? null,
     sourcePeriodStart: row.source_period_start
       ? new Date(row.source_period_start).toISOString().slice(0, 10)
       : null,
@@ -214,8 +243,13 @@ export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {
 }
 
 export async function getCarousel(id: number): Promise<CarouselDeck | null> {
+  await sql`
+    ALTER TABLE content_carousels
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
   const rows = (await sql`
-    SELECT id, title, slug, caption, slides, status, source_period_start, created_at
+    SELECT id, title, slug, caption, slides, status, source_period_start, source_shoot_id, source_shoot_title, created_at
     FROM content_carousels
     WHERE id = ${id}
     LIMIT 1
@@ -229,6 +263,8 @@ export async function getCarousel(id: number): Promise<CarouselDeck | null> {
     caption: row.caption,
     slides: row.slides,
     status: row.status,
+    sourceShootId: row.source_shoot_id ?? null,
+    sourceShootTitle: row.source_shoot_title ?? null,
     sourcePeriodStart: row.source_period_start
       ? new Date(row.source_period_start).toISOString().slice(0, 10)
       : null,

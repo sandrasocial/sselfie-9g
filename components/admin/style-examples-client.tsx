@@ -13,6 +13,8 @@ export function StyleExamplesClient({ initialOptions }: { initialOptions: StyleO
   const [busy, setBusy] = useState<string | null>(null) // styleId currently saving
   const [error, setError] = useState<string | null>(null)
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({})
+  const readyCount = options.filter((o) => o.exampleImageUrl).length
+  const missing = options.filter((o) => !o.exampleImageUrl)
 
   function applyUpdate(styleId: string, imageUrl: string | null) {
     setOptions((prev) => prev.map((o) => (o.id === styleId ? { ...o, exampleImageUrl: imageUrl } : o)))
@@ -52,6 +54,12 @@ export function StyleExamplesClient({ initialOptions }: { initialOptions: StyleO
       setError(e instanceof Error ? e.message : "Generation failed")
     } finally {
       setBusy(null)
+    }
+  }
+
+  async function generateMissing() {
+    for (const option of missing) {
+      await generate(option.id)
     }
   }
 
@@ -148,11 +156,25 @@ export function StyleExamplesClient({ initialOptions }: { initialOptions: StyleO
 
   return (
     <div className="space-y-5">
-      <p className="text-xs text-stone-400">
-        Source: app_v3_style_examples. These cards are what members see when they ask Maya to pick a
-        text style. One image per style; uploading or generating again replaces it. Maya examples are
-        typography demos with no people in them.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-stone-400">Member picker readiness</p>
+          <p className="mt-1 text-sm text-stone-700">
+            {readyCount}/{options.length} visual examples ready. Members see these cards when they ask Maya
+            to pick a text or carousel style.
+          </p>
+        </div>
+        {missing.length > 0 && (
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void generateMissing()}
+            className="rounded-full bg-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
+          >
+            {busy ? "Generating" : `Generate ${missing.length} missing`}
+          </button>
+        )}
+      </div>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <Group title="Cover and story text styles" kind="overlay" />
       <Group title="Carousel design systems" kind="carousel" />

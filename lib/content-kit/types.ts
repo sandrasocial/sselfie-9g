@@ -3,6 +3,13 @@
 
 export type CarouselSlideKind = "hook" | "step" | "list" | "quote" | "cta" | "photo" | "grid"
 
+export type ContentOverlayAsset = {
+  url: string
+  label?: string
+  /** Renderer hint: screenshots/product proof usually sit opposite the text block. */
+  placement?: "top-right" | "middle-right" | "bottom-right" | "center"
+}
+
 export type CarouselSlide = {
   kind: CarouselSlideKind
   eyebrow?: string
@@ -17,6 +24,8 @@ export type CarouselSlide = {
   /** 2x2 grid images for kind "grid" (the prompts.ig signature: same person,
    * four worlds). Title overlays the grid when present. */
   gridUrls?: string[]
+  /** Optional screenshots, proof, or product images layered above the slide. */
+  overlayAssets?: ContentOverlayAsset[]
 }
 
 export type StorySlideRole =
@@ -44,6 +53,8 @@ export type StorySlide = {
   note?: string
   /** Background photo (untouched — identity preservation is structural). */
   imageUrl?: string
+  /** Optional screenshots, proof, or product images layered above the story slide. */
+  overlayAssets?: ContentOverlayAsset[]
 }
 
 export type StorySequence = {
@@ -52,6 +63,8 @@ export type StorySequence = {
   topic: string
   slides: StorySlide[]
   status: "draft" | "approved" | "posted"
+  sourceShootId?: number | null
+  sourceShootTitle?: string | null
   createdAt: string
 }
 
@@ -111,6 +124,8 @@ export type CarouselDeck = {
   caption: string
   slides: CarouselSlide[]
   status: "draft" | "approved" | "posted"
+  sourceShootId?: number | null
+  sourceShootTitle?: string | null
   sourcePeriodStart: string | null
   createdAt: string
 }

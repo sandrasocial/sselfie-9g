@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCarousel } from "@/lib/content-kit/carousel-generator"
-import type { CarouselSlide } from "@/lib/content-kit/types"
+import type { CarouselSlide, ContentOverlayAsset } from "@/lib/content-kit/types"
 
 export const dynamic = "force-dynamic"
 
@@ -104,6 +104,57 @@ function Frame({
   )
 }
 
+function OverlayAssets({
+  assets,
+  width,
+  height,
+}: {
+  assets?: ContentOverlayAsset[]
+  width: number
+  height: number
+}) {
+  if (!assets?.length) return null
+  return (
+    <>
+      {assets.slice(0, 2).map((asset, index) => {
+        const placement = asset.placement || "middle-right"
+        const boxW = placement === "center" ? 560 : 390
+        const boxH = placement === "center" ? 430 : 520
+        const left = placement === "center" ? (width - boxW) / 2 : width - boxW - 72
+        const top =
+          placement === "top-right"
+            ? 210 + index * 34
+            : placement === "bottom-right"
+              ? height - boxH - 250 - index * 34
+              : placement === "center"
+                ? (height - boxH) / 2
+                : 405 + index * 34
+        return (
+          <div
+            key={asset.url}
+            style={{
+              position: "absolute",
+              left,
+              top,
+              width: boxW,
+              height: boxH,
+              display: "flex",
+              borderRadius: 28,
+              overflow: "hidden",
+              border: "4px solid rgba(255,255,255,0.92)",
+              boxShadow: "0 28px 80px rgba(0,0,0,0.42)",
+              transform: index % 2 === 0 ? "rotate(1.5deg)" : "rotate(-1.5deg)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={asset.url} width={boxW} height={boxH} style={{ objectFit: "cover" }} />
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 /** 2x2 photo grid (the prompts.ig signature: same person, four worlds), with the
  * hook line over a bottom scrim when the slide has a title. */
 function GridFrame({
@@ -162,6 +213,7 @@ function GridFrame({
             : "linear-gradient(180deg, rgba(10,10,10,0.28) 0%, rgba(10,10,10,0.00) 18%, rgba(10,10,10,0.00) 80%, rgba(10,10,10,0.45) 100%)",
         }}
       />
+      <OverlayAssets assets={slide.overlayAssets} width={width} height={height} />
       <div
         style={{
           position: "absolute",
@@ -338,6 +390,34 @@ function PhotoFrame({
                 }}
               >
                 {slide.body}
+              </div>
+            ) : null}
+            {slide.kind === "list" && slide.items?.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28, maxWidth: 680 }}>
+                {slide.items.slice(0, 4).map((item, index) => (
+                  <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 18 }}>
+                    <div style={{ display: "flex", fontSize: 27, color: "rgba(255,255,255,0.78)", width: 34 }}>
+                      {index + 1}
+                    </div>
+                    <div style={{ display: "flex", fontSize: 30, lineHeight: 1.32, color: "rgba(255,255,255,0.9)" }}>
+                      {item}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {slide.kind === "step" && slide.stepNumber ? (
+              <div
+                style={{
+                  display: "flex",
+                  marginTop: 22,
+                  fontSize: 25,
+                  letterSpacing: 5,
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.72)",
+                }}
+              >
+                Step {slide.stepNumber}
               </div>
             ) : null}
           </div>

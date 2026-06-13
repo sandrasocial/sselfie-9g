@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getStorySequence } from "@/lib/content-kit/story-generator"
-import type { StoryLine, StorySlide } from "@/lib/content-kit/types"
+import type { ContentOverlayAsset, StoryLine, StorySlide } from "@/lib/content-kit/types"
 
 export const dynamic = "force-dynamic"
 
@@ -98,6 +98,49 @@ function Arrow({ color }: { color: string }) {
       <path d="M 28 6 Q 20 36, 27 60" stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" />
       <path d="M 16 50 Q 22 58, 27 62 Q 33 57, 38 49" stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" />
     </svg>
+  )
+}
+
+function OverlayAssets({ assets }: { assets?: ContentOverlayAsset[] }) {
+  if (!assets?.length) return null
+  return (
+    <>
+      {assets.slice(0, 2).map((asset, index) => {
+        const placement = asset.placement || "middle-right"
+        const boxW = placement === "center" ? 620 : 430
+        const boxH = placement === "center" ? 520 : 590
+        const left = placement === "center" ? (WIDTH - boxW) / 2 : WIDTH - boxW - 72
+        const top =
+          placement === "top-right"
+            ? 280 + index * 40
+            : placement === "bottom-right"
+              ? HEIGHT - boxH - 360 - index * 40
+              : placement === "center"
+                ? (HEIGHT - boxH) / 2
+                : 590 + index * 40
+        return (
+          <div
+            key={asset.url}
+            style={{
+              position: "absolute",
+              left,
+              top,
+              width: boxW,
+              height: boxH,
+              display: "flex",
+              overflow: "hidden",
+              borderRadius: 34,
+              border: "4px solid rgba(255,255,255,0.92)",
+              boxShadow: "0 34px 90px rgba(0,0,0,0.42)",
+              transform: index % 2 === 0 ? "rotate(1.5deg)" : "rotate(-1.5deg)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={asset.url} width={boxW} height={boxH} style={{ objectFit: "cover" }} />
+          </div>
+        )
+      })}
+    </>
   )
 }
 
@@ -208,6 +251,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           }}
         />
       )}
+      <OverlayAssets assets={slide.overlayAssets} />
 
       <div
         style={{

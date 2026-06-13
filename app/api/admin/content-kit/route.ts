@@ -38,10 +38,16 @@ export async function POST(request: NextRequest) {
     const imageUrls = Array.isArray(body.imageUrls)
       ? body.imageUrls.filter((url: unknown): url is string => typeof url === "string")
       : []
+    const overlayUrls = Array.isArray(body.overlayUrls)
+      ? body.overlayUrls.filter((url: unknown): url is string => typeof url === "string")
+      : []
+    const hasVisualSource = Boolean(body.sourceShootId) || imageUrls.length > 0
     const carousels = await generateCarousels({
-      count: typeof body.count === "number" ? body.count : imageUrls.length > 0 ? 1 : 2,
+      count: typeof body.count === "number" ? body.count : hasVisualSource ? 1 : 2,
       topic: typeof body.topic === "string" && body.topic.trim() ? body.topic.trim() : undefined,
       imageUrls,
+      overlayUrls,
+      sourceShootId: Number.isFinite(Number(body.sourceShootId)) ? Number(body.sourceShootId) : undefined,
     })
     return NextResponse.json({ success: true, carousels })
   } catch (error: any) {

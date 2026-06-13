@@ -3,7 +3,8 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
-import type { StorySequence, StorySlide } from "@/lib/content-kit/types"
+import { getShoot } from "@/lib/content-kit/shoot-generator"
+import type { ContentOverlayAsset, StorySequence, StorySlide } from "@/lib/content-kit/types"
 
 // Condensed from Sandra's own Story Prompt Engineer spec:
 // docs/funnel/STORY_SLIDE_DOCTRINE_2026-06-12.md (that doc wins on conflict).
@@ -56,8 +57,30 @@ function isAllowedImageUrl(value: string): boolean {
   }
 }
 
-function sanitizeSlides(slides: StorySlide[], imageUrls: string[]): StorySlide[] {
+async function resolveShootImages(sourceShootId?: number): Promise<{
+  imageUrls: string[]
+  title: string | null
+  id: number | null
+}> {
+  if (!sourceShootId) return { imageUrls: [], title: null, id: null }
+  const shoot = await getShoot(sourceShootId)
+  if (!shoot) throw new Error("Shoot not found")
+  const imageUrls = shoot.shots
+    .filter((shot) => shot.status === "approved" && shot.imageUrl)
+    .map((shot) => shot.imageUrl as string)
+  if (imageUrls.length < 2) {
+    throw new Error("Approve at least 2 rendered shoot images before building a story sequence")
+  }
+  return { imageUrls, title: shoot.title, id: shoot.id }
+}
+
+function sanitizeSlides(slides: StorySlide[], imageUrls: string[], overlayUrls: string[]): StorySlide[] {
   const clean = (value?: string) => value?.replace(/—/g, ":").trim()
+  const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
+    url,
+    label: `Overlay ${index + 1}`,
+    placement: index % 2 === 0 ? "middle-right" : "bottom-right",
+  }))
   return slides.map((slide, index) => ({
     role: slide.role,
     note: clean(slide.note),
@@ -71,16 +94,27 @@ function sanitizeSlides(slides: StorySlide[], imageUrls: string[]): StorySlide[]
     // One photoshoot, rotated across slides. Identity preservation is structural:
     // the photo is the untouched background layer, never re-generated.
     imageUrl: imageUrls.length > 0 ? imageUrls[index % imageUrls.length] : undefined,
+    overlayAssets:
+      overlays.length > 0 && (slide.role === "proof" || slide.role === "teaching" || slide.role === "bridge")
+        ? [overlays[index % overlays.length]]
+        : undefined,
   }))
 }
 
 export async function generateStorySequence(input: {
   topic: string
+  sourceShootId?: number
   imageUrls?: string[]
+  overlayUrls?: string[]
 }): Promise<StorySequence> {
   const topic = input.topic.trim()
   if (topic.length < 5) throw new Error("Tell me the story idea first")
-  const imageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
+  const sourceShoot = await resolveShootImages(input.sourceShootId)
+  const imageUrls = [
+    ...sourceShoot.imageUrls,
+    ...(input.imageUrls ?? []).filter(isAllowedImageUrl),
+  ].slice(0, 8)
+  const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
 
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI photoshoots from one selfie, personal branding for women).
 
@@ -89,6 +123,7 @@ ${SANDRA_VOICE_RULES}
 ${STORY_DOCTRINE}
 
 TODAY'S STORY IDEA (from Sandra): ${topic}
+${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this as story copy layered onto that same approved photoshoot, so it feels like the story version of the shoot, not a separate design.` : ""}
 
 Write ONE story sequence (5-8 slides) following the doctrine arc. Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (CTA slide has 4).
 
@@ -102,11 +137,16 @@ Return ONLY a JSON array of slides, no commentary:
   const raw = extractJsonArray(text) as StorySlide[]
   if (!Array.isArray(raw) || raw.length < 4) throw new Error("LLM returned too few story slides")
 
-  const slides = sanitizeSlides(raw.slice(0, 8), imageUrls)
+  const slides = sanitizeSlides(raw.slice(0, 8), imageUrls, overlayUrls)
   const title = topic.slice(0, 90)
+  await sql`
+    ALTER TABLE content_story_sequences
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
   const rows = (await sql`
-    INSERT INTO content_story_sequences (title, topic, slides)
-    VALUES (${title}, ${topic}, ${JSON.stringify(slides)})
+    INSERT INTO content_story_sequences (title, topic, slides, source_shoot_id, source_shoot_title)
+    VALUES (${title}, ${topic}, ${JSON.stringify(slides)}, ${sourceShoot.id}, ${sourceShoot.title})
     RETURNING id, created_at
   `) as Array<{ id: number; created_at: string }>
 
@@ -116,13 +156,20 @@ Return ONLY a JSON array of slides, no commentary:
     topic,
     slides,
     status: "draft",
+    sourceShootId: sourceShoot.id,
+    sourceShootTitle: sourceShoot.title,
     createdAt: new Date(rows[0].created_at).toISOString(),
   }
 }
 
 export async function listStorySequences(limit = 20): Promise<StorySequence[]> {
+  await sql`
+    ALTER TABLE content_story_sequences
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
   const rows = (await sql`
-    SELECT id, title, topic, slides, status, created_at
+    SELECT id, title, topic, slides, status, source_shoot_id, source_shoot_title, created_at
     FROM content_story_sequences
     ORDER BY created_at DESC
     LIMIT ${limit}
@@ -133,13 +180,20 @@ export async function listStorySequences(limit = 20): Promise<StorySequence[]> {
     topic: row.topic,
     slides: row.slides,
     status: row.status,
+    sourceShootId: (row as any).source_shoot_id ?? null,
+    sourceShootTitle: (row as any).source_shoot_title ?? null,
     createdAt: new Date(row.created_at).toISOString(),
   }))
 }
 
 export async function getStorySequence(id: number): Promise<StorySequence | null> {
+  await sql`
+    ALTER TABLE content_story_sequences
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
   const rows = (await sql`
-    SELECT id, title, topic, slides, status, created_at
+    SELECT id, title, topic, slides, status, source_shoot_id, source_shoot_title, created_at
     FROM content_story_sequences
     WHERE id = ${id}
     LIMIT 1
@@ -152,6 +206,8 @@ export async function getStorySequence(id: number): Promise<StorySequence | null
     topic: row.topic,
     slides: row.slides,
     status: row.status,
+    sourceShootId: (row as any).source_shoot_id ?? null,
+    sourceShootTitle: (row as any).source_shoot_title ?? null,
     createdAt: new Date(row.created_at).toISOString(),
   }
 }

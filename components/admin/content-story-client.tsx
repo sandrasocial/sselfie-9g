@@ -3,6 +3,16 @@
 import { useState } from "react"
 import type { StorySequence } from "@/lib/content-kit/types"
 
+type ShootOption = {
+  id: number
+  title: string
+  status: string
+  createdAt: string
+  shots: Array<{ id: string; title: string; url: string }>
+}
+
+type UploadedAsset = { url: string; label: string }
+
 const STATUS_LABELS: Record<StorySequence["status"], string> = {
   draft: "Draft",
   approved: "Approved",
@@ -107,37 +117,64 @@ function SequenceCard({
 
 export function ContentStoryClient({
   initialSequences,
-  availableImages = [],
+  shoots = [],
 }: {
   initialSequences: StorySequence[]
-  availableImages?: Array<{ url: string; label: string }>
+  shoots?: ShootOption[]
 }) {
   const [sequences, setSequences] = useState<StorySequence[]>(initialSequences)
   const [topic, setTopic] = useState("")
-  const [selectedImages, setSelectedImages] = useState<string[]>([])
+  const [selectedShootId, setSelectedShootId] = useState<number | null>(shoots.find((shoot) => shoot.shots.length >= 2)?.id ?? null)
+  const [backgrounds, setBackgrounds] = useState<UploadedAsset[]>([])
+  const [overlays, setOverlays] = useState<UploadedAsset[]>([])
   const [generating, setGenerating] = useState(false)
+  const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  function toggleImage(url: string) {
-    setSelectedImages((current) =>
-      current.includes(url) ? current.filter((item) => item !== url) : [...current, url],
-    )
+  const selectedShoot = shoots.find((shoot) => shoot.id === selectedShootId) ?? null
+
+  async function upload(kind: "background" | "overlay", files: FileList | null) {
+    if (!files?.length) return
+    setUploading(kind)
+    setError(null)
+    try {
+      const form = new FormData()
+      form.append("kind", kind)
+      Array.from(files).forEach((file) => form.append("files", file))
+      const response = await fetch("/api/admin/content-kit/assets/upload", { method: "POST", body: form })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
+      if (kind === "background") setBackgrounds((current) => [...current, ...data.assets])
+      else setOverlays((current) => [...current, ...data.assets])
+    } catch (err: any) {
+      setError(err?.message || "Upload failed")
+    } finally {
+      setUploading(null)
+    }
   }
 
   async function generate() {
+    if (!selectedShootId && backgrounds.length < 2) {
+      setError("Pick an approved shoot, or upload at least 2 background images.")
+      return
+    }
     setGenerating(true)
     setError(null)
     try {
       const response = await fetch("/api/admin/content-kit/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topic.trim(), imageUrls: selectedImages }),
+        body: JSON.stringify({
+          topic: topic.trim(),
+          sourceShootId: selectedShootId,
+          imageUrls: backgrounds.map((asset) => asset.url),
+          overlayUrls: overlays.map((asset) => asset.url),
+        }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setSequences([data.sequence, ...sequences])
       setTopic("")
-      setSelectedImages([])
     } catch (err: any) {
       setError(err?.message || "Generation failed")
     } finally {
@@ -167,56 +204,95 @@ export function ContentStoryClient({
     <section className="mt-12">
       <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">Story sequence</h2>
       <p className="mt-1 text-sm text-stone-600">
-        Your story doctrine, rendered: hook, tension, shift, desire, CTA. Your photo stays untouched
-        as the background (no AI re-render, no face drift), text and doodles go on top.
+        Pick an approved shoot first. Stories reuse those photos as untouched backgrounds, then add
+        short doctrine-led copy and optional screenshot/proof overlays.
       </p>
 
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
+        <label className="text-xs uppercase tracking-wide text-stone-500" htmlFor="story-shoot">
+          Source shoot
+        </label>
+        <select
+          id="story-shoot"
+          value={selectedShootId ?? ""}
+          onChange={(event) => setSelectedShootId(event.target.value ? Number(event.target.value) : null)}
+          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-950 focus:outline-none"
+        >
+          <option value="">No approved shoot selected</option>
+          {shoots.map((shoot) => (
+            <option key={shoot.id} value={shoot.id} disabled={shoot.shots.length < 2}>
+              {shoot.title} · {shoot.shots.length} approved image{shoot.shots.length === 1 ? "" : "s"}
+            </option>
+          ))}
+        </select>
+        {selectedShoot ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-3">
+            {selectedShoot.shots.map((shot) => (
+              <div key={shot.id} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={shot.url} alt={shot.title} className="h-24 w-[4.5rem] object-cover" loading="lazy" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 pb-3 text-sm text-amber-700">
+            Approve at least 2 rendered shots in Shoot Studio before generating a shoot-based story.
+          </p>
+        )}
         <textarea
           value={topic}
           onChange={(event) => setTopic(event.target.value)}
           rows={2}
-          placeholder="Today's story idea, e.g. why posting yourself online changes you (sell the Starter Kit, CTA: KIT)"
+          placeholder="Today's story idea, e.g. the fear behind posting AI photos, CTA: PROMPT"
           className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
-        {availableImages.length > 0 && (
-          <div className="mt-3">
-            <p className="text-xs uppercase tracking-wide text-stone-500">
-              Photoshoot images (rotated across slides; skip for clean text slides)
-            </p>
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-              {availableImages.map((image) => {
-                const order = selectedImages.indexOf(image.url)
-                return (
-                  <button
-                    key={image.url}
-                    type="button"
-                    onClick={() => toggleImage(image.url)}
-                    title={image.label}
-                    className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition ${
-                      order >= 0 ? "border-stone-950" : "border-transparent hover:border-stone-300"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image.url} alt={image.label} className="h-24 w-[4.5rem] object-cover" loading="lazy" />
-                    {order >= 0 && (
-                      <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-stone-950 text-[10px] text-white">
-                        {order + 1}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
+            <span className="block text-xs uppercase tracking-wide text-stone-500">Extra backgrounds</span>
+            <span className="mt-1 block">Only use if the story needs a non-shoot scene.</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              className="mt-3 block w-full text-xs"
+              onChange={(event) => void upload("background", event.target.files)}
+            />
+            <span className="mt-2 block text-xs text-stone-400">
+              {uploading === "background" ? "Uploading..." : `${backgrounds.length} uploaded`}
+            </span>
+          </label>
+          <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
+            <span className="block text-xs uppercase tracking-wide text-stone-500">Screenshot overlays</span>
+            <span className="mt-1 block">Use for proof, ChatGPT screenshots, or DM examples.</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              className="mt-3 block w-full text-xs"
+              onChange={(event) => void upload("overlay", event.target.files)}
+            />
+            <span className="mt-2 block text-xs text-stone-400">
+              {uploading === "overlay" ? "Uploading..." : `${overlays.length} uploaded`}
+            </span>
+          </label>
+        </div>
+        {overlays.length > 0 && (
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
+            {overlays.map((asset) => (
+              <div key={asset.url} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={asset.url} alt={asset.label} className="h-20 w-20 object-cover" loading="lazy" />
+              </div>
+            ))}
           </div>
         )}
         <button
           type="button"
           onClick={generate}
-          disabled={generating || !topic.trim()}
+          disabled={generating || !topic.trim() || (!selectedShootId && backgrounds.length < 2)}
           className="mt-3 rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
         >
-          {generating ? "Writing your story (about a minute)" : "Generate story sequence"}
+          {generating ? "Writing the shoot story" : "Generate shoot story"}
         </button>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </div>

@@ -122,14 +122,15 @@ export default async function ContentBriefPage() {
   const shoots = await listShoots().catch(() => [])
   const styleOptions = await listStyleOptions().catch(() => [])
 
-  const availableImages = [
-    ...shoots.flatMap((shoot) =>
-      shoot.shots
-        .filter((shot) => shot.status !== "killed" && shot.imageUrl)
-        .map((shot) => ({ url: shot.imageUrl as string, label: shot.title })),
-    ),
-    ...selfies.slice(0, 8).map((url) => ({ url, label: "Your selfie" })),
-  ]
+  const shootOptions = shoots.map((shoot) => ({
+    id: shoot.id,
+    title: shoot.title,
+    status: shoot.status,
+    createdAt: shoot.createdAt,
+    shots: shoot.shots
+      .filter((shot) => shot.status === "approved" && shot.imageUrl)
+      .map((shot) => ({ id: shot.id, title: shot.title, url: shot.imageUrl as string })),
+  }))
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -160,10 +161,10 @@ export default async function ContentBriefPage() {
             <VaultDropEmailPreview />
           </Collapsed>
           <Collapsed title="Carousel kit" hint="Rendered decks, covers, captions">
-            <ContentKitClient initialCarousels={carousels} availableImages={availableImages} />
+            <ContentKitClient initialCarousels={carousels} shoots={shootOptions} />
           </Collapsed>
           <Collapsed title="Story sequences" hint="Doctrine story slides">
-            <ContentStoryClient initialSequences={stories} availableImages={availableImages} />
+            <ContentStoryClient initialSequences={stories} shoots={shootOptions} />
           </Collapsed>
           <Collapsed title="Text style examples" hint="The cards members tap when picking a text style">
             <StyleExamplesClient initialOptions={styleOptions} />

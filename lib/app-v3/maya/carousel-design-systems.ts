@@ -4,8 +4,8 @@
 // Sandra's reference grids). Each system is a complete visual language for the WHOLE set:
 // palette + grade, typography, decoration rules, and how each slide TYPE is treated. Slides
 // come in three visual roles:
-//   - "identity":  she appears (kept recognizable — the No-Fake doctrine). Max 1-2 per set.
-//   - "detail":    a styled object shot from her world (coffee, desk, phone, notes). No people.
+//   - "identity":  she appears (kept recognizable — the No-Fake doctrine). Default for most slides.
+//   - "detail":    a styled object shot from her world (coffee, desk, phone, notes). Use only on purpose.
 //   - "text-only": a designed typographic slide (lists, quotes, the CTA). No photo subject.
 //
 // Detail and text-only slides are generated WITHOUT the selfie attached (the route uses
@@ -112,13 +112,12 @@ export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
 
 /**
  * Default visual mix when Maya doesn't tag slides (back-compat + safety net).
- * Doctrine: 1-2 identity slides max; every other slide carries a photograph by default
- * (SUITE-UX-02: image backgrounds are the default; text-only happens only when Maya
- * deliberately tags it, e.g. because the user asked for text-led slides).
+ * Doctrine: carousels should feel like part of the user's photoshoot, not disconnected
+ * still-life slides. Identity is the default; detail/text-only happen only when Maya
+ * deliberately tags them.
  */
 export function defaultSlideVisual(role: "hook" | "value" | "cta", _valueIndex: number): SlideVisual {
-  if (role === "hook") return "identity"
-  return "detail"
+  return role === "value" || role === "hook" || role === "cta" ? "identity" : "detail"
 }
 
 /** The carousel design guide injected into Maya's system prompt (carousel format only). */
@@ -141,10 +140,11 @@ export function getCarouselDesignGuide(): string {
     "",
     "Slide mix rules (non-negotiable):",
     '- Tag every slide with "visual": "identity" | "detail" | "text-only".',
-    "- IMAGE-FIRST DEFAULT: every slide carries a photograph unless she asks for text-led slides. Hook = identity; value and CTA slides = detail with a concrete photographed subject. Use text-only ONLY when she asks for it, or when the copy is a long list that genuinely needs a pure typographic page (at most one such slide per set).",
-    "- MAX 2 identity slides per carousel (usually just the hook). She must stay clearly recognizable on them — never an idealized stranger.",
-    '- Detail slides show HER world, no people: give each a concrete "detailSubject" that VISUALIZES that slide\'s message, not just the scene (the slide "stop using flash" -> a phone face-down by a window with soft daylight; "5 ways to boost confidence" -> a mirror, a written affirmation card). Pull subjects from her brand and the chosen look.',
+    "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot. Use identity slides by default for hook, value, and CTA slides so the person stays present and recognizable.",
+    "- Detail slides are optional, not default. Use them only when a screenshot, object, phone, product, or texture genuinely explains the point better than another person-in-scene image.",
     "- Text-only slides (when used) carry lists, the big statement, or the CTA. The copy is the hero.",
+    "- Keep identity slides natural and recognizable — never an idealized stranger. Vary crop, pose, and text placement so it does not feel repetitive.",
+    '- When you deliberately choose a detail slide, give it a concrete "detailSubject" that VISUALIZES that slide\'s message, not just the scene (the slide "stop using flash" -> a phone face-down by a window with soft daylight).',
     "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
     "- The whole set shares one palette and one voice. Vary the slide compositions so the carousel feels designed, never repetitive.",
   ].join("\n")

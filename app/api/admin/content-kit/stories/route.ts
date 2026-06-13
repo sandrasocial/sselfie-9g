@@ -40,8 +40,12 @@ export async function POST(request: NextRequest) {
     }
     const sequence = await generateStorySequence({
       topic: body.topic,
+      sourceShootId: Number.isFinite(Number(body.sourceShootId)) ? Number(body.sourceShootId) : undefined,
       imageUrls: Array.isArray(body.imageUrls)
         ? body.imageUrls.filter((url: unknown): url is string => typeof url === "string")
+        : [],
+      overlayUrls: Array.isArray(body.overlayUrls)
+        ? body.overlayUrls.filter((url: unknown): url is string => typeof url === "string")
         : [],
     })
     return NextResponse.json({ success: true, sequence })
