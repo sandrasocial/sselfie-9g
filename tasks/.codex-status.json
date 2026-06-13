@@ -1,0 +1,29 @@
+{
+  "_readme": "Codex's status channel. Codex is the ONLY writer of this file; Claude only reads it. Do NOT edit tasks/README.md or specs (Claude owns those) — report progress here + in the PR body/commits instead. Claude reads this each loop run and updates the board to match. See tasks/LOOP_PROTOCOL.md.",
+  "_schema": {
+    "updated": "ISO8601 timestamp of last write",
+    "tasks": [
+      {
+        "spec": "filename under tasks/ (e.g. WEBHOOK-01-split-stripe-monolith.md)",
+        "branch": "codex/<task>",
+        "pr": "PR number or null",
+        "status": "in-progress | in-review | blocked | done",
+        "ci": "pending | green | red",
+        "tier": "0 = normal/auto-merge, 1 = payment/auth/entitlement/migration (Claude gate), 2 = send/money (Sandra only)",
+        "notes": "what changed, tests run, blockers or questions for Claude/Sandra"
+      }
+    ]
+  },
+  "updated": "2026-06-13T19:26:00Z",
+  "tasks": [
+    {
+      "spec": "WEBHOOK-01-split-stripe-monolith.md",
+      "branch": "codex/webhook-01-prompt-vault-extract",
+      "pr": 52,
+      "status": "in-review",
+      "ci": "red",
+      "tier": 1,
+      "notes": "PR #52 opened. Extracted the inline Studio/SSELFIE membership subscription checkout branch into lib/payments/handlers/studio-membership.ts; route delegates session.mode=subscription to the handler. Local focused verification green: type-check:ci, build, focused webhook Vitest, focused ESLint 0 errors, diff check. GitHub CI failed twice in ~2s with no log blob. Full local lint/test are red on unrelated stale repo issues; PR comment documents exact failures. Tier 1: payment/webhook code, requires Claude review/approval before merge."
+    }
+  ]
+}

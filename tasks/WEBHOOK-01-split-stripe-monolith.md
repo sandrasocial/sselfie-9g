@@ -1,5 +1,7 @@
 # WEBHOOK-01 — Split the Stripe webhook monolith (strangler extraction, zero rewrites)
 
+OWNER: codex (queued — after ENTITLE-01; access-gate leak was bumped ahead per Sandra 2026-06-13)
+
 > Status audit 2026-06-13: Real unfinished work. Extraction has started, but
 > `app/api/webhooks/stripe/route.ts` is still about 2200 lines, above the spec's
 > target. Because this is live-money code, continue only as a dedicated payment

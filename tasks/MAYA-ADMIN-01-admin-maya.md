@@ -1,9 +1,14 @@
 # MAYA-ADMIN-01 — Maya becomes the admin content surface
 
-> Status audit 2026-06-13: Mostly built. Slice 1, approve/publish tooling, admin
-> content tools, weekly brief knowledge, and admin-specific editorial memory are
-> live in code. Remaining work: final handoff/live QA polish and optional
-> reel-cover/caption tools after Sandra tests the carousel/story workflow.
+OWNER: sandra (live QA) — code-complete, no Codex task queued; flip to `codex` only if QA surfaces a fix
+
+> Status audit 2026-06-13 (revised): Code-complete. All four slices are built and
+> verified in code — including Slice 4 weekly-brief injection (`getAdminBriefContext()`
+> at `app/api/app-v3/maya/chat/route.ts:277`, appended to the admin contract at
+> route.ts:452). The only outstanding spec item, "remove the collapsed brief row," is
+> intentionally NOT done — see decision below. Remaining work is Sandra's live QA
+> (human test, checklist below) and optional reel-cover/caption tools after she tests
+> the carousel/story workflow. No Codex code task is queued from this spec.
 
 *Approved by Sandra 2026-06-12. Owner: Claude (Cowork). Supersedes the standalone Shoot
 Studio UI direction (SHOOT-STUDIO-01 Phase A stays live as a collapsed support tool until
@@ -62,9 +67,38 @@ admin first; Sandra is customer zero of the real vision.
    workflow, and content signals. Shoot Studio approve/kill/full-approve/publish
    actions also write compact taste-memory notes automatically. Member Maya is
    unchanged.
-4. **Weekly brief as knowledge**: inject the latest content_brief_weekly payload into
-   the admin contract so "what should I post this week?" answers from data; remove the
-   collapsed brief row.
+4. **Weekly brief as knowledge**: ✅ BUILT 2026-06-13. `getAdminBriefContext()`
+   (`app/api/app-v3/maya/chat/route.ts:277`) loads the latest `content_brief_weekly`
+   report and appends it to the admin contract (route.ts:452) on every admin session,
+   so "what should I post this week?" answers from real data. Member Maya unchanged.
+   **Brief-row removal: declined (Claude, 2026-06-13).** The spec originally said to
+   remove the collapsed "Weekly brief" row (`app/admin/content-brief/page.tsx:154`,
+   renders `ContentBriefClient`). Keeping it: it is the only surface where Sandra can
+   *read* the raw brief numbers (post performance, copies, DMs, hooks). Maya holding the
+   data as knowledge does not replace the dashboard view, and the row is collapsed by
+   default so it costs nothing. Removing it would trade a real capability for a checkbox.
+   Revisit only if Sandra says she never opens it.
+
+## Live QA checklist (Sandra — this is the remaining work)
+
+Run inside `/admin/content-brief` (the "Content" page) while signed in as the admin email.
+
+1. **She knows the week.** Ask Maya "what should I post this week?" — she should answer
+   from the actual brief (name real hooks/keywords/top posts), not generic advice.
+2. **Vault DNA holds.** Pick a Vault vibe tile, then ask for the same world with one change
+   (e.g. "same look, swap the location to a car"). Series consistency should survive.
+3. **Publish handoff is safe.** Take a ready shoot through `publish_admin_shoot_to_vault`.
+   Confirm the drop-email card shows counts and that NOTHING sends without your explicit
+   button press (test-send, create run, process batch are all separate clicks).
+4. **Content tools.** From an approved shoot, have Maya draft a carousel and a story
+   sequence; confirm they render inline with source-shoot context and review links.
+5. **Memory sticks.** Tell Maya a lasting preference ("I never want X"), start a fresh
+   session, confirm she still respects it.
+6. **Member safety.** Open Maya in `/app` as a normal member (or confirm via a non-admin
+   account) — none of the admin tools/persona appear. This is the one thing to never break.
+
+Report back which steps feel off; each maps to a small, isolated fix Codex can take
+without touching `/app` member code.
 
 ## Hard rules
 
