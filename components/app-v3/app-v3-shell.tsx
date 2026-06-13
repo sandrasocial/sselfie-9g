@@ -79,7 +79,7 @@ function ShellInner({
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10]">
+    <main className="min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] [overflow-x:clip]">
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
       {accessLevel === "trial" && typeof trialDaysLeft === "number" && (
         <div className="border-b border-[#C5C6C8]/50 bg-white px-5 py-2.5 text-center">
@@ -158,7 +158,7 @@ function ShellInner({
       {!limited && <MayaConcierge />}
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
           {NAV.map(n => {
             const active = n.id === section

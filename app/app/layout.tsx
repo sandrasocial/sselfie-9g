@@ -26,7 +26,32 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
       style={{ fontFamily: "var(--font-app-sans), system-ui, sans-serif" }}
     >
       {/* Scoped to /app only (two-class specificity beats Tailwind's .font-serif). */}
-      <style>{`.studio-3-root .font-serif{font-family:var(--font-app-serif),Georgia,"Times New Roman",serif;}`}</style>
+      <style>{`
+        html:has(.studio-3-root),
+        body:has(.studio-3-root) {
+          width: 100%;
+          max-width: 100vw;
+          overflow-x: hidden;
+          overflow-x: clip;
+          overscroll-behavior-x: none;
+        }
+
+        .studio-3-root {
+          position: relative;
+          isolation: isolate;
+          width: 100%;
+          max-width: 100vw;
+          min-height: 100dvh;
+          overflow-x: hidden;
+          overflow-x: clip;
+          overscroll-behavior-x: none;
+          touch-action: pan-y pinch-zoom;
+        }
+
+        .studio-3-root .font-serif {
+          font-family: var(--font-app-serif), Georgia, "Times New Roman", serif;
+        }
+      `}</style>
       {children}
     </div>
   )
