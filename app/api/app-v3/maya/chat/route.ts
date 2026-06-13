@@ -652,14 +652,22 @@ export async function POST(req: Request) {
         const context = adminContentToolContext ?? (await getAdminContentToolContext())
         const resolvedShoot =
           (sourceShootId ? context.shoots.find((shoot) => shoot.id === sourceShootId) : null) ??
-          context.shoots.find((shoot) => shoot.publishReady && !shoot.publishedVaultSlug) ??
-          context.shoots.find((shoot) => shoot.publishReady)
+          context.shoots.find((shoot) => shoot.publishReady && !shoot.publishedVaultSlug)
 
         if (!resolvedShoot) {
           return {
             kind: "error" as const,
             tool: "publish",
-            message: "Approve at least 6 rendered shots in Shoot Studio before I can publish a shoot to the Vault.",
+            message: "There is no ready unpublished shoot to publish. Approve 6 rendered shots on a new Shoot Studio collection first.",
+            shoots: context.shoots,
+          }
+        }
+
+        if (resolvedShoot.publishedVaultSlug) {
+          return {
+            kind: "error" as const,
+            tool: "publish",
+            message: `${resolvedShoot.title} is already published to the Vault as ${resolvedShoot.publishedVaultSlug}. Create or approve the next shoot before publishing again.`,
             shoots: context.shoots,
           }
         }

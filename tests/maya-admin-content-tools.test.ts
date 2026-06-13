@@ -17,6 +17,8 @@ describe("MAYA-ADMIN-01 content tools in chat", () => {
     expect(route).toContain("show_admin_vault_drop_handoff")
     expect(route).toContain("publishShootToVault")
     expect(route).toContain("getVaultDropEmailPreview")
+    expect(route).toContain("There is no ready unpublished shoot to publish")
+    expect(route).toContain("is already published to the Vault as")
     expect(route).toContain("generateCarousels")
     expect(route).toContain("generateStorySequence")
     expect(route).toContain("...(isAdminSession")
