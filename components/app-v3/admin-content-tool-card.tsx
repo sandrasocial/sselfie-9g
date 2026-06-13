@@ -24,8 +24,22 @@ type AdminToolSlide = {
 type AdminVaultDropRun = {
   id: string
   status: string
-  nonBuyer: { total: number; sent: number; failed: number; skipped: number; processed: number; remaining: number }
-  buyer: { total: number; sent: number; failed: number; skipped: number; processed: number; remaining: number }
+  nonBuyer: {
+    total: number
+    sent: number
+    failed: number
+    skipped: number
+    processed: number
+    remaining: number
+  }
+  buyer: {
+    total: number
+    sent: number
+    failed: number
+    skipped: number
+    processed: number
+    remaining: number
+  }
 }
 
 type AdminVaultDropEmail = {
@@ -107,10 +121,15 @@ function Badge({ children }: { children: React.ReactNode }) {
 function SourceShoot({ shoot }: { shoot?: AdminToolShoot | null }) {
   if (!shoot) return null
   return (
-    <div className="mt-3 flex items-center gap-3 rounded-[6px] border border-[#C5C6C8]/50 bg-white p-2.5">
+    <div className="mt-3 flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-[#C5C6C8]/50 bg-white p-2.5 [overflow-x:clip]">
       {shoot.heroImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={shoot.heroImageUrl} alt="" className="h-14 w-11 rounded-[4px] object-cover" loading="lazy" />
+        <img
+          src={shoot.heroImageUrl}
+          alt=""
+          className="h-14 w-11 rounded-[4px] object-cover"
+          loading="lazy"
+        />
       ) : (
         <div className="h-14 w-11 rounded-[4px] bg-[#ECEDED]" />
       )}
@@ -125,9 +144,12 @@ function SourceShoot({ shoot }: { shoot?: AdminToolShoot | null }) {
 
 function SlidesList({ slides }: { slides: AdminToolSlide[] }) {
   return (
-    <div className="mt-3 space-y-1.5">
-      {slides.slice(0, 8).map((slide) => (
-        <div key={slide.index} className="rounded-[4px] bg-white px-3 py-2 text-[12px] text-[#4F5052]">
+    <div className="mt-3 min-w-0 max-w-full space-y-1.5 [overflow-x:clip]">
+      {slides.slice(0, 8).map(slide => (
+        <div
+          key={slide.index}
+          className="min-w-0 break-words rounded-[4px] bg-white px-3 py-2 text-[12px] text-[#4F5052] [overflow-wrap:anywhere]"
+        >
           <span className="text-[#818283]">
             {slide.index + 1}. {slide.kind || slide.role || "slide"} ·{" "}
           </span>
@@ -147,7 +169,7 @@ function SourcesCard({ shoots }: { shoots: AdminToolShoot[] }) {
       </div>
       <div className="mt-3 space-y-2">
         {shoots.length > 0 ? (
-          shoots.map((shoot) => <SourceShoot key={shoot.id} shoot={shoot} />)
+          shoots.map(shoot => <SourceShoot key={shoot.id} shoot={shoot} />)
         ) : (
           <p className="text-[13px] leading-relaxed text-[#4F5052]">
             Approve at least 2 rendered shots in Shoot Studio, then Maya can make carousels and
@@ -159,7 +181,11 @@ function SourcesCard({ shoots }: { shoots: AdminToolShoot[] }) {
   )
 }
 
-function CarouselCard({ result }: { result: Extract<AdminContentToolResult, { kind: "carousel" }> }) {
+function CarouselCard({
+  result,
+}: {
+  result: Extract<AdminContentToolResult, { kind: "carousel" }>
+}) {
   const deck = result.deck
   return (
     <>
@@ -167,17 +193,19 @@ function CarouselCard({ result }: { result: Extract<AdminContentToolResult, { ki
         <Badge>Carousel draft</Badge>
         <span className="text-[12px] text-[#818283]">{deck.slides.length} slides</span>
       </div>
-      <h3 className="mt-3 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">{deck.title}</h3>
+      <h3 className="mt-3 break-words font-serif text-[21px] font-light leading-tight text-[#0D0E10] [overflow-wrap:anywhere]">
+        {deck.title}
+      </h3>
       <SourceShoot shoot={result.sourceShoot} />
       <SlidesList slides={deck.slides} />
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex min-w-0 max-w-full flex-wrap gap-2">
         <a
           href={`/api/admin/content-kit/render/${deck.id}/0?format=cover`}
           className="rounded-[4px] bg-[#0D0E10] px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white"
         >
           Download cover
         </a>
-        {deck.slides.slice(0, 3).map((slide) => (
+        {deck.slides.slice(0, 3).map(slide => (
           <a
             key={slide.index}
             href={`/api/admin/content-kit/render/${deck.id}/${slide.index}`}
@@ -192,7 +220,9 @@ function CarouselCard({ result }: { result: Extract<AdminContentToolResult, { ki
           <summary className="cursor-pointer text-[10px] uppercase tracking-[0.16em] text-[#818283]">
             Caption
           </summary>
-          <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-[#4F5052]">{deck.caption}</p>
+          <p className="mt-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-[#4F5052] [overflow-wrap:anywhere]">
+            {deck.caption}
+          </p>
         </details>
       )}
     </>
@@ -207,11 +237,13 @@ function StoryCard({ result }: { result: Extract<AdminContentToolResult, { kind:
         <Badge>Story sequence</Badge>
         <span className="text-[12px] text-[#818283]">{sequence.slides.length} slides</span>
       </div>
-      <h3 className="mt-3 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">{sequence.title}</h3>
+      <h3 className="mt-3 break-words font-serif text-[21px] font-light leading-tight text-[#0D0E10] [overflow-wrap:anywhere]">
+        {sequence.title}
+      </h3>
       <SourceShoot shoot={result.sourceShoot} />
       <SlidesList slides={sequence.slides} />
-      <div className="mt-4 flex flex-wrap gap-2">
-        {sequence.slides.slice(0, 4).map((slide) => (
+      <div className="mt-4 flex min-w-0 max-w-full flex-wrap gap-2">
+        {sequence.slides.slice(0, 4).map(slide => (
           <a
             key={slide.index}
             href={`/api/admin/content-kit/story/${sequence.id}/${slide.index}`}
@@ -236,21 +268,35 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 function CollectionStrip({ collections }: { collections: AdminVaultDropEmail["collections"] }) {
   if (collections.length === 0) {
-    return <p className="mt-3 text-[13px] leading-relaxed text-[#4F5052]">No pending collections selected yet.</p>
+    return (
+      <p className="mt-3 text-[13px] leading-relaxed text-[#4F5052]">
+        No pending collections selected yet.
+      </p>
+    )
   }
   return (
-    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-      {collections.map((collection) => (
-        <div key={collection.id} className="grid grid-cols-[46px_1fr] gap-2 rounded-[6px] bg-white p-2">
+    <div className="mt-3 grid min-w-0 max-w-full gap-2 sm:grid-cols-2">
+      {collections.map(collection => (
+        <div
+          key={collection.id}
+          className="grid min-w-0 grid-cols-[46px_minmax(0,1fr)] gap-2 rounded-[6px] bg-white p-2"
+        >
           {collection.heroImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={collection.heroImage} alt="" className="h-14 w-[46px] rounded-[4px] object-cover" loading="lazy" />
+            <img
+              src={collection.heroImage}
+              alt=""
+              className="h-14 w-[46px] rounded-[4px] object-cover"
+              loading="lazy"
+            />
           ) : (
             <div className="h-14 w-[46px] rounded-[4px] bg-[#ECEDED]" />
           )}
           <div className="min-w-0">
             <p className="truncate text-[13px] font-medium text-[#0D0E10]">{collection.name}</p>
-            <p className="line-clamp-2 text-[11px] leading-snug text-[#818283]">{collection.moodLine}</p>
+            <p className="line-clamp-2 break-words text-[11px] leading-snug text-[#818283] [overflow-wrap:anywhere]">
+              {collection.moodLine}
+            </p>
           </div>
         </div>
       ))}
@@ -281,9 +327,17 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
       if (action === "send_test") {
         setMessage(`Test sent to ${data.to}.`)
       } else if (action === "start_live_run") {
-        setMessage(data.existing ? "Using the existing live run." : "Live run created. No emails have sent yet.")
+        setMessage(
+          data.existing
+            ? "Using the existing live run."
+            : "Live run created. No emails have sent yet."
+        )
       } else {
-        setMessage(data.done?.all ? "Drop complete." : "Batch processed. Keep going until both segments are done.")
+        setMessage(
+          data.done?.all
+            ? "Drop complete."
+            : "Batch processed. Keep going until both segments are done."
+        )
       }
     } catch (err: any) {
       setError(err?.message || "Action failed")
@@ -294,7 +348,7 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
 
   return (
     <>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex min-w-0 max-w-full flex-wrap gap-2">
         <button
           type="button"
           onClick={() => post("send_test", { audience: "nonbuyer" })}
@@ -322,18 +376,24 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
         <button
           type="button"
           onClick={() => post("process_batch", { runId: run?.id, audienceType: "all" })}
-          disabled={!dropEmail.ready || busy !== null || !run || run.status === "completed" || run.status === "partially_completed"}
+          disabled={
+            !dropEmail.ready ||
+            busy !== null ||
+            !run ||
+            run.status === "completed" ||
+            run.status === "partially_completed"
+          }
           className="rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] disabled:opacity-40"
         >
           {busy === "process_batch" ? "Processing" : "Process next batch"}
         </button>
       </div>
       {run && (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <div className="rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052]">
+        <div className="mt-3 grid min-w-0 max-w-full gap-2 sm:grid-cols-2">
+          <div className="break-words rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052] [overflow-wrap:anywhere]">
             Free: {run.nonBuyer.processed}/{run.nonBuyer.total} processed · {run.nonBuyer.sent} sent
           </div>
-          <div className="rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052]">
+          <div className="break-words rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052] [overflow-wrap:anywhere]">
             Buyers: {run.buyer.processed}/{run.buyer.total} processed · {run.buyer.sent} sent
           </div>
         </div>
@@ -349,16 +409,19 @@ function VaultDropCard({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
     <>
       <div className="flex flex-wrap items-center gap-2">
         <Badge>Vault drop handoff</Badge>
-        <span className="text-[12px] text-[#818283]">{dropEmail.ready ? "Ready for approval" : "Needs one more collection"}</span>
+        <span className="text-[12px] text-[#818283]">
+          {dropEmail.ready ? "Ready for approval" : "Needs one more collection"}
+        </span>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3 grid min-w-0 max-w-full grid-cols-3 gap-2">
         <Stat label="Free" value={dropEmail.segments.nonbuyers.count} />
         <Stat label="Buyers" value={dropEmail.segments.buyers.count} />
         <Stat label="Total" value={dropEmail.totalRecipients} />
       </div>
       {!dropEmail.ready && (
-        <p className="mt-3 rounded-[6px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
-          A drop needs at least 2 valid pending collections. Publish one more Shoot Studio collection before live sending.
+        <p className="mt-3 break-words rounded-[6px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900 [overflow-wrap:anywhere]">
+          A drop needs at least 2 valid pending collections. Publish one more Shoot Studio
+          collection before live sending.
         </p>
       )}
       <CollectionStrip collections={dropEmail.collections} />
@@ -367,16 +430,22 @@ function VaultDropCard({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
   )
 }
 
-function VaultPublishCard({ result }: { result: Extract<AdminContentToolResult, { kind: "vault-publish" }> }) {
+function VaultPublishCard({
+  result,
+}: {
+  result: Extract<AdminContentToolResult, { kind: "vault-publish" }>
+}) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
         <Badge>Published to Vault</Badge>
         <span className="text-[12px] text-[#818283]">{result.collection.shotCount} prompts</span>
       </div>
-      <h3 className="mt-3 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">{result.shoot.title}</h3>
+      <h3 className="mt-3 break-words font-serif text-[21px] font-light leading-tight text-[#0D0E10] [overflow-wrap:anywhere]">
+        {result.shoot.title}
+      </h3>
       <SourceShoot shoot={result.shoot} />
-      <p className="mt-3 rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052]">
+      <p className="mt-3 break-words rounded-[6px] bg-white px-3 py-2 text-[12px] text-[#4F5052] [overflow-wrap:anywhere]">
         Vault slug: {result.collection.slug} · Email drop status: queued
       </p>
       <div className="mt-4">
@@ -388,7 +457,7 @@ function VaultPublishCard({ result }: { result: Extract<AdminContentToolResult, 
 
 export function AdminContentToolCard({ result }: { result: AdminContentToolResult }) {
   return (
-    <div className="rounded-[8px] border border-[#C5C6C8]/70 bg-[#F1F2F2] p-4">
+    <div className="min-w-0 max-w-full rounded-[8px] border border-[#C5C6C8]/70 bg-[#F1F2F2] p-4 [overflow-x:clip]">
       {result.kind === "sources" && <SourcesCard shoots={result.shoots} />}
       {result.kind === "carousel" && <CarouselCard result={result} />}
       {result.kind === "story" && <StoryCard result={result} />}
@@ -397,8 +466,12 @@ export function AdminContentToolCard({ result }: { result: AdminContentToolResul
       {result.kind === "error" && (
         <>
           <Badge>{result.tool || "Tool"} needs setup</Badge>
-          <p className="mt-3 text-[13px] leading-relaxed text-[#4F5052]">{result.message}</p>
-          {Array.isArray(result.shoots) && result.shoots.length > 0 && <SourcesCard shoots={result.shoots} />}
+          <p className="mt-3 break-words text-[13px] leading-relaxed text-[#4F5052] [overflow-wrap:anywhere]">
+            {result.message}
+          </p>
+          {Array.isArray(result.shoots) && result.shoots.length > 0 && (
+            <SourcesCard shoots={result.shoots} />
+          )}
         </>
       )}
     </div>

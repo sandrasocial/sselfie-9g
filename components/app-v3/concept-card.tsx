@@ -55,7 +55,7 @@ export function ConceptCard({
   const isCarousel = images.length > 1
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
       {/* Visual area ONLY exists once we're generating or done — never an empty placeholder box. */}
       {(isGenerating || isDone) && (
         <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
@@ -105,8 +105,8 @@ export function ConceptCard({
       )}
 
       {/* Copy + action */}
-      <div className="space-y-3 p-4">
-        <div>
+      <div className="min-w-0 space-y-3 p-4">
+        <div className="min-w-0 break-words [overflow-wrap:anywhere]">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Direction</p>
           <h4 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
@@ -115,7 +115,7 @@ export function ConceptCard({
         </div>
 
         {gen.status === "error" && (
-          <p className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] text-[#282728]">
+          <p className="break-words rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] text-[#282728] [overflow-wrap:anywhere]">
             {gen.error || "That one didn't go through. Try again."}
           </p>
         )}
@@ -125,7 +125,7 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               Saved to your gallery
             </p>
-            <div className="flex flex-wrap items-center gap-2 min-[380px]:gap-3">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {isCarousel ? (
                 <button
                   type="button"
