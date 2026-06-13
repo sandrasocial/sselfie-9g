@@ -9,7 +9,7 @@
 // untouched for members on /studio).
 // Isolated tree: imports only from components/app-v3/ + lib/. No components/sselfie/.
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
@@ -19,6 +19,7 @@ import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, OutputFormat } from "./types"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
+import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 
 export interface AppV3ShellProps {
   firstName?: string | null
@@ -61,9 +62,23 @@ function ShellInner({
   trialDaysLeft,
   initialSection = "create",
 }: AppV3ShellProps) {
-  const [section, setSection] = useState<AppV3Section>(initialSection)
+  const [section, setSection] = useState<AppV3Section>(() =>
+    initialSection === "create" ? readStoredAppSection(initialSection) : initialSection
+  )
   const { openWithAesthetic } = useConcierge()
   const limited = accessLevel === "limited"
+
+  function goToSection(next: AppV3Section) {
+    setSection(next)
+    saveStoredAppSection(next)
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", buildStoredSectionHref(next))
+    }
+  }
+
+  useEffect(() => {
+    saveStoredAppSection(section)
+  }, [section])
 
   // Maya woven in: open a general session preset to a format, so she begins on it.
   function createFormat(format: OutputFormat) {
@@ -143,14 +158,14 @@ function ShellInner({
           firstName={firstName}
           onCreateIdea={createIdea}
           onCreate={createFormat}
-          onBrowse={() => setSection("photos")}
+          onBrowse={() => goToSection("photos")}
         />
       )}
       {section === "library" && <LibraryView />}
       {section === "account" && (
         <AccountView
           firstName={firstName}
-          onOpenLibrary={() => setSection("library")}
+          onOpenLibrary={() => goToSection("library")}
           trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
         />
       )}
@@ -166,7 +181,7 @@ function ShellInner({
               <button
                 key={n.id}
                 type="button"
-                onClick={() => setSection(n.id)}
+                onClick={() => goToSection(n.id)}
                 className={`min-h-[56px] flex-1 px-0.5 py-2 text-[9px] uppercase tracking-[0.08em] transition-colors sm:text-[11px] sm:tracking-[0.16em] ${
                   active ? "text-[#0D0E10]" : "text-[#818283] hover:text-[#4F5052]"
                 }`}
