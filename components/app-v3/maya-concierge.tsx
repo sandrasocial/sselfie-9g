@@ -167,14 +167,24 @@ function extractAdminContentTool(part: any): AdminContentToolResult | null {
     part.type === "tool-show_admin_content_sources" ||
     part.type === "tool-create_admin_carousel" ||
     part.type === "tool-create_admin_story_sequence" ||
+    part.type === "tool-publish_admin_shoot_to_vault" ||
+    part.type === "tool-show_admin_vault_drop_handoff" ||
     (part.type === "dynamic-tool" &&
-      ["show_admin_content_sources", "create_admin_carousel", "create_admin_story_sequence"].includes(toolName))
+      [
+        "show_admin_content_sources",
+        "create_admin_carousel",
+        "create_admin_story_sequence",
+        "publish_admin_shoot_to_vault",
+        "show_admin_vault_drop_handoff",
+      ].includes(toolName))
   if (!isAdminTool) return null
   const payload = part.output
   if (!payload || typeof payload.kind !== "string") return null
   if (payload.kind === "sources" && Array.isArray(payload.shoots)) return payload as AdminContentToolResult
   if (payload.kind === "carousel" && payload.deck) return payload as AdminContentToolResult
   if (payload.kind === "story" && payload.sequence) return payload as AdminContentToolResult
+  if (payload.kind === "vault-publish" && payload.dropEmail) return payload as AdminContentToolResult
+  if (payload.kind === "vault-drop-handoff" && payload.dropEmail) return payload as AdminContentToolResult
   if (payload.kind === "error" && typeof payload.message === "string") return payload as AdminContentToolResult
   return null
 }

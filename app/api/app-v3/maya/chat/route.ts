@@ -167,6 +167,10 @@ type AdminToolShoot = {
   title: string
   status: string
   approvedShotCount: number
+  publishReady: boolean
+  publishNeeded: number
+  publishedVaultSlug: string | null
+  emailDropStatus: string | null
   heroImageUrl: string | null
 }
 
@@ -176,14 +180,20 @@ async function getAdminContentToolContext(): Promise<{
 }> {
   try {
     const { listShoots } = await import("@/lib/content-kit/shoot-generator")
+    const { getShootPublishReadiness } = await import("@/lib/content-kit/shoot-readiness")
     const shoots = (await listShoots(12))
       .map((shoot): AdminToolShoot => {
         const approvedShots = shoot.shots.filter((shot) => shot.status === "approved" && shot.imageUrl)
+        const readiness = getShootPublishReadiness(shoot)
         return {
           id: shoot.id,
           title: shoot.title,
           status: shoot.status,
           approvedShotCount: approvedShots.length,
+          publishReady: readiness.ready,
+          publishNeeded: readiness.needed,
+          publishedVaultSlug: shoot.publishedVaultSlug ?? null,
+          emailDropStatus: shoot.emailDropStatus ?? null,
           heroImageUrl: approvedShots[0]?.imageUrl ?? null,
         }
       })
@@ -244,6 +254,23 @@ function summarizeAdminStorySequence(sequence: any) {
             : `Story ${index + 1}`,
         }))
       : [],
+  }
+}
+
+function summarizeVaultDropEmailPreview(preview: any) {
+  return {
+    ready: Boolean(preview.ready),
+    dropKey: String(preview.dropKey || ""),
+    selectedCollectionIds: Array.isArray(preview.selectedCollectionIds) ? preview.selectedCollectionIds : [],
+    missingCollectionIds: Array.isArray(preview.missingCollectionIds) ? preview.missingCollectionIds : [],
+    collections: Array.isArray(preview.collections) ? preview.collections : [],
+    availableCollections: Array.isArray(preview.availableCollections) ? preview.availableCollections : [],
+    segments: preview.segments ?? {
+      nonbuyers: { count: 0, sampleRecipients: [] },
+      buyers: { count: 0, sampleRecipients: [] },
+    },
+    totalRecipients: Number(preview.totalRecipients || 0),
+    latestRun: preview.latestRun ?? null,
   }
 }
 
@@ -403,8 +430,9 @@ export async function POST(req: Request) {
           "---",
           "## ADMIN CONTENT TOOLS AVAILABLE",
           "When Sandra asks for a carousel, story sequence, content tool, or wants to reuse an approved shoot, use the admin content tools instead of only explaining.",
+          "When Sandra asks to approve, publish, add to the Vault, or send the drop email, use the admin publish and Vault drop handoff tools.",
           "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
-          "Create drafts only. Never approve, publish, post, or send email from these tools.",
+          "Carousels and story sequences are drafts only. Publishing a shoot to the Vault is allowed only through the explicit publish tool. Email sends always stay behind the handoff card buttons.",
           `Approved shoot sources:\n${adminContentToolContext.summary}`,
         ].join("\n")
         system = `${system}\n\n${ADMIN_MAYA_CONTRACT}\n\n${toolContext}${briefContext ? `\n\n${briefContext}` : ""}`
@@ -611,6 +639,95 @@ export async function POST(req: Request) {
       },
     })
 
+    const publishAdminShootToVault = tool({
+      description:
+        "ADMIN ONLY. Publish a ready Shoot Studio shoot into the DB-backed Prompt Vault after Sandra " +
+        "explicitly asks to approve, publish, add it to the Vault, or move it into the drop workflow. " +
+        "Only use this for shoots with at least 6 approved rendered shots. After publishing, show the " +
+        "Vault drop email handoff so Sandra can review counts and test emails before any live send.",
+      inputSchema: z.object({
+        sourceShootId: z.number().optional().describe("Ready Shoot Studio id. Omit to publish the newest ready unpublished shoot."),
+      }),
+      execute: async ({ sourceShootId }) => {
+        const context = adminContentToolContext ?? (await getAdminContentToolContext())
+        const resolvedShoot =
+          (sourceShootId ? context.shoots.find((shoot) => shoot.id === sourceShootId) : null) ??
+          context.shoots.find((shoot) => shoot.publishReady && !shoot.publishedVaultSlug) ??
+          context.shoots.find((shoot) => shoot.publishReady)
+
+        if (!resolvedShoot) {
+          return {
+            kind: "error" as const,
+            tool: "publish",
+            message: "Approve at least 6 rendered shots in Shoot Studio before I can publish a shoot to the Vault.",
+            shoots: context.shoots,
+          }
+        }
+
+        if (!resolvedShoot.publishReady) {
+          return {
+            kind: "error" as const,
+            tool: "publish",
+            message: `This shoot needs ${resolvedShoot.publishNeeded} more approved rendered shot${resolvedShoot.publishNeeded === 1 ? "" : "s"} before publishing.`,
+            shoots: context.shoots,
+          }
+        }
+
+        try {
+          const { publishShootToVault } = await import("@/lib/content-kit/shoot-publisher")
+          const { getVaultDropEmailPreview } = await import("@/lib/admin/vault-drop-email-workflow")
+          const result = await publishShootToVault(resolvedShoot.id)
+          const dropEmail = await getVaultDropEmailPreview()
+          return {
+            kind: "vault-publish" as const,
+            shoot: {
+              ...resolvedShoot,
+              publishedVaultSlug: result.collection.slug,
+              emailDropStatus: "queued",
+            },
+            collection: result.collection,
+            dropEmail: summarizeVaultDropEmailPreview(dropEmail),
+          }
+        } catch (error) {
+          console.error("[app-v3 maya chat] admin publish tool failed:", error)
+          return {
+            kind: "error" as const,
+            tool: "publish",
+            message: error instanceof Error ? error.message : "Could not publish this shoot to the Vault.",
+            shoots: context.shoots,
+          }
+        }
+      },
+    })
+
+    const showAdminVaultDropHandoff = tool({
+      description:
+        "ADMIN ONLY. Show Sandra the Vault drop email readiness handoff: selected collections, free " +
+        "preview recipient count, buyer recipient count, latest run, and buttons for test send, live " +
+        "run creation, and batch processing. Use this when she asks if the drop email is ready or says " +
+        "ready to send the drop email. Showing the handoff does not send anything.",
+      inputSchema: z.object({
+        collectionIds: z.array(z.string()).optional().describe("Optional Vault collection slugs to use for this drop."),
+      }),
+      execute: async ({ collectionIds }) => {
+        try {
+          const { getVaultDropEmailPreview } = await import("@/lib/admin/vault-drop-email-workflow")
+          const dropEmail = await getVaultDropEmailPreview(collectionIds ?? [])
+          return {
+            kind: "vault-drop-handoff" as const,
+            dropEmail: summarizeVaultDropEmailPreview(dropEmail),
+          }
+        } catch (error) {
+          console.error("[app-v3 maya chat] admin vault drop handoff failed:", error)
+          return {
+            kind: "error" as const,
+            tool: "vault-drop",
+            message: error instanceof Error ? error.message : "Could not load the Vault drop email handoff.",
+          }
+        }
+      },
+    })
+
     const tools = {
       emit_concepts: emitConcepts,
       ask_clarify: askClarify,
@@ -622,6 +739,8 @@ export async function POST(req: Request) {
             show_admin_content_sources: showAdminContentSources,
             create_admin_carousel: createAdminCarousel,
             create_admin_story_sequence: createAdminStorySequence,
+            publish_admin_shoot_to_vault: publishAdminShootToVault,
+            show_admin_vault_drop_handoff: showAdminVaultDropHandoff,
           }
         : {}),
     }
