@@ -27,7 +27,12 @@ function formatWhen(iso: string): string {
   }
 }
 
-export function ChatHistoryModal({ open, currentChatId, onClose, onSelect }: ChatHistoryModalProps) {
+export function ChatHistoryModal({
+  open,
+  currentChatId,
+  onClose,
+  onSelect,
+}: ChatHistoryModalProps) {
   const [chats, setChats] = useState<ChatListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -37,8 +42,8 @@ export function ChatHistoryModal({ open, currentChatId, onClose, onSelect }: Cha
     setChats(null)
     setError(null)
     fetch("/api/app-v3/maya/chats")
-      .then((r) => r.json())
-      .then((d) => setChats(Array.isArray(d?.chats) ? d.chats : []))
+      .then(r => r.json())
+      .then(d => setChats(Array.isArray(d?.chats) ? d.chats : []))
       .catch(() => setError("Couldn't load your chats."))
   }, [open])
 
@@ -46,7 +51,7 @@ export function ChatHistoryModal({ open, currentChatId, onClose, onSelect }: Cha
     setBusy(true)
     try {
       await fetch(`/api/app-v3/maya/chats/${id}`, { method: "DELETE" })
-      setChats((c) => (c ? c.filter((x) => x.id !== id) : c))
+      setChats(c => (c ? c.filter(x => x.id !== id) : c))
     } catch {
       /* leave the row; user can retry */
     } finally {
@@ -57,36 +62,46 @@ export function ChatHistoryModal({ open, currentChatId, onClose, onSelect }: Cha
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
-      <div className="w-full max-w-md rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">History</p>
-            <h3 className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">Your chats</h3>
+            <h3 className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+              Your chats
+            </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
           >
             Close
           </button>
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 min-h-0 flex-1">
           {chats === null && !error && <p className="text-[13px] text-[#818283]">Loading…</p>}
           {error && <p className="text-[13px] text-[#282728]">{error}</p>}
           {chats && chats.length === 0 && (
-            <p className="text-[13px] text-[#818283]">No saved chats yet. Start one and it'll show up here.</p>
+            <p className="text-[13px] text-[#818283]">
+              No saved chats yet. Start one and it&apos;ll show up here.
+            </p>
           )}
           {chats && chats.length > 0 && (
             <ul className="max-h-[55vh] divide-y divide-[#C5C6C8]/40 overflow-y-auto">
-              {chats.map((c) => {
+              {chats.map(c => {
                 const isCurrent = c.id === currentChatId
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-3 py-3">
-                    <button type="button" onClick={() => onSelect(c.id)} className="min-w-0 flex-1 text-left">
-                      <p className={`truncate text-[14px] ${isCurrent ? "text-[#0D0E10]" : "text-[#282728]"}`}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(c.id)}
+                      className="min-h-11 min-w-0 flex-1 text-left"
+                    >
+                      <p
+                        className={`truncate text-[14px] ${isCurrent ? "text-[#0D0E10]" : "text-[#282728]"}`}
+                      >
                         {c.title?.trim() || "Untitled chat"}
                       </p>
                       <p className="mt-0.5 text-[11px] text-[#818283]">
@@ -98,7 +113,7 @@ export function ChatHistoryModal({ open, currentChatId, onClose, onSelect }: Cha
                       type="button"
                       disabled={busy}
                       onClick={() => void remove(c.id)}
-                      className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#282728] disabled:opacity-40"
+                      className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#282728] disabled:opacity-40"
                     >
                       Delete
                     </button>

@@ -34,8 +34,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
     if (!open) return
     setLoading(true)
     fetch("/api/app-v3/maya/memory")
-      .then((r) => r.json())
-      .then((d) => {
+      .then(r => r.json())
+      .then(d => {
         setName(d?.agentName ?? "")
         setBrand(d?.brandNotes ?? "")
         setPrefs(d?.preferences ?? "")
@@ -64,7 +64,12 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentName: name, brandNotes: brand, preferences: prefs, userAvatarUrl: avatarUrl }),
+        body: JSON.stringify({
+          agentName: name,
+          brandNotes: brand,
+          preferences: prefs,
+          userAvatarUrl: avatarUrl,
+        }),
       })
       const d = (await res.json().catch(() => null)) as Memory | null
       if (res.ok && d) {
@@ -84,8 +89,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-6 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none">
-      <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-6 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:max-h-[88vh] sm:p-6">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Memory</p>
@@ -96,7 +101,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
           >
             Close
           </button>
@@ -107,9 +112,17 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           <div className="flex items-center gap-3">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/60 bg-white">
               {avatarUrl ? (
-                <Image src={avatarUrl} alt="Your photo" fill className="object-cover" sizes="56px" />
+                <Image
+                  src={avatarUrl}
+                  alt="Your photo"
+                  fill
+                  className="object-cover"
+                  sizes="56px"
+                />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-[12px] text-[#A6A7A8]">You</span>
+                <span className="flex h-full w-full items-center justify-center text-[12px] text-[#A6A7A8]">
+                  You
+                </span>
               )}
             </div>
             <div>
@@ -118,7 +131,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="mt-1 text-[12px] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-50"
+                className="mt-1 inline-flex min-h-11 items-center text-[12px] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-50"
               >
                 {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Upload a photo"}
               </button>
@@ -128,7 +141,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={(e) => {
+              onChange={e => {
                 const f = e.target.files?.[0]
                 if (f) void uploadAvatar(f)
               }}
@@ -140,17 +153,19 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               placeholder="e.g. Aria"
               disabled={loading}
-              className="mt-1.5 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+              className="mt-1.5 min-h-11 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
           <label className="block">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Your brand</span>
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+              Your brand
+            </span>
             <textarea
               value={brand}
-              onChange={(e) => setBrand(e.target.value)}
+              onChange={e => setBrand(e.target.value)}
               placeholder="Who you are, who you serve, your vibe. e.g. warm minimal, founder coach for women, Iceland."
               rows={3}
               disabled={loading}
@@ -158,10 +173,12 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Style notes</span>
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+              Style notes
+            </span>
             <textarea
               value={prefs}
-              onChange={(e) => setPrefs(e.target.value)}
+              onChange={e => setPrefs(e.target.value)}
               placeholder="What you love and what you avoid. e.g. no heels, no busy prints, always natural light."
               rows={3}
               disabled={loading}
@@ -170,19 +187,19 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           </label>
         </div>
 
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => void save()}
             disabled={saving || loading}
-            className="rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
+            className="inline-flex min-h-11 items-center rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
           >
             Cancel
           </button>

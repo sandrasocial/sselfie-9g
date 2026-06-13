@@ -76,8 +76,8 @@ export function VisualFrontDoor({
   useEffect(() => {
     let alive = true
     fetch("/api/app-v3/aesthetics")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => {
         if (!alive || !Array.isArray(data?.aesthetics) || data.aesthetics.length === 0) return
         setAesthetics(data.aesthetics)
       })
@@ -88,24 +88,22 @@ export function VisualFrontDoor({
   }, [])
 
   return (
-    <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16"}>
+    <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16"}>
       <header className={compact ? "mb-6" : "mb-8 sm:mb-12"}>
         <p className="text-[10px] uppercase tracking-[0.34em] text-[#818283]">{eyebrow}</p>
         <h1
           className={`mt-3 font-serif font-light leading-[1.05] text-[#0D0E10] ${
-            compact ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[46px]"
+            compact ? "text-[27px] sm:text-[34px]" : "text-[32px] sm:text-[46px]"
           }`}
         >
           {title}
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">{subtitle}</p>
-        {note && (
-          <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">{note}</p>
-        )}
+        {note && <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">{note}</p>}
       </header>
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
-      <div className="[column-fill:_balance] columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+      <div className="[column-fill:_balance] columns-1 gap-3 min-[380px]:columns-2 sm:columns-3 sm:gap-4 lg:columns-4">
         {aesthetics.map((aesthetic, i) => (
           <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">
             <AestheticTile aesthetic={aesthetic} index={i} onOpen={openWithAesthetic} />

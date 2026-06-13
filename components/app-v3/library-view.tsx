@@ -83,7 +83,7 @@ function ProductTile({
       href={href}
       className={`${card} group block overflow-hidden transition-colors hover:border-[#0D0E10]/40`}
     >
-      <div className="relative aspect-[4/5] bg-[#F1F2F2]">
+      <div className="relative aspect-[16/11] bg-[#F1F2F2] sm:aspect-[4/5]">
         {thumbnailUrl ? (
           <Image
             src={thumbnailUrl}
@@ -107,9 +107,13 @@ function ProductTile({
       </div>
       <div className="p-4">
         <span className="text-[9px] uppercase tracking-[0.16em] text-[#818283]">{eyebrow}</span>
-        <h3 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">{title}</h3>
-        {description && <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{description}</p>}
-        <span className="mt-4 block text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
+        <h3 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{description}</p>
+        )}
+        <span className="mt-3 inline-flex min-h-8 items-center text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] sm:mt-4">
           {actionLabel}
         </span>
       </div>
@@ -123,8 +127,8 @@ export function LibraryView() {
 
   useEffect(() => {
     fetch("/api/app-v3/library")
-      .then((r) => r.json())
-      .then((d) => {
+      .then(r => r.json())
+      .then(d => {
         if (d && Array.isArray(d.ownedProducts)) setData(d as LibraryData)
         else setError("Couldn't load your library. Try again.")
       })
@@ -135,14 +139,16 @@ export function LibraryView() {
   // the same item appearing twice (the courses list is the richer surface).
   const courseProductIds = new Set(["masterclass", "branded_by_sselfie", "editing_masterclass"])
   const products = (data?.ownedProducts ?? []).filter(
-    (p) => !(data?.courses?.length && courseProductIds.has(p.id))
+    p => !(data?.courses?.length && courseProductIds.has(p.id))
   )
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-5 py-8">
+    <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Library</p>
-        <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">Your SSELFIE</h1>
+        <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
+          Your SSELFIE
+        </h1>
         <p className="mt-1.5 text-[14px] text-[#4F5052]">Everything you own lives here.</p>
       </header>
 
@@ -154,22 +160,28 @@ export function LibraryView() {
           {/* Courses with progress */}
           {data.courses.length > 0 && (
             <section>
-              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Your courses</p>
+              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                Your courses
+              </p>
               <div className="space-y-3">
-                {data.courses.map((c) => (
+                {data.courses.map(c => (
                   <a
                     key={c.id}
                     href={c.href}
                     className={`${card} block p-4 transition-colors hover:border-[#0D0E10]/40`}
                   >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">{c.title}</h3>
+                    <div className="flex flex-col gap-1 min-[420px]:flex-row min-[420px]:items-baseline min-[420px]:justify-between min-[420px]:gap-3">
+                      <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+                        {c.title}
+                      </h3>
                       <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
                         {c.completedLessons}/{c.lessonCount} lessons
                       </span>
                     </div>
                     {c.description && (
-                      <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{c.description}</p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
+                        {c.description}
+                      </p>
                     )}
                     <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F2F2]">
                       <div
@@ -177,7 +189,7 @@ export function LibraryView() {
                         style={{ width: `${Math.min(100, Math.max(0, c.progressPercentage))}%` }}
                       />
                     </div>
-                    <span className="mt-3 block text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
+                    <span className="mt-3 inline-flex min-h-8 items-center text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
                       {c.started ? "Continue" : "Start"}
                     </span>
                   </a>
@@ -189,9 +201,11 @@ export function LibraryView() {
           {/* Owned products */}
           {products.length > 0 && (
             <section>
-              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Your products</p>
+              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                Your products
+              </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {products.map((p) => (
+                {products.map(p => (
                   <ProductTile
                     key={p.id}
                     title={p.name}
@@ -207,7 +221,9 @@ export function LibraryView() {
           )}
 
           {data.courses.length === 0 && products.length === 0 && (
-            <p className="text-[14px] text-[#4F5052]">Nothing here yet. Your products will show up the moment you own them.</p>
+            <p className="text-[14px] text-[#4F5052]">
+              Nothing here yet. Your products will show up the moment you own them.
+            </p>
           )}
 
           {/* Weekly drops */}
@@ -215,21 +231,31 @@ export function LibraryView() {
             <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Drops</p>
             {data.drops.length > 0 ? (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {data.drops.map((d) => (
+                {data.drops.map(d => (
                   <Link
                     key={d.id}
                     href="/academy/access/monthly-drops"
-                    className={`${card} flex gap-3 overflow-hidden p-3 transition-colors hover:border-[#0D0E10]/40`}
+                    className={`${card} flex min-h-[78px] gap-3 overflow-hidden p-3 transition-colors hover:border-[#0D0E10]/40`}
                   >
                     {d.thumbnailUrl && (
                       <div className="relative aspect-square w-16 shrink-0 overflow-hidden rounded-[6px] bg-[#F1F2F2]">
-                        <Image src={d.thumbnailUrl} alt="" fill className="object-cover" sizes="64px" />
+                        <Image
+                          src={d.thumbnailUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <h3 className="font-serif text-[17px] font-light leading-tight text-[#0D0E10]">{d.title}</h3>
+                      <h3 className="font-serif text-[17px] font-light leading-tight text-[#0D0E10]">
+                        {d.title}
+                      </h3>
                       {d.month && (
-                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-[#818283]">{d.month}</p>
+                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
+                          {d.month}
+                        </p>
                       )}
                     </div>
                   </Link>
@@ -247,9 +273,11 @@ export function LibraryView() {
             <section>
               {data.lockedProducts.length > 0 && (
                 <>
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Not yours yet</p>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                    Not yours yet
+                  </p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {data.lockedProducts.map((p) => (
+                    {data.lockedProducts.map(p => (
                       <ProductTile
                         key={p.id}
                         title={p.title}
@@ -273,7 +301,7 @@ export function LibraryView() {
                 </p>
                 <a
                   href="/join/studio?source=app_library"
-                  className="mt-3 inline-block rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#0D0E10]"
+                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#0D0E10]"
                 >
                   See the SUITE
                 </a>

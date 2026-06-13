@@ -70,7 +70,12 @@ export function OverlayComposer({
         body: JSON.stringify({
           baseImageUrl: imageUrl,
           format,
-          overlay: { headline: headline.trim(), subline: subline.trim() || undefined, overlayStyle: styleId, role: "hook" },
+          overlay: {
+            headline: headline.trim(),
+            subline: subline.trim() || undefined,
+            overlayStyle: styleId,
+            role: "hook",
+          },
         }),
       })
       const data = await res.json().catch(() => null)
@@ -100,7 +105,11 @@ export function OverlayComposer({
               Your photo, your words
             </h2>
           </div>
-          <button type="button" onClick={onClose} className="text-[11px] uppercase tracking-[0.18em] text-[#818283] hover:text-[#0D0E10]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-[#818283] hover:text-[#0D0E10]"
+          >
             Close
           </button>
         </div>
@@ -108,7 +117,7 @@ export function OverlayComposer({
         <div className="grid flex-1 grid-cols-1 gap-0 sm:grid-cols-2">
           {/* Image side */}
           <div className="flex flex-col items-center justify-center border-b border-[#E5E5E5] bg-[#F1F2F2] p-5 sm:border-b-0 sm:border-r">
-            {(result || imageUrl) ? (
+            {result || imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={result || imageUrl || ""}
@@ -120,10 +129,14 @@ export function OverlayComposer({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex aspect-[4/5] w-full max-w-[260px] flex-col items-center justify-center rounded-[8px] border border-dashed border-[#C5C6C8] bg-white text-center"
+                className="flex min-h-[220px] w-full max-w-[260px] flex-col items-center justify-center rounded-[8px] border border-dashed border-[#C5C6C8] bg-white text-center sm:aspect-[4/5]"
               >
-                <span className="font-serif text-[18px] font-light text-[#0D0E10]">Add a photo</span>
-                <span className="mt-1 px-6 text-[12px] text-[#818283]">Upload one, or open this from a Library image.</span>
+                <span className="font-serif text-[18px] font-light text-[#0D0E10]">
+                  Add a photo
+                </span>
+                <span className="mt-1 px-6 text-[12px] text-[#818283]">
+                  Upload one, or open this from a Library image.
+                </span>
               </button>
             )}
             <input
@@ -131,13 +144,13 @@ export function OverlayComposer({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => pickFile(e.target.files?.[0])}
+              onChange={e => pickFile(e.target.files?.[0])}
             />
             {(imageUrl || result) && (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                className="mt-3 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
               >
                 {result ? "Use a different photo" : "Change photo"}
               </button>
@@ -149,21 +162,23 @@ export function OverlayComposer({
             {result ? (
               <div className="flex flex-1 flex-col">
                 <p className="text-[15px] text-[#0D0E10]">Done. Here it is.</p>
-                <p className="mt-1 text-[13px] text-[#818283]">It's saved to your Library too.</p>
-                <div className="mt-4 flex gap-4">
+                <p className="mt-1 text-[13px] text-[#818283]">
+                  It&apos;s saved to your Library too.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
                   <a
                     href={result}
                     download
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-[6px] bg-[#0D0E10] px-4 py-2.5 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
+                    className="inline-flex min-h-11 items-center rounded-[6px] bg-[#0D0E10] px-4 py-2.5 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
                   >
                     Download
                   </a>
                   <button
                     type="button"
                     onClick={() => startTransition(() => setResult(null))}
-                    className="text-[12px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                    className="inline-flex min-h-11 items-center text-[12px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
                   >
                     Make another
                   </button>
@@ -176,7 +191,7 @@ export function OverlayComposer({
                   <input
                     className={field}
                     value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
+                    onChange={e => setHeadline(e.target.value)}
                     placeholder="The words that go on top"
                     maxLength={120}
                   />
@@ -186,15 +201,19 @@ export function OverlayComposer({
                   <input
                     className={field}
                     value={subline}
-                    onChange={(e) => setSubline(e.target.value)}
+                    onChange={e => setSubline(e.target.value)}
                     placeholder="A supporting line"
                     maxLength={120}
                   />
                 </div>
                 <div>
                   <label className={label}>Style</label>
-                  <select className={field} value={styleId} onChange={(e) => setStyleId(e.target.value)}>
-                    {OVERLAY_STYLES.map((s) => (
+                  <select
+                    className={field}
+                    value={styleId}
+                    onChange={e => setStyleId(e.target.value)}
+                  >
+                    {OVERLAY_STYLES.map(s => (
                       <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
@@ -204,12 +223,12 @@ export function OverlayComposer({
                 <div>
                   <label className={label}>Format</label>
                   <div className="mt-1 flex flex-wrap gap-2">
-                    {FORMATS.map((f) => (
+                    {FORMATS.map(f => (
                       <button
                         key={f.id}
                         type="button"
                         onClick={() => setFormat(f.id)}
-                        className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                        className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] transition-colors ${
                           format === f.id
                             ? "border-[#0D0E10] bg-[#0D0E10] text-white"
                             : "border-[#C5C6C8] text-[#4F5052] hover:border-[#0D0E10]/40"
@@ -227,7 +246,7 @@ export function OverlayComposer({
                   type="button"
                   onClick={generate}
                   disabled={busy || !imageUrl}
-                  className="mt-1 rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-1 min-h-12 rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-40 sm:tracking-[0.18em]"
                 >
                   {busy ? "Adding your text…" : "Add the text"}
                 </button>

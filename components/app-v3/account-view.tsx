@@ -22,18 +22,22 @@ const SUPPORT_EMAIL = "support@sselfie.ai"
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
   } catch {
     return ""
   }
 }
 
-const card = "rounded-[8px] border border-[#C5C6C8]/60 bg-white p-5"
+const card = "rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 sm:p-5"
 const cardTitle = "text-[10px] uppercase tracking-[0.22em] text-[#818283]"
 const primaryBtn =
-  "rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+  "inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
 const quietBtn =
-  "text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+  "inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
 
 export function AccountView({
   firstName,
@@ -57,12 +61,12 @@ export function AccountView({
 
   useEffect(() => {
     fetch("/api/app-v3/account")
-      .then((r) => r.json())
-      .then((d) => setData(d && typeof d === "object" ? d : null))
+      .then(r => r.json())
+      .then(d => setData(d && typeof d === "object" ? d : null))
       .catch(() => setData(null))
     fetch("/api/app-v3/reference-library")
-      .then((r) => r.json())
-      .then((d) => setSelfies(Array.isArray(d?.images) ? d.images : []))
+      .then(r => r.json())
+      .then(d => setSelfies(Array.isArray(d?.images) ? d.images : []))
       .catch(() => setSelfies([]))
   }, [])
 
@@ -112,7 +116,7 @@ export function AccountView({
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const d = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !d?.url) throw new Error(d?.error || "Upload failed")
-      setSelfies((prev) => [d.url as string, ...(prev ?? [])])
+      setSelfies(prev => [d.url as string, ...(prev ?? [])])
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
@@ -121,7 +125,7 @@ export function AccountView({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
       <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Account</p>
       <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
         {firstName ? `Hi ${firstName}` : "Your account"}
@@ -144,26 +148,40 @@ export function AccountView({
                 When it ends, your photos stay yours. Members keep Maya and everything included.
               </p>
               <div className="mt-4">
-                <a href="/checkout/membership?interval=month&source=trial_account" className={primaryBtn}>
+                <a
+                  href="/checkout/membership?interval=month&source=trial_account"
+                  className={primaryBtn}
+                >
                   Keep your Studio
                 </a>
               </div>
             </>
           ) : (
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="font-serif text-[22px] font-light text-[#0D0E10]">{data?.plan ?? "SSELFIE SUITE"}</p>
+              <p className="font-serif text-[22px] font-light text-[#0D0E10]">
+                {data?.plan ?? "SSELFIE SUITE"}
+              </p>
               {data?.status === "active" && (
-                <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">Active</span>
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+                  Active
+                </span>
               )}
             </div>
           )}
           {typeof trialDaysLeft !== "number" && (
             <>
               {data?.renewsAt && (
-                <p className="mt-1 text-[13px] text-[#818283]">Renews {formatDate(data.renewsAt)}</p>
+                <p className="mt-1 text-[13px] text-[#818283]">
+                  Renews {formatDate(data.renewsAt)}
+                </p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={openBilling} disabled={billingBusy} className={primaryBtn}>
+                <button
+                  type="button"
+                  onClick={openBilling}
+                  disabled={billingBusy}
+                  className={primaryBtn}
+                >
                   {billingBusy ? "Opening…" : "Manage billing"}
                 </button>
                 <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
@@ -179,7 +197,9 @@ export function AccountView({
           <p className="mt-2 font-serif text-[22px] font-light text-[#0D0E10]">
             {typeof data?.credits === "number" ? `${data.credits} credits` : "—"}
           </p>
-          <p className="mt-1 text-[13px] text-[#818283]">Each image is one credit. Your plan refills monthly.</p>
+          <p className="mt-1 text-[13px] text-[#818283]">
+            Each image is one credit. Your plan refills monthly.
+          </p>
           <div className="mt-4">
             <a href="/checkout/credits" className={primaryBtn}>
               Top up credits
@@ -219,12 +239,16 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Your selfies</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-            The selfies Maya can use to keep your face in every shoot. Your newest one is used automatically.
+            The selfies Maya can use to keep your face in every shoot. Your newest one is used
+            automatically.
           </p>
           {selfies && selfies.length > 0 && (
             <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {selfies.slice(0, 12).map((url) => (
-                <div key={url} className="relative aspect-square overflow-hidden rounded-[4px] border border-[#C5C6C8]/60">
+              {selfies.slice(0, 12).map(url => (
+                <div
+                  key={url}
+                  className="relative aspect-square overflow-hidden rounded-[4px] border border-[#C5C6C8]/60"
+                >
                   <Image src={url} alt="Saved selfie" fill className="object-cover" sizes="96px" />
                 </div>
               ))}
@@ -233,7 +257,7 @@ export function AccountView({
           {selfies && selfies.length === 0 && (
             <p className="mt-3 text-[13px] text-[#818283]">No saved selfies yet.</p>
           )}
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
@@ -249,7 +273,7 @@ export function AccountView({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
-            onChange={(e) => {
+            onChange={e => {
               const f = e.target.files?.[0]
               if (f) void handleAddSelfie(f)
             }}
@@ -270,7 +294,7 @@ export function AccountView({
         </div>
 
         {/* Quiet legacy access + logout */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-2">
+        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-3">
           <a href="/studio?legacy=1" className={quietBtn}>
             Open the classic Studio (trained models, old galleries)
           </a>

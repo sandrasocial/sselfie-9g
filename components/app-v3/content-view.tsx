@@ -32,11 +32,15 @@ const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
   { format: "photo", label: "A photo", line: "An editorial brand shot." },
   { format: "reel-cover", label: "A Reel cover", line: "A scroll-stopping cover with your words." },
   { format: "carousel", label: "A carousel", line: "A few cohesive slides that teach or tell." },
-  { format: "story-slide", label: "A Story slide", line: "A vertical slide for polls, sales, or moments." },
+  {
+    format: "story-slide",
+    label: "A Story slide",
+    line: "A vertical slide for polls, sales, or moments.",
+  },
 ]
 
 // Aspirational editorial fallback visuals (her own Library is preferred when present).
-const MOOD_IMAGES = AESTHETICS.map((a) => a.coverImage).filter(Boolean)
+const MOOD_IMAGES = AESTHETICS.map(a => a.coverImage).filter(Boolean)
 
 interface ContentViewProps {
   onCreateIdea: (format: OutputFormat, title: string) => void
@@ -52,8 +56,8 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
 
   useEffect(() => {
     fetch("/api/app-v3/maya/recommendations")
-      .then((r) => r.json())
-      .then((d) => {
+      .then(r => r.json())
+      .then(d => {
         setGreeting(typeof d?.greeting === "string" ? d.greeting : "")
         setRecs(Array.isArray(d?.recommendations) ? d.recommendations : [])
       })
@@ -63,8 +67,8 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
       })
 
     fetch("/api/app-v3/aesthetics")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
         if (!Array.isArray(d?.aesthetics)) return
         const images = d.aesthetics.map((a: Aesthetic) => a.coverImage).filter(Boolean)
         if (images.length > 0) setMoodImages(images)
@@ -79,11 +83,14 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
     return null
   }
 
-  const greetingLines = (greeting ?? "").split(/(?<=[.!?])\s+/).map((l) => l.trim()).filter(Boolean)
+  const greetingLines = (greeting ?? "")
+    .split(/(?<=[.!?])\s+/)
+    .map(l => l.trim())
+    .filter(Boolean)
   const showGreeting = greetingLines.length > 0
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-5 py-8">
+    <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Content</p>
         {showGreeting ? (
@@ -106,12 +113,16 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
             {firstName ? `Good to see you, ${firstName}` : "What should you post?"}
           </h1>
         )}
-        {recs === null && <p className="mt-2 text-[14px] text-[#818283]">Maya is thinking about your week…</p>}
+        {recs === null && (
+          <p className="mt-2 text-[14px] text-[#818283]">Maya is thinking about your week…</p>
+        )}
       </header>
 
       {recs && recs.length > 0 && (
         <section>
-          <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Maya recommends today</p>
+          <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+            Maya recommends today
+          </p>
           <div className="space-y-3">
             {recs.map((r, i) => {
               const hero = heroFor(r, i)
@@ -120,9 +131,9 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
                   key={`${i}-${r.title}`}
                   type="button"
                   onClick={() => onCreateIdea(r.format, r.title)}
-                  className="group flex w-full gap-4 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white p-3 text-left transition-colors hover:border-[#0D0E10]/40"
+                  className="group flex w-full flex-col gap-3 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white p-3 text-left transition-colors hover:border-[#0D0E10]/40 min-[420px]:flex-row min-[420px]:gap-4"
                 >
-                  <div className="relative aspect-[4/5] w-24 shrink-0 overflow-hidden rounded-[6px] bg-[#F1F2F2] sm:w-28">
+                  <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-[6px] bg-[#F1F2F2] min-[420px]:aspect-[4/5] min-[420px]:w-24 sm:w-28">
                     {hero && (
                       <Image
                         src={hero}
@@ -137,10 +148,16 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
                     <span className="self-start rounded-full border border-[#C5C6C8]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[#818283]">
                       {FORMAT_LABEL[r.format]}
                     </span>
-                    <h3 className="mt-2 font-serif text-[20px] font-light leading-tight text-[#0D0E10]">{r.title}</h3>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{r.rationale}</p>
+                    <h3 className="mt-2 font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+                      {r.title}
+                    </h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
+                      {r.rationale}
+                    </p>
                     {r.imageReason && (
-                      <span className="mt-1.5 block text-[11px] italic text-[#818283]">{r.imageReason}</span>
+                      <span className="mt-1.5 block text-[11px] italic text-[#818283]">
+                        {r.imageReason}
+                      </span>
                     )}
                     <span className="mt-auto pt-2 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
                       Create this
@@ -158,14 +175,16 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
           {recs && recs.length > 0 ? "Or start from a format" : "Start something"}
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {CONTENT_TYPES.map((c) => (
+          {CONTENT_TYPES.map(c => (
             <button
               key={c.format}
               type="button"
               onClick={() => onCreate(c.format)}
-              className="rounded-[8px] border border-[#C5C6C8]/60 bg-white px-4 py-4 text-left transition-colors hover:border-[#0D0E10]/40"
+              className="min-h-[92px] rounded-[8px] border border-[#C5C6C8]/60 bg-white px-4 py-4 text-left transition-colors hover:border-[#0D0E10]/40"
             >
-              <span className="block font-serif text-[19px] font-light text-[#0D0E10]">{c.label}</span>
+              <span className="block font-serif text-[19px] font-light text-[#0D0E10]">
+                {c.label}
+              </span>
               <span className="mt-0.5 block text-[13px] text-[#818283]">{c.line}</span>
             </button>
           ))}
@@ -173,7 +192,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
         <button
           type="button"
           onClick={onBrowse}
-          className="mt-4 text-[12px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+          className="mt-4 inline-flex min-h-11 items-center text-[12px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
         >
           Or reuse a photo from your library
         </button>
