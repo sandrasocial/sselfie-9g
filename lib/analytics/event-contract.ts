@@ -118,6 +118,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "trial_claimed",
   "trial_first_generation",
   "trial_expired",
+  "membership_checkout_email_capture_view",
   "membership_checkout_recovery_sent",
   // SUITE-UX-02 — member pulse: what members DO with Maya in /app (behavior only, never money).
   // Aggregated weekly by lib/admin/member-pulse.ts into the Monday content brief.

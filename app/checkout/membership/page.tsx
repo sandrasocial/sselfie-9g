@@ -1,9 +1,22 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
-import { getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { createServerClient } from "@/lib/supabase/server"
+import {
+  buildCheckoutRedirectUrl,
+  getCheckoutAttributionFromParams,
+} from "@/lib/revenue-engine/checkout-attribution"
+import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 
 export const dynamic = "force-dynamic"
+
+function normalizeCheckoutEmail(value?: string | null): string | null {
+  const email = value?.trim().toLowerCase()
+  if (!email) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+}
 
 export default async function MembershipCheckoutPage({
   searchParams,
@@ -20,6 +33,18 @@ export default async function MembershipCheckoutPage({
     utm_content?: string
     campaign_id?: string
     ref?: string
+    referral_code?: string
+    checkout_source?: string
+    freebie_source?: string
+    guide_cta?: string
+    cta_keyword?: string
+    quiz_result?: string
+    entry_path?: string
+    entry_post_slug?: string
+    buyer_stage?: string
+    checkout_email?: string
+    email?: string
+    skip_email_capture?: string
     returnTo?: string
     return_to?: string
   }>
@@ -29,31 +54,87 @@ export default async function MembershipCheckoutPage({
   const attribution = getCheckoutAttributionFromParams(params, {
     source: bonusCredits ? "selfie_guide_day21_bonus" : "membership_checkout_page",
   })
+  const supabase = await createServerClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+  const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
+  const checkoutEmail = authUser?.email ?? urlEmail ?? null
 
-  // If interval is passed directly (from the client toggle), proceed straight to Stripe
   if (params.interval) {
     const productId = params.interval === "year"
       ? "sselfie_studio_membership_annual"
       : "sselfie_studio_membership"
+    const captureParams = {
+      ...params,
+      checkout_source: params.checkout_source || "membership_email_capture",
+    }
+    const shouldCaptureEmail = shouldShowCheckoutEmailCapture({
+      params,
+      hasRecoverableEmail: Boolean(checkoutEmail),
+      hasAuthUser: Boolean(authUser?.id),
+      hasFreebieToken: false,
+    })
+
+    if (shouldCaptureEmail) {
+      await logAnalyticsEvent({
+        eventName: "membership_checkout_email_capture_view",
+        userId: authUser?.id || null,
+        path: "/checkout/membership",
+        utm: {
+          source: attribution.utmSource,
+          medium: attribution.utmMedium,
+          campaign: attribution.utmCampaign,
+          content: attribution.utmContent,
+        },
+        properties: {
+          product_type: productId,
+          source: attribution.source,
+          interval: params.interval,
+          has_auth_user: Boolean(authUser?.id),
+          has_prefill_email: false,
+          prefill_email_source: "none",
+          checkout_source: captureParams.checkout_source,
+          buyer_stage: attribution.buyerStage || null,
+          cta_keyword: attribution.ctaKeyword || null,
+          entry_post_slug: attribution.entryPostSlug || null,
+        },
+      })
+
+      return (
+        <PromptVaultCheckoutEmailCapture
+          params={captureParams}
+          actionPath="/checkout/membership"
+          eyebrow="SSELFIE SUITE"
+          title="Where should I send your access?"
+          copy="Add your email before checkout so your login and receipt go to the right place. If anything pauses, I can help you pick up where you left off."
+          inputId="membership-checkout-email"
+          buttonLabel="Continue to checkout"
+          skipLabel="Skip and go straight to payment"
+        />
+      )
+    }
 
     try {
-      const clientSecret = await createLandingCheckoutSession(productId, params.promo, undefined, {
+      const clientSecret = await createLandingCheckoutSession(productId, params.promo, checkoutEmail, {
         bonusCredits,
         ...attribution,
       })
       if (clientSecret) {
         // product_type lets the embedded checkout page show membership copy and fire the
         // membership funnel event (it previously arrived as product_type "unknown").
-        const forwarded = new URLSearchParams({ client_secret: clientSecret, product_type: productId })
-        if (params.source) forwarded.set("source", params.source)
-        if (params.utm_source) forwarded.set("utm_source", params.utm_source)
-        if (params.utm_medium) forwarded.set("utm_medium", params.utm_medium)
-        if (params.utm_campaign) forwarded.set("utm_campaign", params.utm_campaign)
-        if (params.utm_content) forwarded.set("utm_content", params.utm_content)
-        redirect(`/checkout?${forwarded.toString()}`)
+        redirect(buildCheckoutRedirectUrl(clientSecret, productId, params))
       }
-    } catch (error: any) {
-      if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "digest" in error &&
+        typeof error.digest === "string" &&
+        error.digest.startsWith("NEXT_REDIRECT")
+      ) {
+        throw error
+      }
       console.error("[checkout/membership] Error creating session:", error)
     }
     redirect("/checkout/failure?product=" + productId)
@@ -102,7 +183,7 @@ export default async function MembershipCheckoutPage({
             color: "rgba(229,229,229,0.78)",
           }}
         >
-          The SSELFIE SUITE is the weekly execution layer with Maya. Join monthly when you're ready
+          The SSELFIE SUITE is the weekly execution layer with Maya. Join monthly when you&apos;re ready
           for the recurring system, or start smaller if you still need the method first.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>

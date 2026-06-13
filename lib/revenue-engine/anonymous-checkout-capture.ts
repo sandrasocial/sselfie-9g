@@ -3,6 +3,9 @@ const SOCIAL_DM_SIGNAL_RE = /\b(manychat|instagram_dm|instagram-manychat|instagr
 export type CheckoutEmailCaptureParams = Record<string, string | undefined | null>
 
 export const CHECKOUT_EMAIL_CAPTURE_PARAM_KEYS = [
+  "interval",
+  "promo",
+  "bonus",
   "source",
   "utm_source",
   "utm_medium",

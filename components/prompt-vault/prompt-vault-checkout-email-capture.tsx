@@ -16,6 +16,7 @@ export function PromptVaultCheckoutEmailCapture({
   copy = "Add your email before checkout so your access link and receipt go to the right place. If anything pauses, I can also help you find your purchase faster.",
   inputId = "prompt-vault-checkout-email",
   buttonLabel = "Continue to checkout",
+  skipLabel = "Continue without email",
 }: {
   params: CheckoutEmailCaptureParams
   actionPath?: string
@@ -24,6 +25,7 @@ export function PromptVaultCheckoutEmailCapture({
   copy?: string
   inputId?: string
   buttonLabel?: string
+  skipLabel?: string
 }) {
   const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params)
   const skipHref = buildSkipCheckoutEmailCaptureHref(actionPath, params)
@@ -63,7 +65,7 @@ export function PromptVaultCheckoutEmailCapture({
           </form>
 
           <a href={skipHref} className="pv-skip">
-            Continue without email
+            {skipLabel}
           </a>
         </div>
       </section>
