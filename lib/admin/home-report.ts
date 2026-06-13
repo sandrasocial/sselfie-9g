@@ -3,6 +3,7 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
+import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
 
 // Admin data contract: money ONLY from stripe_payments (status succeeded/paid,
 // live mode, payment_date window) or the live Stripe API. Member counts only
@@ -25,6 +26,7 @@ export type AdminHomeReport = {
     live: boolean
     source: "stripe_live" | "db_fallback"
   }
+  studioHealth: StudioMemberHealthReport | null
   // BRIDGE-01: SUITE trials are NOT members and carry no money fields.
   // Counts come from subscriptions suite_trial rows; converted = trial users
   // who later hold a membership row.
@@ -47,7 +49,6 @@ export type AdminHomeReport = {
   }
 }
 
-type MoneyRow = { payments: number; revenue_cents: string | number }
 type ProductRow = { product: string | null; payments: number; revenue_cents: string | number }
 
 const PRODUCT_LABELS: Record<string, string> = {
@@ -69,7 +70,7 @@ function labelProduct(product: string | null) {
 }
 
 export async function getAdminHomeReport(): Promise<AdminHomeReport> {
-  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows] = await Promise.all([
+  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows, studioHealth] = await Promise.all([
     sql`
       SELECT
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days')::int AS week_payments,
@@ -117,6 +118,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       ) m ON TRUE
       WHERE t.product_type = 'suite_trial'
     `.catch(() => []) as unknown as Promise<any[]>,
+    getStudioMemberHealthReport().catch((error) => {
+      console.error("[admin-home] studio member health failed:", error)
+      return null
+    }),
   ])
 
   const money = moneyRows[0] || {}
@@ -153,6 +158,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       live: Boolean(memberMetrics && !memberMetrics.cached) || Boolean(memberMetrics?.cached),
       source: memberMetrics ? "stripe_live" : "db_fallback",
     },
+    studioHealth,
     trials: {
       active: Number((trialRows as any[])[0]?.active || 0),
       expired: Number((trialRows as any[])[0]?.expired || 0),

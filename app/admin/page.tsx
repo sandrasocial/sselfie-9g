@@ -14,6 +14,11 @@ function money(value: number) {
   return "$" + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function percent(part: number, whole: number) {
+  if (!whole) return "0%"
+  return Math.round((part / whole) * 100) + "%"
+}
+
 function SourceTag({ label }: { label: string }) {
   return (
     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-stone-500">
@@ -191,6 +196,66 @@ export default async function AdminPage({
                 {report.trials.expired} expired · {report.trials.converted} converted to paid
               </div>
             )}
+            {report.studioHealth && (
+              <div className="mt-5 border-t border-stone-100 pt-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-xs uppercase tracking-wide text-stone-500">Studio member health</p>
+                    <SourceTag label="subscriptions + generation tables" />
+                  </div>
+                  <p className="text-xs text-stone-500">
+                    {report.studioHealth.neverGeneratedRealMembers} real members at churn risk
+                  </p>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-4">
+                  <div className="rounded-xl bg-stone-50 p-3">
+                    <p className="font-serif text-2xl text-stone-950">
+                      {percent(report.studioHealth.trainingCompleted, report.studioHealth.totalMembers)}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {report.studioHealth.trainingCompleted}/{report.studioHealth.totalMembers} trained
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-stone-50 p-3">
+                    <p className="font-serif text-2xl text-stone-950">
+                      {percent(report.studioHealth.everGenerated, report.studioHealth.totalMembers)}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {report.studioHealth.everGenerated}/{report.studioHealth.totalMembers} generated
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-stone-50 p-3">
+                    <p className="font-serif text-2xl text-stone-950">
+                      {percent(report.studioHealth.neverGenerated, report.studioHealth.totalMembers)}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {report.studioHealth.neverGenerated}/{report.studioHealth.totalMembers} never generated
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-stone-50 p-3">
+                    <p className="font-serif text-2xl text-stone-950">{report.studioHealth.proGenerators}</p>
+                    <p className="text-xs text-stone-500">used Pro mode</p>
+                  </div>
+                </div>
+                {report.studioHealth.neverGeneratedMembers.length > 0 && (
+                  <div className="mt-3 rounded-xl bg-stone-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-stone-500">Never generated</p>
+                    <ul className="mt-2 space-y-1 text-sm text-stone-700">
+                      {report.studioHealth.neverGeneratedMembers.map((member) => (
+                        <li key={member.id} className="flex flex-wrap items-center justify-between gap-2">
+                          <span>{member.email}</span>
+                          {member.isSmokeTest && (
+                            <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-stone-500">
+                              smoke test
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
@@ -237,7 +302,7 @@ export default async function AdminPage({
           >
             {report.content.nextPostHook ? (
               <>
-                <p className="font-serif text-lg text-stone-950">"{report.content.nextPostHook}"</p>
+                <p className="font-serif text-lg text-stone-950">&quot;{report.content.nextPostHook}&quot;</p>
                 {report.content.topPrompt && (
                   <p className="mt-2 text-sm text-stone-600">
                     Strongest demand signal: {report.content.topPrompt.title} ({report.content.topPrompt.copies} copies)
@@ -249,7 +314,7 @@ export default async function AdminPage({
               </>
             ) : (
               <p className="text-sm text-stone-700">
-                No brief yet. Open the content page and hit "Generate this week's brief".
+                No brief yet. Open the content page and hit &quot;Generate this week&apos;s brief&quot;.
               </p>
             )}
           </Link>

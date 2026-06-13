@@ -3,11 +3,13 @@
 Date: 2026-05-27
 Agent: Codex
 Priority: Now (no gates required)
-Status: Still active, needs schema refresh before implementation
+Status: Complete 2026-06-13
 
-> Status audit 2026-06-13: Genuinely unbuilt. No Studio Member Health admin/report
-> output was found. The old query references legacy training paths, so refresh it
-> against the current live schema before building.
+> Status audit 2026-06-13: Built. Studio Member Health now uses the current live
+> schema (`subscriptions.product_type`, `user_models.training_status`,
+> `generated_images`, and completed `ai_images`) and appears on `/admin`.
+> Findings are documented in
+> `docs/revenue/STUDIO_MEMBER_HEALTH_2026-05-27.md`.
 
 ## Context
 

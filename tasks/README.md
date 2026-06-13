@@ -8,11 +8,10 @@ This folder contains active build specs, completed historical specs, superseded 
 
 | Priority | Spec | Current truth | Next action |
 |---:|---|---|---|
-| 1 | `UX-03-maya-classic-training-retention.md` | Still genuinely unbuilt. The Studio Member Health query/report was not found in code or docs. | Build a current member health report using the live schema. |
-| 2 | `MAYA-ADMIN-01-admin-maya.md` | Mostly built. Weekly brief context and admin content tools are live. | Add admin-specific approval/rejection memory, then QA handoff polish. |
-| 3 | `APP-CUTOVER-01-members-to-new-app.md` | Core member gate exists and App v3 is live. | Treat remaining work as cutover QA, env verification, member comms, and monitoring. |
-| 4 | `WEBHOOK-01-split-stripe-monolith.md` | Extraction started but the Stripe webhook route is still too large. | Finish the zero-behavior-change split carefully, one handler at a time. |
-| 5 | `IG-AGENT-01-foundation.md` + `DM-RELIEF-01-dm-triage-system.md` | Partly built and overlapping. | Consolidate into one current DM launch checklist, then live-QA permissions and send flow. |
+| 1 | `MAYA-ADMIN-01-admin-maya.md` | Mostly built. Weekly brief context and admin content tools are live. | Add admin-specific approval/rejection memory, then QA handoff polish. |
+| 2 | `APP-CUTOVER-01-members-to-new-app.md` | Core member gate exists and App v3 is live. | Treat remaining work as cutover QA, env verification, member comms, and monitoring. |
+| 3 | `WEBHOOK-01-split-stripe-monolith.md` | Extraction started but the Stripe webhook route is still too large. | Finish the zero-behavior-change split carefully, one handler at a time. |
+| 4 | `IG-AGENT-01-foundation.md` + `DM-RELIEF-01-dm-triage-system.md` | Partly built and overlapping. | Consolidate into one current DM launch checklist, then live-QA permissions and send flow. |
 
 ## Complete Or Stale
 
@@ -27,6 +26,7 @@ This folder contains active build specs, completed historical specs, superseded 
 | `MAYA-REBUILD-05-port-legacy-ui.md` | Superseded | Many listed UI pieces now exist. Rewrite as a current polish checklist before assigning. |
 | `SELFIE-TO-BRAND-SHOOT-01-ASSET-CONSOLIDATION.md` | Complete | Required asset map doc exists. |
 | `SELFIE-TO-BRAND-SHOOT-02-PRODUCT-OUTLINE-AND-BUILD-SPEC.md` | Complete | Required product outline doc exists. |
+| `UX-03-maya-classic-training-retention.md` | Complete | Studio Member Health report and `/admin` card built 2026-06-13. |
 
 ## Planning Or Gated
 
