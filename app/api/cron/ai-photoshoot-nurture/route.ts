@@ -10,6 +10,8 @@ import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
+import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
+import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
 import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 import {
   generatePromptVaultDay10NextShootEmail,
@@ -239,6 +241,10 @@ function generateAiPromptsEmail(
       return generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
     case "ai-prompts-day7-prompt-vault-offer":
       return generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
+    case "ai-prompts-day9-prompt-vault-proof":
+      return generateAiPromptsDay9PromptVaultProofEmail({ firstName, recipientEmail: candidate.email })
+    case "ai-prompts-day11-prompt-vault-why-now":
+      return generateAiPromptsDay11PromptVaultWhyNowEmail({ firstName, recipientEmail: candidate.email })
     case "ai-prompts-day10-suite-trial": {
       const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
       if (!token) return null

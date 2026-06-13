@@ -38,6 +38,8 @@ import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
+import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
+import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
@@ -569,6 +571,12 @@ async function sendAiPromptsTouchEmail(
       break
     case "ai-prompts-day7-prompt-vault-offer":
       email = generateAiPromptsDay7PromptVaultOfferEmail({ firstName, recipientEmail: candidate.email })
+      break
+    case "ai-prompts-day9-prompt-vault-proof":
+      email = generateAiPromptsDay9PromptVaultProofEmail({ firstName, recipientEmail: candidate.email })
+      break
+    case "ai-prompts-day11-prompt-vault-why-now":
+      email = generateAiPromptsDay11PromptVaultWhyNowEmail({ firstName, recipientEmail: candidate.email })
       break
     default:
       throw new Error(`Unknown AI Prompts email type: ${emailType}`)

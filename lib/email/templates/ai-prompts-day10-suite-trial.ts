@@ -13,38 +13,40 @@ export function generateAiPromptsDay10SuiteTrialEmail({
 }): { html: string; text: string; subject: string } {
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You've had the free prompts for a while now. Maybe you've made a few photos you like. Maybe you haven't had time.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Either way, here's the honest truth: prompts are the manual way. Maya is the fast way.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">She's the creative director inside my Studio. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, and your photos are done in minutes. They keep your face. That's the whole point.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Try her free: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If you've been making photos with the prompts, you know the feeling. That little "oh, that's actually me" moment.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Here's something I don't talk about much.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Doing it by hand with prompts works. But there's a faster way inside my Studio. Her name's Maya.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, your photos are done in minutes. They keep your face. Same promise, less work.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Try her free. 7 days in the SUITE, 20 photos on me. No card. Nothing turns into a charge. It just ends.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Whatever you make is yours to keep.</p>
-    <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
+    <p style="margin:0;font-size:16px;line-height:1.8;">Your prompts stay yours either way.</p>
   `
 
   return {
-    subject: "Skip the prompts. Meet Maya",
+    subject: "loved making those? there's a faster way.",
     html: renderStoneShell({
       eyebrow: "SSELFIE SUITE",
       title: "There's a faster way.",
       bodyHtml,
-      footerLead: "Your free prompts stay yours either way.",
-      footerSignoff: "",
+      footerLead: "Your prompts stay yours either way.",
+      footerSignoff: "Sandra x",
     }),
     text: `Hi ${firstName},
 
-You've had the free prompts for a while now. Maybe you've made a few photos you like. Maybe you haven't had time.
+If you've been making photos with the prompts, you know the feeling. That little "oh, that's actually me" moment.
 
-Either way, here's the honest truth: prompts are the manual way. Maya is the fast way.
+Here's something I don't talk about much.
 
-She's the creative director inside my Studio. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, and your photos are done in minutes. They keep your face. That's the whole point.
+Doing it by hand with prompts works. But there's a faster way inside my Studio. Her name's Maya.
 
-Try her free: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.
+She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, your photos are done in minutes. They keep your face. Same promise, less work.
+
+Try her free. 7 days in the SUITE, 20 photos on me. No card. Nothing turns into a charge. It just ends.
 
 Claim your 7 days:
 ${claimUrl}
 
-Whatever you make is yours to keep.
+Your prompts stay yours either way.
 
 Sandra x`,
   }
