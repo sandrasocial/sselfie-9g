@@ -1,4 +1,8 @@
 import type { AppV3Section } from "@/lib/app-v3/navigation"
+import {
+  sanitizeServerMayaDraftSnapshot,
+  type ServerMayaDraftSnapshot,
+} from "@/lib/app-v3/maya/draft-snapshot"
 import type { ConciergeSession, OutputFormat } from "./types"
 import type { ConceptGenState } from "./concept-card"
 
@@ -186,4 +190,20 @@ export function clearMayaDraft() {
   } catch {
     /* ignore */
   }
+}
+
+export function cacheServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSnapshot | null {
+  const snapshot = sanitizeServerMayaDraftSnapshot(value)
+  if (!snapshot) return null
+  const session = snapshot.session as ConciergeSession
+  saveConciergeSnapshot({ isOpen: snapshot.isOpen, session })
+  saveMayaDraft({
+    chatId: snapshot.chatId,
+    sessionStartedAt: session.startedAt,
+    messages: snapshot.messages,
+    genState: snapshot.genState as Record<string, ConceptGenState>,
+    generatedOnce: snapshot.generatedOnce,
+    setupOpen: snapshot.setupOpen,
+  })
+  return snapshot
 }
