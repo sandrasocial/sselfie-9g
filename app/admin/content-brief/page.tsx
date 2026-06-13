@@ -7,6 +7,7 @@ import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
 import { StyleExamplesClient } from "@/components/admin/style-examples-client"
+import { VaultDropEmailPreview } from "@/components/admin/vault-drop-email-preview"
 import { listStyleOptions } from "@/lib/app-v3/maya/style-example-store"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
@@ -154,6 +155,9 @@ export default async function ContentBriefPage() {
           </Collapsed>
           <Collapsed title="Shoot studio" hint="Inspiration-image photoshoots (being absorbed into Maya)">
             <ShootStudioClient initialShoots={shoots} selfies={selfies} />
+          </Collapsed>
+          <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
+            <VaultDropEmailPreview />
           </Collapsed>
           <Collapsed title="Carousel kit" hint="Rendered decks, covers, captions">
             <ContentKitClient initialCarousels={carousels} availableImages={availableImages} />

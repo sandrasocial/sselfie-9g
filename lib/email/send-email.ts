@@ -23,6 +23,7 @@ export interface EmailOptions {
   campaignId?: number // Optional: campaign ID for tracking
   marketing?: boolean
   headers?: Record<string, string>
+  idempotencyKey?: string
 }
 
 
@@ -112,7 +113,7 @@ async function sendEmailWithRetry(
         isMarketing,
       })
 
-      const { data, error } = await resend.emails.send({
+      const emailPayload = {
         from: options.from || "SSelfie <hello@sselfie.ai>",
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
@@ -121,7 +122,11 @@ async function sendEmailWithRetry(
         ...(options.replyTo ? { replyTo: options.replyTo } : {}),
         ...(options.headers ? { headers: options.headers } : {}),
         tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
-      })
+      }
+
+      const { data, error } = options.idempotencyKey
+        ? await resend.emails.send(emailPayload, { idempotencyKey: options.idempotencyKey })
+        : await resend.emails.send(emailPayload)
 
       if (error) {
         lastError = error.message || "Failed to send email"
