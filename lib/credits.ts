@@ -1,6 +1,7 @@
 // Credit system utilities
 
 import { sql } from "@/lib/db/client"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 export const CREDIT_COSTS = {
   TRAINING: 20, // $3.00 / $0.15 per credit (actual API cost)
@@ -71,10 +72,12 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
       return true
     }
 
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const subscriptionResult = await sql`
       SELECT product_type, status FROM subscriptions 
       WHERE user_id = ${userId} 
       AND status = 'active'
+      AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
       LIMIT 1
     `
 

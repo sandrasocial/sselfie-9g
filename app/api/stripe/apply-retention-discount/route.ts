@@ -3,6 +3,7 @@ import Stripe from "stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 // Coupon used for cancel-intercept retention offer: 50% off one month
 const RETENTION_COUPON_ID = "COMEBACK50"
@@ -25,12 +26,14 @@ export async function POST() {
     }
 
     // Get their active Studio subscription from DB
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const rows = await sql`
       SELECT stripe_subscription_id
       FROM subscriptions
       WHERE user_id = ${neonUser.id}
         AND status = 'active'
         AND product_type = 'sselfie_studio_membership'
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
       LIMIT 1
     `
 

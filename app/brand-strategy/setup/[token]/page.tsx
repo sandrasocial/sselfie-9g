@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import BrandStrategySetupForm from "@/components/brand-strategy/brand-strategy-setup-form"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 
 interface PageProps {
@@ -14,6 +15,7 @@ export default async function BrandStrategySetupPage({ params }: PageProps) {
   }
 
   // Look up the subscription by setup_token
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
   const rows = await sql`
     SELECT s.id, s.user_id, u.email, u.display_name
     FROM subscriptions s
@@ -21,6 +23,7 @@ export default async function BrandStrategySetupPage({ params }: PageProps) {
     WHERE s.setup_token = ${token}::uuid
       AND s.product_type = 'brand_strategy_pack'
       AND s.status = 'active'
+      AND (${enforceLiveMode} = false OR COALESCE(s.is_test_mode, false) = false)
     LIMIT 1
   `.catch(() => [] as any[])
 

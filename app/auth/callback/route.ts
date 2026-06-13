@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
 import { isReferralSignupEligible, trackReferralSignup } from "@/lib/referrals/service"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { syncUserWithNeon } from "@/lib/user-sync"
 import { NextResponse } from "next/server"
 
@@ -63,10 +64,12 @@ export async function GET(request: Request) {
         try {
           
           // Check if user has active subscription (only free users get welcome credits)
+          const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
           const hasSubscription = await sql`
             SELECT COUNT(*) as count
             FROM subscriptions
             WHERE user_id = ${neonUser.id} AND status = 'active'
+              AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
           `
           
           if (hasSubscription[0].count === 0) {

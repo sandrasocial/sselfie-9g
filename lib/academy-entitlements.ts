@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { ACADEMY_PRODUCTS, PRICING_PRODUCTS } from "@/lib/products"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 
 const MEMBERSHIP_PRODUCT_TYPES = [
@@ -410,7 +411,7 @@ async function getAcademyProductOverrides(): Promise<Map<string, ProductOverride
 
 export async function hasActiveStudioMembership(userId: string): Promise<boolean> {
   try {
-    const enforceLiveMode = process.env.NODE_ENV === "production"
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const membership = await sql`
       SELECT 1
       FROM subscriptions
@@ -540,6 +541,8 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
 }
 
 async function getExplicitEntitlements(userId: string): Promise<ExplicitEntitlementRow[]> {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
+
   try {
     const rows = (await sql`
       SELECT DISTINCT product_id, valid_from, source
@@ -574,6 +577,7 @@ async function getExplicitEntitlements(userId: string): Promise<ExplicitEntitlem
         WHERE user_id = ${userId}
           AND status = 'active'
           AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
+          AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         UNION
         SELECT product_type AS product_id, payment_date AS valid_from, 'migration_backfill' AS source
         FROM stripe_payments

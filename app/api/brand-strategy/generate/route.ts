@@ -7,6 +7,7 @@ import { generateBrandStrategyPaidDeliveryEmail } from "@/lib/email/templates/br
 import { sendEmail } from "@/lib/email/send-email"
 import { generateFreebieStrategy } from "@/lib/freebie/generate-brand-strategy"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 export const maxDuration = 90
 
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
       | Response
 
     if (setupToken) {
+      const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
       const rows = await sql`
         SELECT s.id AS subscription_id, s.user_id, u.email, u.display_name
         FROM subscriptions s
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
         WHERE s.setup_token = ${setupToken}::uuid
           AND s.product_type = 'brand_strategy_pack'
           AND s.status = 'active'
+          AND (${enforceLiveMode} = false OR COALESCE(s.is_test_mode, false) = false)
         LIMIT 1
       `
 

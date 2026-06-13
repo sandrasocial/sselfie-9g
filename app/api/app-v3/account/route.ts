@@ -7,6 +7,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 export const dynamic = "force-dynamic"
 
@@ -32,6 +33,7 @@ export async function GET() {
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (!neonUserId) return NextResponse.json(empty)
 
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const [credits, subs] = await Promise.all([
       getUserCredits(String(neonUserId)).catch(() => null),
       sql`
@@ -39,6 +41,7 @@ export async function GET() {
         FROM subscriptions
         WHERE user_id = ${String(neonUserId)}
           AND status = 'active'
+          AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         ORDER BY created_at DESC
         LIMIT 1
       `.catch(() => [] as Record<string, unknown>[]),

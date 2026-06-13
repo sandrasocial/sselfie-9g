@@ -11,6 +11,7 @@ import { NextResponse } from "next/server"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { sendEmail } from "@/lib/email/send-email"
 import {
   generateSuiteDay0Email,
@@ -72,11 +73,13 @@ async function alreadySent(email: string, emailType: string, withinDays: number)
 }
 
 async function memberJoinedWithin(userId: string, minDays: number, maxDays: number): Promise<boolean> {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
   const rows = await sql`
     SELECT 1 FROM subscriptions
     WHERE user_id = ${userId}
       AND product_type = 'sselfie_studio_membership'
       AND status = 'active'
+      AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
       AND created_at <= NOW() - (${`${minDays} days`}::interval)
       AND created_at > NOW() - (${`${maxDays} days`}::interval)
     LIMIT 1

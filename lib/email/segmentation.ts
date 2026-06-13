@@ -5,6 +5,7 @@
  */
 
 import { sql } from "@/lib/db/client"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
 
 export interface SegmentCriteria {
@@ -75,11 +76,15 @@ export async function refreshSegment(segmentId: number) {
 
     if (criteria.has_purchased === false) {
       // Users with no active subscriptions and no purchases
+      const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
       const nonPurchasers = await sql`
         SELECT DISTINCT u.email as user_email
         FROM users u
         WHERE NOT EXISTS (
-          SELECT 1 FROM subscriptions WHERE user_id = u.id AND status = 'active'
+          SELECT 1 FROM subscriptions
+          WHERE user_id = u.id
+            AND status = 'active'
+            AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         )
         AND NOT EXISTS (
           SELECT 1 FROM credit_transactions WHERE user_id = u.id AND transaction_type = 'purchase'
@@ -88,11 +93,15 @@ export async function refreshSegment(segmentId: number) {
       purchaseEmails = nonPurchasers.map((m: any) => m.user_email)
     } else if (criteria.has_purchased === true) {
       // Users with active subscriptions or purchases
+      const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
       const purchasers = await sql`
         SELECT DISTINCT u.email as user_email
         FROM users u
         WHERE EXISTS (
-          SELECT 1 FROM subscriptions WHERE user_id = u.id AND status = 'active'
+          SELECT 1 FROM subscriptions
+          WHERE user_id = u.id
+            AND status = 'active'
+            AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         )
         OR EXISTS (
           SELECT 1 FROM credit_transactions WHERE user_id = u.id AND transaction_type = 'purchase'

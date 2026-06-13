@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import SelfieGuideExperience from "@/components/freebie/selfie-guide-experience"
 
 const cormorant = Cormorant_Garamond({
@@ -98,6 +99,7 @@ async function emailHasBrandStrategyAccess(email: string | null | undefined): Pr
   const trimmed = typeof email === "string" ? email.trim() : ""
   if (!trimmed) return false
   try {
+    const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const rows = await sql`
       SELECT 1
       FROM users u
@@ -117,6 +119,7 @@ async function emailHasBrandStrategyAccess(email: string | null | undefined): Pr
             WHERE s.user_id = u.id::varchar
               AND s.product_type = 'brand_strategy_pack'
               AND s.status = 'active'
+              AND (${enforceLiveMode} = false OR COALESCE(s.is_test_mode, false) = false)
           )
         )
       LIMIT 1
