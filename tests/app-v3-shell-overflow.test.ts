@@ -35,4 +35,25 @@ describe("App v3 shell overflow containment", () => {
     expect(concierge).toContain("sm:slide-in-from-right")
     expect(concierge).not.toContain(" animate-in slide-in-from-right")
   })
+
+  it("contains the Maya chat thread, bubbles, cards, and composer inside the phone viewport", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const inlineCard = read("components/app-v3/inline-card.tsx")
+    const conceptCard = read("components/app-v3/concept-card.tsx")
+
+    expect(concierge).toContain("min-w-0")
+    expect(concierge).toContain("max-w-full")
+    expect(concierge).toContain("[overflow-wrap:anywhere]")
+    expect(concierge).toContain("break-words")
+    expect(concierge).toContain("overflow-y-auto")
+    expect(concierge).toContain("[overflow-x:clip]")
+
+    expect(inlineCard).toContain("min-w-0")
+    expect(inlineCard).toContain("max-w-full")
+    expect(inlineCard).toContain("[overflow-x:clip]")
+
+    expect(conceptCard).toContain("min-w-0")
+    expect(conceptCard).toContain("max-w-full")
+    expect(conceptCard).toContain("[overflow-x:clip]")
+  })
 })

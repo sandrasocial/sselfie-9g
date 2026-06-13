@@ -760,11 +760,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
             : undefined
         }
-        className="relative flex h-[100dvh] w-full max-w-[100dvw] flex-col bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
+        className="relative flex h-[100dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
       >
         {/* Header — one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
-        <header className="shrink-0 flex items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
+        <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">
               {agentLabel}
@@ -863,7 +863,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           </div>
         )}
         {(!hasStarted || setupOpen) && (
-          <div className="shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
+          <div className="min-w-0 shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
             <div className="flex flex-wrap gap-2">
               {FORMAT_OPTIONS.map(opt => {
                 // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
@@ -1065,11 +1065,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         {/* Thread — the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+        <div className="min-h-0 min-w-0 flex-1 max-w-full space-y-5 overflow-y-auto overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6">
           {/* Static opener */}
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-0 max-w-full items-end gap-2">
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-            <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] sm:max-w-[80%]">
+            <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
               <p>
                 {aesthetic.name}. {aesthetic.blurb}
               </p>
@@ -1081,11 +1081,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
           {/* First-run: name your agent (the ownership moment). Skippable. */}
           {showNaming && (
-            <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
+            <div className="min-w-0 max-w-full rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip] animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <p className="text-[14px] leading-relaxed text-[#282728]">
                 One quick thing: what would you like to call me? It makes this ours. 🤍
               </p>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex min-w-0 gap-2">
                 <input
                   type="text"
                   value={nameDraft}
@@ -1097,7 +1097,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                     }
                   }}
                   placeholder="e.g. Aria"
-                  className="min-h-11 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
+                  className="min-h-11 min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
                 />
                 <button
                   type="button"
@@ -1120,9 +1120,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
           {/* Maya acknowledges her new name */}
           {justNamed && (
-            <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
+            <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={justNamed.charAt(0)} />
-              <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] sm:max-w-[80%]">
+              <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                 Love it. I&apos;m {justNamed} now. Let&apos;s make something beautiful. 🤍
               </div>
             </div>
@@ -1131,7 +1131,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           {/* Prominent selfie requirement: once Maya has proposed directions but there's no
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
           {!referenceSelfieUrl && hasStarted && (
-            <div className="rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4">
+            <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
               <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
                 Start your brand shoot
               </p>
@@ -1186,20 +1186,20 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             return (
               <div
                 key={m.id}
-                className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
+                className="min-w-0 max-w-full space-y-4 [overflow-x:clip] animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
               >
                 {text.trim() &&
                   (isUser ? (
-                    <div className="flex flex-row-reverse items-end gap-2">
+                    <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
                       <Avatar src={userAvatar} fallback="You" />
-                      <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white sm:max-w-[80%]">
+                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
                         {text}
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-end gap-2">
+                    <div className="flex min-w-0 max-w-full items-end gap-2">
                       <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                      <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] bg-white p-4 sm:max-w-[80%]">
+                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 [overflow-wrap:anywhere] sm:max-w-[80%]">
                         <Markdown>{text}</Markdown>
                       </div>
                     </div>
@@ -1226,7 +1226,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
 
                 {conceptsLost && (
-                  <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
+                  <div className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
                     <p className="text-[13px] text-[#282728]">
                       Your directions didn&apos;t come through cleanly.
                     </p>
@@ -1241,7 +1241,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 )}
 
                 {conceptPart && conceptPart.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="min-w-0 max-w-full space-y-3 [overflow-x:clip]">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
                       Choose your direction
                     </p>
@@ -1270,9 +1270,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           })}
 
           {showBrandPrompt && (
-            <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
+            <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-              <div className="max-w-[calc(100%-2.25rem)] rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4 sm:max-w-[88%]">
+              <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-wrap:anywhere] sm:max-w-[88%]">
                 <p className="text-[15px] leading-relaxed text-[#282728]">
                   Love that. So I can make these really yours, tell me a little about your brand:
                   what you do and who you help. 🤍
@@ -1284,7 +1284,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   placeholder="e.g. I'm a founder coach for women starting an online business"
                   className="mt-3 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
                 />
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => void saveBrand()}
@@ -1306,10 +1306,10 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           )}
 
           {isThinking && (
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 max-w-full items-center gap-3">
               <TypingDots />
               {!hasConcepts && (
-                <span className="text-[13px] text-[#818283]">
+                <span className="min-w-0 break-words text-[13px] text-[#818283] [overflow-wrap:anywhere]">
                   Maya is preparing your directions…
                 </span>
               )}
@@ -1317,7 +1317,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
           )}
 
           {error && !isThinking && (
-            <div className="rounded-[6px] bg-[#282728]/5 px-4 py-3">
+            <div className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
               <p className="text-[13px] text-[#282728]">
                 Maya hit a snag creating your directions.
               </p>
@@ -1337,9 +1337,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         {/* Composer — secondary: refinement only, the happy path is the taps above. One clean
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
-        <div className="shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-6">
+        <div className="min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6">
           {inspirationUrl && (
-            <div className="mb-2 flex items-center gap-2">
+            <div className="mb-2 flex min-w-0 max-w-full items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={inspirationUrl}
@@ -1358,7 +1358,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               </button>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex min-w-0 max-w-full gap-2">
             <input
               ref={attachInputRef}
               type="file"

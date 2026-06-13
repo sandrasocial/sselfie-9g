@@ -18,18 +18,18 @@ interface StyleOptionsCardProps {
 export function StyleOptionsCard({ kind, options, onPick, disabled }: StyleOptionsCardProps) {
   if (options.length === 0) return null
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 max-w-full space-y-2 [overflow-x:clip]">
       <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
         {kind === "carousel" ? "Tap a carousel style" : "Tap a text style"}
       </p>
-      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3">
+      <div className="grid min-w-0 max-w-full grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3">
         {options.map(o => (
           <button
             key={o.id}
             type="button"
             disabled={disabled}
             onClick={() => onPick(o)}
-            className="group overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white text-left transition-colors hover:border-[#0D0E10] disabled:opacity-40"
+            className="group min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white text-left transition-colors hover:border-[#0D0E10] disabled:opacity-40"
           >
             {o.exampleImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -46,9 +46,11 @@ export function StyleOptionsCard({ kind, options, onPick, disabled }: StyleOptio
                 </span>
               </div>
             )}
-            <div className="p-2.5">
-              <p className="text-[12px] font-medium text-[#0D0E10]">{o.name}</p>
-              <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-[#818283]">
+            <div className="min-w-0 p-2.5">
+              <p className="break-words text-[12px] font-medium text-[#0D0E10] [overflow-wrap:anywhere]">
+                {o.name}
+              </p>
+              <p className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-[#818283] [overflow-wrap:anywhere]">
                 {o.when}
               </p>
             </div>
