@@ -7,6 +7,7 @@ import {
   VAULT_COLLECTION_META,
   FREEBIE_COLLECTION_PREVIEWS,
 } from "@/lib/ai-prompts/prompt-data"
+import { getPublishedFreebiePreviews, getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -16,6 +17,8 @@ export const metadata: Metadata = {
   description:
     "Free AI photoshoot prompts for turning one selfie into elevated personal brand images.",
 }
+
+export const dynamic = "force-dynamic"
 
 // ── Dynamic hero + preview data ─────────────────────────────────────────────
 // Sourced from the same approved collection data that powers the Vault.
@@ -46,9 +49,13 @@ const HERO_IMAGE: string = "/images/ai-prompts/quiet-luxury-london-shot-3.jpg"
  * Updates automatically when FREEBIE_COLLECTION_PREVIEWS gains new entries.
  * Do not show cards without a valid image src.
  */
-const HERO_PREVIEWS = FREEBIE_COLLECTION_PREVIEWS.slice(0, 3)
+function buildHeroPreviews(
+  freebiePreviews = FREEBIE_COLLECTION_PREVIEWS,
+  vaultMeta = VAULT_COLLECTION_META,
+) {
+  return freebiePreviews.slice(0, 3)
   .map((card) => {
-    const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
+    const meta = vaultMeta.find((m) => m.previewCardId === card.id)
     return {
       src: card.exampleImage ?? "",
       label: meta
@@ -57,6 +64,7 @@ const HERO_PREVIEWS = FREEBIE_COLLECTION_PREVIEWS.slice(0, 3)
     }
   })
   .filter((p) => p.src !== "")
+}
 
 const VALUE_ITEMS = [
   "Free AI photoshoot prompts you can test with your own selfies.",
@@ -83,7 +91,16 @@ const FUNNEL_STEPS = [
   },
 ]
 
-export default function AiPromptsOptInPage() {
+export default async function AiPromptsOptInPage() {
+  const [publishedPreviews, publishedMeta] = await Promise.all([
+    getPublishedFreebiePreviews(),
+    getPublishedVaultCollectionMeta(),
+  ])
+  const heroPreviews = buildHeroPreviews(
+    [...publishedPreviews, ...FREEBIE_COLLECTION_PREVIEWS],
+    [...publishedMeta, ...VAULT_COLLECTION_META],
+  )
+
   return (
     <main className={inter.className}>
 
@@ -113,7 +130,7 @@ export default function AiPromptsOptInPage() {
             </p>
 
             <div className="opt-proof-strip" aria-label="Photoshoot prompt examples">
-              {HERO_PREVIEWS.map((preview) => (
+              {heroPreviews.map((preview) => (
                 <div key={preview.src} className="opt-proof-card">
                   <Image
                     src={preview.src}

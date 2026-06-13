@@ -21,6 +21,7 @@ import {
   VAULT_COLLECTION_META,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
+import { getPublishedFreebiePreviews, getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -210,6 +211,12 @@ export default async function AiPromptsAccessPage({
   const hasHeroImage = fs.existsSync(HERO_IMAGE)
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
+  const [publishedPreviews, publishedMeta] = await Promise.all([
+    getPublishedFreebiePreviews(),
+    getPublishedVaultCollectionMeta(),
+  ])
+  const freebiePreviews = [...publishedPreviews, ...FREEBIE_COLLECTION_PREVIEWS]
+  const vaultMeta = [...publishedMeta, ...VAULT_COLLECTION_META]
 
   if (!result.valid && !adminOverride) {
     return (
@@ -400,7 +407,7 @@ export default async function AiPromptsAccessPage({
       </section>
 
       {/* 2. Updated Vault preview — the core experience */}
-      {FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
+      {freebiePreviews.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
@@ -412,8 +419,8 @@ export default async function AiPromptsAccessPage({
               identity from one selfie. The complete shoot directions are inside the Vault.
             </p>
             <div className="ap-vault-grid">
-              {FREEBIE_COLLECTION_PREVIEWS.map(card => {
-                const meta = VAULT_COLLECTION_META.find(m => m.previewCardId === card.id)
+              {freebiePreviews.map(card => {
+                const meta = vaultMeta.find(m => m.previewCardId === card.id)
                 const upgradeHref = buildPromptVaultFreebieCheckoutHref({
                   promptId: card.id,
                   accessToken: token,

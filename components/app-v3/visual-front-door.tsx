@@ -6,7 +6,7 @@
 // Design system: light luxury editorial — Seasalt surfaces, Night for contrast, Cormorant
 // display, generous spacing, no icons/emojis, no gradients/color.
 
-import { memo } from "react"
+import { memo, useEffect, useState } from "react"
 import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
@@ -71,6 +71,22 @@ export function VisualFrontDoor({
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
   const { openWithAesthetic } = useConcierge()
+  const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
+
+  useEffect(() => {
+    let alive = true
+    fetch("/api/app-v3/aesthetics")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!alive || !Array.isArray(data?.aesthetics) || data.aesthetics.length === 0) return
+        setAesthetics(data.aesthetics)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
   return (
     <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16"}>
       <header className={compact ? "mb-6" : "mb-8 sm:mb-12"}>
@@ -90,7 +106,7 @@ export function VisualFrontDoor({
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
       <div className="[column-fill:_balance] columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
-        {AESTHETICS.map((aesthetic, i) => (
+        {aesthetics.map((aesthetic, i) => (
           <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">
             <AestheticTile aesthetic={aesthetic} index={i} onOpen={openWithAesthetic} />
           </div>

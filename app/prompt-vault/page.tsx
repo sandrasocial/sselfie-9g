@@ -10,6 +10,7 @@ import {
   FREEBIE_COLLECTION_PREVIEWS,
   VAULT_COLLECTION_META,
 } from "@/lib/ai-prompts/prompt-data"
+import { getPublishedFreebiePreviews, getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -66,6 +67,12 @@ export default async function PromptVaultPage({
 }) {
   const params = searchParams ? await searchParams : {}
   const checkoutFailed = params.checkout === "failed"
+  const [publishedPreviews, publishedMeta] = await Promise.all([
+    getPublishedFreebiePreviews(),
+    getPublishedVaultCollectionMeta(),
+  ])
+  const freebiePreviews = [...publishedPreviews, ...FREEBIE_COLLECTION_PREVIEWS]
+  const vaultMeta = [...publishedMeta, ...VAULT_COLLECTION_META]
 
   return (
     <main className={inter.className} style={{ background: "#F8FAFA", color: "#0D0E10" }}>
@@ -343,8 +350,8 @@ export default async function PromptVaultPage({
           </p>
 
           <div className="pvf-preview-grid">
-            {FREEBIE_COLLECTION_PREVIEWS.map((card) => {
-              const meta = VAULT_COLLECTION_META.find((m) => m.previewCardId === card.id)
+            {freebiePreviews.map((card) => {
+              const meta = vaultMeta.find((m) => m.previewCardId === card.id)
               return (
                 <article key={card.id} className="pvf-preview-card">
                   {card.exampleImage && (

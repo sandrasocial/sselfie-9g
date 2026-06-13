@@ -7,6 +7,7 @@ import { sql } from "@/lib/db/client"
 import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
 import { callContentKitLlm, callContentKitVision } from "@/lib/content-kit/llm"
 import type { Shoot, ShootMessage, ShootShot } from "@/lib/content-kit/types"
+import { ensureVaultCollectionsSchema } from "@/lib/vault/published-collections"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -15,7 +16,7 @@ import type { Shoot, ShootMessage, ShootShot } from "@/lib/content-kit/types"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const PORTRAIT_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
-const SHOTS_PER_SHOOT = 4
+const DEFAULT_SHOTS_PER_SHOOT = 6
 
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
@@ -69,8 +70,9 @@ async function normalizeForOpenAI(buffer: Buffer): Promise<Buffer> {
 
 // Condensed from .agents/skills/vault-prompt-writer/SKILL.md (the committed skill is the
 // source of truth — keep this block aligned with it).
-const VAULT_ANATOMY = `Each shot prompt must follow the SSELFIE vault anatomy, in this exact order, each section a labeled paragraph:
-1. Series header: "Create image N of a ${SHOTS_PER_SHOOT}-part [collection name] editorial photoshoot." (shot 2+ : "Create image N of the same [collection name] editorial photoshoot.")
+function buildVaultAnatomy(totalShots = DEFAULT_SHOTS_PER_SHOOT): string {
+  return `Each shot prompt must follow the SSELFIE vault anatomy, in this exact order, each section a labeled paragraph:
+1. Series header: "Create image N of a ${totalShots}-part [collection name] editorial photoshoot." (shot 2+ : "Create image N of the same [collection name] editorial photoshoot.")
 2. Identity lock, verbatim: "Use the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair color, and overall look from the reference photos."
 3. "Scene:" location, architecture, materials, light quality.
 4. "Outfit:" every garment with fabric, fit, color, finish, shoes, bag. Specific, never vague.
@@ -90,6 +92,7 @@ const VAULT_ANATOMY = `Each shot prompt must follow the SSELFIE vault anatomy, i
 Series consistency: ONE shoot means same outfit, hair, makeup, location and grade in every shot. Only Scene details, Accessories/props, Pose, Camera and Composition vary. Shot arc: arrival/establishing, lifestyle action, seated or still hero, close-up or detail.
 
 The prompts must work for ANY woman pasting them into ChatGPT with her own selfie. Never reference a specific person. No em-dashes anywhere. No-fake doctrine: realistic, recognizable, true-to-you; never "perfect face", "flawless skin", "look rich", "no one will know".`
+}
 
 const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
 {
@@ -103,12 +106,12 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
     }
   ]
 }
-Exactly ${SHOTS_PER_SHOOT} shots.`
+Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 
 function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images: the style, vibe, outfit, makeup, hair, accessories, location, light and color grade. Then write a ${SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images: the style, vibe, outfit, makeup, hair, accessories, location, light and color grade. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
 
-${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${VAULT_ANATOMY}
+${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
 ${SANDRA_VOICE_RULES}
 
@@ -124,9 +127,10 @@ function extractJsonObject(text: string): any {
   return JSON.parse(candidate.slice(start, end + 1))
 }
 
-function sanitizeShots(raw: any[]): Omit<ShootShot, "id" | "status">[] {
+function sanitizeShots(raw: any[], limit = DEFAULT_SHOTS_PER_SHOOT): Omit<ShootShot, "id" | "status">[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned no shots")
-  return raw.slice(0, SHOTS_PER_SHOOT).map((shot) => {
+  if (raw.length < limit) throw new Error(`LLM returned ${raw.length} shots, expected ${limit}`)
+  return raw.slice(0, limit).map((shot) => {
     if (typeof shot?.prompt !== "string" || shot.prompt.trim().length < 200) {
       throw new Error("LLM returned an incomplete shot prompt")
     }
@@ -137,6 +141,10 @@ function sanitizeShots(raw: any[]): Omit<ShootShot, "id" | "status">[] {
       prompt: stripEmDashes(shot.prompt).trim(),
     }
   })
+}
+
+function toPromptShot({ imageUrl: _imageUrl, status: _status, ...rest }: ShootShot) {
+  return rest
 }
 
 // ── Image generation ────────────────────────────────────────────────────────────
@@ -192,6 +200,9 @@ function mapRow(row: any): Shoot {
     title: row.title,
     slug: row.slug,
     status: row.status,
+    publishedVaultSlug: row.published_vault_slug ?? null,
+    vaultPublishedAt: row.vault_published_at ? new Date(row.vault_published_at).toISOString() : null,
+    emailDropStatus: row.email_drop_status ?? null,
     inspirationUrls: Array.isArray(row.inspiration_urls) ? row.inspiration_urls : [],
     selfieUrl: row.selfie_url,
     shots: Array.isArray(row.shots) ? row.shots : [],
@@ -215,14 +226,35 @@ async function saveShots(id: number, shots: ShootShot[], messages?: ShootMessage
 }
 
 export async function listShoots(limit = 20): Promise<Shoot[]> {
+  await ensureVaultCollectionsSchema()
   const rows = (await sql`
-    SELECT * FROM content_shoots WHERE status != 'archived' ORDER BY created_at DESC LIMIT ${limit}
+    SELECT
+      cs.*,
+      vc.slug AS published_vault_slug,
+      vc.published_at AS vault_published_at,
+      vc.email_drop_status AS email_drop_status
+    FROM content_shoots cs
+    LEFT JOIN vault_collections vc ON vc.source_shoot_id = cs.id AND vc.status = 'published'
+    WHERE cs.status != 'archived'
+    ORDER BY cs.created_at DESC
+    LIMIT ${limit}
   `) as any[]
   return rows.map(mapRow)
 }
 
 export async function getShoot(id: number): Promise<Shoot | null> {
-  const rows = (await sql`SELECT * FROM content_shoots WHERE id = ${id} LIMIT 1`) as any[]
+  await ensureVaultCollectionsSchema()
+  const rows = (await sql`
+    SELECT
+      cs.*,
+      vc.slug AS published_vault_slug,
+      vc.published_at AS vault_published_at,
+      vc.email_drop_status AS email_drop_status
+    FROM content_shoots cs
+    LEFT JOIN vault_collections vc ON vc.source_shoot_id = cs.id AND vc.status = 'published'
+    WHERE cs.id = ${id}
+    LIMIT 1
+  `) as any[]
   return rows.length ? mapRow(rows[0]) : null
 }
 
@@ -305,11 +337,11 @@ export async function refineShoot(id: number, message: string): Promise<Shoot> {
     `You are SSELFIE's vault prompt writer, refining the photoshoot "${shoot.title}" for Sandra.
 
 Current shots JSON:
-${JSON.stringify(shoot.shots.map(({ imageUrl, status, ...rest }) => rest), null, 2)}
+${JSON.stringify(shoot.shots.map(toPromptShot), null, 2)}
 
 Sandra says: "${ask}"
 
-${VAULT_ANATOMY}
+${buildVaultAnatomy(shoot.shots.length)}
 
 ${SANDRA_VOICE_RULES}
 
@@ -370,9 +402,82 @@ export async function regenerateShot(id: number, shotId: string, quality: ImgQua
     prompt: shoot.shots[idx].prompt,
     quality,
   })
-  shoot.shots[idx] = { ...shoot.shots[idx], imageUrl, status: "draft" }
+  shoot.shots[idx] = { ...shoot.shots[idx], imageUrl, status: quality === "high" ? shoot.shots[idx].status : "draft" }
   await saveShots(shoot.id, shoot.shots)
   return shoot
+}
+
+const EXTEND_CONTRACT = `Respond with ONLY a JSON object:
+{
+  "reply": "1-2 sentences back to Sandra in her own voice.",
+  "shots": [
+    {
+      "title": "Collection Name · Shot Name",
+      "whenToUse": "1-2 sentences in Sandra's voice: where to post it, what caption energy.",
+      "mood": "five · dot · separated · lowercase · tags",
+      "prompt": "the full vault-anatomy prompt"
+    }
+  ]
+}
+Return only the NEW shots. No em-dashes.`
+
+export async function extendShoot(id: number, count = 2): Promise<Shoot> {
+  const shoot = await getShoot(id)
+  if (!shoot) throw new Error("Shoot not found")
+  const safeCount = Math.min(Math.max(Math.floor(count), 1), 4)
+  const nextTotal = shoot.shots.length + safeCount
+
+  const raw = await callContentKitLlm(
+    `You are SSELFIE's vault prompt writer. Add ${safeCount} more shots to the existing photoshoot "${shoot.title}".
+
+Current shots JSON:
+${JSON.stringify(shoot.shots.map(toPromptShot), null, 2)}
+
+Keep the same collection world, outfit family, hair, makeup, location mood and color grade. Add fresh useful angles only: movement, detail, profile, cover, story, carousel, seated hero, or full-body variations not already covered.
+
+${buildVaultAnatomy(nextTotal)}
+
+${SANDRA_VOICE_RULES}
+
+${EXTEND_CONTRACT}
+
+Exactly ${safeCount} new shots.`,
+  )
+  const parsed = extractJsonObject(raw)
+  const drafts = sanitizeShots(parsed.shots, safeCount)
+  const start = shoot.shots.length + 1
+  const newShots: ShootShot[] = drafts.map((shot, i) => ({
+    ...shot,
+    id: `shot-${start + i}`,
+    status: "draft",
+  }))
+
+  const results = await Promise.allSettled(
+    newShots.map((shot) =>
+      generateShotImage({
+        selfieUrl: shoot.selfieUrl,
+        inspirationUrls: shoot.inspirationUrls,
+        prompt: shot.prompt,
+        quality: "medium",
+      }),
+    ),
+  )
+  const rendered = newShots.map((shot, i) => {
+    const r = results[i]
+    return r.status === "fulfilled" ? { ...shot, imageUrl: r.value } : shot
+  })
+  const reply = stripEmDashes(String(parsed.reply || `Added ${safeCount} more shots to the same world.`)).trim()
+  const messages: ShootMessage[] = [
+    ...shoot.messages,
+    {
+      role: "agent",
+      text: reply,
+      at: new Date().toISOString(),
+    },
+  ]
+  const nextShots = [...shoot.shots, ...rendered]
+  await saveShots(shoot.id, nextShots, messages)
+  return { ...shoot, shots: nextShots, messages }
 }
 
 export async function setShotStatus(id: number, shotId: string, status: ShootShot["status"]): Promise<void> {

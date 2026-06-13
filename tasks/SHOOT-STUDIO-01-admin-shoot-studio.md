@@ -50,13 +50,14 @@ black"). Nothing requires typing to reach the core outcome. NOTHING auto-posts, 
 - The shareable prompt stays in paste-into-ChatGPT form (identity lock paragraph included)
   so approving a shoot later maps 1:1 onto a vault collection (Phase B).
 
-## Phase B — DB-backed vault + publish pipeline (NEXT)
+## Phase B — DB-backed vault + publish pipeline (✅ BUILT 2026-06-13)
 
-`vault_collections`/`vault_prompts` tables seeded from prompt-data.ts; vault access page,
-freebie shot-1 previews, landing page, delivery email list, studio vibes (aesthetics.ts),
-Maya DNA (vault-styles.ts — currently a hard-coded 10-entry list that silently gives new
-collections NO style DNA), and Library drops all read from DB. "Publish as vault collection"
-button on an approved shoot. No deploy per collection.
+`vault_collections`/`vault_prompts` tables now receive approved Shoot Studio collections.
+New shoots generate 6 shots by default, can be extended, and must have at least 6 approved
+rendered shots before publish. Publishing writes the full approved collection to the paid
+Vault, exposes only the first approved shot to the freebie preview surfaces, feeds Maya's
+dynamic vibe tiles and server-side Vault style guide, appears in member Library drops, and
+adds the collection to the existing approval-gated email-drop queue. No deploy per collection.
 
 ## Phase C — Drop email button + auto-sync (AFTER B)
 

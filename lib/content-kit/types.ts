@@ -84,6 +84,9 @@ export type Shoot = {
   title: string
   slug: string
   status: "draft" | "approved" | "archived"
+  publishedVaultSlug?: string | null
+  vaultPublishedAt?: string | null
+  emailDropStatus?: "queued" | "included" | "skipped" | null
   inspirationUrls: string[]
   selfieUrl: string
   shots: ShootShot[]

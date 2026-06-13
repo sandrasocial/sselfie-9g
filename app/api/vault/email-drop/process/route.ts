@@ -305,7 +305,7 @@ async function processBatch(
 ): Promise<BatchResult> {
   const result: BatchResult = { sent: 0, failed: 0, skipped: 0 }
 
-  const pendingCollections = getPendingCollections()
+  const pendingCollections = await getPendingCollections()
 
   for (const subscriber of subscribers) {
     const claimed = await claimRecipient(run.id, audience, dropEmailType, subscriber.email)
@@ -528,7 +528,7 @@ export async function POST(request: Request) {
   const buyerEmailType = isTestMode ? testDropEmailType(baseBuyerEmailType) : baseBuyerEmailType
 
   // Verify drop-log still matches (safety check)
-  const pendingCollections = getPendingCollections()
+  const pendingCollections = await getPendingCollections()
   const currentDropKey = buildDropKey(pendingCollections)
   if (currentDropKey !== run.drop_key) {
     return NextResponse.json(

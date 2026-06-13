@@ -145,8 +145,8 @@ export async function POST(request: Request) {
   }
 
   // 3. Pending collections check
-  if (!isEmailDropReady()) {
-    const pending = getPendingCollections()
+  if (!(await isEmailDropReady())) {
+    const pending = await getPendingCollections()
     return NextResponse.json(
       {
         error: "Not enough new collections for a drop.",
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const newCollections = getPendingCollections()
+  const newCollections = await getPendingCollections()
   const dropKey = buildDropKey(newCollections)
   const nonbuyerEmailType = buildDropEmailType(dropKey, "nonbuyer")
   const buyerEmailType = buildDropEmailType(dropKey, "buyer")

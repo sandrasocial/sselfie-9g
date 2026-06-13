@@ -14,7 +14,7 @@ import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
-import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles"
+import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles-server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
@@ -240,6 +240,7 @@ export async function POST(req: Request) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)
     }
 
+    const vaultStyleGuide = (await getVaultStyleGuide(body?.aestheticId)) ?? (await getVaultOverviewGuide())
     let system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
@@ -253,7 +254,7 @@ export async function POST(req: Request) {
       // The real Vault shots for the chosen vibe — Maya's styling source of truth. General
       // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
       // EVERY generation path carries Vault DNA, never a generic posed-studio default.
-      vaultStyleGuide: getVaultStyleGuide(body?.aestheticId) ?? getVaultOverviewGuide(),
+      vaultStyleGuide,
     })
 
     // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.

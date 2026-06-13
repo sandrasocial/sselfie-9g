@@ -3,12 +3,14 @@ import { createServerClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
 import {
   createShoot,
+  extendShoot,
   listShoots,
   refineShoot,
   regenerateShot,
   setShootStatus,
   setShotStatus,
 } from "@/lib/content-kit/shoot-generator"
+import { publishShootToVault } from "@/lib/content-kit/shoot-publisher"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 
 export const dynamic = "force-dynamic"
@@ -59,6 +61,16 @@ export async function POST(request: NextRequest) {
       const quality = body.quality === "high" ? "high" : "medium"
       const shoot = await regenerateShot(Number(body.id), String(body.shotId || ""), quality)
       return NextResponse.json({ success: true, shoot })
+    }
+
+    if (action === "extend") {
+      const shoot = await extendShoot(Number(body.id), Number(body.count || 2))
+      return NextResponse.json({ success: true, shoot })
+    }
+
+    if (action === "publish") {
+      const result = await publishShootToVault(Number(body.id))
+      return NextResponse.json({ success: true, ...result })
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 })

@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
-import type { OutputFormat } from "./types"
+import type { Aesthetic, OutputFormat } from "./types"
 
 interface Recommendation {
   title: string
@@ -48,6 +48,7 @@ interface ContentViewProps {
 export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: ContentViewProps) {
   const [greeting, setGreeting] = useState<string | null>(null)
   const [recs, setRecs] = useState<Recommendation[] | null>(null)
+  const [moodImages, setMoodImages] = useState<string[]>(MOOD_IMAGES)
 
   useEffect(() => {
     fetch("/api/app-v3/maya/recommendations")
@@ -60,12 +61,21 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
         setGreeting("")
         setRecs([])
       })
+
+    fetch("/api/app-v3/aesthetics")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!Array.isArray(d?.aesthetics)) return
+        const images = d.aesthetics.map((a: Aesthetic) => a.coverImage).filter(Boolean)
+        if (images.length > 0) setMoodImages(images)
+      })
+      .catch(() => {})
   }, [])
 
   // Maya's contextually matched Library image; the editorial Vault image as the fallback.
   function heroFor(rec: Recommendation, index: number): string | null {
     if (rec.imageUrl) return rec.imageUrl
-    if (MOOD_IMAGES.length > 0) return MOOD_IMAGES[index % MOOD_IMAGES.length]
+    if (moodImages.length > 0) return moodImages[index % moodImages.length]
     return null
   }
 

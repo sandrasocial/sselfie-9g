@@ -24,6 +24,7 @@ import {
   VAULT_COLLECTION_META,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
+import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -327,6 +328,37 @@ export default async function PromptVaultAccessPage({
   const { token } = await params
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
+  const publishedCollections = await getPublishedVaultCollections()
+  const collectionOverview = [
+    ...publishedCollections.map((collection, index) => ({
+      eyebrow: `NEW COLLECTION ${publishedCollections.length - index}`,
+      title: collection.title.replace(/\s*Editorial\s*$/i, ""),
+      note: collection.moodLine,
+      image: collection.heroImage ?? collection.cards[0]?.exampleImage,
+      href: `#${collection.slug}`,
+    })),
+    ...COLLECTION_OVERVIEW,
+  ]
+  const vaultCollections = [
+    ...publishedCollections.map((collection) => ({
+      id: collection.slug,
+      eyebrow: `PUBLISHED VAULT COLLECTION · ${collection.title.toUpperCase()}`,
+      title: collection.title,
+      note: collection.note,
+      heroImage: collection.heroImage ?? collection.cards[0]?.exampleImage,
+      cards: collection.cards,
+    })),
+    ...VAULT_COLLECTIONS,
+  ]
+  const vaultMeta = [
+    ...publishedCollections.map((collection) => ({
+      previewCardId: collection.cards[0]?.id ?? collection.slug,
+      name: collection.title,
+      shotCount: collection.cards.length,
+      thumbnails: collection.cards.map((card) => card.exampleImage).filter((url): url is string => !!url),
+    })),
+    ...VAULT_COLLECTION_META,
+  ]
 
   if (!result.valid && !adminOverride) {
     return (
@@ -605,7 +637,7 @@ export default async function PromptVaultAccessPage({
             photograph today. Then open the collection for the full prompts.
           </p>
           <div className="pva-overview-grid">
-            {COLLECTION_OVERVIEW.map((c) => (
+            {collectionOverview.map((c) => (
               <a key={c.href} href={c.href} className="pva-overview-card">
                 {c.image && (
                   <div className="pva-overview-image-wrap">
@@ -657,8 +689,8 @@ export default async function PromptVaultAccessPage({
           </p>
 
           <div className="pva-collection-list">
-            {VAULT_COLLECTIONS.map((collection) => {
-              const meta = VAULT_COLLECTION_META.find(
+            {vaultCollections.map((collection) => {
+              const meta = vaultMeta.find(
                 (m) => m.name === collection.title,
               )
               const thumbs = meta?.thumbnails.slice(0, 6) ?? []

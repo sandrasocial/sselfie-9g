@@ -137,14 +137,21 @@ export const VAULT_COLLECTIONS: VaultDropCollection[] = [
 
 // ── Derived helpers ────────────────────────────────────────────────────────
 
-/** Collections not yet included in any email drop. */
-export function getPendingCollections(): VaultDropCollection[] {
-  return VAULT_COLLECTIONS.filter((c) => !c.includedInEmailDrop)
+/** Collections not yet included in any email drop. Includes DB-published Shoot Studio drops. */
+export async function getPendingCollections(): Promise<VaultDropCollection[]> {
+  let published: VaultDropCollection[] = []
+  try {
+    const { getPublishedVaultDropCollections } = await import("@/lib/vault/published-collections")
+    published = await getPublishedVaultDropCollections()
+  } catch (error) {
+    console.error("[vault-drop] DB-published collection load skipped:", error)
+  }
+  return [...VAULT_COLLECTIONS.filter((c) => !c.includedInEmailDrop), ...published]
 }
 
 /** Whether there are enough new collections to justify an email drop (2+). */
-export function isEmailDropReady(): boolean {
-  return getPendingCollections().length >= 2
+export async function isEmailDropReady(): Promise<boolean> {
+  return (await getPendingCollections()).length >= 2
 }
 
 /**

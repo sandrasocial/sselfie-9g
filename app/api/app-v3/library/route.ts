@@ -9,6 +9,7 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { getAcademyHomeState } from "@/app/academy/_lib/course-library"
+import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 
 export const dynamic = "force-dynamic"
 
@@ -33,14 +34,18 @@ export async function GET() {
 
     // Weekly drops are a membership collection; non-members see the locked empty state.
     let drops: Array<Record<string, unknown>> = []
+    let vaultDrops: Awaited<ReturnType<typeof getPublishedVaultCollections>> = []
     if (state.membershipActive) {
-      drops = await sql`
-        SELECT id, title, description, thumbnail_url, month, category
-        FROM academy_monthly_drops
-        WHERE status = 'published'
-        ORDER BY created_at DESC, order_index ASC
-        LIMIT 12
-      `
+      ;[drops, vaultDrops] = await Promise.all([
+        sql`
+          SELECT id, title, description, thumbnail_url, month, category
+          FROM academy_monthly_drops
+          WHERE status = 'published'
+          ORDER BY created_at DESC, order_index ASC
+          LIMIT 12
+        `,
+        getPublishedVaultCollections(),
+      ])
     }
 
     return NextResponse.json({
@@ -67,14 +72,24 @@ export async function GET() {
       })),
       // The membership tile is excluded: the Library's single upgrade CTA covers it.
       lockedProducts: state.lockedProducts.filter((p) => p.id !== "studio"),
-      drops: drops.map((d) => ({
-        id: d.id,
-        title: d.title,
-        description: d.description,
-        thumbnailUrl: d.thumbnail_url ?? null,
-        month: d.month ?? null,
-        category: d.category ?? null,
-      })),
+      drops: [
+        ...vaultDrops.map((d) => ({
+          id: `vault-${d.slug}`,
+          title: d.title,
+          description: d.moodLine,
+          thumbnailUrl: d.heroImage,
+          month: d.publishedAt.slice(0, 7),
+          category: "Prompt Vault",
+        })),
+        ...drops.map((d) => ({
+          id: d.id,
+          title: d.title,
+          description: d.description,
+          thumbnailUrl: d.thumbnail_url ?? null,
+          month: d.month ?? null,
+          category: d.category ?? null,
+        })),
+      ],
     })
   } catch (e) {
     console.error("[app-v3 library] load failed:", e)

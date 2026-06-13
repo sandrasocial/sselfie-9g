@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import type { Shoot, ShootShot } from "@/lib/content-kit/types"
+import { getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
 
 // SHOOT-STUDIO-01: Maya-style chat container + tap-first cards. The agent leads with
 // cards (prompt, shots, actions); typing is refinement only. Nothing auto-posts.
@@ -119,6 +120,8 @@ function ShootThread({
   const [message, setMessage] = useState("")
   const [refining, setRefining] = useState(false)
   const [busyShot, setBusyShot] = useState<string | null>(null)
+  const [extending, setExtending] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function shotAction(action: "approve" | "kill" | "regenerate" | "finalize", shot: ShootShot) {
@@ -189,7 +192,48 @@ function ShootThread({
     })
   }
 
-  const giveaway = shoot.shots[0]?.prompt ?? ""
+  async function extend(count: number) {
+    if (extending) return
+    setExtending(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/admin/content-kit/shoots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "extend", id: shoot.id, count }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Extend failed")
+      onUpdate(data.shoot)
+    } catch (err: any) {
+      setError(err?.message || "Extend failed")
+    } finally {
+      setExtending(false)
+    }
+  }
+
+  async function publish() {
+    if (publishing) return
+    setPublishing(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/admin/content-kit/shoots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish", id: shoot.id }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Publish failed")
+      onUpdate(data.shoot)
+    } catch (err: any) {
+      setError(err?.message || "Publish failed")
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const readiness = getShootPublishReadiness(shoot)
+  const giveaway = shoot.shots.find((shot) => shot.id === readiness.giveawayShotId)?.prompt ?? ""
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -203,7 +247,14 @@ function ShootThread({
             {shoot.status === "approved" ? "Approved" : "Draft"}
           </span>
           <h3 className="font-medium text-stone-950">{shoot.title}</h3>
-          <span className="text-xs text-stone-400">{shoot.shots.length} shots</span>
+          <span className="text-xs text-stone-400">
+            {shoot.shots.length} shots · {readiness.approvedCount} approved
+          </span>
+          {shoot.publishedVaultSlug && (
+            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs uppercase tracking-wide text-stone-600">
+              Published
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -253,9 +304,12 @@ function ShootThread({
           {/* The giveaway asset */}
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-stone-50 p-3">
             <p className="text-xs text-stone-500">
-              The reel giveaway (what goes out when they comment PROMPT):
+              The reel giveaway uses the first approved shot:
             </p>
             <CopyChip label="Copy giveaway prompt" text={giveaway} />
+            {!giveaway && (
+              <span className="text-xs text-stone-400">Approve a rendered shot first.</span>
+            )}
           </div>
 
           {/* Refinement chat input */}
@@ -286,11 +340,21 @@ function ShootThread({
 
           {/* Shoot actions */}
           <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => extend(2)}
+              disabled={extending}
+              className="rounded-full border border-stone-300 px-4 py-1.5 text-xs uppercase tracking-wide text-stone-600 hover:border-stone-950 disabled:opacity-50"
+            >
+              {extending ? "Adding shots" : "Add 2 shots"}
+            </button>
             {shoot.status !== "approved" && (
               <button
                 type="button"
                 onClick={() => setStatus("approved")}
-                className="rounded-full bg-stone-950 px-4 py-1.5 text-xs uppercase tracking-wide text-white"
+                disabled={!readiness.ready}
+                title={readiness.reason}
+                className="rounded-full bg-stone-950 px-4 py-1.5 text-xs uppercase tracking-wide text-white disabled:opacity-40"
               >
                 Approve shoot
               </button>
@@ -304,6 +368,20 @@ function ShootThread({
                 Back to draft
               </button>
             )}
+            <button
+              type="button"
+              onClick={publish}
+              disabled={!readiness.ready || publishing}
+              title={readiness.reason}
+              className="rounded-full bg-stone-950 px-4 py-1.5 text-xs uppercase tracking-wide text-white disabled:opacity-40"
+            >
+              {publishing ? "Publishing" : shoot.publishedVaultSlug ? "Republish to Vault" : "Publish to Vault"}
+            </button>
+            <span className="self-center text-xs text-stone-400">
+              {shoot.publishedVaultSlug
+                ? `Vault: ${shoot.publishedVaultSlug} · email drop ${shoot.emailDropStatus || "queued"}`
+                : readiness.reason}
+            </span>
             <button
               type="button"
               onClick={() => onDelete(shoot.id)}
@@ -401,7 +479,7 @@ export function ShootStudioClient({
         <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">Shoot studio</h2>
         <p className="mt-1 text-sm text-stone-600">
           Drop your Pinterest saves, pick a selfie, and get the photoshoot: your face, that world.
-          Every shoot comes with the giveaway prompt for the reel. Nothing posts without you.
+          Every shoot starts with 6 shots, can be extended, and only publishes when you approve it.
         </p>
       </div>
 
@@ -478,7 +556,7 @@ export function ShootStudioClient({
             disabled={creating || inspiration.length === 0 || !selfieUrl}
             className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
           >
-            {creating ? "Creating your shoot (2-3 minutes)" : "Create the shoot"}
+            {creating ? "Creating your 6-shot shoot (3-4 minutes)" : "Create the shoot"}
           </button>
         </div>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
