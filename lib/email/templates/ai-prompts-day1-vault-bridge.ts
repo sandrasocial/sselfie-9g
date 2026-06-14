@@ -21,7 +21,7 @@ export function generateAiPromptsDay1VaultBridgeEmail({
     checkoutEmail: recipientEmail,
   })
 
-  const subject = "did your photo come out?"
+  const subject = "babe did your first shot actually look like you?"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>

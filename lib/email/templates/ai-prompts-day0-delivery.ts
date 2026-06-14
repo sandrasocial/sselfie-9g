@@ -1,7 +1,7 @@
 import { getEmailHeroImage } from "../email-image-assets"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
-import { starterKitCheckoutUrl } from "./selfie-education-links"
+import { promptVaultCheckoutUrl } from "./selfie-education-links"
 
 export interface AiPromptsDay0DeliveryParams {
   firstName: string
@@ -18,18 +18,16 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
 
   const subject = "your selfie prompts are here"
   const heroImage = getEmailHeroImage("prompt_pack_hero")
-  const starterKitUrl = new URL(buildRevenueEmailLink(starterKitCheckoutUrl(), {
-    campaign: "ai_prompts_day0_starter_kit_bridge",
-    content: "see_starter_kit",
+  const promptVaultUrl = new URL(buildRevenueEmailLink(promptVaultCheckoutUrl(), {
+    campaign: "vault_bridge",
+    medium: "ai_prompts_day0",
     emailType: "ai_prompts_delivery",
+    checkoutEmail: params.recipientEmail,
   }))
 
-  if (params.recipientEmail) {
-    starterKitUrl.searchParams.set("checkout_email", params.recipientEmail)
-  }
-  starterKitUrl.searchParams.set("checkout_source", "ai_prompts_day0_starter_kit_bridge")
-  starterKitUrl.searchParams.set("cta_keyword", "PROMPTS")
-  starterKitUrl.searchParams.set("buyer_stage", "lead")
+  promptVaultUrl.searchParams.set("checkout_source", "ai_prompts_day0_vault_bridge")
+  promptVaultUrl.searchParams.set("cta_keyword", "PROMPTS")
+  promptVaultUrl.searchParams.set("buyer_stage", "lead")
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
@@ -39,8 +37,8 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One quick thing first, because it trips almost everyone up:</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If your photo comes back looking a little plastic or fake, it&apos;s almost never the AI. It&apos;s the lighting in your original selfie. When the light is dark or harsh, the AI gets bad information and starts guessing, and that&apos;s when skin goes waxy.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want the easy shortcut to better photos to feed it, that&apos;s exactly what the Starter Kit is for. My presets, a simple posing guide, and the quick setup that gets your selfies camera-ready in minutes. It&apos;s $37, and it&apos;s the difference between &quot;almost&quot; and &quot;wow.&quot;</p>
-    <div style="margin:26px 0 26px;">${renderStoneButton("See the Starter Kit · $37", starterKitUrl.toString(), "outline")}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When you&apos;re ready for more than one look, the full Vault is where it lives. Ten worlds, 92 shots, every prompt with the example image so you&apos;re never guessing. One selfie, as many shoots as you want. It&apos;s a one-time $27.</p>
+    <div style="margin:26px 0 26px;">${renderStoneButton("See the full Vault · $27", promptVaultUrl.toString(), "outline")}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Have fun with these. Reply and show me what you make. I read every message.</p>
   `
 
@@ -71,10 +69,10 @@ If your photo comes back looking a little plastic or fake, it's almost never the
 
 The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.
 
-If you want the easy shortcut to better photos to feed it, that's exactly what the Starter Kit is for. My presets, a simple posing guide, and the quick setup that gets your selfies camera-ready in minutes. It's $37, and it's the difference between "almost" and "wow."
+When you're ready for more than one look, the full Vault is where it lives. Ten worlds, 92 shots, every prompt with the example image so you're never guessing. One selfie, as many shoots as you want. It's a one-time $27.
 
-See the Starter Kit · $37:
-${starterKitUrl.toString()}
+See the full Vault · $27:
+${promptVaultUrl.toString()}
 
 Have fun with these. Reply and show me what you make. I read every message.
 
