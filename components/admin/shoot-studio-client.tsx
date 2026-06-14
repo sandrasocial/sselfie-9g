@@ -26,15 +26,15 @@ function CopyChip({ label, text }: { label: string; text: string }) {
 }
 
 function ShotCard({
-  shoot,
   shot,
   busy,
   onAction,
+  onPreview,
 }: {
-  shoot: Shoot
   shot: ShootShot
   busy: string | null
   onAction: (action: "approve" | "kill" | "regenerate" | "finalize", shot: ShootShot) => void
+  onPreview: (shot: ShootShot) => void
 }) {
   const working = busy === shot.id
   return (
@@ -48,10 +48,10 @@ function ShotCard({
       }`}
     >
       {shot.imageUrl ? (
-        <a href={shot.imageUrl} download={`${shoot.slug}-${shot.id}.png`} title="Download this shot">
+        <button type="button" onClick={() => onPreview(shot)} title="Open full-size preview" className="block w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={shot.imageUrl} alt={shot.title} className="h-72 w-full object-cover" loading="lazy" />
-        </a>
+        </button>
       ) : (
         <div className="flex h-72 w-full items-center justify-center bg-stone-100 px-4 text-center text-xs text-stone-500">
           {working ? "Rendering..." : "Didn't render. Hit regenerate."}
@@ -123,6 +123,7 @@ function ShootThread({
   const [extending, setExtending] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [previewShot, setPreviewShot] = useState<ShootShot | null>(null)
 
   async function shotAction(action: "approve" | "kill" | "regenerate" | "finalize", shot: ShootShot) {
     setError(null)
@@ -297,7 +298,13 @@ function ShootThread({
           {/* Shot cards */}
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
             {shoot.shots.map((shot) => (
-              <ShotCard key={shot.id} shoot={shoot} shot={shot} busy={busyShot} onAction={shotAction} />
+              <ShotCard
+                key={shot.id}
+                shot={shot}
+                busy={busyShot}
+                onAction={shotAction}
+                onPreview={setPreviewShot}
+              />
             ))}
           </div>
 
@@ -389,6 +396,43 @@ function ShootThread({
             >
               Delete
             </button>
+          </div>
+        </div>
+      )}
+      {previewShot?.imageUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full-size preview: ${previewShot.title}`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/90 p-4"
+          onClick={() => setPreviewShot(null)}
+        >
+          <div className="flex max-h-full w-full max-w-5xl flex-col gap-3" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 text-white">
+              <p className="truncate text-sm font-medium">{previewShot.title}</p>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  href={previewShot.imageUrl}
+                  download={`${shoot.slug}-${previewShot.id}.png`}
+                  className="rounded-full border border-white/40 px-3 py-1 text-xs uppercase tracking-wide text-white hover:border-white"
+                >
+                  Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewShot(null)}
+                  className="rounded-full border border-white/40 px-3 py-1 text-xs uppercase tracking-wide text-white hover:border-white"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewShot.imageUrl}
+              alt={previewShot.title}
+              className="max-h-[85vh] w-full rounded-xl object-contain"
+            />
           </div>
         </div>
       )}

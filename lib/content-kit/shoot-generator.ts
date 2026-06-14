@@ -24,11 +24,15 @@ const DEFAULT_SHOTS_PER_SHOOT = 6
 // could lift a face from the inspiration. Structural no-fake guard, not prompt-dependent.
 // Built per generation: the first `selfieCount` images are all the SAME woman (different
 // angles: front, side profiles, full body) and define identity; the rest are style only.
-function buildImageRoleGuard(selfieCount: number): string {
+function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
+  const stylePriority =
+    styleCount > 1
+      ? "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible. Use the later style references only as secondary support when they do not conflict with the first style reference."
+      : "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible."
   if (selfieCount <= 1) {
-    return "Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. Never copy a face, skin, hair color or body from the style references."
+    return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
   }
-  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading and mood. Never copy a face, skin, hair color or body from the style references.`
+  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
 }
 
 function buildIdentityGuard(selfieCount: number): string {
@@ -119,7 +123,7 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
 Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 
 function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images: the style, vibe, outfit, makeup, hair, accessories, location, light and color grade. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for style, outfit family, lighting direction, camera distance, makeup finish, accessories, location materials, color grade and mood. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
@@ -181,7 +185,7 @@ async function generateShotImage(input: {
     ),
   )
 
-  const fullPrompt = `${buildImageRoleGuard(selfieUrls.length)}\n\n${input.prompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
+  const fullPrompt = `${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${input.prompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
