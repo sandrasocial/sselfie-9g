@@ -28,6 +28,10 @@ vi.mock("@/lib/admin-error-log", () => ({
   logAdminError: logAdminErrorMock,
 }))
 
+vi.mock("@/lib/analytics/events", () => ({
+  logAnalyticsEvent: vi.fn().mockResolvedValue({ ok: true }),
+}))
+
 function renderTaggedTemplate(strings: TemplateStringsArray, values: unknown[]): string {
   let output = ""
 
@@ -71,17 +75,21 @@ describe("GET /api/cron/nurture-sequence", () => {
     expect(cronSuccessMock).toHaveBeenCalledTimes(1)
     expect(cronErrorMock).not.toHaveBeenCalled()
 
-    expect(queries).toHaveLength(22)
+    expect(queries).toHaveLength(20)
 
     for (const query of queries) {
       expect(query).not.toContain("u.name")
       expect(query).not.toContain("UNION")
     }
 
-    const selfieGuideQueries = queries.slice(0, 5)
-    const starterKitQueries = queries.slice(5, 12)
-    const masterclassQueries = queries.slice(12, 17)
-    const strategyQueries = queries.slice(17)
+    const freebieGuideQueries = queries.slice(0, 3)
+    const selfieGuideQueries = queries.slice(3, 8)
+    const starterKitQueries = queries.slice(8, 15)
+    const masterclassQueries = queries.slice(15, 20)
+
+    for (const query of freebieGuideQueries) {
+      expect(query).toContain("NULLIF(BTRIM(fs.name), '') AS name")
+    }
 
     for (const query of [...selfieGuideQueries, ...starterKitQueries]) {
       expect(query).toContain("COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name")
@@ -92,11 +100,9 @@ describe("GET /api/cron/nurture-sequence", () => {
       expect(query).toContain("s.product_type = 'masterclass'")
     }
 
-    expect(strategyQueries).toHaveLength(5)
-
-    for (const query of strategyQueries) {
-      expect(query).toContain("NULLIF(BTRIM(u.display_name), '') AS name")
-      expect(query).toContain("fbs.setup_token IS NOT NULL")
-    }
+    expect(freebieGuideQueries).toHaveLength(3)
+    expect(selfieGuideQueries).toHaveLength(5)
+    expect(starterKitQueries).toHaveLength(7)
+    expect(masterclassQueries).toHaveLength(5)
   })
 })

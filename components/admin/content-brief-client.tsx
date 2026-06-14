@@ -204,7 +204,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
                       </a>
                     )}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-stone-900">"{post.hookLine}"</p>
+                  <p className="mt-2 text-sm font-medium text-stone-900">&quot;{post.hookLine}&quot;</p>
                   <p className="mt-1 text-sm text-stone-600">{post.whyItWorked}</p>
                 </div>
               ))}
