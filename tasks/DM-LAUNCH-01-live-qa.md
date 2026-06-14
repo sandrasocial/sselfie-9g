@@ -2,7 +2,12 @@
 
 OWNER: sandra
 
-Status: built, waiting for real-world QA.
+Status: on hold by Sandra as of 2026-06-14.
+
+Forward-going bridge is live. Historical backlog import is paused because Meta Graph times out on
+Sandra's current IG thread volume, and the public ManyChat API does not expose bulk message
+history. Existing backlog remains in Instagram/ManyChat unless Sandra exports it or revives this
+work later.
 
 ## What Is Built
 
