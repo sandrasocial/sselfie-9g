@@ -54,7 +54,7 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
   it("renders the approved day 1 Vault bridge email with checkout attribution", () => {
     const email = generateAiPromptsDay1VaultBridgeEmail({ firstName: "Sandra" })
 
-    expect(email.subject).toBe("did your photo come out?")
+    expect(email.subject).toBe("babe did your first shot actually look like you?")
     expect(email.text).toContain("Hi Sandra,")
     expect(email.text).toContain("the free prompt was one look. The Vault is the full shoot")
     expect(email.text).toContain("/checkout/prompt-vault")
@@ -76,12 +76,12 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
       recipientEmail: "sandra@example.com",
     })
 
-    expect(day7.subject).toBe("one shot each. the Vault is the whole story.")
+    expect(day7.subject).toBe("that was 1 of 92, babe 👀")
     expect(day7.text).toContain("The Vault has ten of those worlds. 92 shots, start to finish.")
     expect(day7.text).toContain("Get the Vault · $27 · one time:")
     expect(day7.text).toContain("email_type=ai-prompts-day7-prompt-vault-offer")
 
-    expect(day9.subject).toBe("will it actually look like me?")
+    expect(day9.subject).toBe("proof it still looks like you (not someone else)")
     expect(day9.text).toContain(
       `"I am blown away. I'm so picky it's not even funny. But this? My God."`
     )
@@ -90,7 +90,7 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(day9.text).toContain("AI should not erase you. It should frame you.")
     expect(day9.text).toContain("email_type=ai-prompts-day9-prompt-vault-proof")
 
-    expect(day11.subject).toBe("still sitting in your camera roll?")
+    expect(day11.subject).toBe("your camera roll's still waiting on the full shoot")
     expect(day11.text).toContain("The Vault is $27. One time. Ten full worlds, 92 shots")
     expect(day11.text).toContain("email_type=ai-prompts-day11-prompt-vault-why-now")
 

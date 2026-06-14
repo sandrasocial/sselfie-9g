@@ -1,5 +1,3 @@
-import fs from "node:fs"
-import path from "node:path"
 import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
@@ -24,8 +22,6 @@ import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-col
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
-
-const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "ai-prompts-hero.jpg")
 
 export const metadata: Metadata = {
   title: "Your AI Photoshoot Preview · SSELFIE",
@@ -214,7 +210,6 @@ export default async function AiPromptsAccessPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const hasHeroImage = fs.existsSync(HERO_IMAGE)
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
   const publishedCollections = await getPublishedFreebieCollectionPreviews()
@@ -327,18 +322,6 @@ export default async function AiPromptsAccessPage({
     <main className={`ap-page ${inter.className}`}>
       {/* 1. Hero */}
       <section className="ap-hero">
-        {hasHeroImage && (
-          <div className="ap-hero-image-wrap" aria-hidden="true">
-            <Image
-              src="/images/ai-prompts/ai-prompts-hero.jpg"
-              alt=""
-              fill
-              className="ap-hero-image"
-              priority
-            />
-            <div className="ap-hero-image-overlay" />
-          </div>
-        )}
         <div className="ap-hero-content">
           <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
@@ -703,32 +686,11 @@ export default async function AiPromptsAccessPage({
 
         .ap-hero {
           position: relative;
-          min-height: 92vh;
           display: flex;
           align-items: flex-end;
-          padding: 0 24px 64px;
+          padding: 96px 24px 56px;
           overflow: hidden;
           background: #F8FAFA;
-        }
-
-        .ap-hero-image-wrap {
-          position: absolute;
-          inset: 0;
-        }
-
-        .ap-hero-image {
-          object-fit: cover;
-          object-position: center top;
-        }
-
-        .ap-hero-image-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(248, 250, 250, 0.56) 0%,
-            rgba(248, 250, 250, 0.94) 100%
-          );
         }
 
         .ap-hero-content {
@@ -1394,8 +1356,7 @@ export default async function AiPromptsAccessPage({
 
         @media (min-width: 640px) {
           .ap-hero {
-            padding: 0 48px 80px;
-            min-height: 88vh;
+            padding: 112px 48px 72px;
           }
           .ap-section {
             padding: 88px 48px;
@@ -1417,7 +1378,7 @@ export default async function AiPromptsAccessPage({
 
         @media (min-width: 900px) {
           .ap-hero {
-            padding: 0 72px 96px;
+            padding: 128px 72px 80px;
           }
           .ap-section {
             padding: 96px 72px;
