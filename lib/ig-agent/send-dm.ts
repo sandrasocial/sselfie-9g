@@ -52,7 +52,7 @@ export async function sendInstagramDm(params: {
         ${params.conversationId},
         ${fromType},
         ${params.message},
-        ${fromType !== "sandra"},
+        ${true /* this branch only runs for fromType "agent", so the draft is always AI-generated */},
         ${"draft"},
         FALSE,
         NOW()
