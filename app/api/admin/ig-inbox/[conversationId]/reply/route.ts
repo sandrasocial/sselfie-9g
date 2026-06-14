@@ -57,6 +57,9 @@ export async function POST(
     WHERE id = ${conversationId}
   `
 
-  return NextResponse.json({ success: true, result })
+  return NextResponse.json({
+    success: result.sent,
+    result,
+    error: result.sent ? null : result.reason || "send_failed",
+  })
 }
-
