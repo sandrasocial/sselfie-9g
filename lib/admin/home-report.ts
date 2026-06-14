@@ -113,10 +113,12 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         SELECT user_id FROM subscriptions m
         WHERE m.user_id = t.user_id
           AND m.product_type = 'sselfie_studio_membership'
+          AND (m.is_test_mode = FALSE OR m.is_test_mode IS NULL)
           AND m.created_at >= t.created_at
         LIMIT 1
       ) m ON TRUE
       WHERE t.product_type = 'suite_trial'
+        AND (t.is_test_mode = FALSE OR t.is_test_mode IS NULL)
     `.catch(() => []) as unknown as Promise<any[]>,
     getStudioMemberHealthReport().catch((error) => {
       console.error("[admin-home] studio member health failed:", error)
