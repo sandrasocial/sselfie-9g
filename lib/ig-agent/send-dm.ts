@@ -24,7 +24,10 @@ type ConnectionRow = {
  * - Instagram Login / IGAA token: graph.instagram.com/{ig-user-id}/messages
  * - Legacy Facebook Page token: graph.facebook.com/me/messages
  *
- * The function is still launch-gated by IG_AGENT_AUTO_SEND_ENABLED.
+ * Send policy:
+ * - fromType "sandra" = a human approved this exact text in /admin/ig-inbox -> SEND.
+ * - fromType "agent" = automated -> only sends when IG_AGENT_AUTO_SEND_ENABLED === "true";
+ *   otherwise it is stored as a draft.
  */
 export async function sendInstagramDm(params: {
   igUserId: string
@@ -32,7 +35,9 @@ export async function sendInstagramDm(params: {
   conversationId: number
   fromType?: "agent" | "sandra"
 }): Promise<SendIgDmResult> {
-  if (process.env.IG_AGENT_AUTO_SEND_ENABLED !== "true") {
+  const fromType = params.fromType || "agent"
+
+  if (fromType !== "sandra" && process.env.IG_AGENT_AUTO_SEND_ENABLED !== "true") {
     await sql`
       INSERT INTO ig_messages (
         conversation_id,
@@ -45,9 +50,9 @@ export async function sendInstagramDm(params: {
       )
       VALUES (
         ${params.conversationId},
-        ${params.fromType || "agent"},
+        ${fromType},
         ${params.message},
-        ${params.fromType !== "sandra"},
+        ${fromType !== "sandra"},
         ${"draft"},
         FALSE,
         NOW()
@@ -116,9 +121,9 @@ export async function sendInstagramDm(params: {
       )
       VALUES (
         ${params.conversationId},
-        ${params.fromType || "agent"},
+        ${fromType},
         ${params.message},
-        ${params.fromType !== "sandra"},
+        ${fromType !== "sandra"},
         ${"failed"},
         FALSE,
         ${JSON.stringify(payload)},
@@ -159,9 +164,9 @@ export async function sendInstagramDm(params: {
     VALUES (
       ${params.conversationId},
       ${messageId},
-      ${params.fromType || "agent"},
+      ${fromType},
       ${params.message},
-      ${params.fromType !== "sandra"},
+      ${fromType !== "sandra"},
       ${"sent"},
       TRUE,
       ${JSON.stringify(payload)},
