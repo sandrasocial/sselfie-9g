@@ -13,11 +13,13 @@ function read(relativePath: string) {
 describe("Stripe webhook studio membership checkout extraction", () => {
   it("delegates subscription checkout fulfillment to the studio membership handler", () => {
     const routeSource = read("app/api/webhooks/stripe/route.ts")
+    const checkoutSessionSource = read("lib/payments/lifecycle/checkout-session-completed.ts")
     const handlerSource = read("lib/payments/handlers/studio-membership.ts")
 
-    expect(routeSource).toContain("handleStudioMembershipSubscriptionCheckout")
-    expect(routeSource).toContain("await handleStudioMembershipSubscriptionCheckout({")
-    expect(routeSource).toContain("maybeTrackCheckoutReferralSignup,")
+    expect(routeSource).toContain("handleCheckoutSessionCompleted")
+    expect(checkoutSessionSource).toContain("handleStudioMembershipSubscriptionCheckout")
+    expect(checkoutSessionSource).toContain("await handleStudioMembershipSubscriptionCheckout({")
+    expect(checkoutSessionSource).toContain("maybeTrackCheckoutReferralSignup,")
     expect(routeSource).not.toContain("New subscription purchase from")
     expect(routeSource).not.toContain("Membership welcome (existing user) sent")
 
