@@ -55,6 +55,17 @@ describe("Instagram DM send policy", () => {
 
     expect(result).toEqual({ sent: false, reason: "auto_send_disabled" })
     expect(fetchMock).not.toHaveBeenCalled()
+
+    // The draft is recorded with ai_generated = true (this branch only runs for
+    // fromType "agent"). Guards the always-true comparison that previously lived here.
+    const draftInsert = sqlMock.mock.calls.find(([strings]) =>
+      Array.from(strings as TemplateStringsArray)
+        .join("")
+        .includes("INSERT INTO ig_messages"),
+    )
+    expect(draftInsert).toBeDefined()
+    // interpolated values: [conversationId, fromType, message, ai_generated, send_status]
+    expect(draftInsert?.slice(1)).toEqual([42, "agent", "Hey lovely, here is the link.", true, "draft"])
   })
 
   it("allows Sandra-approved replies even while automated sends are disabled", async () => {
