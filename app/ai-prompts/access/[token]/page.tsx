@@ -214,6 +214,8 @@ export default async function AiPromptsAccessPage({
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
   const publishedCollections = await getPublishedFreebieCollectionPreviews()
   const freebieCollections = [...publishedCollections, ...getStaticVaultFreebieCollections()]
+  const heroCollection = freebieCollections[0] ?? null
+  const heroImageSrc = heroCollection?.freeCard.exampleImage ?? null
   const lockedTileCount = freebieCollections.reduce((total, collection) => total + collection.lockedShots.length, 0)
 
   if (!result.valid && !adminOverride) {
@@ -321,7 +323,20 @@ export default async function AiPromptsAccessPage({
   return (
     <main className={`ap-page ${inter.className}`}>
       {/* 1. Hero */}
-      <section className="ap-hero">
+      <section className={`ap-hero ${heroImageSrc ? "ap-hero-with-image" : ""}`}>
+        {heroImageSrc && (
+          <div className="ap-hero-image-wrap" aria-hidden="true">
+            <Image
+              src={heroImageSrc}
+              alt=""
+              fill
+              className="ap-hero-image"
+              priority
+              sizes="100vw"
+            />
+            <div className="ap-hero-image-overlay" />
+          </div>
+        )}
         <div className="ap-hero-content">
           <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
@@ -331,6 +346,11 @@ export default async function AiPromptsAccessPage({
             Shot 1 from every Vault collection is here. Pick a visual identity, copy the prompt,
             upload one selfie, and see which version of you feels the most alive.
           </p>
+          {heroCollection && (
+            <p className="ap-hero-current">
+              Newest Vault world: {heroCollection.name}
+            </p>
+          )}
           <div className="ap-hero-actions">
             <a href="#vault-preview" className="ap-hero-cta">
               Open the Preview
@@ -686,11 +706,30 @@ export default async function AiPromptsAccessPage({
 
         .ap-hero {
           position: relative;
+          min-height: 72vh;
           display: flex;
           align-items: flex-end;
           padding: 96px 24px 56px;
           overflow: hidden;
           background: #F8FAFA;
+        }
+
+        .ap-hero-image-wrap {
+          position: absolute;
+          inset: 0;
+        }
+
+        .ap-hero-image {
+          object-fit: cover;
+          object-position: center center;
+        }
+
+        .ap-hero-image-overlay {
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(90deg, rgba(248, 250, 250, 0.96) 0%, rgba(248, 250, 250, 0.74) 42%, rgba(248, 250, 250, 0.28) 100%),
+            linear-gradient(0deg, rgba(248, 250, 250, 0.90) 0%, rgba(248, 250, 250, 0.12) 55%);
         }
 
         .ap-hero-content {
@@ -718,11 +757,20 @@ export default async function AiPromptsAccessPage({
         }
 
         .ap-hero-sub {
-          margin: 0 0 32px;
+          margin: 0 0 18px;
           font-size: clamp(0.95rem, 2.5vw, 1.05rem);
           line-height: 1.8;
           color: #4F5052;
           max-width: 520px;
+        }
+
+        .ap-hero-current {
+          margin: 0 0 32px;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #4F5052;
         }
 
         .ap-hero-actions {
@@ -1379,6 +1427,7 @@ export default async function AiPromptsAccessPage({
         @media (min-width: 900px) {
           .ap-hero {
             padding: 128px 72px 80px;
+            min-height: 78vh;
           }
           .ap-section {
             padding: 96px 72px;
