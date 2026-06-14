@@ -24,7 +24,7 @@ export function generateAiPromptsDay9PromptVaultProofEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "will it actually look like me?"
+  const subject = "proof it still looks like you (not someone else)"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The question I get most about the Vault: "will it actually look like me, or some AI version of me?"</p>

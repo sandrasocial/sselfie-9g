@@ -23,7 +23,7 @@ export function generateAiPromptsDay11PromptVaultWhyNowEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "still sitting in your camera roll?"
+  const subject = "your camera roll's still waiting on the full shoot"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've had the free shots for almost two weeks now.</p>

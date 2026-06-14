@@ -1,5 +1,3 @@
-import fs from "node:fs"
-import path from "node:path"
 import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
@@ -24,8 +22,6 @@ import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-col
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
-
-const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "ai-prompts-hero.jpg")
 
 export const metadata: Metadata = {
   title: "Your AI Photoshoot Preview · SSELFIE",
@@ -214,7 +210,6 @@ export default async function AiPromptsAccessPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const hasHeroImage = fs.existsSync(HERO_IMAGE)
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
   const publishedCollections = await getPublishedFreebieCollectionPreviews()
@@ -327,18 +322,6 @@ export default async function AiPromptsAccessPage({
     <main className={`ap-page ${inter.className}`}>
       {/* 1. Hero */}
       <section className="ap-hero">
-        {hasHeroImage && (
-          <div className="ap-hero-image-wrap" aria-hidden="true">
-            <Image
-              src="/images/ai-prompts/ai-prompts-hero.jpg"
-              alt=""
-              fill
-              className="ap-hero-image"
-              priority
-            />
-            <div className="ap-hero-image-overlay" />
-          </div>
-        )}
         <div className="ap-hero-content">
           <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
@@ -360,69 +343,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 1b. Seven-minute value test */}
-      <section className="ap-section ap-first-test">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">SELFIE TO BRAND SHOOT</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>
-            Try one opening shot before you decide.
-          </h2>
-          <p className="ap-workflow-note ap-first-test-note">
-            The free preview is meant to prove the transformation quickly. Pick one visual world
-            below, upload a clear selfie into ChatGPT, copy Shot 1, and see if you want the full
-            shoot sequence.
-          </p>
-          <div className="ap-test-steps">
-            <div className="ap-test-step">
-              <span>01</span>
-              <p>Choose the version of you that feels the most magnetic today.</p>
-            </div>
-            <div className="ap-test-step">
-              <span>02</span>
-              <p>Copy the opening-shot prompt and paste it into ChatGPT with your selfie.</p>
-            </div>
-            <div className="ap-test-step">
-              <span>03</span>
-              <p>If the result works, unlock the remaining shots, newest drops, and future photoshoots.</p>
-            </div>
-          </div>
-          <a href="#vault-preview" className="ap-bridge-cta ap-bridge-cta-primary ap-test-cta">
-            Start With Shot 1
-          </a>
-        </div>
-      </section>
-
-      {/* 1c. Product path context */}
-      <section className="ap-section ap-path">
-        <div className="ap-section-inner ap-path-inner">
-          <div>
-            <p className="ap-eyebrow">WHERE THIS FITS</p>
-            <h2 className={`ap-section-title ${cormorant.className}`}>
-              This is the free preview, not the whole shoot.
-            </h2>
-            <p className="ap-workflow-note">
-              The preview helps you test the feeling. The Vault gives you the full
-              photoshoot collections. The Selfie to Brand Shoot System is the guided
-              path for turning the images into usable brand content.
-            </p>
-          </div>
-          <div className="ap-path-steps" aria-label="SSELFIE product path">
-            {[
-              ["01", "Preview", "Test Shot 1 from each visual world."],
-              ["02", "Vault", "Get full shoots, newest drops, and future photoshoots."],
-              ["03", "System", "Use the guided path to create, choose, and post the images."],
-            ].map(([n, title, body]) => (
-              <article key={n} className="ap-path-step">
-                <span>{n}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Updated Vault preview — the core experience */}
+      {/* 2. Updated Vault preview — the core experience (moved directly under hero) */}
       {freebieCollections.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
@@ -540,6 +461,38 @@ export default async function AiPromptsAccessPage({
           </div>
         </section>
       )}
+
+      {/* 1b. Seven-minute value test */}
+      <section className="ap-section ap-first-test">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">SELFIE TO BRAND SHOOT</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            Try one opening shot before you decide.
+          </h2>
+          <p className="ap-workflow-note ap-first-test-note">
+            The free preview is meant to prove the transformation quickly. Pick one visual world
+            below, upload a clear selfie into ChatGPT, copy Shot 1, and see if you want the full
+            shoot sequence.
+          </p>
+          <div className="ap-test-steps">
+            <div className="ap-test-step">
+              <span>01</span>
+              <p>Choose the version of you that feels the most magnetic today.</p>
+            </div>
+            <div className="ap-test-step">
+              <span>02</span>
+              <p>Copy the opening-shot prompt and paste it into ChatGPT with your selfie.</p>
+            </div>
+            <div className="ap-test-step">
+              <span>03</span>
+              <p>If the result works, unlock the remaining shots, newest drops, and future photoshoots.</p>
+            </div>
+          </div>
+          <a href="#vault-preview" className="ap-bridge-cta ap-bridge-cta-primary ap-test-cta">
+            Start With Shot 1
+          </a>
+        </div>
+      </section>
 
       {/* 2. Before you start */}
       <section className="ap-section ap-before">
@@ -733,32 +686,11 @@ export default async function AiPromptsAccessPage({
 
         .ap-hero {
           position: relative;
-          min-height: 92vh;
           display: flex;
           align-items: flex-end;
-          padding: 0 24px 64px;
+          padding: 96px 24px 56px;
           overflow: hidden;
           background: #F8FAFA;
-        }
-
-        .ap-hero-image-wrap {
-          position: absolute;
-          inset: 0;
-        }
-
-        .ap-hero-image {
-          object-fit: cover;
-          object-position: center top;
-        }
-
-        .ap-hero-image-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(248, 250, 250, 0.56) 0%,
-            rgba(248, 250, 250, 0.94) 100%
-          );
         }
 
         .ap-hero-content {
@@ -1122,15 +1054,16 @@ export default async function AiPromptsAccessPage({
         .copy-after-cta {
           width: 100%;
           margin-top: 14px;
-          padding: 16px;
-          border: 1px solid #FFFFFF;
-          background: #FFFFFF;
+          padding: 20px;
+          border: 1px solid #0D0E10;
+          background: #0D0E10;
+          border-radius: 8px;
           text-align: left;
         }
 
         .copy-after-title {
           margin: 0 0 8px;
-          color: #0D0E10;
+          color: #F8FAFA;
           font-size: 15px;
           font-weight: 500;
           line-height: 1.35;
@@ -1140,7 +1073,7 @@ export default async function AiPromptsAccessPage({
           margin: 0 0 14px;
           font-size: 13px;
           line-height: 1.6;
-          color: #818283;
+          color: rgba(248, 250, 250, 0.72);
         }
 
         .copy-after-link {
@@ -1149,8 +1082,8 @@ export default async function AiPromptsAccessPage({
           justify-content: center;
           min-height: 44px;
           padding: 12px 16px;
-          background: #0D0E10;
-          color: #F8FAFA;
+          background: #F8FAFA;
+          color: #0D0E10;
           text-align: center;
           text-decoration: none;
           font-size: 10px;
@@ -1166,7 +1099,7 @@ export default async function AiPromptsAccessPage({
           padding: 4px 8px;
           border: 0;
           background: none;
-          color: #818283;
+          color: rgba(248, 250, 250, 0.6);
           font-size: 11px;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -1176,12 +1109,12 @@ export default async function AiPromptsAccessPage({
         }
 
         .copy-after-dismiss:hover {
-          color: #4F5052;
+          color: rgba(248, 250, 250, 0.85);
         }
 
         .copy-after-footnote {
           margin: 10px 0 0;
-          color: #818283;
+          color: rgba(248, 250, 250, 0.6);
           font-size: 11px;
           line-height: 1.55;
         }
@@ -1423,8 +1356,7 @@ export default async function AiPromptsAccessPage({
 
         @media (min-width: 640px) {
           .ap-hero {
-            padding: 0 48px 80px;
-            min-height: 88vh;
+            padding: 112px 48px 72px;
           }
           .ap-section {
             padding: 88px 48px;
@@ -1446,7 +1378,7 @@ export default async function AiPromptsAccessPage({
 
         @media (min-width: 900px) {
           .ap-hero {
-            padding: 0 72px 96px;
+            padding: 128px 72px 80px;
           }
           .ap-section {
             padding: 96px 72px;
@@ -1567,20 +1499,21 @@ export default async function AiPromptsAccessPage({
           border-color: rgba(13, 14, 16, 0.42);
         }
         .copy-after-cta {
-          border-color: rgba(13, 12, 11, 0.08);
+          border-color: #0D0E10;
+          background: #0D0E10;
         }
         .copy-after-note {
-          color: rgba(13, 12, 11, 0.56);
+          color: rgba(248, 250, 250, 0.72);
         }
         .copy-after-title {
-          color: #0D0E10;
-        }
-        .copy-after-link {
-          background: #0D0E10;
           color: #F8FAFA;
         }
+        .copy-after-link {
+          background: #F8FAFA;
+          color: #0D0E10;
+        }
         .copy-after-footnote {
-          color: rgba(13, 12, 11, 0.56);
+          color: rgba(248, 250, 250, 0.6);
         }
         .ap-bridge-cta,
         .ap-bridge-cta-primary,

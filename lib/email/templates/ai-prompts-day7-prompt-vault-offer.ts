@@ -24,7 +24,7 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "one shot each. the Vault is the whole story."
+  const subject = "that was 1 of 92, babe 👀"
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
   const bodyHtml = `

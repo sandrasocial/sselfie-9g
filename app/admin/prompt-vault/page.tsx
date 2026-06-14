@@ -95,7 +95,7 @@ async function getPromptVaultMetrics(windowDays: number) {
     SELECT
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_landing_view')::int AS landing_views,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_reel_click')::int AS reel_clicks,
-      COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
+      COUNT(*) FILTER (WHERE event_name IN ('ai_prompts_prompt_vault_click', 'ai_prompts_locked_vault_tile_click'))::int AS free_to_vault_clicks,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_requested')::int AS checkout_session_requested,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_created')::int AS checkout_session_created,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_session_failed')::int AS checkout_session_failed,

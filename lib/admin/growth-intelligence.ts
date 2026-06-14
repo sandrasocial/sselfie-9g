@@ -19,7 +19,7 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
         COUNT(*) FILTER (WHERE event_name = 'ai_prompts_subscribed')::int AS ai_prompt_optins,
         COUNT(*) FILTER (WHERE event_name = 'ai_prompts_access_opened')::int AS ai_prompt_access_opens,
         COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_copied')::int AS free_prompt_copies,
-        COUNT(*) FILTER (WHERE event_name = 'ai_prompts_prompt_vault_click')::int AS free_to_vault_clicks,
+        COUNT(*) FILTER (WHERE event_name IN ('ai_prompts_prompt_vault_click', 'ai_prompts_locked_vault_tile_click'))::int AS free_to_vault_clicks,
         COUNT(*) FILTER (WHERE event_name IN ('prompt_vault_landing_view', 'prompt_vault_reel_click'))::int AS vault_visits,
         COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
         COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
