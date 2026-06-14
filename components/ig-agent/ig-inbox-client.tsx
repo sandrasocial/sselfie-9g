@@ -37,6 +37,13 @@ type InboxPayload = {
   conversations: Conversation[]
   selectedConversationId: number | null
   messages: Message[]
+  ingestion?: {
+    bridgeConfigured: boolean
+    totalConversations: number
+    manychatConversations: number
+    latestReceivedAt: string | null
+    latestManychatReceivedAt: string | null
+  }
 }
 
 function formatTime(value?: string | null) {
@@ -154,12 +161,29 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
           </div>
         </div>
 
+        <div className={`${panel} mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-xs`}>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] opacity-60">DM bridge</p>
+            <p className="mt-1">
+              {data.ingestion?.bridgeConfigured ? "ManyChat bridge is configured" : "ManyChat bridge secret is missing"}
+              {" · "}
+              {data.ingestion?.manychatConversations || 0} ManyChat conversations stored
+            </p>
+          </div>
+          <p className="opacity-60">
+            Last inbound: {formatTime(data.ingestion?.latestManychatReceivedAt || data.ingestion?.latestReceivedAt) || "waiting for live DM"}
+          </p>
+        </div>
+
         {loading ? (
           <div className={`${panel} p-8 text-sm opacity-70`}>Loading inbox...</div>
         ) : data.conversations.length === 0 ? (
           <div className={`${panel} p-8`}>
-            <p className="font-serif text-3xl font-light">You&apos;re all caught up 🤍</p>
-            <p className="mt-3 text-sm opacity-70">Nothing needs you right now.</p>
+            <p className="font-serif text-3xl font-light">No live DMs in the inbox yet</p>
+            <p className="mt-3 text-sm opacity-70">
+              The inbox only fills when ManyChat sends a real inbound message to the bridge. If your test DM does not appear after refresh,
+              check the ManyChat Default Reply external request.
+            </p>
           </div>
         ) : (
           <div className={mobile ? "space-y-4" : "grid grid-cols-[320px_minmax(0,1fr)_300px] gap-4"}>

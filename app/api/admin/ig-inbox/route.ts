@@ -10,6 +10,13 @@ type InboxConversationRow = {
   id: number
 }
 
+type IngestionStatusRow = {
+  total_conversations: string | number
+  manychat_conversations: string | number
+  latest_received_at: string | null
+  latest_manychat_received_at: string | null
+}
+
 async function requireAdmin() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -109,13 +116,30 @@ export async function GET(request: NextRequest) {
         FROM ig_messages
         WHERE conversation_id = ${selectedId}
         ORDER BY sent_at ASC, id ASC
-      `
+    `
     : []
+
+  const ingestionRows = await sql`
+    SELECT
+      COUNT(*) AS total_conversations,
+      COUNT(*) FILTER (WHERE ig_user_id LIKE 'mc:%' OR ig_thread_id LIKE 'mc-%') AS manychat_conversations,
+      MAX(last_message_at) AS latest_received_at,
+      MAX(last_message_at) FILTER (WHERE ig_user_id LIKE 'mc:%' OR ig_thread_id LIKE 'mc-%') AS latest_manychat_received_at
+    FROM ig_conversations
+  `
+  const ingestion = ingestionRows[0] as IngestionStatusRow | undefined
 
   return NextResponse.json({
     conversations,
     selectedConversationId: selectedId || null,
     messages,
+    ingestion: {
+      bridgeConfigured: Boolean(process.env.MANYCHAT_BRIDGE_SECRET?.trim()),
+      totalConversations: Number(ingestion?.total_conversations || 0),
+      manychatConversations: Number(ingestion?.manychat_conversations || 0),
+      latestReceivedAt: ingestion?.latest_received_at || null,
+      latestManychatReceivedAt: ingestion?.latest_manychat_received_at || null,
+    },
   })
 }
 

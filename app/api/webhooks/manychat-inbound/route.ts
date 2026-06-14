@@ -10,7 +10,7 @@
 //
 // ManyChat External Request setup (one-time, in the ManyChat editor):
 //   POST https://www.sselfie.ai/api/webhooks/manychat-inbound
-//   Header: x-bridge-secret = MANYCHAT_BRIDGE_SECRET (set the same value in Vercel env)
+//   Header: x-bridge-secret = MANYCHAT_BRIDGE_SECRET (or include bridge_secret in the JSON body)
 //   Body (JSON):
 //     {
 //       "subscriber_id": "{{user_id}}",
@@ -20,6 +20,7 @@
 //     }
 
 import { after, type NextRequest, NextResponse } from "next/server"
+import { getManychatInboundBridgeSecret, normalizeManychatInboundPayload } from "@/lib/ig-agent/manychat-inbound"
 import { processInboundInstagramMessage } from "@/lib/ig-agent/processor"
 
 export const runtime = "nodejs"
@@ -38,45 +39,37 @@ export async function POST(request: NextRequest) {
     // Ships dark until the env is set — same kill-switch pattern as every other system.
     return NextResponse.json({ error: "Bridge not enabled" }, { status: 503 })
   }
-  const provided = request.headers.get("x-bridge-secret")?.trim() || ""
+  const body = await request.json().catch(() => null)
+  const normalized = normalizeManychatInboundPayload(body)
+  const provided = request.headers.get("x-bridge-secret")?.trim() || getManychatInboundBridgeSecret(body)
   if (!timingSafeEqual(provided, secret)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const body = (await request.json().catch(() => null)) as {
-    subscriber_id?: string | number
-    username?: string
-    full_name?: string
-    text?: string
-    channel?: string
-  } | null
-
-  // Same bridge serves comment triggers later: add "channel": "comment" in the ManyChat body.
-  const channel = body?.channel === "comment" ? "comment" : body?.channel === "story_reply" ? "story_reply" : "dm"
-
-  const subscriberId = body?.subscriber_id ? String(body.subscriber_id) : ""
-  const text = (body?.text || "").trim()
-  if (!subscriberId || !text) {
-    return NextResponse.json({ error: "subscriber_id and text required" }, { status: 400 })
-  }
-  // Guardrails: ManyChat templates can leak literal placeholders when a field is empty.
-  if (text.startsWith("{{") || text.length > 4000) {
-    // Unsubstituted placeholder or oversized — acknowledge in ManyChat's dynamic format, send nothing.
-    return NextResponse.json({ version: "v2", content: { messages: [] }, skipped: "placeholder_or_oversized" })
+  if (!normalized.ok) {
+    if (normalized.status === 200) {
+      return NextResponse.json({ version: "v2", content: { messages: [] }, skipped: normalized.skipped })
+    }
+    return NextResponse.json({ error: normalized.error }, { status: normalized.status })
   }
 
+  const inbound = normalized.value
   after(async () => {
     try {
       await processInboundInstagramMessage({
-        igUserId: `mc:${subscriberId}`,
-        username: body?.username?.replace(/^\{\{.*\}\}$/, "") || null,
-        fullName: body?.full_name?.replace(/^\{\{.*\}\}$/, "") || null,
-        messageId: null,
-        threadId: `mc-${channel}:${subscriberId}`,
-        channel,
-        text,
-        timestamp: Date.now(),
-        rawPayload: { source: "manychat_bridge", manychat_subscriber_id: subscriberId },
+        igUserId: `mc:${inbound.subscriberId}`,
+        username: inbound.username,
+        fullName: inbound.fullName,
+        messageId: inbound.messageId ? `mc:${inbound.messageId}` : null,
+        threadId: `mc-${inbound.channel}:${inbound.subscriberId}`,
+        channel: inbound.channel,
+        text: inbound.text,
+        timestamp: inbound.timestamp,
+        rawPayload: {
+          source: "manychat_bridge",
+          manychat_subscriber_id: inbound.subscriberId,
+          inbound_channel: inbound.channel,
+        },
       })
     } catch (error) {
       console.error("[manychat-bridge] Failed to process inbound DM:", error)
