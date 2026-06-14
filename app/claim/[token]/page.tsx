@@ -26,11 +26,11 @@ function InvalidLink() {
       <div className="max-w-md text-center">
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">SSELFIE SUITE</p>
         <h1 className="mt-3 font-serif text-[28px] font-light leading-tight text-[#0D0E10]">
-          This link isn't valid anymore.
+          This link isn&apos;t valid anymore.
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-[#4F5052]">
           If you bought the Prompt Vault or Starter Kit and think this is a mistake, reply to
-          your delivery email or write to support@sselfie.ai and I'll sort it out.
+          your delivery email or write to support@sselfie.ai and I&apos;ll sort it out.
         </p>
       </div>
     </main>
