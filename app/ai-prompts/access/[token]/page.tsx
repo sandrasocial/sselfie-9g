@@ -17,11 +17,10 @@ import {
   MAIN_LOOKS,
   BONUS_LOOKS,
   WORKFLOW_PROMPTS,
-  FREEBIE_COLLECTION_PREVIEWS,
-  VAULT_COLLECTION_META,
+  getStaticVaultFreebieCollections,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
-import { getPublishedFreebiePreviews, getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
+import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -142,9 +141,13 @@ function PromptCardEl({
 
 function PreviewCardEl({
   card,
+  collectionName,
+  shotCount,
   upgradeHref,
 }: {
   card: PromptCard
+  collectionName: string
+  shotCount: number
   upgradeHref?: string
 }) {
   return (
@@ -162,6 +165,9 @@ function PreviewCardEl({
       )}
       <div className="ap-preview-body">
         <span className="ap-preview-number">{card.number}</span>
+        <p className="ap-preview-gap">
+          Shot 1 of {shotCount} · {collectionName}
+        </p>
         <h3 className={`ap-preview-title ${cormorant.className}`}>{card.title}</h3>
         <p className="ap-preview-when">{card.whenToUse}</p>
         <p className="ap-preview-mood">{card.mood}</p>
@@ -211,12 +217,9 @@ export default async function AiPromptsAccessPage({
   const hasHeroImage = fs.existsSync(HERO_IMAGE)
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
-  const [publishedPreviews, publishedMeta] = await Promise.all([
-    getPublishedFreebiePreviews(),
-    getPublishedVaultCollectionMeta(),
-  ])
-  const freebiePreviews = [...publishedPreviews, ...FREEBIE_COLLECTION_PREVIEWS]
-  const vaultMeta = [...publishedMeta, ...VAULT_COLLECTION_META]
+  const publishedCollections = await getPublishedFreebieCollectionPreviews()
+  const freebieCollections = [...publishedCollections, ...getStaticVaultFreebieCollections()]
+  const lockedTileCount = freebieCollections.reduce((total, collection) => total + collection.lockedShots.length, 0)
 
   if (!result.valid && !adminOverride) {
     return (
@@ -297,6 +300,19 @@ export default async function AiPromptsAccessPage({
       subscriber_source: result.valid ? result.subscriberSource : "admin_override",
     },
   }).catch(() => {})
+
+  if (lockedTileCount > 0) {
+    logAnalyticsEvent({
+      eventName: "ai_prompts_locked_vault_tiles_view",
+      path: "/ai-prompts/access/[token]",
+      properties: {
+        source: "ai-prompts",
+        token_prefix: token.slice(0, 8),
+        collection_count: freebieCollections.length,
+        locked_tile_count: lockedTileCount,
+      },
+    }).catch(() => {})
+  }
 
   const vaultPreviewCheckoutHref = buildPromptVaultFreebieCheckoutHref({
     promptId: "vault_preview",
@@ -407,7 +423,7 @@ export default async function AiPromptsAccessPage({
       </section>
 
       {/* 2. Updated Vault preview — the core experience */}
-      {freebiePreviews.length > 0 && (
+      {freebieCollections.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
@@ -419,40 +435,65 @@ export default async function AiPromptsAccessPage({
               identity from one selfie. The complete shoot directions are inside the Vault.
             </p>
             <div className="ap-vault-grid">
-              {freebiePreviews.map(card => {
-                const meta = vaultMeta.find(m => m.previewCardId === card.id)
+              {freebieCollections.map(collection => {
+                const card = collection.freeCard
                 const upgradeHref = buildPromptVaultFreebieCheckoutHref({
                   promptId: card.id,
                   accessToken: token,
                 })
                 return (
                   <div key={card.id} className="ap-vault-item">
-                    <PreviewCardEl card={card} upgradeHref={upgradeHref} />
-                    {meta && (
+                    <PreviewCardEl
+                      card={card}
+                      collectionName={collection.name}
+                      shotCount={collection.shotCount}
+                      upgradeHref={upgradeHref}
+                    />
+                    {collection.lockedShots.length > 0 && (
                       <div className="ap-thumb-wrap">
-                        <div className="ap-thumb-row">
-                          {meta.thumbnails.map((src, i) => (
-                            <div
-                              key={i}
-                              className={`ap-thumb-item ${i === 0 ? "ap-thumb-item-yours" : "ap-thumb-item-locked"}`}
-                            >
-                              <Image
-                                src={src}
-                                alt=""
-                                fill
-                                sizes="64px"
-                                style={{ objectFit: "cover", objectPosition: "center top" }}
-                                aria-hidden
-                              />
-                            </div>
-                          ))}
-                        </div>
                         <p className="ap-thumb-note">
                           <span className="ap-thumb-yours-label">
-                            Shot 1 of {meta.shotCount} is yours.
+                            Shot 1 of {collection.shotCount} is yours.
                           </span>{" "}
-                          {meta.shotCount - 1} more images in this full shoot.
+                          {collection.shotCount - 1} more shots are inside this collection.
                         </p>
+                        <div className="ap-locked-grid" aria-label={`Locked shots in ${collection.name}`}>
+                          {collection.lockedShots.map((shot, index) => (
+                            <TrackedLink
+                              key={`${card.id}-${index}`}
+                              href={upgradeHref}
+                              className="ap-locked-tile"
+                              trackEvent="ai_prompts_locked_vault_tile_click"
+                              trackProperties={{
+                                source: "ai-prompts",
+                                destination: "checkout-prompt-vault",
+                                utm_campaign: "ai_prompts_to_prompt_vault",
+                                utm_content: `locked_${card.id}_${index + 2}`,
+                                checkout_source: "free_prompt_locked_tile",
+                                cta_position: "locked_tile",
+                                prompt_id: card.id,
+                                prompt_title: card.title,
+                                collection_name: collection.name,
+                                locked_shot_title: shot.title,
+                                locked_shot_number: String(index + 2),
+                              }}
+                            >
+                              <span className="ap-lock-badge">In the Vault</span>
+                              {shot.exampleImage && (
+                                <Image
+                                  src={shot.exampleImage}
+                                  alt=""
+                                  fill
+                                  sizes="(min-width: 900px) 120px, 42vw"
+                                  className="ap-locked-image"
+                                  aria-hidden
+                                />
+                              )}
+                              <span className="ap-locked-shade" />
+                              <span className="ap-locked-title">{shot.title}</span>
+                            </TrackedLink>
+                          ))}
+                        </div>
                         <TrackedLink
                           href={upgradeHref}
                           className="ap-shoot-cta"
@@ -466,9 +507,10 @@ export default async function AiPromptsAccessPage({
                             cta_position: "shoot_preview",
                             prompt_id: card.id,
                             prompt_title: card.title,
+                            collection_name: collection.name,
                           }}
                         >
-                          Get The Full Shoot + Future Drops · $27
+                          Unlock all {collection.shotCount} shots · $27
                         </TrackedLink>
                         <p className="ap-shoot-cta-note">
                           One-time access to the rest of this shoot, the newest collections, and future photoshoots.
@@ -1226,7 +1268,6 @@ export default async function AiPromptsAccessPage({
           flex-direction: column;
         }
 
-        /* Thumbnail strip */
         .ap-thumb-wrap {
           margin-top: 0;
           padding: 18px 28px 22px;
@@ -1236,38 +1277,8 @@ export default async function AiPromptsAccessPage({
           border-radius: 0 0 18px 18px;
         }
 
-        .ap-thumb-row {
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          padding-bottom: 2px;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
-        .ap-thumb-row::-webkit-scrollbar { display: none; }
-
-        .ap-thumb-item {
-          position: relative;
-          width: 54px;
-          min-width: 54px;
-          aspect-ratio: 2 / 3;
-          overflow: hidden;
-          border-radius: 5px;
-          flex-shrink: 0;
-        }
-
-        .ap-thumb-item-yours {
-          opacity: 1;
-          outline: 1.5px solid #818283;
-          outline-offset: 2px;
-        }
-
-        .ap-thumb-item-locked {
-          opacity: 0.28;
-        }
-
         .ap-thumb-note {
-          margin: 12px 0 0;
+          margin: 0 0 14px;
           font-size: 11px;
           line-height: 1.65;
           color: #818283;
@@ -1277,6 +1288,79 @@ export default async function AiPromptsAccessPage({
         .ap-thumb-yours-label {
           color: #4F5052;
           font-weight: 500;
+        }
+
+        .ap-locked-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .ap-locked-tile {
+          position: relative;
+          min-width: 0;
+          aspect-ratio: 4 / 5;
+          overflow: hidden;
+          border: 1px solid rgba(197, 198, 200, 0.42);
+          background: #F8FAFA;
+          color: #F8FAFA;
+          text-decoration: none;
+          isolation: isolate;
+        }
+
+        .ap-locked-image {
+          object-fit: cover;
+          object-position: center top;
+          filter: blur(1.5px) saturate(0.82);
+          transform: scale(1.04);
+        }
+
+        .ap-locked-shade {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to bottom,
+            rgba(13, 14, 16, 0.28),
+            rgba(13, 14, 16, 0.74)
+          );
+          z-index: 1;
+        }
+
+        .ap-lock-badge {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          right: 8px;
+          z-index: 2;
+          width: fit-content;
+          max-width: calc(100% - 16px);
+          padding: 5px 7px;
+          border: 1px solid rgba(248, 250, 250, 0.52);
+          background: rgba(13, 14, 16, 0.48);
+          color: #F8FAFA;
+          font-size: 8px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          line-height: 1.2;
+          text-transform: uppercase;
+        }
+
+        .ap-locked-title {
+          position: absolute;
+          left: 9px;
+          right: 9px;
+          bottom: 9px;
+          z-index: 2;
+          color: #F8FAFA;
+          font-size: 11px;
+          font-weight: 500;
+          line-height: 1.32;
+          overflow-wrap: anywhere;
+        }
+
+        .ap-locked-tile:hover .ap-locked-image {
+          filter: blur(0.5px) saturate(0.9);
+          transform: scale(1.02);
         }
 
         .ap-shoot-cta {
@@ -1316,6 +1400,9 @@ export default async function AiPromptsAccessPage({
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
+          }
+          .ap-locked-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
           }
         }
 
@@ -1467,9 +1554,6 @@ export default async function AiPromptsAccessPage({
           border-color: rgba(197, 198, 200, 0.35);
           border-radius: 0 0 8px 8px;
         }
-        .ap-thumb-item-yours {
-          outline-color: rgba(13, 12, 11, 0.42);
-        }
         .ap-thumb-yours-label {
           color: rgba(13, 12, 11, 0.7);
         }
@@ -1559,6 +1643,7 @@ export default async function AiPromptsAccessPage({
           padding: 24px 22px 22px;
         }
         .ap-preview-number,
+        .ap-preview-gap,
         .ap-preview-mood,
         .ap-preview-prompt summary {
           color: rgba(13, 12, 11, 0.42);
@@ -1570,6 +1655,12 @@ export default async function AiPromptsAccessPage({
           font-weight: 600;
           letter-spacing: 0.28em;
           text-transform: uppercase;
+        }
+        .ap-preview-gap {
+          margin: 8px 0 0;
+          font-size: 11px;
+          line-height: 1.45;
+          color: rgba(13, 12, 11, 0.52);
         }
         .ap-preview-title {
           margin: 10px 0 12px;
