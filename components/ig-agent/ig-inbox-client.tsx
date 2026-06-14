@@ -179,10 +179,10 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
           <div className={`${panel} p-8 text-sm opacity-70`}>Loading inbox...</div>
         ) : data.conversations.length === 0 ? (
           <div className={`${panel} p-8`}>
-            <p className="font-serif text-3xl font-light">No live DMs in the inbox yet</p>
+            <p className="font-serif text-3xl font-light">No bridged DMs in this admin inbox yet</p>
             <p className="mt-3 text-sm opacity-70">
-              The inbox only fills when ManyChat sends a real inbound message to the bridge. If your test DM does not appear after refresh,
-              check the ManyChat Default Reply external request.
+              This does not mean your Instagram or ManyChat inbox is clear. It only means no real DMs have been forwarded into SSELFIE yet.
+              Existing backlog still needs to be answered in ManyChat/Instagram or imported from a ManyChat export.
             </p>
           </div>
         ) : (
