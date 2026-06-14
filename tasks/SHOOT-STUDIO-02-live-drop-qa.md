@@ -2,7 +2,15 @@
 
 OWNER: sandra
 
-Status: built, waiting for live QA with real queued shoots.
+Status: built, partially verified 2026-06-14; waiting for one more published Shoot Studio collection.
+
+Codex verified live data on 2026-06-14:
+
+- `Café Minimalist Paris` is published to `vault_collections` with 6 published prompts and `email_drop_status = queued`.
+- `Quiet Monochrome City` has 4 approved shots and needs 2 more approved rendered shots before it can publish.
+- `Monochrome Ease` and `Shadows & Structure` each have 6 generated shots but 0 approved shots.
+- Live drop tracking tables `vault_drop_runs` and `vault_drop_recipient_claims` were missing and have now been created from the additive migration.
+- Strict Shoot Studio drop QA still needs at least one more Shoot Studio collection published so the drop email can use new shoot images only, instead of mixing one new shoot with older static pending collections.
 
 ## What Is Built
 
@@ -15,14 +23,15 @@ Status: built, waiting for live QA with real queued shoots.
 
 ## QA Steps
 
-1. Publish a new shoot with at least 6 approved shots.
-2. Confirm Vault shows the full collection.
-3. Confirm the free AI prompts page shows only Shot 1 and locked teasers for the rest.
-4. Confirm Maya/App library can see the published collection.
-5. Open the drop-email preview in admin.
-6. Confirm images match the newest published shoot, not old static images.
-7. Send a test email to Sandra.
-8. Run dry-run counts before any live send.
+1. Sandra approves at least 6 rendered shots in one more shoot.
+2. Publish that shoot to the Vault.
+3. Confirm Vault shows the full collection.
+4. Confirm the free AI prompts page shows only Shot 1 and locked teasers for the rest.
+5. Confirm Maya/App library can see the published collection.
+6. Open the drop-email preview in admin and select the two newest Shoot Studio collections.
+7. Confirm images match the selected newest shoots, not old static images.
+8. Send a test email to Sandra.
+9. Run dry-run counts before any live send.
 
 ## Acceptance
 
