@@ -55,6 +55,8 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
   const [data, setData] = useState<InboxPayload>({ conversations: [], selectedConversationId: null, messages: [] })
   const [reply, setReply] = useState("")
   const [loading, setLoading] = useState(true)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
   async function load(conversationId = selectedId) {
     setLoading(true)
@@ -91,13 +93,33 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
 
   async function sendReply() {
     if (!selectedId || !reply.trim()) return
-    await fetch(`/api/admin/ig-inbox/${selectedId}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: reply.trim() }),
-    })
-    setReply("")
-    await load(selectedId)
+    setSending(true)
+    setSendError(null)
+    try {
+      const response = await fetch(`/api/admin/ig-inbox/${selectedId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: reply.trim() }),
+      })
+      const payload = await response.json().catch(() => null) as {
+        success?: boolean
+        error?: string | null
+        result?: { reason?: string }
+      } | null
+
+      if (!response.ok || !payload?.success) {
+        setSendError(payload?.error || payload?.result?.reason || "Reply was not sent.")
+        await load(selectedId)
+        return
+      }
+
+      setReply("")
+      await load(selectedId)
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Reply was not sent.")
+    } finally {
+      setSending(false)
+    }
   }
 
   const shell = mobile
@@ -190,6 +212,11 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                       placeholder={process.env.NEXT_PUBLIC_IG_AGENT_AUTO_SEND_ENABLED === "true" ? "Reply as Sandra..." : "Draft a reply... auto-send is off"}
                       className={`min-h-28 w-full resize-none border bg-transparent p-3 text-sm outline-none ${mobile ? "border-[#E5E5E5]" : "border-[#C5C6C8]/50"}`}
                     />
+                    {sendError ? (
+                      <p className="border border-red-200 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-700">
+                        Reply not sent: {sendError}
+                      </p>
+                    ) : null}
                     <div className="flex flex-wrap gap-2">
                       <button
                       type="button"
@@ -199,7 +226,13 @@ export function IgInboxClient({ mobile = false }: { mobile?: boolean }) {
                       }}
                       className="min-h-11 border border-[#C5C6C8] px-4 text-[11px] uppercase tracking-[0.18em]"
                     >Use AI draft</button>
-                    <button onClick={sendReply} className="min-h-11 bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.18em] text-white">Send reply</button>
+                    <button
+                      onClick={sendReply}
+                      disabled={sending}
+                      className="min-h-11 bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.18em] text-white disabled:opacity-50"
+                    >
+                      {sending ? "Sending..." : "Send reply"}
+                    </button>
                       <button onClick={() => action("mark_handled")} className="min-h-11 border border-current/20 px-4 text-[11px] uppercase tracking-[0.18em]">Handled</button>
                       <button onClick={() => action("snooze")} className="min-h-11 border border-current/20 px-4 text-[11px] uppercase tracking-[0.18em]">Snooze</button>
                     </div>
