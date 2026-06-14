@@ -41,7 +41,7 @@
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
 - **Academy library**: The authenticated Academy surface now uses the course-library flow from `tasks/ACADEMY-03-course-library-ui.md`: `/academy` library, `/academy/courses/[courseId]`, lesson viewer at `/academy/courses/[courseId]/lessons/[lessonId]`, lesson notes in `user_lesson_notes`, and Maya-profile sync through `/api/academy/lessons/[lessonId]/notes`.
 - **Reconciliation pipelines**: `reconcile-generation-assets`, `reconcile-generations`, `reconcile-subscriptions` — keep running and logging cleanly.
-- **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. Use `tasks/README.md` before choosing a task spec; it separates active build specs from stale/completed/superseded docs. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
+- **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. Use `tasks/README.md` before choosing a task spec. On 2026-06-14 the task folder was cleaned: stale/completed/superseded specs and old loop state were archived under `tasks/archive/2026-06-14-spec-cleanup/`; the active root now contains only current QA/scale-readiness work. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
 
 ## File map (anchor points for future work)
 
