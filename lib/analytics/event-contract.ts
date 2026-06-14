@@ -76,6 +76,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "ai_prompts_access_opened",
   "ai_prompts_prompt_copied",
   "ai_prompts_after_copy_vault_cta_view",
+  "ai_prompts_locked_vault_tiles_view",
+  "ai_prompts_locked_vault_tile_click",
   "ai_prompts_selfie_guide_click",
   "ai_prompts_prompt_vault_click",
   "ai_prompts_starter_kit_click",

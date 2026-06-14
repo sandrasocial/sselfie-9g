@@ -1,7 +1,11 @@
 import "server-only"
 
 import { sql } from "@/lib/db/client"
-import type { PromptCard, VaultCollectionMeta } from "@/lib/ai-prompts/prompt-data"
+import type {
+  PromptCard,
+  VaultCollectionMeta,
+  VaultFreebieCollectionPreview,
+} from "@/lib/ai-prompts/prompt-data"
 
 export type PublishedVaultCollection = {
   id: number
@@ -195,6 +199,21 @@ export async function getPublishedVaultCollectionMeta(): Promise<VaultCollection
 export async function getPublishedFreebiePreviews(): Promise<PromptCard[]> {
   const collections = await getPublishedVaultCollections()
   return collections.map((collection) => collection.cards[0]).filter(Boolean)
+}
+
+export async function getPublishedFreebieCollectionPreviews(): Promise<VaultFreebieCollectionPreview[]> {
+  const collections = await getPublishedVaultCollections()
+  return collections
+    .filter((collection) => collection.cards.length > 0)
+    .map((collection) => ({
+      freeCard: collection.cards[0],
+      name: collection.title,
+      shotCount: collection.cards.length,
+      lockedShots: collection.cards.slice(1).map((card) => ({
+        title: card.title,
+        exampleImage: card.exampleImage,
+      })),
+    }))
 }
 
 export async function getPublishedVaultDropCollections(options: { queuedOnly?: boolean } = {}) {

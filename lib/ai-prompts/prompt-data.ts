@@ -2360,6 +2360,18 @@ export type VaultCollectionMeta = {
   thumbnails: string[]
 }
 
+export type VaultLockedShotPreview = {
+  title: string
+  exampleImage?: string
+}
+
+export type VaultFreebieCollectionPreview = {
+  freeCard: PromptCard
+  name: string
+  shotCount: number
+  lockedShots: VaultLockedShotPreview[]
+}
+
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
     previewCardId: "mysterious-vogue-shot-1",
@@ -2547,3 +2559,35 @@ export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   ...(DENIM_STREET_SERIES.length > 0   ? [DENIM_STREET_SERIES[0]]   : []),
   ...(MARBLE_CAFE_SERIES.length > 0    ? [MARBLE_CAFE_SERIES[0]]    : []),
 ]
+
+const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
+  MYSTERIOUS_VOGUE_SERIES,
+  QUIET_LUXURY_LONDON_SERIES,
+  NOIR_FEMME_SERIES,
+  CLEAN_GIRL_MORNING_SERIES,
+  DARK_FEMININE_CAFE_SERIES,
+  DARK_BALCONY_SERIES,
+  COASTAL_WHITE_SERIES,
+  COZY_LEATHER_SERIES,
+  DENIM_STREET_SERIES,
+  MARBLE_CAFE_SERIES,
+]
+
+export function getStaticVaultFreebieCollections(): VaultFreebieCollectionPreview[] {
+  return STATIC_VAULT_COLLECTION_SERIES.flatMap((series) => {
+    const freeCard = series[0]
+    if (!freeCard) return []
+
+    const meta = VAULT_COLLECTION_META.find((entry) => entry.previewCardId === freeCard.id)
+
+    return [{
+      freeCard,
+      name: meta?.name || freeCard.title,
+      shotCount: series.length || meta?.shotCount || 1,
+      lockedShots: series.slice(1).map((card) => ({
+        title: card.title,
+        exampleImage: card.exampleImage,
+      })),
+    }]
+  })
+}
