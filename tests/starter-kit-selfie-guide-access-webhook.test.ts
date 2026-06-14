@@ -171,7 +171,7 @@ describe("Starter Kit checkout from Selfie Guide access", () => {
   })
 
   it("treats the guide access bridge as a public paid checkout source", () => {
-    const webhook = readFileSync("app/api/webhooks/stripe/route.ts", "utf8")
+    const webhook = readFileSync("lib/payments/lifecycle/checkout-session-completed.ts", "utf8")
     const allowlistStart = webhook.indexOf("const isPublicPaidCheckoutSource =")
     const allowlistEnd = webhook.indexOf("if (!customerEmail)", allowlistStart)
     const allowlist = webhook.slice(allowlistStart, allowlistEnd)
