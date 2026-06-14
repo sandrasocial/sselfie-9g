@@ -53,4 +53,14 @@ describe("suite_trial never counts as membership (Admin Data Contract)", () => {
       expect(src, route).toContain("generation_locked")
     }
   })
+
+  it("admin trial counters exclude test-mode subscription rows", () => {
+    const src = readFileSync(path.join(process.cwd(), "lib/admin/home-report.ts"), "utf8")
+    const trialQueryStart = src.indexOf("FROM subscriptions t")
+    const trialQuery = src.slice(trialQueryStart, src.indexOf("`.catch", trialQueryStart))
+
+    expect(trialQuery).toContain("WHERE t.product_type = 'suite_trial'")
+    expect(trialQuery).toContain("(t.is_test_mode = FALSE OR t.is_test_mode IS NULL)")
+    expect(trialQuery).toContain("(m.is_test_mode = FALSE OR m.is_test_mode IS NULL)")
+  })
 })

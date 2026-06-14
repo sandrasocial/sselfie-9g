@@ -48,4 +48,17 @@ describe("Vault drop email admin workflow", () => {
     expect(buyerTemplate).not.toContain('c.id === "dark-balcony"')
     expect(nonbuyerTemplate).not.toContain('c.id === "dark-balcony"')
   })
+
+  it("keeps the secret drop start endpoint aligned with the admin-reviewed workflow", () => {
+    const root = process.cwd()
+    const publicRoute = fs.readFileSync(path.join(root, "app/api/vault/email-drop/route.ts"), "utf8")
+
+    expect(publicRoute).toContain("getVaultDropEmailPreview")
+    expect(publicRoute).toContain("createVaultDropLiveRun")
+    expect(publicRoute).toContain("selectedVaultDropIdsFromInput")
+    expect(publicRoute).toContain("preview.selectedCollectionIds")
+    expect(publicRoute).toContain("Select two queued Shoot Studio collections")
+    expect(publicRoute).not.toContain("getPendingCollections()")
+    expect(publicRoute).not.toContain("Ensure migration 20260527_vault_drop_runs.sql has been applied")
+  })
 })
