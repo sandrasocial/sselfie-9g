@@ -68,9 +68,14 @@ export async function POST(request: NextRequest) {
     const action = body.action
 
     if (action === "create") {
+      const selfieUrls = Array.isArray(body.selfieUrls)
+        ? body.selfieUrls.map((u: unknown) => String(u || "")).filter(Boolean)
+        : body.selfieUrl
+          ? [String(body.selfieUrl)]
+          : []
       const shoot = await createShoot({
         inspirationUrls: Array.isArray(body.inspirationUrls) ? body.inspirationUrls : [],
-        selfieUrl: String(body.selfieUrl || ""),
+        selfieUrls,
         notes: typeof body.notes === "string" ? body.notes : undefined,
       })
       return NextResponse.json({ success: true, shoot })

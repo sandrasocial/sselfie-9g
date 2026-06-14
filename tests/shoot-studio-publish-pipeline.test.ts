@@ -12,6 +12,7 @@ function makeShoot(overrides: Partial<Shoot> = {}): Shoot {
     status: "draft",
     inspirationUrls: [],
     selfieUrl: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie.png",
+    selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie.png"],
     messages: [],
     createdAt: "2026-06-13T08:00:00.000Z",
     shots: Array.from({ length: MIN_VAULT_PUBLISH_SHOTS }, (_, index) => ({
@@ -77,10 +78,19 @@ describe("Shoot Studio publish pipeline", () => {
     const root = process.cwd()
     const generator = fs.readFileSync(path.join(root, "lib/content-kit/shoot-generator.ts"), "utf8")
     const route = fs.readFileSync(path.join(root, "app/api/admin/content-kit/shoots/route.ts"), "utf8")
+    const client = fs.readFileSync(path.join(root, "components/admin/shoot-studio-client.tsx"), "utf8")
+    const types = fs.readFileSync(path.join(root, "lib/content-kit/types.ts"), "utf8")
 
     expect(generator).toContain("const DEFAULT_SHOTS_PER_SHOOT = 6")
     expect(generator).toContain("export async function extendShoot")
     expect(generator).toContain('quality === "high" ? shoot.shots[idx].status : "draft"')
+    expect(generator).toContain("selfie_urls")
+    expect(generator).toContain("buildImageRoleGuard(selfieUrls.length)")
+    expect(route).toContain("Array.isArray(body.selfieUrls)")
+    expect(route).toContain("selfieUrls,")
+    expect(client).toContain('fetch("/api/admin/content-kit/selfies"')
+    expect(client).toContain("selfieUrls,")
+    expect(types).toContain("selfieUrls: string[]")
     expect(route).toContain('action === "extend"')
     expect(route).toContain('action === "publish"')
   })
