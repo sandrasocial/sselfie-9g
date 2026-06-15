@@ -1,12 +1,12 @@
 "use server"
 
 import { cookies } from "next/headers"
-import { createHash } from "crypto"
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
+import { buildCheckoutSessionIdempotencyKey } from "@/lib/checkout/session-idempotency"
 import { normalizeReferralCode, REFERRAL_COOKIE_NAME } from "@/lib/referrals/routing"
 import {
   buildCheckoutAttributionMetadata,
@@ -26,41 +26,6 @@ function normalizeStripeCustomerEmail(email?: string | null): string | null {
   // Stripe validates customer_email before creating the session. If a saved lead
   // email has a typo, skip prefill so checkout still opens and asks for email.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null
-}
-
-const IDEMPOTENT_ONE_TIME_PRODUCT_TYPES = new Set([
-  "selfie_guide",
-  "selfie_guide_bundle",
-  "starter_kit",
-  "masterclass",
-  "brand_strategy_pack",
-  "prompt_vault",
-  "selfie_to_brand_shoot_system",
-])
-
-function buildCheckoutSessionIdempotencyKey(input: {
-  productType: string
-  stripePriceId: string
-  customerEmail?: string | null
-  promoCode?: string | null
-}) {
-  const email = input.customerEmail?.trim().toLowerCase()
-  if (!email || !IDEMPOTENT_ONE_TIME_PRODUCT_TYPES.has(input.productType)) {
-    return null
-  }
-
-  const fifteenMinuteBucket = Math.floor(Date.now() / (15 * 60 * 1000))
-  const rawKey = [
-    "landing_checkout",
-    input.productType,
-    input.stripePriceId,
-    email,
-    input.promoCode?.trim().toUpperCase() || "no_promo",
-    fifteenMinuteBucket,
-  ].join(":")
-  const digest = createHash("sha256").update(rawKey).digest("hex").slice(0, 32)
-
-  return `sselfie_checkout_${input.productType}_${digest}`
 }
 
 export async function createLandingCheckoutSession(
@@ -94,6 +59,12 @@ export async function createLandingCheckoutSession(
     ...options,
     source: checkoutSource,
     referralCode,
+  })
+  const checkoutAttributionMetadata = buildCheckoutAttributionMetadata(productId, {
+    ...options,
+    source: attribution.source,
+    referralCode: attribution.referralCode,
+    checkoutSource: options?.checkoutSource || checkoutSource,
   })
 
   const actualPrice = product.priceInCents
@@ -225,12 +196,7 @@ export async function createLandingCheckoutSession(
           product_type: product.type,
           credits: product.credits?.toString() || "0",
           ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
-          ...buildCheckoutAttributionMetadata(productId, {
-            ...options,
-            source: attribution.source,
-            referralCode: attribution.referralCode,
-            checkoutSource: options?.checkoutSource || checkoutSource,
-          }),
+          ...checkoutAttributionMetadata,
         },
       },
     }),
@@ -239,12 +205,7 @@ export async function createLandingCheckoutSession(
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
-      ...buildCheckoutAttributionMetadata(productId, {
-        ...options,
-        source: attribution.source,
-        referralCode: attribution.referralCode,
-        checkoutSource: options?.checkoutSource || checkoutSource,
-      }),
+      ...checkoutAttributionMetadata,
       ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
       ...(promoCode && { promo_code: promoCode }),
     },
@@ -258,6 +219,11 @@ export async function createLandingCheckoutSession(
           stripePriceId,
           customerEmail: normalizedCustomerEmail,
           promoCode,
+          sessionScope: {
+            metadata: sessionConfig.metadata || {},
+            discounts: validatedCoupon ? [validatedCoupon] : [],
+            allowPromotionCodes: Boolean(sessionConfig.allow_promotion_codes),
+          },
         })
     // CHECKOUT-02: only pass an options object when we actually have an idempotency
     // key. Passing an empty `{}` made stripe-node throw "Unknown arguments
