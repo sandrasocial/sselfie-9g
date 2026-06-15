@@ -2,121 +2,146 @@
 
 OWNER: Codex (Sandra approves merge)
 
-Status: spec ready. Source: tutorial-content-engine research 2026-06-15. DO NOT start until
-Sandra says go. **Phase 1 only** (on-demand tutorial carousels). Auto-pull/auto-batch/fal are
-later phases, scoped at the bottom, NOT in this spec.
+Status: spec ready. **DO NOT start until Sandra says go.** Phase 1 = on-demand tutorial
+carousels + the reel-reference batch. Auto-batch/fal scoped out (Phase 2). Source: tutorial
+content-engine research 2026-06-15, updated with Sandra's rulings same day.
 
 ## Goal
 Let Sandra produce premium editorial tutorial carousels (selfie / iPhone-settings / editing /
-before-after / CTA) on demand, in her structure, reusing her tutorial screenshots and a freshly
-generated "result" image in new worlds (location / outfit / lighting). She always posts manually
-(downloads the rendered PNGs). This is the in-app version of her ChatGPT "Tutorial Carousel
-Studio" workflow.
+before-after / CTA) on demand, in her structure, WITHOUT reshooting. Reuse her best reels as
+reference, keep her face via selfies, and regenerate "same method, new fantasy" (new
+locations/outfits/lighting). She always posts manually (downloads the rendered slides).
 
 ## Hard rule: extend System 1, do NOT build a parallel studio
-The carousel feature lives in `lib/content-kit/*` + the next/og renderer + admin Maya. Research
-confirmed ~80% already exists there. Build by extension only. Do NOT build on the member-facing
-app-v3 layered-image overlay (System 2) — it's single-image, client-canvas, text-only, and has no
-deck/DB/screenshot model.
+The admin carousel feature lives in `lib/content-kit/*` + the next/og renderer + admin Maya.
+~80% already exists there. Build by extension only. Do NOT build on the member-facing app-v3
+layered-image overlay (that's a separate, member-only surface).
 
-## Reuse foundation (already built — verified)
+---
+
+## Sandra's locked rulings (2026-06-15)
+1. **Hybrid text rendering, split by slide type** (research-backed; gpt-image-2 is now ~99%
+   accurate on SHORT text but garbles long text and can corrupt real screenshots):
+   - **Cover + result/transformation slides (generated scenes): gpt-image-2 renders the slide
+     WITH the short headline baked in.** Looks integrated; matches; short text is reliable.
+   - **Real iPhone-settings screenshots: keep the screenshot PIXEL-EXACT, composite callouts on
+     top** (never let gpt-image-2 redraw a real settings screen — it can change the actual
+     values and teach the wrong setting). Sandra's explicit choice.
+   - **Long step text: composited** (deterministic, correctly spelled, real brand font).
+2. **fal.ai = Phase 2** (future cost/scale lane). gpt-image-2 stays the generation engine now.
+3. **Burgundy accent approved, tutorial-only.** Recommended hex `#6E2A35` (alts `#7B3B45`,
+   `#5C2730`); Sandra confirms exact hex before merge.
+4. **Reel-reference extraction runs OFFLINE (Cowork/Claude Code batch), not in the app.**
+
+## Instagram connection: VERIFIED (no fix needed)
+Live DB check 2026-06-15: active connection is `@sandra.social` (business, `instagram_manage_
+insights` working, token valid to 2026-08-12). 44 reels already carry real view/save data, so the
+"winners" feed has real fuel. The old "wrong account" concern is resolved. The username
+auto-suggest layer (Phase 2) can rely on this.
+
+---
+
+## Reuse foundation (verified to exist)
 - `lib/content-kit/carousel-generator.ts` `generateCarousels({sourceShootId, topic, overlayUrls,
-  imageUrls})` — deck writer, already round-robins screenshots onto slides (`applyShootImages`).
-- `lib/content-kit/types.ts` — `CarouselSlide` (kinds hook/step/list/quote/cta/photo/grid),
-  `ContentOverlayAsset` (screenshot-on-slide with placement), `CarouselDeck`.
-- `app/api/admin/content-kit/render/[id]/[slide]/route.tsx` — next/og renderer, 1080x1350,
-  `Frame`/`PhotoFrame`/`GridFrame`, serif (Cormorant) + sans (Inter), `OverlayAssets` already
-  draws screenshots as bordered editorial cards.
-- `app/api/admin/content-kit/story/[id]/[slide]/route.tsx` — **`Squiggle`, `KeywordCircle`,
-  `Arrow` SVG primitives already exist here** (take a `color` prop). These are the burgundy
-  callouts. Port them, do not reinvent.
-- `lib/content-kit/shoot-generator.ts` `refineShoot`/`extendShoot`/`generateShotImage` — new-world
-  result images on gpt-image-2 with identity guards (same face, new location/outfit/lighting).
-- Admin Maya tool `create_admin_carousel` at `app/api/app-v3/maya/chat/route.ts:601`; result card
-  `CarouselCard` in `components/app-v3/admin-content-tool-card.tsx`.
-- Grounding: `lib/content/grounding.ts` (CONTENT-GROUNDING-01) — voice, no-fake, proof, funnel.
+  imageUrls})` — deck writer; already round-robins screenshots onto slides.
+- `lib/content-kit/types.ts` — `CarouselSlide` kinds, `ContentOverlayAsset`, `CarouselDeck`.
+- `app/api/admin/content-kit/render/[id]/[slide]/route.tsx` — next/og renderer (1080x1350),
+  serif `Frame`/`PhotoFrame`/`GridFrame`, `OverlayAssets` already composites screenshots as
+  bordered cards. **This is the compositor for screenshots + step text.**
+- `app/api/admin/content-kit/story/[id]/[slide]/route.tsx` — `Squiggle`, `KeywordCircle`,
+  `Arrow` SVG callout primitives already exist (take a `color` prop). Port these.
+- `lib/content-kit/shoot-generator.ts` `generateShotImage`/`refineShoot`/`extendShoot` —
+  gpt-image-2 `images.edit` with multi-reference + identity guards. **This is the engine for the
+  generated scene slides and the new-world restyling.**
+- Admin Maya tool `create_admin_carousel` (`app/api/app-v3/maya/chat/route.ts:601`); result card
+  `CarouselCard` (`components/app-v3/admin-content-tool-card.tsx`).
+- Grounding: `lib/content/grounding.ts` (CONTENT-GROUNDING-01) for voice/no-fake/proof/funnel.
+
+---
 
 ## Phase 1 build items
 
-### 1. Tutorial carousel template + generator mode
-- Add a tutorial mode to `generateCarousels` (a `mode: "tutorial"` param or a sibling
-  `generateTutorialCarousel`), producing Sandra's structure:
-  cover/hook · bad-example (problem) · setting-stack steps (back camera / portrait / 2x / contour
-  light / exposure / focus) · composition tip · pose tip · before ("from this") · after ("to
-  this") · edit/preset · CTA.
-- Ground the prompt in `lib/content/grounding.ts` (voice + no-fake + funnel) AND the tutorial
-  brand rules from Sandra's ChatGPT brief: luxury editorial, serif hero word huge, short
-  swipe-stopping text, NO red circles / green checks / emojis / Canva look, keep iPhone UI
-  screenshots recognizable, don't cover the face except on an intentional "bad example" slide.
-- CTA keyword per offer (her formula + the funnel): COMMENT KIT (selfie starter kit), COMMENT
-  PROMPT (AI prompts / Vault), COMMENT PRESET (editing). Editorial, not loud.
+### 1. Reel-reference batch (offline, Cowork/Claude Code — NOT serverless)
+A standalone script (run here, not in the app), because IG media URLs expire within hours and
+ffmpeg is impractical in Vercel serverless but already installed locally:
+- Rank reels from `ig_media_snapshots` (already populated) by views/saves.
+- For a chosen reel, fetch its `media_url` on demand (add `media_url,thumbnail_url` to that one
+  fetch), download the mp4 in the SAME pass (URL expires), and run ffmpeg scene/frame extraction
+  (e.g. `fps=1/2` or scene-change detection) to per-scene stills.
+- Upload the kept frames to Vercel Blob and register them as Maya reference images (the existing
+  reference-library surface) tagged to the source reel.
+- These scene stills are the "keep the steps correct" reference layer. They are INPUTS to
+  generation and the source of the real-screenshot slides, not necessarily final slides.
 
-### 2. Slide-count + new slide kind
-- Raise the System 1 slide cap to support up to 10 tutorial slides (`SLIDE_RULES` in
-  `carousel-generator.ts:23` currently "7 to 9"). (Note: app-v3's `MAX_CAROUSEL_SLIDES = 6` is
-  System 2 / member-facing, leave it.)
-- Add `before-after` to `CarouselSlideKind` (`types.ts`) and a `BeforeAfterFrame` in the render
-  route alongside `PhotoFrame`/`GridFrame` (the renderer already switches on `slide.kind`).
+### 2. Generation pipeline (the "same method, new fantasy" engine)
+- Inputs: scene-reference screenshots (from step 1 or Sandra's uploads) + 1-3 clear face selfies.
+- Use the existing `generateShotImage`/`extendShoot` (gpt-image-2 `images.edit`, multi-reference,
+  ≤5 inputs, put the face first for high-fidelity identity) to recreate the look in NEW
+  locations/outfits/lighting while keeping her face/body. Identity guards already exist — reuse.
+- This produces the cover + result/transformation imagery for the carousel.
 
-### 3. Editorial callouts (the burgundy arrows/circles/underlines)
-- Port `Squiggle`, `KeywordCircle`, `Arrow` from the story route into a shared
-  `lib/content-kit/accents.tsx` (or into the carousel render route).
-- Drive them off a new optional slide field, e.g. `accents?: { type: "circle"|"arrow"|"underline";
-  target: string; color?: string }[]`. Default color = the burgundy token (below).
-- Replace any "red circle / arrow" intent with these refined callouts. Never place a callout over
-  the face except on a "bad example" slide.
+### 3. Tutorial carousel template + generator mode
+- Add a tutorial mode to `generateCarousels` (a `mode:"tutorial"` param or sibling fn) producing
+  Sandra's structure: cover/hook · bad-example · setting-stack steps · composition tip · pose tip
+  · before ("from this") · after ("to this") · edit/preset · CTA.
+- Ground copy in `lib/content/grounding.ts` + the tutorial brand rules (luxury editorial, serif
+  hero word huge, short swipe-stopping text, NO red circles/green checks/emojis/Canva look, keep
+  iPhone UI recognizable, don't cover the face except an intentional "bad example" slide).
+- CTA keyword per offer/funnel: COMMENT KIT / PROMPT / PRESET. Editorial, not loud.
 
-### 4. Burgundy accent token (tutorial-only) — Sandra approved 2026-06-15
-- Add ONE muted oxblood/burgundy token, used ONLY for tutorial-carousel callouts (and optionally a
-  thin tutorial accent line). Do not use it anywhere else in the brand.
-- **Recommended hex: `#6E2A35` (muted oxblood).** Alternatives if Sandra prefers: `#7B3B45`
-  (softer) or `#5C2730` (deeper graphite-burgundy). **Sandra confirms the exact hex before merge.**
-- Define it next to the existing render-route token block (`render/[id]/[slide]/route.tsx:13-19`
-  and `story/[id]/[slide]/route.tsx:13-17`) and record it in `docs/SSELFIE_DESIGN_SYSTEM.md` as
-  "tutorial-carousel accent only." Keep all other slides neutral (obsidian/porcelain/smoke).
+### 4. Rendering split by slide type (implements ruling #1)
+- **Generated scene slides (cover, result/before-after):** the gpt-image-2 output IS the slide,
+  with the short headline baked in via the prompt (quote the exact words, `quality:"high"`,
+  `input_fidelity:"high"`, name placement). Placed full-bleed as a `photo` slide.
+- **Real-screenshot slides (iPhone settings):** the untouched screenshot is the slide background
+  (via `OverlayAssets`/full-bleed), and the next/og renderer composites the burgundy callouts +
+  any labels ON TOP. The screenshot pixels are never sent to gpt-image-2 for redraw.
+- **Step-text slides:** next/og serif `Frame` (already exists), composited, real font.
 
-### 5. Relax the image source (one result image + screenshots, no full shoot required)
-- Today `resolveShootImages` throws if `< 2` approved shots. Allow a tutorial carousel to be built
-  from a single "result" image + arbitrary screenshot Blob URLs via the existing `imageUrls` /
-  `overlayUrls` params, without forcing a Shoot Studio shoot first. Small relaxation, not a rebuild.
+### 5. New slide kind + callouts + slide count
+- Add `before-after` to `CarouselSlideKind` (`types.ts`) + a `BeforeAfterFrame` in the renderer.
+- Port `Squiggle`/`KeywordCircle`/`Arrow` from the story route into shared
+  `lib/content-kit/accents.tsx`, driven by a new optional slide field `accents?: {type, target,
+  color?}[]`, default color = the burgundy token. Never over the face except "bad example".
+- Raise the System 1 slide cap to support up to 10 tutorial slides (`SLIDE_RULES`
+  `carousel-generator.ts:23` currently "7 to 9"). Leave app-v3's `MAX_CAROUSEL_SLIDES` alone.
 
-### 6. New-world result image (the "same method, new fantasy")
-- Let the tutorial flow optionally request the "after"/result image rendered in a new world
-  (location/outfit/lighting) by chaining the existing `extendShoot`/`refineShoot` on gpt-image-2,
-  identity-locked (keep face/body, change scene/outfit). This is what makes carousels feel new
-  without reshooting. Reuse the shoot engine; do not add a new generator.
-- The "ChatGPT turned my selfie into this" bridge = include a result/photo slide showing one
-  selfie → editorial result. Already supported by the photo slide + result image.
+### 6. Burgundy accent token (tutorial-only, Sandra approved)
+- Add ONE muted oxblood token used ONLY for tutorial callouts. Define it next to the render-route
+  token blocks and record in `docs/SSELFIE_DESIGN_SYSTEM.md` as "tutorial-carousel accent only."
+  Recommended `#6E2A35`; Sandra confirms exact hex before merge. Rest of brand stays neutral.
 
-### 7. Maya surface
-- Add `create_admin_tutorial_carousel` (or a `mode:"tutorial"` arg on `create_admin_carousel`) and
-  reuse `CarouselCard` rendering + per-slide download links as-is. Maya should: confirm the topic,
-  propose the slide order, generate, render, return downloadable PNGs + caption. No auto-post.
+### 7. Relax the image source
+- Allow a tutorial carousel from a single result image + arbitrary screenshot Blob URLs via the
+  existing `imageUrls`/`overlayUrls` params, without forcing a full Shoot Studio shoot first
+  (`resolveShootImages` currently throws if `<2` approved shots). Small relaxation.
+
+### 8. Maya surface
+- Add `create_admin_tutorial_carousel` (or `mode:"tutorial"` on the existing tool); reuse
+  `CarouselCard` + download links. Maya: confirm topic → propose slide order → generate (scenes
+  via gpt-image-2, screenshots composited) → render → return downloadable slides + caption. No
+  auto-post.
+
+## Relationship to MAYA-FIX-03 (no duplication)
+FIX-03's editable text layer is the MEMBER-facing app-v3 surface. The admin tutorial carousels use
+the System-1 next/og renderer for compositing. gpt-image-2 (generated scenes + short baked text)
+and the composited path (real screenshots + step text) do DIFFERENT jobs inside ONE pipeline —
+complementary, not competing. Do not revert FIX-03; do not route admin carousels through it.
 
 ## Acceptance
-- Sandra can ask Maya for a tutorial carousel by topic and get a 10-slide editorial deck in her
-  structure, with her screenshots composited, a fresh new-world result image, refined burgundy
-  callouts (not red circles), an editorial CTA with the right keyword, and a caption in her voice.
-- Output is downloadable PNGs (1080x1350 + 1080x1920 cover). Nothing auto-posts.
-- No parallel system: all of it lives in `lib/content-kit/*` + the existing renderer + admin Maya.
-- Burgundy token exists ONLY for tutorial callouts; rest of the brand unchanged.
-- Voice/no-fake/funnel come from `lib/content/grounding.ts`; "elevate/elevated" never appears.
-- Existing carousel/story tests pass; add tests for the tutorial template shape, the before-after
-  kind, and the accent field. Lint + build clean.
+- Sandra asks Maya for a tutorial carousel by topic and gets a ~10-slide editorial deck: cover +
+  result slides generated by gpt-image-2 with clean baked headlines; real iPhone-settings
+  screenshots kept pixel-exact with composited burgundy callouts; step text composited in her
+  serif; an editorial CTA with the right keyword; caption in her voice (from grounding).
+- New-world variations (location/outfit/lighting) generated from face selfies + scene references,
+  identity preserved.
+- The offline reel-reference batch can rank her reels, extract per-scene stills, and store them as
+  references.
+- No real screenshot is ever redrawn by AI. Nothing auto-posts. "elevate/elevated" never appears.
+- All in `lib/content-kit/*` + next/og renderer + admin Maya. Tests for tutorial template shape,
+  before-after kind, accent field, and the screenshot-preserve path. Lint + build clean.
 
-## Dependencies / sequencing
-- Depends on CONTENT-GROUNDING-01 (grounding module) for voice/proof/funnel.
-- Complementary to MAYA-FIX-03 (editable overlay layer) but independent: the carousel renderer is
-  System 1 (next/og, server-side), separate from the app-v3 layered-image work.
-- Prerequisite for the "winners" auto-suggestions (Phase 2, below): verify the Instagram
-  connection is the RIGHT account with insights scope, or the winners feed is empty. Not required
-  for manual Phase 1 use.
-
-## Out of scope (future phases — do NOT build here)
-- **Phase 2 (auto-engine):** Maya proactively flags repost-due winners from `ig_media_snapshots`
-  and pre-generates a weekly batch into a review queue; optional scheduled Cowork/Claude Code
-  driver; optional fal.ai batch lane for cost/scale (gpt-image-2 stays the likeness anchor; A/B on
-  Sandra's face before any switch; gate on skin texture per no-fake).
-- **Phase 3 (old-image reuse):** add Graph API media fields (`media_url`, `children`), download to
-  Blob (IG URLs expire), and a paginated backfill to reach the old catalog. Only if Sandra wants
-  exact old visuals instead of regenerating.
+## Out of scope (Phase 2+ — do NOT build here)
+- Auto-engine: Maya proactively flags repost-due winners and pre-generates weekly batches into a
+  review queue; scheduling. fal.ai batch lane (A/B on Sandra's face first; gate on skin texture).
+- In-app (serverless) reel/video processing — keep extraction offline.
