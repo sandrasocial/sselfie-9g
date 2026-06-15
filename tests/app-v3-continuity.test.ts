@@ -5,6 +5,7 @@ import {
   sanitizeConciergeSnapshot,
   sanitizeMayaDraftForSession,
 } from "@/components/app-v3/continuity"
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 
 describe("App v3 refresh continuity", () => {
   it("keeps the last valid app section and maps it to a refresh-safe URL", () => {
@@ -67,5 +68,50 @@ describe("App v3 refresh continuity", () => {
     expect(sanitizeMayaDraftForSession(draft, 123)?.genState["m1:concept-1"]?.status).toBe("done")
     expect(sanitizeMayaDraftForSession(draft, 999)).toBeNull()
     expect(sanitizeMayaDraftForSession({ ...draft, chatId: "" }, 123)).toBeNull()
+  })
+
+  it("strips retired Maya tool parts from restored chat history", () => {
+    const messages = [
+      {
+        id: "u1",
+        role: "user",
+        parts: [{ type: "text", text: "Can I see text styles?" }],
+      },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "Here are a few." },
+          {
+            type: "tool-show_style_options",
+            toolCallId: "old-tool",
+            state: "output-available",
+            output: { options: [] },
+          },
+          {
+            type: "tool-emit_concepts",
+            toolCallId: "current-tool",
+            state: "output-available",
+            output: { concepts: [] },
+          },
+          {
+            type: "dynamic-tool",
+            toolName: "show_style_options",
+            toolCallId: "old-dynamic-tool",
+            state: "output-available",
+            output: { options: [] },
+          },
+        ],
+      },
+    ]
+
+    const cleaned = sanitizeMayaMessages(messages) as any[]
+
+    expect(cleaned).toHaveLength(2)
+    expect(cleaned[1].parts.map((part: any) => part.type)).toEqual([
+      "text",
+      "tool-emit_concepts",
+    ])
+    expect(cleaned[1].parts.some((part: any) => part.toolName === "show_style_options")).toBe(false)
   })
 })

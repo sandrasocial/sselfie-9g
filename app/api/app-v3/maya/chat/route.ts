@@ -18,6 +18,7 @@ import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vau
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
@@ -502,7 +503,12 @@ export async function POST(req: Request) {
         .catch(() => {})
     }
 
-    let modelMessages = await convertToModelMessages(uiMessages)
+    const cleanUiMessages = sanitizeMayaMessages(uiMessages, { admin: isAdminSession }) as UIMessage[]
+    if (cleanUiMessages.length === 0) {
+      return NextResponse.json({ error: "messages is required" }, { status: 400 })
+    }
+
+    let modelMessages = await convertToModelMessages(cleanUiMessages)
     if (isAllowedInspirationUrl(body?.inspirationImageUrl)) {
       modelMessages = attachInspiration(modelMessages, body.inspirationImageUrl)
     }

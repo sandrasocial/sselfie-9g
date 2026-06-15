@@ -1,3 +1,5 @@
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+
 export type ServerOutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide"
 
 export type ServerAestheticSnapshot = {
@@ -123,7 +125,7 @@ export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraft
     chatId: draft.chatId,
     session,
     savedAt: draft.savedAt,
-    messages: draft.messages,
+    messages: sanitizeMayaMessages(draft.messages, { admin: true }),
     genState: sanitizeServerGenState(draft.genState),
     generatedOnce: draft.generatedOnce === true,
     setupOpen: draft.setupOpen === true,

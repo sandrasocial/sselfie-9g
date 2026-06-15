@@ -7,6 +7,7 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { listChats, saveChat } from "@/lib/app-v3/maya/chat-store"
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 
 export const dynamic = "force-dynamic"
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   if (!neonUserId) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   try {
-    await saveChat(String(neonUserId), id, messages, title)
+    await saveChat(String(neonUserId), id, sanitizeMayaMessages(messages, { admin: true }), title)
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error("[app-v3 chats] save failed:", e)

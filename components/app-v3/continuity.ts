@@ -3,6 +3,7 @@ import {
   sanitizeServerMayaDraftSnapshot,
   type ServerMayaDraftSnapshot,
 } from "@/lib/app-v3/maya/draft-snapshot"
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import type { ConciergeSession, OutputFormat } from "./types"
 import type { ConceptGenState } from "./concept-card"
 
@@ -166,7 +167,7 @@ export function sanitizeMayaDraftForSession(
     chatId: draft.chatId,
     sessionStartedAt,
     savedAt: draft.savedAt,
-    messages: draft.messages,
+    messages: sanitizeMayaMessages(draft.messages, { admin: true }),
     genState: sanitizeGenState(draft.genState),
     generatedOnce: draft.generatedOnce === true,
     setupOpen: draft.setupOpen === true,
@@ -200,7 +201,7 @@ export function cacheServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSna
   saveMayaDraft({
     chatId: snapshot.chatId,
     sessionStartedAt: session.startedAt,
-    messages: snapshot.messages,
+    messages: sanitizeMayaMessages(snapshot.messages, { admin: true }),
     genState: snapshot.genState as Record<string, ConceptGenState>,
     generatedOnce: snapshot.generatedOnce,
     setupOpen: snapshot.setupOpen,

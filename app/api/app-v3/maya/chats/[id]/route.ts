@@ -6,6 +6,7 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { loadChat, archiveChat } from "@/lib/app-v3/maya/chat-store"
+import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 
 export const dynamic = "force-dynamic"
 
@@ -20,7 +21,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   try {
     const chat = await loadChat(String(neonUserId), id)
     if (!chat) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json(chat)
+    return NextResponse.json({
+      ...chat,
+      messages: Array.isArray(chat.messages)
+        ? sanitizeMayaMessages(chat.messages, { admin: true })
+        : [],
+    })
   } catch (e) {
     console.error("[app-v3 chats/:id] load failed:", e)
     return NextResponse.json({ error: "Could not load chat" }, { status: 500 })
