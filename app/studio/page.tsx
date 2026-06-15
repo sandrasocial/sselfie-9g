@@ -103,6 +103,28 @@ export default async function StudioPage({
     redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
+  // Studio 3.0 member forward: send active members + trials to the new /app shell, mirroring
+  // the admin override above. Without this, returning members who log in normally land on
+  // legacy /studio (retired Replicate generation) and can't generate with Maya. Gated by
+  // APP_V3_MEMBERS_ENABLED (one-flip rollback), the same ?legacy=1 escape hatch, and the
+  // impersonation guard. Uses the same getSuiteAccess check /app uses, so there is no redirect
+  // loop; "limited"/"none" (expired trials, one-time owners) stay on legacy Studio.
+  // NOTE: redirect() must run OUTSIDE the try/catch — it throws NEXT_REDIRECT, which a catch
+  // would swallow.
+  if (!impersonatedUserId && params.legacy !== "1" && process.env.APP_V3_MEMBERS_ENABLED === "true") {
+    let forwardToApp = false
+    try {
+      const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
+      const access = await getSuiteAccess(String(neonUser.id))
+      forwardToApp = access.level === "member" || access.level === "trial"
+    } catch (error) {
+      console.error("[studio] App v3 member-forward check failed, staying on legacy:", error)
+    }
+    if (forwardToApp) {
+      redirect("/app")
+    }
+  }
+
   console.log("[v0] [STUDIO PAGE] Starting credit grant check for user:", neonUser.email, neonUser.id)
 
   // Decision 1: Grant free user credits to ALL free users who haven't received them yet
