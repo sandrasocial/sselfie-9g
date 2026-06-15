@@ -9,7 +9,6 @@ import { notifyNorth } from "@/lib/north-notifier"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
-import { logWebhookError, alertWebhookError } from "@/lib/webhook-monitoring"
 import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
 import { getSubscriptionPeriod } from "@/lib/payments/shared"
 
@@ -281,21 +280,6 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
   console.log(
     `[v0] ⚠️ Payment failed for subscription ${subscriptionId} - marked as past_due`
   )
-
-  try {
-    const failureMessage = `Stripe payment failed for subscription ${subscriptionId} (invoice: ${invoice.id || "unknown"})`
-    const webhookError = {
-      eventType: event.type,
-      errorMessage: failureMessage,
-      errorStack: undefined,
-      eventData: invoice,
-      timestamp: new Date(),
-    }
-    await logWebhookError(webhookError)
-    await alertWebhookError(webhookError)
-  } catch (alertError) {
-    console.error("[v0] ⚠️ Failed to log/alert payment failure:", alertError)
-  }
 
   try {
     const [subRecord] = await sql`
