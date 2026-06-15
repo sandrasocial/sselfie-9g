@@ -7,7 +7,6 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
-import { TrackedLink } from "@/components/ai-prompts/tracked-link"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import { SuiteDoor } from "@/components/marketing/suite-door"
 import {
@@ -198,7 +197,8 @@ const FIRST_RESULT_PATHS = [
   {
     label: "Most copied",
     title: "Dark Feminine Brand Shoot",
-    useWhen: "Use this when you want your next profile, reel cover, or launch image to feel sharper and more expensive.",
+    useWhen:
+      "Use this when you want your next profile, reel cover, or launch image to feel sharper and more expensive.",
     selfie: "Best source selfie: clear face, dark top or blazer, soft window light, no sunglasses.",
     fix: "If ChatGPT makes it too polished, rerun and add: keep my real facial features, natural skin texture, and normal expression.",
     collectionHref: "#dark-feminine-cafe",
@@ -207,8 +207,10 @@ const FIRST_RESULT_PATHS = [
   {
     label: "Fastest visual proof",
     title: "Clean Girl Founder Morning",
-    useWhen: "Use this when you want soft founder energy: laptop, coffee, skincare, morning routine, calm personal brand.",
-    selfie: "Best source selfie: natural face, hair visible, neutral top, clean light from the front or side.",
+    useWhen:
+      "Use this when you want soft founder energy: laptop, coffee, skincare, morning routine, calm personal brand.",
+    selfie:
+      "Best source selfie: natural face, hair visible, neutral top, clean light from the front or side.",
     fix: "If the result looks too generic, tell ChatGPT: keep my age, facial structure, hair color, and realistic body proportions.",
     collectionHref: "#clean-girl-morning",
     card: CLEAN_GIRL_MORNING_SERIES[0],
@@ -216,25 +218,26 @@ const FIRST_RESULT_PATHS = [
   {
     label: "Best for outfit/content",
     title: "Denim Street Editorial",
-    useWhen: "Use this when you want full-body personal brand images that feel like a street-style content day.",
-    selfie: "Best source selfie: mirror selfie or full outfit photo with your body shape and outfit visible.",
+    useWhen:
+      "Use this when you want full-body personal brand images that feel like a street-style content day.",
+    selfie:
+      "Best source selfie: mirror selfie or full outfit photo with your body shape and outfit visible.",
     fix: "If the outfit changes too much, rerun and add: preserve my outfit silhouette, body proportions, and natural pose.",
     collectionHref: "#denim-street",
     card: DENIM_STREET_SERIES[0],
   },
-].filter((path) => path.card)
+].filter(path => path.card)
 
 export const metadata: Metadata = {
   title: "The Prompt Vault · SSELFIE",
-  description: "Turn one selfie into unlimited editorial photoshoots.",
+  description:
+    "The full SSELFIE prompt library: complete AI photoshoot sequences, example images, and new drops.",
   robots: { index: false, follow: false },
 }
 
 // ── Token validation ─────────────────────────────────────────────────────────
 
-type TokenResult =
-  | { valid: false }
-  | { valid: true; name?: string | null }
+type TokenResult = { valid: false } | { valid: true; name?: string | null }
 
 async function validateToken(token: string): Promise<TokenResult> {
   try {
@@ -290,9 +293,7 @@ function PromptCardEl({ card }: { card: PromptCard }) {
       <div className="pva-card-body">
         <div className="pva-card-header">
           <span className="pva-card-number">{card.number}</span>
-          <h3 className={`pva-card-title ${cormorant.className}`}>
-            {card.title}
-          </h3>
+          <h3 className={`pva-card-title ${cormorant.className}`}>{card.title}</h3>
         </div>
         {card.whenToUse && (
           <>
@@ -340,7 +341,7 @@ export default async function PromptVaultAccessPage({
     ...COLLECTION_OVERVIEW,
   ]
   const vaultCollections = [
-    ...publishedCollections.map((collection) => ({
+    ...publishedCollections.map(collection => ({
       id: collection.slug,
       eyebrow: `PUBLISHED VAULT COLLECTION · ${collection.title.toUpperCase()}`,
       title: collection.title,
@@ -351,11 +352,13 @@ export default async function PromptVaultAccessPage({
     ...VAULT_COLLECTIONS,
   ]
   const vaultMeta = [
-    ...publishedCollections.map((collection) => ({
+    ...publishedCollections.map(collection => ({
       previewCardId: collection.cards[0]?.id ?? collection.slug,
       name: collection.title,
       shotCount: collection.cards.length,
-      thumbnails: collection.cards.map((card) => card.exampleImage).filter((url): url is string => !!url),
+      thumbnails: collection.cards
+        .map(card => card.exampleImage)
+        .filter((url): url is string => !!url),
     })),
     ...VAULT_COLLECTION_META,
   ]
@@ -408,8 +411,8 @@ export default async function PromptVaultAccessPage({
               color: "#3A3632",
             }}
           >
-            This access link is not valid. Use the link from your purchase
-            confirmation email or contact hello@sselfie.ai if you need help.
+            This access link is not valid. Use the link from your purchase confirmation email or
+            contact hello@sselfie.ai if you need help.
           </p>
           <Link
             href="/prompt-vault"
@@ -441,13 +444,11 @@ export default async function PromptVaultAccessPage({
     },
   }).catch(() => {})
 
-  const firstName =
-    (result.valid && result.name) ? result.name.split(" ")[0] : null
-  const systemUpgradeHref = `/checkout/selfie-to-brand-shoot?source=vault_access&utm_source=owned&utm_medium=vault_access&utm_campaign=selfie_to_brand_shoot_system_upgrade&freebie_token=${encodeURIComponent(token)}&buyer_stage=micro&vault_credit=1`
+  const firstName = result.valid && result.name ? result.name.split(" ")[0] : null
+  const vaultShotCount = vaultMeta.reduce((total, collection) => total + collection.shotCount, 0)
 
   return (
     <main className={`pva-page ${inter.className}`}>
-
       {/* ── NAV ── */}
       <nav className="pva-nav">
         <Link href="/" className={`pva-nav-logo ${cormorant.className}`}>
@@ -461,31 +462,27 @@ export default async function PromptVaultAccessPage({
         <div className="pva-hero-inner">
           <p className="pva-eyebrow">SSELFIE · THE PROMPT VAULT</p>
           <h1 className={`pva-headline ${cormorant.className}`}>
-            {firstName ? `${firstName}'s` : "The"} Prompt<br />Vault
+            {firstName ? `${firstName}'s` : "The"} Prompt
+            <br />
+            Vault
           </h1>
           <p className="pva-subhead">
-            A guided library of full AI photoshoot sequences, creative direction,
-            styling notes, and tested prompts for turning one selfie into elevated
-            personal brand images. The Vault is the prompts. The System is the guided
-            path that uses them, with the Vault included.
+            You unlocked the full SSELFIE shoot library: every collection, every prompt, every
+            example image, and every new drop. Start with one complete shoot before you browse
+            everything.
           </p>
+          <div className="pva-hero-stats" aria-label="Vault library size">
+            <span>{vaultCollections.length} collections</span>
+            <span>{vaultShotCount} prompts</span>
+            <span>new drops included</span>
+          </div>
           <div className="pva-hero-actions">
             <a href="#first-result" className="pva-hero-primary">
-              Start with your first result
+              Start with one full shoot
             </a>
-            <TrackedLink
-              href={systemUpgradeHref}
-              className="pva-hero-secondary"
-              trackEvent="prompt_vault_system_upgrade_click"
-              trackProperties={{
-                source: "vault_access",
-                placement: "hero",
-                buyer_stage: "micro",
-                upgrade_credit: "2700",
-              }}
-            >
-              See the System · $170
-            </TrackedLink>
+            <a href="#vault-overview" className="pva-hero-secondary">
+              Browse the full library
+            </a>
           </div>
         </div>
 
@@ -510,55 +507,21 @@ export default async function PromptVaultAccessPage({
         </div>
       </section>
 
-      <section className="pva-system-upgrade" aria-label="Selfie to Brand Shoot System upgrade">
-        <div className="pva-system-upgrade-inner">
-          <div>
-            <p className="pva-eyebrow">YOUR $27 IS A CREDIT</p>
-            <h2 className={`pva-upgrade-title ${cormorant.className}`}>
-              Love the Vault? Get the whole method for less.
-            </h2>
-            <p className="pva-upgrade-copy">
-              The Selfie to Brand Shoot System walks you through the entire path, with this Vault
-              included. Your $27 is already applied, so it&apos;s $170 instead of $197. No code needed.
-            </p>
-          </div>
-          <div className="pva-upgrade-card">
-            <span>$27 credit applied</span>
-            <strong className={cormorant.className}>The Selfie to Brand Shoot System</strong>
-            <p>The Vault is the prompts. The System is the whole method.</p>
-            <TrackedLink
-              href={systemUpgradeHref}
-              className="pva-upgrade-button"
-              trackEvent="prompt_vault_system_upgrade_click"
-              trackProperties={{
-                source: "vault_access",
-                placement: "system_upgrade_block",
-                buyer_stage: "micro",
-                upgrade_credit: "2700",
-              }}
-            >
-              See the System · $170
-            </TrackedLink>
-          </div>
-        </div>
-      </section>
-
       {/* ── FIRST RESULT PATH ── */}
       <section id="first-result" className="pva-first-result">
         <div className="pva-first-result-inner">
           <p className="pva-eyebrow">START HERE</p>
           <h2 className={`pva-first-title ${cormorant.className}`}>
-            Get your first brand shoot result in seven minutes.
+            Create one complete shoot first.
           </h2>
           <p className="pva-first-note">
-            Do not start by browsing everything. Choose one path, upload the right
-            selfie, copy the first prompt, and get one usable image before you try
-            another look. When you want the full guided workflow, open the System
-            home and follow the six-step path.
+            Do not start by browsing everything. Choose one full collection, upload the right
+            selfie, copy the first prompt, and build the matching shots before you try another
+            world.
           </p>
 
           <div className="pva-first-grid">
-            {FIRST_RESULT_PATHS.map((path) => (
+            {FIRST_RESULT_PATHS.map(path => (
               <article key={path.title} className="pva-first-card">
                 {path.card.exampleImage && (
                   <div className="pva-first-image-wrap">
@@ -573,9 +536,7 @@ export default async function PromptVaultAccessPage({
                 )}
                 <div className="pva-first-body">
                   <span className="pva-first-label">{path.label}</span>
-                  <h3 className={`pva-first-card-title ${cormorant.className}`}>
-                    {path.title}
-                  </h3>
+                  <h3 className={`pva-first-card-title ${cormorant.className}`}>{path.title}</h3>
                   <p className="pva-first-copy">{path.useWhen}</p>
                   <div className="pva-first-instruction">
                     <span>Selfie to use</span>
@@ -605,9 +566,9 @@ export default async function PromptVaultAccessPage({
           <div className="pva-troubleshoot">
             <p className="pva-troubleshoot-label">If ChatGPT gives a weird result</p>
             <p>
-              Start a fresh chat, upload the selfie again, paste the prompt, and add:
-              &quot;Preserve my real face, age, skin texture, hair color, body proportions,
-              and natural expression. Make it editorial, not fake.&quot;
+              Start a fresh chat, upload the selfie again, paste the prompt, and add: &quot;Preserve
+              my real face, age, skin texture, hair color, body proportions, and natural expression.
+              Make it editorial, not fake.&quot;
             </p>
           </div>
         </div>
@@ -629,15 +590,13 @@ export default async function PromptVaultAccessPage({
       <section id="vault-overview" className="pva-overview">
         <div className="pva-overview-inner">
           <p className="pva-eyebrow">INSIDE THE VAULT</p>
-          <h2 className={`pva-overview-title ${cormorant.className}`}>
-            Full photoshoot collections.
-          </h2>
+          <h2 className={`pva-overview-title ${cormorant.className}`}>The full shoot library.</h2>
           <p className="pva-overview-note">
-            Scroll the moodboard to pick the version of you you want to
-            photograph today. Then open the collection for the full prompts.
+            Scroll the moodboard to pick the world you want to create today. Then open the
+            collection for the full sequence.
           </p>
           <div className="pva-overview-grid">
-            {collectionOverview.map((c) => (
+            {collectionOverview.map(c => (
               <a key={c.href} href={c.href} className="pva-overview-card">
                 {c.image && (
                   <div className="pva-overview-image-wrap">
@@ -652,15 +611,9 @@ export default async function PromptVaultAccessPage({
                 )}
                 <div className="pva-overview-card-body">
                   <span className="pva-overview-eyebrow">{c.eyebrow}</span>
-                  <h3
-                    className={`pva-overview-card-title ${cormorant.className}`}
-                  >
-                    {c.title}
-                  </h3>
+                  <h3 className={`pva-overview-card-title ${cormorant.className}`}>{c.title}</h3>
                   <p className="pva-overview-card-note">{c.note}</p>
-                  <span className="pva-overview-open-hint">
-                    Open collection
-                  </span>
+                  <span className="pva-overview-open-hint">Open collection</span>
                 </div>
               </a>
             ))}
@@ -684,23 +637,17 @@ export default async function PromptVaultAccessPage({
               maxWidth: "560px",
             }}
           >
-            Each collection gives you the full shoot direction. The image
-            leads. The prompt supports it.
+            Each collection gives you the full shoot direction. The image leads. The prompt supports
+            it. Use one collection at a time.
           </p>
 
           <div className="pva-collection-list">
-            {vaultCollections.map((collection) => {
-              const meta = vaultMeta.find(
-                (m) => m.name === collection.title,
-              )
+            {vaultCollections.map(collection => {
+              const meta = vaultMeta.find(m => m.name === collection.title)
               const thumbs = meta?.thumbnails.slice(0, 6) ?? []
 
               return (
-                <details
-                  key={collection.id}
-                  id={collection.id}
-                  className="pva-details"
-                >
+                <details key={collection.id} id={collection.id} className="pva-details">
                   <summary className="pva-summary">
                     {collection.heroImage && (
                       <div className="pva-summary-thumb">
@@ -714,12 +661,8 @@ export default async function PromptVaultAccessPage({
                       </div>
                     )}
                     <div className="pva-summary-text">
-                      <span className="pva-series-eyebrow">
-                        {collection.eyebrow}
-                      </span>
-                      <span
-                        className={`pva-series-title ${cormorant.className}`}
-                      >
+                      <span className="pva-series-eyebrow">{collection.eyebrow}</span>
+                      <span className={`pva-series-title ${cormorant.className}`}>
                         {collection.title}
                       </span>
                       <span className="pva-series-note">{collection.note}</span>
@@ -750,7 +693,7 @@ export default async function PromptVaultAccessPage({
 
                     {/* Prompt cards */}
                     <div className="pva-cards">
-                      {collection.cards.map((card) => (
+                      {collection.cards.map(card => (
                         <PromptCardEl key={card.id} card={card} />
                       ))}
                     </div>
@@ -855,6 +798,24 @@ export default async function PromptVaultAccessPage({
           line-height: 1.85;
           color: #3A3632;
           max-width: 520px;
+        }
+        .pva-hero-stats {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin: 0 0 28px;
+          max-width: 540px;
+        }
+        .pva-hero-stats span {
+          border: 1px solid rgba(197,198,200,0.55);
+          background: #FFFFFF;
+          color: #4F5052;
+          padding: 8px 10px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          line-height: 1.35;
         }
         .pva-hero-actions {
           display: flex;

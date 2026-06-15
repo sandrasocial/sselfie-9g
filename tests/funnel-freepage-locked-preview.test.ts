@@ -1,3 +1,6 @@
+// @vitest-environment node
+import fs from "fs"
+import path from "path"
 import { describe, expect, it } from "vitest"
 
 import { isAllowedAnalyticsEventName } from "@/lib/analytics/event-contract"
@@ -8,6 +11,12 @@ import {
   getStaticVaultFreebieCollections,
 } from "@/lib/ai-prompts/prompt-data"
 import { selectRotatingPublishedFreebieCollections } from "@/lib/vault/freebie-curation"
+
+const ROOT = process.cwd()
+
+function read(relativePath: string) {
+  return fs.readFileSync(path.join(ROOT, relativePath), "utf8")
+}
 
 describe("AI prompts free page locked Vault previews", () => {
   it("keeps paid prompts out of locked teaser data", () => {
@@ -99,5 +108,24 @@ describe("AI prompts free page locked Vault previews", () => {
       },
     ])
     expect("prompt" in curated[0].lockedShots[0]).toBe(false)
+  })
+
+  it("keeps the free prompt pack and paid Vault in separate lanes", () => {
+    const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
+    const vaultLandingContents = read("app/prompt-vault/page.tsx")
+    const vaultAccessContents = read("app/access/prompt-vault/[token]/page.tsx")
+
+    expect(freePageContents).toContain("Your starter shoot.")
+    expect(vaultLandingContents).toContain("Unlock the")
+    expect(vaultLandingContents).toContain("full AI")
+    expect(vaultLandingContents).toContain("photoshoot")
+    expect(vaultLandingContents).toContain("library.")
+    expect(vaultLandingContents).toContain("The free starter shoot gives you a taste.")
+    expect(vaultLandingContents).not.toContain("Turn one<br />selfie into<br />unlimited")
+    expect(vaultLandingContents).not.toContain("import { CopyButton }")
+
+    expect(vaultAccessContents).toContain("You unlocked the full SSELFIE shoot library")
+    expect(vaultAccessContents).toContain("Start with one full shoot")
+    expect(vaultAccessContents).not.toContain("See the System · $170")
   })
 })
