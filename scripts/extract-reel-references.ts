@@ -12,9 +12,10 @@
 // in instagram_connections, and ffmpeg on PATH.
 
 import { neon } from "@neondatabase/serverless"
+import { put } from "@vercel/blob"
 import { config } from "dotenv"
 import { execFileSync } from "node:child_process"
-import { mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs"
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 
 config({ path: ".env.local" })
@@ -26,6 +27,7 @@ const REELS_LIMIT = Number(process.env.REELS_LIMIT ?? 3)
 const EXCLUDE_RE = /chatgpt|chat gpt|\bgpt\b|prompt/i
 const SCENE = Number(process.env.SCENE ?? 0.3) // ffmpeg scene-change sensitivity (0-1, lower = more frames)
 const MAX_FRAMES = Number(process.env.MAX_FRAMES ?? 30)
+const UPLOAD = process.env.UPLOAD === "1" // also push frames to Blob + content_reel_references
 const OUT_ROOT = join(process.cwd(), "reel-references")
 
 type Connection = { access_token: string; instagram_user_id: string; instagram_username: string }
@@ -109,6 +111,31 @@ function extractScenes(videoPath: string, outDir: string): number {
   return readdirSync(outDir).filter((f: string) => f.startsWith("scene_")).length
 }
 
+async function uploadReferences(sql: ReturnType<typeof neon>, dir: string, reel: ReelRow): Promise<number> {
+  // Idempotent: clear this reel's prior rows, then re-upload to stable Blob paths.
+  await sql`DELETE FROM content_reel_references WHERE media_id = ${reel.media_id}`
+  const files = readdirSync(dir).filter((f) => f === "cover.jpg" || f.startsWith("scene_"))
+  let count = 0
+  for (const file of files) {
+    const isCover = file === "cover.jpg"
+    const sceneIndex = isCover ? null : Number(file.match(/scene_(\d+)/)?.[1] ?? 0)
+    const bytes = readFileSync(join(dir, file))
+    const blob = await put(`content-kit/reel-references/${reel.media_id}/${file}`, bytes, {
+      access: "public",
+      contentType: "image/jpeg",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    })
+    await sql`
+      INSERT INTO content_reel_references (media_id, permalink, hook_line, views, kind, scene_index, image_url)
+      VALUES (${reel.media_id}, ${reel.permalink}, ${reel.hook_line}, ${reel.views},
+              ${isCover ? "cover" : "scene"}, ${sceneIndex}, ${blob.url})
+    `
+    count++
+  }
+  return count
+}
+
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL missing from .env.local")
   checkFfmpeg()
@@ -156,16 +183,26 @@ async function main() {
         join(dir, "meta.json"),
         JSON.stringify({ media_id: r.media_id, views: r.views, hook: r.hook_line, permalink: r.permalink, frames }, null, 2),
       )
-      console.log(`  ✓ ${label}: ${(bytes / 1e6).toFixed(1)}MB video → ${frames} scene stills`)
-      summary.push({ ...r, frames })
+      let uploaded = 0
+      if (UPLOAD) uploaded = await uploadReferences(sql, dir, r)
+      console.log(
+        `  ✓ ${label}: ${(bytes / 1e6).toFixed(1)}MB video → ${frames} scene stills` +
+          (UPLOAD ? ` → ${uploaded} refs in app library` : ""),
+      )
+      summary.push({ ...r, frames, uploaded })
     } catch (err: any) {
       console.log(`  ✗ ${label}: ${err.message}`)
       summary.push({ ...r, frames: 0, note: err.message })
     }
   }
 
-  console.log(`\nDone. References saved under: ${OUT_ROOT}`)
-  console.log("Each reel has cover.jpg + scene_NNN.jpg + meta.json. Nothing was uploaded or written to the DB.")
+  console.log(`\nDone. Local references under: ${OUT_ROOT}`)
+  if (UPLOAD) {
+    const totalRefs = summary.reduce((n, s) => n + (s.uploaded || 0), 0)
+    console.log(`Uploaded ${totalRefs} references to Blob + content_reel_references (app library).`)
+  } else {
+    console.log("Local only. Re-run with UPLOAD=1 to push into the app library (Blob + content_reel_references).")
+  }
 }
 
 main().catch((e) => {

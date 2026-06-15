@@ -2,9 +2,17 @@
 
 OWNER: Codex (Sandra approves merge)
 
-Status: spec ready. **DO NOT start until Sandra says go.** Phase 1 = on-demand tutorial
-carousels + the reel-reference batch. Auto-batch/fal scoped out (Phase 2). Source: tutorial
-content-engine research 2026-06-15, updated with Sandra's rulings same day.
+Status: **READY FOR CODEX** (Sandra approved the build 2026-06-15). Phase 1 = on-demand tutorial
+carousels. Auto-batch/fal scoped out (Phase 2).
+
+## Division of labor
+- ✅ **DONE by Claude (data layer):** the offline reel-reference extractor + the
+  `content_reel_references` table, populated and verified live (see item 1). Codex reads it.
+- **Codex builds (this spec):** the in-app tutorial carousel feature — generator mode, slide
+  kinds, callouts, burgundy token, the render split, and the Maya tool that LISTS references from
+  `content_reel_references` and feeds chosen `image_url`s into `generateCarousels`.
+- One open input from Sandra: confirm the burgundy hex (`#6E2A35` recommended). Use `#6E2A35` as
+  provisional if unconfirmed at build time — it's a one-line token change.
 
 ## Goal
 Let Sandra produce premium editorial tutorial carousels (selfie / iPhone-settings / editing /
@@ -61,17 +69,23 @@ auto-suggest layer (Phase 2) can rely on this.
 
 ## Phase 1 build items
 
-### 1. Reel-reference batch (offline, Cowork/Claude Code — NOT serverless)
-A standalone script (run here, not in the app), because IG media URLs expire within hours and
-ffmpeg is impractical in Vercel serverless but already installed locally:
-- Rank reels from `ig_media_snapshots` (already populated) by views/saves.
-- For a chosen reel, fetch its `media_url` on demand (add `media_url,thumbnail_url` to that one
-  fetch), download the mp4 in the SAME pass (URL expires), and run ffmpeg scene/frame extraction
-  (e.g. `fps=1/2` or scene-change detection) to per-scene stills.
-- Upload the kept frames to Vercel Blob and register them as Maya reference images (the existing
-  reference-library surface) tagged to the source reel.
-- These scene stills are the "keep the steps correct" reference layer. They are INPUTS to
-  generation and the source of the real-screenshot slides, not necessarily final slides.
+### 1. Reel-reference batch + storage — ✅ DONE by Claude 2026-06-15 (data layer)
+This upstream piece is built, run, and live in production. Codex does NOT need to build it; it
+just READS the table below.
+- `scripts/extract-reel-references.ts` — offline (ffmpeg local, not serverless). Ranks reels from
+  `ig_media_snapshots` by views, excludes ChatGPT/prompt reels (`EXCLUDE_RE`), fetches each
+  reel's `media_url` on demand, downloads + ffmpeg scene-extracts per-step stills, and (with
+  `UPLOAD=1`) pushes them to Blob (`content-kit/reel-references/<media_id>/`) + inserts rows.
+  Idempotent per `media_id`. Re-run any time: `UPLOAD=1 REELS_LIMIT=N npx tsx scripts/extract-reel-references.ts`.
+- `scripts/setup-content-reel-references.ts` — creates the table (run, live).
+- **Storage = `content_reel_references`** (admin-global, no user_id — same family as
+  `content_shoots`/`content_carousels`). Columns: `id, media_id, permalink, hook_line, views,
+  kind ('cover'|'scene'), scene_index, image_url (public Blob), label, created_at`.
+- Currently populated: 15 tutorial reels, 185 refs (15 covers + 170 step stills). Verified live.
+- These stills are the "keep the steps correct" layer: INPUTS to generation and the source of the
+  real-screenshot slides. `image_url` values are already valid `*.public.blob.vercel-storage.com`
+  URLs, so they pass `generateCarousels`' `isAllowedImageUrl` and can be fed straight into
+  `imageUrls`/`overlayUrls` with no generator change.
 
 ### 2. Generation pipeline (the "same method, new fantasy" engine)
 - Inputs: scene-reference screenshots (from step 1 or Sandra's uploads) + 1-3 clear face selfies.
