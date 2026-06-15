@@ -88,9 +88,10 @@ const conceptSchema = z.object({
 
 const emitConcepts = tool({
   description:
-    "Present EXACTLY 3 distinct photo/graphic concept directions to the user. Call this once you " +
-    "understand what they want. Each concept's brief must be production-grade with exact brand names, " +
-    "a named camera body, and named lighting. Never more or fewer than 3.",
+    "Present photo/graphic concept directions sized to her ask: 3 distinct directions by default, " +
+    "1-2 when she described one specific photo, and 6-9 cohesive shots when she asked for a full shoot. " +
+    "Call this once you understand what they want. Each concept's brief must be production-grade with " +
+    "exact brand names, a named camera body, and named lighting.",
   inputSchema: z.object({
     concepts: z
       .array(conceptSchema)

@@ -4,7 +4,7 @@
 //
 // This is the missing layer Sandra felt. Instead of a form with one Generate button, Maya
 // now holds a real streaming conversation (Claude Sonnet 4.5 via /api/app-v3/maya/chat),
-// proposes EXACTLY 3 concept directions inline as cards, and the user clicks one to fire the
+// proposes concept directions inline as cards, and the user clicks one to fire the
 // synchronous OpenAI generation (/api/app-v3/maya/generate). "Tweak" is just another message.
 //
 // Reuses the lean primitives only (ConceptCard, concierge-context). It does NOT port the
@@ -81,7 +81,7 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "story-slide", label: "Story slide" },
 ]
 
-// Tapping a format is the first guided step: it asks Maya (in natural words) to pull 3 directions.
+// Tapping a format is the first guided step: it asks Maya (in natural words) to pull directions.
 const FORMAT_PHRASE: Record<OutputFormat, string> = {
   photo: "Let's create photos.",
   "reel-cover": "Let's make a Reel cover.",
@@ -94,7 +94,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 // brand shoot" framing so the system status is clear (the photo case is the one that changes most).
 // Sandra-approved short openers (2026-06-11): two lines max before anything happens.
 const FORMAT_OPENER: Record<OutputFormat, string> = {
-  photo: "Add one selfie and I'll pull three directions. Soft window light works best. 🤍",
+  photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
   "reel-cover": "Tell me what your reel's about and I'll design the cover.",
   carousel: "Give me the topic and I'll build slides that feel like you.",
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
@@ -111,10 +111,10 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
 // so the customer never has to type to move forward.
 const CTA_LABEL: Record<OutputFormat, string> = {
-  photo: "Create my 3 photo directions",
-  "reel-cover": "Create my 3 cover directions",
-  carousel: "Create my 3 carousel directions",
-  "story-slide": "Create my 3 story directions",
+  photo: "Create my photo directions",
+  "reel-cover": "Create my cover directions",
+  carousel: "Create my carousel directions",
+  "story-slide": "Create my story directions",
 }
 
 type UploadSlot = "face" | "side" | "body" | "inspiration"

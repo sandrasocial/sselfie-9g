@@ -452,7 +452,7 @@ export function compileConceptJobs(
       let visual: SlideVisual = (slide as { visual?: SlideVisual }).visual ?? defaultSlideVisual(role, valueIndex)
       if (visual === "identity") {
         identityCount += 1
-        if (identityCount > 4) visual = "detail"
+        if (identityCount > 2) visual = "detail"
       }
       const text = { heading: clean(slide.heading), body: clean(slide.body) }
       const label = `slide ${i + 1}/${total} (${role} · ${visual})`

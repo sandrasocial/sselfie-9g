@@ -58,9 +58,10 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       ]),
       "carousel",
     )
-    // hook -> identity (selfie); values alternate detail/text-only (none); cta -> text-only (none).
+    // hook/value/cta default to identity, then the 2-slide identity cap downgrades extras to detail.
     expect(jobs[0].passes[0].input).toBe("selfie")
-    expect(jobs.slice(1).every((j) => j.passes[0].input === "none")).toBe(true)
+    expect(jobs[1].passes[0].input).toBe("selfie")
+    expect(jobs.slice(2).every((j) => j.passes[0].input === "none")).toBe(true)
   })
 
   it("keeps people out of detail and text-only prompts, and renders copy verbatim", () => {
