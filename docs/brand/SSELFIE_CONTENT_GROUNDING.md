@@ -1,7 +1,7 @@
 # SSELFIE Content Grounding — Voice · Audience · Proof
-*The single source of truth that every admin content generator imports. Drafted 2026-06-15 from Sandra's existing assets, made current, for Sandra's correction. Once approved, this is encoded into one TypeScript module (`lib/content/grounding.ts`) that the weekly brief, shoot studio, carousel, and story generators all import. No more hand-copied, drifting versions.*
+*The single source of truth that every admin content generator imports. Approved by Sandra 2026-06-15. Encoded into one TypeScript module (`lib/content/grounding.ts`) that the weekly brief, shoot studio, carousel, and story generators all import. No more hand-copied, drifting versions.*
 
-> STATUS: DRAFT FOR SANDRA'S CORRECTION. Lines marked **[CONFIRM]** are judgment calls I made or facts I refreshed. Fix anything that isn't true, then I wire it.
+> STATUS: APPROVED 2026-06-15. Canonical. If any copy anywhere conflicts with this doc, this doc wins.
 
 **Supersedes for code purposes:** the scattered voice/audience facts currently hand-typed into `brief-generator.ts` (`SANDRA_VOICE_RULES`), `core-personality.ts`, and `admin-persona.ts`. Source docs this consolidates: `VOICE_BIBLE.md`, `SANDRA-VOICE-STORY-BANK-DRAFT.md`, `NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md`, `IG_GROWTH_OS_2026-06-11.md`, and the live `audience-signals.ts` demand data.
 
@@ -36,12 +36,12 @@ A real woman talking to one other woman. Specific, slightly messy, honest. Pract
 ### Banned words (never use — consolidated and locked)
 leverage · synergy · transform · game-changer · skyrocket · unlock · "unlock your potential" · **elevate / elevated** · level up · robust · scalable · "strategic visibility" · "build your dream life" / "create your dream life" · "this is your sign" · "as a busy entrepreneur" · "in today's digital world" · "consistency is key" (without a lived example).
 
-**[CONFIRM] "elevate / elevated" is now fully banned per your call (2026-06-15).** It was previously baked into the no-fake doctrine as core positioning, so I've replaced it everywhere in this doc (see the new signature promise in Part 4). Wherever the old docs said "elevated," the replacement is: **polished · editorial · premium · true-to-you · high-end**, depending on context.
+**"elevate / elevated" is fully banned (locked 2026-06-15).** It was previously baked into the no-fake doctrine as core positioning, so it's replaced everywhere in this doc (see the signature promise in Part 4). Wherever the old docs said "elevated," the replacement is: **polished · editorial · premium · true-to-you · high-end**, depending on context.
 
 ### Approved language (sounds like her)
 phone-first · AI-ready selfie · cinematic personal brand content · visual transformation (when visual and specific) · high-end visuals · "make your content look expensive" · one photo can become a week of content · photos you actually want to post · a personal brand that looks like you · keeps your face · still you · realistic · editorial · recognizable · tasteful · polished · true-to-you · creative direction · brand world · premium presence · real features · natural texture.
 
-> **[CONFIRM] One nuance to rule on:** the Voice Bible approves "make your content look **expensive**," but the no-fake doctrine bans "look **rich**" / fake-wealth claims about her. My read: "expensive-looking content/visuals" is fine (it's about the photo), "look rich / luxury lifestyle" as a claim about her life is banned. Confirm that's how you want it.
+> **Approved nuance (2026-06-15):** "make your content look **expensive**" / "expensive-looking visuals" is allowed (it's about the photo). "look **rich**" / "luxury lifestyle" as a claim about her life is banned.
 
 ### High-signal Sandra phrases (the real voice — use as few-shot anchors)
 - "I had 0 in savings, two boys, and a bathroom. That was my business plan."
@@ -75,7 +75,7 @@ A woman building (or wanting to build) a personal brand / business mostly from h
 3. **Time / overwhelm — 23%**
 4. **Visibility / getting seen — 9%**
 
-> **Strategic truth [CONFIRM]:** the audience is NOT primarily asking for selfie tutorials. They want to know how Sandra *actually did it* (income, from real constraints, honestly). This is the desire that converts. Selfie/AI tutorials are the REACH engine (what spreads, top of funnel); the income/story is the DESIRE engine (what makes them buy). Both matter, for different jobs. Content should teach the skill AND connect it to the income/identity she wants.
+> **Strategic truth (approved 2026-06-15):** the audience is NOT primarily asking for selfie tutorials. They want to know how Sandra *actually did it* (income, from real constraints, honestly). This is the desire that converts. Selfie/AI tutorials are the REACH engine (what spreads, top of funnel); the income/story is the DESIRE engine (what makes them buy). Both matter, for different jobs. Content should teach the skill AND connect it to the income/identity she wants.
 
 ### Her core pain points (in priority order)
 1. **The fake fear (the emotional wall):** *"I want to be seen as the woman I'm becoming, but I'm scared people will think I'm fake."* She fears being called a catfish, looking too perfect/plastic/influencer, clients thinking she's lying.
@@ -132,7 +132,7 @@ PROMPT MY SELFIE (weekly, numbered) · The 10-Minute Brand Shoot (weekly) · Wor
 ### The repost engine
 Re-run a proven winner every 8-12 weeks with a new cover + new first line + current year. New followers haven't seen it; the algorithm treats it as new.
 
-### The funnel ladder (CURRENT — [CONFIRM], the old docs are stale)
+### The funnel ladder (CURRENT, approved 2026-06-15)
 **Free AI Prompts** (`/ai-prompts`, lead magnet) → **Prompt Vault $27** (`/prompt-vault`, first paid step) → **SSELFIE SUITE €97/mo** (the real revenue target). Supporting: free Selfie Guide (lead magnet), Starter Kit $37 (secondary), Masterclass $147. Every reel earns its keyword: SELFIE → selfie guide, PROMPT → /ai-prompts, ANDROID → Android guide. When copies are high but purchases low, push the Vault harder.
 **Retired / do not reference:** Brand Strategy Pack $19 (now in Masterclass), the old "Studio" naming, Masterclass-as-funnel-center. The story bank's April funnel list is OUT OF DATE.
 
@@ -177,11 +177,5 @@ Light editorial luxury. Cormorant Garamond / editorial serif for display; clean 
 
 ---
 
-## What I need from you to finalize
-1. **Signature promise:** pick 1-4 above (or write your own).
-2. **"Expensive" vs "rich" nuance** (Part 1): confirm "expensive-looking content" stays approved while "look rich" stays banned.
-3. **The reach-vs-desire strategic truth** (Part 2): confirm tutorials = reach, income/story = what converts.
-4. **Funnel ladder** (Part 3): confirm Free AI Prompts → Vault $27 → SUITE €97 is current and correct.
-5. **Anything in the voice/phrases/pain points that isn't actually you** — strike it.
-
-Once you've corrected this, I write the spec that encodes it into one imported module and wires the four generators to it.
+## Status
+Approved in full by Sandra on 2026-06-15: signature promise ("Look like yourself, at your best"), the expensive-vs-rich nuance, the reach-vs-desire truth, and the current funnel ladder. This is canonical. Implementation: `tasks/CONTENT-GROUNDING-01-wire-voice-audience-proof.md`.

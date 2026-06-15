@@ -13,12 +13,11 @@ TypeScript constants (`SANDRA_VOICE_RULES` in brief-generator, `MAYA_VOICE` in c
 slice. The strongest assets (the 156-reel viral DNA, the audience poll, the DM pain points) reach
 almost none of the generators.
 
-## GATE — do not encode until approved
-The canonical content is **`docs/brand/SSELFIE_CONTENT_GROUNDING.md`**. It currently carries a
-"STATUS: DRAFT FOR SANDRA'S CORRECTION" line. **Do not start step 1 until that DRAFT line is
-removed** (Sandra's sign-off). Encode from the doc verbatim in intent; do not paraphrase away her
-voice. The signature promise is locked: "Look like yourself, at your best." "elevate/elevated" is
-fully banned.
+## Source of truth (APPROVED — ready to build)
+The canonical content is **`docs/brand/SSELFIE_CONTENT_GROUNDING.md`** (STATUS: APPROVED
+2026-06-15). Encode from the doc verbatim in intent; do not paraphrase away her voice. The
+signature promise is locked: "Look like yourself, at your best." "elevate/elevated" is fully
+banned (include it in `BANNED_WORDS`).
 
 ---
 
