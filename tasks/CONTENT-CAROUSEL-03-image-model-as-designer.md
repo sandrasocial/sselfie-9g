@@ -2,9 +2,9 @@
 
 OWNER: Codex (Sandra approves merge)
 
-Status: authoritative spec, rewritten 2026-06-15 per Sandra. **Pending Sandra's yes on the
-customer-app removal before Codex builds.** Supersedes CAROUSEL-01 (renderer), CAROUSEL-02
-(new-world), the composited-text rewrite, and MAYA-FIX-03 (text layer).
+Status: **APPROVED TO BUILD (Sandra 2026-06-15), incl. removing the text-overlay generator from
+the LIVE customer app.** Authoritative content-slide spec. Supersedes CAROUSEL-01 (renderer),
+CAROUSEL-02 (new-world), the composited-text rewrite, and MAYA-FIX-03 (text layer).
 
 ## The one principle (applies everywhere)
 **Reference frame in → image model redesigns it → finished styled slide out.** The image model
@@ -63,7 +63,9 @@ generating new looks from a selfie are fine — that's the product.
   cards, no composited text layer anywhere (removed). Identity + screenshot meaning preserved.
 - "elevate/elevated" absent. Nothing auto-posts. Tests updated; build/invariants green.
 
-## Open confirm before build
-This REMOVES the shipped MAYA-FIX-03 text layer + overlay composer + text previews from the LIVE
-customer app and replaces all text-on-image with image-to-image redesign. Confirm Sandra is good
-removing those from live, and I hand to Codex.
+## Approved (Sandra 2026-06-15)
+Sandra confirmed removing the shipped MAYA-FIX-03 text layer + overlay composer + text previews
+from the LIVE customer app and replacing all text-on-image with image-to-image redesign. Build it.
+Remove cleanly (verify dependents, update tests). Suggested sequencing: (1) remove the text-overlay
+generator surfaces, (2) wire the image-to-image redesign per content type using the proven prompts
++ categorized style anchors, (3) tests + verify, (4) QA against Sandra's approved folders.
