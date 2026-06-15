@@ -53,3 +53,6 @@ next-env.d.ts
 # Living docs rule: never commit smoke test logs or automation chunks
 /output/automation/
 /output/agents/reports/
+
+# Local reel-reference extraction output (CONTENT-CAROUSEL-01) — not committed
+reel-references/
