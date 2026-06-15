@@ -5,9 +5,13 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { OptInForm } from "@/components/ai-prompts/opt-in-form"
 import {
   VAULT_COLLECTION_META,
-  FREEBIE_COLLECTION_PREVIEWS,
+  FREEBIE_ROTATING_DROP_LIMIT,
+  getCuratedStaticVaultFreebieCollections,
 } from "@/lib/ai-prompts/prompt-data"
-import { getPublishedFreebiePreviews, getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
+import {
+  getPublishedFreebieCollectionPreviews,
+  getPublishedVaultCollectionMeta,
+} from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -15,7 +19,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "Selfie to Brand Shoot · SSELFIE",
   description:
-    "Free AI photoshoot prompts for turning one selfie into elevated personal brand images.",
+    "Free AI photoshoot prompts for turning one selfie into editorial personal brand images that still look like you.",
 }
 
 export const dynamic = "force-dynamic"
@@ -45,39 +49,39 @@ function collectionShortLabel(fullName: string): string {
 const HERO_IMAGE: string = "/images/ai-prompts/quiet-luxury-london-shot-3.jpg"
 
 /**
- * Preview strip: Shot 1 from the 3 newest approved freebie collections.
- * Updates automatically when FREEBIE_COLLECTION_PREVIEWS gains new entries.
+ * Preview strip: the newest published drop preview + the curated starter looks.
  * Do not show cards without a valid image src.
  */
 function buildHeroPreviews(
-  freebiePreviews = FREEBIE_COLLECTION_PREVIEWS,
-  vaultMeta = VAULT_COLLECTION_META,
+  freebiePreviews = getCuratedStaticVaultFreebieCollections().map(
+    collection => collection.freeCard
+  ),
+  vaultMeta = VAULT_COLLECTION_META
 ) {
-  return freebiePreviews.slice(0, 3)
-  .map((card) => {
-    const meta = vaultMeta.find((m) => m.previewCardId === card.id)
-    return {
-      src: card.exampleImage ?? "",
-      label: meta
-        ? collectionShortLabel(meta.name)
-        : card.title.split(" ").slice(0, 2).join(" "),
-    }
-  })
-  .filter((p) => p.src !== "")
+  return freebiePreviews
+    .slice(0, 3)
+    .map(card => {
+      const meta = vaultMeta.find(m => m.previewCardId === card.id)
+      return {
+        src: card.exampleImage ?? "",
+        label: meta ? collectionShortLabel(meta.name) : card.title.split(" ").slice(0, 2).join(" "),
+      }
+    })
+    .filter(p => p.src !== "")
 }
 
 const VALUE_ITEMS = [
   "Free AI photoshoot prompts you can test with your own selfies.",
   "Editorial looks for personal brand images, profile photos, and content.",
   "Beginner-friendly instructions so you know what to paste and where.",
-  "A growing free preview of the SSELFIE visual world, with new prompts added over time.",
+  "A starter shoot from the SSELFIE visual world, with a fresh drop preview when new shoots are added.",
 ]
 
 const FUNNEL_STEPS = [
   {
     label: "01",
     title: "Free Preview",
-    body: "Start with opening-shot prompts and see what your own selfie can become.",
+    body: "Start with a starter shoot and see what your own selfie can become.",
   },
   {
     label: "02",
@@ -93,17 +97,20 @@ const FUNNEL_STEPS = [
 
 export default async function AiPromptsOptInPage() {
   const [publishedPreviews, publishedMeta] = await Promise.all([
-    getPublishedFreebiePreviews(),
+    getPublishedFreebieCollectionPreviews({ limit: FREEBIE_ROTATING_DROP_LIMIT }),
     getPublishedVaultCollectionMeta(),
   ])
+  const publishedPreviewCards = publishedPreviews.map(collection => collection.freeCard)
   const heroPreviews = buildHeroPreviews(
-    [...publishedPreviews, ...FREEBIE_COLLECTION_PREVIEWS],
-    [...publishedMeta, ...VAULT_COLLECTION_META],
+    [
+      ...publishedPreviewCards,
+      ...getCuratedStaticVaultFreebieCollections().map(collection => collection.freeCard),
+    ],
+    [...publishedMeta, ...VAULT_COLLECTION_META]
   )
 
   return (
     <main className={inter.className}>
-
       {/* ── Editorial capture hero ─────────────────────────────────────── */}
       <section className="opt-hero-section">
         <div className="opt-hero-media" aria-hidden="true">
@@ -121,16 +128,14 @@ export default async function AiPromptsOptInPage() {
         <div className="opt-hero-content">
           <div className="opt-container">
             <p className="opt-eyebrow">FREE DOWNLOAD</p>
-            <h1 className={`opt-headline ${cormorant.className}`}>
-              Selfie to Brand Shoot.
-            </h1>
+            <h1 className={`opt-headline ${cormorant.className}`}>Selfie to Brand Shoot.</h1>
             <p className="opt-sub">
-              Get the free photoshoot prompts to turn your own selfie into cinematic,
-              editorial personal brand images. No studio, no photographer, no perfect setup.
+              Get the free photoshoot prompts to turn your own selfie into cinematic, editorial
+              personal brand images. No studio, no photographer, no perfect setup.
             </p>
 
             <div className="opt-proof-strip" aria-label="Photoshoot prompt examples">
-              {heroPreviews.map((preview) => (
+              {heroPreviews.map(preview => (
                 <div key={preview.src} className="opt-proof-card">
                   <Image
                     src={preview.src}
@@ -161,9 +166,9 @@ export default async function AiPromptsOptInPage() {
               Your first step into the SSELFIE visual world.
             </h2>
             <p className="opt-value-body">
-              Upload your selfie, choose the look, and start creating elevated
-              brand-style images from your own photo. The prompts are the first
-              step. The full path is Selfie to Brand Shoot.
+              Upload your selfie, choose the look, and start creating editorial brand-style images
+              that still look like you. The prompts are the first step. The full path is Selfie to
+              Brand Shoot.
             </p>
           </div>
           <div className="opt-value-list">
@@ -187,7 +192,7 @@ export default async function AiPromptsOptInPage() {
             </h2>
           </div>
           <div className="opt-path-list">
-            {FUNNEL_STEPS.map((step) => (
+            {FUNNEL_STEPS.map(step => (
               <article key={step.label} className="opt-path-card">
                 <span>{step.label}</span>
                 <h3>{step.title}</h3>
@@ -205,8 +210,8 @@ export default async function AiPromptsOptInPage() {
             Your photo is the starting point.
           </p>
           <p className="opt-bridge-body">
-            The better the selfie, the better the AI result. Start with a clear
-            photo before you create your shoot.
+            The better the selfie, the better the AI result. Start with a clear photo before you
+            create your shoot.
           </p>
           <Link
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=landing_page&utm_campaign=ai_prompts_to_selfie_guide"

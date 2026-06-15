@@ -15,7 +15,8 @@ import {
   MAIN_LOOKS,
   BONUS_LOOKS,
   WORKFLOW_PROMPTS,
-  getStaticVaultFreebieCollections,
+  FREEBIE_ROTATING_DROP_LIMIT,
+  getCuratedStaticVaultFreebieCollections,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-collections"
@@ -212,11 +213,16 @@ export default async function AiPromptsAccessPage({
   const { token } = await params
   const result = await validateToken(token)
   const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
-  const publishedCollections = await getPublishedFreebieCollectionPreviews()
-  const freebieCollections = [...publishedCollections, ...getStaticVaultFreebieCollections()]
+  const publishedCollections = await getPublishedFreebieCollectionPreviews({
+    limit: FREEBIE_ROTATING_DROP_LIMIT,
+  })
+  const freebieCollections = [...publishedCollections, ...getCuratedStaticVaultFreebieCollections()]
   const heroCollection = freebieCollections[0] ?? null
   const heroImageSrc = heroCollection?.freeCard.exampleImage ?? null
-  const lockedTileCount = freebieCollections.reduce((total, collection) => total + collection.lockedShots.length, 0)
+  const lockedTileCount = freebieCollections.reduce(
+    (total, collection) => total + collection.lockedShots.length,
+    0
+  )
 
   if (!result.valid && !adminOverride) {
     return (
@@ -343,13 +349,11 @@ export default async function AiPromptsAccessPage({
             Your Updated Photoshoot Preview.
           </h1>
           <p className="ap-hero-sub">
-            Shot 1 from every Vault collection is here. Pick a visual identity, copy the prompt,
-            upload one selfie, and see which version of you feels the most alive.
+            Start with Sandra&apos;s starter shoot. Pick a visual identity, copy the prompt, upload
+            one selfie, and see which version of you feels most like you.
           </p>
           {heroCollection && (
-            <p className="ap-hero-current">
-              Newest Vault world: {heroCollection.name}
-            </p>
+            <p className="ap-hero-current">Newest Vault world: {heroCollection.name}</p>
           )}
           <div className="ap-hero-actions">
             <a href="#vault-preview" className="ap-hero-cta">
@@ -368,12 +372,10 @@ export default async function AiPromptsAccessPage({
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
-            <h2 className={`ap-section-title ${cormorant.className}`}>
-              Shot 1 from every photoshoot collection.
-            </h2>
+            <h2 className={`ap-section-title ${cormorant.className}`}>Your starter shoot.</h2>
             <p className="ap-workflow-note">
-              These are the opening shots from the full Vault. Each one gives you a different visual
-              identity from one selfie. The complete shoot directions are inside the Vault.
+              These are the best first looks to test before you buy. Each one gives you a different
+              visual direction from one selfie. The complete shoot library lives inside the Vault.
             </p>
             <div className="ap-vault-grid">
               {freebieCollections.map(collection => {
@@ -398,7 +400,10 @@ export default async function AiPromptsAccessPage({
                           </span>{" "}
                           {collection.shotCount - 1} more shots are inside this collection.
                         </p>
-                        <div className="ap-locked-grid" aria-label={`Locked shots in ${collection.name}`}>
+                        <div
+                          className="ap-locked-grid"
+                          aria-label={`Locked shots in ${collection.name}`}
+                        >
                           {collection.lockedShots.map((shot, index) => (
                             <TrackedLink
                               key={`${card.id}-${index}`}
@@ -454,7 +459,8 @@ export default async function AiPromptsAccessPage({
                           Unlock all {collection.shotCount} shots · $27
                         </TrackedLink>
                         <p className="ap-shoot-cta-note">
-                          One-time access to the rest of this shoot, the newest collections, and future photoshoots.
+                          One-time access to the rest of this shoot, the full Vault, and future
+                          photoshoots.
                         </p>
                       </div>
                     )}
@@ -475,7 +481,7 @@ export default async function AiPromptsAccessPage({
                   checkout_source: "free_prompts_bridge",
                 }}
               >
-                Get the Full Shoot + Future Drops · $27
+                Get the Full Vault + Future Drops · $27
               </TrackedLink>
             </div>
           </div>
@@ -505,7 +511,10 @@ export default async function AiPromptsAccessPage({
             </div>
             <div className="ap-test-step">
               <span>03</span>
-              <p>If the result works, unlock the remaining shots, newest drops, and future photoshoots.</p>
+              <p>
+                If the result works, unlock the remaining shots, newest drops, and future
+                photoshoots.
+              </p>
             </div>
           </div>
           <a href="#vault-preview" className="ap-bridge-cta ap-bridge-cta-primary ap-test-cta">
@@ -582,7 +591,10 @@ export default async function AiPromptsAccessPage({
                     <PromptCardEl
                       key={card.id}
                       card={card}
-                      upgradeHref={buildPromptVaultFreebieCheckoutHref({ promptId: card.id, accessToken: token })}
+                      upgradeHref={buildPromptVaultFreebieCheckoutHref({
+                        promptId: card.id,
+                        accessToken: token,
+                      })}
                     />
                   ))}
                 </div>
@@ -598,7 +610,10 @@ export default async function AiPromptsAccessPage({
                     <PromptCardEl
                       key={card.id}
                       card={card}
-                      upgradeHref={buildPromptVaultFreebieCheckoutHref({ promptId: card.id, accessToken: token })}
+                      upgradeHref={buildPromptVaultFreebieCheckoutHref({
+                        promptId: card.id,
+                        accessToken: token,
+                      })}
                     />
                   ))}
                 </div>

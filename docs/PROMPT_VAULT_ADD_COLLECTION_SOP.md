@@ -1,6 +1,6 @@
 # Prompt Vault — Add New Collection SOP
 
-*Read this every time Sandra says "I have a new collection to add."*
+_Read this every time Sandra says "I have a new collection to add."_
 
 ---
 
@@ -8,16 +8,16 @@
 
 Every new photoshoot collection follows this split:
 
-| Where | What gets added |
-|-------|----------------|
-| **Freebie** (`/ai-prompts/access/[token]`) | Shot 1 only — first prompt card + first image |
-| **Vault** (`/access/prompt-vault/[token]`) | Full collection — all shots + all images |
-| **Vault landing page** (`/prompt-vault`) | New collection name added to the collections list |
-| **Vault delivery email** | New collection name added to the "inside your vault" list |
+| Where                                      | What gets added                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| **Freebie** (`/ai-prompts/access/[token]`) | Curated starter shoot only: 5 evergreen preview looks + the newest published drop preview |
+| **Vault** (`/access/prompt-vault/[token]`) | Full collection — all shots + all images                                                  |
+| **Vault landing page** (`/prompt-vault`)   | New collection name added to the collections list                                         |
+| **Vault delivery email**                   | New collection name added to the "inside your vault" list                                 |
 
-The freebie always has a taste. The vault has everything. This is the upgrade hook.
+The freebie is a starter shoot, not a growing archive. The Vault has everything. This is the upgrade hook.
 
-**Important:** The freebie must never import or render full paid series arrays directly. It should only render `FREEBIE_COLLECTION_PREVIEWS`, which contains one preview card per paid collection.
+**Important:** The freebie must never import or render full paid series arrays directly. It should render the curated helper output from `getCuratedStaticVaultFreebieCollections()` plus at most `FREEBIE_ROTATING_DROP_LIMIT` published drop preview from the DB. Do not show one free shot from every collection forever.
 
 **Primary upgrade from the prompt freebie:** the full Prompt Vault / photoshoot vault.
 
@@ -30,7 +30,7 @@ The freebie always has a taste. The vault has everything. This is the upgrade ho
 ```
 lib/ai-prompts/prompt-data.ts           ← ALL prompt data lives here
 public/images/ai-prompts/               ← ALL images live here
-app/ai-prompts/access/[token]/page.tsx  ← Freebie access page (shows FREEBIE_COLLECTION_PREVIEWS)
+app/ai-prompts/access/[token]/page.tsx  ← Freebie access page (shows curated starter previews)
 app/access/prompt-vault/[token]/page.tsx ← Vault access page (shows all series)
 app/prompt-vault/page.tsx               ← Vault landing/sales page
 lib/email/templates/prompt-vault-delivery.ts ← Delivery email
@@ -43,6 +43,7 @@ lib/email/templates/prompt-vault-delivery.ts ← Delivery email
 ### Step 1 — Get the assets from Sandra
 
 Sandra will provide:
+
 - A collection name (e.g. "Pink Cashmere Hotel Editorial")
 - Images — shot-1, shot-2, shot-3 etc.
 - Prompt text for each shot
@@ -56,11 +57,13 @@ Ask if not provided: **"What's the collection name and which image is shot 1?"**
 Naming convention: `[collection-slug]-shot-N.jpg` (or `.png` if provided as PNG)
 
 **Collection slug examples:**
+
 - "Pink Cashmere Hotel Editorial" → `pink-cashmere`
 - "Morning Terrace Coffee Editorial" → `morning-terrace`
 - "Dark Studio Leather Editorial" → `dark-studio`
 
 Place ALL images in:
+
 ```
 /public/images/ai-prompts/[collection-slug]-shot-1.jpg
 /public/images/ai-prompts/[collection-slug]-shot-2.jpg
@@ -105,28 +108,25 @@ Check the current highest number in the file and continue from there.
 
 ---
 
-### Step 4 — Add shot 1 to the freebie previews
+### Step 4 — Decide whether this collection belongs in the evergreen freebie starter
 
-In the same `prompt-data.ts` file, find the `FREEBIE_COLLECTION_PREVIEWS` export.
+In the same `prompt-data.ts` file, find `FREEBIE_STATIC_STARTER_CARD_IDS`.
 
-Add the first card from the new series to the TOP of the array by referencing the series, not by copying the whole card object.
+Most new collections should **not** be added here. They already enter the paid Vault, SUITE Library, Maya style context, and the newest-drop freebie preview through the publish pipeline.
 
-Preferred pattern:
+Only add the new collection's first card id to `FREEBIE_STATIC_STARTER_CARD_IDS` if Sandra explicitly wants it to replace one of the 5 evergreen starter looks.
 
 ```typescript
-export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
-  ...(PINK_CASHMERE_SERIES.length > 0 ? [PINK_CASHMERE_SERIES[0]] : []),
-  ...(COZY_LEATHER_SERIES.length > 0 ? [COZY_LEATHER_SERIES[0]] : []),
-  ...(DENIM_STREET_SERIES.length > 0 ? [DENIM_STREET_SERIES[0]] : []),
-  ...(MARBLE_CAFE_SERIES.length > 0 ? [MARBLE_CAFE_SERIES[0]] : []),
+const FREEBIE_STATIC_STARTER_CARD_IDS = [
+  "mysterious-vogue-shot-1",
+  "clean-girl-morning-shot-1",
+  "noir-femme-shot-1",
+  "quiet-luxury-london-shot-1",
+  "dark-feminine-cafe-shot-1",
 ]
 ```
 
-Replace `PINK_CASHMERE_SERIES` with the new collection export name.
-
-This prevents drift. If shot 1 is edited in the full collection, the freebie preview updates with it.
-
-**If `FREEBIE_COLLECTION_PREVIEWS` doesn't exist yet**, create it in `prompt-data.ts` and add the import to the freebie access page (Step 6 below).
+Keep the starter list capped at `FREEBIE_STATIC_STARTER_LIMIT` (currently 5). If you add one, remove one.
 
 ---
 
@@ -170,11 +170,11 @@ import {
 
 ---
 
-### Step 6 — Add freebie preview section to freebie access page
+### Step 6 — Confirm the freebie access page still uses curation
 
 Open `app/ai-prompts/access/[token]/page.tsx`.
 
-**1. Add the import** (if not already there):
+The page should use:
 
 ```typescript
 import {
@@ -182,53 +182,24 @@ import {
   MAIN_LOOKS,
   BONUS_LOOKS,
   WORKFLOW_PROMPTS,
-  FREEBIE_COLLECTION_PREVIEWS,   // ← add this
+  FREEBIE_ROTATING_DROP_LIMIT,
+  getCuratedStaticVaultFreebieCollections,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 ```
 
-**2. Add a "Vault Preview" section** at the bottom of the prompt cards (before the footer), if it doesn't exist yet. If it does exist, the `FREEBIE_COLLECTION_PREVIEWS` data already feeds it — no JSX change needed.
+and:
 
-The vault preview section must include a clear upgrade CTA to the full Prompt Vault / photoshoot vault:
-
-```tsx
-{/* Vault preview — first shot from each paid collection */}
-{FREEBIE_COLLECTION_PREVIEWS.length > 0 && (
-  <section className="ap-section ap-vault-preview">
-    <div className="ap-section-inner">
-      <p className="ap-eyebrow ap-eyebrow-new">VAULT PREVIEW</p>
-      <h2 className={`ap-section-title ${cormorant.className}`}>
-        A taste of the full photoshoot vault.
-      </h2>
-      <p className="ap-workflow-note">
-        These are the opening shots from the paid editorial collections. The full Prompt Vault
-        gives you the complete shoot series, every angle, and every copy-paste prompt.
-      </p>
-      <div className="ap-cards">
-        {FREEBIE_COLLECTION_PREVIEWS.map((card) => (
-          <PromptCardEl key={card.id} card={card} />
-        ))}
-      </div>
-      <div className="ap-vault-cta-row">
-        <TrackedLink
-          href="/prompt-vault?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_prompt_vault"
-          className="ap-bridge-cta ap-bridge-cta-primary"
-          trackEvent="ai_prompts_prompt_vault_click"
-          trackProperties={{
-            source: "ai-prompts",
-            destination: "prompt-vault",
-            utm_campaign: "ai_prompts_to_prompt_vault",
-          }}
-        >
-          Get the Full Photoshoot Vault · $27
-        </TrackedLink>
-      </div>
-    </div>
-  </section>
-)}
+```typescript
+const publishedCollections = await getPublishedFreebieCollectionPreviews({
+  limit: FREEBIE_ROTATING_DROP_LIMIT,
+})
+const freebieCollections = [...publishedCollections, ...getCuratedStaticVaultFreebieCollections()]
 ```
 
 Do not add full collection sections to the freebie page. Do not map `COZY_LEATHER_SERIES`, `DENIM_STREET_SERIES`, `MARBLE_CAFE_SERIES`, or any future paid series directly on `/ai-prompts/access/[token]`.
+
+Do not keep appending every new Shot 1 to the freebie. New collections belong in the paid Vault by default. The freebie stays capped and curated.
 
 Starter Kit may appear only as a secondary "need better original selfies first?" link after the freebie content. It should not be styled or worded as the main upgrade from the prompt freebie.
 
@@ -280,17 +251,19 @@ git add \
 ```
 
 Commit message format:
+
 ```
-Add [Collection Name] to Prompt Vault and freebie preview
+Add [Collection Name] to Prompt Vault
 
 - [N] shots added to vault ([collection-slug]-series)
-- Shot 1 added to freebie FREEBIE_COLLECTION_PREVIEWS
+- Freebie curation left capped; new collection will appear as the newest rotating drop preview when published
 - Vault landing page updated with new collection section
 - Delivery email updated to list new collection
 - Prompt numbers [X]–[Y]
 ```
 
 Push to main via the worktree (same as always):
+
 ```bash
 git push origin HEAD:main
 ```
@@ -350,8 +323,8 @@ Open `lib/vault/drop-log.ts`. Set:
 
 ```typescript
 export const VAULT_EMAIL_CONFIG = {
-  automationApproved: true,   // ← arm the system
-  dryRun: true,               // ← stay on dry run first
+  automationApproved: true, // ← arm the system
+  dryRun: true, // ← stay on dry run first
   dropLabel: "Two New Shoots Just Dropped",
 }
 ```
@@ -369,6 +342,7 @@ curl -X POST https://sselfie.ai/api/vault/email-drop \
 ```
 
 The response shows:
+
 - `segments.nonBuyers.count` — how many non-buyers will receive the upsell
 - `segments.buyers.count` — how many vault owners will receive the update
 - `segments.nonBuyers.sampleRecipients` — first 5 email addresses
@@ -389,7 +363,7 @@ After Sandra approves the dry-run counts, set `dryRun: false` in `lib/vault/drop
 ```typescript
 export const VAULT_EMAIL_CONFIG = {
   automationApproved: true,
-  dryRun: false,   // ← flip after Sandra approval
+  dryRun: false, // ← flip after Sandra approval
   dropLabel: "Two New Shoots Just Dropped",
 }
 ```
@@ -405,13 +379,14 @@ curl -X POST https://sselfie.ai/api/vault/email-drop \
 The response returns a `runId`. **Save this.** You need it for all batch calls.
 
 Example response:
+
 ```json
 {
   "dryRun": false,
   "runId": "abc123-...",
   "segments": {
     "nonBuyers": { "totalPending": 1507 },
-    "buyers":    { "totalPending": 8 }
+    "buyers": { "totalPending": 8 }
   }
 }
 ```
@@ -431,12 +406,13 @@ curl -X POST https://sselfie.ai/api/vault/email-drop/process \
 ```
 
 The response shows progress:
+
 ```json
 {
   "done": { "nonBuyer": false, "buyer": true },
   "progress": {
     "nonBuyer": { "sent": 25, "total": 1507, "pct": 2 },
-    "buyer":    { "sent": 8,  "total": 8,    "pct": 100 }
+    "buyer": { "sent": 8, "total": 8, "pct": 100 }
   }
 }
 ```
@@ -476,6 +452,7 @@ curl -G "https://sselfie.ai/api/vault/email-drop/status" \
 ```
 
 Run statuses:
+
 - `pending` — created, no batches sent yet
 - `processing` — batches in progress
 - `completed` — all recipients processed, 0 failures
@@ -516,6 +493,7 @@ Only do this **after** `runStatus` is `completed` or `partially_completed` and y
    ```
 
 Commit with:
+
 ```
 Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
 ```
@@ -525,6 +503,7 @@ Mark [Collection A] + [Collection B] as email-dropped (YYYY-MM-DD)
 #### How idempotency works
 
 Each drop generates a deterministic short `email_type` from the collection slugs:
+
 ```
 vault_drop_1g9j3xf_nonbuyer
 vault_drop_1g9j3xf_buyer
@@ -536,6 +515,7 @@ The full human-readable slug key still lives in `vault_drop_runs.drop_key`. The 
 Before sending to any address, the route checks `email_logs` for a record with this `email_type` and `status IN ('sent', 'delivered', 'suppressed')`. If found → skip.
 
 This means:
+
 - Calling `/process` twice is safe — second call skips already-sent addresses
 - Calling `/start` twice for the same collections creates two runs, but `/process` deduplicates at the email level
 - Only 'failed' records are eligible for retry (no 'sent' record blocks retries)
@@ -565,26 +545,27 @@ This means:
 
 ## What NOT to Touch
 
-| File | Reason |
-|------|--------|
-| `app/api/webhooks/stripe/route.ts` | Webhook — no changes needed for new collections |
-| `app/checkout/prompt-vault/page.tsx` | Checkout — product is the same |
-| `lib/email/templates/prompt-vault-delivery.ts` | Only update the collection list, nothing else |
-| `freebie_subscribers` DB table | No schema changes needed |
-| Any Maya, Feed Planner, or Academy files | Unrelated — do not touch |
-| Full paid series imports on `app/ai-prompts/access/[token]/page.tsx` | Freebie must only use `FREEBIE_COLLECTION_PREVIEWS`, never full paid collections |
+| File                                                                 | Reason                                                                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `app/api/webhooks/stripe/route.ts`                                   | Webhook — no changes needed for new collections                          |
+| `app/checkout/prompt-vault/page.tsx`                                 | Checkout — product is the same                                           |
+| `lib/email/templates/prompt-vault-delivery.ts`                       | Only update the collection list, nothing else                            |
+| `freebie_subscribers` DB table                                       | No schema changes needed                                                 |
+| Any Maya, Feed Planner, or Academy files                             | Unrelated — do not touch                                                 |
+| Full paid series imports on `app/ai-prompts/access/[token]/page.tsx` | Freebie must only use curated helper output, never full paid collections |
 
 ---
 
 ## Quick Checklist
 
 ### Every new collection (Steps 1–9)
+
 - [ ] Images placed in `/public/images/ai-prompts/` with correct naming
 - [ ] Full series added to `prompt-data.ts` (top of file, numbers continuous)
-- [ ] Shot 1 referenced in `FREEBIE_COLLECTION_PREVIEWS` using `[NEW_SERIES][0]`
+- [ ] Freebie starter curation reviewed; if replacing an evergreen look, `FREEBIE_STATIC_STARTER_CARD_IDS` still has max 5 ids
 - [ ] New collection entry added to `VAULT_COLLECTIONS` in `lib/vault/drop-log.ts`
 - [ ] New series imported + section added in vault access page
-- [ ] Freebie access page imports only `FREEBIE_COLLECTION_PREVIEWS` for paid collection previews
+- [ ] Freebie access page imports only curated helper output for paid collection previews
 - [ ] Freebie access page does not map full paid series arrays
 - [ ] Freebie has clear CTA: `Get the Full Photoshoot Vault · $27`
 - [ ] Starter Kit, if present, is secondary and framed as help for stronger original selfies
@@ -594,6 +575,7 @@ This means:
 - [ ] Verified on sselfie.ai/access/prompt-vault/[test-token] after deploy
 
 ### After every 2nd new collection (Step 10 — email drop)
+
 - [ ] Migration `20260527_vault_drop_runs.sql` applied (one-time only)
 - [ ] `VAULT_EMAIL_DROP_SECRET` set in Vercel env (one-time only)
 - [ ] New collection entries added to `VAULT_COLLECTIONS` in `drop-log.ts`

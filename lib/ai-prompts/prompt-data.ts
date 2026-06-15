@@ -8,8 +8,9 @@
 //
 // FREEBIE RULE: When adding a new collection:
 //   1. Add the full collection as [NAME]_SERIES above COZY_LEATHER_SERIES (newest at top)
-//   2. Add [NAME]_SERIES[0] to FREEBIE_COLLECTION_PREVIEWS at the BOTTOM of this file
-//   Only shot 1 goes to the freebie. The full series goes to the vault.
+//   2. Add it to STATIC_VAULT_COLLECTION_SERIES / VAULT_COLLECTION_META for paid Vault surfaces.
+//   Do NOT append every new shot 1 to the freebie. The freebie is a curated starter shoot
+//   plus one rotating newest-drop preview. The full series goes to the Vault.
 // ---------------------------------------------------------------------------
 
 export type PromptCard = {
@@ -31,7 +32,8 @@ export const MYSTERIOUS_VOGUE_SERIES: PromptCard[] = [
     number: "98",
     id: "mysterious-vogue-shot-1",
     title: "Mysterious Vogue · Half-Light",
-    whenToUse: "An extreme close-up with half the face swallowed by shadow, one eye and nude lips holding the frame. Use as a striking profile photo, a mysterious single post, or anywhere you want the image to do the talking.",
+    whenToUse:
+      "An extreme close-up with half the face swallowed by shadow, one eye and nude lips holding the frame. Use as a striking profile photo, a mysterious single post, or anywhere you want the image to do the talking.",
     mood: "mysterious vogue · half shadow · one eye · chiaroscuro · beauty close-up",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-1.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -46,7 +48,8 @@ No text, no accessories, no over-smoothed skin.`,
     number: "99",
     id: "mysterious-vogue-shot-2",
     title: "Mysterious Vogue · After Rain",
-    whenToUse: "Damp tousled hair, bronze glam, sensual luxury-campaign energy. Use when you want something editorial and a little undone, or a caption with some heat behind it.",
+    whenToUse:
+      "Damp tousled hair, bronze glam, sensual luxury-campaign energy. Use when you want something editorial and a little undone, or a caption with some heat behind it.",
     mood: "mysterious vogue · damp hair · bronze glam · sensual · luxury campaign",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-2.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -63,7 +66,8 @@ No text, no accessories, no water droplets on face unless very subtle.`,
     number: "100",
     id: "mysterious-vogue-shot-3",
     title: "Mysterious Vogue · Black Blazer",
-    whenToUse: "Shoulders-up in a sharp black blazer, calm and powerful, lit from one side. Strong for a profile photo, an about-me moment, or any caption about meaning business.",
+    whenToUse:
+      "Shoulders-up in a sharp black blazer, calm and powerful, lit from one side. Strong for a profile photo, an about-me moment, or any caption about meaning business.",
     mood: "mysterious vogue · black blazer · calm power · shoulders up · editorial",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-3.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -82,7 +86,8 @@ No text, no bright colors, no extra props.`,
     number: "101",
     id: "mysterious-vogue-shot-4",
     title: "Mysterious Vogue · Noir Beam",
-    whenToUse: "A dramatic noir close-up, one strong beam of warm light across the face, a bold classic red lip. Use for high-impact single posts or anything that needs pure presence.",
+    whenToUse:
+      "A dramatic noir close-up, one strong beam of warm light across the face, a bold classic red lip. Use for high-impact single posts or anything that needs pure presence.",
     mood: "mysterious vogue · noir · side beam · intense · classic red lip",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-4.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -99,7 +104,8 @@ No jewelry, no text, no extra props.`,
     number: "102",
     id: "mysterious-vogue-shot-5",
     title: "Mysterious Vogue · Eyes Closed",
-    whenToUse: "Eyes gently closed, face turned to the light, fragrance-campaign calm. Use for intimate, quiet captions or a softer moment that breaks up a bolder grid.",
+    whenToUse:
+      "Eyes gently closed, face turned to the light, fragrance-campaign calm. Use for intimate, quiet captions or a softer moment that breaks up a bolder grid.",
     mood: "mysterious vogue · eyes closed · side light · fragrance campaign · intimate",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-5.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -116,7 +122,8 @@ No text, no props, no over-smoothed skin.`,
     number: "103",
     id: "mysterious-vogue-shot-6",
     title: "Mysterious Vogue · Hair Across",
-    whenToUse: "Loose hair falling across the face, one sharp eye on the camera. Mysterious, feminine, high-fashion. Use as a scroll-stopper or a moody single post.",
+    whenToUse:
+      "Loose hair falling across the face, one sharp eye on the camera. Mysterious, feminine, high-fashion. Use as a scroll-stopper or a moody single post.",
     mood: "mysterious vogue · hair across face · one eye · direct gaze · high fashion",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-6.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial beauty portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -133,7 +140,8 @@ No text, no accessories, no fake-looking skin.`,
     number: "104",
     id: "mysterious-vogue-shot-7",
     title: "Mysterious Vogue · Cover Portrait",
-    whenToUse: "The hero of the set. A centered magazine-cover beauty portrait, direct powerful gaze, one side of the face glowing. Use as a single post, a profile photo, or the carousel cover.",
+    whenToUse:
+      "The hero of the set. A centered magazine-cover beauty portrait, direct powerful gaze, one side of the face glowing. Use as a single post, a profile photo, or the carousel cover.",
     mood: "mysterious vogue · magazine cover · centered · direct gaze · hero",
     exampleImage: "/images/ai-prompts/mysterious-vogue-shot-7.png",
     prompt: `Using my uploaded selfie as the identity reference, create an ultra-realistic luxury editorial portrait of the same woman. Preserve my real facial features, face shape, eye shape, brown eyes, thick brows, nose, lips, skin tone, hair color, and natural identity. Do not change my face. Keep the result realistic and recognizable as me.
@@ -157,7 +165,8 @@ export const QUIET_LUXURY_LONDON_SERIES: PromptCard[] = [
     number: "89",
     id: "quiet-luxury-london-shot-1",
     title: "Quiet Luxury London · Café Arrival",
-    whenToUse: "Your opener. Full-body street style walking up to the café, coffee not in hand yet. Use for reel covers, carousel openers, or any caption about starting the day in your element.",
+    whenToUse:
+      "Your opener. Full-body street style walking up to the café, coffee not in hand yet. Use for reel covers, carousel openers, or any caption about starting the day in your element.",
     mood: "quiet luxury · london street · arriving · full body · camel tailoring",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
     prompt: `Create image 1 of a 6-part quiet luxury London editorial photoshoot.
@@ -196,7 +205,8 @@ Avoid: phone, coffee in hand, distorted hands, extra fingers, warped heels, stre
     number: "90",
     id: "quiet-luxury-london-shot-2",
     title: "Quiet Luxury London · Coffee Run",
-    whenToUse: "The coffee-in-hand moment. Three-quarter body carrying the takeaway tray, mid-stride. Ideal for day-in-my-life content or any caption about moving through the city with ease.",
+    whenToUse:
+      "The coffee-in-hand moment. Three-quarter body carrying the takeaway tray, mid-stride. Ideal for day-in-my-life content or any caption about moving through the city with ease.",
     mood: "quiet luxury · coffee run · takeaway cups · three-quarter · lifestyle",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-2.jpg",
     prompt: `Create image 2 of the same quiet luxury London editorial photoshoot.
@@ -235,7 +245,8 @@ Avoid: phone, distorted hands, extra fingers, warped coffee cups, fake cup lids,
     number: "91",
     id: "quiet-luxury-london-shot-3",
     title: "Quiet Luxury London · Seated Marble Hero",
-    whenToUse: "The hero shot of the series. Seated at the marble bistro table, legs crossed, coffee resting, the heels and chain bag in full view. The centrepiece. Perfect as a single post or carousel cover.",
+    whenToUse:
+      "The hero shot of the series. Seated at the marble bistro table, legs crossed, coffee resting, the heels and chain bag in full view. The centrepiece. Perfect as a single post or carousel cover.",
     mood: "quiet luxury · seated hero · marble bistro table · crossed legs · fashion editorial",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-3.jpg",
     prompt: `Create image 3 of the same quiet luxury London editorial photoshoot.
@@ -274,7 +285,8 @@ Avoid: phone, random extra props, distorted hands, extra fingers, warped heels, 
     number: "92",
     id: "quiet-luxury-london-shot-4",
     title: "Quiet Luxury London · Sunglasses Beauty",
-    whenToUse: "A close-up candid while seated. Gold jewelry, sunglasses, completely at ease. Works beautifully for beauty, fragrance, or any caption about a quiet moment to yourself.",
+    whenToUse:
+      "A close-up candid while seated. Gold jewelry, sunglasses, completely at ease. Works beautifully for beauty, fragrance, or any caption about a quiet moment to yourself.",
     mood: "quiet luxury · beauty close-up · gold jewelry · sunglasses · personal moment",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-4.jpg",
     prompt: `Create image 4 of the same quiet luxury London editorial photoshoot.
@@ -313,7 +325,8 @@ Avoid: phone, warped sunglasses, distorted fingers, extra fingers, changed face,
     number: "93",
     id: "quiet-luxury-london-shot-5",
     title: "Quiet Luxury London · Detail Cutaway",
-    whenToUse: "The atmospheric detail shot. Chain bag on the woven chair, takeaway coffees, pointed heels on marble, gold rings. No full face needed. Use as a carousel filler or a standalone mood image that grounds the whole editorial.",
+    whenToUse:
+      "The atmospheric detail shot. Chain bag on the woven chair, takeaway coffees, pointed heels on marble, gold rings. No full face needed. Use as a carousel filler or a standalone mood image that grounds the whole editorial.",
     mood: "quiet luxury · detail shot · chain bag · heels · coffee · cutaway",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-5.jpg",
     prompt: `Create image 5 of the same quiet luxury London editorial photoshoot.
@@ -352,7 +365,8 @@ Avoid: phone, distorted hands, extra fingers, warped coffee cups, fake tray shap
     number: "94",
     id: "quiet-luxury-london-shot-6",
     title: "Quiet Luxury London · Reel Cover Exit",
-    whenToUse: "The exit shot. Full body walking away down the London street, coffee in hand, head turned back over the shoulder, phone box and black cab behind. The perfect reel cover, reel thumbnail, or closing carousel image.",
+    whenToUse:
+      "The exit shot. Full body walking away down the London street, coffee in hand, head turned back over the shoulder, phone box and black cab behind. The perfect reel cover, reel thumbnail, or closing carousel image.",
     mood: "quiet luxury · reel cover · leaving · london street · head turn · full body exit",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-6.jpg",
     prompt: `Create image 6 of the same quiet luxury London editorial photoshoot.
@@ -391,7 +405,8 @@ Avoid: phone, stiff walking pose, distorted feet, extra toes, unrealistic body p
     number: "95",
     id: "quiet-luxury-london-shot-7",
     title: "Quiet Luxury London · Grand Entrance",
-    whenToUse: "The architecture beat. Pulled back at the entrance of a grand London building, the facade celebrated around you. Use for establishing shots, location reveals, or any caption about the city itself.",
+    whenToUse:
+      "The architecture beat. Pulled back at the entrance of a grand London building, the facade celebrated around you. Use for establishing shots, location reveals, or any caption about the city itself.",
     mood: "quiet luxury · london architecture · grand facade · establishing · full body",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-7.jpg",
     prompt: `Create image 7 of the same quiet luxury London editorial photoshoot.
@@ -430,7 +445,8 @@ Avoid: phone, distorted hands, extra fingers, warped heels, warped architecture,
     number: "96",
     id: "quiet-luxury-london-shot-8",
     title: "Quiet Luxury London · Checking Phone",
-    whenToUse: "The candid pause. Stopped on the pavement checking your phone, coffee in the other hand. Founder-on-the-go energy. Works for productivity captions, day-in-my-life content, or any honest in-between moment.",
+    whenToUse:
+      "The candid pause. Stopped on the pavement checking your phone, coffee in the other hand. Founder-on-the-go energy. Works for productivity captions, day-in-my-life content, or any honest in-between moment.",
     mood: "quiet luxury · checking phone · candid pause · coffee · real moment",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-8.jpg",
     prompt: `Create image 8 of the same quiet luxury London editorial photoshoot.
@@ -469,7 +485,8 @@ Avoid: distorted hands, extra fingers, warped phone, fake Apple logo, warped cof
     number: "97",
     id: "quiet-luxury-london-shot-9",
     title: "Quiet Luxury London · Through the Cab Window",
-    whenToUse: "The cinematic closer. Seen from outside through the window of a black London cab, soft glass reflections over you inside. The most editorial frame in the set. Use as a standalone art-direction post or the final carousel slide.",
+    whenToUse:
+      "The cinematic closer. Seen from outside through the window of a black London cab, soft glass reflections over you inside. The most editorial frame in the set. Use as a standalone art-direction post or the final carousel slide.",
     mood: "quiet luxury · black cab · through glass · cinematic · series closer",
     exampleImage: "/images/ai-prompts/quiet-luxury-london-shot-9.jpg",
     prompt: `Create image 9 of the same quiet luxury London editorial photoshoot.
@@ -515,7 +532,8 @@ export const NOIR_FEMME_SERIES: PromptCard[] = [
     number: "80",
     id: "noir-femme-shot-1",
     title: "Noir Femme · Walking Toward Camera",
-    whenToUse: "Your ground-level opener. Full-body upshot, mid-stride, lace flares lifting off cobblestones. Use for reel covers, carousel openers, or any content that leads with movement and presence.",
+    whenToUse:
+      "Your ground-level opener. Full-body upshot, mid-stride, lace flares lifting off cobblestones. Use for reel covers, carousel openers, or any content that leads with movement and presence.",
     mood: "noir editorial · ground-level upshot · lace flares · full body · movement",
     exampleImage: "/images/ai-prompts/noir-femme-shot-1.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -538,7 +556,8 @@ Avoid: No plastic fabric. No static posed stance. No CGI surfaces. No warped lac
     number: "81",
     id: "noir-femme-shot-2",
     title: "Noir Femme · Mid-Pivot Turning Away",
-    whenToUse: "The movement mystery shot. Body in rotation, hair sweeping, back to camera. Use for transitions, moody editorial breaks, or content about turning the page.",
+    whenToUse:
+      "The movement mystery shot. Body in rotation, hair sweeping, back to camera. Use for transitions, moody editorial breaks, or content about turning the page.",
     mood: "noir editorial · mid-pivot · turning away · hair in motion · from behind",
     exampleImage: "/images/ai-prompts/noir-femme-shot-2.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -561,7 +580,8 @@ Avoid: No plastic fabric. No static pose. No CGI surfaces. No warped lace. No ce
     number: "82",
     id: "noir-femme-shot-3",
     title: "Noir Femme · Looking Back Over Shoulder",
-    whenToUse: "The head-turn tension shot. Body moving forward, face looking back. Use for before/after content, mid-walk lifestyle posts, or any caption about moving forward while staying aware.",
+    whenToUse:
+      "The head-turn tension shot. Body moving forward, face looking back. Use for before/after content, mid-walk lifestyle posts, or any caption about moving forward while staying aware.",
     mood: "noir editorial · head turn · three-quarter profile · lace trousers · blazer closed",
     exampleImage: "/images/ai-prompts/noir-femme-shot-3.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -584,7 +604,8 @@ Avoid: No open blazer. No visible bralette or midriff. No plastic fabric. No sta
     number: "83",
     id: "noir-femme-shot-4",
     title: "Noir Femme · Fixing the Heel",
-    whenToUse: "The graphic pause. One leg raised behind her, hand reaching to the ankle strap. A strong standalone shot or detail-heavy carousel slide.",
+    whenToUse:
+      "The graphic pause. One leg raised behind her, hand reaching to the ankle strap. A strong standalone shot or detail-heavy carousel slide.",
     mood: "noir editorial · heel fix · upright balance · lace lifted mid-air · graphic line",
     exampleImage: "/images/ai-prompts/noir-femme-shot-4.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -607,7 +628,8 @@ Avoid: No bent-forward posture. No open blazer. No visible midriff. No plastic f
     number: "84",
     id: "noir-femme-shot-5",
     title: "Noir Femme · Walking Away Down the Street",
-    whenToUse: "The cinematic wide closer. Small figure, tall facades, converging vanishing-point perspective. Use as a series closer, reel cover, or any caption about moving forward alone.",
+    whenToUse:
+      "The cinematic wide closer. Small figure, tall facades, converging vanishing-point perspective. Use as a series closer, reel cover, or any caption about moving forward alone.",
     mood: "noir editorial · wide shot · vanishing point · walking away · architectural",
     exampleImage: "/images/ai-prompts/noir-femme-shot-5.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -630,7 +652,8 @@ Avoid: No plastic fabric. No CGI surfaces. No warped lace. No static pose. No ot
     number: "85",
     id: "noir-femme-shot-6",
     title: "Noir Femme · Eyes Down, Hair Across",
-    whenToUse: "Intimate face close-up — downcast eyes, hair falling across the cheek. Use for beauty posts, personal captions, or any post where the face tells the story without looking at the lens.",
+    whenToUse:
+      "Intimate face close-up — downcast eyes, hair falling across the cheek. Use for beauty posts, personal captions, or any post where the face tells the story without looking at the lens.",
     mood: "noir portrait · close-up · eyes down · hair across · natural texture",
     exampleImage: "/images/ai-prompts/noir-femme-shot-6.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -653,7 +676,8 @@ Avoid: No eye contact with camera. No over-smoothed skin. No idealized face. No 
     number: "86",
     id: "noir-femme-shot-7",
     title: "Noir Femme · Mid-Hair Push, Eyes Closed",
-    whenToUse: "The private, unguarded portrait. Both hands at the hairline, eyes closed, face to the light. Use for intimate captions, process content, or any post where vulnerability is the message.",
+    whenToUse:
+      "The private, unguarded portrait. Both hands at the hairline, eyes closed, face to the light. Use for intimate captions, process content, or any post where vulnerability is the message.",
     mood: "noir portrait · hands in hair · eyes closed · private moment · intimate",
     exampleImage: "/images/ai-prompts/noir-femme-shot-7.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -676,7 +700,8 @@ Avoid: No open eyes. No over-smoothed skin. No idealized face. No distorted fing
     number: "87",
     id: "noir-femme-shot-8",
     title: "Noir Femme · Sharp Profile, Chin Up",
-    whenToUse: "The architectural portrait. Pure 90-degree profile against dark stone — jawline, throat, necklace. Use for visual brand statements or any caption about clarity and direction.",
+    whenToUse:
+      "The architectural portrait. Pure 90-degree profile against dark stone — jawline, throat, necklace. Use for visual brand statements or any caption about clarity and direction.",
     mood: "noir portrait · true 90° profile · chin up · jawline · architectural",
     exampleImage: "/images/ai-prompts/noir-femme-shot-8.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -699,7 +724,8 @@ Avoid: No three-quarter turn — true 90 degree profile only. No over-smoothed s
     number: "88",
     id: "noir-femme-shot-9",
     title: "Noir Femme · Looking Back, Face Over Shoulder",
-    whenToUse: "The only direct-eye-contact shot in the series. Tight over-the-shoulder crop, sharp neck turn, full gaze straight to the lens. Use when you want to stop the scroll with pure presence.",
+    whenToUse:
+      "The only direct-eye-contact shot in the series. Tight over-the-shoulder crop, sharp neck turn, full gaze straight to the lens. Use when you want to stop the scroll with pure presence.",
     mood: "noir portrait · over shoulder · eye contact · direct · confrontational",
     exampleImage: "/images/ai-prompts/noir-femme-shot-9.png",
     prompt: `Use the uploaded reference photos as the only source for this person's face and identity. Preserve her exact facial structure, face shape, skin tone, natural skin texture, body proportions, and age. Do not idealize, smooth, or alter the face.
@@ -729,7 +755,8 @@ export const CLEAN_GIRL_MORNING_SERIES: PromptCard[] = [
     number: "70",
     id: "clean-girl-morning-shot-1",
     title: "Clean Girl · Soft Morning Mirror Selfie",
-    whenToUse: "Your opener. Bedroom mirror selfie in cream knit loungewear, soft window light, phone covering part of the face. Use for morning routine content, outfit check captions, or any post about the quiet start of a founder day.",
+    whenToUse:
+      "Your opener. Bedroom mirror selfie in cream knit loungewear, soft window light, phone covering part of the face. Use for morning routine content, outfit check captions, or any post about the quiet start of a founder day.",
     mood: "clean girl · mirror selfie · morning soft · bedroom · cozy",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
     prompt: `Create image 1 of a 10-part clean girl founder morning editorial photoshoot.
@@ -764,7 +791,8 @@ Avoid: cluttered room, harsh white overexposure, distorted hands, extra fingers,
     number: "71",
     id: "clean-girl-morning-shot-2",
     title: "Clean Girl · Bathroom Skincare In Use",
-    whenToUse: "The real skincare moment — not a product shelf ad. Use for beauty content, morning routine posts, or any caption about showing up for yourself before anyone else.",
+    whenToUse:
+      "The real skincare moment — not a product shelf ad. Use for beauty content, morning routine posts, or any caption about showing up for yourself before anyone else.",
     mood: "clean girl · bathroom · skincare · dewy skin · UGC morning routine",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-2.jpg",
     prompt: `Create image 2 of the same clean girl founder morning editorial photoshoot.
@@ -799,7 +827,8 @@ Avoid: perfect product lineup, too many products, fake labels, distorted fingers
     number: "72",
     id: "clean-girl-morning-shot-3",
     title: "Clean Girl · Kitchen Coffee + Breakfast",
-    whenToUse: "The morning moves into the kitchen. Use for slow morning content, what-I-eat posts, or any caption about the pace of a founder day.",
+    whenToUse:
+      "The morning moves into the kitchen. Use for slow morning content, what-I-eat posts, or any caption about the pace of a founder day.",
     mood: "clean girl · kitchen · coffee · breakfast · morning movement",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
     prompt: `Create image 3 of the same clean girl founder morning editorial photoshoot.
@@ -834,7 +863,8 @@ Avoid: perfect flatlay, fake food, cluttered kitchen, warped phone, distorted ha
     number: "73",
     id: "clean-girl-morning-shot-4",
     title: "Clean Girl · Living Room Founder Work Moment",
-    whenToUse: "The soft founder work shot. MacBook open, matcha nearby, elevated knit outfit. Use for working-from-home content, productivity captions, or posts about building something from wherever you are.",
+    whenToUse:
+      "The soft founder work shot. MacBook open, matcha nearby, elevated knit outfit. Use for working-from-home content, productivity captions, or posts about building something from wherever you are.",
     mood: "clean girl · living room · laptop · founder work · soft editorial",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-4.jpg",
     prompt: `Create image 4 of the same clean girl founder morning editorial photoshoot.
@@ -869,7 +899,8 @@ Avoid: corporate office vibe, boring sweatshirt outfit, too many props, fake lap
     number: "74",
     id: "clean-girl-morning-shot-5",
     title: "Clean Girl · Closet Getting Dressed Moment",
-    whenToUse: "The morning becomes fashion-forward. Wardrobe backdrop, getting-dressed action. Use for outfit reveal content, wardrobe posts, or any caption about showing up polished.",
+    whenToUse:
+      "The morning becomes fashion-forward. Wardrobe backdrop, getting-dressed action. Use for outfit reveal content, wardrobe posts, or any caption about showing up polished.",
     mood: "clean girl · getting dressed · wardrobe · outfit transition · fashion-forward",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-5.jpg",
     prompt: `Create image 5 of the same clean girl founder morning editorial photoshoot.
@@ -904,7 +935,8 @@ Avoid: boring matching loungewear, phone covering whole face, stiff mirror pose,
     number: "75",
     id: "clean-girl-morning-shot-6",
     title: "Clean Girl · Real Morning Objects Detail",
-    whenToUse: "The tactile detail slide. No face needed. Phone, coffee, lip product, laptop edge — the full morning through objects. Use as a carousel detail slide or standalone mood post.",
+    whenToUse:
+      "The tactile detail slide. No face needed. Phone, coffee, lip product, laptop edge — the full morning through objects. Use as a carousel detail slide or standalone mood post.",
     mood: "clean girl · detail shot · morning objects · no face · tactile",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-6.jpg",
     prompt: `Create image 6 as the only detail shot of this clean girl founder morning editorial photoshoot.
@@ -939,7 +971,8 @@ Avoid: too many products, product-only ad shot, perfect symmetrical flatlay, ran
     number: "76",
     id: "clean-girl-morning-shot-7",
     title: "Clean Girl · Bathroom Mirror Skincare Selfie",
-    whenToUse: "The post-skincare mirror check. Fresh skin, robe, phone up. Use for glow check captions, UGC-style beauty content, or morning routine posts that feel real and relatable.",
+    whenToUse:
+      "The post-skincare mirror check. Fresh skin, robe, phone up. Use for glow check captions, UGC-style beauty content, or morning routine posts that feel real and relatable.",
     mood: "clean girl · bathroom mirror selfie · skincare glow · UGC · candid beauty",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-7.jpg",
     prompt: `Create image 7 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
@@ -976,7 +1009,8 @@ Avoid: perfect product lineup, fake labels, harsh beauty lighting, distorted han
     number: "77",
     id: "clean-girl-morning-shot-8",
     title: "Clean Girl · Kitchen Counter iPhone Selfie",
-    whenToUse: "Coffee before content. Lean-back kitchen selfie with breakfast nearby. Use for morning routine posts, founder-lifestyle captions, or the quiet start before the busy day.",
+    whenToUse:
+      "Coffee before content. Lean-back kitchen selfie with breakfast nearby. Use for morning routine posts, founder-lifestyle captions, or the quiet start before the busy day.",
     mood: "clean girl · kitchen selfie · coffee · casual founder · morning",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-8.jpg",
     prompt: `Create image 8 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
@@ -1011,7 +1045,8 @@ Avoid: perfect flatlay, fake food texture, cluttered kitchen, overexposed whites
     number: "78",
     id: "clean-girl-morning-shot-9",
     title: "Clean Girl · Living Room Laptop Selfie",
-    whenToUse: "Soft founder work selfie — laptop open, matcha beside her, cozy outfit. Use for working-from-home content, accountability posts, or any caption about making the work feel good.",
+    whenToUse:
+      "Soft founder work selfie — laptop open, matcha beside her, cozy outfit. Use for working-from-home content, accountability posts, or any caption about making the work feel good.",
     mood: "clean girl · living room selfie · laptop · founder lifestyle · soft",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-9.jpg",
     prompt: `Create image 9 as a bonus selfie shot from the same clean girl founder morning editorial photoshoot.
@@ -1046,7 +1081,8 @@ Avoid: corporate office vibe, boring sweatshirt outfit, fake laptop screen, too 
     number: "79",
     id: "clean-girl-morning-shot-10",
     title: "Clean Girl · Window Light FaceTime Selfie",
-    whenToUse: "The most intimate shot in the series. Close selfie near the window, finished look, just before the day starts. Use for personal check-in content, profile photos, or captions about showing up for yourself.",
+    whenToUse:
+      "The most intimate shot in the series. Close selfie near the window, finished look, just before the day starts. Use for personal check-in content, profile photos, or captions about showing up for yourself.",
     mood: "clean girl · window light · close selfie · intimate · polished",
     exampleImage: "/images/ai-prompts/clean-girl-morning-shot-10.jpg",
     prompt: `Create image 10 as a creative selfie-style portrait from the same clean girl founder morning editorial photoshoot.
@@ -1086,7 +1122,8 @@ export const DARK_FEMININE_CAFE_SERIES: PromptCard[] = [
     number: "64",
     id: "dark-feminine-cafe-shot-1",
     title: "Dark Feminine Café · Street Arrival",
-    whenToUse: "Your opener. Full-body street style, mid-step toward the café. Use for reel covers, carousel openers, or any content that captures confident city movement.",
+    whenToUse:
+      "Your opener. Full-body street style, mid-step toward the café. Use for reel covers, carousel openers, or any content that captures confident city movement.",
     mood: "dark feminine · city street · arriving · full body · editorial opener",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
     prompt: `Create image 1 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1125,7 +1162,8 @@ Avoid: phone, coffee in hand, distorted hands, extra fingers, warped boots, stre
     number: "65",
     id: "dark-feminine-cafe-shot-2",
     title: "Dark Feminine Café · Counter Order",
-    whenToUse: "The ordering moment. Three-quarter body at the counter, relaxed and confident. Ideal for lifestyle content and any caption about moving through the world with ease.",
+    whenToUse:
+      "The ordering moment. Three-quarter body at the counter, relaxed and confident. Ideal for lifestyle content and any caption about moving through the world with ease.",
     mood: "dark feminine · café counter · ordering · side profile · lifestyle editorial",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-2.jpg",
     prompt: `Create image 2 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1164,7 +1202,8 @@ Avoid: phone, cluttered counter, distorted hands, extra fingers, warped sunglass
     number: "66",
     id: "dark-feminine-cafe-shot-3",
     title: "Dark Feminine Café · Seated Hero",
-    whenToUse: "The main hero shot of the series. Seated at the marble bistro table, one leg crossed, face turned away from camera. The pinnacle fashion image. Perfect for single posts or the centrepiece of a carousel.",
+    whenToUse:
+      "The main hero shot of the series. Seated at the marble bistro table, one leg crossed, face turned away from camera. The pinnacle fashion image. Perfect for single posts or the centrepiece of a carousel.",
     mood: "dark feminine · seated hero · marble table · crossed legs · fashion editorial",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
     prompt: `Create image 3 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1203,7 +1242,8 @@ Avoid: phone, random extra props, distorted hands, extra fingers, warped boots, 
     number: "67",
     id: "dark-feminine-cafe-shot-4",
     title: "Dark Feminine Café · Lipstick Moment",
-    whenToUse: "A close-up candid while waiting for coffee. Lipstick in hand, sunglasses, completely in her own world. Works beautifully for beauty, self-care, or any caption about having a moment for yourself.",
+    whenToUse:
+      "A close-up candid while waiting for coffee. Lipstick in hand, sunglasses, completely in her own world. Works beautifully for beauty, self-care, or any caption about having a moment for yourself.",
     mood: "dark feminine · beauty close-up · lipstick · candid · personal moment",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-4.jpg",
     prompt: `Create image 4 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1242,7 +1282,8 @@ Avoid: phone, warped lipstick, distorted fingers, extra fingers, changed face, w
     number: "68",
     id: "dark-feminine-cafe-shot-5",
     title: "Dark Feminine Café · Detail Cutaway",
-    whenToUse: "The atmospheric detail shot — coffee, rings, blazer sleeve, leather boots. No full face needed. Use as a carousel filler or as a standalone mood image that grounds the whole editorial.",
+    whenToUse:
+      "The atmospheric detail shot — coffee, rings, blazer sleeve, leather boots. No full face needed. Use as a carousel filler or as a standalone mood image that grounds the whole editorial.",
     mood: "dark feminine · detail shot · coffee · rings · leather · cutaway",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-5.jpg",
     prompt: `Create image 5 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1281,7 +1322,8 @@ Avoid: phone, distorted hands, extra fingers, warped coffee cup, fake saucer sha
     number: "69",
     id: "dark-feminine-cafe-shot-6",
     title: "Dark Feminine Café · Reel Cover Exit",
-    whenToUse: "The exit shot. Full body, walking away with coffee, head turned back over the shoulder. The perfect reel cover. Use it as a standalone post, a reel thumbnail, or the closing image of your carousel.",
+    whenToUse:
+      "The exit shot. Full body, walking away with coffee, head turned back over the shoulder. The perfect reel cover. Use it as a standalone post, a reel thumbnail, or the closing image of your carousel.",
     mood: "dark feminine · reel cover · leaving · movement · head turn · full body exit",
     exampleImage: "/images/ai-prompts/dark-feminine-cafe-shot-6.jpg",
     prompt: `Create image 6 of a 6-part dark feminine café coffee-run editorial photoshoot.
@@ -1327,7 +1369,8 @@ export const DARK_BALCONY_SERIES: PromptCard[] = [
     number: "55",
     id: "dark-balcony-shot-1",
     title: "Dark Balcony · Balcony Kiss Hero",
-    whenToUse: "Your hero shot for the series. Full editorial statement — black outfit, oversized sunglasses, blowing a kiss from the balcony. Use as your single-image post or carousel cover.",
+    whenToUse:
+      "Your hero shot for the series. Full editorial statement — black outfit, oversized sunglasses, blowing a kiss from the balcony. Use as your single-image post or carousel cover.",
     mood: "quiet luxury · city editorial · moody · balcony · hero",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-1.png",
     prompt: `Create image 1 of a 6-part dark balcony luxury city editorial photoshoot.
@@ -1358,7 +1401,8 @@ Avoid: bright daylight, colorful outfit, extra props, distorted hands, extra fin
     number: "56",
     id: "dark-balcony-shot-2",
     title: "Dark Balcony · Window Lean Side Profile",
-    whenToUse: "Side profile shot at the balcony — strong editorial line, moody city depth. Use mid-carousel or as a standalone story-style post.",
+    whenToUse:
+      "Side profile shot at the balcony — strong editorial line, moody city depth. Use mid-carousel or as a standalone story-style post.",
     mood: "side profile · city romance · moody · urban · editorial",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-2.png",
     prompt: `Create image 2 of the same dark balcony luxury city editorial photoshoot.
@@ -1389,7 +1433,8 @@ Avoid: overly bright exposure, cluttered city details, distorted hand near face,
     number: "57",
     id: "dark-balcony-shot-3",
     title: "Dark Balcony · Hair Movement Portrait",
-    whenToUse: "Cinematic movement shot — hair in motion, balcony railing, city blur. Strong mid-carousel energy or reel thumbnail.",
+    whenToUse:
+      "Cinematic movement shot — hair in motion, balcony railing, city blur. Strong mid-carousel energy or reel thumbnail.",
     mood: "movement · cinematic · hair · balcony · moody",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-3.png",
     prompt: `Create image 3 of the same dark balcony luxury city photoshoot.
@@ -1420,7 +1465,8 @@ Avoid: overly dramatic wind, messy fake hair, distorted hands, extra fingers, wa
     number: "58",
     id: "dark-balcony-shot-4",
     title: "Dark Balcony · From Inside Looking Out",
-    whenToUse: "Interior-to-balcony cinematic frame — moody doorway, cream curtains, city light. Use for 'day in my life' or quiet lifestyle content.",
+    whenToUse:
+      "Interior-to-balcony cinematic frame — moody doorway, cream curtains, city light. Use for 'day in my life' or quiet lifestyle content.",
     mood: "interior · cinematic · mysterious · night-before energy · main character",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-4.png",
     prompt: `Create image 4 of the same dark balcony luxury day-in-my-life photoshoot.
@@ -1451,7 +1497,8 @@ Avoid: cluttered room, bright daylight, distorted hands, extra fingers, warped c
     number: "59",
     id: "dark-balcony-shot-5",
     title: "Dark Balcony · Detail Shot",
-    whenToUse: "B-roll detail card — hand on railing, sunglasses edge, black outfit, city blur. Use as a filler slide in a carousel or story frame.",
+    whenToUse:
+      "B-roll detail card — hand on railing, sunglasses edge, black outfit, city blur. Use as a filler slide in a carousel or story frame.",
     mood: "detail · b-roll · tactile · luxury · close-up",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-5.png",
     prompt: `Create image 5 as the detail shot of this dark balcony luxury city editorial photoshoot.
@@ -1478,7 +1525,8 @@ Avoid: distorted fingers, extra hands, cluttered props, warped railing, fake jew
     number: "60",
     id: "dark-balcony-shot-6",
     title: "Dark Balcony · Reel Cover Hero",
-    whenToUse: "Your strongest reel cover — clean composition, negative space for text, full main-character energy. Use as a Reel thumbnail or grid anchor.",
+    whenToUse:
+      "Your strongest reel cover — clean composition, negative space for text, full main-character energy. Use as a Reel thumbnail or grid anchor.",
     mood: "reel cover · main character · luxury city · moody · confident",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-6.png",
     prompt: `Create image 6 as the strongest reel-cover image from this dark balcony luxury city editorial photoshoot.
@@ -1509,7 +1557,8 @@ Avoid: repeating the exact blowing-kiss pose from Shot 1, bright clean daylight,
     number: "61",
     id: "dark-balcony-shot-7",
     title: "Dark Balcony · Overhead Balcony Street View",
-    whenToUse: "Creative overhead angle looking down at the city. Artistic and unexpected — use as a carousel ender or standalone art-direction post.",
+    whenToUse:
+      "Creative overhead angle looking down at the city. Artistic and unexpected — use as a carousel ender or standalone art-direction post.",
     mood: "overhead · creative · high-rise · depth · cinematic",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-7.png",
     prompt: `Create image 7 as a creative overhead shot from the same dark balcony luxury city photoshoot.
@@ -1538,7 +1587,8 @@ Avoid: distorted fingers, fake city depth, cluttered props, CGI.`,
     number: "62",
     id: "dark-balcony-shot-8",
     title: "Dark Balcony · Close-Up Sunglasses + Lips",
-    whenToUse: "Tight beauty close-up — sunglasses, lips, moody light. Use as a beauty slide mid-carousel or a standalone close-up post.",
+    whenToUse:
+      "Tight beauty close-up — sunglasses, lips, moody light. Use as a beauty slide mid-carousel or a standalone close-up post.",
     mood: "beauty · close-up · sunglasses · soft glam · editorial",
     exampleImage: "/images/ai-prompts/dark-balcony-shot-8.png",
     prompt: `Create image 8 as a close-up beauty portrait from the same dark balcony luxury city editorial shoot.
@@ -1569,7 +1619,8 @@ Avoid: heavy glam makeup, overfilled lips, plastic skin, warped sunglasses, dist
     number: "63",
     id: "dark-balcony-shot-9",
     title: "Dark Balcony · Shadow Silhouette",
-    whenToUse: "Creative shadow silhouette — partially hidden in warm low evening light. Use as an artistic series closer or a moody atmospheric post.",
+    whenToUse:
+      "Creative shadow silhouette — partially hidden in warm low evening light. Use as an artistic series closer or a moody atmospheric post.",
     mood: "silhouette · shadow · mysterious · cinematic · low light",
     prompt: `Create image 9 as a creative shadow silhouette shot from the same dark balcony luxury photoshoot.
 
@@ -1606,7 +1657,8 @@ export const COASTAL_WHITE_SERIES: PromptCard[] = [
     number: "46",
     id: "coastal-white-shot-1",
     title: "Coastal White · Cliffside Hero",
-    whenToUse: "Your hero shot for the series. Full-body at the terrace wall with ocean and cliffs behind. Use as your single-image post or carousel cover.",
+    whenToUse:
+      "Your hero shot for the series. Full-body at the terrace wall with ocean and cliffs behind. Use as your single-image post or carousel cover.",
     mood: "quiet luxury · coastal · full body · sunset · editorial",
     exampleImage: "/images/ai-prompts/coastal-white-shot-1.jpg",
     prompt: `Create image 1 of a 6-part coastal white dress sunset editorial photoshoot.
@@ -1637,7 +1689,8 @@ Avoid: bridal styling, wedding dress look, heavy glam makeup, cluttered resort p
     number: "47",
     id: "coastal-white-shot-2",
     title: "Coastal White · Backless Ocean View",
-    whenToUse: "The intimate back-view shot. Reveals the open-back dress detail with the ocean as backdrop. Strong as slide 2 of a carousel or a standalone mood post.",
+    whenToUse:
+      "The intimate back-view shot. Reveals the open-back dress detail with the ocean as backdrop. Strong as slide 2 of a carousel or a standalone mood post.",
     mood: "backless · ocean view · intimate · from behind · sunset",
     exampleImage: "/images/ai-prompts/coastal-white-shot-2.jpg",
     prompt: `Create image 2 of the same coastal white dress sunset editorial photoshoot.
@@ -1668,7 +1721,8 @@ Avoid: bridal look, veil, wedding styling, overexposed white fabric, distorted b
     number: "48",
     id: "coastal-white-shot-3",
     title: "Coastal White · Terrace Wall With Wine",
-    whenToUse: "The seated evening moment. Pairs well with captions about slowing down, a slow evening, or living with intention.",
+    whenToUse:
+      "The seated evening moment. Pairs well with captions about slowing down, a slow evening, or living with intention.",
     mood: "seated · wine glass · terrace · soft evening · feminine",
     exampleImage: "/images/ai-prompts/coastal-white-shot-3.jpg",
     prompt: `Create image 3 of the same coastal white dress sunset editorial photoshoot.
@@ -1699,7 +1753,8 @@ Avoid: too many props, bridal styling, distorted fingers, warped wine glass, pla
     number: "49",
     id: "coastal-white-shot-4",
     title: "Coastal White · Walking The Terrace",
-    whenToUse: "The movement shot. Shows the dress in motion and creates a day-in-my-life coastal feeling. Great for carousel slide 3 or a standalone reel cover.",
+    whenToUse:
+      "The movement shot. Shows the dress in motion and creates a day-in-my-life coastal feeling. Great for carousel slide 3 or a standalone reel cover.",
     mood: "walking · movement · terrace · coastal · main character",
     exampleImage: "/images/ai-prompts/coastal-white-shot-4.jpg",
     prompt: `Create image 4 of the same coastal white dress day-in-my-life editorial photoshoot.
@@ -1730,7 +1785,8 @@ Avoid: awkward walking pose, distorted legs, warped dress hem, bridal train, pla
     number: "50",
     id: "coastal-white-shot-5",
     title: "Coastal White · Detail Shot",
-    whenToUse: "The carousel detail slide. No face needed. Pairs with captions about the dress, the moment, or the feeling of being somewhere beautiful.",
+    whenToUse:
+      "The carousel detail slide. No face needed. Pairs with captions about the dress, the moment, or the feeling of being somewhere beautiful.",
     mood: "detail · no face · hand · terrace · tactile · quiet luxury",
     exampleImage: "/images/ai-prompts/coastal-white-shot-5.jpg",
     prompt: `Create image 5 as the detail shot of this coastal white dress sunset editorial photoshoot.
@@ -1757,7 +1813,8 @@ Avoid: distorted fingers, extra hands, overexposed fabric, fake-looking dress te
     number: "51",
     id: "coastal-white-shot-6",
     title: "Coastal White · Reel Cover Hero",
-    whenToUse: "Your reel cover or the strongest single image from the series. Strong silhouette, clean text space at the top.",
+    whenToUse:
+      "Your reel cover or the strongest single image from the series. Strong silhouette, clean text space at the top.",
     mood: "reel cover · hero · sunset · iconic · clean text space",
     exampleImage: "/images/ai-prompts/coastal-white-shot-6.jpg",
     prompt: `Create image 6 as the strongest reel-cover image from this coastal white dress sunset editorial photoshoot.
@@ -1788,7 +1845,8 @@ Avoid: bridal styling, wedding mood, veil, overexposed dress, fantasy sunset, di
     number: "52",
     id: "coastal-white-shot-7",
     title: "Coastal White · Overhead Pool Detail",
-    whenToUse: "Creative bonus shot. Overhead angle looking down at the dress hem and ocean water. Artistic carousel slide or standalone detail post.",
+    whenToUse:
+      "Creative bonus shot. Overhead angle looking down at the dress hem and ocean water. Artistic carousel slide or standalone detail post.",
     mood: "overhead · creative · abstract · pool · fabric detail",
     exampleImage: "/images/ai-prompts/coastal-white-shot-7.jpg",
     prompt: `Create image 7 as a creative overhead detail shot from the same coastal white dress editorial photoshoot.
@@ -1817,7 +1875,8 @@ Avoid: distorted hands, overexposed fabric, messy water, cluttered props, CGI.`,
     number: "53",
     id: "coastal-white-shot-8",
     title: "Coastal White · Close-Up Beauty Portrait",
-    whenToUse: "Tight face shot with ocean behind. Strong for beauty-focused posts, profile photo updates, or pairing with a personal caption.",
+    whenToUse:
+      "Tight face shot with ocean behind. Strong for beauty-focused posts, profile photo updates, or pairing with a personal caption.",
     mood: "beauty · close up · face · ocean blur · soft · feminine",
     exampleImage: "/images/ai-prompts/coastal-white-shot-8.jpg",
     prompt: `Create image 8 as a close-up beauty portrait from the same coastal white dress sunset editorial photoshoot.
@@ -1848,7 +1907,8 @@ Avoid: heavy glam makeup, plastic skin, bridal beauty styling, overexposed highl
     number: "54",
     id: "coastal-white-shot-9",
     title: "Coastal White · Back View Sunset Reflection",
-    whenToUse: "Cinematic back-view with pool reflection and pastel sky. Use as a final carousel slide or a standalone reflective/mood post.",
+    whenToUse:
+      "Cinematic back-view with pool reflection and pastel sky. Use as a final carousel slide or a standalone reflective/mood post.",
     mood: "back view · pool reflection · sunset sky · cinematic · peaceful",
     prompt: `Create image 9 as a creative back-view shot from the same coastal white dress sunset editorial photoshoot.
 
@@ -1885,7 +1945,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "33",
     id: "cozy-leather-shot-1",
     title: "Cozy Leather · Full Mirror Check",
-    whenToUse: "Hero shot for the set. Full-body mirror selfie showing the complete look. Use as your single post or carousel cover.",
+    whenToUse:
+      "Hero shot for the set. Full-body mirror selfie showing the complete look. Use as your single post or carousel cover.",
     mood: "cozy luxury · mirror selfie · full body · fall/winter · editorial",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-1.png",
     prompt:
@@ -1895,7 +1956,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "34",
     id: "cozy-leather-shot-2",
     title: "Cozy Leather · Closer Mirror Selfie",
-    whenToUse: "Tighter crop focusing on the sweater texture and jacket. Good as slide 2 of a carousel or a standalone texture post.",
+    whenToUse:
+      "Tighter crop focusing on the sweater texture and jacket. Good as slide 2 of a carousel or a standalone texture post.",
     mood: "close crop · texture · sweater · leather · intimate",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-2.png",
     prompt:
@@ -1905,7 +1967,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "35",
     id: "cozy-leather-shot-3",
     title: "Cozy Leather · Getting Ready",
-    whenToUse: "The seated morning moment. Pairs well with captions about routine, slowing down, or getting dressed with intention.",
+    whenToUse:
+      "The seated morning moment. Pairs well with captions about routine, slowing down, or getting dressed with intention.",
     mood: "seated · bed · getting ready · morning · day-in-my-life",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-3.png",
     prompt:
@@ -1915,7 +1978,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "36",
     id: "cozy-leather-shot-4",
     title: "Cozy Leather · Hallway Walk",
-    whenToUse: "The leaving-the-house shot. Works for any caption about showing up, going out, or moving through the day with intention.",
+    whenToUse:
+      "The leaving-the-house shot. Works for any caption about showing up, going out, or moving through the day with intention.",
     mood: "walking · hallway · leaving · movement · fall/winter",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-4.png",
     prompt:
@@ -1925,7 +1989,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "37",
     id: "cozy-leather-shot-5",
     title: "Cozy Leather · Texture Detail",
-    whenToUse: "The carousel detail slide. No full face. Pairs with outfit breakdown captions or texture-focused posts.",
+    whenToUse:
+      "The carousel detail slide. No full face. Pairs with outfit breakdown captions or texture-focused posts.",
     mood: "detail · texture · knit · leather · boots · no face",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-5.png",
     prompt:
@@ -1935,7 +2000,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "38",
     id: "cozy-leather-shot-6",
     title: "Cozy Leather · Reel Cover",
-    whenToUse: "Your reel cover or strongest single image from the set. Clean space at the top for text.",
+    whenToUse:
+      "Your reel cover or strongest single image from the set. Clean space at the top for text.",
     mood: "reel cover · mirror · strong · text space · cozy luxury",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-6.png",
     prompt:
@@ -1945,7 +2011,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "39",
     id: "cozy-leather-shot-7",
     title: "Cozy Leather · Overhead Texture",
-    whenToUse: "The graphic overhead angle. No face needed. Use as a carousel insert or standalone texture post.",
+    whenToUse:
+      "The graphic overhead angle. No face needed. Use as a carousel insert or standalone texture post.",
     mood: "overhead · texture · floor · graphic · no face",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-7.png",
     prompt:
@@ -1955,7 +2022,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "40",
     id: "cozy-leather-shot-8",
     title: "Cozy Leather · Beauty Portrait",
-    whenToUse: "Close-up face shot with the leather collar framing everything. Use for a profile photo, a beauty post, or any caption where the face is the focus.",
+    whenToUse:
+      "Close-up face shot with the leather collar framing everything. Use for a profile photo, a beauty post, or any caption where the face is the focus.",
     mood: "beauty · close-up · leather collar · fall · quiet luxury",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-8.png",
     prompt:
@@ -1965,7 +2033,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "41",
     id: "cozy-leather-shot-9",
     title: "Cozy Leather · Floor-Level Walk",
-    whenToUse: "Cinematic low-angle b-roll. Works well for reels, a carousel surprise slide, or any caption about moving through the day.",
+    whenToUse:
+      "Cinematic low-angle b-roll. Works well for reels, a carousel surprise slide, or any caption about moving through the day.",
     mood: "low angle · boots · hallway · cinematic · movement",
     exampleImage: "/images/ai-prompts/cozy-leather-shot-9.png",
     prompt:
@@ -1975,7 +2044,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "42",
     id: "cozy-leather-shot-10",
     title: "Cozy Leather · Doorframe Portrait",
-    whenToUse: "The editorial statement shot. Strong silhouette, cinematic mood. Use as a reel cover alternative or a single high-impact post.",
+    whenToUse:
+      "The editorial statement shot. Strong silhouette, cinematic mood. Use as a reel cover alternative or a single high-impact post.",
     mood: "doorframe · cinematic · editorial · silhouette · warm light",
     prompt:
       "Create image 10 as a creative portrait from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, age, hair color, body proportions, and natural texture from the reference photos.\n\nScene: warm bedroom doorway or hallway with beige walls, soft indoor light, and a clean minimal background. Natural light from a nearby window creates a soft shadow across the wall or doorway.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket worn loosely over the shoulders, black pointed ankle boots.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, held low in one hand. The phone should not cover the face.\n\nPose: standing in the doorway, body slightly turned, one shoulder leaning gently against the frame, one hand adjusting the leather jacket collar. Face visible, calm confident expression, eyes looking slightly away from camera.\n\nComposition: vertical 9:16 editorial portrait with the doorway framing the body. Include soft wall shadows, negative space, and a cinematic silhouette.\n\nMood: quiet luxury, soft power, cozy but strong, leaving-the-house energy, Pinterest editorial portrait.\n\nColor grading: warm beige wall tones, deep black leather, charcoal knit, creamy skin tones, soft golden highlights, gentle shadows, subtle film grain, muted cozy editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, crisp leather texture, detailed knit, clean doorway lines, no blur, no compression softness.\n\nAvoid: mirror selfie composition, phone covering face, cluttered background, distorted hands, extra fingers, fake-looking leather, plastic skin, CGI, generic influencer pose.",
@@ -1984,7 +2054,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "43",
     id: "cozy-leather-shot-11",
     title: "Cozy Leather · Overhead Bed Moment",
-    whenToUse: "Cozy lifestyle overhead. No face needed. Works for a carousel detail slide or a quiet lifestyle post.",
+    whenToUse:
+      "Cozy lifestyle overhead. No face needed. Works for a carousel detail slide or a quiet lifestyle post.",
     mood: "overhead · bed · cozy · lifestyle · intimate · no face",
     prompt:
       "Create image 11 as an overhead creative lifestyle shot from the same cozy leather and oversized knit photoshoot.\n\nNo full face needed.\n\nScene: minimal bedroom with white or cream bedding, beige wall, warm indoor light, and soft cozy atmosphere.\n\nOutfit: oversized charcoal gray chunky knit sweater dress, oversized black leather biker jacket placed naturally beside the person or partly draped over the body, black pointed ankle boots either worn or placed near the bed.\n\nHair: if visible, sleek low bun or slicked-back bun. Keep the person's natural hair color from the uploaded reference photos.\n\nAccessory: Apple iPhone Pro Max only, resting naturally on the bed or held loosely in one hand. No coffee, laptop, headphones, handbag, or extra props.\n\nPose: overhead angle from above, showing the person seated or reclining on the bed while adjusting the knit sweater sleeve or leather jacket. One leg bent naturally, boots partly visible, phone nearby. The focus is on texture, shape, and mood.\n\nComposition: vertical 9:16 overhead editorial crop. Show chunky knit texture, black leather jacket, soft bedding, phone, boots, and warm neutral interior tones.\n\nMood: cozy getting-ready moment, intimate day-in-my-life b-roll, quiet luxury, soft fall/winter aesthetic, Pinterest lifestyle detail.\n\nColor grading: warm cream bedding, beige shadows, charcoal gray knit, glossy black leather, soft natural skin tones, gentle highlights, subtle film grain, cozy editorial color edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit fibers, sharp leather folds, realistic bedding texture, clean phone edge, no blur, no low-resolution softness.\n\nAvoid: distorted legs, extra fingers, warped phone, messy bed, cluttered props, fake-looking leather, plastic textures, CGI, overly staged product-photo look.",
@@ -1993,7 +2064,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "44",
     id: "cozy-leather-shot-12",
     title: "Cozy Leather · Overhead Texture (Alt)",
-    whenToUse: "A second overhead angle variant. Swap in for the carousel if you want a different crop or floor background.",
+    whenToUse:
+      "A second overhead angle variant. Swap in for the carousel if you want a different crop or floor background.",
     mood: "overhead · floor · texture · alternative · no face",
     prompt:
       "Create image 12 as an overhead creative outfit detail from the same cozy leather and knit photoshoot.\n\nNo full face needed.\n\nScene: warm light wood floor or soft neutral bedroom setting.\n\nOutfit details: charcoal gray chunky knit sweater dress, black leather biker jacket spread naturally over one shoulder or beside the person, black pointed ankle boots, bare legs or sheer tights if natural.\n\nAccessory: Apple iPhone Pro Max only, held low or resting naturally near the outfit.\n\nPose: overhead angle from above, showing the person seated on the floor or edge of the bed, one leg bent, one boot visible, hand resting on the knit sweater. Focus on outfit textures and body lines, not the face.\n\nMood: cozy, intimate, editorial, tactile, Pinterest detail shot.\n\nColor grading: warm beige floor, charcoal knit, glossy black leather, soft shadows, creamy highlights, subtle film grain.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp knit texture, sharp leather folds, realistic boot shape, no blur.\n\nAvoid: distorted legs, extra fingers, warped phone, fake leather, clutter, CGI.",
@@ -2002,7 +2074,8 @@ export const COZY_LEATHER_SERIES: PromptCard[] = [
     number: "45",
     id: "cozy-leather-shot-13",
     title: "Cozy Leather · Beauty Portrait (Alt)",
-    whenToUse: "A second beauty portrait variant. Slightly different crop or lighting mood — run both and pick the stronger result.",
+    whenToUse:
+      "A second beauty portrait variant. Slightly different crop or lighting mood — run both and pick the stronger result.",
     mood: "beauty · leather collar · face · alternative · close-up",
     prompt:
       "Create image 13 as a close-up beauty portrait from the same cozy leather and oversized knit photoshoot.\n\nUse the uploaded reference photos as the only source for the person's face and identity. Preserve the person's facial structure, skin tone, hair color, age, and natural texture from the reference photos.\n\nScene: warm neutral interior with beige wardrobe or soft wall blurred in the background.\n\nOutfit: oversized black leather biker jacket collar visible over chunky charcoal knit sweater neckline.\n\nHair: sleek low bun or slicked-back bun. Keep the person's natural hair color from the reference photos.\n\nAccessory: no extra accessories except minimal earrings if natural. No phone in this shot unless needed for a mirror crop.\n\nPose: close-up portrait from shoulders up, face turned slightly to the side, calm confident expression, soft lips, natural makeup, leather collar framing the face.\n\nComposition: tight editorial portrait, shallow depth of field, warm interior background, focus on face, skin texture, leather collar, and knit neckline.\n\nMood: cozy but powerful, quiet luxury, fall beauty, soft confidence.\n\nColor grading: warm beige background, deep black leather, charcoal knit, creamy skin tones, gentle shadows, subtle grain, realistic editorial finish.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp face, realistic skin texture, crisp hairline, detailed leather collar, no blur.\n\nAvoid: plastic skin, heavy glam makeup, distorted earrings, fake-looking leather, CGI, overly smoothed beauty filter.",
@@ -2018,7 +2091,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "19",
     id: "denim-street-shot-1",
     title: "Denim Street · Full Outfit Hero",
-    whenToUse: "Your hero shot for the series. Full-body against a dark wall. Use as your single-image post or carousel cover.",
+    whenToUse:
+      "Your hero shot for the series. Full-body against a dark wall. Use as your single-image post or carousel cover.",
     mood: "quiet luxury · street style · full body · dark wall · editorial",
     exampleImage: "/images/ai-prompts/denim-street-shot-1.jpg",
     prompt:
@@ -2028,7 +2102,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "20",
     id: "denim-street-shot-2",
     title: "Denim Street · Walking Moment",
-    whenToUse: "The in-motion shot. Works perfectly as slide 2 of a carousel or a standalone day-in-my-life post.",
+    whenToUse:
+      "The in-motion shot. Works perfectly as slide 2 of a carousel or a standalone day-in-my-life post.",
     mood: "walking · city · candid · movement · effortless",
     exampleImage: "/images/ai-prompts/denim-street-shot-2.jpg",
     prompt:
@@ -2038,7 +2113,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "21",
     id: "denim-street-shot-3",
     title: "Denim Street · City Steps",
-    whenToUse: "The seated pause shot. Good for quotes, captions about slowing down, or mid-carousel variety.",
+    whenToUse:
+      "The seated pause shot. Good for quotes, captions about slowing down, or mid-carousel variety.",
     mood: "seated · city steps · calm · quiet confidence · architectural",
     exampleImage: "/images/ai-prompts/denim-street-shot-3.jpg",
     prompt:
@@ -2048,7 +2124,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "22",
     id: "denim-street-shot-4",
     title: "Denim Street · Mirror Selfie",
-    whenToUse: "The 'about to leave' moment. Pairs well with outfit captions, morning routine content, or an honest personal brand post.",
+    whenToUse:
+      "The 'about to leave' moment. Pairs well with outfit captions, morning routine content, or an honest personal brand post.",
     mood: "mirror selfie · outfit check · morning · real · personal brand",
     exampleImage: "/images/ai-prompts/denim-street-shot-4.jpg",
     prompt:
@@ -2058,7 +2135,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "23",
     id: "denim-street-shot-5",
     title: "Denim Street · Detail Shot",
-    whenToUse: "The carousel detail slide. No full face. Pairs well with outfit breakdown captions or accessory-focused posts.",
+    whenToUse:
+      "The carousel detail slide. No full face. Pairs well with outfit breakdown captions or accessory-focused posts.",
     mood: "detail · tactile · accessories · no face · quiet luxury",
     exampleImage: "/images/ai-prompts/denim-street-shot-5.jpg",
     prompt:
@@ -2068,7 +2146,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "24",
     id: "denim-street-shot-6",
     title: "Denim Street · Reel Cover",
-    whenToUse: "Your reel cover or strongest single image from the set. Clean space at the top for text overlay.",
+    whenToUse:
+      "Your reel cover or strongest single image from the set. Clean space at the top for text overlay.",
     mood: "reel cover · strong silhouette · dark wall · text space · editorial",
     exampleImage: "/images/ai-prompts/denim-street-shot-6.jpg",
     prompt:
@@ -2078,7 +2157,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "25",
     id: "denim-street-shot-7",
     title: "Denim Street · Overhead Shot",
-    whenToUse: "The unexpected angle. Stops the scroll. Use for a single post or as a carousel surprise slide.",
+    whenToUse:
+      "The unexpected angle. Stops the scroll. Use for a single post or as a carousel surprise slide.",
     mood: "overhead · bird's-eye · pavement · graphic · unexpected",
     exampleImage: "/images/ai-prompts/denim-street-shot-7.jpg",
     prompt:
@@ -2088,7 +2168,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "26",
     id: "denim-street-shot-8",
     title: "Denim Street · Low-Angle Walk",
-    whenToUse: "Makes the outfit feel powerful and fashion-forward. Works well for outfit caption posts or when you want a strong editorial feel.",
+    whenToUse:
+      "Makes the outfit feel powerful and fashion-forward. Works well for outfit caption posts or when you want a strong editorial feel.",
     mood: "low angle · fashion · strong · denim · dynamic",
     exampleImage: "/images/ai-prompts/denim-street-shot-8.jpg",
     prompt:
@@ -2098,7 +2179,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "27",
     id: "denim-street-shot-9",
     title: "Denim Street · Phone Check",
-    whenToUse: "The realistic pause moment. Good for founder content, productivity posts, or any caption about being in the city.",
+    whenToUse:
+      "The realistic pause moment. Good for founder content, productivity posts, or any caption about being in the city.",
     mood: "seated · phone · city ledge · candid · real",
     exampleImage: "/images/ai-prompts/denim-street-shot-9.jpg",
     prompt:
@@ -2108,7 +2190,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "28",
     id: "denim-street-shot-10",
     title: "Denim Street · Glass Reflection",
-    whenToUse: "The editorial statement shot. Stops the scroll and makes the whole set feel more like a campaign. Use as a single post or reel cover alternative.",
+    whenToUse:
+      "The editorial statement shot. Stops the scroll and makes the whole set feel more like a campaign. Use as a single post or reel cover alternative.",
     mood: "reflection · glass · editorial · moody · campaign",
     exampleImage: "/images/ai-prompts/denim-street-shot-10.jpg",
     prompt:
@@ -2118,7 +2201,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "29",
     id: "denim-street-shot-11",
     title: "Denim Street · Shadow Detail",
-    whenToUse: "The creative b-roll detail. No face. Pairs well with a quote or a short caption about presence.",
+    whenToUse:
+      "The creative b-roll detail. No face. Pairs well with a quote or a short caption about presence.",
     mood: "shadow · artistic · shoes · pavement · cinematic",
     exampleImage: "/images/ai-prompts/denim-street-shot-11.jpg",
     prompt:
@@ -2128,7 +2212,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "30",
     id: "denim-street-shot-12",
     title: "Denim Street · Windy Side Profile",
-    whenToUse: "A reel cover alternative. The movement and hair create energy without needing a direct-camera pose.",
+    whenToUse:
+      "A reel cover alternative. The movement and hair create energy without needing a direct-camera pose.",
     mood: "side profile · wind · movement · cinematic · reel cover",
     exampleImage: "/images/ai-prompts/denim-street-shot-12.jpg",
     prompt:
@@ -2138,7 +2223,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "31",
     id: "denim-street-shot-13",
     title: "Denim Street · Waist Close-Up",
-    whenToUse: "Fashion detail without showing the face. Great for outfit breakdown posts or pairing with a style caption.",
+    whenToUse:
+      "Fashion detail without showing the face. Great for outfit breakdown posts or pairing with a style caption.",
     mood: "waist · blazer · denim · fashion detail · close-up",
     exampleImage: "/images/ai-prompts/denim-street-shot-13.jpg",
     prompt:
@@ -2148,7 +2234,8 @@ export const DENIM_STREET_SERIES: PromptCard[] = [
     number: "32",
     id: "denim-street-shot-14",
     title: "Denim Street · Phone Close-Up",
-    whenToUse: "Candid founder-on-the-go detail. Works as a b-roll slide in a carousel or paired with a caption about being present in the city.",
+    whenToUse:
+      "Candid founder-on-the-go detail. Works as a b-roll slide in a carousel or paired with a caption about being present in the city.",
     mood: "phone · candid · close-up · lifestyle · founder",
     prompt:
       "Create image 14 as a candid close-up from the same soft blazer and light denim day-in-my-life photoshoot.\n\nUse the uploaded reference photos as the only source for the person's identity if any part of the face appears. Preserve the person's natural look from the reference photos.\n\nScene: modern city sidewalk with dark charcoal wall, clean gray pavement, and soft daylight.\n\nOutfit details: oversized soft taupe or warm gray blazer sleeve, fitted white crop top edge, light-wash denim, slim black sunglasses either worn or partly visible.\n\nAccessory: Apple iPhone Pro Max only, held naturally in one hand.\n\nPose: close-up crop of the person holding the phone while walking or pausing near the dark wall. Show the hand, phone, blazer sleeve, part of the denim, and a soft partial face or sunglasses crop if natural.\n\nComposition: candid editorial close-up, like a real day-in-my-life b-roll frame. The phone should feel natural, not like a product ad.\n\nMood: modern, casual, quiet luxury, founder-on-the-go, Pinterest lifestyle detail.\n\nColor grading: muted charcoal gray, soft taupe, pale denim, creamy skin tones, gentle contrast, subtle film grain, slightly desaturated editorial edit.\n\nImage quality: vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, sharp phone edge, crisp hand detail, realistic blazer texture, no blur, no compression haze.\n\nAvoid: distorted fingers, extra hands, warped phone, fake-looking Apple logo, cluttered props, plastic skin, CGI, stock-photo pose.",
@@ -2163,7 +2250,8 @@ export const MAIN_LOOKS: PromptCard[] = [
     number: "01",
     id: "bw-supermodel",
     title: "90s Black and White Supermodel",
-    whenToUse: "You want something dramatic for a black and white post. Strong, fashion-editorial, and scroll-stopping.",
+    whenToUse:
+      "You want something dramatic for a black and white post. Strong, fashion-editorial, and scroll-stopping.",
     mood: "contrast · 90s editorial · monochrome · film",
     prompt:
       "Use my uploaded selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face, smooth my skin unnaturally, or create a more idealised version of me. You may change the crop, lighting, background, expression energy, and overall mood entirely. Recreate this as a high-contrast black and white portrait in the style of a 1990s fashion magazine editorial. Strong directional light that defines the cheekbones and jaw. One soft flash reflected in the eyes. Natural skin texture with visible pores. Subtle silver halide film grain. Studio-gray background. The crop should feel like a magazine portrait, not a selfie. The expression should feel direct, cool, and present. Photographic, not illustrated. This should look like it was shot on film in a photography studio, not generated by AI.",
@@ -2172,7 +2260,8 @@ export const MAIN_LOOKS: PromptCard[] = [
     number: "02",
     id: "car-mirror-noir",
     title: "Car Mirror Lipstick Noir",
-    whenToUse: "You want something cinematic and unexpected. One of the most distinctive looks in the pack.",
+    whenToUse:
+      "You want something cinematic and unexpected. One of the most distinctive looks in the pack.",
     mood: "cinematic · noir · late night · shadow",
     prompt:
       "Use my uploaded selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face, smooth my skin unnaturally, or create a more idealised version of me. You may change the crop, angle, lighting, setting, and mood entirely. Create a black and white cinematic portrait seen through a car side mirror. My face fills the mirror, partial and cropped, showing mostly my eyes, nose, and the top of my lips. One hand near my jaw or collarbone. Deep shadow on one side of the face. A single stripe of light crossing the eyes and the bridge of the nose. Rim light from behind on the hair. The blurred car door and mirror frame surround the reflection like a border. Fine film grain. The mood is late night, private, cinematic. Photographic, not illustrated. This should look like a still from a film, not an AI image.",
@@ -2190,7 +2279,8 @@ export const MAIN_LOOKS: PromptCard[] = [
     number: "04",
     id: "window-light-brand",
     title: "Window Light Brand Portrait",
-    whenToUse: "You need a personal brand photo that looks natural, not corporate. Good for bios, press, and website use.",
+    whenToUse:
+      "You need a personal brand photo that looks natural, not corporate. Good for bios, press, and website use.",
     mood: "morning light · approachable · real · personal brand",
     prompt:
       "Use my uploaded selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face, smooth my skin unnaturally, or create a more idealised version of me. You may change the lighting, background, crop, and overall image quality entirely. Create a personal brand portrait with soft diffused morning window light falling across my face from one side. Clean neutral background in warm white or soft off-white tones. Real skin texture with natural pores visible. Relaxed shoulders, present, grounded. The mood is real and approachable, not corporate, not a studio shot, not aspirational in a manufactured way. It should feel like a photographer came to my home on a quiet morning and found me in good light. Photorealistic, no beauty filter, no dramatic retouching.",
@@ -2199,7 +2289,8 @@ export const MAIN_LOOKS: PromptCard[] = [
     number: "05",
     id: "mirror-selfie-upgrade",
     title: "Expensive Mirror Selfie Upgrade",
-    whenToUse: "You took a mirror selfie but the lighting or background is not working. You want the same moment, elevated.",
+    whenToUse:
+      "You took a mirror selfie but the lighting or background is not working. You want the same moment, elevated.",
     mood: "clean · elevated · editorial · same moment, better light",
     prompt:
       "Use my uploaded mirror selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face or create a more idealised version of me. Keep my outfit and body position. You may change everything else: the background, the lighting, the room, and the overall quality of the image. Replace the background and room behind me with a clean minimal interior in warm neutral tones, a white wall or pale plaster in soft light. Adjust the lighting to soft and directional, coming from slightly above and to one side. Straighten the composition. Sharpen the mirror detail. Natural skin texture. The result should feel like the same moment, same outfit, same body, same energy, but photographed in a well-styled space by someone who knew what they were doing. Editorial mirror selfie quality. Real, not filtered.",
@@ -2220,7 +2311,8 @@ export const BONUS_LOOKS: PromptCard[] = [
     number: "07",
     id: "narrow-light",
     title: "Narrow Light Portrait",
-    whenToUse: "You want a moody, high-contrast look. Works well for quotes and single-image posts.",
+    whenToUse:
+      "You want a moody, high-contrast look. Works well for quotes and single-image posts.",
     mood: "dramatic · shadow · moody · sharp",
     prompt:
       "Use my uploaded selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face or smooth my skin unnaturally. You may change the lighting, background, and crop entirely. Create a close-up portrait where most of my face is in deep shadow, with one narrow band of light crossing my eyes and the bridge of my nose. Plain muted gray-blue background. High-contrast cinematic lighting. Sharp focus on the eyes. Realistic photography with soft grain.",
@@ -2229,7 +2321,8 @@ export const BONUS_LOOKS: PromptCard[] = [
     number: "08",
     id: "bathroom-magazine",
     title: "Bathroom Selfie to Magazine Shot",
-    whenToUse: "You have a bathroom selfie you like but it is not quite there yet. Keep the moment, improve everything around it.",
+    whenToUse:
+      "You have a bathroom selfie you like but it is not quite there yet. Keep the moment, improve everything around it.",
     mood: "editorial · clean · elevated · same moment, better room",
     prompt:
       "Use my uploaded bathroom selfie as the facial identity reference. Preserve my facial identity, age, skin tone, facial structure, and natural features. Do not alter my face or create a more idealised version of me. Keep my hair, outfit, phone, and body position. You may change the lighting, background, room detail, and overall quality. Improve the lighting so it is soft and even. Clean up the background so it is minimal and neutral. Straighten the lines and composition. The result should feel like a high-end editorial bathroom mirror photo, the same moment but photographed well. Real skin texture. Not filtered.",
@@ -2241,7 +2334,8 @@ export const WORKFLOW_PROMPTS: PromptCard[] = [
     number: "09",
     id: "selfie-audit",
     title: "Selfie Audit",
-    whenToUse: "You know something is off but you cannot identify what. Use this before you try any of the visual prompts.",
+    whenToUse:
+      "You know something is off but you cannot identify what. Use this before you try any of the visual prompts.",
     mood: "This prompt does not change your photo. It gives you a written critique.",
     prompt:
       "Analyse this selfie like an iPhone photography coach. Tell me exactly what is working and what is making it look less polished. Give me 5 simple fixes for lighting, angle, pose, crop, and editing. Keep the advice beginner-friendly and specific to iPhone selfies. Give me the fastest way to make this photo look better before I post it.",
@@ -2250,7 +2344,8 @@ export const WORKFLOW_PROMPTS: PromptCard[] = [
     number: "10",
     id: "edit-bridge",
     title: "Prompt-to-Edit Bridge",
-    whenToUse: "You love an AI result and want to recreate that same mood in Lightroom or iPhone editing without AI.",
+    whenToUse:
+      "You love an AI result and want to recreate that same mood in Lightroom or iPhone editing without AI.",
     mood: "This prompt does not change your photo. It gives you manual editing steps.",
     prompt:
       "Look at this AI-edited version of my selfie. Help me recreate the same mood manually in iPhone editing or Lightroom. Break the look into simple steps: exposure, contrast, highlights, shadows, warmth, colour, sharpness, crop, and grain. Keep the steps beginner-friendly. The goal is a natural, realistic result, not an over-edited one.",
@@ -2259,7 +2354,8 @@ export const WORKFLOW_PROMPTS: PromptCard[] = [
     number: "11",
     id: "content-caption",
     title: "Content Caption From My Selfie",
-    whenToUse: "You have a photo but do not know what to write. Use this to turn a selfie into an Instagram caption.",
+    whenToUse:
+      "You have a photo but do not know what to write. Use this to turn a selfie into an Instagram caption.",
     mood: "This prompt does not change your photo. It generates caption copy.",
     prompt:
       "Use this selfie as the starting point for an Instagram caption. Write a warm, honest caption about showing up online before you feel fully ready. Write it as a real woman speaking to another woman, not as a brand. Keep it short and direct. Include one practical line about using your phone, your face, and everyday life to start building online. End with a soft CTA to comment GUIDE for the free selfie guide.",
@@ -2268,7 +2364,8 @@ export const WORKFLOW_PROMPTS: PromptCard[] = [
     number: "12",
     id: "studio-workflow",
     title: "SSELFIE Studio Workflow",
-    whenToUse: "You want a full content plan from one photo. Hook, caption, edit direction, reel idea, and CTA.",
+    whenToUse:
+      "You want a full content plan from one photo. Hook, caption, edit direction, reel idea, and CTA.",
     mood: "This prompt does not change your photo. It generates a content plan.",
     prompt:
       "Act like my personal content assistant. I am uploading one selfie. Give me: 1. what this photo says about me right now, 2. the strongest Instagram hook for this image, 3. one caption idea, 4. one simple edit direction, 5. one carousel or reel idea, 6. the best CTA to use: GUIDE, KIT, or Studio. Keep the advice short, confident, and made for a woman building her brand from her phone.",
@@ -2280,7 +2377,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "13",
     id: "marble-wine-shot-1",
     title: "Marble Café · Hero Wine Sip",
-    whenToUse: "Your hero shot for the series. Intimate, editorial, and fashion-forward. Use this as the single-image post or the carousel cover.",
+    whenToUse:
+      "Your hero shot for the series. Intimate, editorial, and fashion-forward. Use this as the single-image post or the carousel cover.",
     mood: "quiet luxury · marble café · wine · editorial · fashion-forward",
     exampleImage: "/images/ai-prompts/marble-wine-shot-1.jpg",
     prompt:
@@ -2290,7 +2388,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "14",
     id: "marble-wine-shot-2",
     title: "Marble Café · Outfit Shot",
-    whenToUse: "Slide 2 of the carousel or a standalone outfit post. Shows the full look with the marble setting.",
+    whenToUse:
+      "Slide 2 of the carousel or a standalone outfit post. Shows the full look with the marble setting.",
     mood: "quiet luxury · café · outfit · editorial · effortless",
     exampleImage: "/images/ai-prompts/marble-wine-shot-2.jpg",
     prompt:
@@ -2300,7 +2399,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "15",
     id: "marble-wine-shot-3",
     title: "Marble Café · Looking Away",
-    whenToUse: "The mysterious candid shot. Works for quotes, captions about presence and stillness, or as a mid-carousel break.",
+    whenToUse:
+      "The mysterious candid shot. Works for quotes, captions about presence and stillness, or as a mid-carousel break.",
     mood: "candid · mysterious · café moment · quiet · fashion",
     exampleImage: "/images/ai-prompts/marble-wine-shot-3.jpg",
     prompt:
@@ -2310,7 +2410,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "16",
     id: "marble-wine-shot-4",
     title: "Marble Café · Beauty Portrait",
-    whenToUse: "Use for your profile photo, a close-up post, or any moment where you want the face to be the focus.",
+    whenToUse:
+      "Use for your profile photo, a close-up post, or any moment where you want the face to be the focus.",
     mood: "beauty · close-up · editorial · quiet luxury · sharp",
     exampleImage: "/images/ai-prompts/marble-wine-shot-4.jpg",
     prompt:
@@ -2320,7 +2421,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "17",
     id: "marble-wine-shot-5",
     title: "Marble Café · Detail Shot",
-    whenToUse: "The carousel detail slide. No face needed. Pairs perfectly with a caption about the outfit, the accessories, or the mood.",
+    whenToUse:
+      "The carousel detail slide. No face needed. Pairs perfectly with a caption about the outfit, the accessories, or the mood.",
     mood: "detail · tactile · quiet luxury · accessories · no face",
     exampleImage: "/images/ai-prompts/marble-wine-shot-5.jpg",
     prompt:
@@ -2330,7 +2432,8 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
     number: "18",
     id: "marble-wine-shot-6",
     title: "Marble Café · Reel Cover",
-    whenToUse: "Your reel cover or the strongest single image from the series. Strong silhouette, clean space for text at the top.",
+    whenToUse:
+      "Your reel cover or the strongest single image from the series. Strong silhouette, clean space for text at the top.",
     mood: "reel cover · editorial · silhouette · strong · vertical",
     exampleImage: "/images/ai-prompts/marble-wine-shot-6.jpg",
     prompt:
@@ -2338,20 +2441,19 @@ export const MARBLE_CAFE_SERIES: PromptCard[] = [
   },
 ]
 
-
 // ---------------------------------------------------------------------------
 // VAULT COLLECTION METADATA
 //
 // Thumbnail image paths + shot counts for each paid collection.
-// Used by the freebie page to render the thumbnail strip below each preview
-// card — without importing full paid series arrays (respects SOP).
+// Used by Vault/freebie surfaces to render thumbnail strips below preview
+// cards — without exposing full paid prompt text in free previews.
 //
-// Keep in the same order as FREEBIE_COLLECTION_PREVIEWS (newest at top).
+// Keep static collection metadata in the same order as the static series list.
 // When adding a new collection: add a new entry at the TOP of this array.
 // ---------------------------------------------------------------------------
 
 export type VaultCollectionMeta = {
-  /** Matches the `id` field of the corresponding FREEBIE_COLLECTION_PREVIEWS card */
+  /** Matches the `id` field of the corresponding first-shot preview card */
   previewCardId: string
   name: string
   /** Total number of prompts (shots) in the full collection */
@@ -2371,6 +2473,18 @@ export type VaultFreebieCollectionPreview = {
   shotCount: number
   lockedShots: VaultLockedShotPreview[]
 }
+
+export const FREEBIE_STATIC_STARTER_LIMIT = 5
+
+export const FREEBIE_ROTATING_DROP_LIMIT = 1
+
+const FREEBIE_STATIC_STARTER_CARD_IDS = [
+  "mysterious-vogue-shot-1",
+  "clean-girl-morning-shot-1",
+  "noir-femme-shot-1",
+  "quiet-luxury-london-shot-1",
+  "dark-feminine-cafe-shot-1",
+]
 
 export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
   {
@@ -2535,29 +2649,28 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 // ---------------------------------------------------------------------------
 // FREEBIE COLLECTION PREVIEWS
 //
-// One shot per paid collection — shown in the freebie access page with an
-// upgrade CTA to the full Prompt Vault.
+// Legacy complete list of static collection first shots. The public freebie
+// should use getCuratedStaticVaultFreebieCollections(), not this full list,
+// so the freebie stays a starter shoot instead of becoming a free mini-Vault.
 //
 // HOW TO UPDATE WHEN ADDING A NEW COLLECTION:
-//   Add the new series's first card here at the TOP of this array:
-//   FREEBIE_COLLECTION_PREVIEWS.unshift(NEW_SERIES[0])
-//   (or manually add it above the existing entries below)
-//
-// Rule: newest collection preview at the top, oldest at the bottom.
+//   Do not update this array for normal new drops. Add the full collection
+//   to the paid Vault data. Only replace FREEBIE_STATIC_STARTER_CARD_IDS when
+//   Sandra explicitly wants a different evergreen starter look.
 // ---------------------------------------------------------------------------
 
 export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   // Newest collection preview at top — add new ones above this line
-  ...(MYSTERIOUS_VOGUE_SERIES.length > 0     ? [MYSTERIOUS_VOGUE_SERIES[0]]     : []),
-  ...(QUIET_LUXURY_LONDON_SERIES.length > 0  ? [QUIET_LUXURY_LONDON_SERIES[0]]  : []),
-  ...(NOIR_FEMME_SERIES.length > 0           ? [NOIR_FEMME_SERIES[0]]           : []),
-  ...(CLEAN_GIRL_MORNING_SERIES.length > 0   ? [CLEAN_GIRL_MORNING_SERIES[0]]   : []),
+  ...(MYSTERIOUS_VOGUE_SERIES.length > 0 ? [MYSTERIOUS_VOGUE_SERIES[0]] : []),
+  ...(QUIET_LUXURY_LONDON_SERIES.length > 0 ? [QUIET_LUXURY_LONDON_SERIES[0]] : []),
+  ...(NOIR_FEMME_SERIES.length > 0 ? [NOIR_FEMME_SERIES[0]] : []),
+  ...(CLEAN_GIRL_MORNING_SERIES.length > 0 ? [CLEAN_GIRL_MORNING_SERIES[0]] : []),
   ...(DARK_FEMININE_CAFE_SERIES.length > 0 ? [DARK_FEMININE_CAFE_SERIES[0]] : []),
-  ...(DARK_BALCONY_SERIES.length > 0   ? [DARK_BALCONY_SERIES[0]]   : []),
-  ...(COASTAL_WHITE_SERIES.length > 0  ? [COASTAL_WHITE_SERIES[0]]  : []),
-  ...(COZY_LEATHER_SERIES.length > 0   ? [COZY_LEATHER_SERIES[0]]   : []),
-  ...(DENIM_STREET_SERIES.length > 0   ? [DENIM_STREET_SERIES[0]]   : []),
-  ...(MARBLE_CAFE_SERIES.length > 0    ? [MARBLE_CAFE_SERIES[0]]    : []),
+  ...(DARK_BALCONY_SERIES.length > 0 ? [DARK_BALCONY_SERIES[0]] : []),
+  ...(COASTAL_WHITE_SERIES.length > 0 ? [COASTAL_WHITE_SERIES[0]] : []),
+  ...(COZY_LEATHER_SERIES.length > 0 ? [COZY_LEATHER_SERIES[0]] : []),
+  ...(DENIM_STREET_SERIES.length > 0 ? [DENIM_STREET_SERIES[0]] : []),
+  ...(MARBLE_CAFE_SERIES.length > 0 ? [MARBLE_CAFE_SERIES[0]] : []),
 ]
 
 const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
@@ -2574,20 +2687,31 @@ const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
 ]
 
 export function getStaticVaultFreebieCollections(): VaultFreebieCollectionPreview[] {
-  return STATIC_VAULT_COLLECTION_SERIES.flatMap((series) => {
+  return STATIC_VAULT_COLLECTION_SERIES.flatMap(series => {
     const freeCard = series[0]
     if (!freeCard) return []
 
-    const meta = VAULT_COLLECTION_META.find((entry) => entry.previewCardId === freeCard.id)
+    const meta = VAULT_COLLECTION_META.find(entry => entry.previewCardId === freeCard.id)
 
-    return [{
-      freeCard,
-      name: meta?.name || freeCard.title,
-      shotCount: series.length || meta?.shotCount || 1,
-      lockedShots: series.slice(1).map((card) => ({
-        title: card.title,
-        exampleImage: card.exampleImage,
-      })),
-    }]
+    return [
+      {
+        freeCard,
+        name: meta?.name || freeCard.title,
+        shotCount: series.length || meta?.shotCount || 1,
+        lockedShots: series.slice(1).map(card => ({
+          title: card.title,
+          exampleImage: card.exampleImage,
+        })),
+      },
+    ]
   })
+}
+
+export function getCuratedStaticVaultFreebieCollections(): VaultFreebieCollectionPreview[] {
+  const allCollections = getStaticVaultFreebieCollections()
+  const byCardId = new Map(allCollections.map(collection => [collection.freeCard.id, collection]))
+
+  return FREEBIE_STATIC_STARTER_CARD_IDS.map(cardId => byCardId.get(cardId))
+    .filter((collection): collection is VaultFreebieCollectionPreview => Boolean(collection))
+    .slice(0, FREEBIE_STATIC_STARTER_LIMIT)
 }

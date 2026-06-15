@@ -6,6 +6,7 @@ import type {
   VaultCollectionMeta,
   VaultFreebieCollectionPreview,
 } from "@/lib/ai-prompts/prompt-data"
+import { selectRotatingPublishedFreebieCollections } from "@/lib/vault/freebie-curation"
 
 export type PublishedVaultCollection = {
   id: number
@@ -52,7 +53,7 @@ export function toDisplayName(name: string): string {
 export function extractMoodLine(cards: PromptCard[]): string {
   const firstMood = cards[0]?.mood
     ?.split("·")
-    .map((part) => part.trim())
+    .map(part => part.trim())
     .filter(Boolean)
     .slice(0, 3)
     .join(". ")
@@ -162,7 +163,7 @@ export async function getPublishedVaultCollections(): Promise<PublishedVaultColl
     `) as any[]
 
     return rows
-      .map((row) => {
+      .map(row => {
         const cards = parseCards(row.cards)
         return {
           id: Number(row.id),
@@ -173,13 +174,16 @@ export async function getPublishedVaultCollections(): Promise<PublishedVaultColl
           moodLine: String(row.mood_line || extractMoodLine(cards)),
           sourceShootId: row.source_shoot_id === null ? null : Number(row.source_shoot_id),
           giveawayShotId: (row.giveaway_shot_id as string | null) ?? null,
-          emailDropStatus: (row.email_drop_status || "queued") as PublishedVaultCollection["emailDropStatus"],
-          emailDropIncludedAt: row.email_drop_included_at ? new Date(row.email_drop_included_at).toISOString() : null,
+          emailDropStatus: (row.email_drop_status ||
+            "queued") as PublishedVaultCollection["emailDropStatus"],
+          emailDropIncludedAt: row.email_drop_included_at
+            ? new Date(row.email_drop_included_at).toISOString()
+            : null,
           publishedAt: new Date(row.published_at).toISOString(),
           cards,
         }
       })
-      .filter((collection) => collection.cards.length > 0)
+      .filter(collection => collection.cards.length > 0)
   } catch (error) {
     console.error("[vault] published collection load failed:", error)
     return []
@@ -188,40 +192,34 @@ export async function getPublishedVaultCollections(): Promise<PublishedVaultColl
 
 export async function getPublishedVaultCollectionMeta(): Promise<VaultCollectionMeta[]> {
   const collections = await getPublishedVaultCollections()
-  return collections.map((collection) => ({
+  return collections.map(collection => ({
     previewCardId: collection.cards[0].id,
     name: collection.title,
     shotCount: collection.cards.length,
-    thumbnails: collection.cards.map((card) => card.exampleImage).filter((url): url is string => !!url),
+    thumbnails: collection.cards
+      .map(card => card.exampleImage)
+      .filter((url): url is string => !!url),
   }))
 }
 
 export async function getPublishedFreebiePreviews(): Promise<PromptCard[]> {
   const collections = await getPublishedVaultCollections()
-  return collections.map((collection) => collection.cards[0]).filter(Boolean)
+  return collections.map(collection => collection.cards[0]).filter(Boolean)
 }
 
-export async function getPublishedFreebieCollectionPreviews(): Promise<VaultFreebieCollectionPreview[]> {
+export async function getPublishedFreebieCollectionPreviews(
+  options: { limit?: number } = {}
+): Promise<VaultFreebieCollectionPreview[]> {
   const collections = await getPublishedVaultCollections()
-  return collections
-    .filter((collection) => collection.cards.length > 0)
-    .map((collection) => ({
-      freeCard: collection.cards[0],
-      name: collection.title,
-      shotCount: collection.cards.length,
-      lockedShots: collection.cards.slice(1).map((card) => ({
-        title: card.title,
-        exampleImage: card.exampleImage,
-      })),
-    }))
+  return selectRotatingPublishedFreebieCollections(collections, options)
 }
 
 export async function getPublishedVaultDropCollections(options: { queuedOnly?: boolean } = {}) {
   const queuedOnly = options.queuedOnly ?? true
   const collections = await getPublishedVaultCollections()
   return collections
-    .filter((collection) => !queuedOnly || collection.emailDropStatus === "queued")
-    .map((collection) => ({
+    .filter(collection => !queuedOnly || collection.emailDropStatus === "queued")
+    .map(collection => ({
       id: collection.slug,
       name: collection.title,
       heroImage: collection.heroImage || collection.cards[0]?.exampleImage || "",
