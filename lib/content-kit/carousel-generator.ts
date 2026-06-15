@@ -88,6 +88,10 @@ function isAllowedImageUrl(value: string): boolean {
   }
 }
 
+function isReelReferenceUrl(value?: string): boolean {
+  return Boolean(value?.includes("/content-kit/reel-references/"))
+}
+
 async function resolveShootImages(
   sourceShootId?: number,
   minApprovedImages = 2
@@ -402,19 +406,20 @@ export async function generateTutorialSceneImages({
   topic,
   slides,
   world,
-  coverReferenceUrls,
 }: {
   topic: string
   slides: CarouselSlide[]
   world: ReturnType<typeof resolveTutorialWorld>
-  coverReferenceUrls: string[]
 }): Promise<{ coverUrl?: string; resultUrl?: string }> {
   const selfieUrls = (await listAdminSelfies()).filter(isAllowedImageUrl).slice(0, 4)
   if (selfieUrls.length === 0) return {}
 
-  // HARD INVARIANT: only non-screenshot cover/reference images can be style inputs for
-  // gpt-image-2. Real settings screenshots stay in overlayAssets and are never passed here.
-  const styleReferences = coverReferenceUrls.filter(isAllowedImageUrl).slice(0, 1)
+  // HARD INVARIANT: new-world generation uses Sandra's clean selfies + the world prompt only.
+  // No content_reel_references URL may enter gpt-image-2; those frames stay screenshot-safe in
+  // overlayAssets/before images so old baked text or settings UI cannot be redrawn.
+  if (selfieUrls.some(isReelReferenceUrl)) {
+    throw new Error("Refusing to generate from reel-reference URLs")
+  }
   const coverSlide = slides.find(slide => slide.kind === "hook") ?? slides[0]
   const resultSlide = slides.find(slide => slide.kind === "before-after" || slide.kind === "photo")
   const coverHeadline = shortBakedHeadline(coverSlide?.title)
@@ -422,7 +427,7 @@ export async function generateTutorialSceneImages({
   const [cover, result] = await Promise.allSettled([
     generateShotImage({
       selfieUrls,
-      inspirationUrls: styleReferences,
+      inspirationUrls: [],
       prompt: buildTutorialScenePrompt({
         role: "cover",
         headline: coverHeadline,
@@ -434,7 +439,7 @@ export async function generateTutorialSceneImages({
     }),
     generateShotImage({
       selfieUrls,
-      inspirationUrls: styleReferences,
+      inspirationUrls: [],
       prompt: buildTutorialScenePrompt({
         role: "result",
         headline: resultHeadline,
@@ -695,7 +700,6 @@ Return ONLY a JSON array with one object:
     topic,
     slides: shapedSlides,
     world,
-    coverReferenceUrls: coverRefs,
   }).catch(error => {
     console.error("[content-kit] tutorial new-world generation skipped:", error)
     return {}

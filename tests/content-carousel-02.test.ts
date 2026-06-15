@@ -141,7 +141,8 @@ describe("CONTENT-CAROUSEL-02 new-world tutorial generation", () => {
     expect(generateInputs.flatMap(input => input.inspirationUrls)).not.toContain(
       mocks.screenshotUrl
     )
-    expect(generateInputs[0].inspirationUrls).toContain(mocks.coverUrl)
+    expect(generateInputs.flatMap(input => input.inspirationUrls)).not.toContain(mocks.coverUrl)
+    expect(generateInputs.every(input => input.inspirationUrls.length === 0)).toBe(true)
 
     const cover = deck.slides.find(slide => slide.kind === "hook")
     const beforeAfter = deck.slides.find(slide => slide.kind === "before-after")
