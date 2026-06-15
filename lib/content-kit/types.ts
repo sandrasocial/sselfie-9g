@@ -46,6 +46,8 @@ export type CarouselSlide = {
   /** Full-bleed background image (Vercel Blob URL). When set, the slide renders
    * photo-first with a bottom scrim and white text — the niche-viral format. */
   imageUrl?: string
+  /** Tutorial scene slides can ask gpt-image-2 to bake short text into the generated image. */
+  headlineRender?: "baked" | "composited"
   /** 2x2 grid images for kind "grid" (the prompts.ig signature: same person,
    * four worlds). Title overlays the grid when present. */
   gridUrls?: string[]

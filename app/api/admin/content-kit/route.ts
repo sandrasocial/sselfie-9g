@@ -62,6 +62,11 @@ export async function POST(request: NextRequest) {
       overlayUrls,
       reelReferenceIds,
       keyword,
+      world: typeof body.world === "string" && body.world.trim() ? body.world.trim() : undefined,
+      customWorld:
+        typeof body.customWorld === "string" && body.customWorld.trim()
+          ? body.customWorld.trim()
+          : undefined,
       sourceShootId: Number.isFinite(Number(body.sourceShootId))
         ? Number(body.sourceShootId)
         : undefined,

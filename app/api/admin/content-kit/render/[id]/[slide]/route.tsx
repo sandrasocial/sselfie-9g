@@ -113,6 +113,10 @@ function SlideAccents({
   )
 }
 
+function isScreenshotReferenceUrl(value?: string): boolean {
+  return Boolean(value && value.includes("/content-kit/reel-references/"))
+}
+
 function Frame({
   dark,
   eyebrow,
@@ -434,7 +438,7 @@ function PhotoFrame({
   const isHook = slide.kind === "hook"
   const isCta = slide.kind === "cta"
   const isPlainPhoto = slide.kind === "photo"
-  const hasText = !isPlainPhoto && Boolean(slide.title)
+  const hasText = slide.headlineRender !== "baked" && !isPlainPhoto && Boolean(slide.title)
 
   return (
     <div
@@ -662,6 +666,7 @@ function BeforeAfterFrame({
 }) {
   const beforeUrl = slide.imageUrl
   const afterUrl = slide.overlayAssets?.[0]?.url || slide.gridUrls?.[0] || slide.imageUrl
+  const beforeFit = isScreenshotReferenceUrl(beforeUrl) ? "contain" : "cover"
   const imageTop = 350
   const imageH = 690
   const gap = 28
@@ -731,7 +736,7 @@ function BeforeAfterFrame({
       >
         {beforeUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={beforeUrl} width={imageW} height={imageH} style={{ objectFit: "cover" }} />
+          <img src={beforeUrl} width={imageW} height={imageH} style={{ objectFit: beforeFit }} />
         ) : null}
         <div
           style={{

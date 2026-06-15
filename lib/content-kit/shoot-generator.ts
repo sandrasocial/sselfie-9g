@@ -184,7 +184,7 @@ function toPromptShot({ imageUrl: _imageUrl, status: _status, ...rest }: ShootSh
 
 type ImgQuality = "low" | "medium" | "high"
 
-async function generateShotImage(input: {
+export async function generateShotImage(input: {
   selfieUrls: string[]
   inspirationUrls: string[]
   prompt: string

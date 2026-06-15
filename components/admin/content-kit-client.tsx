@@ -13,6 +13,15 @@ type ShootOption = {
 
 type UploadedAsset = { url: string; label: string }
 
+const TUTORIAL_WORLD_OPTIONS = [
+  { value: "hotel-mirror", label: "Hotel mirror" },
+  { value: "cafe", label: "Cafe" },
+  { value: "marble-bathroom", label: "Marble bathroom" },
+  { value: "at-home-mirror", label: "At-home mirror" },
+  { value: "window-light", label: "Window light" },
+  { value: "street-style", label: "Street style" },
+] as const
+
 function CopyChip({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
   return (
@@ -159,6 +168,8 @@ export function ContentKitClient({
 }) {
   const [decks, setDecks] = useState<CarouselDeck[]>(initialCarousels)
   const [mode, setMode] = useState<"standard" | "tutorial">("standard")
+  const [world, setWorld] = useState<(typeof TUTORIAL_WORLD_OPTIONS)[number]["value"]>("cafe")
+  const [customWorld, setCustomWorld] = useState("")
   const [topic, setTopic] = useState("")
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
@@ -211,6 +222,8 @@ export function ContentKitClient({
           sourceShootId: selectedShootId,
           imageUrls: backgrounds.map(asset => asset.url),
           overlayUrls: overlays.map(asset => asset.url),
+          world,
+          customWorld: customWorld.trim() || undefined,
         }),
       })
       const data = await response.json()
@@ -317,6 +330,30 @@ export function ContentKitClient({
           placeholder="Optional teaching angle, e.g. the prompt behind this Paris shoot"
           className="w-full max-w-md rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
+        {mode === "tutorial" && (
+          <>
+            <select
+              value={world}
+              onChange={event =>
+                setWorld(event.target.value as (typeof TUTORIAL_WORLD_OPTIONS)[number]["value"])
+              }
+              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 focus:border-stone-950 focus:outline-none"
+            >
+              {TUTORIAL_WORLD_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={customWorld}
+              onChange={event => setCustomWorld(event.target.value)}
+              placeholder="Optional custom world"
+              className="w-full max-w-xs rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
+            />
+          </>
+        )}
         <button
           type="button"
           onClick={generate}

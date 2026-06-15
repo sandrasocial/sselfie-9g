@@ -488,7 +488,7 @@ export async function POST(req: Request) {
           "---",
           "## ADMIN CONTENT TOOLS AVAILABLE",
           "When Sandra asks for a carousel, story sequence, content tool, or wants to reuse an approved shoot, use the admin content tools instead of only explaining.",
-          "When Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after teaching deck, or content based on strong reels, use create_admin_tutorial_carousel so the reel-reference library can be picked and rendered with burgundy callouts.",
+          "When Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after teaching deck, or content based on strong reels, use create_admin_tutorial_carousel so the reel-reference library can be picked and rendered with burgundy callouts. If the new world is unclear, propose hotel mirror, cafe, marble bathroom, at-home mirror, window light, or street style.",
           "When Sandra asks to approve, publish, add to the Vault, or send the drop email, use the admin publish and Vault drop handoff tools.",
           "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
           "Carousels and story sequences are drafts only. Publishing a shoot to the Vault is allowed only through the explicit publish tool. Email sends always stay behind the handoff card buttons.",
@@ -739,6 +739,25 @@ export async function POST(req: Request) {
           .enum(["KIT", "PROMPT", "PRESET", "SELFIE"])
           .optional()
           .describe("CTA keyword. Defaults to KIT."),
+        world: z
+          .enum([
+            "hotel-mirror",
+            "cafe",
+            "marble-bathroom",
+            "at-home-mirror",
+            "window-light",
+            "street-style",
+          ])
+          .optional()
+          .describe(
+            "New-world preset for generated cover/result scenes. Propose hotel mirror, cafe, marble bathroom, at-home mirror, window light, or street style when Sandra has not chosen."
+          ),
+        customWorld: z
+          .string()
+          .optional()
+          .describe(
+            "Sandra's custom world/location/outfit/lighting direction if she asks for one."
+          ),
       }),
       execute: async ({
         topic,
@@ -747,6 +766,8 @@ export async function POST(req: Request) {
         imageUrls,
         overlayUrls,
         keyword,
+        world,
+        customWorld,
       }) => {
         try {
           const { generateCarousels, listContentReelReferences } =
@@ -768,6 +789,8 @@ export async function POST(req: Request) {
             imageUrls: [...(imageUrls ?? []), ...referenceUrls],
             overlayUrls: [...(overlayUrls ?? []), ...sceneReferenceUrls],
             keyword,
+            world,
+            customWorld,
           })
           return {
             kind: "carousel" as const,
