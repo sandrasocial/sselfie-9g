@@ -2,9 +2,16 @@ import "server-only"
 
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
-import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import type { ContentOverlayAsset, StorySequence, StorySlide } from "@/lib/content-kit/types"
+import {
+  audienceBlock,
+  funnelBlock,
+  noFakeBlock,
+  proofBlock,
+  sanitizeGroundedText,
+  voiceBlock,
+} from "@/lib/content/grounding"
 
 // Condensed from Sandra's own Story Prompt Engineer spec:
 // docs/funnel/STORY_SLIDE_DOCTRINE_2026-06-12.md (that doc wins on conflict).
@@ -66,16 +73,20 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   const shoot = await getShoot(sourceShootId)
   if (!shoot) throw new Error("Shoot not found")
   const imageUrls = shoot.shots
-    .filter((shot) => shot.status === "approved" && shot.imageUrl)
-    .map((shot) => shot.imageUrl as string)
+    .filter(shot => shot.status === "approved" && shot.imageUrl)
+    .map(shot => shot.imageUrl as string)
   if (imageUrls.length < 2) {
     throw new Error("Approve at least 2 rendered shoot images before building a story sequence")
   }
   return { imageUrls, title: shoot.title, id: shoot.id }
 }
 
-function sanitizeSlides(slides: StorySlide[], imageUrls: string[], overlayUrls: string[]): StorySlide[] {
-  const clean = (value?: string) => value?.replace(/—/g, ":").trim()
+function sanitizeSlides(
+  slides: StorySlide[],
+  imageUrls: string[],
+  overlayUrls: string[]
+): StorySlide[] {
+  const clean = (value?: string) => (value ? sanitizeGroundedText(value).trim() : undefined)
   const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
     url,
     label: `Overlay ${index + 1}`,
@@ -85,17 +96,18 @@ function sanitizeSlides(slides: StorySlide[], imageUrls: string[], overlayUrls: 
     role: slide.role,
     note: clean(slide.note),
     lines: (slide.lines || [])
-      .map((line) => ({
+      .map(line => ({
         text: clean(line.text) || "",
         size: line.size === "keyword" || line.size === "support" ? line.size : ("lead" as const),
         emphasis: Boolean(line.emphasis),
       }))
-      .filter((line) => line.text.length > 0),
+      .filter(line => line.text.length > 0),
     // One photoshoot, rotated across slides. Identity preservation is structural:
     // the photo is the untouched background layer, never re-generated.
     imageUrl: imageUrls.length > 0 ? imageUrls[index % imageUrls.length] : undefined,
     overlayAssets:
-      overlays.length > 0 && (slide.role === "proof" || slide.role === "teaching" || slide.role === "bridge")
+      overlays.length > 0 &&
+      (slide.role === "proof" || slide.role === "teaching" || slide.role === "bridge")
         ? [overlays[index % overlays.length]]
         : undefined,
   }))
@@ -116,14 +128,28 @@ export async function generateStorySequence(input: {
   ].slice(0, 8)
   const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
 
-  const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI photoshoots from one selfie, personal branding for women).
+  const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
+
+${noFakeBlock()}
+
+${audienceBlock()}
+
+${proofBlock()}
+
+${funnelBlock()}
 
 ${STORY_DOCTRINE}
 
 TODAY'S STORY IDEA (from Sandra): ${topic}
 ${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this as story copy layered onto that same approved photoshoot, so it feels like the story version of the shoot, not a separate design.` : ""}
+
+NO-FAKE REMINDER FOR THE DESIRE/BRIDGE BEAT:
+Identity content must never imply she becomes someone else. The promise is "Look like yourself, at your best." Use story to create recognition and permission, then bridge to the keyword/capture mechanic.
+
+PROOF REMINDER:
+Stories support the funnel. Use them to warm desire, handle the fake fear, and point to the right keyword or Vault step when the sequence earns it.
 
 Write ONE story sequence (5-8 slides) following the doctrine arc. Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (CTA slide has 4).
 
@@ -174,7 +200,7 @@ export async function listStorySequences(limit = 20): Promise<StorySequence[]> {
     ORDER BY created_at DESC
     LIMIT ${limit}
   `) as StoryRow[]
-  return rows.map((row) => ({
+  return rows.map(row => ({
     id: row.id,
     title: row.title,
     topic: row.topic,

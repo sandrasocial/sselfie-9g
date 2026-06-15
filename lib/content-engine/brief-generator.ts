@@ -6,6 +6,13 @@ import {
   type InstagramPerformanceSnapshot,
 } from "@/lib/content-engine/instagram-performance"
 import { collectAudienceSignals, type AudienceSignals } from "@/lib/content-engine/audience-signals"
+import {
+  audienceBlock,
+  funnelBlock,
+  noFakeBlock,
+  proofBlock,
+  voiceBlock,
+} from "@/lib/content/grounding"
 
 const RESEARCH_MODEL = "claude-sonnet-4-5"
 const BRIEF_MODEL = "claude-sonnet-4-5"
@@ -58,23 +65,6 @@ export type ContentBrief = {
   researchNotes: string
 }
 
-export const SANDRA_VOICE_RULES = `
-VOICE (non-negotiable):
-- Sandra's voice: like texting a close friend. Warm, honest, short sentences. Contractions always.
-- NEVER use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential.
-- NEVER use em-dashes (—) anywhere. Use a period, a colon, or a middle dot instead.
-
-NO-FAKE DOCTRINE (locked, governs all copy):
-- Her audience's core fear is "people will think I'm fake." The promise is "look elevated without feeling fake."
-- AI = creative direction around the real her, never deception.
-- NEVER write copy implying viewers are fooled. Banned: "no one will know", "look rich", "fake photoshoot", "perfect face", "flawless skin".
-- ALWAYS frame as: AI-assisted, realistic, recognizable, tasteful, true-to-you, "keeps your face".
-- Signature line allowed: "AI should not erase you. It should frame you."
-
-PHOTOSHOOT PROMPTS:
-- ChatGPT-ready, following the Prompt Vault style: start with "Use my selfie as the identity reference." then describe an editorial scene (location, light, outfit, mood, camera feel). Keep the face recognizable. No face-altering instructions.
-`.trim()
-
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured")
@@ -83,18 +73,21 @@ function getAnthropicClient() {
 
 async function researchCurrentHooks(
   performance: InstagramPerformanceSnapshot | null,
-  signals: AudienceSignals,
+  signals: AudienceSignals
 ): Promise<string> {
   const client = getAnthropicClient()
 
   const ownWinners = (performance?.topPosts || [])
     .slice(0, 5)
-    .map((post) => `- [${post.format}] "${post.hookLine}" (${post.likes} likes, ${post.comments} comments)`)
+    .map(
+      post =>
+        `- [${post.format}] "${post.hookLine}" (${post.likes} likes, ${post.comments} comments)`
+    )
     .join("\n")
 
   const topPrompts = signals.promptDemand
     .slice(0, 5)
-    .map((p) => `- "${p.title}" copied ${p.copies}x`)
+    .map(p => `- "${p.title}" copied ${p.copies}x`)
     .join("\n")
 
   const response = await client.messages.create({
@@ -104,7 +97,7 @@ async function researchCurrentHooks(
     messages: [
       {
         role: "user",
-        content: `You research Instagram content strategy for @${performance?.username || "sandra.social"} (${performance?.followers ?? "100k+"} followers). Her niche: AI photoshoots from one selfie, personal branding for women entrepreneurs, "look elevated without feeling fake".
+        content: `You research Instagram content strategy for @${performance?.username || "sandra.social"} (${performance?.followers ?? "100k+"} followers). Her niche: AI-assisted brand imagery from one selfie, personal branding for women entrepreneurs, "Look like yourself, at your best."
 
 Her own recent winners (real data):
 ${ownWinners || "- (no data this run)"}
@@ -235,7 +228,13 @@ const BRIEF_SCHEMA = {
       required: ["theme", "frames"],
     },
   },
-  required: ["performanceRecap", "audienceDemand", "hookIntelligence", "contentPlan", "storySequence"],
+  required: [
+    "performanceRecap",
+    "audienceDemand",
+    "hookIntelligence",
+    "contentPlan",
+    "storySequence",
+  ],
 } as const
 
 export async function generateContentBrief(): Promise<ContentBrief> {
@@ -258,7 +257,7 @@ export async function generateContentBrief(): Promise<ContentBrief> {
       followers: performance?.followers ?? null,
       insightsLevel: performance?.insightsLevel || "basic",
     },
-    topPosts: (performance?.topPosts || []).map((post) => ({
+    topPosts: (performance?.topPosts || []).map(post => ({
       permalink: post.permalink,
       format: post.format,
       postedAt: post.postedAt,
@@ -279,18 +278,31 @@ export async function generateContentBrief(): Promise<ContentBrief> {
     max_tokens: 8000,
     system: `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
+
+${noFakeBlock()}
+
+${audienceBlock()}
+
+${proofBlock()}
+
+${funnelBlock()}
 
 CONTENT PLAN RULES:
 - Exactly 5 pieces, spread across the week (e.g. Mon/Tue/Thu/Fri/Sun).
 - At least 2 reels, at least 1 carousel.
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
+- Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM. Anchor at least 2 content pieces to a specific pain point found in the DMs.
+- Her own viral DNA and top posts win over the research memo when they conflict. Treat researchMemo as a tiebreaker only.
+- Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
+- Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
 - Captions are complete and ready to paste: hook line, body in short lines, one clear CTA. CTA options: comment keyword PROMPT, link in bio to the free prompts page, or the $27 Prompt Vault. Never more than one CTA per piece.
 - reelCoverText: 3-6 words, works as on-image text.
 - carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. For non-carousels return an empty array.
 - photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies).
 - hashtags: 8-12, mix of niche and reach, no banned or spammy tags.
-- storySequence: one sequence, 4-6 frames, at least one interaction (poll, question box, or link) per sequence, designed to lead into one of the 5 pieces.`,
+- storySequence: one sequence, 4-6 frames, at least one interaction (poll, question box, or link) per sequence, designed to lead into one of the 5 pieces.
+- No banned words and no m-dashes anywhere in the structured output.`,
     messages: [
       {
         role: "user",

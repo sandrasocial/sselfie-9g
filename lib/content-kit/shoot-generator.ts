@@ -4,10 +4,16 @@ import OpenAI, { toFile } from "openai"
 import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
-import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
 import { callContentKitLlm, callContentKitVision } from "@/lib/content-kit/llm"
 import type { Shoot, ShootMessage, ShootShot } from "@/lib/content-kit/types"
 import { ensureVaultCollectionsSchema } from "@/lib/vault/published-collections"
+import {
+  audienceBlock,
+  noFakeBlock,
+  proofBlock,
+  sanitizeGroundedText,
+  voiceBlock,
+} from "@/lib/content/grounding"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -52,7 +58,7 @@ function isAllowedUrl(value: string): boolean {
 }
 
 function stripEmDashes(text: string): string {
-  return text.replace(/—/g, ":")
+  return sanitizeGroundedText(text)
 }
 
 function toSlug(title: string): string {
@@ -127,7 +133,17 @@ function buildCreatePrompt(notes?: string): string {
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
+
+${noFakeBlock()}
+
+AUDIENCE CONTEXT FOR whenToUse ONLY:
+${audienceBlock()}
+
+PROOF CONTEXT FOR SHOT UTILITY ONLY:
+${proofBlock()}
+
+Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile/detail crops, seated hero, close-up, and cover-safe negative space. Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
 ${SHOOT_JSON_CONTRACT}`
 }
@@ -141,10 +157,13 @@ function extractJsonObject(text: string): any {
   return JSON.parse(candidate.slice(start, end + 1))
 }
 
-function sanitizeShots(raw: any[], limit = DEFAULT_SHOTS_PER_SHOOT): Omit<ShootShot, "id" | "status">[] {
+function sanitizeShots(
+  raw: any[],
+  limit = DEFAULT_SHOTS_PER_SHOOT
+): Omit<ShootShot, "id" | "status">[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned no shots")
   if (raw.length < limit) throw new Error(`LLM returned ${raw.length} shots, expected ${limit}`)
-  return raw.slice(0, limit).map((shot) => {
+  return raw.slice(0, limit).map(shot => {
     if (typeof shot?.prompt !== "string" || shot.prompt.trim().length < 200) {
       throw new Error("LLM returned an incomplete shot prompt")
     }
@@ -181,8 +200,10 @@ async function generateShotImage(input: {
   const urls = [...selfieUrls, ...styleUrls]
   const files = await Promise.all(
     urls.map(async (url, i) =>
-      toFile(await normalizeForOpenAI(await readImage(url)), `shoot-input-${i}.png`, { type: "image/png" }),
-    ),
+      toFile(await normalizeForOpenAI(await readImage(url)), `shoot-input-${i}.png`, {
+        type: "image/png",
+      })
+    )
   )
 
   const fullPrompt = `${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${input.prompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
@@ -201,10 +222,14 @@ async function generateShotImage(input: {
   const b64 = response.data?.[0]?.b64_json
   if (!b64) throw new Error("No image data returned from OpenAI")
 
-  const blob = await put(`content-kit/shoots/${Date.now()}-${Math.floor(Math.random() * 1e6)}.png`, Buffer.from(b64, "base64"), {
-    access: "public",
-    contentType: "image/png",
-  })
+  const blob = await put(
+    `content-kit/shoots/${Date.now()}-${Math.floor(Math.random() * 1e6)}.png`,
+    Buffer.from(b64, "base64"),
+    {
+      access: "public",
+      contentType: "image/png",
+    }
+  )
   return blob.url
 }
 
@@ -217,7 +242,9 @@ function mapRow(row: any): Shoot {
     slug: row.slug,
     status: row.status,
     publishedVaultSlug: row.published_vault_slug ?? null,
-    vaultPublishedAt: row.vault_published_at ? new Date(row.vault_published_at).toISOString() : null,
+    vaultPublishedAt: row.vault_published_at
+      ? new Date(row.vault_published_at).toISOString()
+      : null,
     emailDropStatus: row.email_drop_status ?? null,
     inspirationUrls: Array.isArray(row.inspiration_urls) ? row.inspiration_urls : [],
     selfieUrl: row.selfie_url,
@@ -303,12 +330,19 @@ export async function createShoot(input: {
   const selfieUrls = input.selfieUrls.filter(isAllowedUrl).slice(0, 4)
   if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
 
-  const raw = await callContentKitVision(buildCreatePrompt(input.notes?.trim() || undefined), inspirationUrls)
+  const raw = await callContentKitVision(
+    buildCreatePrompt(input.notes?.trim() || undefined),
+    inspirationUrls
+  )
   const parsed = extractJsonObject(raw)
   const title = stripEmDashes(String(parsed.title || "Untitled shoot")).trim()
   const drafts = sanitizeShots(parsed.shots)
 
-  const shots: ShootShot[] = drafts.map((shot, i) => ({ ...shot, id: `shot-${i + 1}`, status: "draft" }))
+  const shots: ShootShot[] = drafts.map((shot, i) => ({
+    ...shot,
+    id: `shot-${i + 1}`,
+    status: "draft",
+  }))
   const messages: ShootMessage[] = [
     ...(input.notes?.trim()
       ? [{ role: "sandra" as const, text: input.notes.trim(), at: new Date().toISOString() }]
@@ -332,17 +366,24 @@ export async function createShoot(input: {
 
   // Draft pass renders medium (~82s, ~$0.06/shot). Finals re-roll high per shot.
   const results = await Promise.allSettled(
-    shoot.shots.map((shot) =>
-      generateShotImage({ selfieUrls: shoot.selfieUrls, inspirationUrls, prompt: shot.prompt, quality: "medium" }),
-    ),
+    shoot.shots.map(shot =>
+      generateShotImage({
+        selfieUrls: shoot.selfieUrls,
+        inspirationUrls,
+        prompt: shot.prompt,
+        quality: "medium",
+      })
+    )
   )
   shoot.shots = shoot.shots.map((shot, i) => {
     const r = results[i]
     return r.status === "fulfilled" ? { ...shot, imageUrl: r.value } : shot
   })
-  const failures = results.filter((r) => r.status === "rejected").length
+  const failures = results.filter(r => r.status === "rejected").length
   if (failures > 0) {
-    console.error(`[shoot-studio] ${failures}/${results.length} shot generations failed for shoot ${shoot.id}`)
+    console.error(
+      `[shoot-studio] ${failures}/${results.length} shot generations failed for shoot ${shoot.id}`
+    )
     shoot.messages = [
       ...shoot.messages,
       {
@@ -379,13 +420,17 @@ Sandra says: "${ask}"
 
 ${buildVaultAnatomy(shoot.shots.length)}
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
 
-${REFINE_CONTRACT}`,
+${noFakeBlock()}
+
+${REFINE_CONTRACT}`
   )
   const parsed = extractJsonObject(raw)
   const updated = sanitizeShots(parsed.shots)
-  const reply = stripEmDashes(String(parsed.reply || "Done. Regenerating the changed shots now.")).trim()
+  const reply = stripEmDashes(
+    String(parsed.reply || "Done. Regenerating the changed shots now.")
+  ).trim()
 
   // Only re-render shots whose prompt actually changed; keep approvals on untouched shots.
   const nextShots: ShootShot[] = shoot.shots.map((existing, i) => {
@@ -402,19 +447,20 @@ ${REFINE_CONTRACT}`,
 
   const changedIdx = nextShots
     .map((shot, i) => (shot.imageUrl === undefined ? i : -1))
-    .filter((i) => i >= 0)
+    .filter(i => i >= 0)
   const results = await Promise.allSettled(
-    changedIdx.map((i) =>
+    changedIdx.map(i =>
       generateShotImage({
         selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: nextShots[i].prompt,
         quality: "medium",
-      }),
-    ),
+      })
+    )
   )
   results.forEach((r, j) => {
-    if (r.status === "fulfilled") nextShots[changedIdx[j]] = { ...nextShots[changedIdx[j]], imageUrl: r.value }
+    if (r.status === "fulfilled")
+      nextShots[changedIdx[j]] = { ...nextShots[changedIdx[j]], imageUrl: r.value }
   })
 
   const messages: ShootMessage[] = [
@@ -426,10 +472,14 @@ ${REFINE_CONTRACT}`,
   return { ...shoot, shots: nextShots, messages }
 }
 
-export async function regenerateShot(id: number, shotId: string, quality: ImgQuality = "medium"): Promise<Shoot> {
+export async function regenerateShot(
+  id: number,
+  shotId: string,
+  quality: ImgQuality = "medium"
+): Promise<Shoot> {
   const shoot = await getShoot(id)
   if (!shoot) throw new Error("Shoot not found")
-  const idx = shoot.shots.findIndex((shot) => shot.id === shotId)
+  const idx = shoot.shots.findIndex(shot => shot.id === shotId)
   if (idx === -1) throw new Error("Shot not found")
 
   const imageUrl = await generateShotImage({
@@ -438,7 +488,11 @@ export async function regenerateShot(id: number, shotId: string, quality: ImgQua
     prompt: shoot.shots[idx].prompt,
     quality,
   })
-  shoot.shots[idx] = { ...shoot.shots[idx], imageUrl, status: quality === "high" ? shoot.shots[idx].status : "draft" }
+  shoot.shots[idx] = {
+    ...shoot.shots[idx],
+    imageUrl,
+    status: quality === "high" ? shoot.shots[idx].status : "draft",
+  }
   await saveShots(shoot.id, shoot.shots)
   return shoot
 }
@@ -473,11 +527,13 @@ Keep the same collection world, outfit family, hair, makeup, location mood and c
 
 ${buildVaultAnatomy(nextTotal)}
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
+
+${noFakeBlock()}
 
 ${EXTEND_CONTRACT}
 
-Exactly ${safeCount} new shots.`,
+Exactly ${safeCount} new shots.`
   )
   const parsed = extractJsonObject(raw)
   const drafts = sanitizeShots(parsed.shots, safeCount)
@@ -489,20 +545,22 @@ Exactly ${safeCount} new shots.`,
   }))
 
   const results = await Promise.allSettled(
-    newShots.map((shot) =>
+    newShots.map(shot =>
       generateShotImage({
         selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: shot.prompt,
         quality: "medium",
-      }),
-    ),
+      })
+    )
   )
   const rendered = newShots.map((shot, i) => {
     const r = results[i]
     return r.status === "fulfilled" ? { ...shot, imageUrl: r.value } : shot
   })
-  const reply = stripEmDashes(String(parsed.reply || `Added ${safeCount} more shots to the same world.`)).trim()
+  const reply = stripEmDashes(
+    String(parsed.reply || `Added ${safeCount} more shots to the same world.`)
+  ).trim()
   const messages: ShootMessage[] = [
     ...shoot.messages,
     {
@@ -516,10 +574,14 @@ Exactly ${safeCount} new shots.`,
   return { ...shoot, shots: nextShots, messages }
 }
 
-export async function setShotStatus(id: number, shotId: string, status: ShootShot["status"]): Promise<void> {
+export async function setShotStatus(
+  id: number,
+  shotId: string,
+  status: ShootShot["status"]
+): Promise<void> {
   const shoot = await getShoot(id)
   if (!shoot) throw new Error("Shoot not found")
-  const shots = shoot.shots.map((shot) => (shot.id === shotId ? { ...shot, status } : shot))
+  const shots = shoot.shots.map(shot => (shot.id === shotId ? { ...shot, status } : shot))
   await saveShots(id, shots)
 }
 

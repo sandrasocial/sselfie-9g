@@ -3,9 +3,18 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
-import { SANDRA_VOICE_RULES } from "@/lib/content-engine/brief-generator"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import type { CarouselDeck, CarouselSlide, ContentOverlayAsset } from "@/lib/content-kit/types"
+import {
+  audienceBlock,
+  funnelBlock,
+  noFakeBlock,
+  proofBlock,
+  sanitizeGroundedText,
+  voiceBlock,
+} from "@/lib/content/grounding"
+import { getCarouselDesignGuide } from "@/lib/app-v3/maya/carousel-design-systems"
+import { getOverlayStyleGuide } from "@/lib/app-v3/maya/overlay-styles"
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
@@ -49,8 +58,8 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   const shoot = await getShoot(sourceShootId)
   if (!shoot) throw new Error("Shoot not found")
   const images = shoot.shots
-    .filter((shot) => shot.status === "approved" && shot.imageUrl)
-    .map((shot) => shot.imageUrl as string)
+    .filter(shot => shot.status === "approved" && shot.imageUrl)
+    .map(shot => shot.imageUrl as string)
   if (images.length < 2) {
     throw new Error("Approve at least 2 rendered shoot images before building a carousel")
   }
@@ -60,7 +69,7 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
 function applyShootImages(
   slides: CarouselSlide[],
   imageUrls: string[],
-  overlayUrls: string[],
+  overlayUrls: string[]
 ): CarouselSlide[] {
   if (imageUrls.length === 0) return slides
   const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
@@ -91,14 +100,14 @@ type RawCarousel = {
 
 function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
   // Hard guard: no em-dashes ever reach a rendered slide.
-  const clean = (value?: string) => value?.replace(/—/g, ":").trim()
-  return slides.map((slide) => ({
+  const clean = (value?: string) => (value ? sanitizeGroundedText(value).trim() : undefined)
+  return slides.map(slide => ({
     ...slide,
     eyebrow: clean(slide.eyebrow),
     title: clean(slide.title) || "",
     body: clean(slide.body),
     footer: clean(slide.footer),
-    items: slide.items?.map((item) => clean(item) || "").filter(Boolean),
+    items: slide.items?.map(item => clean(item) || "").filter(Boolean),
   }))
 }
 
@@ -123,14 +132,20 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
     FROM ig_media_snapshots
     WHERE hook_line IS NOT NULL
     ORDER BY media_id, captured_on DESC
-  `) as Array<{ hook_line: string; format: string; views: number | null; saves: number | null; shares: number | null }>
+  `) as Array<{
+    hook_line: string
+    format: string
+    views: number | null
+    saves: number | null
+    shares: number | null
+  }>
   const winners = topPosts
-    .filter((post) => (post.views ?? 0) > 0)
+    .filter(post => (post.views ?? 0) > 0)
     .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
     .slice(0, 8)
     .map(
-      (post) =>
-        `- [${post.format}] "${post.hook_line}" · ${post.views?.toLocaleString()} views · ${post.saves ?? 0} saves · ${post.shares ?? 0} shares`,
+      post =>
+        `- [${post.format}] "${post.hook_line}" · ${post.views?.toLocaleString()} views · ${post.saves ?? 0} saves · ${post.shares ?? 0} shares`
     )
     .join("\n")
 
@@ -139,14 +154,26 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
         .filter((piece: any) => piece.format === "carousel")
         .map(
           (piece: any) =>
-            `- "${piece.title}" · hook: "${piece.hook}" · outline: ${(piece.carouselOutline || []).join(" / ")}`,
+            `- "${piece.title}" · hook: "${piece.hook}" · outline: ${(piece.carouselOutline || []).join(" / ")}`
         )
         .join("\n")
     : ""
 
-  const prompt = `You are Sandra's carousel writer for @sandra.social (Instagram, AI photoshoots from one selfie, personal branding for women entrepreneurs).
+  const prompt = `You are Sandra's carousel writer for @sandra.social (Instagram, AI-assisted brand imagery from one selfie, personal branding for women building from their phone).
 
-${SANDRA_VOICE_RULES}
+${voiceBlock()}
+
+${noFakeBlock()}
+
+${audienceBlock()}
+
+${proofBlock()}
+
+${funnelBlock()}
+
+${getCarouselDesignGuide()}
+
+${getOverlayStyleGuide()}
 
 ${SLIDE_RULES}
 
@@ -159,6 +186,13 @@ ${input.topic ? `\nREQUESTED TOPIC (priority): ${input.topic}` : ""}
 ${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this carousel as an extension of that exact shoot. The approved shoot photos will be the backgrounds on the rendered slides, so keep the copy short enough to sit on photos and make it feel like one finished shoot-based content piece.` : ""}
 
 Write ${count} complete carousel deck(s). Teach something stealable: her audience saves carousels that give them numbered, concrete steps they can use today (selfie angles, ChatGPT photo prompts, posing, editing prompts like color grading / lens looks / outfit changes).
+
+Every carousel must:
+- Speak to one of the real pain points in the audience block.
+- Use the reach-vs-desire truth: teach the selfie/AI skill, then connect it to the income, identity, relief, or visibility she wants.
+- Use the proof block's save-bait structure: numbered steps, clear cover text, one keyword/save CTA, no known-flop formats.
+- Use Sandra's no-fake doctrine. Promise "Look like yourself, at your best." Never imply trickery.
+- Choose one of the carousel design systems and one overlay style direction. The renderer uses composited text layers, so write concise slide copy that sits beautifully on approved shoot images.
 
 Return ONLY a JSON array, no commentary:
 [
@@ -178,14 +212,18 @@ Return ONLY a JSON array, no commentary:
 
   const text = await callContentKitLlm(prompt)
   const raw = extractJsonArray(text) as RawCarousel[]
-  if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned an empty carousel array")
+  if (!Array.isArray(raw) || raw.length === 0)
+    throw new Error("LLM returned an empty carousel array")
 
   const decks: CarouselDeck[] = []
   for (const carousel of raw.slice(0, count)) {
     if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) continue
     const slides = applyShootImages(sanitizeSlides(carousel.slides), imageUrls, overlayUrls)
-    const slug = (carousel.slug || carousel.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)
-    const caption = (carousel.caption || "").replace(/—/g, ":")
+    const slug = (carousel.slug || carousel.title)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, 60)
+    const caption = sanitizeGroundedText(carousel.caption || "")
     await sql`
       ALTER TABLE content_carousels
       ADD COLUMN IF NOT EXISTS source_shoot_id integer,
@@ -226,7 +264,7 @@ export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {
     ORDER BY created_at DESC
     LIMIT ${limit}
   `) as Array<any>
-  return rows.map((row) => ({
+  return rows.map(row => ({
     id: row.id,
     title: row.title,
     slug: row.slug,
