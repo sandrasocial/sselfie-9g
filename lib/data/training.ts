@@ -66,6 +66,24 @@ export async function getLatestTrainedModel(userId: string, includeTest: boolean
   return models[0] as TrainedModel
 }
 
+/**
+ * Light gate for the App v3 "use my trained model" entry point.
+ * True only when the user has a COMPLETED, non-test trained model with usable
+ * Replicate weights (so the legacy /studio?legacy=1 path can actually generate).
+ * One indexed lookup by user_id — never returns the row.
+ */
+export async function hasCompletedTrainedModel(userId: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1 FROM user_models
+    WHERE user_id = ${userId}
+      AND training_status = 'completed'
+      AND replicate_version_id IS NOT NULL
+      AND (is_test = false OR is_test IS NULL)
+    LIMIT 1
+  `
+  return rows.length > 0
+}
+
 export async function getOrCreateTrainingModel(
   userId: string,
   modelName: string,

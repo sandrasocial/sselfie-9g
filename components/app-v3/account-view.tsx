@@ -43,11 +43,14 @@ export function AccountView({
   firstName,
   onOpenLibrary,
   trialDaysLeft,
+  hasTrainedModel = false,
 }: {
   firstName?: string | null
   onOpenLibrary?: () => void
   /** Set while on a SUITE trial (BRIDGE-01 Phase D) — shows the trial badge. */
   trialDaysLeft?: number | null
+  /** True when the member has a completed, non-test trained model. Gates the legacy entry. */
+  hasTrainedModel?: boolean
 }) {
   const [data, setData] = useState<AccountData | null>(null)
   const [selfies, setSelfies] = useState<string[] | null>(null)
@@ -280,6 +283,25 @@ export function AccountView({
           />
         </div>
 
+        {/* Trained model — quiet, discoverable entry back to the classic Studio. Only
+            for members with a completed, non-test trained model (gated server-side). */}
+        {hasTrainedModel && (
+          <div className={card}>
+            <p className={cardTitle}>Your trained model</p>
+            <p className="mt-2 font-serif text-[22px] font-light text-[#0D0E10]">
+              Use my trained model
+            </p>
+            <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
+              Your original Classic Studio from before the upgrade. Still here whenever you want it.
+            </p>
+            <div className="mt-4">
+              <a href="/studio?legacy=1" className={primaryBtn}>
+                Use my trained model
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Support */}
         <div className={card}>
           <p className={cardTitle}>Support</p>
@@ -293,11 +315,8 @@ export function AccountView({
           </div>
         </div>
 
-        {/* Quiet legacy access + logout */}
-        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-3">
-          <a href="/studio?legacy=1" className={quietBtn}>
-            Open the classic Studio (trained models, old galleries)
-          </a>
+        {/* Logout (legacy Studio entry now lives in the gated "Your trained model" card above). */}
+        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
           <button type="button" onClick={handleLogout} disabled={loggingOut} className={quietBtn}>
             {loggingOut ? "Logging out…" : "Log out"}
           </button>

@@ -51,6 +51,10 @@ export default async function StudioV3Page({
   // Rollback is one env flip (APP_V3_MEMBERS_ENABLED=false returns members to /studio).
   let accessLevel: "full" | "trial" | "limited" = "full"
   let trialDaysLeft: number | null = null
+  // Whether this member has a completed, non-test trained LoRA model. When true, App v3
+  // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
+  // members never see it. Admins resolve this separately below.
+  let hasTrainedModel = false
   if (!isAdminEmail(user.email)) {
     let resolved: "full" | "trial" | "limited" | "none" = "none"
     if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
@@ -65,6 +69,13 @@ export default async function StudioV3Page({
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft
           } else if (access.level === "limited") resolved = "limited"
+
+          try {
+            const { hasCompletedTrainedModel } = await import("@/lib/data/training")
+            hasTrainedModel = await hasCompletedTrainedModel(String(neonUserId))
+          } catch (modelErr) {
+            console.error("[/app gate] trained-model check failed:", modelErr)
+          }
         }
       } catch (e) {
         console.error("[/app gate] access check failed, falling back to /studio:", e)
@@ -72,6 +83,18 @@ export default async function StudioV3Page({
     }
     if (resolved === "none") redirect("/studio")
     accessLevel = resolved
+  } else {
+    // Admin: still surface the legacy entry if a real trained model exists.
+    try {
+      const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
+      const neonUserId = await getUserIdFromSupabase(user.id)
+      if (neonUserId) {
+        const { hasCompletedTrainedModel } = await import("@/lib/data/training")
+        hasTrainedModel = await hasCompletedTrainedModel(String(neonUserId))
+      }
+    } catch (e) {
+      console.error("[/app gate] admin trained-model check failed:", e)
+    }
   }
 
   const firstName =
@@ -85,6 +108,7 @@ export default async function StudioV3Page({
       accessLevel={accessLevel}
       trialDaysLeft={trialDaysLeft}
       initialSection={initialSection}
+      hasTrainedModel={hasTrainedModel}
     />
   )
 }

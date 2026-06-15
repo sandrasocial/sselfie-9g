@@ -27,6 +27,8 @@ export interface AppV3ShellProps {
   accessLevel?: "full" | "trial" | "limited"
   trialDaysLeft?: number | null
   initialSection?: AppV3Section
+  /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
+  hasTrainedModel?: boolean
 }
 
 const NAV: { id: AppV3Section; label: string }[] = [
@@ -61,6 +63,7 @@ function ShellInner({
   accessLevel = "full",
   trialDaysLeft,
   initialSection = "create",
+  hasTrainedModel = false,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(() =>
     initialSection === "create" ? readStoredAppSection(initialSection) : initialSection
@@ -167,6 +170,7 @@ function ShellInner({
           firstName={firstName}
           onOpenLibrary={() => goToSection("library")}
           trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
+          hasTrainedModel={hasTrainedModel}
         />
       )}
 
@@ -201,6 +205,7 @@ export function AppV3Shell({
   accessLevel,
   trialDaysLeft,
   initialSection,
+  hasTrainedModel,
 }: AppV3ShellProps) {
   return (
     <ConciergeProvider>
@@ -209,6 +214,7 @@ export function AppV3Shell({
         accessLevel={accessLevel}
         trialDaysLeft={trialDaysLeft}
         initialSection={initialSection}
+        hasTrainedModel={hasTrainedModel}
       />
     </ConciergeProvider>
   )
