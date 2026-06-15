@@ -17,7 +17,9 @@ async function requireAdmin(request?: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   if (cronSecret && bearer === `Bearer ${cronSecret}`) return true
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   return user?.email === ADMIN_EMAIL
 }
 
@@ -41,20 +43,35 @@ export async function POST(request: NextRequest) {
     const overlayUrls = Array.isArray(body.overlayUrls)
       ? body.overlayUrls.filter((url: unknown): url is string => typeof url === "string")
       : []
-    const hasVisualSource = Boolean(body.sourceShootId) || imageUrls.length > 0
+    const mode = body.mode === "tutorial" ? "tutorial" : "standard"
+    const reelReferenceIds = Array.isArray(body.reelReferenceIds)
+      ? body.reelReferenceIds
+          .map((id: unknown) => Number(id))
+          .filter((id: number) => Number.isFinite(id))
+      : undefined
+    const keyword = ["KIT", "PROMPT", "PRESET", "SELFIE"].includes(String(body.keyword))
+      ? (String(body.keyword) as "KIT" | "PROMPT" | "PRESET" | "SELFIE")
+      : undefined
+    const hasVisualSource =
+      mode === "tutorial" || Boolean(body.sourceShootId) || imageUrls.length > 0
     const carousels = await generateCarousels({
       count: typeof body.count === "number" ? body.count : hasVisualSource ? 1 : 2,
+      mode,
       topic: typeof body.topic === "string" && body.topic.trim() ? body.topic.trim() : undefined,
       imageUrls,
       overlayUrls,
-      sourceShootId: Number.isFinite(Number(body.sourceShootId)) ? Number(body.sourceShootId) : undefined,
+      reelReferenceIds,
+      keyword,
+      sourceShootId: Number.isFinite(Number(body.sourceShootId))
+        ? Number(body.sourceShootId)
+        : undefined,
     })
     return NextResponse.json({ success: true, carousels })
   } catch (error: any) {
     console.error("[content-kit] generation failed:", error)
     return NextResponse.json(
       { success: false, error: error?.message || "Generation failed" },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -67,7 +84,10 @@ export async function PATCH(request: NextRequest) {
   const id = Number(body.id)
   const status = body.status
   if (!id || !["draft", "approved", "posted"].includes(status)) {
-    return NextResponse.json({ error: "id and status (draft|approved|posted) required" }, { status: 400 })
+    return NextResponse.json(
+      { error: "id and status (draft|approved|posted) required" },
+      { status: 400 }
+    )
   }
   await setCarouselStatus(id, status)
   return NextResponse.json({ success: true })

@@ -95,7 +95,9 @@ function DeckCard({
             ))}
           </div>
           <div className="mt-1 flex items-center justify-between">
-            <p className="text-xs text-stone-400">Click a slide to download it as PNG (1080x1350).</p>
+            <p className="text-xs text-stone-400">
+              Click a slide to download it as PNG (1080x1350).
+            </p>
             <a
               href={`/api/admin/content-kit/render/${deck.id}/0?format=cover`}
               download={`${deck.slug}-cover.png`}
@@ -156,15 +158,18 @@ export function ContentKitClient({
   shoots?: ShootOption[]
 }) {
   const [decks, setDecks] = useState<CarouselDeck[]>(initialCarousels)
+  const [mode, setMode] = useState<"standard" | "tutorial">("standard")
   const [topic, setTopic] = useState("")
-  const [selectedShootId, setSelectedShootId] = useState<number | null>(shoots.find((shoot) => shoot.shots.length >= 2)?.id ?? null)
+  const [selectedShootId, setSelectedShootId] = useState<number | null>(
+    shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
+  )
   const [backgrounds, setBackgrounds] = useState<UploadedAsset[]>([])
   const [overlays, setOverlays] = useState<UploadedAsset[]>([])
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const selectedShoot = shoots.find((shoot) => shoot.id === selectedShootId) ?? null
+  const selectedShoot = shoots.find(shoot => shoot.id === selectedShootId) ?? null
 
   async function upload(kind: "background" | "overlay", files: FileList | null) {
     if (!files?.length) return
@@ -173,12 +178,15 @@ export function ContentKitClient({
     try {
       const form = new FormData()
       form.append("kind", kind)
-      Array.from(files).forEach((file) => form.append("files", file))
-      const response = await fetch("/api/admin/content-kit/assets/upload", { method: "POST", body: form })
+      Array.from(files).forEach(file => form.append("files", file))
+      const response = await fetch("/api/admin/content-kit/assets/upload", {
+        method: "POST",
+        body: form,
+      })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      if (kind === "background") setBackgrounds((current) => [...current, ...data.assets])
-      else setOverlays((current) => [...current, ...data.assets])
+      if (kind === "background") setBackgrounds(current => [...current, ...data.assets])
+      else setOverlays(current => [...current, ...data.assets])
     } catch (err: any) {
       setError(err?.message || "Upload failed")
     } finally {
@@ -187,7 +195,7 @@ export function ContentKitClient({
   }
 
   async function generate() {
-    if (!selectedShootId && backgrounds.length < 2) {
+    if (mode === "standard" && !selectedShootId && backgrounds.length < 2) {
       setError("Pick an approved shoot, or upload at least 2 background images.")
       return
     }
@@ -198,10 +206,11 @@ export function ContentKitClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode,
           topic: topic.trim() || undefined,
           sourceShootId: selectedShootId,
-          imageUrls: backgrounds.map((asset) => asset.url),
-          overlayUrls: overlays.map((asset) => asset.url),
+          imageUrls: backgrounds.map(asset => asset.url),
+          overlayUrls: overlays.map(asset => asset.url),
         }),
       })
       const data = await response.json()
@@ -216,7 +225,7 @@ export function ContentKitClient({
   }
 
   async function updateStatus(id: number, status: CarouselDeck["status"]) {
-    setDecks((current) => current.map((deck) => (deck.id === id ? { ...deck, status } : deck)))
+    setDecks(current => current.map(deck => (deck.id === id ? { ...deck, status } : deck)))
     await fetch("/api/admin/content-kit", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -228,12 +237,30 @@ export function ContentKitClient({
     <section className="mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">Carousel kit</h2>
+          <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">
+            Carousel kit
+          </h2>
           <p className="mt-1 text-sm text-stone-600">
             Pick an approved shoot first. The carousel uses those photos as backgrounds, then layers
-            short teaching copy and any screenshots you upload on top.
+            short teaching copy and any screenshots you upload on top. Tutorial mode can also pull
+            Sandra&apos;s reel-reference library.
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 inline-flex rounded-full border border-stone-300 bg-white p-1">
+        {(["standard", "tutorial"] as const).map(option => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setMode(option)}
+            className={`rounded-full px-4 py-1.5 text-xs uppercase tracking-wide transition ${
+              mode === option ? "bg-stone-950 text-white" : "text-stone-600 hover:text-stone-950"
+            }`}
+          >
+            {option === "standard" ? "Shoot carousel" : "Tutorial carousel"}
+          </button>
+        ))}
       </div>
 
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
@@ -243,28 +270,41 @@ export function ContentKitClient({
         <select
           id="carousel-shoot"
           value={selectedShootId ?? ""}
-          onChange={(event) => setSelectedShootId(event.target.value ? Number(event.target.value) : null)}
+          onChange={event =>
+            setSelectedShootId(event.target.value ? Number(event.target.value) : null)
+          }
           className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-950 focus:outline-none"
         >
           <option value="">No approved shoot selected</option>
-          {shoots.map((shoot) => (
+          {shoots.map(shoot => (
             <option key={shoot.id} value={shoot.id} disabled={shoot.shots.length < 2}>
-              {shoot.title} · {shoot.shots.length} approved image{shoot.shots.length === 1 ? "" : "s"}
+              {shoot.title} · {shoot.shots.length} approved image
+              {shoot.shots.length === 1 ? "" : "s"}
             </option>
           ))}
         </select>
         {selectedShoot ? (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {selectedShoot.shots.map((shot) => (
-              <div key={shot.id} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+            {selectedShoot.shots.map(shot => (
+              <div
+                key={shot.id}
+                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={shot.url} alt={shot.title} className="h-24 w-[4.5rem] object-cover" loading="lazy" />
+                <img
+                  src={shot.url}
+                  alt={shot.title}
+                  className="h-24 w-[4.5rem] object-cover"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
         ) : (
           <p className="mt-2 text-sm text-amber-700">
-            Approve at least 2 rendered shots in Shoot Studio before generating a shoot-based carousel.
+            {mode === "tutorial"
+              ? "Tutorial mode can use the reel-reference library, or you can add one result image and screenshots below."
+              : "Approve at least 2 rendered shots in Shoot Studio before generating a shoot-based carousel."}
           </p>
         )}
       </div>
@@ -273,44 +313,58 @@ export function ContentKitClient({
         <input
           type="text"
           value={topic}
-          onChange={(event) => setTopic(event.target.value)}
+          onChange={event => setTopic(event.target.value)}
           placeholder="Optional teaching angle, e.g. the prompt behind this Paris shoot"
           className="w-full max-w-md rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
         <button
           type="button"
           onClick={generate}
-          disabled={generating || (!selectedShootId && backgrounds.length < 2)}
+          disabled={
+            generating || (mode === "standard" && !selectedShootId && backgrounds.length < 2)
+          }
           className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
         >
-          {generating ? "Writing the shoot carousel" : "Generate shoot carousel"}
+          {generating
+            ? mode === "tutorial"
+              ? "Writing the tutorial carousel"
+              : "Writing the shoot carousel"
+            : mode === "tutorial"
+              ? "Generate tutorial carousel"
+              : "Generate shoot carousel"}
         </button>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
-          <span className="block text-xs uppercase tracking-wide text-stone-500">Extra backgrounds</span>
+          <span className="block text-xs uppercase tracking-wide text-stone-500">
+            Extra backgrounds
+          </span>
           <span className="mt-1 block">Only use these when the shoot needs one more scene.</span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
             className="mt-3 block w-full text-xs"
-            onChange={(event) => void upload("background", event.target.files)}
+            onChange={event => void upload("background", event.target.files)}
           />
           <span className="mt-2 block text-xs text-stone-400">
             {uploading === "background" ? "Uploading..." : `${backgrounds.length} uploaded`}
           </span>
         </label>
         <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
-          <span className="block text-xs uppercase tracking-wide text-stone-500">Screenshot overlays</span>
-          <span className="mt-1 block">Use for ChatGPT screenshots, product proof, or examples.</span>
+          <span className="block text-xs uppercase tracking-wide text-stone-500">
+            Screenshot overlays
+          </span>
+          <span className="mt-1 block">
+            Use for ChatGPT screenshots, product proof, or examples.
+          </span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
             className="mt-3 block w-full text-xs"
-            onChange={(event) => void upload("overlay", event.target.files)}
+            onChange={event => void upload("overlay", event.target.files)}
           />
           <span className="mt-2 block text-xs text-stone-400">
             {uploading === "overlay" ? "Uploading..." : `${overlays.length} uploaded`}
@@ -319,13 +373,21 @@ export function ContentKitClient({
       </div>
       {overlays.length > 0 && (
         <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-          {overlays.map((asset) => (
-            <div key={asset.url} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+          {overlays.map(asset => (
+            <div
+              key={asset.url}
+              className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset.url} alt={asset.label} className="h-20 w-20 object-cover" loading="lazy" />
+              <img
+                src={asset.url}
+                alt={asset.label}
+                className="h-20 w-20 object-cover"
+                loading="lazy"
+              />
             </div>
           ))}
-          </div>
+        </div>
       )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
 
@@ -335,7 +397,7 @@ export function ContentKitClient({
             No carousels yet. Hit generate after this week&apos;s brief exists.
           </p>
         ) : (
-          decks.map((deck) => <DeckCard key={deck.id} deck={deck} onStatus={updateStatus} />)
+          decks.map(deck => <DeckCard key={deck.id} deck={deck} onStatus={updateStatus} />)
         )}
       </div>
     </section>

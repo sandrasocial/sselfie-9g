@@ -1,13 +1,38 @@
 // CONTENT-VISUALS-01: carousel deck schema. Slides are stored as JSONB in
 // content_carousels and rendered to 1080x1350 PNGs by the next/og render route.
 
-export type CarouselSlideKind = "hook" | "step" | "list" | "quote" | "cta" | "photo" | "grid"
+export type CarouselSlideKind =
+  | "hook"
+  | "step"
+  | "list"
+  | "quote"
+  | "cta"
+  | "photo"
+  | "grid"
+  | "before-after"
+
+export type ContentAccent = {
+  type: "arrow" | "circle" | "squiggle"
+  /** Renderer hint for the callout position. Keep broad so Maya can target practical screenshot areas. */
+  target:
+    | "top-left"
+    | "top-right"
+    | "middle-left"
+    | "middle-right"
+    | "bottom-left"
+    | "bottom-right"
+    | "center"
+    | "keyword"
+  color?: string
+  label?: string
+}
 
 export type ContentOverlayAsset = {
   url: string
   label?: string
   /** Renderer hint: screenshots/product proof usually sit opposite the text block. */
-  placement?: "top-right" | "middle-right" | "bottom-right" | "center"
+  placement?: "top-right" | "middle-right" | "bottom-right" | "center" | "full" | "left" | "right"
+  fit?: "cover" | "contain"
 }
 
 export type CarouselSlide = {
@@ -26,6 +51,8 @@ export type CarouselSlide = {
   gridUrls?: string[]
   /** Optional screenshots, proof, or product images layered above the slide. */
   overlayAssets?: ContentOverlayAsset[]
+  /** Tutorial-only composited callouts. Defaults to the muted oxblood tutorial accent. */
+  accents?: ContentAccent[]
 }
 
 export type StorySlideRole =

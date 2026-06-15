@@ -18,7 +18,7 @@ import { getOverlayStyleGuide } from "@/lib/app-v3/maya/overlay-styles"
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
-- Each carousel: 7 to 9 slides. Slide 1 kind "hook", last slide kind "cta", middle slides "step", "list" or "quote".
+- Each carousel: 7 to 10 slides. Slide 1 kind "hook", last slide kind "cta", middle slides "step", "list" or "quote".
 - "hook": title max 9 words (the scroll-stopper), optional body max 16 words, eyebrow max 4 words.
 - "step": stepNumber (1,2,3...), title max 8 words, body 1-3 short sentences (max 40 words total).
 - "list": title max 8 words, items: 3-5 strings of max 9 words each.
@@ -29,15 +29,31 @@ SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect lim
 - caption: Sandra-voice Instagram caption, 60-120 words, line breaks allowed, ends with the same comment keyword or save ask as the cta slide, then 5-8 niche hashtags on the final line.
 `.trim()
 
+const TUTORIAL_SLIDE_RULES = `
+TUTORIAL CAROUSEL RULES:
+- Build one 8 to 10 slide tutorial deck: cover/hook, bad example, setting stack, composition tip, pose tip, before-after, edit/preset, CTA.
+- Allowed kinds: "hook", "step", "list", "quote", "photo", "before-after", "cta".
+- Use "before-after" exactly once.
+- Add "accents" to 2-4 practical teaching slides. Accent types: "arrow", "circle", "squiggle". Targets: top-left, top-right, middle-left, middle-right, bottom-left, bottom-right, center, keyword.
+- Real screenshot/reference slides must use overlayAssets, not imageUrl, so the renderer keeps the screenshot pixels exact and composites the burgundy callouts on top.
+- Keep text short. Generated scene/photo slides can carry a short headline, but long teaching text stays composited.
+- CTA keyword must be one of KIT, PROMPT, PRESET, or SELFIE. Default to KIT unless Sandra asked for a different funnel.
+`.trim()
+
 type GeneratorInput = {
   count?: number
   topic?: string
+  mode?: "standard" | "tutorial"
   /** Approved Shoot Studio row. When present, this is the source of visual truth. */
   sourceShootId?: number
   /** Optional additional background images, only used after the approved shoot images. */
   imageUrls?: string[]
   /** Screenshots, product proof, or other assets layered above teaching slides. */
   overlayUrls?: string[]
+  /** Optional hand-picked rows from content_reel_references. Omit to use the current top tutorial references. */
+  reelReferenceIds?: number[]
+  /** Tutorial CTA keyword. Defaults to KIT. */
+  keyword?: "KIT" | "PROMPT" | "PRESET" | "SELFIE"
 }
 
 function isAllowedImageUrl(value: string): boolean {
@@ -49,7 +65,10 @@ function isAllowedImageUrl(value: string): boolean {
   }
 }
 
-async function resolveShootImages(sourceShootId?: number): Promise<{
+async function resolveShootImages(
+  sourceShootId?: number,
+  minApprovedImages = 2
+): Promise<{
   imageUrls: string[]
   title: string | null
   id: number | null
@@ -60,10 +79,69 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   const images = shoot.shots
     .filter(shot => shot.status === "approved" && shot.imageUrl)
     .map(shot => shot.imageUrl as string)
-  if (images.length < 2) {
-    throw new Error("Approve at least 2 rendered shoot images before building a carousel")
+  if (images.length < minApprovedImages) {
+    throw new Error(
+      `Approve at least ${minApprovedImages} rendered shoot image${minApprovedImages === 1 ? "" : "s"} before building this carousel`
+    )
   }
   return { imageUrls: images, title: shoot.title, id: shoot.id }
+}
+
+export type ContentReelReference = {
+  id: number
+  mediaId: string
+  permalink: string | null
+  hookLine: string | null
+  views: number | null
+  kind: "cover" | "scene"
+  sceneIndex: number | null
+  imageUrl: string
+  label: string | null
+  createdAt: string
+}
+
+export async function listContentReelReferences({
+  limit = 14,
+  ids,
+}: {
+  limit?: number
+  ids?: number[]
+} = {}): Promise<ContentReelReference[]> {
+  const safeLimit = Math.min(Math.max(ids?.length ? 240 : limit, 1), 240)
+  const rows = (await sql`
+    SELECT id, media_id, permalink, hook_line, views, kind, scene_index, image_url, label, created_at
+    FROM content_reel_references
+    WHERE image_url IS NOT NULL
+    ORDER BY COALESCE(views, 0) DESC, media_id, scene_index NULLS FIRST
+    LIMIT ${safeLimit}
+  `) as Array<{
+    id: number
+    media_id: string
+    permalink: string | null
+    hook_line: string | null
+    views: number | null
+    kind: "cover" | "scene"
+    scene_index: number | null
+    image_url: string
+    label: string | null
+    created_at: string
+  }>
+  const selectedIds = new Set((ids ?? []).filter(id => Number.isFinite(id)))
+  return rows
+    .filter(row => selectedIds.size === 0 || selectedIds.has(row.id))
+    .slice(0, limit)
+    .map(row => ({
+      id: row.id,
+      mediaId: row.media_id,
+      permalink: row.permalink,
+      hookLine: row.hook_line,
+      views: row.views,
+      kind: row.kind,
+      sceneIndex: row.scene_index,
+      imageUrl: row.image_url,
+      label: row.label,
+      createdAt: new Date(row.created_at).toISOString(),
+    }))
 }
 
 function applyShootImages(
@@ -91,6 +169,62 @@ function applyShootImages(
   })
 }
 
+function applyTutorialMedia(
+  slides: CarouselSlide[],
+  imageUrls: string[],
+  overlayUrls: string[]
+): CarouselSlide[] {
+  const sceneImages = imageUrls.slice(0, 8)
+  const screenshotAssets = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
+    url,
+    label: index === 0 ? "before" : `setting ${index}`,
+    placement: index % 2 === 0 ? "full" : "center",
+    fit: "contain",
+  }))
+  return slides.map((slide, index) => {
+    const next: CarouselSlide = { ...slide }
+    if (
+      (slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta") &&
+      sceneImages.length > 0
+    ) {
+      next.imageUrl = slide.imageUrl || sceneImages[index % sceneImages.length]
+    }
+
+    if (slide.kind === "before-after") {
+      const beforeUrl = screenshotAssets[0]?.url || sceneImages[0]
+      const afterUrl = sceneImages[1] || sceneImages[0] || screenshotAssets[1]?.url
+      if (beforeUrl) next.imageUrl = beforeUrl
+      if (afterUrl) {
+        next.overlayAssets = [
+          {
+            url: afterUrl,
+            label: "after",
+            placement: "right",
+            fit: "cover",
+          },
+        ]
+      }
+      next.accents = next.accents?.length
+        ? next.accents
+        : [
+            { type: "arrow", target: "center" },
+            { type: "circle", target: "bottom-right" },
+          ]
+      return next
+    }
+
+    if (
+      (slide.kind === "step" || slide.kind === "list" || slide.kind === "quote") &&
+      screenshotAssets.length > 0
+    ) {
+      const asset = screenshotAssets[(index - 1) % screenshotAssets.length]
+      next.overlayAssets = slide.overlayAssets?.length ? slide.overlayAssets : [asset]
+    }
+
+    return next
+  })
+}
+
 type RawCarousel = {
   title: string
   slug: string
@@ -111,7 +245,60 @@ function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
   }))
 }
 
+function ensureTutorialShape(slides: CarouselSlide[], keyword: string): CarouselSlide[] {
+  const shaped = sanitizeSlides(slides)
+    .filter(slide =>
+      ["hook", "step", "list", "quote", "cta", "photo", "before-after"].includes(slide.kind)
+    )
+    .slice(0, 10)
+
+  if (shaped.length === 0 || shaped[0].kind !== "hook") {
+    shaped.unshift({
+      kind: "hook",
+      eyebrow: "Tutorial",
+      title: "The shot is not random",
+      body: "Use the same tiny stack every time.",
+    })
+  }
+
+  if (!shaped.some(slide => slide.kind === "before-after")) {
+    const insertAt = Math.min(Math.max(shaped.length - 2, 1), 7)
+    shaped.splice(insertAt, 0, {
+      kind: "before-after",
+      eyebrow: "Before / After",
+      title: "From flat to finished",
+      body: "Same idea. Better light, crop, and styling.",
+      accents: [{ type: "arrow", target: "center" }],
+    })
+  }
+
+  const last = shaped[shaped.length - 1]
+  if (last?.kind !== "cta") {
+    shaped.push({
+      kind: "cta",
+      eyebrow: "Save this",
+      title: `Comment ${keyword}`,
+      body: "I will send you the simple version to try from one selfie.",
+    })
+  }
+
+  return shaped.slice(0, 10)
+}
+
+function referencesSummary(refs: ContentReelReference[]): string {
+  if (refs.length === 0) return "- No reel references found."
+  return refs
+    .slice(0, 12)
+    .map(ref => {
+      const label = ref.label || (ref.kind === "cover" ? "cover" : `scene ${ref.sceneIndex ?? "?"}`)
+      return `- #${ref.id} ${ref.kind}: ${label} · ${ref.views ?? 0} views · hook: "${ref.hookLine || "unknown"}"`
+    })
+    .join("\n")
+}
+
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
+  if (input.mode === "tutorial") return generateTutorialCarousels(input)
+
   const sourceShoot = await resolveShootImages(input.sourceShootId)
   const imageUrls = [
     ...sourceShoot.imageUrls,
@@ -250,6 +437,136 @@ Return ONLY a JSON array, no commentary:
 
   if (decks.length === 0) throw new Error("LLM output failed validation: no usable carousels")
   return decks
+}
+
+async function generateTutorialCarousels(input: GeneratorInput): Promise<CarouselDeck[]> {
+  const sourceShoot = await resolveShootImages(input.sourceShootId, 1)
+  const reelReferences = await listContentReelReferences({
+    limit: 14,
+    ids: input.reelReferenceIds,
+  }).catch(error => {
+    console.error("[content-kit] reel references unavailable:", error)
+    return [] as ContentReelReference[]
+  })
+
+  const uploadedImages = (input.imageUrls ?? []).filter(isAllowedImageUrl)
+  const uploadedOverlays = (input.overlayUrls ?? []).filter(isAllowedImageUrl)
+  const coverRefs = reelReferences.filter(ref => ref.kind === "cover").map(ref => ref.imageUrl)
+  const sceneRefs = reelReferences.filter(ref => ref.kind === "scene").map(ref => ref.imageUrl)
+  const imageUrls = [...sourceShoot.imageUrls, ...uploadedImages, ...coverRefs, ...sceneRefs]
+    .filter(isAllowedImageUrl)
+    .slice(0, 8)
+  const overlayUrls = [...uploadedOverlays, ...sceneRefs].filter(isAllowedImageUrl).slice(0, 8)
+  const keyword = input.keyword ?? "KIT"
+  const topic =
+    input.topic?.trim() || "a selfie tutorial carousel from Sandra's strongest reel references"
+
+  const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
+  const briefPeriodStart: string | null = briefs[0]?.period_start
+    ? new Date(briefs[0].period_start).toISOString().slice(0, 10)
+    : null
+
+  const prompt = `You are Sandra's tutorial carousel writer for @sandra.social.
+
+${voiceBlock()}
+
+${noFakeBlock()}
+
+${audienceBlock()}
+
+${proofBlock()}
+
+${funnelBlock()}
+
+${getCarouselDesignGuide()}
+
+${TUTORIAL_SLIDE_RULES}
+
+REEL REFERENCES AVAILABLE FROM content_reel_references:
+${referencesSummary(reelReferences)}
+
+REQUESTED TUTORIAL TOPIC:
+${topic}
+
+${sourceShoot.title ? `SOURCE PHOTOSHOOT: "${sourceShoot.title}". Use it as the visual source when slide copy talks about the finished result.` : ""}
+
+Write ONE premium editorial tutorial carousel. It should feel like a practical saved post, not a loud Canva tutorial.
+
+Rules:
+- The tutorial must teach one clear visual method: settings, light, pose, crop, prompt, edit, or phone setup.
+- Use Sandra's exact promise: "Look like yourself, at your best."
+- Avoid "elevate", "elevated", "flawless", "perfect skin", "fake photoshoot", "no one will know", and any trickery language.
+- Keep the iPhone/settings/screenshot slides practical and precise.
+- Use short serif-friendly titles. No em-dashes. No emojis.
+- CTA slide: ask them to comment ${keyword}.
+
+Return ONLY a JSON array with one object:
+[
+  {
+    "title": "internal working title",
+    "slug": "kebab-case-slug",
+    "caption": "Sandra voice caption, 70-120 words, ends by asking them to comment ${keyword}",
+    "slides": [
+      { "kind": "hook", "eyebrow": "Tutorial", "title": "...", "body": "..." },
+      { "kind": "step", "stepNumber": 1, "title": "Bad example", "body": "...", "accents": [{ "type": "circle", "target": "center" }] },
+      { "kind": "list", "title": "The setting stack", "items": ["...", "..."], "accents": [{ "type": "arrow", "target": "middle-right" }] },
+      { "kind": "step", "stepNumber": 2, "title": "...", "body": "..." },
+      { "kind": "step", "stepNumber": 3, "title": "...", "body": "..." },
+      { "kind": "before-after", "eyebrow": "Before / After", "title": "From this to this", "body": "..." },
+      { "kind": "step", "stepNumber": 4, "title": "The edit", "body": "..." },
+      { "kind": "cta", "eyebrow": "Save this", "title": "Comment ${keyword}", "body": "I will send you the simple version to try." }
+    ]
+  }
+]`
+
+  const text = await callContentKitLlm(prompt)
+  const raw = extractJsonArray(text) as RawCarousel[]
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("LLM returned an empty tutorial carousel array")
+  }
+
+  const carousel = raw[0]
+  if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) {
+    throw new Error("LLM output failed validation: tutorial carousel was incomplete")
+  }
+
+  const slides = applyTutorialMedia(
+    ensureTutorialShape(carousel.slides, keyword),
+    imageUrls,
+    overlayUrls
+  )
+  const title = sanitizeGroundedText(carousel.title || `Tutorial carousel: ${topic}`).trim()
+  const slug = (carousel.slug || title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, 60)
+  const caption = sanitizeGroundedText(carousel.caption || "")
+
+  await sql`
+    ALTER TABLE content_carousels
+    ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+    ADD COLUMN IF NOT EXISTS source_shoot_title text
+  `
+  const rows = (await sql`
+    INSERT INTO content_carousels (title, slug, caption, slides, source_period_start, source_shoot_id, source_shoot_title)
+    VALUES (${title}, ${slug}, ${caption}, ${JSON.stringify(slides)}, ${briefPeriodStart}, ${sourceShoot.id}, ${sourceShoot.title})
+    RETURNING id, created_at
+  `) as Array<{ id: number; created_at: string }>
+
+  return [
+    {
+      id: rows[0].id,
+      title,
+      slug,
+      caption,
+      slides,
+      status: "draft",
+      sourceShootId: sourceShoot.id,
+      sourceShootTitle: sourceShoot.title,
+      sourcePeriodStart: briefPeriodStart,
+      createdAt: new Date(rows[0].created_at).toISOString(),
+    },
+  ]
 }
 
 export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {

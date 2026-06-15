@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getStorySequence } from "@/lib/content-kit/story-generator"
+import { Arrow, KeywordCircle, Squiggle } from "@/lib/content-kit/accents"
 import type { ContentOverlayAsset, StoryLine, StorySlide } from "@/lib/content-kit/types"
 
 export const dynamic = "force-dynamic"
@@ -36,69 +37,15 @@ function loadFonts() {
       readFile(join(dir, "inter-400.ttf")),
       readFile(join(dir, "inter-600.ttf")),
       readFile(join(dir, "caveat-500.ttf")),
-    ]).then(([serif, serifSemi, sans, sansSemi, hand]) => ({ serif, serifSemi, sans, sansSemi, hand }))
+    ]).then(([serif, serifSemi, sans, sansSemi, hand]) => ({
+      serif,
+      serifSemi,
+      sans,
+      sansSemi,
+      hand,
+    }))
   }
   return fontCache
-}
-
-/** Hand-drawn underline: a slightly wobbly stroke (doctrine: soft underline under
- * the identity phrase). */
-function Squiggle({ color, width: w }: { color: string; width: number }) {
-  return (
-    <svg width={w} height={14} viewBox={`0 0 ${w} 14`}>
-      <path
-        d={`M 4 9 Q ${w * 0.22} 2, ${w * 0.46} 8 T ${w * 0.78} 7 T ${w - 4} 5`}
-        stroke={color}
-        strokeWidth={4}
-        fill="none"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-/** Imperfect hand-drawn ellipse around the CTA keyword. */
-function KeywordCircle({ color, w, h }: { color: string; w: number; h: number }) {
-  const cx = w / 2
-  const cy = h / 2
-  const rx = w / 2 - 8
-  const ry = h / 2 - 4
-  // Two overlapping arcs with a slight tilt = the "drawn twice" marker look.
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", top: 0, left: 0 }}>
-      <ellipse
-        cx={cx}
-        cy={cy + 3}
-        rx={rx}
-        ry={ry}
-        stroke={color}
-        strokeWidth={5}
-        fill="none"
-        transform={`rotate(-3 ${cx} ${cy})`}
-      />
-      <ellipse
-        cx={cx - 4}
-        cy={cy}
-        rx={rx - 5}
-        ry={ry + 2}
-        stroke={color}
-        strokeWidth={3}
-        fill="none"
-        opacity={0.6}
-        transform={`rotate(2 ${cx} ${cy})`}
-      />
-    </svg>
-  )
-}
-
-/** Small hand-drawn arrow (doctrine: arrow toward the action). */
-function Arrow({ color }: { color: string }) {
-  return (
-    <svg width={56} height={72} viewBox="0 0 56 72">
-      <path d="M 28 6 Q 20 36, 27 60" stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" />
-      <path d="M 16 50 Q 22 58, 27 62 Q 33 57, 38 49" stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 function OverlayAssets({ assets }: { assets?: ContentOverlayAsset[] }) {
@@ -150,7 +97,15 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
 
   if (line.size === "keyword") {
     return (
-      <div style={{ display: "flex", position: "relative", padding: "18px 56px", marginTop: 20, marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          position: "relative",
+          padding: "18px 56px",
+          marginTop: 20,
+          marginBottom: 8,
+        }}
+      >
         <KeywordCircle color={leadColor} w={line.text.length * 92 + 112} h={196} />
         <div
           style={{
@@ -276,7 +231,14 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
         >
           SSELFIE
         </div>
-        <div style={{ display: "flex", fontSize: 26, color: hasImage ? "rgba(255,255,255,0.8)" : STONE, letterSpacing: 5 }}>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 26,
+            color: hasImage ? "rgba(255,255,255,0.8)" : STONE,
+            letterSpacing: 5,
+          }}
+        >
           {index + 1} / {total}
         </div>
       </div>
@@ -355,7 +317,14 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           >
             @sandra.social
           </div>
-          <div style={{ display: "flex", fontSize: 26, color: hasImage ? "rgba(255,255,255,0.8)" : STONE, letterSpacing: 5 }}>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 26,
+              color: hasImage ? "rgba(255,255,255,0.8)" : STONE,
+              letterSpacing: 5,
+            }}
+          >
             sselfie.ai
           </div>
         </div>
@@ -366,14 +335,16 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; slide: string }> },
+  { params }: { params: Promise<{ id: string; slide: string }> }
 ) {
   const bearer = request.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
   const hasCronAuth = Boolean(cronSecret && bearer === `Bearer ${cronSecret}`)
   if (!hasCronAuth) {
     const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (user?.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -382,14 +353,23 @@ export async function GET(
   const { id, slide: slideParam } = await params
   const sequence = await getStorySequence(Number(id))
   const slideIndex = Number(slideParam)
-  if (!sequence || !Number.isInteger(slideIndex) || slideIndex < 0 || slideIndex >= sequence.slides.length) {
+  if (
+    !sequence ||
+    !Number.isInteger(slideIndex) ||
+    slideIndex < 0 ||
+    slideIndex >= sequence.slides.length
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
   const fonts = await loadFonts()
 
   return new ImageResponse(
-    <StoryFrame slide={sequence.slides[slideIndex]} index={slideIndex} total={sequence.slides.length} />,
+    <StoryFrame
+      slide={sequence.slides[slideIndex]}
+      index={slideIndex}
+      total={sequence.slides.length}
+    />,
     {
       width: WIDTH,
       height: HEIGHT,
@@ -404,6 +384,6 @@ export async function GET(
         "Content-Disposition": `inline; filename="story-${sequence.id}-${String(slideIndex + 1).padStart(2, "0")}.png"`,
         "Cache-Control": "private, max-age=300",
       },
-    },
+    }
   )
 }

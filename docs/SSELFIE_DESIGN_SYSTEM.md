@@ -59,6 +59,8 @@ Use Night/Raisin Black carefully. It can be a button, headline contrast, thin fr
 
 Approved exception: full-bleed image heroes may use Night/Raisin Black gradient overlays when the photo remains visible and the section reads as cinematic editorial imagery, not a dark SaaS/product shell. The page should continue into Seasalt, white, or cool smoke sections below the hero.
 
+Approved tutorial-only exception: content-kit tutorial carousels may use muted oxblood `#6E2A35` for screenshot callouts, hand-drawn circles, arrows, and before/after labels. This token is only for tutorial carousel annotations and must not become a general UI or email accent.
+
 Avoid:
 
 - Black-background product UI
