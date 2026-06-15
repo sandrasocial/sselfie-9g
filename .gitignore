@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Local reel-reference extraction output (CONTENT-CAROUSEL-01) — not committed
 reel-references/
+
+# Local prototype slide outputs (CAROUSEL-03)
+prototype-slide*.png

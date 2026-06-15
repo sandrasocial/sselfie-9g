@@ -30,9 +30,13 @@ OVERLAY (redesign only this, integrated into the scene, not a card):
 - Small uppercase sans label: "STEP 02"
 - Serif hero headline, caps + italic mix: "Adjust Exposure to -0.7"
 - One line of minimal serif helper text: "Darkens the shot so your phone stops faking the light"
-- One muted oxblood/burgundy (#6E2A35) thin callout: a small label "EXPOSURE" with a slim hand-drawn arrow pointing to the exposure control. Muted, refined, never bright red.
+- Exactly ONE callout: a thin, refined muted-burgundy line (color #6E2A35, a soft brownish oxblood, NOT orange, NOT bright red) — a small uppercase label "EXPOSURE" with a slim curved arrow pointing to the exposure slider. Place it in clear empty space so it never overlaps the hero text or the phone screen. Keep it subtle and elegant, like a fashion-editor's annotation.
 
-RULES: elegant serif display + minimal sans/serif helper. Muted oxblood accents only. No bright red, no green checkmarks, no emoji, no chunky TikTok captions, no black-outlined text, no Canva look, no white lesson card. Keep it expensive, editorial, Scandinavian-calm. Render all text spelled exactly as written.`
+CONSISTENCY: the exposure value shown on the phone screen must read "-0.7" to match the headline (not -1.0).
+
+CAMERA UI TONE: render the phone's camera interface elements (labels, dial, readouts) in a muted, refined champagne/soft-gold tone on dark — never bright neon yellow. Keep the controls legible and the meaning intact, but quiet and luxurious so they fit the palette.
+
+RULES: elegant serif display + minimal sans/serif helper. Muted oxblood accents only. No bright red, no neon yellow, no green checkmarks, no emoji, no chunky TikTok captions, no black-outlined text, no Canva look, no white lesson card. Keep it expensive, editorial, Scandinavian-calm. Render all text spelled exactly as written.`
 
 async function toPng(path: string) {
   const buf = readFileSync(path)
