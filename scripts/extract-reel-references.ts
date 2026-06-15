@@ -21,6 +21,9 @@ config({ path: ".env.local" })
 
 const GRAPH_BASE = "https://graph.facebook.com/v21.0"
 const REELS_LIMIT = Number(process.env.REELS_LIMIT ?? 3)
+// Tutorials only: selfie / iPhone-settings / editing. The ChatGPT / AI-prompt
+// reels are a separate category and are excluded here (Sandra's call 2026-06-15).
+const EXCLUDE_RE = /chatgpt|chat gpt|\bgpt\b|prompt/i
 const SCENE = Number(process.env.SCENE ?? 0.3) // ffmpeg scene-change sensitivity (0-1, lower = more frames)
 const MAX_FRAMES = Number(process.env.MAX_FRAMES ?? 30)
 const OUT_ROOT = join(process.cwd(), "reel-references")
@@ -48,9 +51,9 @@ async function getConnection(sql: ReturnType<typeof neon>): Promise<Connection> 
   return rows[0]
 }
 
-async function topReels(sql: ReturnType<typeof neon>, limit: number): Promise<ReelRow[]> {
+async function rankedReels(sql: ReturnType<typeof neon>, pool: number): Promise<ReelRow[]> {
   // Snapshots accumulate one row per media per night; collapse to the best-known
-  // view count per reel, then rank.
+  // view count per reel, then rank. Pull a deep pool so excludes don't starve us.
   return (await sql`
     SELECT media_id,
            MAX(views) AS views,
@@ -60,8 +63,12 @@ async function topReels(sql: ReturnType<typeof neon>, limit: number): Promise<Re
     WHERE format = 'reel'
     GROUP BY media_id
     ORDER BY MAX(views) DESC NULLS LAST
-    LIMIT ${limit}
+    LIMIT ${pool}
   `) as ReelRow[]
+}
+
+function isExcluded(hook: string | null): boolean {
+  return EXCLUDE_RE.test(hook || "")
 }
 
 async function fetchMedia(mediaId: string, token: string) {
@@ -110,8 +117,17 @@ async function main() {
   const conn = await getConnection(sql)
   console.log(`Account: @${conn.instagram_username} (ig_user_id ${conn.instagram_user_id})`)
 
-  const reels = await topReels(sql, REELS_LIMIT)
-  console.log(`Top ${reels.length} reels by views:\n`)
+  const pool = await rankedReels(sql, Math.max(REELS_LIMIT * 4, 60))
+  const excluded = pool.filter((r) => isExcluded(r.hook_line))
+  const reels = pool.filter((r) => !isExcluded(r.hook_line)).slice(0, REELS_LIMIT)
+
+  if (excluded.length) {
+    console.log(`Excluded ${excluded.length} ChatGPT/prompt reels (separate category):`)
+    excluded.forEach((r) => console.log(`    - ${(r.views ?? 0).toLocaleString()} views — "${(r.hook_line || "").slice(0, 70)}"`))
+    console.log("")
+  }
+
+  console.log(`Top ${reels.length} tutorial reels by views:\n`)
   reels.forEach((r, i) => {
     console.log(`  ${i + 1}. ${(r.views ?? 0).toLocaleString()} views — "${(r.hook_line || "(no hook)").slice(0, 80)}"`)
   })
