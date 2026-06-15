@@ -58,4 +58,4 @@ next-env.d.ts
 reel-references/
 
 # Local prototype slide outputs (CAROUSEL-03)
-prototype-slide*.png
+prototype-*.png
