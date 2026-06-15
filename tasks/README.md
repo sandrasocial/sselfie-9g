@@ -30,9 +30,11 @@ The previous active board was stale. Code inspection and recent verification sho
 
 | Priority | Spec | Owner | Why it remains |
 |---:|---|---|---|
-| 1 | `SHOOT-STUDIO-02-live-drop-qa.md` | Sandra + Codex if bug found | Shoot Studio is built, but needs live drop QA with real queued/published shoots and email preview/send validation. |
-| 2 | `MAYA-ADMIN-02-live-content-qa.md` | Sandra + Codex if bug found | Maya Admin content tooling is code-complete, but Sandra should test the approve/publish/drop-email handoff and content quality. |
-| 3 | `SCALE-READY-01-loose-threads.md` | Codex | Current loose threads to tie before the repo feels clean and scalable. |
+| 1 | `MAYA-FIX-01-overlay-and-contradictions.md` | Codex | P0 from Maya deep audit 2026-06-15: composite text-overlay layer (not baked-in), kill EXACTLY-3 contradiction, face-first carousels + 2-slide cap, remove banned word in persona. Most customer-visible quality fix. |
+| 2 | `MAYA-FIX-02-edit-likeness-tapfirst-voice.md` | Codex | P1 from Maya audit: Edit Mode likeness drift, tap-first for carousel/reel/story, caption banned-word guard, slim the shared brain, delete dead font modules. Do after FIX-01. |
+| 3 | `SHOOT-STUDIO-02-live-drop-qa.md` | Sandra + Codex if bug found | Shoot Studio is built, but needs live drop QA with real queued/published shoots and email preview/send validation. |
+| 4 | `MAYA-ADMIN-02-live-content-qa.md` | Sandra + Codex if bug found | Maya Admin content tooling is code-complete, but Sandra should test the approve/publish/drop-email handoff and content quality. |
+| 5 | `SCALE-READY-01-loose-threads.md` | Codex | Current loose threads to tie before the repo feels clean and scalable. |
 | Hold | `DM-LAUNCH-01-live-qa.md` | Sandra | Forward-going bridge is live. Historical backlog import is paused; existing backlog remains in Instagram/ManyChat unless exported/imported later. |
 
 ## Completed Work Snapshot
