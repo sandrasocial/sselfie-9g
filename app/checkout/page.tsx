@@ -80,7 +80,7 @@ const CHECKOUT_COPY: Record<
     heroBody: "You tried the opening shot. Now unlock the remaining shots, newest drops, and future SSELFIE photoshoots.",
     heading: "The AI Photo Prompt Vault",
     blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
-    footer: "One-time digital purchase. Your Vault access link is delivered right after payment.",
+    footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
   selfie_to_brand_shoot_system: {
     heroTitle: "Start your first AI brand shoot",

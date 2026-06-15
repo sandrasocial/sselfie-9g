@@ -48,7 +48,7 @@ export function generatePromptVaultCheckoutRecoveryEmail({
   `
 
   return {
-    subject: "here is the vault link",
+    subject: "you were one tap from your vault 👀",
     html: renderStoneShell({
       title: "Here is the Vault link.",
       eyebrow: "Prompt Vault",
