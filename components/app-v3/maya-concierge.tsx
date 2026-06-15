@@ -523,6 +523,13 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const format: OutputFormat = outputFormat ?? "photo"
+  const openerLine = outputFormat
+    ? referenceSelfieUrl
+      ? FORMAT_OPENER_READY[outputFormat]
+      : FORMAT_OPENER[outputFormat]
+    : referenceSelfieUrl
+      ? "Pick what we're making next. Your selfie is already in."
+      : "Pick what we're making next, then add one selfie."
 
   // Keep the transport context current.
   extrasRef.current = {
@@ -1018,19 +1025,22 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               <button
                 type="button"
                 onClick={() => {
+                  if (!outputFormat) return
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
                   // upload — the gated auto-pull then starts the moment her selfie is in.
-                  handlePickFormat(format)
+                  handlePickFormat(outputFormat)
                   if (!referenceSelfieUrl) fileInput.current?.click()
                 }}
-                disabled={isThinking}
+                disabled={isThinking || !outputFormat}
                 className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
               >
                 {isThinking
                   ? "Creating…"
-                  : referenceSelfieUrl
-                    ? CTA_LABEL[format]
-                    : "Add my selfie to start"}
+                  : !outputFormat
+                    ? "Pick a format to start"
+                    : referenceSelfieUrl
+                      ? CTA_LABEL[outputFormat]
+                      : "Add my selfie to start"}
               </button>
             )}
 
@@ -1137,7 +1147,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 {aesthetic.name}. {aesthetic.blurb}
               </p>
               <p className="mt-2">
-                {referenceSelfieUrl ? FORMAT_OPENER_READY[format] : FORMAT_OPENER[format]}
+                {openerLine}
               </p>
             </div>
           </div>
