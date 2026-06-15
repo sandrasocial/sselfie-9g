@@ -170,6 +170,11 @@ export async function createLandingCheckoutSession(
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
     ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
+    ...(!isSubscription && {
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    }),
     line_items: [
       {
         price: stripePriceId,
