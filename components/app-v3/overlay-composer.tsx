@@ -1,14 +1,16 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Overlay Composer (MAYA-REBUILD-10, Mode C).
+// SSELFIE Studio 3.0 - Overlay Composer (MAYA-REBUILD-10, Mode C / MAYA-FIX-03).
 // "I already have the photo, just add my text." The user brings their own image (an upload or a
-// Library photo) and gets a single-pass, preserve-and-overlay edit (gpt-image-2 renders the text).
-// No selfie, no generation of a new person — the photo is kept exactly, the overlay is added.
+// Library photo) and gets an editable local text layer. Download flattens it into a final PNG.
 
 import { startTransition, useRef, useState } from "react"
 import { OVERLAY_STYLES } from "@/lib/app-v3/maya/overlay-styles"
+import { fallbackTextLayerSpec } from "@/lib/app-v3/overlay-layer"
+import type { OutputFormat } from "./types"
+import { LayeredImage, downloadLayeredImage } from "./layered-image"
 
-const FORMATS: { id: string; label: string }[] = [
+const FORMATS: { id: OutputFormat; label: string }[] = [
   { id: "reel-cover", label: "Reel cover · 9:16" },
   { id: "story-slide", label: "Story · 9:16" },
   { id: "carousel", label: "Post · 4:5" },
@@ -28,11 +30,16 @@ export function OverlayComposer({
   const [headline, setHeadline] = useState("")
   const [subline, setSubline] = useState("")
   const [styleId, setStyleId] = useState(OVERLAY_STYLES[0].id)
-  const [format, setFormat] = useState("reel-cover")
+  const [format, setFormat] = useState<OutputFormat>("reel-cover")
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const overlay = fallbackTextLayerSpec(format, {
+    headline: headline.trim(),
+    subline: subline.trim() || undefined,
+    styleId,
+    role: "hook",
+  })
 
   function pickFile(file: File | undefined) {
     if (!file) return
@@ -52,7 +59,7 @@ export function OverlayComposer({
     reader.readAsDataURL(file)
   }
 
-  async function generate() {
+  async function download() {
     if (!imageUrl) {
       setError("Add a photo first.")
       return
@@ -64,28 +71,14 @@ export function OverlayComposer({
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch("/api/app-v3/maya/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          baseImageUrl: imageUrl,
-          format,
-          overlay: {
-            headline: headline.trim(),
-            subline: subline.trim() || undefined,
-            overlayStyle: styleId,
-            role: "hook",
-          },
-        }),
+      await downloadLayeredImage({
+        imageUrl,
+        overlay,
+        format,
+        fileName: `sselfie-${format}-text.png`,
       })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.imageUrl) {
-        setError(data?.error || "Couldn't add the text. Try again.")
-        return
-      }
-      startTransition(() => setResult(data.imageUrl))
     } catch {
-      setError("Something went wrong. Try again.")
+      setError("Couldn't export the image. Try another photo or open the original.")
     } finally {
       setBusy(false)
     }
@@ -117,13 +110,13 @@ export function OverlayComposer({
         <div className="grid flex-1 grid-cols-1 gap-0 sm:grid-cols-2">
           {/* Image side */}
           <div className="flex flex-col items-center justify-center border-b border-[#E5E5E5] bg-[#F1F2F2] p-5 sm:border-b-0 sm:border-r">
-            {result || imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={result || imageUrl || ""}
-                alt={result ? "Your image with text" : "Your photo"}
-                decoding="async"
-                className="max-h-[46vh] w-auto rounded-[6px] object-contain"
+            {imageUrl ? (
+              <LayeredImage
+                imageUrl={imageUrl}
+                overlay={headline.trim() ? overlay : null}
+                alt="Your photo with editable text"
+                format={format}
+                className="max-h-[52vh] w-full max-w-[320px] rounded-[6px]"
               />
             ) : (
               <button
@@ -146,115 +139,85 @@ export function OverlayComposer({
               className="hidden"
               onChange={e => pickFile(e.target.files?.[0])}
             />
-            {(imageUrl || result) && (
+            {imageUrl && (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 className="mt-3 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
               >
-                {result ? "Use a different photo" : "Change photo"}
+                Change photo
               </button>
             )}
           </div>
 
           {/* Controls side */}
           <div className="flex flex-col gap-4 p-5">
-            {result ? (
-              <div className="flex flex-1 flex-col">
-                <p className="text-[15px] text-[#0D0E10]">Done. Here it is.</p>
-                <p className="mt-1 text-[13px] text-[#818283]">
-                  It&apos;s saved to your Library too.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href={result}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-11 items-center rounded-[6px] bg-[#0D0E10] px-4 py-2.5 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
-                  >
-                    Download
-                  </a>
+            <div>
+              <label className={label}>Headline</label>
+              <input
+                className={field}
+                value={headline}
+                onChange={e => setHeadline(e.target.value)}
+                placeholder="A short cover line"
+                maxLength={48}
+              />
+              <p className="mt-1 text-[11px] text-[#818283]">
+                Keep it short, like a magazine cover line.
+              </p>
+            </div>
+            <div>
+              <label className={label}>Smaller line (optional)</label>
+              <input
+                className={field}
+                value={subline}
+                onChange={e => setSubline(e.target.value)}
+                placeholder="A supporting line"
+                maxLength={80}
+              />
+            </div>
+            <div>
+              <label className={label}>Style</label>
+              <select className={field} value={styleId} onChange={e => setStyleId(e.target.value)}>
+                {OVERLAY_STYLES.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={label}>Format</label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {FORMATS.map(f => (
                   <button
+                    key={f.id}
                     type="button"
-                    onClick={() => startTransition(() => setResult(null))}
-                    className="inline-flex min-h-11 items-center text-[12px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                    onClick={() => setFormat(f.id)}
+                    className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] transition-colors ${
+                      format === f.id
+                        ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                        : "border-[#C5C6C8] text-[#4F5052] hover:border-[#0D0E10]/40"
+                    }`}
                   >
-                    Make another
+                    {f.label}
                   </button>
-                </div>
+                ))}
               </div>
-            ) : (
-              <>
-                <div>
-                  <label className={label}>Headline</label>
-                  <input
-                    className={field}
-                    value={headline}
-                    onChange={e => setHeadline(e.target.value)}
-                    placeholder="The words that go on top"
-                    maxLength={120}
-                  />
-                </div>
-                <div>
-                  <label className={label}>Smaller line (optional)</label>
-                  <input
-                    className={field}
-                    value={subline}
-                    onChange={e => setSubline(e.target.value)}
-                    placeholder="A supporting line"
-                    maxLength={120}
-                  />
-                </div>
-                <div>
-                  <label className={label}>Style</label>
-                  <select
-                    className={field}
-                    value={styleId}
-                    onChange={e => setStyleId(e.target.value)}
-                  >
-                    {OVERLAY_STYLES.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={label}>Format</label>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {FORMATS.map(f => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => setFormat(f.id)}
-                        className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] transition-colors ${
-                          format === f.id
-                            ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                            : "border-[#C5C6C8] text-[#4F5052] hover:border-[#0D0E10]/40"
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            </div>
 
-                {error && <p className="text-[13px] text-[#282728]">{error}</p>}
+            {error && <p className="text-[13px] text-[#282728]">{error}</p>}
 
-                <button
-                  type="button"
-                  onClick={generate}
-                  disabled={busy || !imageUrl}
-                  className="mt-1 min-h-12 rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-40 sm:tracking-[0.18em]"
-                >
-                  {busy ? "Adding your text…" : "Add the text"}
-                </button>
-                <p className="text-[11px] text-[#818283]">
-                  Your photo stays exactly as it is. Maya only adds the text overlay. Uses 1 credit.
-                </p>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={download}
+              disabled={busy || !imageUrl}
+              className="mt-1 min-h-12 rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-40 sm:tracking-[0.18em]"
+            >
+              {busy ? "Preparing..." : "Download with text"}
+            </button>
+            <p className="text-[11px] text-[#818283]">
+              Your photo stays clean. Text is editable here, then flattened when you download.
+            </p>
           </div>
         </div>
       </div>

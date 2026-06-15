@@ -6,10 +6,11 @@
 // While generating, a framed spinner. When done, the result (tap to open) with a confident
 // success state: Use/Download primary, Regenerate secondary, "Ask Maya to tweak" tiny.
 
-import Image from "next/image"
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import { buildTextLayerSpecs, type TextLayerSpec } from "@/lib/app-v3/overlay-layer"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
+import { LayeredImage, downloadLayeredImage } from "./layered-image"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -27,7 +28,7 @@ interface ConceptCardProps {
   format: OutputFormat
   onGenerate: () => void
   /** Open the finished image(s) fullscreen (carousels pass all slides). */
-  onOpen?: (imageUrls: string[]) => void
+  onOpen?: (imageUrls: string[], overlays?: TextLayerSpec[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
   disabled?: boolean
@@ -37,7 +38,7 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   photo: "aspect-[4/5]",
   "reel-cover": "aspect-[9/16]",
   "story-slide": "aspect-[9/16]",
-  carousel: "aspect-square",
+  carousel: "aspect-[4/5]",
 }
 
 export function ConceptCard({
@@ -53,6 +54,9 @@ export function ConceptCard({
   const images = gen.imageUrls ?? []
   const isDone = gen.status === "done" && images.length > 0
   const isCarousel = images.length > 1
+  const overlays = buildTextLayerSpecs(concept.brief, format)
+  const firstOverlay = overlays[0]
+  const hasTextLayer = Boolean(firstOverlay?.headline)
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
@@ -62,16 +66,16 @@ export function ConceptCard({
           {isDone ? (
             <button
               type="button"
-              onClick={() => onOpen?.(images)}
+              onClick={() => onOpen?.(images, overlays)}
               className="group absolute inset-0 cursor-zoom-in"
               aria-label="View full size"
             >
-              <Image
-                src={images[0]}
+              <LayeredImage
+                imageUrl={images[0]}
+                overlay={firstOverlay}
                 alt={concept.title}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                sizes="(max-width:480px) 90vw, 360px"
+                format={format}
+                className="absolute inset-0 transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (
                 <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
@@ -123,16 +127,39 @@ export function ConceptCard({
         {isDone ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
-              Saved to your gallery
+              {hasTextLayer ? "Clean image saved, text stays editable" : "Saved to your gallery"}
             </p>
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {isCarousel ? (
                 <button
                   type="button"
-                  onClick={() => onOpen?.(images)}
+                  onClick={() => onOpen?.(images, overlays)}
                   className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   View all slides
+                </button>
+              ) : hasTextLayer ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void downloadLayeredImage({
+                      imageUrl: images[0],
+                      overlay: firstOverlay,
+                      format,
+                      fileName: `sselfie-${format}.png`,
+                    })
+                    import("@/lib/analytics/client")
+                      .then(({ trackAnalyticsEvent }) =>
+                        trackAnalyticsEvent({
+                          event: "suite_image_downloaded",
+                          properties: { format, source: "concept-card-layered" },
+                        })
+                      )
+                      .catch(() => {})
+                  }}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                >
+                  Download
                 </button>
               ) : (
                 <a

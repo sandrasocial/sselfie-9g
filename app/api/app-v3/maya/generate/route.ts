@@ -24,13 +24,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import {
-  compileConceptJobs,
-  compileOverlayOnlyJob,
-  conceptOpenAISize,
-  type ImageJob,
-  type TextRenderMode,
-} from "@/lib/app-v3/prompt-compiler"
+import { compileConceptJobs, conceptOpenAISize, type ImageJob } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -53,15 +47,10 @@ const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story
 type ImgQuality = "low" | "medium" | "high"
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
 function qualityForFormat(format: OutputFormat): ImgQuality {
-  if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high") return QUALITY_OVERRIDE
+  if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high")
+    return QUALITY_OVERRIDE
   return format === "carousel" ? "medium" : "high"
 }
-
-// On-image text rendering for NEW photos (Mode B). gpt-image-2 renders photoreal + accurate text
-// in a single pass (~99% character accuracy), so one_pass is the default: faster, cheaper, and it
-// avoids the quality drop from stacking edits. Set APP_V3_TEXT_RENDER_MODE=two_pass to force the
-// clean-photo-then-overlay route when tighter text placement is needed (e.g. complex carousels).
-const TEXT_RENDER_MODE: TextRenderMode = process.env.APP_V3_TEXT_RENDER_MODE === "two_pass" ? "two_pass" : "one_pass"
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
 function isContentPolicyError(err: unknown): boolean {
@@ -86,7 +75,10 @@ const RISKY_WARDROBE =
  * wording, neutralize suggestive wardrobe terms, and add a modest-styling nudge.
  */
 function sanitizePromptForModeration(prompt: string): string {
-  const softened = prompt.split(IDENTITY_ANCHOR).join(IDENTITY_ANCHOR_SAFE).replace(RISKY_WARDROBE, "elegant")
+  const softened = prompt
+    .split(IDENTITY_ANCHOR)
+    .join(IDENTITY_ANCHOR_SAFE)
+    .replace(RISKY_WARDROBE, "elegant")
   return `${softened}\nKeep the styling modest, fully clothed, elegant, and tasteful.`
 }
 
@@ -143,7 +135,10 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
     pose: str(b.pose),
     cameraSpec: str(b.cameraSpec),
     lighting: str(b.lighting),
-    graphic: b.graphic && typeof b.graphic === "object" ? (b.graphic as CreativeBrief["graphic"]) : undefined,
+    graphic:
+      b.graphic && typeof b.graphic === "object"
+        ? (b.graphic as CreativeBrief["graphic"])
+        : undefined,
   }
 }
 
@@ -152,7 +147,7 @@ export async function POST(request: NextRequest) {
   if (!rate.success) {
     return NextResponse.json(
       { error: "Rate limit exceeded", retryAfter: rate.retryAfter },
-      { status: 429 },
+      { status: 429 }
     )
   }
 
@@ -170,7 +165,12 @@ export async function POST(request: NextRequest) {
       | (MayaGenerateConceptRequest & {
           /** MODE C: overlay text onto this existing image (their upload or a Library image). */
           baseImageUrl?: string
-          overlay?: { headline?: string; subline?: string; overlayStyle?: string; role?: "hook" | "value" | "cta" }
+          overlay?: {
+            headline?: string
+            subline?: string
+            overlayStyle?: string
+            role?: "hook" | "value" | "cta"
+          }
         })
       | null
     if (!body) {
@@ -185,10 +185,10 @@ export async function POST(request: NextRequest) {
     // Per mode: Mode C overlays text on a provided image; Modes A/B generate from the selfie.
     let jobs: ImageJob[]
     let referenceUrls: string[] = []
-    let baseImageSource: string | null = null
+    const baseImageSource: string | null = null
 
     if (baseImageUrl) {
-      // ── MODE C: overlay-only on the user's own / Library image (no selfie, no full brief). ──
+      // ── MODE C legacy guard: text overlays are now composited client-side, not by OpenAI. ──
       if (!isAllowedReferenceUrl(baseImageUrl)) {
         return NextResponse.json({ error: "That image can't be used here." }, { status: 400 })
       }
@@ -196,20 +196,10 @@ export async function POST(request: NextRequest) {
       if (!heading) {
         return NextResponse.json({ error: "Add the text you want on the image." }, { status: 400 })
       }
-      const overlayText = {
-        heading,
-        body: (body.overlay?.subline ?? body.brief?.graphic?.subline ?? "").trim(),
-      }
-      jobs = [
-        compileOverlayOnlyJob(
-          overlayText,
-          format,
-          body.overlay?.overlayStyle ?? body.brief?.graphic?.overlayStyle,
-          { aestheticId: body.aestheticId },
-          body.overlay?.role ?? "hook",
-        ),
-      ]
-      baseImageSource = baseImageUrl
+      return NextResponse.json(
+        { error: "Text overlays are now editable in the app. Use the local text layer export." },
+        { status: 410 }
+      )
     } else {
       // ── MODE A / B: generate from the selfie (identity anchor). ──
       const brief = normalizeBrief(body.brief)
@@ -220,19 +210,20 @@ export async function POST(request: NextRequest) {
       if (typeof referenceSelfieUrl !== "string" || !isAllowedReferenceUrl(referenceSelfieUrl)) {
         return NextResponse.json(
           { error: "A reference selfie is required to keep your likeness." },
-          { status: 400 },
+          { status: 400 }
         )
       }
       // Front face first, then any optional angles. Dedup + cap at 4. The selfie is the ONLY image
       // input; the Vault connects as text DNA, never as an attached example image.
       referenceUrls = Array.from(
         new Set(
-          [referenceSelfieUrl, ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : [])].filter(
-            isAllowedReferenceUrl,
-          ),
-        ),
+          [
+            referenceSelfieUrl,
+            ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : []),
+          ].filter(isAllowedReferenceUrl)
+        )
       ).slice(0, 4)
-      jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId }, TEXT_RENDER_MODE)
+      jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
     }
 
     const size = conceptOpenAISize(format)
@@ -241,7 +232,7 @@ export async function POST(request: NextRequest) {
     const imageCount = jobs.length
     const totalCost = CREDIT_COSTS.IMAGE * imageCount
     // What we store as the image's prompt (all passes, so photo descriptors + overlay text are searchable).
-    const recordPrompts = jobs.map((j) => j.passes.map((p) => p.prompt).join("\n\n--- pass ---\n\n"))
+    const recordPrompts = jobs.map(j => j.passes.map(p => p.prompt).join("\n\n--- pass ---\n\n"))
 
     // ── Neon user ──
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
@@ -263,7 +254,7 @@ export async function POST(request: NextRequest) {
             code: "generation_locked",
             action: "open_membership_checkout",
           },
-          { status: 403 },
+          { status: 403 }
         )
       }
       isTrialUser = access.level === "trial"
@@ -304,16 +295,24 @@ export async function POST(request: NextRequest) {
           required: totalCost,
           current,
         },
-        { status: 402 },
+        { status: 402 }
       )
     }
 
     const label = body.conceptTitle || body.brief?.outfit?.slice(0, 60) || `${format} overlay`
-    const deduction = await deductCredits(neonUser.id, totalCost, "image", `app-v3 ${format}: ${label}`)
+    const deduction = await deductCredits(
+      neonUser.id,
+      totalCost,
+      "image",
+      `app-v3 ${format}: ${label}`
+    )
     if (!deduction.success) {
       return NextResponse.json(
-        { error: deduction.error ?? "Credit deduction failed. Please try again.", code: "credit_deduction_failed" },
-        { status: 402 },
+        {
+          error: deduction.error ?? "Credit deduction failed. Please try again.",
+          code: "credit_deduction_failed",
+        },
+        { status: 402 }
       )
     }
 
@@ -321,10 +320,15 @@ export async function POST(request: NextRequest) {
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
       console.error("[app-v3 generate] OPENAI_API_KEY is not set in this environment.")
-      await refundCredits(neonUser.id, totalCost, "OpenAI API key not configured", refundRef).catch(() => {})
+      await refundCredits(neonUser.id, totalCost, "OpenAI API key not configured", refundRef).catch(
+        () => {}
+      )
       return NextResponse.json(
-        { error: "Image generation is temporarily unavailable. Please try again later.", code: "openai_not_configured" },
-        { status: 500 },
+        {
+          error: "Image generation is temporarily unavailable. Please try again later.",
+          code: "openai_not_configured",
+        },
+        { status: 500 }
       )
     }
 
@@ -335,7 +339,7 @@ export async function POST(request: NextRequest) {
       referenceUrls.map(async (url, i) => {
         const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
         return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
-      }),
+      })
     )
 
     // Prepare the user-provided base image once (Mode C overlay-only).
@@ -344,7 +348,7 @@ export async function POST(request: NextRequest) {
           await toFile(
             await normalizeReferenceForOpenAI(await readReferenceImage(baseImageSource)),
             "maya-base-input.png",
-            { type: "image/png" },
+            { type: "image/png" }
           ),
         ]
       : []
@@ -352,7 +356,7 @@ export async function POST(request: NextRequest) {
     // One edit call: prompt + image input(s) — the selfie(s), or the prior pass's clean photo.
     const runEdit = async (
       promptText: string,
-      images: Awaited<ReturnType<typeof toFile>>[],
+      images: Awaited<ReturnType<typeof toFile>>[]
     ): Promise<Buffer> => {
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
@@ -375,7 +379,7 @@ export async function POST(request: NextRequest) {
     // One edit call with a single graceful retry on a content-policy rejection.
     const runEditWithRetry = async (
       promptText: string,
-      images: Awaited<ReturnType<typeof toFile>>[],
+      images: Awaited<ReturnType<typeof toFile>>[]
     ): Promise<Buffer> => {
       try {
         return await runEdit(promptText, images)
@@ -437,7 +441,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Persist buffers to Blob + gallery. Throws on blob failure (caller refunds).
-    const persistBuffers = async (bufs: Buffer[]): Promise<{ url: string; id: number | null }[]> => {
+    const persistBuffers = async (
+      bufs: Buffer[]
+    ): Promise<{ url: string; id: number | null }[]> => {
       const stamp = Date.now()
       return Promise.all(
         bufs.map(async (buf, i) => {
@@ -461,7 +467,7 @@ export async function POST(request: NextRequest) {
             console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
           }
           return { url: blob.url, id }
-        }),
+        })
       )
     }
 
@@ -480,10 +486,11 @@ export async function POST(request: NextRequest) {
               rerun: isRerun,
               mode: baseImageSource ? "overlay" : "concept",
               aestheticId: body.aestheticId ?? null,
-              conceptTitle: typeof body.conceptTitle === "string" ? body.conceptTitle.slice(0, 120) : null,
+              conceptTitle:
+                typeof body.conceptTitle === "string" ? body.conceptTitle.slice(0, 120) : null,
               images: imageCount,
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -492,7 +499,7 @@ export async function POST(request: NextRequest) {
     const runStreamingPass = async (
       promptText: string,
       images: Awaited<ReturnType<typeof toFile>>[] | null,
-      onPartial: (b64: string) => void,
+      onPartial: (b64: string) => void
     ): Promise<Buffer> => {
       const base: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
@@ -506,10 +513,16 @@ export async function POST(request: NextRequest) {
       }
       if (images && OPENAI_IMAGE_MODEL !== "gpt-image-2") base.input_fidelity = "high"
       const events = images
-        ? await openai.images.edit({ ...base, image: images.length === 1 ? images[0] : images } as any)
+        ? await openai.images.edit({
+            ...base,
+            image: images.length === 1 ? images[0] : images,
+          } as any)
         : await openai.images.generate(base as any)
       let final: Buffer | null = null
-      for await (const event of events as unknown as AsyncIterable<{ type?: string; b64_json?: string }>) {
+      for await (const event of events as unknown as AsyncIterable<{
+        type?: string
+        b64_json?: string
+      }>) {
         if (typeof event?.b64_json !== "string") continue
         if (event.type?.endsWith("partial_image")) onPartial(event.b64_json)
         else if (event.type?.endsWith("completed")) final = Buffer.from(event.b64_json, "base64")
@@ -521,7 +534,7 @@ export async function POST(request: NextRequest) {
     const runStreamingPassWithRetry = async (
       promptText: string,
       images: Awaited<ReturnType<typeof toFile>>[] | null,
-      onPartial: (b64: string) => void,
+      onPartial: (b64: string) => void
     ): Promise<Buffer> => {
       try {
         return await runStreamingPass(promptText, images, onPartial)
@@ -542,7 +555,7 @@ export async function POST(request: NextRequest) {
       const encoder = new TextEncoder()
       const sse = (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)
       const streamBody = new ReadableStream({
-        start: async (controller) => {
+        start: async controller => {
           try {
             let current: Buffer | null = null
             for (let pi = 0; pi < job.passes.length; pi++) {
@@ -557,11 +570,13 @@ export async function POST(request: NextRequest) {
                       ? baseFiles
                       : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
               if (!isFinal) {
-                current = images ? await runEditWithRetry(pass.prompt, images) : await runGenerateWithRetry(pass.prompt)
+                current = images
+                  ? await runEditWithRetry(pass.prompt, images)
+                  : await runGenerateWithRetry(pass.prompt)
                 continue
               }
-              current = await runStreamingPassWithRetry(pass.prompt, images, (b64) =>
-                controller.enqueue(sse({ type: "partial", b64 })),
+              current = await runStreamingPassWithRetry(pass.prompt, images, b64 =>
+                controller.enqueue(sse({ type: "partial", b64 }))
               )
             }
             if (!current) throw new Error("Job produced no image")
@@ -577,10 +592,15 @@ export async function POST(request: NextRequest) {
                 aiImageId: persisted[0].id,
                 creditsDeducted: totalCost,
                 newBalance: deduction.newBalance,
-              }),
+              })
             )
           } catch (err) {
-            await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(() => {})
+            await refundCredits(
+              neonUser.id,
+              totalCost,
+              "OpenAI generation failed",
+              refundRef
+            ).catch(() => {})
             console.error("[app-v3 generate] Streaming generation failed:", err)
             controller.enqueue(
               sse({
@@ -588,7 +608,7 @@ export async function POST(request: NextRequest) {
                 error: isContentPolicyError(err)
                   ? "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you."
                   : "Failed to generate image. Please try again.",
-              }),
+              })
             )
           } finally {
             controller.close()
@@ -607,9 +627,11 @@ export async function POST(request: NextRequest) {
     // ── Generate every image (jobs run in parallel; passes within a job run sequentially) ──
     let buffers: Buffer[]
     try {
-      buffers = await Promise.all(jobs.map((j) => runJob(j)))
+      buffers = await Promise.all(jobs.map(j => runJob(j)))
     } catch (genError) {
-      await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(() => {})
+      await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(
+        () => {}
+      )
       if (isContentPolicyError(genError)) {
         return NextResponse.json(
           {
@@ -617,11 +639,14 @@ export async function POST(request: NextRequest) {
               "That look pushed against the image rules, even after I softened it. Try another concept or a different outfit and I'll get it for you.",
             code: "content_policy",
           },
-          { status: 400 },
+          { status: 400 }
         )
       }
       console.error("[app-v3 generate] Generation failed:", genError)
-      return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to generate image. Please try again." },
+        { status: 500 }
+      )
     }
 
     // ── Persist each image to Blob + gallery (ai_images). Blob failure refunds the set. ──
@@ -631,13 +656,19 @@ export async function POST(request: NextRequest) {
     } catch (blobError) {
       await refundCredits(neonUser.id, totalCost, "Blob upload failed", refundRef).catch(() => {})
       console.error("[app-v3 generate] Blob upload failed:", blobError)
-      return NextResponse.json({ error: "Failed to save image. Please try again." }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to save image. Please try again." },
+        { status: 500 }
+      )
     }
 
-    const imageUrls = persisted.map((p) => p.url)
+    const imageUrls = persisted.map(p => p.url)
     if (imageUrls.length === 0) {
       await refundCredits(neonUser.id, totalCost, "No images saved", refundRef).catch(() => {})
-      return NextResponse.json({ error: "Failed to save image. Please try again." }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to save image. Please try again." },
+        { status: 500 }
+      )
     }
 
     logGenerated(imageUrls.length)
@@ -652,6 +683,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[app-v3 generate] Unexpected error:", error)
-    return NextResponse.json({ error: "Failed to generate image. Please try again." }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to generate image. Please try again." },
+      { status: 500 }
+    )
   }
 }

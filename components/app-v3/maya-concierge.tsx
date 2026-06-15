@@ -29,6 +29,7 @@ import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
+import type { TextLayerSpec } from "@/lib/app-v3/overlay-layer"
 import type { OutputFormat } from "./types"
 import {
   clearMayaDraft,
@@ -251,7 +252,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     () => restoredDraft?.genState ?? {}
   )
   // Fullscreen viewer: the set of image urls currently open (null = closed).
-  const [lightbox, setLightbox] = useState<string[] | null>(null)
+  const [lightbox, setLightbox] = useState<{ images: string[]; overlays?: TextLayerSpec[] } | null>(
+    null
+  )
   // True Edit Mode target: which generated image we're refining.
   const [editTarget, setEditTarget] = useState<{
     key: string
@@ -1336,7 +1339,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                           gen={genState[key] ?? { status: "idle" }}
                           format={format}
                           onGenerate={() => void generateConcept(key, concept)}
-                          onOpen={urls => setLightbox(urls)}
+                          onOpen={(urls, overlays) => setLightbox({ images: urls, overlays })}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format })
@@ -1488,7 +1491,13 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         </div>
       </aside>
 
-      {lightbox && <ImageLightbox images={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && (
+        <ImageLightbox
+          images={lightbox.images}
+          overlays={lightbox.overlays}
+          onClose={() => setLightbox(null)}
+        />
+      )}
 
       <CreditModal
         open={creditModal.open}
