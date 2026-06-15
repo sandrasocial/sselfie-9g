@@ -1056,7 +1056,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
             {showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
-                  Full-body looks come out best with a few angles. All optional.
+                  For best results, add one full-body shot and one side profile so Maya can keep
+                  your face and body true to you. You can also add an inspo picture and ask Maya
+                  for that same face, that vibe. All optional.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[

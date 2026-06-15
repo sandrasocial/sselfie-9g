@@ -1,9 +1,9 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Visual Front Door.
+// SSELFIE Studio 3.0 - Visual Front Door.
 // A quiet, editorial grid of Prompt Vault aesthetics. Click a vibe to start (this is the
 // decision-fatigue remover). Picking a tile hands off to Maya with the vibe preloaded.
-// Design system: light luxury editorial — Seasalt surfaces, Night for contrast, Cormorant
+// Design system: light luxury editorial - Seasalt surfaces, Night for contrast, Cormorant
 // display, generous spacing, no icons/emojis, no gradients/color.
 
 import { memo, useEffect, useState } from "react"
@@ -61,12 +61,14 @@ export function VisualFrontDoor({
   subtitle = "Choose the look you want. Maya takes it from there: one selfie becomes a full brand shoot.",
   note = "Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · your gallery",
   compact = false,
+  showTrialFirstRunStep = false,
 }: {
   eyebrow?: string
   title?: string
   subtitle?: string
   note?: string | null
   compact?: boolean
+  showTrialFirstRunStep?: boolean
 } = {}) {
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
@@ -101,6 +103,12 @@ export function VisualFrontDoor({
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#4F5052]">{subtitle}</p>
         {note && <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">{note}</p>}
       </header>
+
+      {showTrialFirstRunStep && (
+        <p className="mb-5 border-l border-[#0D0E10] bg-white px-4 py-3 text-[13px] leading-relaxed text-[#3A3632]">
+          Step 1: add one selfie so Maya keeps your face.
+        </p>
+      )}
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
       <div className="[column-fill:_balance] columns-1 gap-3 min-[380px]:columns-2 sm:columns-3 sm:gap-4 lg:columns-4">

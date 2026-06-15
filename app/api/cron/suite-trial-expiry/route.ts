@@ -1,7 +1,8 @@
-// BRIDGE-01 Phase D — SUITE trial lifecycle cron (daily).
+// BRIDGE-01 Phase D - SUITE trial lifecycle cron (daily).
 //
-// 1. Day-5 reminder ("2 days left") to active trials ending within 2 days.
-// 2. Expiry: flips overdue suite_trial rows to status='expired', zeroes the unspent part
+// 1. No-first-image nudge for active trials 36h+ in with no trial_first_generation.
+// 2. Day-5 reminder ("2 days left") to active trials ending within 2 days.
+// 3. Expiry: flips overdue suite_trial rows to status='expired', zeroes the unspent part
 //    of the 20-credit trial grant (credit_transactions type 'trial_expiry'), and sends the
 //    trial-ended email.
 //
@@ -13,7 +14,11 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
-import { generateTrialDay5Email, generateTrialEndedEmail } from "@/lib/email/templates/suite-trial"
+import {
+  generateTrialDay5Email,
+  generateTrialEndedEmail,
+  generateTrialNoFirstImageEmail,
+} from "@/lib/email/templates/suite-trial"
 import { TRIAL_CREDITS } from "@/lib/trial/suite-trial"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { EMAIL_CONFIG } from "@/lib/email/config"
@@ -53,8 +58,58 @@ export async function GET(request: Request) {
     }
 
     const results = {
+      noFirstImage: { sent: 0, failed: 0, skipped: 0 },
       day5: { sent: 0, failed: 0, skipped: 0 },
       expired: { flipped: 0, creditsZeroed: 0, emailed: 0, failed: 0 },
+    }
+
+    // ── Day 1.5-2 activation nudge: active trials that have not made their first image ──
+    const noFirstImageTrials = await sql`
+      SELECT s.user_id, u.email, u.display_name
+      FROM subscriptions s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.product_type = 'suite_trial'
+        AND s.status = 'active'
+        AND s.created_at <= NOW() - INTERVAL '36 hours'
+        AND s.trial_ends_at > NOW() + INTERVAL '2 days'
+        AND u.email IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM analytics_events ae
+          WHERE ae.user_id = s.user_id::text
+            AND ae.event_name = 'trial_first_generation'
+          LIMIT 1
+        )
+    `
+
+    for (const trial of noFirstImageTrials) {
+      try {
+        if (await alreadyEmailed(trial.email, "suite_trial_no_first_image")) {
+          results.noFirstImage.skipped++
+          continue
+        }
+        const email = generateTrialNoFirstImageEmail({
+          customerName: trial.display_name,
+          customerEmail: trial.email,
+        })
+        const result = await sendEmail({
+          to: trial.email,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+          emailType: "suite_trial_no_first_image",
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          tags: ["suite-trial", "no-first-image"],
+          marketing: true,
+        })
+        if (result.success) results.noFirstImage.sent++
+        else results.noFirstImage.failed++
+        await new Promise((r) => setTimeout(r, 150))
+      } catch (e) {
+        console.error(`[suite-trial-expiry] no-first-image send failed for ${trial.email}:`, e)
+        results.noFirstImage.failed++
+      }
     }
 
     // ── Day-5 reminder: active trials ending within the next 2 days ──

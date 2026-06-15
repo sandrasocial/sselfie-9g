@@ -1,9 +1,9 @@
 "use client"
 
-// SSELFIE Studio 3.0 — app shell + product navigation (MAYA-REBUILD-05 Phase H.2).
+// SSELFIE Studio 3.0 - app shell + product navigation (MAYA-REBUILD-05 Phase H.2).
 // Maya is the product, not a tab. She is woven through every surface. The nav is the five
 // places content lives: Create · Photos · Content · Library · Account (BRIDGE-01 Phase C:
-// the photo gallery became "Photos" and "Library" is now everything she owns — courses,
+// the photo gallery became "Photos" and "Library" is now everything she owns - courses,
 // products, drops). No standalone "Maya" tab, and no link to the legacy Instagram
 // feed-planner (that planner mentality is the old SSELFIE; the live Feed Planner stays
 // untouched for members on /studio).
@@ -26,6 +26,7 @@ export interface AppV3ShellProps {
   /** BRIDGE-01 Phase D: "full" member, "trial" (badge + days left), "limited" (no generation). */
   accessLevel?: "full" | "trial" | "limited"
   trialDaysLeft?: number | null
+  trialHasGeneratedImages?: boolean
   initialSection?: AppV3Section
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
   hasTrainedModel?: boolean
@@ -62,6 +63,7 @@ function ShellInner({
   firstName,
   accessLevel = "full",
   trialDaysLeft,
+  trialHasGeneratedImages = false,
   initialSection = "create",
   hasTrainedModel = false,
 }: AppV3ShellProps) {
@@ -153,7 +155,9 @@ function ShellInner({
             </div>
           </div>
         ) : (
-          <VisualFrontDoor />
+          <VisualFrontDoor
+            showTrialFirstRunStep={accessLevel === "trial" && !trialHasGeneratedImages}
+          />
         ))}
       {section === "photos" && <GalleryView />}
       {section === "content" && (
@@ -204,6 +208,7 @@ export function AppV3Shell({
   firstName,
   accessLevel,
   trialDaysLeft,
+  trialHasGeneratedImages,
   initialSection,
   hasTrainedModel,
 }: AppV3ShellProps) {
@@ -213,6 +218,7 @@ export function AppV3Shell({
         firstName={firstName}
         accessLevel={accessLevel}
         trialDaysLeft={trialDaysLeft}
+        trialHasGeneratedImages={trialHasGeneratedImages}
         initialSection={initialSection}
         hasTrainedModel={hasTrainedModel}
       />

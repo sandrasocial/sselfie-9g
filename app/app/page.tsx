@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — /app route (server component).
+// SSELFIE Studio 3.0 - /app route (server component).
 //
 // Access (cutover state):
 // - Not authenticated  → /auth/login (returnTo=/app)
@@ -51,6 +51,7 @@ export default async function StudioV3Page({
   // Rollback is one env flip (APP_V3_MEMBERS_ENABLED=false returns members to /studio).
   let accessLevel: "full" | "trial" | "limited" = "full"
   let trialDaysLeft: number | null = null
+  let trialHasGeneratedImages = false
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
@@ -68,6 +69,19 @@ export default async function StudioV3Page({
           else if (access.level === "trial") {
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft
+            try {
+              const rows = await import("@/lib/db/client").then(({ sql }) => sql`
+                SELECT 1
+                FROM ai_images
+                WHERE user_id = ${neonUserId}
+                  AND image_url IS NOT NULL
+                  AND (generation_status = 'completed' OR generation_status IS NULL)
+                LIMIT 1
+              `)
+              trialHasGeneratedImages = rows.length > 0
+            } catch (imageErr) {
+              console.error("[/app gate] trial generated-image check failed:", imageErr)
+            }
           } else if (access.level === "limited") resolved = "limited"
 
           try {
@@ -109,6 +123,7 @@ export default async function StudioV3Page({
       trialDaysLeft={trialDaysLeft}
       initialSection={initialSection}
       hasTrainedModel={hasTrainedModel}
+      trialHasGeneratedImages={trialHasGeneratedImages}
     />
   )
 }
