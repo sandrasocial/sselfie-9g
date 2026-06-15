@@ -1,16 +1,12 @@
 // @vitest-environment node
 
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
-import { buildTextLayerSpecs } from "@/lib/app-v3/overlay-layer"
 import { compileConceptJobs } from "@/lib/app-v3/prompt-compiler"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
 const read = (path: string) => readFileSync(path, "utf8")
-
-const bakedTextPhrases =
-  /Render the text|Render all text|Then add|headline prominently|spelled exactly|perfectly legible/i
 
 const brief: CreativeBrief = {
   outfit: "The Row cream cashmere turtleneck",
@@ -22,7 +18,6 @@ const brief: CreativeBrief = {
   graphic: {
     headline: "Look expensive without trying",
     subline: "Three quiet styling moves",
-    overlayStyle: "editorial-serif-center",
     designSystem: "cutout-editorial",
     slides: [
       {
@@ -41,51 +36,40 @@ const brief: CreativeBrief = {
   },
 }
 
-describe("MAYA-FIX-03 editable overlay text layer", () => {
-  it("keeps graphic generation prompts text-free", () => {
+describe("CONTENT-CAROUSEL-03 retired overlay layer", () => {
+  it("bakes graphic text into image-model prompts instead of creating local text layers", () => {
     const jobs = [
       ...compileConceptJobs(brief, "carousel"),
-      ...compileConceptJobs(brief, "reel-cover", undefined, "one_pass"),
-      ...compileConceptJobs(brief, "story-slide", undefined, "two_pass"),
+      ...compileConceptJobs(brief, "reel-cover"),
+      ...compileConceptJobs(brief, "story-slide"),
     ]
-    const prompts = jobs.flatMap(job => job.passes.map(pass => pass.prompt))
+    const prompts = jobs.flatMap(job => job.passes.map(pass => pass.prompt)).join("\n")
 
-    expect(prompts.join("\n")).not.toMatch(bakedTextPhrases)
-    expect(prompts.join("\n")).toMatch(/Do not render any text/)
+    expect(prompts).toMatch(/Render this exact headline inside the image/)
+    expect(prompts).toMatch(/Render all text spelled exactly as written/)
+    expect(prompts).not.toMatch(/future app text layer|editable typography|Do not render any text/i)
     expect(jobs.every(job => job.passes.length === 1)).toBe(true)
+    expect(jobs.every(job => job.passes.every(pass => pass.input === "selfie"))).toBe(true)
   })
 
-  it("builds editable layer specs from graphic copy instead of baking copy into prompts", () => {
-    expect(buildTextLayerSpecs(brief, "photo")).toEqual([])
-
-    const carouselLayers = buildTextLayerSpecs(brief, "carousel")
-    expect(carouselLayers).toHaveLength(3)
-    expect(carouselLayers[0]).toMatchObject({
-      headline: "Start with one clean base",
-      subline: "Let the shape do the work",
-      styleId: "editorial-serif-center",
-      role: "hook",
-      format: "carousel",
-    })
-    expect(carouselLayers[2]).toMatchObject({ role: "cta", slideIndex: 2, slideCount: 3 })
-
-    const coverLayers = buildTextLayerSpecs(brief, "reel-cover")
-    expect(coverLayers).toHaveLength(1)
-    expect(coverLayers[0]).toMatchObject({
-      headline: "Look expensive without trying",
-      subline: "Three quiet styling moves",
-      format: "reel-cover",
-    })
+  it("removes the live local overlay/composer modules", () => {
+    expect(existsSync("components/app-v3/layered-image.tsx")).toBe(false)
+    expect(existsSync("components/app-v3/overlay-composer.tsx")).toBe(false)
+    expect(existsSync("components/app-v3/style-options-card.tsx")).toBe(false)
+    expect(existsSync("lib/app-v3/overlay-layer.ts")).toBe(false)
+    expect(existsSync("lib/app-v3/maya/overlay-styles.ts")).toBe(false)
+    expect(existsSync("lib/app-v3/maya/style-example-store.ts")).toBe(false)
+    expect(existsSync("app/api/admin/style-examples/route.ts")).toBe(false)
   })
 
-  it("makes the overlay composer local, editable, and short-copy constrained", () => {
-    const composer = read("components/app-v3/overlay-composer.tsx")
+  it("removes the Maya style picker tool from the live chat route", () => {
+    const route = read("app/api/app-v3/maya/chat/route.ts")
+    const persona = read("lib/app-v3/maya/persona.ts")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(composer).not.toContain("/api/app-v3/maya/generate")
-    expect(composer).not.toContain("Uses 1 credit")
-    expect(composer).toContain("maxLength={48}")
-    expect(composer).toContain("maxLength={80}")
-    expect(composer).toContain("Keep it short, like a magazine cover line.")
-    expect(composer).toContain("downloadLayeredImage")
+    expect(route).not.toContain("show_style_options")
+    expect(route).not.toContain("overlayStyle")
+    expect(persona).not.toContain("getOverlayStyleGuide")
+    expect(concierge).not.toContain("StyleOptionsCard")
   })
 })

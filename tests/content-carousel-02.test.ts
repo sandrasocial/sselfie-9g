@@ -7,19 +7,20 @@ const mocks = vi.hoisted(() => {
     "https://blob.public.blob.vercel-storage.com/content-kit/reel-references/reel-1/scene-1.png"
   const coverUrl =
     "https://blob.public.blob.vercel-storage.com/content-kit/reel-references/reel-1/cover.png"
-  const generatedCoverUrl =
-    "https://blob.public.blob.vercel-storage.com/content-kit/generated/tutorial-cover.png"
-  const generatedResultUrl =
-    "https://blob.public.blob.vercel-storage.com/content-kit/generated/tutorial-result.png"
+  const styledUrl = (i: number) =>
+    `https://blob.public.blob.vercel-storage.com/content-kit/styled/tutorial-${i}.png`
+  let redesignCalls = 0
   return {
     screenshotUrl,
     coverUrl,
-    generatedCoverUrl,
-    generatedResultUrl,
-    generateShotImage: vi
-      .fn()
-      .mockResolvedValueOnce(generatedCoverUrl)
-      .mockResolvedValueOnce(generatedResultUrl),
+    resetRedesignCounter: () => {
+      redesignCalls = 0
+    },
+    redesignContentSlide: vi.fn(async (_input: any) => styledUrl(++redesignCalls)),
+    pickContentStyleReference: vi.fn(async () => ({
+      imageUrl: "https://blob.public.blob.vercel-storage.com/content-kit/style/tutorial.png",
+      label: "approved tutorial anchor",
+    })),
   }
 })
 
@@ -109,7 +110,6 @@ vi.mock("@/lib/analytics/reports", () => ({
 
 vi.mock("@/lib/content-kit/shoot-generator", () => ({
   getShoot: vi.fn(async () => null),
-  generateShotImage: mocks.generateShotImage,
 }))
 
 vi.mock("@/lib/content-kit/demo-generator", () => ({
@@ -118,46 +118,37 @@ vi.mock("@/lib/content-kit/demo-generator", () => ({
   ]),
 }))
 
-describe("CONTENT-CAROUSEL-02 new-world tutorial generation", () => {
+vi.mock("@/lib/content-kit/slide-redesign-generator", () => ({
+  pickContentStyleReference: mocks.pickContentStyleReference,
+  redesignContentSlide: mocks.redesignContentSlide,
+}))
+
+describe("CONTENT-CAROUSEL-02/03 tutorial image-to-image generation", () => {
   beforeEach(() => {
-    mocks.generateShotImage.mockReset()
-    mocks.generateShotImage
-      .mockResolvedValueOnce(mocks.generatedCoverUrl)
-      .mockResolvedValueOnce(mocks.generatedResultUrl)
+    mocks.resetRedesignCounter()
+    mocks.redesignContentSlide.mockClear()
+    mocks.pickContentStyleReference.mockClear()
   })
 
-  it("generates cover/result images while preserving screenshots as composited overlays", async () => {
+  it("redesigns each tutorial slide from real reel frames into finished baked slides", async () => {
     const { generateTutorialCarousels } = await import("@/lib/content-kit/carousel-generator")
 
     const [deck] = await generateTutorialCarousels({
       mode: "tutorial",
       topic: "phone settings before a selfie shoot",
-      world: "hotel-mirror",
       keyword: "KIT",
     })
 
-    expect(mocks.generateShotImage).toHaveBeenCalledTimes(2)
-    const generateInputs = mocks.generateShotImage.mock.calls.map(([input]) => input)
-    expect(generateInputs.flatMap(input => input.inspirationUrls)).not.toContain(
-      mocks.screenshotUrl
-    )
-    expect(generateInputs.flatMap(input => input.inspirationUrls)).not.toContain(mocks.coverUrl)
-    expect(generateInputs.every(input => input.inspirationUrls.length === 0)).toBe(true)
+    expect(mocks.pickContentStyleReference).toHaveBeenCalledWith("tutorial")
+    expect(mocks.redesignContentSlide).toHaveBeenCalledTimes(deck.slides.length)
+    const calls = mocks.redesignContentSlide.mock.calls.map(([input]) => input)
+    expect(calls.some(input => input.referenceUrl === mocks.screenshotUrl)).toBe(true)
+    expect(calls.some(input => input.referenceUrl === mocks.coverUrl)).toBe(true)
+    expect(calls.every(input => input.category === "tutorial")).toBe(true)
 
-    const cover = deck.slides.find(slide => slide.kind === "hook")
-    const beforeAfter = deck.slides.find(slide => slide.kind === "before-after")
-    const screenshotSlide = deck.slides.find(slide =>
-      slide.overlayAssets?.some(asset => asset.url === mocks.screenshotUrl)
-    )
-
-    expect(cover?.imageUrl).toBe(mocks.generatedCoverUrl)
-    expect(cover?.headlineRender).toBe("baked")
-    expect(beforeAfter?.overlayAssets?.[0]?.url).toBe(mocks.generatedResultUrl)
-    expect(beforeAfter?.headlineRender).toBe("baked")
-    expect(screenshotSlide?.overlayAssets?.[0]).toMatchObject({
-      url: mocks.screenshotUrl,
-      placement: "full",
-      fit: "contain",
-    })
+    expect(deck.slides.every(slide => slide.imageUrl?.includes("/content-kit/styled/"))).toBe(true)
+    expect(deck.slides.every(slide => slide.headlineRender === "baked")).toBe(true)
+    expect(deck.slides.every(slide => !slide.overlayAssets?.length)).toBe(true)
+    expect(deck.slides.every(slide => !slide.accents?.length)).toBe(true)
   })
 })

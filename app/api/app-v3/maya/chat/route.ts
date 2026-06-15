@@ -48,8 +48,8 @@ const graphicSpec = z
             .enum(["identity", "detail", "text-only"])
             .optional()
             .describe(
-              "Slide type: identity = she appears (MAX 2 per carousel), detail = object shot from " +
-                "her world with no people, text-only = designed typographic slide."
+              "Slide type: identity = she appears, detail = object shot from her world, " +
+                "text-only = designed typographic slide. The image model bakes the finished slide."
             ),
           detailSubject: z
             .string()
@@ -60,18 +60,6 @@ const graphicSpec = z
         })
       )
       .optional(),
-    overlayStyle: z
-      .enum([
-        "editorial-serif-center",
-        "lower-third-accent",
-        "top-band-minimal",
-        "quote-statement",
-        "series-cover",
-      ])
-      .optional()
-      .describe(
-        "Text-overlay style for this concept, chosen to fit her brand and the post's emotion."
-      ),
     designSystem: z
       .enum(["cutout-editorial", "full-bleed-editorial", "soft-minimal"])
       .optional()
@@ -488,7 +476,7 @@ export async function POST(req: Request) {
           "---",
           "## ADMIN CONTENT TOOLS AVAILABLE",
           "When Sandra asks for a carousel, story sequence, content tool, or wants to reuse an approved shoot, use the admin content tools instead of only explaining.",
-          "When Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after teaching deck, or content based on strong reels, use create_admin_tutorial_carousel so the reel-reference library can be picked and rendered with burgundy callouts. If the new world is unclear, propose hotel mirror, cafe, marble bathroom, at-home mirror, window light, or street style.",
+          "When Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after teaching deck, or content based on strong reels, use create_admin_tutorial_carousel so the real reel-reference frames can be redesigned into finished editorial slides.",
           "When Sandra asks to approve, publish, add to the Vault, or send the drop email, use the admin publish and Vault drop handoff tools.",
           "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
           "Carousels and story sequences are drafts only. Publishing a shoot to the Vault is allowed only through the explicit publish tool. Email sends always stay behind the handoff card buttons.",
@@ -562,33 +550,6 @@ export async function POST(req: Request) {
           console.error("[app-v3 maya chat] remember tool failed:", e)
           return { saved: false }
         }
-      },
-    })
-
-    // SUITE-UX-02 slice 6: the text styles become something she can SEE and tap, not guess
-    // from names. Cards carry the admin-curated example image per style (app_v3_style_examples).
-    const showStyleOptions = tool({
-      description:
-        "Show the text style options as tappable visual example cards. Call this when she asks what " +
-        "text/overlay styles exist, wants to choose how the text or the slides look, or asks for 'a " +
-        "different style' on a cover, story slide, or carousel. Keep your reply to one short line and " +
-        "do NOT call emit_concepts in the same turn; after she taps a style, use it (graphic.overlayStyle " +
-        "or graphic.designSystem) on every following concept until she changes it.",
-      inputSchema: z.object({
-        kind: z
-          .enum(["overlay", "carousel"])
-          .optional()
-          .describe(
-            "overlay = text styles for covers and story slides; carousel = whole-set design systems. " +
-              "Defaults to what fits the current format."
-          ),
-      }),
-      execute: async ({ kind }) => {
-        const resolved = kind ?? (format === "carousel" ? "carousel" : "overlay")
-        const { listStyleOptions } = await import("@/lib/app-v3/maya/style-example-store")
-        const options = await listStyleOptions(resolved).catch(() => [])
-        logBehavior("suite_style_options_shown", { format, kind: resolved })
-        return { kind: resolved, options }
       },
     })
 
@@ -739,25 +700,6 @@ export async function POST(req: Request) {
           .enum(["KIT", "PROMPT", "PRESET", "SELFIE"])
           .optional()
           .describe("CTA keyword. Defaults to KIT."),
-        world: z
-          .enum([
-            "hotel-mirror",
-            "cafe",
-            "marble-bathroom",
-            "at-home-mirror",
-            "window-light",
-            "street-style",
-          ])
-          .optional()
-          .describe(
-            "New-world preset for generated cover/result scenes. Propose hotel mirror, cafe, marble bathroom, at-home mirror, window light, or street style when Sandra has not chosen."
-          ),
-        customWorld: z
-          .string()
-          .optional()
-          .describe(
-            "Sandra's custom world/location/outfit/lighting direction if she asks for one."
-          ),
       }),
       execute: async ({
         topic,
@@ -766,8 +708,6 @@ export async function POST(req: Request) {
         imageUrls,
         overlayUrls,
         keyword,
-        world,
-        customWorld,
       }) => {
         try {
           const { generateCarousels, listContentReelReferences } =
@@ -789,8 +729,6 @@ export async function POST(req: Request) {
             imageUrls: [...(imageUrls ?? []), ...referenceUrls],
             overlayUrls: [...(overlayUrls ?? []), ...sceneReferenceUrls],
             keyword,
-            world,
-            customWorld,
           })
           return {
             kind: "carousel" as const,
@@ -993,7 +931,6 @@ export async function POST(req: Request) {
       ask_clarify: askClarify,
       set_format: setFormat,
       remember,
-      show_style_options: showStyleOptions,
       ...(isAdminSession
         ? {
             show_admin_content_sources: showAdminContentSources,

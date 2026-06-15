@@ -3,9 +3,13 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
-import { generateShotImage, getShoot } from "@/lib/content-kit/shoot-generator"
+import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
-import type { CarouselDeck, CarouselSlide, ContentOverlayAsset } from "@/lib/content-kit/types"
+import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
+import {
+  pickContentStyleReference,
+  redesignContentSlide,
+} from "@/lib/content-kit/slide-redesign-generator"
 import {
   audienceBlock,
   funnelBlock,
@@ -15,7 +19,6 @@ import {
   voiceBlock,
 } from "@/lib/content/grounding"
 import { getCarouselDesignGuide } from "@/lib/app-v3/maya/carousel-design-systems"
-import { getOverlayStyleGuide } from "@/lib/app-v3/maya/overlay-styles"
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
@@ -36,26 +39,10 @@ TUTORIAL CAROUSEL RULES:
 - Allowed kinds: "hook", "step", "list", "quote", "photo", "before-after", "cta".
 - Use "before-after" exactly once.
 - Add "accents" to 2-4 practical teaching slides. Accent types: "arrow", "circle", "squiggle". Targets: top-left, top-right, middle-left, middle-right, bottom-left, bottom-right, center, keyword.
-- Real screenshot/reference slides must use overlayAssets, not imageUrl, so the renderer keeps the screenshot pixels exact and composites the burgundy callouts on top.
-- Keep text short. Generated scene/photo slides can carry a short headline, but long teaching text stays composited.
+- Real screenshot/reference slides must be redesigned by gpt-image-2 from the real frame, not rebuilt by a coded lesson template.
+- Keep text short because the image model bakes all headline, helper text and callouts into the finished slide.
 - CTA keyword must be one of KIT, PROMPT, PRESET, or SELFIE. Default to KIT unless Sandra asked for a different funnel.
 `.trim()
-
-export const TUTORIAL_WORLD_PRESETS = {
-  "hotel-mirror":
-    "luxury hotel mirror selfie world: clean marble, soft robe or tailored monochrome outfit, warm bathroom sconces, polished but realistic skin, phone-shot intimacy",
-  cafe: "quiet European cafe world: marble table, coffee, black sunglasses, tailored coat, natural window light, soft film grain, expensive but everyday",
-  "marble-bathroom":
-    "marble bathroom world: cream stone, chrome fixtures, soft overhead glow, simple black or ivory outfit, fresh makeup, mirror reflection composition",
-  "at-home-mirror":
-    "full-body at-home mirror world: clean bedroom corner, simple fitted outfit, soft daylight, believable home details, confident natural posture",
-  "window-light":
-    "window-light portrait world: sheer curtains, calm morning light, soft shadows, minimal jewelry, close editorial crop, natural expression",
-  "street-style":
-    "street style world: city sidewalk, tailored coat, sunglasses, motion in the background, natural daylight, candid editorial energy",
-} as const
-
-export type TutorialWorldPreset = keyof typeof TUTORIAL_WORLD_PRESETS
 
 type GeneratorInput = {
   count?: number
@@ -71,12 +58,6 @@ type GeneratorInput = {
   reelReferenceIds?: number[]
   /** Tutorial CTA keyword. Defaults to KIT. */
   keyword?: "KIT" | "PROMPT" | "PRESET" | "SELFIE"
-  /** New-world preset for generated cover/result scenes. */
-  worldPreset?: TutorialWorldPreset
-  /** Optional free-text world, used when Sandra asks for a custom location/outfit/lighting. */
-  customWorld?: string
-  /** Back-compat/simple tool arg. Matches a preset id when possible, otherwise becomes customWorld. */
-  world?: string
 }
 
 function isAllowedImageUrl(value: string): boolean {
@@ -86,10 +67,6 @@ function isAllowedImageUrl(value: string): boolean {
   } catch {
     return false
   }
-}
-
-function isReelReferenceUrl(value?: string): boolean {
-  return Boolean(value?.includes("/content-kit/reel-references/"))
 }
 
 async function resolveShootImages(
@@ -171,101 +148,6 @@ export async function listContentReelReferences({
     }))
 }
 
-function applyShootImages(
-  slides: CarouselSlide[],
-  imageUrls: string[],
-  overlayUrls: string[]
-): CarouselSlide[] {
-  if (imageUrls.length === 0) return slides
-  const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
-    url,
-    label: `Overlay ${index + 1}`,
-    placement: index % 2 === 0 ? "middle-right" : "bottom-right",
-  }))
-
-  return slides.map((slide, index) => {
-    const next: CarouselSlide = {
-      ...slide,
-      imageUrl: imageUrls[index % imageUrls.length],
-    }
-    if (slide.kind === "step" || slide.kind === "list" || slide.kind === "quote") {
-      const overlay = overlays[(index - 1) % Math.max(overlays.length, 1)]
-      if (overlay) next.overlayAssets = [overlay]
-    }
-    return next
-  })
-}
-
-function applyTutorialMedia(
-  slides: CarouselSlide[],
-  imageUrls: string[],
-  overlayUrls: string[],
-  generatedScenes: { coverUrl?: string; resultUrl?: string } = {}
-): CarouselSlide[] {
-  const sceneImages = imageUrls.slice(0, 8)
-  const screenshotAssets = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
-    url,
-    label: index === 0 ? "before" : `setting ${index}`,
-    placement: index % 2 === 0 ? "full" : "center",
-    fit: "contain",
-  }))
-  return slides.map((slide, index) => {
-    const next: CarouselSlide = { ...slide }
-    if (slide.kind === "hook" && generatedScenes.coverUrl) {
-      next.imageUrl = generatedScenes.coverUrl
-      next.headlineRender = "baked"
-    } else if (slide.kind === "photo" && generatedScenes.resultUrl) {
-      next.imageUrl = generatedScenes.resultUrl
-      next.headlineRender = "baked"
-    } else if (
-      (slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta") &&
-      sceneImages.length > 0
-    ) {
-      next.imageUrl = slide.imageUrl || sceneImages[index % sceneImages.length]
-      next.headlineRender = next.headlineRender ?? "composited"
-    }
-
-    if (slide.kind === "before-after") {
-      const beforeUrl = screenshotAssets[0]?.url || sceneImages[0]
-      const afterUrl =
-        generatedScenes.resultUrl || sceneImages[1] || sceneImages[0] || screenshotAssets[1]?.url
-      if (beforeUrl) next.imageUrl = beforeUrl
-      if (afterUrl) {
-        next.overlayAssets = [
-          {
-            url: afterUrl,
-            label: "after",
-            placement: "right",
-            fit: "cover",
-          },
-        ]
-      }
-      if (generatedScenes.resultUrl) next.headlineRender = "baked"
-      next.accents = next.accents?.length
-        ? next.accents
-        : [
-            { type: "arrow", target: "center" },
-            { type: "circle", target: "bottom-right" },
-          ]
-      return next
-    }
-
-    if (
-      (slide.kind === "step" || slide.kind === "list" || slide.kind === "quote") &&
-      screenshotAssets.length > 0
-    ) {
-      const asset =
-        screenshotAssets[
-          (((index - 1) % screenshotAssets.length) + screenshotAssets.length) %
-            screenshotAssets.length
-        ]
-      next.overlayAssets = slide.overlayAssets?.length ? slide.overlayAssets : [asset]
-    }
-
-    return next
-  })
-}
-
 type RawCarousel = {
   title: string
   slug: string
@@ -337,124 +219,123 @@ function referencesSummary(refs: ContentReelReference[]): string {
     .join("\n")
 }
 
-function resolveTutorialWorld(input: GeneratorInput): {
-  label: string
-  prompt: string
-  preset: TutorialWorldPreset | null
-} {
-  const worldValue = input.world?.trim()
-  const preset =
-    input.worldPreset ??
-    (worldValue && worldValue in TUTORIAL_WORLD_PRESETS
-      ? (worldValue as TutorialWorldPreset)
-      : undefined)
-  if (preset) {
-    return {
-      label: preset,
-      prompt: TUTORIAL_WORLD_PRESETS[preset],
-      preset,
-    }
-  }
-  const custom =
-    input.customWorld?.trim() ||
-    (worldValue && !(worldValue in TUTORIAL_WORLD_PRESETS) ? worldValue : "")
-  if (custom) return { label: "custom", prompt: custom, preset: null }
-  return {
-    label: "cafe",
-    prompt: TUTORIAL_WORLD_PRESETS.cafe,
-    preset: "cafe",
-  }
-}
-
-function shortBakedHeadline(value?: string): string {
-  const clean = sanitizeGroundedText(value || "Look like yourself")
-    .replace(/[^\w\s']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-  return clean.split(" ").slice(0, 6).join(" ") || "Look like yourself"
-}
-
-function buildTutorialScenePrompt({
-  role,
-  headline,
-  topic,
-  worldPrompt,
-  poseHint,
+function pickTutorialReference({
+  slide,
+  index,
+  coverRefs,
+  sceneRefs,
+  sourceImages,
+  uploadedImages,
+  uploadedOverlays,
 }: {
-  role: "cover" | "result"
-  headline: string
-  topic: string
-  worldPrompt: string
-  poseHint?: string | null
-}) {
-  return `Create a vertical 9:16 editorial tutorial carousel ${role} slide for SSELFIE.
-
-World: ${worldPrompt}
-Tutorial topic: ${topic}
-${poseHint ? `Reference framing cue: ${poseHint}` : ""}
-
-Use the uploaded selfie as the only source for the woman's face, identity, skin tone, natural skin texture, hair color, age and body. Keep her recognizable and natural. The image should look like a believable premium phone-created brand photo, not plastic AI.
-
-Render this exact short headline inside the image: "${headline}"
-Headline placement: elegant serif-inspired white editorial type in the lower third, readable, minimal, no extra words. Baked text can approximate the brand serif; exact Cormorant matching is not expected and this can fall back to the composited renderer if misspelled.
-
-Composition: leave calm negative space for the text, no face covered, no busy Canva look, no red or green tutorial marks, no emojis, no fake phone UI, no random logos.
-Avoid: distorted hands, extra fingers, plastic skin, heavy glam makeup, cartoonish AI style, CGI, blur, random logos, warped text, misspelled text.`
+  slide: CarouselSlide
+  index: number
+  coverRefs: string[]
+  sceneRefs: string[]
+  sourceImages: string[]
+  uploadedImages: string[]
+  uploadedOverlays: string[]
+}): string | null {
+  const scenePool = [...sceneRefs, ...uploadedOverlays, ...sourceImages, ...uploadedImages].filter(
+    isAllowedImageUrl
+  )
+  const coverPool = [...coverRefs, ...sourceImages, ...uploadedImages, ...sceneRefs].filter(
+    isAllowedImageUrl
+  )
+  if (slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta") {
+    return coverPool[index % Math.max(coverPool.length, 1)] ?? null
+  }
+  return scenePool[index % Math.max(scenePool.length, 1)] ?? coverPool[0] ?? null
 }
 
-export async function generateTutorialSceneImages({
-  topic,
+async function redesignTutorialSlides({
   slides,
-  world,
+  topic,
+  coverRefs,
+  sceneRefs,
+  sourceImages,
+  uploadedImages,
+  uploadedOverlays,
 }: {
-  topic: string
   slides: CarouselSlide[]
-  world: ReturnType<typeof resolveTutorialWorld>
-}): Promise<{ coverUrl?: string; resultUrl?: string }> {
-  const selfieUrls = (await listAdminSelfies()).filter(isAllowedImageUrl).slice(0, 4)
-  if (selfieUrls.length === 0) return {}
+  topic: string
+  coverRefs: string[]
+  sceneRefs: string[]
+  sourceImages: string[]
+  uploadedImages: string[]
+  uploadedOverlays: string[]
+}): Promise<CarouselSlide[]> {
+  const style = await pickContentStyleReference("tutorial")
+  if (!style) throw new Error("No tutorial style references found")
 
-  // HARD INVARIANT: new-world generation uses Sandra's clean selfies + the world prompt only.
-  // No content_reel_references URL may enter gpt-image-2; those frames stay screenshot-safe in
-  // overlayAssets/before images so old baked text or settings UI cannot be redrawn.
-  if (selfieUrls.some(isReelReferenceUrl)) {
-    throw new Error("Refusing to generate from reel-reference URLs")
-  }
-  const coverSlide = slides.find(slide => slide.kind === "hook") ?? slides[0]
-  const resultSlide = slides.find(slide => slide.kind === "before-after" || slide.kind === "photo")
-  const coverHeadline = shortBakedHeadline(coverSlide?.title)
-  const resultHeadline = shortBakedHeadline(resultSlide?.title || "From this to this")
-  const [cover, result] = await Promise.allSettled([
-    generateShotImage({
-      selfieUrls,
-      inspirationUrls: [],
-      prompt: buildTutorialScenePrompt({
-        role: "cover",
-        headline: coverHeadline,
-        topic,
-        worldPrompt: world.prompt,
-        poseHint: coverSlide?.body,
-      }),
-      quality: "high",
-    }),
-    generateShotImage({
-      selfieUrls,
-      inspirationUrls: [],
-      prompt: buildTutorialScenePrompt({
-        role: "result",
-        headline: resultHeadline,
-        topic,
-        worldPrompt: world.prompt,
-        poseHint: resultSlide?.body,
-      }),
-      quality: "high",
-    }),
-  ])
+  return Promise.all(
+    slides.map(async (slide, index) => {
+      const referenceUrl = pickTutorialReference({
+        slide,
+        index,
+        coverRefs,
+        sceneRefs,
+        sourceImages,
+        uploadedImages,
+        uploadedOverlays,
+      })
+      if (!referenceUrl) throw new Error("No tutorial reference frame available")
 
-  return {
-    coverUrl: cover.status === "fulfilled" ? cover.value : undefined,
-    resultUrl: result.status === "fulfilled" ? result.value : undefined,
-  }
+      const imageUrl = await redesignContentSlide({
+        referenceUrl,
+        styleReferenceUrl: style.imageUrl,
+        styleLabel: style.label,
+        category: "tutorial",
+        topic,
+        slide,
+      })
+
+      return {
+        ...slide,
+        imageUrl,
+        headlineRender: "baked" as const,
+        overlayAssets: undefined,
+        accents: undefined,
+        gridUrls: undefined,
+      }
+    })
+  )
+}
+
+async function redesignPhotoshootCarouselSlides({
+  slides,
+  topic,
+  referenceUrls,
+}: {
+  slides: CarouselSlide[]
+  topic: string
+  referenceUrls: string[]
+}): Promise<CarouselSlide[]> {
+  const style = await pickContentStyleReference("photoshoot-carousel")
+  if (!style) throw new Error("No photoshoot-carousel style references found")
+  const pool = referenceUrls.filter(isAllowedImageUrl)
+  if (pool.length === 0) throw new Error("No carousel reference image available")
+
+  return Promise.all(
+    slides.map(async (slide, index) => {
+      const imageUrl = await redesignContentSlide({
+        referenceUrl: pool[index % pool.length],
+        styleReferenceUrl: style.imageUrl,
+        styleLabel: style.label,
+        category: "photoshoot-carousel",
+        topic,
+        slide,
+      })
+      return {
+        ...slide,
+        imageUrl,
+        headlineRender: "baked" as const,
+        overlayAssets: undefined,
+        accents: undefined,
+        gridUrls: undefined,
+      }
+    })
+  )
 }
 
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
@@ -465,7 +346,6 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
     ...sourceShoot.imageUrls,
     ...(input.imageUrls ?? []).filter(isAllowedImageUrl),
   ].slice(0, 8)
-  const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
   // Shoot-sourced runs describe one designed object, so default to one deck.
   const count = Math.min(Math.max(input.count ?? (imageUrls.length > 0 ? 1 : 2), 1), 4)
 
@@ -521,8 +401,6 @@ ${funnelBlock()}
 
 ${getCarouselDesignGuide()}
 
-${getOverlayStyleGuide()}
-
 ${SLIDE_RULES}
 
 HER REAL WINNERS (live data from ig_media_snapshots, study the patterns):
@@ -531,7 +409,7 @@ ${winners || "- (no snapshot data available)"}
 THIS WEEK'S BRIEF CAROUSEL IDEAS (expand these first${input.topic ? ", unless the requested topic overrides" : ""}):
 ${carouselPieces || "- (no weekly brief found: invent carousels from her winners and niche)"}
 ${input.topic ? `\nREQUESTED TOPIC (priority): ${input.topic}` : ""}
-${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this carousel as an extension of that exact shoot. The approved shoot photos will be the backgrounds on the rendered slides, so keep the copy short enough to sit on photos and make it feel like one finished shoot-based content piece.` : ""}
+${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this carousel as an extension of that exact shoot. The approved shoot photos will be the grounded reference frames for the model-designed slides, so keep the copy short enough to bake into a finished shoot-based content piece.` : ""}
 
 Write ${count} complete carousel deck(s). Teach something stealable: her audience saves carousels that give them numbered, concrete steps they can use today (selfie angles, ChatGPT photo prompts, posing, editing prompts like color grading / lens looks / outfit changes).
 
@@ -540,7 +418,7 @@ Every carousel must:
 - Use the reach-vs-desire truth: teach the selfie/AI skill, then connect it to the income, identity, relief, or visibility she wants.
 - Use the proof block's save-bait structure: numbered steps, clear cover text, one keyword/save CTA, no known-flop formats.
 - Use Sandra's no-fake doctrine. Promise "Look like yourself, at your best." Never imply trickery.
-- Choose one of the carousel design systems and one overlay style direction. The renderer uses composited text layers, so write concise slide copy that sits beautifully on approved shoot images.
+- Choose one of the carousel design systems. The image model renders the final slide, so write concise copy that can be baked cleanly into the image.
 
 Return ONLY a JSON array, no commentary:
 [
@@ -566,7 +444,15 @@ Return ONLY a JSON array, no commentary:
   const decks: CarouselDeck[] = []
   for (const carousel of raw.slice(0, count)) {
     if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) continue
-    const slides = applyShootImages(sanitizeSlides(carousel.slides), imageUrls, overlayUrls)
+    const sanitized = sanitizeSlides(carousel.slides)
+    const fallbackSelfies = imageUrls.length
+      ? []
+      : await listAdminSelfies().catch(() => [] as string[])
+    const slides = await redesignPhotoshootCarouselSlides({
+      slides: sanitized,
+      topic: input.topic || carousel.title,
+      referenceUrls: [...imageUrls, ...fallbackSelfies],
+    })
     const slug = (carousel.slug || carousel.title)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -614,12 +500,7 @@ export async function generateTutorialCarousels(input: GeneratorInput): Promise<
   const uploadedOverlays = (input.overlayUrls ?? []).filter(isAllowedImageUrl)
   const coverRefs = reelReferences.filter(ref => ref.kind === "cover").map(ref => ref.imageUrl)
   const sceneRefs = reelReferences.filter(ref => ref.kind === "scene").map(ref => ref.imageUrl)
-  const imageUrls = [...sourceShoot.imageUrls, ...uploadedImages, ...coverRefs, ...sceneRefs]
-    .filter(isAllowedImageUrl)
-    .slice(0, 8)
-  const overlayUrls = [...uploadedOverlays, ...sceneRefs].filter(isAllowedImageUrl).slice(0, 8)
   const keyword = input.keyword ?? "KIT"
-  const world = resolveTutorialWorld(input)
   const topic =
     input.topic?.trim() || "a selfie tutorial carousel from Sandra's strongest reel references"
 
@@ -650,8 +531,8 @@ ${referencesSummary(reelReferences)}
 REQUESTED TUTORIAL TOPIC:
 ${topic}
 
-NEW-WORLD VARIATION:
-${world.label}: ${world.prompt}
+VISUAL SOURCE RULE:
+Every finished slide must come from the real reel frame or approved image reference. Do not invent a new café cover or unrelated scene.
 
 ${sourceShoot.title ? `SOURCE PHOTOSHOOT: "${sourceShoot.title}". Use it as the visual source when slide copy talks about the finished result.` : ""}
 
@@ -696,15 +577,15 @@ Return ONLY a JSON array with one object:
   }
 
   const shapedSlides = ensureTutorialShape(carousel.slides, keyword)
-  const generatedScenes = await generateTutorialSceneImages({
-    topic,
+  const slides = await redesignTutorialSlides({
     slides: shapedSlides,
-    world,
-  }).catch(error => {
-    console.error("[content-kit] tutorial new-world generation skipped:", error)
-    return {}
+    topic,
+    coverRefs,
+    sceneRefs,
+    sourceImages: sourceShoot.imageUrls,
+    uploadedImages,
+    uploadedOverlays,
   })
-  const slides = applyTutorialMedia(shapedSlides, imageUrls, overlayUrls, generatedScenes)
   const title = sanitizeGroundedText(carousel.title || `Tutorial carousel: ${topic}`).trim()
   const slug = (carousel.slug || title)
     .toLowerCase()

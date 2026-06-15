@@ -46,8 +46,6 @@ export interface ConceptGraphicSpec {
     visual?: "identity" | "detail" | "text-only"
     detailSubject?: string
   }[]
-  /** Chosen text-overlay style id (lib/app-v3/maya/overlay-styles). Maya picks per brand + emotion. */
-  overlayStyle?: string
   /** Carousel design system id (lib/app-v3/maya/carousel-design-systems). Maya picks per concept. */
   designSystem?: string
 }

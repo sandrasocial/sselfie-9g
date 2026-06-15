@@ -43,17 +43,16 @@ export type CarouselSlide = {
   items?: string[]
   stepNumber?: number
   footer?: string
-  /** Full-bleed background image (Vercel Blob URL). When set, the slide renders
-   * photo-first with a bottom scrim and white text — the niche-viral format. */
+  /** Full-bleed or finished slide image (Vercel Blob URL). */
   imageUrl?: string
   /** Tutorial scene slides can ask gpt-image-2 to bake short text into the generated image. */
   headlineRender?: "baked" | "composited"
   /** 2x2 grid images for kind "grid" (the prompts.ig signature: same person,
    * four worlds). Title overlays the grid when present. */
   gridUrls?: string[]
-  /** Optional screenshots, proof, or product images layered above the slide. */
+  /** Legacy/fallback screenshots or proof images for pre-CAROUSEL-03 decks. */
   overlayAssets?: ContentOverlayAsset[]
-  /** Tutorial-only composited callouts. Defaults to the muted oxblood tutorial accent. */
+  /** Legacy/fallback tutorial callouts for pre-CAROUSEL-03 decks. */
   accents?: ContentAccent[]
 }
 
@@ -80,9 +79,11 @@ export type StorySlide = {
   lines: StoryLine[]
   /** Tiny handwritten accent note (Caveat), e.g. "this is the shift", "I'll send it" */
   note?: string
-  /** Background photo (untouched — identity preservation is structural). */
+  /** Full-bleed or finished story image (Vercel Blob URL). */
   imageUrl?: string
-  /** Optional screenshots, proof, or product images layered above the story slide. */
+  /** CAROUSEL-03: finished story slides can come back from gpt-image-2 with text already baked. */
+  headlineRender?: "baked" | "composited"
+  /** Legacy/fallback screenshots or proof images for pre-CAROUSEL-03 story decks. */
   overlayAssets?: ContentOverlayAsset[]
 }
 

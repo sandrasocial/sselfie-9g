@@ -1,7 +1,7 @@
 // SSELFIE Studio 3.0 — prompt compiler.
 // Turns {aesthetic, output format, editorial intent} into OpenAI prompt(s). One prompt for
-// a single image; one prompt per slide for a carousel. Generated images stay text-free:
-// the app composites editable typography afterward. Pure + unit-testable.
+// a single image; one prompt per slide for a carousel. CAROUSEL-03: graphic formats return
+// finished, image-model-designed slides with text baked into the pixels. Pure + unit-testable.
 
 import type { GraphicTextSpec, OutputFormat } from "@/components/app-v3/types"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
@@ -20,7 +20,6 @@ import {
   recipeToPromptBlock,
 } from "@/lib/app-v3/maya/ingredients/aesthetic-recipes"
 import { getVaultSignatureDna } from "@/lib/app-v3/maya/vault-styles"
-import { resolveOverlayStyle } from "@/lib/app-v3/maya/overlay-styles"
 import {
   resolveDesignSystem,
   defaultSlideVisual,
@@ -35,8 +34,8 @@ const CANDID_EDITORIAL =
   "Make this a candid, caught-in-the-moment editorial photograph, like a real on-location shoot: " +
   "natural movement and a relaxed, unposed moment (walking, sitting, reaching for a coffee, glancing " +
   "away), never a stiff studio pose or a forced smile straight at the camera. Flattering light, " +
-  "refined healthy skin, tasteful natural makeup, great hair, elegant on-brand styling. Elevate her " +
-  "while keeping her clearly recognizable as the same person."
+  "refined healthy skin, tasteful natural makeup, great hair, elegant on-brand styling. Frame her " +
+  "at her best while keeping her clearly recognizable as the same person."
 import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
@@ -65,9 +64,9 @@ const BRAND_PHOTO_STYLE =
   "No added text, no logos, no graphic overlays."
 
 const BRAND_GRAPHIC_STYLE =
-  "Premium light-editorial image in the SSELFIE style: calm, spacious, high-end magazine feel. " +
-  "Neutral palette, generous negative space, refined composition. No emojis, no clip-art, no gradients, no clutter. " +
-  "Do not render text, letters, words, typography, logos, captions, UI, or graphic overlays."
+  "Premium SSELFIE editorial slide: calm, spacious, high-end magazine feel. Neutral palette, " +
+  "generous negative space, refined composition, elegant serif display type, clean supporting type, " +
+  "muted oxblood accents where useful. No emojis, no clip-art, no gradients, no clutter, no white lesson card."
 
 function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
@@ -80,10 +79,9 @@ function clean(text: string | undefined): string {
 //   image input. Structure: role -> identity lock -> scene -> outfit -> hair -> accessories ->
 //   pose -> composition -> mood -> color grading -> image quality -> avoid list.
 //
-//   SYSTEM B — Carousel / Reel cover / Story: NEVER bake text into the pixels. Generate clean,
-//   text-safe editorial imagery only; the React layer composites editable typography and export
-//   flattens it locally. The Vault connects as TEXT DNA only (aesthetic-recipes); the example
-//   image is never fed to generation, which prevents the model copying the inspiration person's face.
+//   SYSTEM B — Carousel / Reel cover / Story: gpt-image-2 is the designer. It renders the final
+//   editorial slide, including the exact short text/callouts, in one image-to-image pass. There is
+//   no React text-overlay layer after generation.
 
 export interface CompileConceptOptions {
   brandKit?: BrandKit | null
@@ -91,29 +89,29 @@ export interface CompileConceptOptions {
   aestheticId?: string | null
 }
 
-/** Deprecated compatibility type: text is now always composited by the app layer. */
+/** Deprecated compatibility type; ignored. Graphic text is now baked by the image model. */
 export type TextRenderMode = "two_pass" | "one_pass"
 
 /**
  * A single OpenAI call. The input image source:
  * - "selfie": attach the user's selfie(s) (identity) — new-photo generation (images.edit).
- * - "prev": legacy only; text overlays no longer call OpenAI.
- * - "base": legacy only; text overlays no longer call OpenAI.
- * - "none": NO image input — pure generation (images.generate). Used for carousel detail and
- *   text-only slides so her face physically cannot appear or drift on slides without her.
+ * - "prev": prior generated pass.
+ * - "base": legacy only; retired local text overlays no longer call OpenAI.
+ * - "none": NO image input — pure generation. Avoid for CAROUSEL-03 graphic slides unless a
+ *   future workflow has no grounded reference at all.
  */
 export interface PromptPass {
   prompt: string
   input: "selfie" | "prev" | "base" | "none"
 }
 
-/** One final image. Text for graphics is composited later by the app layer. */
+/** One final image. Graphic text/callouts are baked into the returned image. */
 export interface ImageJob {
   label: string
   passes: PromptPass[]
 }
 
-/** The brand palette line shared by every overlay (brand kit if present, else Quiet Luxury). */
+/** The brand palette line shared by every graphic slide (brand kit if present, else Quiet Luxury). */
 function paletteLine(brandKit?: BrandKit | null): string {
   if (brandKit?.colors?.length || brandKit?.fonts?.length) {
     return (
@@ -137,41 +135,40 @@ function gradeLine(opts?: CompileConceptOptions): string {
   )
 }
 
-/** Per-role text-safe composition (System B): where the photo leaves space for app typography. */
+/** Per-role composition guidance for where the model should integrate slide typography. */
 interface RoleLayout {
-  /** Negative-space direction baked into the clean photo so the app text layer has room. */
+  /** Negative-space direction baked into the finished slide so text stays legible. */
   space: string
-  /** Legacy UI placement note; never sent as a text-rendering instruction. */
+  /** Placement note for the model-rendered text. */
   place: string
 }
 const HOOK_LAYOUT: RoleLayout = {
-  space: "Leave clean negative space across the top third for a future editorial title layer.",
+  space: "Place the editorial title in clean negative space across the top third.",
   place: "top third",
 }
 const CTA_LAYOUT: RoleLayout = {
-  space:
-    "Keep a calm, uncluttered area in the lower third or center for a future call-to-action layer.",
+  space: "Place the call-to-action in a calm, uncluttered area in the lower third or center.",
   place: "center or lower third",
 }
 const VALUE_LAYOUTS: RoleLayout[] = [
   {
     space:
-      "She stands off to one side in a wider three-quarter shot, leaving clean negative space on the opposite side.",
+      "She stands off to one side in a wider three-quarter shot, with the message integrated on the opposite side.",
     place: "side negative space",
   },
   {
     space:
-      "A candid mid-moment, medium crop, eyes off-camera, with calm open space across the top.",
+      "A candid mid-moment, medium crop, eyes off-camera, with the message integrated across the top.",
     place: "top third",
   },
   {
     space:
-      "A quieter seated or leaning moment at a softer angle, with open space in the lower third.",
+      "A quieter seated or leaning moment at a softer angle, with the message integrated in the lower third.",
     place: "lower third",
   },
   {
     space:
-      "A profile or over-the-shoulder angle, she sits smaller in the frame, with generous open space.",
+      "A profile or over-the-shoulder angle, she sits smaller in the frame, with the message in the largest open area.",
     place: "largest open area",
   },
 ]
@@ -186,7 +183,7 @@ function resolveRole(role: string | undefined, i: number, total: number): "hook"
 /**
  * SYSTEM A — compile ONE editorial photo prompt (text-only, selfie is the only image input).
  * Order follows Sandra's proven 12-part structure. `safeSpace` (optional) makes the photo leave
- * room for the editable app text layer, and forbids the model rendering any text itself.
+ * room for model-rendered graphic text in the final slide.
  */
 function compilePhotoPrompt(
   brief: CreativeBrief,
@@ -200,7 +197,7 @@ function compilePhotoPrompt(
   const quality = format === "carousel" ? CAROUSEL_QUALITY : PORTRAIT_QUALITY
 
   const composition = safeSpace
-    ? `Composition: shot on ${camera}. ${safeSpace} Do not render any text, letters, typography, logos, captions, UI, borders, frames, or graphic overlays in this image; the app adds editable type afterward.`
+    ? `Composition: shot on ${camera}. ${safeSpace}`
     : `Composition: shot on ${camera}, fill the frame edge to edge with the final photo, no border, mockup, phone screen, or app UI.`
 
   // Ground the photo in the chosen Vault collection's real DNA (auto-derived, stays in sync).
@@ -228,12 +225,13 @@ function compilePhotoPrompt(
     .join("\n")
 }
 
-/** Legacy compatibility: build a text-free base image for surfaces that used to request overlays. */
-function compileOverlayPrompt(
+/** Finished one-slide graphic (Reel cover / Story) with text baked by the image model. */
+function compileSingleGraphicPrompt(
+  brief: CreativeBrief,
+  format: OutputFormat,
   text: { heading: string; body?: string },
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
-  format: OutputFormat,
   opts?: CompileConceptOptions
 ): string {
   const heading = clean(text.heading)
@@ -246,12 +244,21 @@ function compileOverlayPrompt(
         : "Instagram Story slide (9:16)"
 
   return [
-    `Create a clean editorial image base for this ${surface}.`,
-    "Preserve the original image feel exactly: do not change her identity, face, body, outfit, pose, lighting, background, colors, or composition.",
-    `The future app text layer is ${role === "cta" ? "a call-to-action" : "a short editorial line"} with this message: "${heading}".${body ? ` Supporting idea: "${body}".` : ""}`,
-    `Leave the cleanest open area around the ${layout.place} readable and calm. Do not cover her face, eyes, phone, hands, or strongest outfit details.`,
-    "Do not render any text, letters, typography, logos, captions, UI, borders, frames, or graphic overlays.",
+    `Create a finished ${surface} featuring the same woman from the reference image.`,
+    IDENTITY_ANCHOR,
+    clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
+    clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
+    "Keep her natural hair color, skin texture, age, and body proportions from the reference photo.",
+    clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
+    `Render this exact ${role === "cta" ? "call-to-action" : "editorial headline"} inside the image: "${heading}".`,
+    body ? `Render this exact supporting line too: "${body}".` : "",
+    `Text placement: ${layout.space} Keep it readable and calm around the ${layout.place}. Do not cover her face, eyes, phone, hands, or strongest outfit details.`,
+    BRAND_GRAPHIC_STYLE,
     paletteLine(opts?.brandKit),
+    gradeLine(opts),
+    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
+    REALISM_TOKENS + ".",
+    AVOID_LIST,
   ]
     .filter(Boolean)
     .join("\n")
@@ -262,13 +269,10 @@ function compileOverlayPrompt(
 // identity slides max, detail slides from her world (no people), and text-first slides —
 // all sharing one design system's palette, type, and decoration language.
 
-const TEXT_FREE_IMAGE =
-  "Do not render any text, letters, typography, logos, captions, UI, borders, frames, or graphic overlays."
-
 const NO_PEOPLE =
   "No people, no faces, no bodies, no hands, no human figures or silhouettes anywhere in the image."
 
-/** Identity slide (input: selfie) — she appears, with clean space for an app text layer. */
+/** Identity slide (input: selfie) — she appears, with text baked into the finished slide. */
 function compileCarouselIdentityPrompt(
   brief: CreativeBrief,
   system: CarouselDesignSystem,
@@ -293,7 +297,9 @@ function compileCarouselIdentityPrompt(
     clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
     // SUITE-UX-02: her moment should match the slide's copy, not just the set's scenery.
     `This slide's message: "${heading}". Her expression, gesture and the captured moment should match that message.`,
-    `Leave text-safe composition for the app layer: ${layout.space}`,
+    `Render this exact headline inside the image: "${heading}".`,
+    body ? `Render this exact supporting line too: "${body}".` : "",
+    `Typography placement: ${layout.space}`,
     system.identityTreatment,
     system.setDna,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
@@ -302,8 +308,7 @@ function compileCarouselIdentityPrompt(
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     paletteLine(opts?.brandKit),
-    `Future app text role: ${role}. Supporting idea: "${body || heading}".`,
-    TEXT_FREE_IMAGE + " Keep her face and eyes clear of busy background detail.",
+    `Finished slide role: ${role}. Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos. Keep her face and eyes clear of busy background detail.`,
     CAROUSEL_QUALITY,
     AVOID_LIST,
   ]
@@ -311,7 +316,7 @@ function compileCarouselIdentityPrompt(
     .join("\n")
 }
 
-/** Detail slide (input: none — pure generation): an object shot from her world, never a person. */
+/** Detail slide: a finished object/world slide with text baked by the model. */
 function compileCarouselDetailPrompt(
   brief: CreativeBrief,
   system: CarouselDesignSystem,
@@ -325,7 +330,7 @@ function compileCarouselDetailPrompt(
     clean(subject) ||
     `a beautiful real-life detail that belongs to this scene (a coffee cup, a notebook and pen, a phone on the table, fabric, or an interior corner): ${clean(brief.setting)}`
   return [
-    "Create a premium editorial DETAIL photograph for an Instagram carousel slide (4:5).",
+    "Create a finished premium editorial DETAIL slide for an Instagram carousel (4:5).",
     NO_PEOPLE,
     // SUITE-UX-02: the image must express the slide's message, not just the set's scenery —
     // this line is what keeps the photograph and the copy telling the same story.
@@ -336,8 +341,9 @@ function compileCarouselDetailPrompt(
     system.setDna,
     gradeLine(opts),
     paletteLine(opts?.brandKit),
-    `Leave calm negative space for the app text layer. Future app text role: value. Headline idea: "${heading}".${body ? ` Supporting idea: "${body}".` : ""}`,
-    TEXT_FREE_IMAGE,
+    `Render this exact headline inside the image: "${heading}".`,
+    body ? `Render this exact supporting line too: "${body}".` : "",
+    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
     "Real textures and believable light, like a beautiful phone photo, never stock-photo gloss or CGI.",
     CAROUSEL_QUALITY,
   ]
@@ -345,7 +351,7 @@ function compileCarouselDetailPrompt(
     .join("\n")
 }
 
-/** Text-led slide (input: none): a clean editorial background; copy is composited by the app. */
+/** Text-led slide: the model designs the full typographic slide. */
 function compileCarouselTextPrompt(
   brief: CreativeBrief,
   system: CarouselDesignSystem,
@@ -356,14 +362,15 @@ function compileCarouselTextPrompt(
   const heading = clean(text.heading)
   const body = clean(text.body)
   return [
-    "Create a clean premium editorial background for an Instagram carousel slide (4:5).",
+    "Create a finished premium editorial typographic slide for an Instagram carousel (4:5).",
     NO_PEOPLE,
-    `The future app text layer carries this ${role} message: "${heading}".${body ? ` Supporting idea: "${body}".` : ""}`,
+    `Render this exact ${role} headline inside the image: "${heading}".`,
+    body ? `Render this exact supporting line too: "${body}".` : "",
     system.textOnlyTreatment,
     system.setDna,
     paletteLine(opts?.brandKit),
-    "Generous quiet negative space, calm spacing, premium print texture, image-led rather than template-led.",
-    TEXT_FREE_IMAGE,
+    "Generous quiet spacing, premium print texture, editorial typography, no white lesson card.",
+    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
   ]
     .filter(Boolean)
     .join("\n")
@@ -372,9 +379,8 @@ function compileCarouselTextPrompt(
 /**
  * Compile a brief into the list of image JOBS the generate route runs.
  * - photo: one pass (selfie -> editorial photo).
- * - carousel: a designed SET — per slide, one pass routed by its visual role
- *   (identity -> selfie edit; detail / text-only -> pure generation, no selfie attached).
- * - reel-cover / story-slide: one clean text-safe photo; app layer composites typography.
+ * - carousel: a designed SET. Each slide returns a finished PNG with type/callouts baked in.
+ * - reel-cover / story-slide: one finished graphic image with type baked in.
  * Carousels stay cohesive (one design system + grade) while each slide varies its visual role.
  */
 export function compileConceptJobs(
@@ -453,7 +459,7 @@ export function compileConceptJobs(
           passes: [
             {
               prompt: compileCarouselDetailPrompt(brief, system, text, subject, opts),
-              input: "none" as const,
+              input: "selfie" as const,
             },
           ],
         }
@@ -463,14 +469,14 @@ export function compileConceptJobs(
         passes: [
           {
             prompt: compileCarouselTextPrompt(brief, system, text, role, opts),
-            input: "none" as const,
+            input: "selfie" as const,
           },
         ],
       }
     })
   }
 
-  // ── Reel cover / Story slide: single clean image with text-safe space. ──
+  // ── Reel cover / Story slide: single finished image with baked typography. ──
   let valueIdx = 0
   return slides.map((slide, i) => {
     const role = resolveRole(slide.role, i, total)
@@ -485,42 +491,20 @@ export function compileConceptJobs(
     return {
       label,
       passes: [
-        { prompt: compilePhotoPrompt(brief, format, opts, layout.space), input: "selfie" as const },
+        {
+          prompt: compileSingleGraphicPrompt(
+            brief,
+            format,
+            { heading: clean(slide.heading), body: clean(slide.body) },
+            layout,
+            role,
+            opts
+          ),
+          input: "selfie" as const,
+        },
       ],
     }
   })
-}
-
-/** Layout for an overlay placed on a user-provided image (we don't control its composition). */
-const OVERLAY_ONLY_LAYOUT: RoleLayout = {
-  space: "",
-  place:
-    "Place the text in the cleanest open area of the photo (the calm negative space, typically the " +
-    "top third or lower third), where it does not cover the main subject's face, eyes, hands, or key details.",
-}
-
-/**
- * MODE C legacy helper. Text overlays are composited client-side now; callers should not send this
- * job to OpenAI. Kept only so older imports/tests fail softly while the route returns 410.
- */
-export function compileOverlayOnlyJob(
-  text: { heading: string; body?: string },
-  format: OutputFormat,
-  overlayStyleId?: string | null,
-  opts?: CompileConceptOptions,
-  role: "hook" | "value" | "cta" = "hook"
-): ImageJob {
-  const style = resolveOverlayStyle(overlayStyleId)
-  const graphicFormat: OutputFormat = format === "photo" ? "story-slide" : format
-  return {
-    label: `clean base (${style.id})`,
-    passes: [
-      {
-        prompt: compileOverlayPrompt(text, OVERLAY_ONLY_LAYOUT, role, graphicFormat, opts),
-        input: "base",
-      },
-    ],
-  }
 }
 
 /** Vertical for photos/covers/stories, square for carousels (keeps text safe from cropping). */
@@ -563,8 +547,9 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
       const subline = clean(graphicText?.subline)
       const prompt =
         `${aestheticIntent} A vertical ${outputFormat === "reel-cover" ? "Reel cover" : "Story slide"} featuring the person from the reference image. ` +
-        `${BRAND_GRAPHIC_STYLE} Leave readable negative space for a future app text layer. Headline idea: "${headline}".` +
-        (subline ? ` Supporting idea: "${subline}".` : "") +
+        `${BRAND_GRAPHIC_STYLE} Render this exact headline inside the image: "${headline}".` +
+        (subline ? ` Render this exact supporting line too: "${subline}".` : "") +
+        " Render all text spelled exactly as written." +
         (input.isEdit && extra ? ` Apply this change: ${extra}.` : "")
       return { prompts: [prompt], size: "1024x1792" }
     }
@@ -581,8 +566,9 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
           ? `${aestheticIntent} Carousel COVER slide featuring the person from the reference image. `
           : `Carousel slide ${i + 1} of ${safeSlides.length} (text-led, no person needed unless natural). `
         return (
-          `${base}${cohesion} Leave readable negative space for the app text layer. Heading idea: "${clean(slide.heading)}".` +
-          (slide.body ? ` Body idea: "${clean(slide.body)}".` : "")
+          `${base}${cohesion} Render this exact heading inside the image: "${clean(slide.heading)}".` +
+          (slide.body ? ` Render this exact body line too: "${clean(slide.body)}".` : "") +
+          " Render all text spelled exactly as written."
         )
       })
       // Square keeps text safe from cropping (per product decision); covers stay vertical-friendly via layout.

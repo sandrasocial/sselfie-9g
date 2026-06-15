@@ -13,15 +13,6 @@ type ShootOption = {
 
 type UploadedAsset = { url: string; label: string }
 
-const TUTORIAL_WORLD_OPTIONS = [
-  { value: "hotel-mirror", label: "Hotel mirror" },
-  { value: "cafe", label: "Cafe" },
-  { value: "marble-bathroom", label: "Marble bathroom" },
-  { value: "at-home-mirror", label: "At-home mirror" },
-  { value: "window-light", label: "Window light" },
-  { value: "street-style", label: "Street style" },
-] as const
-
 function CopyChip({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
   return (
@@ -168,8 +159,6 @@ export function ContentKitClient({
 }) {
   const [decks, setDecks] = useState<CarouselDeck[]>(initialCarousels)
   const [mode, setMode] = useState<"standard" | "tutorial">("standard")
-  const [world, setWorld] = useState<(typeof TUTORIAL_WORLD_OPTIONS)[number]["value"]>("cafe")
-  const [customWorld, setCustomWorld] = useState("")
   const [topic, setTopic] = useState("")
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
@@ -222,8 +211,6 @@ export function ContentKitClient({
           sourceShootId: selectedShootId,
           imageUrls: backgrounds.map(asset => asset.url),
           overlayUrls: overlays.map(asset => asset.url),
-          world,
-          customWorld: customWorld.trim() || undefined,
         }),
       })
       const data = await response.json()
@@ -254,9 +241,8 @@ export function ContentKitClient({
             Carousel kit
           </h2>
           <p className="mt-1 text-sm text-stone-600">
-            Pick an approved shoot first. The carousel uses those photos as backgrounds, then layers
-            short teaching copy and any screenshots you upload on top. Tutorial mode can also pull
-            Sandra&apos;s reel-reference library.
+            Pick an approved shoot first. The carousel uses those photos or real reel frames as
+            grounded references, then returns finished slides with the copy baked in.
           </p>
         </div>
       </div>
@@ -330,30 +316,6 @@ export function ContentKitClient({
           placeholder="Optional teaching angle, e.g. the prompt behind this Paris shoot"
           className="w-full max-w-md rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
-        {mode === "tutorial" && (
-          <>
-            <select
-              value={world}
-              onChange={event =>
-                setWorld(event.target.value as (typeof TUTORIAL_WORLD_OPTIONS)[number]["value"])
-              }
-              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 focus:border-stone-950 focus:outline-none"
-            >
-              {TUTORIAL_WORLD_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={customWorld}
-              onChange={event => setCustomWorld(event.target.value)}
-              placeholder="Optional custom world"
-              className="w-full max-w-xs rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
-            />
-          </>
-        )}
         <button
           type="button"
           onClick={generate}
@@ -375,9 +337,9 @@ export function ContentKitClient({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
           <span className="block text-xs uppercase tracking-wide text-stone-500">
-            Extra backgrounds
+            Extra references
           </span>
-          <span className="mt-1 block">Only use these when the shoot needs one more scene.</span>
+          <span className="mt-1 block">Only use these when the deck needs one more source.</span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -391,7 +353,7 @@ export function ContentKitClient({
         </label>
         <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
           <span className="block text-xs uppercase tracking-wide text-stone-500">
-            Screenshot overlays
+            Screenshot references
           </span>
           <span className="mt-1 block">
             Use for ChatGPT screenshots, product proof, or examples.

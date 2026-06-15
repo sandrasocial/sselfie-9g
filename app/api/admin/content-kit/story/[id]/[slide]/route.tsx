@@ -171,6 +171,15 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
   const light = hasImage
   const noteColor = hasImage ? "rgba(255,255,255,0.92)" : STONE
 
+  if (slide.headlineRender === "baked" && slide.imageUrl) {
+    return (
+      <div style={{ width: WIDTH, height: HEIGHT, display: "flex", backgroundColor: OBSIDIAN }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={slide.imageUrl} width={WIDTH} height={HEIGHT} style={{ objectFit: "cover" }} />
+      </div>
+    )
+  }
+
   return (
     <div
       style={{

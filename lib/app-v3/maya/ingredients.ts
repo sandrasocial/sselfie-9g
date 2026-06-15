@@ -64,7 +64,7 @@ export const REALISM_TOKENS =
 export const ELEVATION =
   "Show the most polished, confident, editorial version of her: flattering light, refined and " +
   "healthy skin, tasteful natural makeup, great hair, elegant on-brand styling, strong posture, " +
-  "magazine-quality finish. Elevate her while keeping her clearly recognizable as the same person. " +
+  "magazine-quality finish. Frame her at her best while keeping her clearly recognizable as the same person. " +
   "Enhance; do not change who she is."
 
 /**
@@ -141,7 +141,11 @@ const POSITIONING_KEYWORDS: { key: keyof typeof CAMERA_SPECS; patterns: RegExp }
   { key: "street-style", patterns: /street|urban|soho|city|sidewalk/i },
   { key: "coffee-run", patterns: /coffee|cafe|café|errand|coffee run/i },
   { key: "cozy", patterns: /cozy|hygge|home|lounge|knit|fireplace|sofa/i },
-  { key: "luxury", patterns: /luxury|quiet luxury|editorial|the row|chanel|marble|hotel|elegant|refined|vogue|noir/i },
+  {
+    key: "luxury",
+    patterns:
+      /luxury|quiet luxury|editorial|the row|chanel|marble|hotel|elegant|refined|vogue|noir/i,
+  },
 ]
 
 /** Pick a positioning key from any free text (aesthetic intent, setting, outfit). */

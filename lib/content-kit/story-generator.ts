@@ -3,7 +3,12 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
-import type { ContentOverlayAsset, StorySequence, StorySlide } from "@/lib/content-kit/types"
+import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
+import {
+  pickContentStyleReference,
+  redesignContentSlide,
+} from "@/lib/content-kit/slide-redesign-generator"
+import type { CarouselSlide, StorySequence, StorySlide } from "@/lib/content-kit/types"
 import {
   audienceBlock,
   funnelBlock,
@@ -81,18 +86,9 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   return { imageUrls, title: shoot.title, id: shoot.id }
 }
 
-function sanitizeSlides(
-  slides: StorySlide[],
-  imageUrls: string[],
-  overlayUrls: string[]
-): StorySlide[] {
+function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
   const clean = (value?: string) => (value ? sanitizeGroundedText(value).trim() : undefined)
-  const overlays = overlayUrls.map<ContentOverlayAsset>((url, index) => ({
-    url,
-    label: `Overlay ${index + 1}`,
-    placement: index % 2 === 0 ? "middle-right" : "bottom-right",
-  }))
-  return slides.map((slide, index) => ({
+  return slides.map(slide => ({
     role: slide.role,
     note: clean(slide.note),
     lines: (slide.lines || [])
@@ -102,15 +98,52 @@ function sanitizeSlides(
         emphasis: Boolean(line.emphasis),
       }))
       .filter(line => line.text.length > 0),
-    // One photoshoot, rotated across slides. Identity preservation is structural:
-    // the photo is the untouched background layer, never re-generated.
-    imageUrl: imageUrls.length > 0 ? imageUrls[index % imageUrls.length] : undefined,
-    overlayAssets:
-      overlays.length > 0 &&
-      (slide.role === "proof" || slide.role === "teaching" || slide.role === "bridge")
-        ? [overlays[index % overlays.length]]
-        : undefined,
   }))
+}
+
+function storySlideToCarouselSlide(slide: StorySlide, index: number): CarouselSlide {
+  const lead = slide.lines.filter(line => line.size === "lead" || line.size === "keyword")
+  const support = slide.lines.filter(line => line.size === "support")
+  return {
+    kind: index === 0 ? "hook" : slide.role === "cta" ? "cta" : "photo",
+    eyebrow: slide.note || slide.role,
+    title: lead.map(line => line.text).join(" "),
+    body: support.map(line => line.text).join(" "),
+  }
+}
+
+async function redesignStorySlides({
+  slides,
+  topic,
+  referenceUrls,
+}: {
+  slides: StorySlide[]
+  topic: string
+  referenceUrls: string[]
+}): Promise<StorySlide[]> {
+  const style = await pickContentStyleReference("story-sequence")
+  if (!style) throw new Error("No story-sequence style references found")
+  const pool = referenceUrls.filter(isAllowedImageUrl)
+  if (pool.length === 0) throw new Error("No story reference image available")
+
+  return Promise.all(
+    slides.map(async (slide, index) => {
+      const imageUrl = await redesignContentSlide({
+        referenceUrl: pool[index % pool.length],
+        styleReferenceUrl: style.imageUrl,
+        styleLabel: style.label,
+        category: "story-sequence",
+        topic,
+        slide: storySlideToCarouselSlide(slide, index),
+      })
+      return {
+        ...slide,
+        imageUrl,
+        headlineRender: "baked" as const,
+        overlayAssets: undefined,
+      }
+    })
+  )
 }
 
 export async function generateStorySequence(input: {
@@ -163,7 +196,14 @@ Return ONLY a JSON array of slides, no commentary:
   const raw = extractJsonArray(text) as StorySlide[]
   if (!Array.isArray(raw) || raw.length < 4) throw new Error("LLM returned too few story slides")
 
-  const slides = sanitizeSlides(raw.slice(0, 8), imageUrls, overlayUrls)
+  const fallbackSelfies = imageUrls.length
+    ? []
+    : await listAdminSelfies().catch(() => [] as string[])
+  const slides = await redesignStorySlides({
+    slides: sanitizeSlides(raw.slice(0, 8)),
+    topic,
+    referenceUrls: [...imageUrls, ...overlayUrls, ...fallbackSelfies],
+  })
   const title = topic.slice(0, 90)
   await sql`
     ALTER TABLE content_story_sequences

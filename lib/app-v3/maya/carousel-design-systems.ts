@@ -1,15 +1,15 @@
 // SSELFIE Studio 3.0 — Carousel Design Systems (MAYA-REBUILD-16).
 //
-// A carousel is a mini editorial design system, not five AI photos with text (QA doc §10 and
+// A carousel is a mini editorial design system, not disconnected AI photos (QA doc §10 and
 // Sandra's reference grids). Each system is a complete visual language for the WHOLE set:
-// palette + grade, typography, decoration rules, and how each slide TYPE is treated. Slides
+// palette + grade, baked typography, decoration rules, and how each slide TYPE is treated. Slides
 // come in three visual roles:
 //   - "identity":  she appears (kept recognizable — the No-Fake doctrine). Default for most slides.
 //   - "detail":    a styled object shot from her world (coffee, desk, phone, notes). Use only on purpose.
 //   - "text-only": a designed typographic slide (lists, quotes, the CTA). No photo subject.
 //
-// Detail and text-only slides are generated WITHOUT the selfie attached (the route uses
-// images.generate, not edit), so her face physically cannot drift on slides that don't need it.
+// CAROUSEL-03: the image model is the designer. Finished slides bake type/callouts in the
+// generated image; there is no local text-overlay renderer after generation.
 // Doctrine: docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md — realism over perfection,
 // recognizable over idealized, creative direction over deception.
 
@@ -107,7 +107,7 @@ export const DEFAULT_DESIGN_SYSTEM_ID = "cutout-editorial"
 
 export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
   const key = (id ?? "").toLowerCase().trim()
-  return CAROUSEL_DESIGN_SYSTEMS.find((s) => s.id === key) ?? CAROUSEL_DESIGN_SYSTEMS[0]
+  return CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === key) ?? CAROUSEL_DESIGN_SYSTEMS[0]
 }
 
 /**
@@ -116,15 +116,18 @@ export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
  * still-life slides. Identity is the default; detail/text-only happen only when Maya
  * deliberately tags them.
  */
-export function defaultSlideVisual(role: "hook" | "value" | "cta", _valueIndex: number): SlideVisual {
+export function defaultSlideVisual(
+  role: "hook" | "value" | "cta",
+  _valueIndex: number
+): SlideVisual {
   return role === "value" || role === "hook" || role === "cta" ? "identity" : "detail"
 }
 
 /** The carousel design guide injected into Maya's system prompt (carousel format only). */
 export function getCarouselDesignGuide(): string {
-  const systems = CAROUSEL_DESIGN_SYSTEMS.map(
-    (s) => `- "${s.id}" (${s.name}): ${s.whenToUse}`,
-  ).join("\n")
+  const systems = CAROUSEL_DESIGN_SYSTEMS.map(s => `- "${s.id}" (${s.name}): ${s.whenToUse}`).join(
+    "\n"
+  )
   return [
     "## CAROUSEL DESIGN SYSTEMS (a carousel is a mini editorial design system, not 5 photos of her with text)",
     "",
@@ -136,7 +139,6 @@ export function getCarouselDesignGuide(): string {
     "- Your 3 concepts must NOT all use the same design system: give at least two different systems across the set, so she sees genuinely different directions, not one style three times.",
     "- Match system to topic and look: moody or authority -> full-bleed-editorial; teaching or collage energy -> cutout-editorial; light, bright, checklist -> soft-minimal.",
     "- If she asks for a specific style, or repeats one she loved, honor that instead.",
-    "- If she asks what styles exist or wants to choose the look herself, call show_style_options (kind 'carousel') so she can tap an example card; then use her pick on every following concept until she changes it.",
     "",
     "Slide mix rules (non-negotiable):",
     '- Tag every slide with "visual": "identity" | "detail" | "text-only".',

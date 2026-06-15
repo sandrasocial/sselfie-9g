@@ -12,7 +12,6 @@ import {
 import type { OutputFormat } from "@/components/app-v3/types"
 import type { BrandKit } from "./concept-types"
 import { CAMERA_SPECS, LIGHTING_OPTIONS, QUIET_LUXURY_FALLBACK } from "./ingredients"
-import { getOverlayStyleGuide } from "./overlay-styles"
 import { getCarouselDesignGuide } from "./carousel-design-systems"
 
 // Re-export the brain so app-v3 imports it from one place.
@@ -24,7 +23,11 @@ export interface AppV3SystemPromptContext {
   format: OutputFormat
   brandKit?: BrandKit | null
   /** Cross-session memory: the name she gave you + what you already know about her brand. */
-  memory?: { agentName?: string | null; brandNotes?: string | null; preferences?: string | null } | null
+  memory?: {
+    agentName?: string | null
+    brandNotes?: string | null
+    preferences?: string | null
+  } | null
   /** Recent meaningful things she created (signal for "what is she likely making now"). */
   recentActivity?: string[] | null
   /** Her authoritative brand profile from the existing SSELFIE system (getUserContextForMaya). */
@@ -42,16 +45,18 @@ function memoryBlock(memory?: AppV3SystemPromptContext["memory"]): string {
   const lines: string[] = []
   if (memory.agentName?.trim()) {
     lines.push(
-      `The user named you "${memory.agentName.trim()}". Answer warmly to that name. It is the relationship you two share, and it is why she keeps coming back.`,
+      `The user named you "${memory.agentName.trim()}". Answer warmly to that name. It is the relationship you two share, and it is why she keeps coming back.`
     )
   }
   if (memory.brandNotes?.trim()) {
     lines.push(
-      `What you already know about her brand (do not re-ask what you already know): ${memory.brandNotes.trim()}`,
+      `What you already know about her brand (do not re-ask what you already know): ${memory.brandNotes.trim()}`
     )
   }
   if (memory.preferences?.trim()) {
-    lines.push(`Her style preferences and the things she avoids (respect these in every concept): ${memory.preferences.trim()}`)
+    lines.push(
+      `Her style preferences and the things she avoids (respect these in every concept): ${memory.preferences.trim()}`
+    )
   }
   if (lines.length === 0) return ""
   return [
@@ -81,7 +86,8 @@ const FORMAT_OPEN_VARIABLE: Record<OutputFormat, string> = {
   photo: "Usually nothing is missing: the look plus her selfie is enough. Create.",
   "reel-cover": "The only thing you might not know is the reel's specific topic.",
   carousel: "The only thing you might not know is the topic and its teaching angle.",
-  "story-slide": "The only thing you might not know is the objective (a poll, engagement, a sale, or a story moment).",
+  "story-slide":
+    "The only thing you might not know is the objective (a poll, engagement, a sale, or a story moment).",
 }
 
 function brandKitLine(brandKit?: BrandKit | null): string {
@@ -125,7 +131,6 @@ Chosen styling intent: ${ctx.aestheticIntent}
 **The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
 ${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
-${ctx.format !== "photo" ? `\n${getOverlayStyleGuide()}\n` : ""}
 ${ctx.format === "carousel" ? `\n${getCarouselDesignGuide()}\n` : ""}
 
 ${brandKitLine(ctx.brandKit)}

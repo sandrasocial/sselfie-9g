@@ -7,7 +7,6 @@
 import { memo, startTransition, useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import { ImageLightbox } from "./image-lightbox"
-import { OverlayComposer } from "./overlay-composer"
 
 // Memoized with a STABLE onOpen, so opening the lightbox/composer (a state change) does not
 // re-render every gallery image at once (that synchronous commit tripped INP).
@@ -41,8 +40,6 @@ export function GalleryView() {
   const [images, setImages] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  // Mode C composer: { url } starts from a Library image; { url: null } starts in upload mode.
-  const [composer, setComposer] = useState<{ url: string | null } | null>(null)
 
   // Stable so the memoized tiles don't re-render when the lightbox/composer opens.
   const openLightbox = useCallback((i: number) => startTransition(() => setLightboxIndex(i)), [])
@@ -63,13 +60,6 @@ export function GalleryView() {
             Everything you&apos;ve made
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => startTransition(() => setComposer({ url: null }))}
-          className="inline-flex min-h-11 shrink-0 items-center rounded-[6px] border border-[#0D0E10] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] transition-colors hover:bg-[#0D0E10] hover:text-white"
-        >
-          Add text to a photo
-        </button>
       </header>
 
       {images === null && !error && (
@@ -98,17 +88,7 @@ export function GalleryView() {
           images={images}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
-          onAddText={url =>
-            startTransition(() => {
-              setLightboxIndex(null)
-              setComposer({ url })
-            })
-          }
         />
-      )}
-
-      {composer && (
-        <OverlayComposer initialImageUrl={composer.url} onClose={() => setComposer(null)} />
       )}
     </div>
   )

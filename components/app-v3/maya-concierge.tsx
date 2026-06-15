@@ -17,7 +17,6 @@ import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { ClarifyCard } from "./clarify-card"
-import { StyleOptionsCard } from "./style-options-card"
 import { AdminContentToolCard, type AdminContentToolResult } from "./admin-content-tool-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
@@ -29,7 +28,6 @@ import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
-import type { TextLayerSpec } from "@/lib/app-v3/overlay-layer"
 import type { OutputFormat } from "./types"
 import {
   clearMayaDraft,
@@ -157,24 +155,6 @@ function extractFormatSwitch(part: any): OutputFormat | null {
   return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
 }
 
-/** Pull the style picker out of a show_style_options tool part (SUITE-UX-02 slice 6). */
-function extractStyleOptions(part: any): { kind: "overlay" | "carousel"; options: any[] } | null {
-  if (!part || typeof part !== "object") return null
-  if (
-    part.type !== "tool-show_style_options" &&
-    !(part.type === "dynamic-tool" && part.toolName === "show_style_options")
-  ) {
-    return null
-  }
-  const payload = part.output
-  if (!payload || !Array.isArray(payload.options) || payload.options.length === 0) return null
-  const kind = payload.kind === "carousel" ? "carousel" : "overlay"
-  const options = payload.options.filter(
-    (o: any) => o && typeof o.id === "string" && typeof o.name === "string"
-  )
-  return options.length > 0 ? { kind, options } : null
-}
-
 /** Pull admin-only content tool results out of Maya's stream (MAYA-ADMIN-01 slice 2). */
 function extractAdminContentTool(part: any): AdminContentToolResult | null {
   if (!part || typeof part !== "object") return null
@@ -252,9 +232,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     () => restoredDraft?.genState ?? {}
   )
   // Fullscreen viewer: the set of image urls currently open (null = closed).
-  const [lightbox, setLightbox] = useState<{ images: string[]; overlays?: TextLayerSpec[] } | null>(
-    null
-  )
+  const [lightbox, setLightbox] = useState<{ images: string[] } | null>(null)
   // True Edit Mode target: which generated image we're refining.
   const [editTarget, setEditTarget] = useState<{
     key: string
@@ -1254,9 +1232,6 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               | ConceptCardData[]
               | undefined
             const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
-            const stylePart = parts.map(extractStyleOptions).find(Boolean) as
-              | { kind: "overlay" | "carousel"; options: any[] }
-              | undefined
             const adminContentPart = parts.map(extractAdminContentTool).find(Boolean) as
               | AdminContentToolResult
               | undefined
@@ -1299,15 +1274,6 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   />
                 )}
 
-                {stylePart && (
-                  <StyleOptionsCard
-                    kind={stylePart.kind}
-                    options={stylePart.options}
-                    onPick={o => sendMessage({ text: `Use the "${o.name}" style.` })}
-                    disabled={isThinking}
-                  />
-                )}
-
                 {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
 
                 {conceptsLost && (
@@ -1339,7 +1305,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                           gen={genState[key] ?? { status: "idle" }}
                           format={format}
                           onGenerate={() => void generateConcept(key, concept)}
-                          onOpen={(urls, overlays) => setLightbox({ images: urls, overlays })}
+                          onOpen={urls => setLightbox({ images: urls })}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format })
@@ -1491,13 +1457,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
         </div>
       </aside>
 
-      {lightbox && (
-        <ImageLightbox
-          images={lightbox.images}
-          overlays={lightbox.overlays}
-          onClose={() => setLightbox(null)}
-        />
-      )}
+      {lightbox && <ImageLightbox images={lightbox.images} onClose={() => setLightbox(null)} />}
 
       <CreditModal
         open={creditModal.open}

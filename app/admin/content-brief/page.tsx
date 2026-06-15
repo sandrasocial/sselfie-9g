@@ -6,9 +6,7 @@ import { ContentBriefClient } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
-import { StyleExamplesClient } from "@/components/admin/style-examples-client"
 import { VaultDropEmailPreview } from "@/components/admin/vault-drop-email-preview"
-import { listStyleOptions } from "@/lib/app-v3/maya/style-example-store"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { listShoots } from "@/lib/content-kit/shoot-generator"
@@ -65,10 +63,19 @@ function MemberPulseSection({ pulse }: { pulse: MemberPulse | null }) {
             {[
               { label: "Members creating", value: String(pulse.activeMembers) },
               { label: "Images made", value: String(pulse.imagesGenerated) },
-              { label: "Loved it (downloads)", value: `${pulse.downloads} · ${pct(pulse.downloadRate)}` },
-              { label: "Friction (re-rolls)", value: `${pulse.rerolls} · ${pct(pulse.rerollRate)}` },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
+              {
+                label: "Loved it (downloads)",
+                value: `${pulse.downloads} · ${pct(pulse.downloadRate)}`,
+              },
+              {
+                label: "Friction (re-rolls)",
+                value: `${pulse.rerolls} · ${pct(pulse.rerollRate)}`,
+              },
+            ].map(s => (
+              <div
+                key={s.label}
+                className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3"
+              >
                 <p className="text-[11px] uppercase tracking-wide text-stone-400">{s.label}</p>
                 <p className="mt-1 font-serif text-xl font-light text-stone-950">{s.value}</p>
               </div>
@@ -76,12 +83,13 @@ function MemberPulseSection({ pulse }: { pulse: MemberPulse | null }) {
           </div>
           <p className="text-stone-600">
             {pulse.conceptsEmitted} concepts across {pulse.conceptSets} sets · {pulse.edits} edits ·{" "}
-            {pulse.clarifiesAsked} clarifying questions · {pulse.memoryNotesSaved} things Maya learned
+            {pulse.clarifiesAsked} clarifying questions · {pulse.memoryNotesSaved} things Maya
+            learned
           </p>
           {pulse.topVibes.length > 0 && (
             <p>
               <span className="font-medium text-stone-950">Top vibes:</span>{" "}
-              {pulse.topVibes.map((v) => `${v.aestheticId} (${v.count})`).join(", ")}
+              {pulse.topVibes.map(v => `${v.aestheticId} (${v.count})`).join(", ")}
             </p>
           )}
           {pulse.freshPreferenceNotes.length > 0 && (
@@ -120,16 +128,15 @@ export default async function ContentBriefPage() {
   const selfies = await listAdminSelfies().catch(() => [])
   const stories = await listStorySequences().catch(() => [])
   const shoots = await listShoots().catch(() => [])
-  const styleOptions = await listStyleOptions().catch(() => [])
 
-  const shootOptions = shoots.map((shoot) => ({
+  const shootOptions = shoots.map(shoot => ({
     id: shoot.id,
     title: shoot.title,
     status: shoot.status,
     createdAt: shoot.createdAt,
     shots: shoot.shots
-      .filter((shot) => shot.status === "approved" && shot.imageUrl)
-      .map((shot) => ({ id: shot.id, title: shot.title, url: shot.imageUrl as string })),
+      .filter(shot => shot.status === "approved" && shot.imageUrl)
+      .map(shot => ({ id: shot.id, title: shot.title, url: shot.imageUrl as string })),
   }))
 
   return (
@@ -148,13 +155,19 @@ export default async function ContentBriefPage() {
 
         <div className="mt-10">
           <p className="text-xs uppercase tracking-wide text-stone-400">Support tools</p>
-          <Collapsed title="Member pulse" hint="What members do with Maya: loved, friction, missing">
+          <Collapsed
+            title="Member pulse"
+            hint="What members do with Maya: loved, friction, missing"
+          >
             <MemberPulseSection pulse={pulse} />
           </Collapsed>
           <Collapsed title="Weekly brief" hint="Post performance, copies, DMs, hooks">
             <ContentBriefClient initialReports={reports as any} />
           </Collapsed>
-          <Collapsed title="Shoot studio" hint="Inspiration-image photoshoots (being absorbed into Maya)">
+          <Collapsed
+            title="Shoot studio"
+            hint="Inspiration-image photoshoots (being absorbed into Maya)"
+          >
             <ShootStudioClient initialShoots={shoots} selfies={selfies} />
           </Collapsed>
           <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
@@ -165,9 +178,6 @@ export default async function ContentBriefPage() {
           </Collapsed>
           <Collapsed title="Story sequences" hint="Doctrine story slides">
             <ContentStoryClient initialSequences={stories} shoots={shootOptions} />
-          </Collapsed>
-          <Collapsed title="Text style examples" hint="The cards members tap when picking a text style">
-            <StyleExamplesClient initialOptions={styleOptions} />
           </Collapsed>
         </div>
       </main>

@@ -422,8 +422,7 @@ function GridFrame({
   )
 }
 
-/** Photo-first slide: full-bleed image, bottom scrim, white text. The niche-viral
- * format (@prompts.ig pattern) with Sandra's editorial typography on top. */
+/** Photo-first slide. For CAROUSEL-03 baked slides, this route is only a PNG pass-through. */
 function PhotoFrame({
   slide,
   counter,
@@ -439,6 +438,15 @@ function PhotoFrame({
   const isCta = slide.kind === "cta"
   const isPlainPhoto = slide.kind === "photo"
   const hasText = slide.headlineRender !== "baked" && !isPlainPhoto && Boolean(slide.title)
+
+  if (slide.headlineRender === "baked") {
+    return (
+      <div style={{ width, height, display: "flex", backgroundColor: OBSIDIAN }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={slide.imageUrl} width={width} height={height} style={{ objectFit: "cover" }} />
+      </div>
+    )
+  }
 
   return (
     <div
@@ -1086,7 +1094,9 @@ export async function GET(
   const fonts = await loadFonts()
 
   return new ImageResponse(
-    slide.kind === "grid" && slide.gridUrls?.length ? (
+    slide.imageUrl && slide.headlineRender === "baked" ? (
+      <PhotoFrame slide={slide} counter={counter} width={width} height={height} />
+    ) : slide.kind === "grid" && slide.gridUrls?.length ? (
       <GridFrame slide={slide} counter={counter} width={width} height={height} />
     ) : slide.kind === "before-after" ? (
       <BeforeAfterFrame slide={slide} counter={counter} width={width} height={height} />

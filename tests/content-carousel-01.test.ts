@@ -40,14 +40,14 @@ describe("CONTENT-CAROUSEL-01 tutorial carousel mode", () => {
     expect(generator).toContain("Each carousel: 7 to 10 slides")
   })
 
-  it("renders before-after slides and preserves screenshot overlays as composited assets", () => {
+  it("passes baked model-designed slides through without drawing extra text", () => {
     const route = read("app/api/admin/content-kit/render/[id]/[slide]/route.tsx")
 
     expect(route).toContain("function BeforeAfterFrame")
     expect(route).toContain('slide.kind === "before-after"')
     expect(route).toContain("SlideAccents")
-    expect(route).toContain('placement === "full"')
-    expect(route).toContain("objectFit: fit")
+    expect(route).toContain('slide.headlineRender === "baked"')
+    expect(route).toContain("PNG pass-through")
   })
 
   it("exposes tutorial carousel creation through admin Maya and the admin API", () => {

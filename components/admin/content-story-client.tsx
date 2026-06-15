@@ -124,14 +124,16 @@ export function ContentStoryClient({
 }) {
   const [sequences, setSequences] = useState<StorySequence[]>(initialSequences)
   const [topic, setTopic] = useState("")
-  const [selectedShootId, setSelectedShootId] = useState<number | null>(shoots.find((shoot) => shoot.shots.length >= 2)?.id ?? null)
+  const [selectedShootId, setSelectedShootId] = useState<number | null>(
+    shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
+  )
   const [backgrounds, setBackgrounds] = useState<UploadedAsset[]>([])
   const [overlays, setOverlays] = useState<UploadedAsset[]>([])
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const selectedShoot = shoots.find((shoot) => shoot.id === selectedShootId) ?? null
+  const selectedShoot = shoots.find(shoot => shoot.id === selectedShootId) ?? null
 
   async function upload(kind: "background" | "overlay", files: FileList | null) {
     if (!files?.length) return
@@ -140,12 +142,15 @@ export function ContentStoryClient({
     try {
       const form = new FormData()
       form.append("kind", kind)
-      Array.from(files).forEach((file) => form.append("files", file))
-      const response = await fetch("/api/admin/content-kit/assets/upload", { method: "POST", body: form })
+      Array.from(files).forEach(file => form.append("files", file))
+      const response = await fetch("/api/admin/content-kit/assets/upload", {
+        method: "POST",
+        body: form,
+      })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      if (kind === "background") setBackgrounds((current) => [...current, ...data.assets])
-      else setOverlays((current) => [...current, ...data.assets])
+      if (kind === "background") setBackgrounds(current => [...current, ...data.assets])
+      else setOverlays(current => [...current, ...data.assets])
     } catch (err: any) {
       setError(err?.message || "Upload failed")
     } finally {
@@ -167,8 +172,8 @@ export function ContentStoryClient({
         body: JSON.stringify({
           topic: topic.trim(),
           sourceShootId: selectedShootId,
-          imageUrls: backgrounds.map((asset) => asset.url),
-          overlayUrls: overlays.map((asset) => asset.url),
+          imageUrls: backgrounds.map(asset => asset.url),
+          overlayUrls: overlays.map(asset => asset.url),
         }),
       })
       const data = await response.json()
@@ -183,7 +188,7 @@ export function ContentStoryClient({
   }
 
   async function updateStatus(id: number, status: StorySequence["status"]) {
-    setSequences((current) => current.map((item) => (item.id === id ? { ...item, status } : item)))
+    setSequences(current => current.map(item => (item.id === id ? { ...item, status } : item)))
     await fetch("/api/admin/content-kit/stories", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -192,7 +197,7 @@ export function ContentStoryClient({
   }
 
   async function remove(id: number) {
-    setSequences((current) => current.filter((item) => item.id !== id))
+    setSequences(current => current.filter(item => item.id !== id))
     await fetch("/api/admin/content-kit/stories", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -202,10 +207,12 @@ export function ContentStoryClient({
 
   return (
     <section className="mt-12">
-      <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">Story sequence</h2>
+      <h2 className="font-serif text-2xl font-light tracking-tight text-stone-950">
+        Story sequence
+      </h2>
       <p className="mt-1 text-sm text-stone-600">
-        Pick an approved shoot first. Stories reuse those photos as untouched backgrounds, then add
-        short doctrine-led copy and optional screenshot/proof overlays.
+        Pick an approved shoot first. Stories use those photos as grounded references, then return
+        finished doctrine-led slides with optional screenshot/proof references.
       </p>
 
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
@@ -215,22 +222,33 @@ export function ContentStoryClient({
         <select
           id="story-shoot"
           value={selectedShootId ?? ""}
-          onChange={(event) => setSelectedShootId(event.target.value ? Number(event.target.value) : null)}
+          onChange={event =>
+            setSelectedShootId(event.target.value ? Number(event.target.value) : null)
+          }
           className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-950 focus:outline-none"
         >
           <option value="">No approved shoot selected</option>
-          {shoots.map((shoot) => (
+          {shoots.map(shoot => (
             <option key={shoot.id} value={shoot.id} disabled={shoot.shots.length < 2}>
-              {shoot.title} · {shoot.shots.length} approved image{shoot.shots.length === 1 ? "" : "s"}
+              {shoot.title} · {shoot.shots.length} approved image
+              {shoot.shots.length === 1 ? "" : "s"}
             </option>
           ))}
         </select>
         {selectedShoot ? (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-3">
-            {selectedShoot.shots.map((shot) => (
-              <div key={shot.id} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+            {selectedShoot.shots.map(shot => (
+              <div
+                key={shot.id}
+                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={shot.url} alt={shot.title} className="h-24 w-[4.5rem] object-cover" loading="lazy" />
+                <img
+                  src={shot.url}
+                  alt={shot.title}
+                  className="h-24 w-[4.5rem] object-cover"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
@@ -241,35 +259,39 @@ export function ContentStoryClient({
         )}
         <textarea
           value={topic}
-          onChange={(event) => setTopic(event.target.value)}
+          onChange={event => setTopic(event.target.value)}
           rows={2}
           placeholder="Today's story idea, e.g. the fear behind posting AI photos, CTA: PROMPT"
           className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
-            <span className="block text-xs uppercase tracking-wide text-stone-500">Extra backgrounds</span>
-            <span className="mt-1 block">Only use if the story needs a non-shoot scene.</span>
+            <span className="block text-xs uppercase tracking-wide text-stone-500">
+              Extra references
+            </span>
+            <span className="mt-1 block">Only use if the story needs a non-shoot source.</span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
               className="mt-3 block w-full text-xs"
-              onChange={(event) => void upload("background", event.target.files)}
+              onChange={event => void upload("background", event.target.files)}
             />
             <span className="mt-2 block text-xs text-stone-400">
               {uploading === "background" ? "Uploading..." : `${backgrounds.length} uploaded`}
             </span>
           </label>
           <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
-            <span className="block text-xs uppercase tracking-wide text-stone-500">Screenshot overlays</span>
+            <span className="block text-xs uppercase tracking-wide text-stone-500">
+              Screenshot references
+            </span>
             <span className="mt-1 block">Use for proof, ChatGPT screenshots, or DM examples.</span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
               className="mt-3 block w-full text-xs"
-              onChange={(event) => void upload("overlay", event.target.files)}
+              onChange={event => void upload("overlay", event.target.files)}
             />
             <span className="mt-2 block text-xs text-stone-400">
               {uploading === "overlay" ? "Uploading..." : `${overlays.length} uploaded`}
@@ -278,10 +300,18 @@ export function ContentStoryClient({
         </div>
         {overlays.length > 0 && (
           <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-            {overlays.map((asset) => (
-              <div key={asset.url} className="shrink-0 overflow-hidden rounded-lg border border-stone-200">
+            {overlays.map(asset => (
+              <div
+                key={asset.url}
+                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={asset.url} alt={asset.label} className="h-20 w-20 object-cover" loading="lazy" />
+                <img
+                  src={asset.url}
+                  alt={asset.label}
+                  className="h-20 w-20 object-cover"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
@@ -298,8 +328,13 @@ export function ContentStoryClient({
       </div>
 
       <div className="mt-4 space-y-3">
-        {sequences.map((sequence) => (
-          <SequenceCard key={sequence.id} sequence={sequence} onStatus={updateStatus} onDelete={remove} />
+        {sequences.map(sequence => (
+          <SequenceCard
+            key={sequence.id}
+            sequence={sequence}
+            onStatus={updateStatus}
+            onDelete={remove}
+          />
         ))}
       </div>
     </section>

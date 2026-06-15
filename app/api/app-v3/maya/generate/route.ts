@@ -163,14 +163,8 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json().catch(() => null)) as
       | (MayaGenerateConceptRequest & {
-          /** MODE C: overlay text onto this existing image (their upload or a Library image). */
+          /** Retired MODE C: local text overlays no longer exist. */
           baseImageUrl?: string
-          overlay?: {
-            headline?: string
-            subline?: string
-            overlayStyle?: string
-            role?: "hook" | "value" | "cta"
-          }
         })
       | null
     if (!body) {
@@ -182,22 +176,18 @@ export async function POST(request: NextRequest) {
 
     const baseImageUrl = typeof body.baseImageUrl === "string" ? body.baseImageUrl : null
 
-    // Per mode: Mode C overlays text on a provided image; Modes A/B generate from the selfie.
+    // Per mode: legacy Mode C is retired; Modes A/B generate from the selfie.
     let jobs: ImageJob[]
     let referenceUrls: string[] = []
     const baseImageSource: string | null = null
 
     if (baseImageUrl) {
-      // ── MODE C legacy guard: text overlays are now composited client-side, not by OpenAI. ──
+      // ── MODE C legacy guard: the text-overlay workflow has been retired. ──
       if (!isAllowedReferenceUrl(baseImageUrl)) {
         return NextResponse.json({ error: "That image can't be used here." }, { status: 400 })
       }
-      const heading = (body.overlay?.headline ?? body.brief?.graphic?.headline ?? "").trim()
-      if (!heading) {
-        return NextResponse.json({ error: "Add the text you want on the image." }, { status: 400 })
-      }
       return NextResponse.json(
-        { error: "Text overlays are now editable in the app. Use the local text layer export." },
+        { error: "Text overlays are retired. Ask Maya to create a finished styled slide instead." },
         { status: 410 }
       )
     } else {
@@ -231,7 +221,7 @@ export async function POST(request: NextRequest) {
     // Charge once per final image (slide), regardless of how many passes produce it.
     const imageCount = jobs.length
     const totalCost = CREDIT_COSTS.IMAGE * imageCount
-    // What we store as the image's prompt (all passes, so photo descriptors + overlay text are searchable).
+    // What we store as the image's prompt (all passes, so descriptors + baked slide text are searchable).
     const recordPrompts = jobs.map(j => j.passes.map(p => p.prompt).join("\n\n--- pass ---\n\n"))
 
     // ── Neon user ──
@@ -299,7 +289,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const label = body.conceptTitle || body.brief?.outfit?.slice(0, 60) || `${format} overlay`
+    const label = body.conceptTitle || body.brief?.outfit?.slice(0, 60) || `${format} concept`
     const deduction = await deductCredits(
       neonUser.id,
       totalCost,
@@ -342,7 +332,7 @@ export async function POST(request: NextRequest) {
       })
     )
 
-    // Prepare the user-provided base image once (Mode C overlay-only).
+    // Retired Mode C placeholder. Kept empty so old request shapes fail safely above.
     const baseFiles = baseImageSource
       ? [
           await toFile(
@@ -419,8 +409,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Run one image JOB end to end. Each pass draws its input from its source: the selfie (Mode
-    // A/B clean photo), the user's base image (Mode C overlay), the prior pass's output (the
-    // two-pass overlay edit), or nothing at all (pure generation).
+    // A/B concept), a retired base image path, the prior pass's output, or nothing at all.
     const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
@@ -484,7 +473,7 @@ export async function POST(request: NextRequest) {
               source: "app-v3-generate",
               format,
               rerun: isRerun,
-              mode: baseImageSource ? "overlay" : "concept",
+              mode: baseImageSource ? "retired-base" : "concept",
               aestheticId: body.aestheticId ?? null,
               conceptTitle:
                 typeof body.conceptTitle === "string" ? body.conceptTitle.slice(0, 120) : null,

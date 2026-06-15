@@ -6,30 +6,18 @@
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.
 
 import { useEffect, useState } from "react"
-import type { TextLayerSpec } from "@/lib/app-v3/overlay-layer"
-import { LayeredImage, downloadLayeredImage } from "./layered-image"
 
 interface ImageLightboxProps {
   images: string[]
-  overlays?: Array<TextLayerSpec | null | undefined>
   startIndex?: number
   onClose: () => void
-  /** Optional: offer "Add text" on the current image (opens the overlay composer with it). */
-  onAddText?: (url: string) => void
 }
 
-export function ImageLightbox({
-  images,
-  overlays,
-  startIndex = 0,
-  onClose,
-  onAddText,
-}: ImageLightboxProps) {
+export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
   // SUITE-UX-02 mobile: swipe left/right navigates multi-image sets (carousel slides).
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -43,7 +31,6 @@ export function ImageLightbox({
 
   const url = images[index]
   if (!url) return null
-  const overlay = overlays?.[index] ?? null
 
   return (
     // SUITE-UX-02 mobile: flex column with a min-h-0 image region (no fixed 80vh), safe-area
@@ -91,96 +78,43 @@ export function ImageLightbox({
           </>
         )}
 
-        {overlay?.headline ? (
-          <LayeredImage
-            imageUrl={url}
-            overlay={overlay}
-            alt={`Result ${index + 1}`}
-            format={overlay.format}
-            className="h-full max-h-full max-w-full rounded-[6px]"
-          />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={url}
-            alt={`Result ${index + 1}`}
-            decoding="async"
-            className="max-h-full max-w-full rounded-[6px] object-contain"
-          />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={`Result ${index + 1}`}
+          decoding="async"
+          className="max-h-full max-w-full rounded-[6px] object-contain"
+        />
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
         <div className="flex items-center justify-center gap-4">
-          {overlay?.headline ? (
-            <button
-              type="button"
-              onClick={() => {
-                setDownloadError(null)
-                void downloadLayeredImage({
-                  imageUrl: url,
-                  overlay,
-                  format: overlay.format,
-                  fileName: `sselfie-slide-${index + 1}.png`,
-                })
-                  .then(() =>
-                    import("@/lib/analytics/client").then(({ trackAnalyticsEvent }) =>
-                      trackAnalyticsEvent({
-                        event: "suite_image_downloaded",
-                        properties: { source: "lightbox-layered" },
-                      })
-                    )
-                  )
-                  .catch(() =>
-                    setDownloadError(
-                      "Could not export this image. Open the original and try again."
-                    )
-                  )
-              }}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
-            >
-              Download
-            </button>
-          ) : (
-            <a
-              href={url}
-              download
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => {
-                // Member pulse: downloads = "she loved it" (SUITE-UX-02).
-                import("@/lib/analytics/client")
-                  .then(({ trackAnalyticsEvent }) =>
-                    trackAnalyticsEvent({
-                      event: "suite_image_downloaded",
-                      properties: { source: "lightbox" },
-                    })
-                  )
-                  .catch(() => {})
-              }}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
-            >
-              Download
-            </a>
-          )}
-          {onAddText && (
-            <button
-              type="button"
-              onClick={() => onAddText(url)}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
-            >
-              Add text
-            </button>
-          )}
+          <a
+            href={url}
+            download
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => {
+              // Member pulse: downloads = "she loved it" (SUITE-UX-02).
+              import("@/lib/analytics/client")
+                .then(({ trackAnalyticsEvent }) =>
+                  trackAnalyticsEvent({
+                    event: "suite_image_downloaded",
+                    properties: { source: "lightbox" },
+                  })
+                )
+                .catch(() => {})
+            }}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+          >
+            Download
+          </a>
           {count > 1 && (
             <span className="text-[11px] text-white/50">
               {index + 1} / {count}
             </span>
           )}
         </div>
-        {downloadError ? (
-          <p className="text-center text-[12px] text-white/60">{downloadError}</p>
-        ) : null}
       </div>
     </div>
   )
