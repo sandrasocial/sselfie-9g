@@ -26,6 +26,18 @@ import {
   type CarouselDesignSystem,
   type SlideVisual,
 } from "@/lib/app-v3/maya/carousel-design-systems"
+import {
+  buildDefaultCreativePlanValidationRules,
+  inferCreativeUseCase,
+  isFiveStylesRequest,
+  isShortCreativeRequest,
+  isVaultRelatedRequest,
+  validateCreativePlan,
+  type CreativePlan,
+  type CreativePlanOutput,
+  type CreativeUseCase,
+  type VaultStyleReference,
+} from "@/lib/app-v3/maya/creative-plan"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -56,7 +68,7 @@ export interface CompiledPrompt {
   size: RequestSize
 }
 
-export const MAX_CAROUSEL_SLIDES = 6
+export const MAX_CAROUSEL_SLIDES = 9
 
 const BRAND_PHOTO_STYLE =
   "Editorial brand photograph. Keep the person's face and likeness from the reference image accurate and natural. " +
@@ -70,6 +82,198 @@ const BRAND_GRAPHIC_STYLE =
 
 function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
+}
+
+type CarouselSlidePlanLike = NonNullable<NonNullable<CreativeBrief["graphic"]>["slides"]>[number]
+
+function normalizeUseCase(value: string | undefined, topic: string): CreativeUseCase {
+  switch (value) {
+    case "single_editorial":
+    case "full_photoshoot":
+    case "educational":
+    case "tutorial":
+    case "sales":
+    case "behind_the_scenes":
+    case "opinion":
+    case "trust":
+    case "vault_product":
+    case "soft_cta":
+    case "motion":
+      return value
+    case "behind-the-scenes":
+      return "behind_the_scenes"
+    case "product-vault":
+      return "vault_product"
+    case "story":
+      return "educational"
+    default:
+      return inferCreativeUseCase(topic, "carousel")
+  }
+}
+
+function vaultStyleReferencesFromBrief(brief: CreativeBrief): VaultStyleReference[] {
+  const planRefs = brief.graphic?.creativePlan?.vaultStyleReferences ?? []
+  const legacyRefs = brief.graphic?.relevantVaultStyles ?? []
+
+  const normalizedPlanRefs = planRefs.map(style => ({
+    name: clean(style.name),
+    mood: clean(style.mood),
+    promptSnippet: clean(style.promptSnippet),
+    referenceImageUrl: style.referenceImageUrl ?? null,
+    reason: clean(style.reason),
+  }))
+  const normalizedLegacyRefs = legacyRefs.map(style => ({
+    name: clean(style.name),
+    mood: clean(style.mood),
+    promptSnippet: clean(style.reason),
+    referenceImageUrl: null,
+    reason: clean(style.reason),
+  }))
+
+  return [...normalizedPlanRefs, ...normalizedLegacyRefs].filter(style => style.name)
+}
+
+function carouselTopicFromBrief(brief: CreativeBrief, fallbackTitle?: string): string {
+  return (
+    clean(brief.graphic?.creativePlan?.userIntent) ||
+    clean(brief.graphic?.carouselTitle) ||
+    clean(fallbackTitle) ||
+    clean(brief.graphic?.headline) ||
+    clean(brief.graphic?.slides?.[0]?.heading) ||
+    `${clean(brief.outfit)} ${clean(brief.setting)}`.trim()
+  )
+}
+
+function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativePlanOutput {
+  const title = clean(slide.heading) || `Slide ${index + 1}`
+  const visualConcept = clean(slide.visualConcept) || clean(slide.detailSubject) || title
+  const imagePromptDirection =
+    clean(slide.imagePromptDirection) ||
+    clean(slide.imagePrompt) ||
+    clean(slide.visualConcept) ||
+    clean(slide.detailSubject) ||
+    title
+
+  return {
+    title,
+    purpose: clean(slide.purpose) || (index === 0 ? "open the carousel" : "continue the carousel story"),
+    visualConcept,
+    imagePromptDirection,
+    textSafeArea: slide.textSafeArea,
+    referenceImageStrategy: slide.referenceImageStrategy ?? "selfie_identity_anchor",
+    reasonThisMatchesUserIntent:
+      clean(slide.reasonThisMatchesUserIntent) ||
+      clean(slide.visualReason) ||
+      `This visual supports the slide message: ${title}`,
+  }
+}
+
+export function buildCustomerCarouselCreativePlan(
+  brief: CreativeBrief,
+  conceptTitle?: string
+): CreativePlan {
+  const g = brief.graphic
+  const topic = carouselTopicFromBrief(brief, conceptTitle)
+  const supplied = g?.creativePlan
+  const useCase = normalizeUseCase(supplied?.useCase ?? g?.contentType, topic)
+  const outputs =
+    supplied && supplied.outputs.length === (g?.slides?.length ?? -1)
+      ? supplied.outputs
+      : (g?.slides ?? []).map((slide, index) => outputFromSlide(slide, index))
+  const vaultStyleReferences = supplied?.vaultStyleReferences?.length
+    ? supplied.vaultStyleReferences
+    : vaultStyleReferencesFromBrief(brief)
+  const outputCount = supplied?.outputCount ?? g?.slideCount ?? outputs.length
+
+  return {
+    mode: "carousel",
+    userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
+    useCase,
+    audienceEmotion: clean(supplied?.audienceEmotion) || "This feels clear, useful, and possible for me.",
+    contentGoal:
+      clean(supplied?.contentGoal) || clean(g?.desiredOutcome) || "teach one clear idea and drive a next action",
+    visualDirection:
+      clean(supplied?.visualDirection) || clean(g?.designDirection) || "luxury editorial SSELFIE carousel",
+    vaultStyleReferences,
+    inspirationInterpretation: supplied?.inspirationInterpretation,
+    referenceHandling: supplied?.referenceHandling ?? {
+      identityStrategy: "selfie_identity_anchor",
+      inspirationStrategy: "inspiration_style_only",
+      notes:
+        "Use the user's selfie for identity preservation. Inspiration can guide styling, lighting, color grade, mood, and accessories without overriding the topic.",
+    },
+    outputCount,
+    outputs,
+    validationRules:
+      supplied?.validationRules?.length
+        ? supplied.validationRules
+        : buildDefaultCreativePlanValidationRules({
+            mode: "carousel",
+            useCase,
+            userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
+          }),
+  }
+}
+
+export function validateCustomerCarouselBrief(
+  brief: CreativeBrief,
+  conceptTitle?: string
+): string[] {
+  const plan = buildCustomerCarouselCreativePlan(brief, conceptTitle)
+  const result = validateCreativePlan(plan)
+  const errors = [...result.errors]
+
+  if (plan.outputCount !== brief.graphic?.slides?.length) {
+    errors.push(`carousel has ${brief.graphic?.slides?.length ?? 0} slides, but creativePlan.outputCount is ${plan.outputCount}`)
+  }
+
+  if (
+    plan.mode === "carousel" &&
+    (plan.useCase === "educational" || plan.useCase === "tutorial" || plan.useCase === "vault_product") &&
+    !isShortCreativeRequest(plan.userIntent) &&
+    (brief.graphic?.slides?.length ?? 0) < 6
+  ) {
+    errors.push(`educational carousel needs at least 6 slides, got ${brief.graphic?.slides?.length ?? 0}`)
+  }
+
+  if (isFiveStylesRequest(plan.userIntent)) {
+    const styleOutputCount = plan.outputs.filter(output =>
+      /\b(style|prompt|look|vault)\b/i.test(
+        [output.title, output.purpose, output.visualConcept, output.imagePromptDirection].join(" ")
+      )
+    ).length
+    if (styleOutputCount < 5) errors.push("five-style carousel must include five distinct style outputs")
+  }
+
+  if (isVaultRelatedRequest(plan.userIntent, plan.vaultStyleReferences) && plan.vaultStyleReferences.length === 0) {
+    errors.push("Vault-related carousel is missing Vault style context")
+  }
+
+  return Array.from(new Set(errors))
+}
+
+function slideCreativePlan(slide: CarouselSlidePlanLike, output?: CreativePlanOutput): string {
+  return [
+    "Slide-specific creative plan:",
+    output?.purpose || slide.purpose ? `Purpose: ${clean(output?.purpose ?? slide.purpose)}` : "",
+    output?.visualConcept || slide.visualConcept
+      ? `Visual concept: ${clean(output?.visualConcept ?? slide.visualConcept)}`
+      : "",
+    output?.imagePromptDirection || slide.imagePromptDirection || slide.imagePrompt
+      ? `Image prompt direction: ${clean(output?.imagePromptDirection ?? slide.imagePromptDirection ?? slide.imagePrompt)}`
+      : "",
+    output?.referenceImageStrategy || slide.referenceImageStrategy
+      ? `Reference strategy: ${clean(output?.referenceImageStrategy ?? slide.referenceImageStrategy)}`
+      : "",
+    output?.textSafeArea || slide.textSafeArea
+      ? `Text-safe area: ${clean(output?.textSafeArea ?? slide.textSafeArea)}`
+      : "",
+    output?.reasonThisMatchesUserIntent || slide.reasonThisMatchesUserIntent || slide.visualReason
+      ? `Why this visual fits: ${clean(output?.reasonThisMatchesUserIntent ?? slide.reasonThisMatchesUserIntent ?? slide.visualReason)}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
 }
 
 // ─── MAYA-REBUILD-07 / MAYA-FIX-03: Vault-aligned prompt engine ─────────────────
@@ -265,12 +469,9 @@ function compileSingleGraphicPrompt(
 }
 
 // ─── MAYA-REBUILD-16: carousel design systems (per-slide visual roles) ─────────
-// A carousel is a mini editorial design system (QA §10 + Sandra's reference grids): 1-2
-// identity slides max, detail slides from her world (no people), and text-first slides —
-// all sharing one design system's palette, type, and decoration language.
-
-const NO_PEOPLE =
-  "No people, no faces, no bodies, no hands, no human figures or silhouettes anywhere in the image."
+// A carousel is a mini editorial design system (QA §10 + Sandra's reference grids):
+// identity, detail, and text-first slides all share one palette, type system, and
+// decoration language while staying grounded in the user's selfie.
 
 /** Identity slide (input: selfie) — she appears, with text baked into the finished slide. */
 function compileCarouselIdentityPrompt(
@@ -279,6 +480,7 @@ function compileCarouselIdentityPrompt(
   text: { heading: string; body?: string },
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
+  slidePlan: string,
   opts?: CompileConceptOptions
 ): string {
   const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
@@ -297,6 +499,7 @@ function compileCarouselIdentityPrompt(
     clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
     // SUITE-UX-02: her moment should match the slide's copy, not just the set's scenery.
     `This slide's message: "${heading}". Her expression, gesture and the captured moment should match that message.`,
+    slidePlan,
     `Render this exact headline inside the image: "${heading}".`,
     body ? `Render this exact supporting line too: "${body}".` : "",
     `Typography placement: ${layout.space}`,
@@ -322,6 +525,7 @@ function compileCarouselDetailPrompt(
   system: CarouselDesignSystem,
   text: { heading: string; body?: string },
   subject: string | undefined,
+  slidePlan: string,
   opts?: CompileConceptOptions
 ): string {
   const heading = clean(text.heading)
@@ -330,13 +534,14 @@ function compileCarouselDetailPrompt(
     clean(subject) ||
     `a beautiful real-life detail that belongs to this scene (a coffee cup, a notebook and pen, a phone on the table, fabric, or an interior corner): ${clean(brief.setting)}`
   return [
-    "Create a finished premium editorial DETAIL slide for an Instagram carousel (4:5).",
-    NO_PEOPLE,
+    "Create a finished premium editorial scene/detail slide for an Instagram carousel (4:5), using the same woman from the reference image when it feels natural to the slide.",
+    IDENTITY_ANCHOR,
     // SUITE-UX-02: the image must express the slide's message, not just the set's scenery —
     // this line is what keeps the photograph and the copy telling the same story.
     `This slide's message: "${heading}".${body ? ` Supporting line: "${body}".` : ""} Compose and style the photograph so it visually expresses that message.`,
     `Subject: ${resolvedSubject}.`,
     `It belongs to the same world as the rest of the set: ${clean(brief.setting)}. Mood: ${clean(brief.mood)}.`,
+    slidePlan,
     system.detailTreatment,
     system.setDna,
     gradeLine(opts),
@@ -357,15 +562,17 @@ function compileCarouselTextPrompt(
   system: CarouselDesignSystem,
   text: { heading: string; body?: string },
   role: "hook" | "value" | "cta",
+  slidePlan: string,
   opts?: CompileConceptOptions
 ): string {
   const heading = clean(text.heading)
   const body = clean(text.body)
   return [
-    "Create a finished premium editorial typographic slide for an Instagram carousel (4:5).",
-    NO_PEOPLE,
+    "Create a finished premium editorial typographic slide for an Instagram carousel (4:5). It may include the same woman from the reference image as a subtle editorial cutout, silhouette, or photo moment when that makes the slide feel more personal.",
+    IDENTITY_ANCHOR,
     `Render this exact ${role} headline inside the image: "${heading}".`,
     body ? `Render this exact supporting line too: "${body}".` : "",
+    slidePlan,
     system.textOnlyTreatment,
     system.setDna,
     paletteLine(opts?.brandKit),
@@ -419,8 +626,8 @@ export function compileConceptJobs(
   // ── Carousel: a designed set with per-slide visual roles (MAYA-REBUILD-16). ──
   if (format === "carousel") {
     const system = resolveDesignSystem(g?.designSystem)
+    const creativePlan = buildCustomerCarouselCreativePlan(brief)
     let valueIdx = 0
-    let identityCount = 0
     return slides.map((slide, i) => {
       const role = resolveRole(slide.role, i, total)
       const layout =
@@ -430,23 +637,19 @@ export function compileConceptJobs(
             ? CTA_LAYOUT
             : VALUE_LAYOUTS[valueIdx % VALUE_LAYOUTS.length]
       const valueIndex = role === "value" ? valueIdx++ : 0
-      // Maya tags the visual; untagged slides get the photoshoot-first default mix. Keep a
-      // sanity cap so long carousels still have room for proof/details without going faceless.
-      let visual: SlideVisual =
+      // Maya tags the visual; untagged slides get the photoshoot-first default mix.
+      const visual: SlideVisual =
         (slide as { visual?: SlideVisual }).visual ?? defaultSlideVisual(role, valueIndex)
-      if (visual === "identity") {
-        identityCount += 1
-        if (identityCount > 2) visual = "detail"
-      }
       const text = { heading: clean(slide.heading), body: clean(slide.body) }
       const label = `slide ${i + 1}/${total} (${role} · ${visual})`
+      const plan = slideCreativePlan(slide as CarouselSlidePlanLike, creativePlan.outputs[i])
 
       if (visual === "identity") {
         return {
           label,
           passes: [
             {
-              prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, opts),
+              prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, plan, opts),
               input: "selfie" as const,
             },
           ],
@@ -458,7 +661,7 @@ export function compileConceptJobs(
           label,
           passes: [
             {
-              prompt: compileCarouselDetailPrompt(brief, system, text, subject, opts),
+              prompt: compileCarouselDetailPrompt(brief, system, text, subject, plan, opts),
               input: "selfie" as const,
             },
           ],
@@ -468,7 +671,7 @@ export function compileConceptJobs(
         label,
         passes: [
           {
-            prompt: compileCarouselTextPrompt(brief, system, text, role, opts),
+            prompt: compileCarouselTextPrompt(brief, system, text, role, plan, opts),
             input: "selfie" as const,
           },
         ],
@@ -564,7 +767,7 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
         const isCover = i === 0
         const base = isCover
           ? `${aestheticIntent} Carousel COVER slide featuring the person from the reference image. `
-          : `Carousel slide ${i + 1} of ${safeSlides.length} (text-led, no person needed unless natural). `
+          : `Carousel slide ${i + 1} of ${safeSlides.length}, designed around the person from the reference image when it feels natural. `
         return (
           `${base}${cohesion} Render this exact heading inside the image: "${clean(slide.heading)}".` +
           (slide.body ? ` Render this exact body line too: "${clean(slide.body)}".` : "") +

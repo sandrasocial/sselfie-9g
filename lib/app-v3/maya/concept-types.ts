@@ -4,6 +4,7 @@
 // Strict + self-contained. Must NOT import from components/sselfie/.
 
 import type { OutputFormat } from "@/components/app-v3/types"
+import type { CreativePlan, CreativeUseCase } from "@/lib/app-v3/maya/creative-plan"
 
 /**
  * The structured creative brief Maya produces for ONE concept.
@@ -36,8 +37,28 @@ export interface ConceptGraphicSpec {
   headline?: string
   /** Optional supporting line. */
   subline?: string
+  /** Shared Maya Creative Brain plan. Phase 2 wires this for customer-facing carousel only. */
+  creativePlan?: CreativePlan
+  /** The user's actual carousel topic/request, kept for validation in the render route. */
+  carouselTitle?: string
+  /** Planner classification for adaptive slide count and validation. */
+  contentType?: CreativeUseCase
+  /** The job this carousel is meant to do: teach, sell, explain, inspire, build trust, etc. */
+  desiredOutcome?: string
+  /** Planned slide count. Must match slides.length when present. */
+  slideCount?: number
+  /** One-line story arc before individual slides. */
+  storyArc?: string
+  /** The overall visual/design direction for the set. */
+  designDirection?: string
+  /** Vault styles/prompts this carousel uses as creative context when relevant. */
+  relevantVaultStyles?: {
+    name: string
+    mood?: string
+    reason?: string
+  }[]
   /** Per-slide copy for carousels (one entry per slide). `visual` picks the slide type
-   *  (identity = she appears, max 1-2 per set; detail = object shot from her world, no people;
+   *  (identity = she appears; detail = a grounded close-up or scene detail when it explains the point;
    *  text-only = designed typographic slide). `detailSubject` grounds detail slides. */
   slides?: {
     heading: string
@@ -45,6 +66,22 @@ export interface ConceptGraphicSpec {
     role?: "hook" | "value" | "cta"
     visual?: "identity" | "detail" | "text-only"
     detailSubject?: string
+    /** Why this slide exists in the carousel arc. */
+    purpose?: string
+    /** Slide-specific visual idea before image generation. */
+    visualConcept?: string
+    /** Detailed image prompt ingredients for this slide. */
+    imagePrompt?: string
+    /** Alias used by the shared Creative Plan contract. */
+    imagePromptDirection?: string
+    /** Reference handling for this slide. */
+    referenceImageStrategy?: CreativePlan["outputs"][number]["referenceImageStrategy"]
+    /** Why the visual matches the slide meaning. */
+    visualReason?: string
+    /** Alias used by the shared Creative Plan contract. */
+    reasonThisMatchesUserIntent?: string
+    /** Text-safe area used by graphic formats. */
+    textSafeArea?: CreativePlan["outputs"][number]["textSafeArea"]
   }[]
   /** Carousel design system id (lib/app-v3/maya/carousel-design-systems). Maya picks per concept. */
   designSystem?: string

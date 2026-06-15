@@ -24,7 +24,12 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import { compileConceptJobs, conceptOpenAISize, type ImageJob } from "@/lib/app-v3/prompt-compiler"
+import {
+  compileConceptJobs,
+  conceptOpenAISize,
+  validateCustomerCarouselBrief,
+  type ImageJob,
+} from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -195,6 +200,20 @@ export async function POST(request: NextRequest) {
       const brief = normalizeBrief(body.brief)
       if (!brief) {
         return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
+      }
+      if (format === "carousel") {
+        const validationErrors = validateCustomerCarouselBrief(brief, body.conceptTitle)
+        if (validationErrors.length > 0) {
+          return NextResponse.json(
+            {
+              error:
+                "That carousel plan was too thin. Ask Maya for a fuller carousel with slide-specific visuals.",
+              code: "carousel_plan_invalid",
+              details: validationErrors,
+            },
+            { status: 400 }
+          )
+        }
       }
       const referenceSelfieUrl = body.referenceSelfieUrl
       if (typeof referenceSelfieUrl !== "string" || !isAllowedReferenceUrl(referenceSelfieUrl)) {

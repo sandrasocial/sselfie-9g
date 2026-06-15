@@ -33,12 +33,158 @@ const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story
 // app-v3 sets its own budget; the shared map stays untouched for legacy /studio.
 const APP_V3_MAX_OUTPUT_TOKENS = 8192
 
+const creativeUseCaseSchema = z.enum([
+  "single_editorial",
+  "full_photoshoot",
+  "educational",
+  "tutorial",
+  "sales",
+  "behind_the_scenes",
+  "opinion",
+  "trust",
+  "vault_product",
+  "soft_cta",
+  "motion",
+])
+
+const textSafeAreaSchema = z.enum([
+  "top",
+  "upper_third",
+  "center",
+  "lower_third",
+  "bottom",
+  "left_column",
+  "right_column",
+  "none",
+])
+
+const referenceImageStrategySchema = z.enum([
+  "selfie_identity_anchor",
+  "selfie_plus_body_reference",
+  "inspiration_style_only",
+  "vault_style_context",
+  "existing_generated_image",
+  "screenshot_preserve_exact",
+  "no_reference",
+])
+
+const creativePlanOutputSchema = z.object({
+  title: z.string().describe("Slide/output title."),
+  purpose: z.string().describe("Why this output exists in the creative arc."),
+  visualConcept: z.string().describe("Specific visual concept for this output."),
+  imagePromptDirection: z
+    .string()
+    .optional()
+    .describe("Image prompt direction: subject, scene, outfit, pose, mood, lighting, crop, text-safe area."),
+  videoPromptDirection: z.string().optional().describe("Video prompt direction. Do not use for carousel."),
+  textSafeArea: textSafeAreaSchema.optional(),
+  referenceImageStrategy: referenceImageStrategySchema,
+  reasonThisMatchesUserIntent: z.string().describe("Why this output matches the user's selected request."),
+})
+
+const creativePlanSchema = z.object({
+  mode: z.literal("carousel").describe("Phase 2 only wires this for customer-facing carousel."),
+  userIntent: z.string().describe("The exact user carousel request/topic."),
+  useCase: creativeUseCaseSchema,
+  audienceEmotion: z.string().describe("What the viewer should feel or realize."),
+  contentGoal: z.string().describe("What the carousel is meant to do."),
+  visualDirection: z.string().describe("Overall visual direction for the carousel set."),
+  vaultStyleReferences: z.array(
+    z.object({
+      name: z.string(),
+      promptSnippet: z.string().optional(),
+      mood: z.string().optional(),
+      referenceImageUrl: z.string().nullable().optional(),
+      reason: z.string().optional(),
+    })
+  ),
+  inspirationInterpretation: z
+    .object({
+      sourceUrl: z.string().nullable().optional(),
+      pose: z.string().optional(),
+      outfit: z.string().optional(),
+      lighting: z.string().optional(),
+      colorGrade: z.string().optional(),
+      mood: z.string().optional(),
+      accessories: z.string().optional(),
+      avoidCopying: z.array(z.string()).optional(),
+    })
+    .optional(),
+  referenceHandling: z.object({
+    identityStrategy: referenceImageStrategySchema,
+    inspirationStrategy: referenceImageStrategySchema.optional(),
+    notes: z.string().optional(),
+  }),
+  outputCount: z.number().int().min(1).max(10),
+  outputs: z.array(creativePlanOutputSchema).min(1).max(10),
+  validationRules: z.array(
+    z.object({
+      id: z.string(),
+      severity: z.enum(["error", "warning"]),
+      description: z.string(),
+    })
+  ),
+})
+
 // Zod schema for one concept brief. Mirrors lib/app-v3/maya/concept-types.CreativeBrief.
 const graphicSpec = z
   .object({
     role: z.enum(["hook", "value", "cta"]).optional(),
     headline: z.string().optional(),
     subline: z.string().optional(),
+    creativePlan: creativePlanSchema
+      .optional()
+      .describe("The shared Maya Creative Plan. Required for customer-facing carousel concepts."),
+    carouselTitle: z
+      .string()
+      .optional()
+      .describe("The exact user/admin carousel topic this plan answers."),
+    contentType: z
+      .enum([
+        "single_editorial",
+        "full_photoshoot",
+        "educational",
+        "tutorial",
+        "sales",
+        "behind_the_scenes",
+        "opinion",
+        "trust",
+        "vault_product",
+        "soft_cta",
+        "motion",
+        // Back-compat aliases during the transition to creativePlan.useCase.
+        "story",
+        "behind-the-scenes",
+        "product-vault",
+      ])
+      .optional()
+      .describe("Planner classification. Educational/tutorial/Vault carousels usually need 6-9 slides."),
+    desiredOutcome: z
+      .string()
+      .optional()
+      .describe("What the carousel should do: teach, sell, explain, inspire, build trust, or drive comments."),
+    slideCount: z
+      .number()
+      .int()
+      .min(1)
+      .max(10)
+      .optional()
+      .describe("Planned slide count. Must match slides.length when present."),
+    storyArc: z.string().optional().describe("The planned story arc before individual slides."),
+    designDirection: z
+      .string()
+      .optional()
+      .describe("The overall visual direction for the carousel set."),
+    relevantVaultStyles: z
+      .array(
+        z.object({
+          name: z.string(),
+          mood: z.string().optional(),
+          reason: z.string().optional(),
+        })
+      )
+      .optional()
+      .describe("Vault styles/prompts used as creative context when the topic connects to the Vault."),
     slides: z
       .array(
         z.object({
@@ -58,6 +204,31 @@ const graphicSpec = z
             .describe(
               'For detail slides: the concrete subject, e.g. "cappuccino on a marble table beside her phone".'
             ),
+          purpose: z.string().optional().describe("Why this slide exists in the carousel arc."),
+          visualConcept: z
+            .string()
+            .optional()
+            .describe("Slide-specific visual idea before image generation."),
+          imagePrompt: z
+            .string()
+            .optional()
+            .describe(
+              "Detailed image ingredients for this slide: subject, scene, outfit, pose, mood, lighting, crop, and text-safe area."
+            ),
+          imagePromptDirection: z
+            .string()
+            .optional()
+            .describe("Alias for imagePrompt from the shared Creative Plan output."),
+          referenceImageStrategy: referenceImageStrategySchema.optional(),
+          visualReason: z
+            .string()
+            .optional()
+            .describe("Why this visual matches the slide's message."),
+          reasonThisMatchesUserIntent: z
+            .string()
+            .optional()
+            .describe("Alias for visualReason from the shared Creative Plan output."),
+          textSafeArea: textSafeAreaSchema.optional(),
         })
       )
       .optional(),

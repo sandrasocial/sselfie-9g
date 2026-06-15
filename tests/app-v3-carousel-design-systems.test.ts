@@ -1,8 +1,12 @@
-// MAYA-REBUILD-16 — carousel design systems: per-slide visual roles, identity cap, no-people
-// guarantees. The compiler is pure, so these lock the doctrine rules in place.
+// MAYA-REBUILD-16 / CONTENT-CAROUSEL-04 — carousel design systems and shared planning rules.
+// The compiler is pure, so these lock the customer-facing Maya contract in place.
 
 import { describe, expect, it } from "vitest"
-import { compileConceptJobs } from "@/lib/app-v3/prompt-compiler"
+import {
+  compileConceptJobs,
+  MAX_CAROUSEL_SLIDES,
+  validateCustomerCarouselBrief,
+} from "@/lib/app-v3/prompt-compiler"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
 const baseBrief = (slides: NonNullable<NonNullable<CreativeBrief["graphic"]>["slides"]>): CreativeBrief => ({
@@ -16,7 +20,7 @@ const baseBrief = (slides: NonNullable<NonNullable<CreativeBrief["graphic"]>["sl
 })
 
 describe("carousel design systems (MAYA-REBUILD-16)", () => {
-  it("routes tagged slides to the right input source", () => {
+  it("keeps all customer carousel slides grounded in the selfie reference", () => {
     const jobs = compileConceptJobs(
       baseBrief([
         { heading: "Hook", visual: "identity" },
@@ -27,12 +31,12 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       "carousel",
     )
     expect(jobs).toHaveLength(4)
-    expect(jobs.map((j) => j.passes[0].input)).toEqual(["selfie", "none", "none", "none"])
+    expect(jobs.map((j) => j.passes[0].input)).toEqual(["selfie", "selfie", "selfie", "selfie"])
     // Every slide is exactly one pass (no two-pass overlay for carousels anymore).
     expect(jobs.every((j) => j.passes.length === 1)).toBe(true)
   })
 
-  it("caps identity slides at 2 per set (doctrine), downgrading extras to detail", () => {
+  it("does not cap identity slides out of longer educational carousels", () => {
     const jobs = compileConceptJobs(
       baseBrief([
         { heading: "S1", visual: "identity" },
@@ -43,8 +47,7 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       "carousel",
     )
     const inputs = jobs.map((j) => j.passes[0].input)
-    expect(inputs.filter((i) => i === "selfie")).toHaveLength(2)
-    expect(inputs.filter((i) => i === "none")).toHaveLength(2)
+    expect(inputs.filter((i) => i === "selfie")).toHaveLength(4)
   })
 
   it("applies the doctrine-safe default mix when Maya doesn't tag visuals", () => {
@@ -58,30 +61,45 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       ]),
       "carousel",
     )
-    // hook/value/cta default to identity, then the 2-slide identity cap downgrades extras to detail.
-    expect(jobs[0].passes[0].input).toBe("selfie")
-    expect(jobs[1].passes[0].input).toBe("selfie")
-    expect(jobs.slice(2).every((j) => j.passes[0].input === "none")).toBe(true)
+    expect(jobs.every((j) => j.passes[0].input === "selfie")).toBe(true)
   })
 
-  it("keeps people out of detail and text-only prompts, and renders copy verbatim", () => {
+  it("passes slide-specific creative planning into the image prompts", () => {
     const jobs = compileConceptJobs(
       baseBrief([
         { heading: "Hook", visual: "identity" },
-        { heading: "The 3 rules", body: "Keep your face. Keep your age. Keep your energy.", visual: "text-only" },
-        { heading: "Start here", visual: "detail", detailSubject: "an open notebook with a pen" },
+        {
+          heading: "The 3 rules",
+          body: "Keep your face. Keep your age. Keep your energy.",
+          visual: "text-only",
+          purpose: "make the rule easy to save",
+          visualConcept: "editorial note beside a mirror selfie",
+          imagePrompt: "same woman, mirror, handwritten note, soft window light",
+          visualReason: "the note makes the teaching point tangible",
+        },
+        {
+          heading: "Start here",
+          visual: "detail",
+          detailSubject: "an open notebook with a pen",
+          purpose: "show the first action",
+          visualConcept: "hands planning beside a phone",
+          imagePrompt: "same woman, hands, phone, notebook, marble cafe table",
+          visualReason: "the phone and notes show the workflow",
+        },
       ]),
       "carousel",
     )
     const textPrompt = jobs[1].passes[0].prompt
     const detailPrompt = jobs[2].passes[0].prompt
     for (const p of [textPrompt, detailPrompt]) {
-      expect(p).toContain("No people, no faces")
-      expect(p).not.toContain("reference photo") // no identity anchor on non-identity slides
+      expect(p).toContain("Slide-specific creative plan")
+      expect(p).toContain("same woman")
     }
     expect(textPrompt).toContain('"The 3 rules"')
     expect(textPrompt).toContain("Keep your face. Keep your age. Keep your energy.")
+    expect(textPrompt).toContain("editorial note beside a mirror selfie")
     expect(detailPrompt).toContain("an open notebook with a pen")
+    expect(detailPrompt).toContain("hands planning beside a phone")
   })
 
   it("shares one design system DNA across every slide for cohesion", () => {
@@ -103,6 +121,41 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
     brief.graphic = { headline: "Read this", subline: "before you post" }
     const jobs = compileConceptJobs(brief, "reel-cover", undefined, "two_pass")
     expect(jobs).toHaveLength(1)
-    expect(jobs[0].passes.map((p) => p.input)).toEqual(["selfie", "prev"])
+    expect(jobs[0].passes.map((p) => p.input)).toEqual(["selfie"])
+  })
+
+  it("allows 9-slide planned educational carousels", () => {
+    expect(MAX_CAROUSEL_SLIDES).toBe(9)
+    const slides = Array.from({ length: 9 }, (_, index) => ({
+      heading: `Slide ${index + 1}`,
+      purpose: `purpose ${index + 1}`,
+      visualConcept: `unique scene ${index + 1}`,
+      imagePrompt: `same woman in unique editorial setting ${index + 1}`,
+      visualReason: `reason ${index + 1}`,
+    }))
+    const jobs = compileConceptJobs(baseBrief(slides), "carousel")
+    expect(jobs).toHaveLength(9)
+  })
+
+  it("rejects a thin customer carousel plan before rendering", () => {
+    const brief = baseBrief([
+      { heading: "Hook", visualConcept: "same cafe", imagePrompt: "same cafe" },
+      { heading: "Style 1", visualConcept: "same cafe", imagePrompt: "same cafe" },
+      { heading: "CTA", visualConcept: "same cafe", imagePrompt: "same cafe" },
+    ])
+    brief.graphic = {
+      ...brief.graphic,
+      carouselTitle: "5 AI photo styles you already own",
+      contentType: "vault_product",
+      slideCount: 3,
+      relevantVaultStyles: [{ name: "Denim Street" }, { name: "Marble Cafe" }],
+    }
+
+    expect(validateCustomerCarouselBrief(brief, "5 AI photo styles you already own")).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("educational carousel needs at least 6 slides"),
+        expect.stringContaining("five-style carousel must include five distinct style outputs"),
+      ])
+    )
   })
 })

@@ -5,8 +5,8 @@
 // palette + grade, baked typography, decoration rules, and how each slide TYPE is treated. Slides
 // come in three visual roles:
 //   - "identity":  she appears (kept recognizable — the No-Fake doctrine). Default for most slides.
-//   - "detail":    a styled object shot from her world (coffee, desk, phone, notes). Use only on purpose.
-//   - "text-only": a designed typographic slide (lists, quotes, the CTA). No photo subject.
+//   - "detail":    a styled close-up, object, screenshot, hand, reflection, or scene moment. Use only on purpose.
+//   - "text-only": a designed typographic slide, optionally with her as a subtle photo element.
 //
 // CAROUSEL-03: the image model is the designer. Finished slides bake type/callouts in the
 // generated image; there is no local text-overlay renderer after generation.
@@ -24,9 +24,9 @@ export interface CarouselDesignSystem {
   setDna: string
   /** How an identity slide is composed in this system (input: selfie). */
   identityTreatment: string
-  /** How a detail slide is composed (input: none — pure generation, no person). */
+  /** How a detail slide is composed. */
   detailTreatment: string
-  /** How a text-only slide is composed (input: none). */
+  /** How a text-first slide is composed. */
   textOnlyTreatment: string
 }
 
@@ -50,9 +50,9 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "medium-small in the frame (about one third), leaving generous space for the headline and one handwritten accent. " +
       "A soft drop shadow under the cutout makes it feel pasted on.",
     detailTreatment:
-      "A real, tactile close-up photograph of the subject (no people, no faces): natural light, shallow depth of field, " +
+      "A real, tactile close-up photograph of the subject: natural light, shallow depth of field, " +
       "true textures (ceramic, paper, fabric, glass, metal), slight imperfection so it reads like a phone photo from a " +
-      "beautiful morning, not a stock image. The text sits in the calmest open area, with one handwritten accent pointing " +
+      "beautiful morning, not a stock image. Include her hands, reflection, profile, or outfit detail when it keeps the slide personal. The text sits in the calmest open area, with one handwritten accent pointing " +
       "to or circling the key phrase.",
     textOnlyTreatment:
       "A designed typographic slide on a textured paper or soft plaster background in the set's palette. The message is " +
@@ -74,7 +74,7 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "A candid full-bleed editorial photograph of her, caught mid-moment, composed with generous negative space for " +
       "the headline. She is never centered and posing; the frame breathes.",
     detailTreatment:
-      "A full-bleed cinematic still-life from her world (no people): one hero object, dramatic soft light, deep shadows, " +
+      "A full-bleed cinematic detail from her world: one hero object, her hand, reflection, profile, or outfit crop when useful, dramatic soft light, deep shadows, " +
       "the set's grade. Text overlaid in the darkest or calmest region, perfectly legible.",
     textOnlyTreatment:
       "A near-black or deep-toned slide with a single large serif statement (or short list) in off-white. One thin rule " +
@@ -95,7 +95,7 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "A bright, soft editorial photograph of her in natural window light, plenty of clean negative space (white wall, " +
       "linen, sky) where the headline sits. Calm and unposed.",
     detailTreatment:
-      "A bright minimal still-life (no people): one or two objects on a clean light surface, soft daylight, true texture. " +
+      "A bright minimal detail: one or two objects, her hands, a profile crop, or a clean light surface, soft daylight, true texture. " +
       "Text in the open space above or beside the objects.",
     textOnlyTreatment:
       "An off-white slide with the message set like a beautifully typeset magazine quote or checklist: serif headline, " +
@@ -143,8 +143,8 @@ export function getCarouselDesignGuide(): string {
     "Slide mix rules (non-negotiable):",
     '- Tag every slide with "visual": "identity" | "detail" | "text-only".',
     "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot. Use identity slides by default for hook, value, and CTA slides so the person stays present and recognizable.",
-    "- Detail slides are optional, not default. Use them only when a screenshot, object, phone, product, or texture genuinely explains the point better than another person-in-scene image.",
-    "- Text-only slides (when used) carry lists, the big statement, or the CTA. The copy is the hero.",
+    "- Detail slides are optional, not default. Use them only when a screenshot, object, phone, product, texture, hand, reflection, or crop genuinely explains the point better than another full person-in-scene image.",
+    "- Text-only slides (when used) carry lists, the big statement, or the CTA. The copy is the hero, but the slide can still include her as a subtle cutout or photo element if it fits.",
     "- Keep identity slides natural and recognizable — never an idealized stranger. Vary crop, pose, and text placement so it does not feel repetitive.",
     '- When you deliberately choose a detail slide, give it a concrete "detailSubject" that VISUALIZES that slide\'s message, not just the scene (the slide "stop using flash" -> a phone face-down by a window with soft daylight).',
     "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
