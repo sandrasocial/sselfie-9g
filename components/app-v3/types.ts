@@ -59,6 +59,8 @@ export interface OpenConciergeOptions {
   format?: OutputFormat
   /** A specific idea Maya should create (the first turn), e.g. a Content recommendation. */
   seed?: string
+  /** Optional already-saved image to use as the active reference when opening Maya. */
+  referenceSelfieUrl?: string | null
 }
 
 export interface ConciergeContextValue {

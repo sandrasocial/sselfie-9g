@@ -107,6 +107,11 @@ function buildFinalPrompt(
       " authentic moment, unfiltered, real life texture"
   }
 
+  prompt +=
+    ", realistic natural skin texture, visible pores, natural facial asymmetry," +
+    " real camera photo, true facial structure, not waxy, not plastic skin," +
+    " not airbrushed, not beauty-filtered, not CGI"
+
   return prompt
 }
 
@@ -163,6 +168,16 @@ function buildQualitySettings(
     extra_lora: readStringSetting(customSettings, "extraLora") ?? presetSettings.extra_lora,
     extra_lora_scale: extraLoraScale,
     num_inference_steps: presetSettings.num_inference_steps,
+  }
+}
+
+function appV3TrainedModelPreset(presetSettings: QualitySettings): QualitySettings {
+  return {
+    ...presetSettings,
+    guidance_scale: 2.2,
+    lora_scale: 0.9,
+    extra_lora_scale: Math.min(presetSettings.extra_lora_scale ?? 0.08, 0.08),
+    num_inference_steps: Math.min(presetSettings.num_inference_steps, 40),
   }
 }
 
@@ -271,9 +286,11 @@ export async function startTrainedModelGeneration(
     isHighlight: input.isHighlight === true,
     enhancedAuthenticity: input.enhancedAuthenticity === true,
   })
-  const presetSettings =
+  const rawPresetSettings =
     MAYA_QUALITY_PRESETS[input.category as keyof typeof MAYA_QUALITY_PRESETS] ||
     MAYA_QUALITY_PRESETS.default
+  const presetSettings =
+    input.source === "app-v3-custom-model" ? appV3TrainedModelPreset(rawPresetSettings) : rawPresetSettings
   const lora = resolveLoraDecision(input.customSettings, input.enhancedAuthenticity === true, finalPrompt)
   const qualitySettings = buildQualitySettings(
     presetSettings,
@@ -286,7 +303,8 @@ export async function startTrainedModelGeneration(
     qualitySettings,
     loraWeightsUrl: model.loraWeightsUrl,
     seed: readNumberSetting(input.customSettings, "seed") ?? randomInt(1_000_000),
-    referenceImageUrl: input.referenceImageUrl || undefined,
+    referenceImageUrl:
+      input.source === "app-v3-custom-model" ? undefined : input.referenceImageUrl || undefined,
     extraLoraDisabled: lora.shouldDisableExtraLora,
   })
 

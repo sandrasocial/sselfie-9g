@@ -91,7 +91,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   "reel-cover": "Let's make a Reel cover.",
   carousel: "Let's make a carousel.",
   "story-slide": "Let's make a Story slide.",
-  video: "Let's animate a photo into a short video.",
+  video: "Let's add motion to a photo.",
 }
 
 // Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
@@ -103,7 +103,7 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   "reel-cover": "Tell me what your reel's about and I'll design the cover.",
   carousel: "Give me the topic and I'll build slides that feel like you.",
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
-  video: "Add or choose the image you want to animate, and I'll pull motion directions.",
+  video: "Add or choose the image you want to move, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
@@ -768,7 +768,6 @@ export function MayaConcierge({
             conceptDescription: concept.description,
             conceptPrompt: buildCustomModelConceptPrompt(concept.brief),
             category: "portrait",
-            referenceImageUrl: inspirationUrl,
           }),
         })
         const startData = (await startRes.json().catch(() => null)) as {

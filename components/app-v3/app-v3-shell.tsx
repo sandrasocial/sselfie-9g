@@ -99,6 +99,21 @@ function ShellInner({
     })
   }
 
+  function createMotionFromImage(imageUrl: string) {
+    openWithAesthetic(MAYA_GENERAL, {
+      format: "video",
+      referenceSelfieUrl: imageUrl,
+      seed: "Let's add subtle editorial motion to this exact image. Keep it natural, polished, and true to the original.",
+    })
+  }
+
+  function createWithTrainedModel() {
+    openWithAesthetic(MAYA_GENERAL, {
+      format: "photo",
+      seed: "Let's create a photo using my trained model.",
+    })
+  }
+
   return (
     <main className="min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] [overflow-x:clip]">
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
@@ -160,7 +175,7 @@ function ShellInner({
             showTrialFirstRunStep={accessLevel === "trial" && !trialHasGeneratedImages}
           />
         ))}
-      {section === "photos" && <GalleryView />}
+      {section === "photos" && <GalleryView onMakeMotion={createMotionFromImage} />}
       {section === "content" && (
         <ContentView
           firstName={firstName}
@@ -174,6 +189,7 @@ function ShellInner({
         <AccountView
           firstName={firstName}
           onOpenLibrary={() => goToSection("library")}
+          onUseTrainedModel={createWithTrainedModel}
           trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
           hasTrainedModel={hasTrainedModel}
         />

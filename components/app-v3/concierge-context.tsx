@@ -43,7 +43,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       setSession({
         aesthetic,
         outputFormat: opts?.format ?? null,
-        referenceSelfieUrl: null,
+        referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
         graphicText: null,
         seedPrompt: opts?.seed ?? null,
         startedAt,

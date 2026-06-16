@@ -14,29 +14,40 @@ const GalleryTile = memo(function GalleryTile({
   url,
   index,
   onOpen,
+  onMakeMotion,
 }: {
   url: string
   index: number
   onOpen: (i: number) => void
+  onMakeMotion?: (url: string) => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(index)}
+    <div
       className="group relative aspect-[4/5] overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]"
     >
-      <Image
-        src={url}
-        alt={`Gallery image ${index + 1}`}
-        fill
-        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-        sizes="(max-width:640px) 45vw, 240px"
-      />
-    </button>
+      <button type="button" onClick={() => onOpen(index)} className="absolute inset-0">
+        <Image
+          src={url}
+          alt={`Gallery image ${index + 1}`}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          sizes="(max-width:640px) 45vw, 240px"
+        />
+      </button>
+      {onMakeMotion && (
+        <button
+          type="button"
+          onClick={() => onMakeMotion(url)}
+          className="absolute inset-x-2 bottom-2 z-10 min-h-10 rounded-[4px] bg-white/95 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[#0D0E10] shadow-sm transition-colors hover:bg-[#0D0E10] hover:text-white"
+        >
+          Make it move
+        </button>
+      )}
+    </div>
   )
 })
 
-export function GalleryView() {
+export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => void }) {
   const [images, setImages] = useState<string[] | null>(null)
   const [videos, setVideos] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +93,13 @@ export function GalleryView() {
       {images && images.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((url, i) => (
-            <GalleryTile key={url} url={url} index={i} onOpen={openLightbox} />
+            <GalleryTile
+              key={url}
+              url={url}
+              index={i}
+              onOpen={openLightbox}
+              onMakeMotion={onMakeMotion}
+            />
           ))}
         </div>
       )}

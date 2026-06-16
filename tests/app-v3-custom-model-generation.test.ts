@@ -105,10 +105,14 @@ describe("app-v3 custom trained-model generation service", () => {
         input: expect.objectContaining({
           prompt: expect.stringMatching(/^sandra, Nordic woman, editorial portrait/),
           hf_lora: "https://example.com/lora.safetensors",
-          image: "https://example.com/inspo.jpg",
+          guidance_scale: 2.2,
+          num_inference_steps: 40,
+          extra_lora_scale: 0.08,
         }),
       }),
     )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("image")
+    expect(mockReplicateCreate.mock.calls[0][0].input.prompt).toContain("not plastic skin")
   })
 
   it("returns a structured training-required error when no completed model exists", async () => {

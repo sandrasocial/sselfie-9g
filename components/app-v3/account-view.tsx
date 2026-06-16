@@ -3,8 +3,8 @@
 // SSELFIE Studio 3.0 — native Account (MAYA-REBUILD-15, QA P0-3).
 // Members manage everything here without leaving /app: membership, credits, billing (Stripe
 // portal), Maya's brand memory (opens the dedicated Memory screen directly, QA P1-6), saved
-// selfies, support, and logout. The classic Studio remains ONLY as quiet legacy access for
-// trained Flux models and old galleries — never the main path.
+// selfies, support, and logout. Trained Flux models now enter through Maya's app-v3 flow,
+// never the old Studio interface.
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
@@ -42,11 +42,13 @@ const quietBtn =
 export function AccountView({
   firstName,
   onOpenLibrary,
+  onUseTrainedModel,
   trialDaysLeft,
   hasTrainedModel = false,
 }: {
   firstName?: string | null
   onOpenLibrary?: () => void
+  onUseTrainedModel?: () => void
   /** Set while on a SUITE trial (BRIDGE-01 Phase D) — shows the trial badge. */
   trialDaysLeft?: number | null
   /** True when the member has a completed, non-test trained model. Gates the legacy entry. */
@@ -283,21 +285,21 @@ export function AccountView({
           />
         </div>
 
-        {/* Trained model — quiet, discoverable entry back to the classic Studio. Only
+        {/* Trained model — quiet, discoverable entry into Maya's new app flow. Only
             for members with a completed, non-test trained model (gated server-side). */}
-        {hasTrainedModel && (
+        {hasTrainedModel && onUseTrainedModel && (
           <div className={card}>
             <p className={cardTitle}>Your trained model</p>
             <p className="mt-2 font-serif text-[22px] font-light text-[#0D0E10]">
               Use my trained model
             </p>
             <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
-              Your original Classic Studio from before the upgrade. Still here whenever you want it.
+              Create with your saved model inside Maya, without opening the old Studio.
             </p>
             <div className="mt-4">
-              <a href="/studio?legacy=1" className={primaryBtn}>
+              <button type="button" onClick={onUseTrainedModel} className={primaryBtn}>
                 Use my trained model
-              </a>
+              </button>
             </div>
           </div>
         )}
