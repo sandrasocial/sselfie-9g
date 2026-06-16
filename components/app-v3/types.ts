@@ -68,6 +68,8 @@ export interface ConciergeContextValue {
   isOpen: boolean
   /** Open the concierge with a chosen aesthetic preloaded (the Handoff). */
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
+  /** Start a clean thread while keeping the active reference image available. */
+  resetCurrentSession: () => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */
   setOutputFormat: (format: OutputFormat | null) => void
   setReferenceSelfieUrl: (url: string | null) => void

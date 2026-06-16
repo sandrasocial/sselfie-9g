@@ -60,6 +60,21 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     setSession(prev => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
   }, [])
 
+  const resetCurrentSession = useCallback(() => {
+    setSession(prev =>
+      prev
+        ? {
+            ...prev,
+            outputFormat: null,
+            graphicText: null,
+            seedPrompt: null,
+            startedAt: Date.now(),
+          }
+        : prev,
+    )
+    setIsOpen(true)
+  }, [])
+
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
   }, [])
@@ -101,6 +116,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       session,
       isOpen,
       openWithAesthetic,
+      resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
       setGraphicText,
@@ -110,6 +126,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       session,
       isOpen,
       openWithAesthetic,
+      resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
       setGraphicText,

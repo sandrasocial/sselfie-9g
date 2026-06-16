@@ -261,7 +261,8 @@ export function MayaConcierge({
   admin = false,
   hasTrainedModel = false,
 }: { admin?: boolean; hasTrainedModel?: boolean } = {}) {
-  const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, close } = useConcierge()
+  const { session, isOpen, resetCurrentSession, setOutputFormat, setReferenceSelfieUrl, close } =
+    useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
   const sideInput = useRef<HTMLInputElement>(null)
   const bodyInput = useRef<HTMLInputElement>(null)
@@ -671,6 +672,9 @@ export function MayaConcierge({
     savedCountRef.current = 0
     lastPulledFormatRef.current = null
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
+    restoredDraftRef.current = null
+    appliedDraftSessionRef.current = null
+    formatSwitchAppliedRef.current.clear()
     setMessages([])
     setGenState({})
     setGeneratedOnce(false)
@@ -680,6 +684,7 @@ export function MayaConcierge({
     // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
     // directions (which made "New chat" look like it did nothing). Selfie + memory are kept.
     setOutputFormat(null)
+    resetCurrentSession()
   }
 
   async function handleSelectChat(id: string) {

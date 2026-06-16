@@ -173,6 +173,8 @@ function ShellInner({
         ) : (
           <VisualFrontDoor
             showTrialFirstRunStep={accessLevel === "trial" && !trialHasGeneratedImages}
+            hasTrainedModel={hasTrainedModel}
+            onUseTrainedModel={createWithTrainedModel}
           />
         ))}
       {section === "photos" && <GalleryView onMakeMotion={createMotionFromImage} />}
