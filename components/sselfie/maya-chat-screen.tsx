@@ -2387,6 +2387,38 @@ export default function MayaChatScreen({
     [sendMessage, setChatError],
   )
 
+  const createChatAndQueueMessage = useCallback(
+    async (parts: PendingMayaChatMessage["parts"]) => {
+      try {
+        const chatType = currentChatType
+        const response = await fetch("/api/maya/new-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatType }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.chatId) {
+            pendingMessageAfterChatCreateRef.current = { parts }
+            setChatId(data.chatId)
+            setChatTitle("New Chat")
+            console.log("[v0] Created new chat with ID:", data.chatId, "chatType:", chatType)
+            return true
+          }
+        }
+
+        const errorText = await response.text().catch(() => "")
+        throw new Error(errorText || `Failed to create new chat (${response.status})`)
+      } catch (error) {
+        console.error("[v0] Error creating new chat:", error)
+        setChatError(error instanceof Error ? error.message : "Maya could not start a new chat. Please try again.")
+        return false
+      }
+    },
+    [currentChatType, setChatError, setChatId, setChatTitle],
+  )
+
   useEffect(() => {
     if (!chatId || !pendingMessageAfterChatCreateRef.current) return
 
@@ -2430,33 +2462,12 @@ export default function MayaChatScreen({
 
       if (!chatId) {
         console.log("[v0] No chatId exists, creating new chat before sending message...")
-        try {
-          // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
-          const chatType = currentChatType
-          const response = await fetch("/api/maya/new-chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chatType }),
-          })
-          if (response.ok) {
-            const data = await response.json()
-            if (data.chatId) {
-              pendingMessageAfterChatCreateRef.current = { parts: messageParts }
-              setChatId(data.chatId)
-              setChatTitle("New Chat")
-              setInputValue("")
-              setUploadedImage(null)
-              console.log("[v0] Created new chat with ID:", data.chatId, "chatType:", chatType)
-              return
-            }
-          }
-          const errorText = await response.text().catch(() => "")
-          throw new Error(errorText || `Failed to create new chat (${response.status})`)
-        } catch (error) {
-          console.error("[v0] Error creating new chat:", error)
-          setChatError(error instanceof Error ? error.message : "Maya could not start a new chat. Please try again.")
-          return
+        const queued = await createChatAndQueueMessage(messageParts)
+        if (queued) {
+          setInputValue("")
+          setUploadedImage(null)
         }
+        return
       }
 
       void sendMessageParts(messageParts)
@@ -4595,7 +4606,7 @@ export default function MayaChatScreen({
                     await updateIntent(library.intent)
                   }
                   
-                  if (sendMessage && library.selfies.length > 0) {
+                  if (library.selfies.length > 0) {
                     // Use feed message if in Feed tab, otherwise use concepts message
                     const defaultMessage = activeMayaTab === "feed" 
                       ? "Create an Instagram feed layout"
@@ -4608,7 +4619,7 @@ export default function MayaChatScreen({
                       ...library.vibes,
                     ]
                     
-                    const messageParts: Array<{ type: string; text?: string; image?: string }> = []
+                    const messageParts: PendingMayaChatMessage["parts"] = []
                     if (messageText) {
                       messageParts.push({ type: "text", text: messageText })
                     }
@@ -4616,10 +4627,11 @@ export default function MayaChatScreen({
                       messageParts.push({ type: "image", image: imageUrl })
                     })
                     
-                    sendMessage({
-                      role: "user",
-                      parts: messageParts as any, // Type assertion for parts array
-                    })
+                    if (!chatId) {
+                      await createChatAndQueueMessage(messageParts)
+                    } else {
+                      await sendMessageParts(messageParts)
+                    }
                     
                     // Close the upload flow modal
                     setShowUploadFlow(false)

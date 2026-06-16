@@ -625,6 +625,7 @@ const OFFER_BRIEF_FIELD_LABELS: Record<MayaOfferBriefField, string> = {
   uniqueMethod: "your unique method",
   proofPoints: "your proof points",
   callToAction: "your CTA",
+  designStyle: "your design style",
 }
 
 function summarizeMissingOfferBriefFields(fields: MayaOfferBriefField[]): string {
