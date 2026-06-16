@@ -27,6 +27,7 @@ import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
+import { buildCustomModelConceptPrompt } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type { OutputFormat } from "./types"
 import {
@@ -117,6 +118,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
 }
 
 type UploadSlot = "face" | "side" | "body" | "inspiration"
+type GenerationSource = "selfie" | "trained-model"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
  *  `rawInput` is the salvage path: if the tool call finished but failed schema validation (a
@@ -201,7 +203,35 @@ function extractClarify(part: any): ClarifyPrompt | null {
   return { question: payload.question, options, allowFreeText: Boolean(payload.allowFreeText) }
 }
 
-export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
+function wait(ms: number): Promise<void> {
+  return new Promise(resolve => window.setTimeout(resolve, ms))
+}
+
+async function pollCustomModelGeneration(predictionId: string, generationId: number): Promise<string> {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const res = await fetch(
+      `/api/app-v3/maya/custom-model/check?predictionId=${encodeURIComponent(predictionId)}&generationId=${generationId}`,
+    )
+    const data = (await res.json().catch(() => null)) as {
+      status?: string
+      imageUrl?: string
+      error?: string
+    } | null
+
+    if (!res.ok) throw new Error(data?.error || "Generation failed")
+    if (data?.status === "succeeded" && data.imageUrl) return data.imageUrl
+    if (data?.status === "failed") throw new Error(data.error || "Generation failed")
+
+    await wait(attempt < 10 ? 1500 : 2500)
+  }
+
+  throw new Error("Maya is still creating this. Try again in a moment.")
+}
+
+export function MayaConcierge({
+  admin = false,
+  hasTrainedModel = false,
+}: { admin?: boolean; hasTrainedModel?: boolean } = {}) {
   const { session, isOpen, setOutputFormat, setReferenceSelfieUrl, close } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
   const sideInput = useRef<HTMLInputElement>(null)
@@ -227,6 +257,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
+  const [generationSource, setGenerationSource] = useState<GenerationSource>(() =>
+    hasTrainedModel ? "trained-model" : "selfie"
+  )
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>(
     () => restoredDraft?.genState ?? {}
@@ -488,16 +521,25 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     if (!isOpen || !session) return
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
-    if (!session.referenceSelfieUrl) return
+    const canUseTrainedModelWithoutSelfie =
+      hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
+    if (!session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
     extrasRef.current = { ...extrasRef.current, format: fmt }
     // First pull may carry a seeded idea (a Content recommendation); after that, plain format.
     const seed = !seedRetiredRef.current ? session.seedPrompt : null
-    const text = isFirstPull && seed ? seed : FORMAT_PHRASE[fmt]
+    const text =
+      isFirstPull && seed
+        ? canUseTrainedModelWithoutSelfie
+          ? `${seed} Use my trained model as the photo source.`
+          : seed
+        : canUseTrainedModelWithoutSelfie
+          ? "Let's create photos using my trained model."
+          : FORMAT_PHRASE[fmt]
     sendMessage({ text })
-  }, [isOpen, session, isThinking, sendMessage])
+  }, [admin, generationSource, hasTrainedModel, isOpen, session, isThinking, sendMessage])
 
   // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
   // ("make me a carousel" typed, no chip), commit the switch here — the auto-pull effect
@@ -520,13 +562,21 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     if (latest && session?.outputFormat !== latest) setOutputFormat(latest)
   }, [messages, isThinking, session, setOutputFormat])
 
+  useEffect(() => {
+    if (!hasTrainedModel && generationSource !== "selfie") setGenerationSource("selfie")
+  }, [generationSource, hasTrainedModel])
+
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const format: OutputFormat = outputFormat ?? "photo"
+  const customModelAvailable = hasTrainedModel && format === "photo" && !admin
+  const activeGenerationSource: GenerationSource = customModelAvailable ? generationSource : "selfie"
   const openerLine = outputFormat
-    ? referenceSelfieUrl
-      ? FORMAT_OPENER_READY[outputFormat]
-      : FORMAT_OPENER[outputFormat]
+    ? activeGenerationSource === "trained-model" && outputFormat === "photo"
+      ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
+      : referenceSelfieUrl
+        ? FORMAT_OPENER_READY[outputFormat]
+        : FORMAT_OPENER[outputFormat]
     : referenceSelfieUrl
       ? "Pick what we're making next. Your selfie is already in."
       : "Pick what we're making next, then add one selfie."
@@ -630,7 +680,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
   }
 
   async function generateConcept(key: string, concept: ConceptCardData) {
-    if (!referenceSelfieUrl) {
+    if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
@@ -642,6 +692,45 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
     const rerun = genState[key]?.status === "done"
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
+      if (activeGenerationSource === "trained-model") {
+        const startRes = await fetch("/api/app-v3/maya/custom-model/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conceptTitle: concept.title,
+            conceptDescription: concept.description,
+            conceptPrompt: buildCustomModelConceptPrompt(concept.brief),
+            category: "portrait",
+            referenceImageUrl: inspirationUrl,
+          }),
+        })
+        const startData = (await startRes.json().catch(() => null)) as {
+          generationId?: number
+          predictionId?: string
+          error?: string
+          code?: string
+          current?: number
+        } | null
+
+        if (startRes.status === 402 || startData?.code === "insufficient_credits") {
+          setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          setCreditModal({
+            open: true,
+            balance: typeof startData?.current === "number" ? startData.current : null,
+          })
+          return
+        }
+
+        if (!startRes.ok || !startData?.generationId || !startData?.predictionId) {
+          throw new Error(startData?.error || "Generation failed")
+        }
+
+        const url = await pollCustomModelGeneration(startData.predictionId, startData.generationId)
+        setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: [url] } }))
+        setGeneratedOnce(true)
+        return
+      }
+
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -920,6 +1009,11 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
               )}
               <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#818283]">
                 {FORMAT_OPTIONS.find(o => o.id === format)?.label ?? "Photo"}
+                {customModelAvailable
+                  ? activeGenerationSource === "trained-model"
+                    ? " · My trained model"
+                    : " · Selfie engine"
+                  : ""}
                 {referenceSelfieUrl ? " · Selfie in" : " · No selfie yet"}
               </span>
             </span>
@@ -956,6 +1050,52 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                 )
               })}
             </div>
+
+            {customModelAvailable && (
+              <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
+                <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                  Photo source
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    {
+                      id: "trained-model" as const,
+                      label: "My trained model",
+                      note: "Uses your saved model.",
+                    },
+                    {
+                      id: "selfie" as const,
+                      label: "Selfie engine",
+                      note: "Uses your uploaded selfie.",
+                    },
+                  ].map(option => {
+                    const selected = generationSource === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setGenerationSource(option.id)}
+                        disabled={isThinking}
+                        className={`min-h-14 rounded-[4px] border px-3 py-2 text-left transition-colors disabled:opacity-50 ${
+                          selected
+                            ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                            : "border-[#C5C6C8]/60 bg-[#F8FAFA] text-[#4F5052] hover:border-[#0D0E10]/40"
+                        }`}
+                      >
+                        <span className="block text-[12px] font-medium">{option.label}</span>
+                        <span
+                          className={`mt-0.5 block text-[10px] leading-relaxed ${
+                            selected ? "text-white/70" : "text-[#818283]"
+                          }`}
+                        >
+                          {option.note}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Front-face selfie: an action before upload, a calm status after. */}
             {referenceSelfieUrl ? (
@@ -1029,7 +1169,9 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
                   // upload — the gated auto-pull then starts the moment her selfie is in.
                   handlePickFormat(outputFormat)
-                  if (!referenceSelfieUrl) fileInput.current?.click()
+                  if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
+                    fileInput.current?.click()
+                  }
                 }}
                 disabled={isThinking || !outputFormat}
                 className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
@@ -1038,7 +1180,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                   ? "Creating…"
                   : !outputFormat
                     ? "Pick a format to start"
-                    : referenceSelfieUrl
+                    : referenceSelfieUrl || activeGenerationSource === "trained-model"
                       ? CTA_LABEL[outputFormat]
                       : "Add my selfie to start"}
               </button>
@@ -1205,7 +1347,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
 
           {/* Prominent selfie requirement: once Maya has proposed directions but there's no
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
-          {!referenceSelfieUrl && hasStarted && (
+          {!referenceSelfieUrl && hasStarted && activeGenerationSource !== "trained-model" && (
             <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
               <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
                 Start your brand shoot
@@ -1322,7 +1464,7 @@ export function MayaConcierge({ admin = false }: { admin?: boolean } = {}) {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format })
                           }}
-                          disabled={!referenceSelfieUrl}
+                          disabled={!referenceSelfieUrl && activeGenerationSource !== "trained-model"}
                         />
                       )
                     })}
