@@ -7,15 +7,43 @@ import {
 } from "@/lib/content-engine/instagram-performance"
 import { collectAudienceSignals, type AudienceSignals } from "@/lib/content-engine/audience-signals"
 import {
+  BANNED_WORDS,
   audienceBlock,
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  sanitizeGroundedText,
   voiceBlock,
 } from "@/lib/content/grounding"
+import { getAcademyProductCatalog } from "@/lib/academy-entitlements"
+import { getStaticVaultInventory } from "@/lib/ai-prompts/prompt-data"
+import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 
 const RESEARCH_MODEL = "claude-sonnet-4-5"
 const BRIEF_MODEL = "claude-sonnet-4-5"
+
+type VaultBriefContext = {
+  staticCollectionCount: number
+  staticPromptCount: number
+  publishedDropCount: number
+  publishedDropPromptCount: number
+  totalCollectionCount: number
+  totalPromptCount: number
+  newestPublishedDrops: Array<{
+    title: string
+    promptCount: number
+    moodLine: string
+    publishedAt: string
+  }>
+}
+
+type SuiteBriefContext = {
+  includedProducts: Array<{
+    id: string
+    name: string
+    tagline: string
+  }>
+}
 
 export type ContentBriefPiece = {
   day: string
@@ -69,6 +97,165 @@ function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured")
   return new Anthropic({ apiKey })
+}
+
+async function getVaultBriefContext(): Promise<VaultBriefContext> {
+  const staticCollections = getStaticVaultInventory()
+  const publishedDrops = await getPublishedVaultCollections()
+  const staticPromptCount = staticCollections.reduce((sum, collection) => sum + collection.shotCount, 0)
+  const publishedDropPromptCount = publishedDrops.reduce(
+    (sum, collection) => sum + collection.cards.length,
+    0
+  )
+
+  return {
+    staticCollectionCount: staticCollections.length,
+    staticPromptCount,
+    publishedDropCount: publishedDrops.length,
+    publishedDropPromptCount,
+    totalCollectionCount: staticCollections.length + publishedDrops.length,
+    totalPromptCount: staticPromptCount + publishedDropPromptCount,
+    newestPublishedDrops: publishedDrops.slice(0, 5).map(collection => ({
+      title: collection.title,
+      promptCount: collection.cards.length,
+      moodLine: collection.moodLine,
+      publishedAt: collection.publishedAt,
+    })),
+  }
+}
+
+async function getSuiteBriefContext(): Promise<SuiteBriefContext> {
+  const catalog = await getAcademyProductCatalog()
+  return {
+    includedProducts: catalog
+      .filter(product => product.active && product.membershipIncluded)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        tagline: product.tagline,
+      })),
+  }
+}
+
+const BANNED_COPY_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\belevated\b/gi, "high-end"],
+  [/\belevate\b/gi, "make clearer"],
+  [/\btransform(?:s|ed|ing|ation)?\b/gi, "turn"],
+  [/\bcurated\b/gi, "chosen"],
+  [/\bleverage\b/gi, "use"],
+  [/\bamplify\b/gi, "strengthen"],
+  [/\bempower\b/gi, "help"],
+  [/\bjourney\b/gi, "path"],
+  [/\bgame-changer\b/gi, "useful shift"],
+  [/\bskyrocket\b/gi, "grow"],
+  [/\bunlock your potential\b/gi, "start with what you have"],
+  [/\bunlock\b/gi, "open"],
+  [/\bstrategic visibility\b/gi, "being seen by the right people"],
+]
+
+function sanitizeBriefText(text: string, vault: VaultBriefContext): string {
+  let next = sanitizeGroundedText(String(text || ""))
+  next = next.replace(
+    /\b(?:92|98|104|150)\s+(copy-paste\s+)?prompts?\b/gi,
+    `${vault.totalPromptCount} $1prompts`
+  )
+  next = next.replace(
+    /\b(?:10|11|12|13|14|15)\s+(collections?|shoot worlds?|shoots?)\b/gi,
+    `${vault.totalCollectionCount} $1`
+  )
+  for (const [pattern, replacement] of BANNED_COPY_REPLACEMENTS) {
+    next = next.replace(pattern, replacement)
+  }
+  for (const banned of BANNED_WORDS) {
+    const escaped = banned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    next = next.replace(new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "gi"), "$1$2")
+  }
+  return next.replace(/[ \t]{2,}/g, " ").trim()
+}
+
+function captionLooksLikePromptLeak(caption: string): boolean {
+  const markers = [
+    "Use the uploaded reference photos",
+    "Identity lock:",
+    "Scene:",
+    "Outfit:",
+    "Camera + lens:",
+    "Color grading:",
+    "Avoid:",
+    "Create image",
+  ]
+  const hits = markers.filter(marker => caption.toLowerCase().includes(marker.toLowerCase()))
+  return hits.length >= 3 || caption.length > 1300
+}
+
+function safeTeaserCaption(piece: Pick<ContentBriefPiece, "hook" | "title">): string {
+  return [
+    piece.hook || piece.title,
+    "",
+    "Show the result first.",
+    "Name the tiny method.",
+    "Keep the full copy-paste prompt inside the Vault.",
+    "",
+    "Comment PROMPT and I will send you the free starter pack.",
+  ].join("\n")
+}
+
+function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" | "periodEnd" | "accountSnapshot" | "researchNotes">>(
+  brief: T,
+  vault: VaultBriefContext
+): T {
+  const sanitizePiece = (piece: ContentBriefPiece): ContentBriefPiece => {
+    const caption = sanitizeBriefText(piece.caption, vault)
+    return {
+      ...piece,
+      day: sanitizeBriefText(piece.day, vault),
+      title: sanitizeBriefText(piece.title, vault),
+      hook: sanitizeBriefText(piece.hook, vault),
+      caption: captionLooksLikePromptLeak(caption)
+        ? sanitizeBriefText(safeTeaserCaption(piece), vault)
+        : caption,
+      carouselOutline: piece.carouselOutline.map(line => sanitizeBriefText(line, vault)),
+      reelCoverText: sanitizeBriefText(piece.reelCoverText, vault),
+      photoshootPrompt: sanitizeBriefText(piece.photoshootPrompt, vault),
+      hashtags: piece.hashtags.map(tag => sanitizeBriefText(tag, vault)),
+      whyThisWorks: sanitizeBriefText(piece.whyThisWorks, vault),
+    }
+  }
+
+  return {
+    ...brief,
+    performanceRecap: brief.performanceRecap.map(item => ({
+      ...item,
+      hookLine: sanitizeBriefText(item.hookLine, vault),
+      whyItWorked: sanitizeBriefText(item.whyItWorked, vault),
+    })),
+    audienceDemand: {
+      topPrompts: brief.audienceDemand.topPrompts.map(prompt => ({
+        ...prompt,
+        title: sanitizeBriefText(prompt.title, vault),
+      })),
+      dmThemes: brief.audienceDemand.dmThemes.map(theme => ({
+        theme: sanitizeBriefText(theme.theme, vault),
+        evidence: sanitizeBriefText(theme.evidence, vault),
+      })),
+    },
+    hookIntelligence: brief.hookIntelligence.map(hook => ({
+      ...hook,
+      hook: sanitizeBriefText(hook.hook, vault),
+      pattern: sanitizeBriefText(hook.pattern, vault),
+      evidence: sanitizeBriefText(hook.evidence, vault),
+    })),
+    contentPlan: brief.contentPlan.map(sanitizePiece),
+    storySequence: {
+      theme: sanitizeBriefText(brief.storySequence.theme, vault),
+      frames: brief.storySequence.frames.map(frame => ({
+        ...frame,
+        content: sanitizeBriefText(frame.content, vault),
+        interaction: sanitizeBriefText(frame.interaction, vault),
+      })),
+    },
+  }
 }
 
 async function researchCurrentHooks(
@@ -242,9 +429,11 @@ export async function generateContentBrief(): Promise<ContentBrief> {
   const periodStart = new Date(periodEnd)
   periodStart.setDate(periodStart.getDate() - 7)
 
-  const [performance, signals] = await Promise.all([
+  const [performance, signals, vault, suite] = await Promise.all([
     collectInstagramPerformance(),
     collectAudienceSignals(30),
+    getVaultBriefContext(),
+    getSuiteBriefContext(),
   ])
 
   const researchNotes = await researchCurrentHooks(performance, signals)
@@ -270,6 +459,8 @@ export async function generateContentBrief(): Promise<ContentBrief> {
       shares: post.shares,
     })),
     audience: signals,
+    vault,
+    suite,
     researchMemo: researchNotes,
   }
 
@@ -296,7 +487,11 @@ CONTENT PLAN RULES:
 - Her own viral DNA and top posts win over the research memo when they conflict. Treat researchMemo as a tiebreaker only.
 - Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
 - Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
+- Vault count is LIVE in dataPacket.vault. Never hardcode "92", "150", "10 collections", or any fixed count. If you need a number, use dataPacket.vault.totalPromptCount and dataPacket.vault.totalCollectionCount only. Prefer "every shoot world I've built" or "new drops added all the time" unless the exact live number improves clarity.
+- Newly published Shoot Studio drops in dataPacket.vault.newestPublishedDrops are fresh content inputs. Feature the newest relevant drop as a content angle when it fits the week's demand.
+- SUITE claims may only use dataPacket.suite.includedProducts. Do not invent "Real You Method training", "monthly brand shoot themes", "live editing sessions", or any feature not listed in the product catalog.
 - Captions are complete and ready to paste: hook line, body in short lines, one clear CTA. CTA options: comment keyword PROMPT, link in bio to the free prompts page, or the $27 Prompt Vault. Never more than one CTA per piece.
+- Do not give away the full copy-paste Vault prompt in any free reel/feed caption. Tease the result and the method. The full prompt is the Vault payoff. The photoshootPrompt field is for Sandra's internal planning only.
 - reelCoverText: 3-6 words, works as on-image text.
 - carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. For non-carousels return an empty array.
 - photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies).
@@ -324,10 +519,10 @@ CONTENT PLAN RULES:
     throw new Error("Brief generation returned no structured output")
   }
 
-  const brief = toolBlock.input as Omit<
+  const brief = sanitizeContentBriefOutput(toolBlock.input as Omit<
     ContentBrief,
     "periodStart" | "periodEnd" | "accountSnapshot" | "researchNotes"
-  >
+  >, vault)
 
   return {
     periodStart: periodStart.toISOString(),
@@ -339,6 +534,6 @@ CONTENT PLAN RULES:
       insightsLevel: performance?.insightsLevel || "basic",
     },
     ...brief,
-    researchNotes,
+    researchNotes: sanitizeBriefText(researchNotes, vault),
   }
 }

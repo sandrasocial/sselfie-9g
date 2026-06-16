@@ -2686,6 +2686,29 @@ const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
   MARBLE_CAFE_SERIES,
 ]
 
+export type StaticVaultInventoryCollection = {
+  name: string
+  shotCount: number
+  previewCardId: string
+  newestCardTitle: string
+}
+
+export function getStaticVaultInventory(): StaticVaultInventoryCollection[] {
+  return STATIC_VAULT_COLLECTION_SERIES.flatMap(series => {
+    const first = series[0]
+    if (!first) return []
+    const meta = VAULT_COLLECTION_META.find(entry => entry.previewCardId === first.id)
+    return [
+      {
+        name: meta?.name || first.title,
+        shotCount: series.length,
+        previewCardId: first.id,
+        newestCardTitle: first.title,
+      },
+    ]
+  })
+}
+
 export function getStaticVaultFreebieCollections(): VaultFreebieCollectionPreview[] {
   return STATIC_VAULT_COLLECTION_SERIES.flatMap(series => {
     const freeCard = series[0]
