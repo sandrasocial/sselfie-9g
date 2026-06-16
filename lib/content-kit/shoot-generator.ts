@@ -48,6 +48,54 @@ function buildIdentityGuard(selfieCount: number): string {
   return `Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
 }
 
+function buildImageSafetyGuard(): string {
+  return [
+    "Non-sexual adult fashion editorial. Modest styling only.",
+    "If a style reference or written prompt implies revealing clothing, translate it into a covered editorial outfit with the same color, light, mood and location.",
+    "No swimwear, lingerie, cleavage, sheer fabric, erotic posing, nudity, exposed torso or sexualized styling.",
+  ].join(" ")
+}
+
+function sanitizePromptForImageSafety(prompt: string): string {
+  return prompt
+    .replace(/deep\s+v\s+neckline/gi, "modest rounded neckline")
+    .replace(/open\s+back/gi, "covered back")
+    .replace(/halter\s+dress/gi, "sleeveless linen midi dress with a modest neckline")
+    .replace(/mid-thigh/gi, "midi length")
+    .replace(/mid-chest/gi, "upper torso")
+    .replace(/near the chest/gi, "near the shoulder")
+    .replace(/from chest to head/gi, "from upper torso to head")
+    .replace(/nude pink lips/gi, "soft neutral pink lips")
+    .replace(/natural skin texture/gi, "natural complexion texture")
+    .replace(/skin tones?/gi, "complexion tones")
+    .replace(/skin looks/gi, "complexion looks")
+    .replace(/plastic skin/gi, "over-smoothed complexion")
+    .replace(/body proportions/gi, "natural proportions")
+    .replace(/head-to-body ratio/gi, "natural overall proportion")
+    .replace(/body angled/gi, "person angled")
+    .replace(/shoulders proportional to hips and torso/gi, "shoulders and torso naturally proportioned")
+    .replace(/shoulders proportional to torso/gi, "shoulders naturally proportioned")
+    .replace(/shoulder width proportional/gi, "shoulder width natural")
+    .replace(/\bhips\b/gi, "frame")
+    .replace(/\bchest\b/gi, "upper torso")
+    .replace(/\bthigh\b/gi, "leg")
+    .replace(/intimate/gi, "quiet")
+}
+
+function getGenerationFailureSummary(error: unknown): string {
+  const candidate = error as { message?: unknown; code?: unknown; status?: unknown; type?: unknown }
+  const message = typeof candidate?.message === "string" ? candidate.message : "Unknown image error"
+  const code = typeof candidate?.code === "string" ? candidate.code : null
+  const status =
+    typeof candidate?.status === "number" || typeof candidate?.status === "string"
+      ? String(candidate.status)
+      : null
+  const type = typeof candidate?.type === "string" ? candidate.type : null
+  return [status && `status=${status}`, code && `code=${code}`, type && `type=${type}`, message]
+    .filter(Boolean)
+    .join(" · ")
+}
+
 function isAllowedUrl(value: string): boolean {
   try {
     const url = new URL(value)
@@ -206,7 +254,7 @@ export async function generateShotImage(input: {
     )
   )
 
-  const fullPrompt = `${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${input.prompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
+  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${sanitizePromptForImageSafety(input.prompt)}\n\n${buildIdentityGuard(selfieUrls.length)}`
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
@@ -381,6 +429,13 @@ export async function createShoot(input: {
   })
   const failures = results.filter(r => r.status === "rejected").length
   if (failures > 0) {
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          `[shoot-studio] shot ${shoot.shots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(result.reason)}`
+        )
+      }
+    })
     console.error(
       `[shoot-studio] ${failures}/${results.length} shot generations failed for shoot ${shoot.id}`
     )
