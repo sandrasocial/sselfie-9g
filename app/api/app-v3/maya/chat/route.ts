@@ -25,7 +25,7 @@ import { NextResponse } from "next/server"
 
 export const maxDuration = 300
 
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
 
 // Concept turns are token-heavy: Maya's prose + an emit_concepts call with 3 full briefs (and,
 // for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
@@ -83,7 +83,7 @@ const creativePlanOutputSchema = z.object({
 })
 
 const creativePlanSchema = z.object({
-  mode: z.literal("carousel").describe("Phase 2 only wires this for customer-facing carousel."),
+  mode: z.enum(["carousel", "video"]).describe("Shared planning contract for carousel and video."),
   userIntent: z.string().describe("The exact user carousel request/topic."),
   useCase: creativeUseCaseSchema,
   audienceEmotion: z.string().describe("What the viewer should feel or realize."),
@@ -132,9 +132,13 @@ const graphicSpec = z
     role: z.enum(["hook", "value", "cta"]).optional(),
     headline: z.string().optional(),
     subline: z.string().optional(),
+    motionPrompt: z
+      .string()
+      .optional()
+      .describe("For video concepts: subject motion, camera motion, environment motion, pace, and stability."),
     creativePlan: creativePlanSchema
       .optional()
-      .describe("The shared Maya Creative Plan. Required for customer-facing carousel concepts."),
+      .describe("The shared Maya Creative Plan. Required for customer-facing carousel concepts and encouraged for video."),
     carouselTitle: z
       .string()
       .optional()
@@ -292,7 +296,7 @@ const setFormat = tool({
     "short line and do not present concepts in the same turn.",
   inputSchema: z.object({
     format: z
-      .enum(["photo", "reel-cover", "carousel", "story-slide"])
+      .enum(["photo", "reel-cover", "carousel", "story-slide", "video"])
       .describe("The format she asked for."),
   }),
   execute: async input => input,

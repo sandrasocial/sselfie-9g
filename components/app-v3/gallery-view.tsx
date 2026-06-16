@@ -38,6 +38,7 @@ const GalleryTile = memo(function GalleryTile({
 
 export function GalleryView() {
   const [images, setImages] = useState<string[] | null>(null)
+  const [videos, setVideos] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -47,7 +48,10 @@ export function GalleryView() {
   useEffect(() => {
     fetch("/api/app-v3/gallery")
       .then(r => r.json())
-      .then(d => setImages(Array.isArray(d?.images) ? d.images : []))
+      .then(d => {
+        setImages(Array.isArray(d?.images) ? d.images : [])
+        setVideos(Array.isArray(d?.videos) ? d.videos : [])
+      })
       .catch(() => setError("Couldn't load your gallery. Try again."))
   }, [])
 
@@ -66,7 +70,7 @@ export function GalleryView() {
         <p className="text-[13px] text-[#818283]">Loading your gallery…</p>
       )}
       {error && <p className="text-[13px] text-[#282728]">{error}</p>}
-      {images && images.length === 0 && (
+      {images && images.length === 0 && videos.length === 0 && (
         <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
           <p className="text-[15px] text-[#282728]">Nothing here yet.</p>
           <p className="mt-1 text-[13px] text-[#818283]">
@@ -81,6 +85,31 @@ export function GalleryView() {
             <GalleryTile key={url} url={url} index={i} onOpen={openLightbox} />
           ))}
         </div>
+      )}
+
+      {videos.length > 0 && (
+        <section className="mt-8">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.24em] text-[#818283]">Videos</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {videos.map((url, i) => (
+              <div
+                key={url}
+                className="overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]"
+              >
+                <video src={url} controls playsInline className="aspect-[9/16] w-full object-cover" />
+                <a
+                  href={url}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block bg-white px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[#4F5052] underline underline-offset-2"
+                >
+                  Download video {i + 1}
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {lightboxIndex !== null && images && (

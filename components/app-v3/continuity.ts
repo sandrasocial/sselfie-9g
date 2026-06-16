@@ -12,7 +12,7 @@ export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
 export const MAYA_DRAFT_STORAGE_KEY = "sselfie.appV3.mayaDraft.v1"
 
 const VALID_SECTIONS: AppV3Section[] = ["create", "photos", "content", "library", "account"]
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 export type ConciergeSnapshot = {
@@ -137,7 +137,12 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     if (!item || typeof item !== "object") continue
     const state = item as Record<string, unknown>
-    if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+    if (state.status === "done" && typeof state.videoUrl === "string") {
+      out[key] = {
+        status: "done",
+        videoUrl: state.videoUrl,
+      }
+    } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),

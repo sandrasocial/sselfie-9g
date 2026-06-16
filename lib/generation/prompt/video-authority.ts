@@ -16,7 +16,8 @@ export interface VideoAuthorityPromptResult {
   builder: string
 }
 
-const DEFAULT_MOTION_PROMPT = "Standing naturally, subtle breathing motion visible, camera gentle push-in"
+const DEFAULT_MOTION_PROMPT =
+  "subtle natural breathing, tiny expression shift, gentle camera push-in, soft ambient movement, preserve the same face and body"
 
 function normalizeLine(value: unknown): string {
   if (typeof value !== "string") return ""
@@ -107,12 +108,22 @@ function inferStyleDirectives(notes: string[]): string[] {
 }
 
 function includesCameraDirection(text: string): boolean {
-  return /\bcamera\b|\bdolly\b|\bpush-?in\b|\bpan\b|\barc\b|\btracking\b/i.test(text)
+  return /\bcamera\b|\bdolly\b|\bpush-?in\b|\bpan\b|\barc\b|\btracking\b|\blocked\b|\bfixed\b|\bhandheld\b/i.test(text)
 }
 
 function ensureMaxLength(text: string, maxLength: number = 360): string {
   if (text.length <= maxLength) return text
   return `${text.slice(0, maxLength).trim().replace(/[,.;:!?-]+$/g, "")}`
+}
+
+function includesSubjectMotion(text: string): boolean {
+  return /\bturns?\b|\blooks?\b|\bblink\b|\bbreath|\bsmil|\badjusts?\b|\bwalk|\bmoves?\b|\bhair\b|\bfabric\b|\bhand\b/i.test(
+    text,
+  )
+}
+
+function includesPace(text: string): boolean {
+  return /\bslow\b|\bgentle\b|\bsubtle\b|\bsoft\b|\bcalm\b|\bcontrolled\b|\bsmooth\b/i.test(text)
 }
 
 export function buildVideoAuthorityPrompt(input: VideoAuthorityPromptInput): VideoAuthorityPromptResult {
@@ -148,8 +159,18 @@ export function buildVideoAuthorityPrompt(input: VideoAuthorityPromptInput): Vid
   let finalPrompt = merged || DEFAULT_MOTION_PROMPT
 
   if (!includesCameraDirection(finalPrompt)) {
-    finalPrompt = `${finalPrompt}, camera gentle push-in`
+    finalPrompt = `${finalPrompt}, gentle camera push-in`
   }
+
+  if (!includesSubjectMotion(finalPrompt)) {
+    finalPrompt = `${finalPrompt}, natural blink and subtle breathing motion`
+  }
+
+  if (!includesPace(finalPrompt)) {
+    finalPrompt = `${finalPrompt}, slow controlled motion`
+  }
+
+  finalPrompt = `${finalPrompt}, preserve identity and facial structure, no subtitles, no text overlays, no extra people, no face morphing`
 
   finalPrompt = ensureMaxLength(finalPrompt)
 
@@ -158,4 +179,3 @@ export function buildVideoAuthorityPrompt(input: VideoAuthorityPromptInput): Vid
     builder: directives.length > 0 ? "video-authority-contextual-v1" : "video-authority-base-v1",
   }
 }
-

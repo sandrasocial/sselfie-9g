@@ -26,6 +26,7 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "reel-cover": "Reel cover",
   carousel: "Carousel",
   "story-slide": "Story slide",
+  video: "Video",
 }
 
 const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
@@ -37,6 +38,7 @@ const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
     label: "A Story slide",
     line: "A vertical slide for polls, sales, or moments.",
   },
+  { format: "video", label: "A video", line: "A short motion clip from one image." },
 ]
 
 // Aspirational editorial fallback visuals (her own Library is preferred when present).

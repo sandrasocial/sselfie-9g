@@ -79,6 +79,8 @@ const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
     "The user wants a vertical Story slide with on-image text. Each concept's brief.graphic.headline (and optional subline) must hold the exact words to render.",
   carousel:
     "The user wants a cohesive multi-slide carousel. You must create brief.graphic.creativePlan before writing slides. The plan decides userIntent, useCase, audienceEmotion, contentGoal, visualDirection, vaultStyleReferences, referenceHandling, outputCount, outputs, and validationRules. Educational, tutorial, and Vault-related carousels usually need 6 to 9 slides, not 3. A topic like '5 AI photo styles you already own' needs a hook, context, five distinct style slides, a how-to/choose slide, and a CTA. Give each slide one purpose, one visualConcept, one imagePrompt, one referenceImageStrategy, one textSafeArea, and one visualReason. Set each slide's role AND visual type. ALWAYS set designSystem per concept (your 3 concepts must not all share one design system). Default hook/value/CTA slides to identity so the customer's photoshoot stays present; use detail only when an object, screenshot, product, or texture explains the point better; reserve text-only for lists or the single big statement (see CAROUSEL DESIGN SYSTEMS below).",
+  video:
+    "The user wants to animate a still image into a short vertical video. Each concept is a motion direction, not a new photo. Set brief.graphic.motionPrompt with subject motion, camera motion, environment motion, pace, and stability. Keep motion subtle and editorial: natural blink, tiny expression shift, fabric or hair movement, gentle push-in, slow parallax, or a locked camera with ambient motion. Avoid big body changes, face morphing, extra people, subtitles, random text, aggressive camera shake, or anything that changes her identity.",
 }
 
 // The ONE variable usually still open per format — a guide for judgment, NOT a mandate to ask.
@@ -88,6 +90,8 @@ const FORMAT_OPEN_VARIABLE: Record<OutputFormat, string> = {
   carousel: "The only thing you might not know is the topic and its teaching angle.",
   "story-slide":
     "The only thing you might not know is the objective (a poll, engagement, a sale, or a story moment).",
+  video:
+    "Usually nothing is missing once she has an image. If she asks for a specific motion, use it. Otherwise offer 3 motion options: subtle editorial push-in, soft natural movement, or cinematic atmosphere.",
 }
 
 function brandKitLine(brandKit?: BrandKit | null): string {

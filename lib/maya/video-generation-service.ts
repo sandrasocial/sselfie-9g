@@ -1,0 +1,320 @@
+import { put } from "@vercel/blob"
+import { addCredits, checkCredits, CREDIT_COSTS, deductCredits, getUserCredits } from "@/lib/credits"
+import { getDbClient } from "@/lib/db/client"
+import { generatePrompt } from "@/lib/generation/prompt"
+import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
+import { getReplicateClient } from "@/lib/replicate-client"
+
+export type VideoGenerationInput = {
+  userId: string | number
+  imageUrl: unknown
+  imageId?: string | number | null
+  motionPrompt?: string | null
+  imageDescription?: string | null
+  category?: string | null
+  source?: string
+}
+
+export type VideoGenerationResult = {
+  videoId: number
+  predictionId: string
+  status: "processing"
+  creditsDeducted: number
+  newBalance: number
+  motionPrompt: string
+}
+
+export type VideoGenerationCheckResult =
+  | { status: "succeeded"; videoUrl: string; progress: 100 }
+  | { status: "failed"; error: string }
+  | { status: string; progress: number; message?: string }
+
+export class VideoGenerationError extends Error {
+  status: number
+  payload: Record<string, unknown>
+
+  constructor(message: string, status = 500, payload: Record<string, unknown> = {}) {
+    super(message)
+    this.name = "VideoGenerationError"
+    this.status = status
+    this.payload = payload
+  }
+}
+
+function validateImageUrl(value: unknown): string {
+  if (typeof value !== "string") {
+    throw new VideoGenerationError("Missing image URL", 400, { error: "Missing image URL" })
+  }
+  const trimmed = value.trim()
+  if (!trimmed) {
+    throw new VideoGenerationError("Missing image URL", 400, { error: "Missing image URL" })
+  }
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== "https:") throw new Error("not https")
+    return trimmed
+  } catch {
+    throw new VideoGenerationError("Invalid image URL", 400, {
+      error: "Video needs a public https image URL.",
+    })
+  }
+}
+
+function normalizeVideoId(value: string | number): number {
+  const parsed = typeof value === "number" ? value : Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed)) {
+    throw new VideoGenerationError("Invalid video id", 400, { error: "Invalid video id" })
+  }
+  return parsed
+}
+
+function predictionOutputUrl(output: unknown): string | null {
+  if (Array.isArray(output)) return typeof output[0] === "string" ? output[0] : null
+  return typeof output === "string" ? output : null
+}
+
+function normalizeOptionalImageId(value: string | number | null | undefined): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) return Number.parseInt(value, 10)
+  return null
+}
+
+async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
+  const snapshot = await getMayaUserSnapshot(input.userId)
+  const rawPreferenceNotes =
+    snapshot.memoryData && typeof snapshot.memoryData === "object"
+      ? (snapshot.memoryData as Record<string, unknown>).user_preference_notes
+      : []
+  const styleNotes = Array.isArray(rawPreferenceNotes)
+    ? rawPreferenceNotes
+        .map(note => (typeof note === "string" ? note.replace(/\s+/g, " ").trim() : ""))
+        .filter(Boolean)
+        .slice(0, 4)
+    : []
+
+  const authorityResult = await generatePrompt("video", "video-generation", {
+    userId: String(input.userId),
+    motionPrompt: input.motionPrompt,
+    imageDescription: input.imageDescription,
+    category: input.category || "",
+    userRequest: input.imageDescription || input.motionPrompt || "",
+    styleNotes,
+    offerBriefPrefill: snapshot.offerBrief.prefill,
+    recommendedSource: snapshot.generation.recommendedSource,
+    uploadsTotal: snapshot.uploads.total,
+  })
+
+  return authorityResult.prompt
+}
+
+export async function startVideoGeneration(
+  input: VideoGenerationInput,
+): Promise<VideoGenerationResult> {
+  const userId = String(input.userId)
+  const imageUrl = validateImageUrl(input.imageUrl)
+
+  const hasEnoughCredits = await checkCredits(userId, CREDIT_COSTS.ANIMATION)
+  if (!hasEnoughCredits) {
+    const currentBalance = await getUserCredits(userId)
+    throw new VideoGenerationError("Insufficient credits", 402, {
+      error: "Insufficient credits",
+      code: "insufficient_credits",
+      action: "open_credits_topup",
+      required: CREDIT_COSTS.ANIMATION,
+      current: currentBalance,
+      message: `Video generation requires ${CREDIT_COSTS.ANIMATION} credits.`,
+    })
+  }
+
+  const label = input.imageId ? `Animated image: ${input.imageId}` : "Animated image"
+  const deduction = await deductCredits(userId, CREDIT_COSTS.ANIMATION, "animation", label)
+  if (!deduction.success) {
+    throw new VideoGenerationError("Could not deduct credits", 402, {
+      error: "Could not deduct credits",
+      code: "credit_deduction_failed",
+      message: deduction.error ?? "Credit deduction failed. Please try again.",
+    })
+  }
+
+  let finalMotionPrompt: string
+  try {
+    finalMotionPrompt = await buildMotionPrompt(input)
+  } catch (error) {
+    console.warn("[app-v3-video] Prompt authority failed, using direct prompt:", error)
+    finalMotionPrompt =
+      input.motionPrompt?.trim() ||
+      "subtle natural movement, gentle camera push-in, preserve identity, no subtitles"
+  }
+
+  const predictionInput = {
+    image: imageUrl,
+    prompt: finalMotionPrompt,
+    duration: 5,
+    resolution: "1080p",
+    negative_prompt:
+      "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake",
+    enable_prompt_expansion: true,
+    seed: Math.floor(Math.random() * 1_000_000),
+  }
+
+  let prediction
+  try {
+    prediction = await getReplicateClient().predictions.create({
+      model: process.env.APP_V3_VIDEO_MODEL || "wan-video/wan-2.5-i2v-fast",
+      input: predictionInput,
+    })
+  } catch (error) {
+    await addCredits(
+      userId,
+      CREDIT_COSTS.ANIMATION,
+      "refund",
+      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`,
+    ).catch(() => {})
+    const message = error instanceof Error ? error.message : String(error)
+    throw new VideoGenerationError("Failed to create video prediction", 500, {
+      error: "Failed to generate video",
+      details: message,
+    })
+  }
+
+  let inserted
+  try {
+    const sql = getDbClient()
+    inserted = await sql`
+      INSERT INTO generated_videos (
+        user_id,
+        image_id,
+        image_source,
+        motion_prompt,
+        job_id,
+        status,
+        progress,
+        created_at
+      ) VALUES (
+        ${input.userId},
+        ${normalizeOptionalImageId(input.imageId)},
+        ${imageUrl},
+        ${finalMotionPrompt},
+        ${prediction.id},
+        'processing',
+        0,
+        NOW()
+      )
+      RETURNING id
+    `
+  } catch (error) {
+    await addCredits(
+      userId,
+      CREDIT_COSTS.ANIMATION,
+      "refund",
+      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`,
+    ).catch(() => {})
+    const message = error instanceof Error ? error.message : String(error)
+    throw new VideoGenerationError("Could not save video generation", 500, {
+      error: "Could not save video generation",
+      details: message,
+    })
+  }
+
+  return {
+    videoId: Number(inserted[0].id),
+    predictionId: prediction.id,
+    status: "processing",
+    creditsDeducted: CREDIT_COSTS.ANIMATION,
+    newBalance: deduction.newBalance,
+    motionPrompt: finalMotionPrompt,
+  }
+}
+
+export async function checkVideoGeneration(input: {
+  userId: string | number
+  predictionId: string
+  videoId: string | number
+}): Promise<VideoGenerationCheckResult> {
+  const videoId = normalizeVideoId(input.videoId)
+  const sql = getDbClient()
+
+  const ownedRows = await sql`
+    SELECT id
+    FROM generated_videos
+    WHERE id = ${videoId}
+      AND user_id = ${input.userId}
+      AND job_id = ${input.predictionId}
+    LIMIT 1
+  `
+  if (ownedRows.length === 0) {
+    throw new VideoGenerationError("Video not found", 404, { error: "Video not found" })
+  }
+
+  let prediction
+  try {
+    prediction = await getReplicateClient().predictions.get(input.predictionId)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes("Too Many Requests") || message.includes("429")) {
+      return { status: "processing", progress: 50, message: "Rate limited, retrying..." }
+    }
+    throw error
+  }
+
+  if (prediction.status === "failed") {
+    const errorMessage =
+      typeof prediction.error === "string" ? prediction.error : "Video generation failed"
+    await sql`
+      UPDATE generated_videos
+      SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
+      WHERE id = ${videoId}
+        AND user_id = ${input.userId}
+    `
+    return { status: "failed", error: errorMessage }
+  }
+
+  if (prediction.status !== "succeeded" || !prediction.output) {
+    const progress = prediction.status === "starting" ? 10 : prediction.status === "processing" ? 50 : 0
+    await sql`
+      UPDATE generated_videos
+      SET progress = ${progress}, updated_at = NOW()
+      WHERE id = ${videoId}
+        AND user_id = ${input.userId}
+    `
+    return { status: prediction.status, progress }
+  }
+
+  const outputUrl = predictionOutputUrl(prediction.output)
+  if (!outputUrl) {
+    throw new VideoGenerationError("Video completed without a URL", 500, {
+      error: "Video completed without a URL",
+    })
+  }
+
+  const videoResponse = await fetch(outputUrl)
+  if (!videoResponse.ok) {
+    throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`)
+  }
+  const videoBlob = await videoResponse.blob()
+  if (videoBlob.size === 0) throw new Error("Video blob is empty")
+
+  const blob = await put(`maya-videos/${videoId}.mp4`, videoBlob, {
+    access: "public",
+    contentType: "video/mp4",
+    addRandomSuffix: true,
+  })
+
+  await sql`
+    UPDATE generated_videos
+    SET
+      status = 'completed',
+      video_url = ${blob.url},
+      progress = 100,
+      completed_at = NOW(),
+      updated_at = NOW()
+    WHERE id = ${videoId}
+      AND user_id = ${input.userId}
+  `
+
+  return {
+    status: "succeeded",
+    videoUrl: blob.url,
+    progress: 100,
+  }
+}

@@ -605,6 +605,23 @@ export function compileConceptJobs(
     ]
   }
 
+  if (format === "video") {
+    return [
+      {
+        label: "video",
+        passes: [
+          {
+            prompt:
+              clean(brief.graphic?.motionPrompt) ||
+              clean(brief.graphic?.creativePlan?.outputs?.[0]?.videoPromptDirection) ||
+              "subtle natural movement, gentle camera push-in, preserve identity",
+            input: "selfie",
+          },
+        ],
+      },
+    ]
+  }
+
   // Graphic formats: build the slide list (carousel = many; cover/story = one).
   const g = brief.graphic
   const rawSlides =
@@ -741,6 +758,13 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
       const prompt = editPrefix
         ? `${editPrefix}${extra}. ${BRAND_PHOTO_STYLE}`
         : `${aestheticIntent} ${BRAND_PHOTO_STYLE}${extra ? ` Extra direction: ${extra}.` : ""}`
+      return { prompts: [prompt], size: "1024x1792" }
+    }
+
+    case "video": {
+      const prompt =
+        `${aestheticIntent} Create a short image-to-video motion direction for the attached image. ` +
+        `Motion only: subject motion, camera motion, environment motion, pace, and stability. ${extra}`
       return { prompts: [prompt], size: "1024x1792" }
     }
 

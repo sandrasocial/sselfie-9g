@@ -37,6 +37,8 @@ export interface ConceptGraphicSpec {
   headline?: string
   /** Optional supporting line. */
   subline?: string
+  /** Motion direction for video/image-to-video concepts. */
+  motionPrompt?: string
   /** Shared Maya Creative Brain plan. Phase 2 wires this for customer-facing carousel only. */
   creativePlan?: CreativePlan
   /** The user's actual carousel topic/request, kept for validation in the render route. */

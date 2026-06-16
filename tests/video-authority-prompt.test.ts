@@ -9,6 +9,17 @@ describe("video authority prompt builder", () => {
 
     expect(result.prompt).toContain("Head turns toward window with subtle breeze in hair")
     expect(result.prompt.toLowerCase()).toContain("camera")
+    expect(result.prompt.toLowerCase()).toContain("preserve identity")
+    expect(result.prompt.toLowerCase()).toContain("no subtitles")
+  })
+
+  it("adds missing subject motion and pace for thin prompts", () => {
+    const result = buildVideoAuthorityPrompt({
+      motionPrompt: "Editorial portrait comes alive",
+    })
+
+    expect(result.prompt.toLowerCase()).toContain("natural blink")
+    expect(result.prompt.toLowerCase()).toContain("gentle camera push-in")
   })
 
   it("adds contextual directives from category and style notes", () => {
@@ -44,8 +55,7 @@ describe("video authority prompt builder", () => {
   it("returns safe default when no usable input exists", () => {
     const result = buildVideoAuthorityPrompt({})
 
-    expect(result.prompt).toContain("Standing naturally")
+    expect(result.prompt).toContain("subtle natural breathing")
     expect(result.prompt.toLowerCase()).toContain("camera")
   })
 })
-

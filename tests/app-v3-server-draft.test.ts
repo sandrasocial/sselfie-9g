@@ -81,7 +81,7 @@ describe("App v3 server-backed Maya drafts", () => {
     expect(
       sanitizeServerMayaDraftSnapshot({
         ...base,
-        session: { ...base.session, outputFormat: "video" },
+        session: { ...base.session, outputFormat: "newsletter" },
       })
     ).toBeNull()
   })

@@ -1,6 +1,6 @@
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 
-export type ServerOutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide"
+export type ServerOutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide" | "video"
 
 export type ServerAestheticSnapshot = {
   id: string
@@ -24,6 +24,7 @@ export type ServerConciergeSessionSnapshot = {
 export type ServerConceptGenState = {
   status: string
   imageUrls?: string[]
+  videoUrl?: string
   error?: string
   previewUrl?: string
 }
@@ -39,7 +40,7 @@ export type ServerMayaDraftSnapshot = {
   setupOpen: boolean
 }
 
-const VALID_FORMATS: ServerOutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: ServerOutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 function nowish(value: unknown): value is number {
@@ -96,7 +97,12 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     if (!item || typeof item !== "object") continue
     const state = item as Record<string, unknown>
-    if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+    if (state.status === "done" && typeof state.videoUrl === "string") {
+      out[key] = {
+        status: "done",
+        videoUrl: state.videoUrl,
+      }
+    } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),

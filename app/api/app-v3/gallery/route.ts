@@ -30,7 +30,20 @@ export async function GET() {
       .map((r: { image_url?: unknown }) => r.image_url)
       .filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http"))
 
-    return NextResponse.json({ images })
+    const videoRows = await sql`
+      SELECT video_url
+      FROM generated_videos
+      WHERE user_id = ${neonUser.id}
+        AND status = 'completed'
+        AND video_url IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 30
+    `
+    const videos = videoRows
+      .map((r: { video_url?: unknown }) => r.video_url)
+      .filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http"))
+
+    return NextResponse.json({ images, videos })
   } catch (e) {
     console.error("[app-v3 gallery] list failed:", e)
     return NextResponse.json({ images: [] })

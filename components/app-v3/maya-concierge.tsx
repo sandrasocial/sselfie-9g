@@ -27,7 +27,10 @@ import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
-import { buildCustomModelConceptPrompt } from "@/lib/app-v3/custom-model-brief"
+import {
+  buildCustomModelConceptPrompt,
+  buildVideoMotionPrompt,
+} from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type { OutputFormat } from "./types"
 import {
@@ -79,6 +82,7 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "reel-cover", label: "Reel cover" },
   { id: "carousel", label: "Carousel" },
   { id: "story-slide", label: "Story slide" },
+  { id: "video", label: "Video" },
 ]
 
 // Tapping a format is the first guided step: it asks Maya (in natural words) to pull directions.
@@ -87,6 +91,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   "reel-cover": "Let's make a Reel cover.",
   carousel: "Let's make a carousel.",
   "story-slide": "Let's make a Story slide.",
+  video: "Let's animate a photo into a short video.",
 }
 
 // Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
@@ -98,6 +103,7 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   "reel-cover": "Tell me what your reel's about and I'll design the cover.",
   carousel: "Give me the topic and I'll build slides that feel like you.",
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
+  video: "Add or choose the image you want to animate, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
@@ -106,6 +112,7 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
     "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
   carousel: "Your selfie's in, and your face stays yours. Hit create, then give me the topic.",
   "story-slide": "Your selfie's in, and your face stays yours. Hit create, then tell me the goal.",
+  video: "Your image is in. Hit create and pick the motion that feels most natural.",
 }
 
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
@@ -115,6 +122,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
   "reel-cover": "Create my cover directions",
   carousel: "Create my carousel directions",
   "story-slide": "Create my story directions",
+  video: "Create my video directions",
 }
 
 type UploadSlot = "face" | "side" | "body" | "inspiration"
@@ -226,6 +234,27 @@ async function pollCustomModelGeneration(predictionId: string, generationId: num
   }
 
   throw new Error("Maya is still creating this. Try again in a moment.")
+}
+
+async function pollVideoGeneration(predictionId: string, videoId: number): Promise<string> {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const res = await fetch(
+      `/api/app-v3/maya/video/check?predictionId=${encodeURIComponent(predictionId)}&videoId=${videoId}`,
+    )
+    const data = (await res.json().catch(() => null)) as {
+      status?: string
+      videoUrl?: string
+      error?: string
+    } | null
+
+    if (!res.ok) throw new Error(data?.error || "Video failed")
+    if (data?.status === "succeeded" && data.videoUrl) return data.videoUrl
+    if (data?.status === "failed") throw new Error(data.error || "Video failed")
+
+    await wait(attempt < 12 ? 2000 : 3500)
+  }
+
+  throw new Error("Maya is still making the video. Try again in a moment.")
 }
 
 export function MayaConcierge({
@@ -692,6 +721,44 @@ export function MayaConcierge({
     const rerun = genState[key]?.status === "done"
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
+      if (format === "video") {
+        const startRes = await fetch("/api/app-v3/maya/video/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: referenceSelfieUrl,
+            motionPrompt: buildVideoMotionPrompt(concept.brief),
+            imageDescription: concept.description,
+            category: "editorial",
+          }),
+        })
+        const startData = (await startRes.json().catch(() => null)) as {
+          videoId?: number
+          predictionId?: string
+          error?: string
+          code?: string
+          current?: number
+        } | null
+
+        if (startRes.status === 402 || startData?.code === "insufficient_credits") {
+          setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          setCreditModal({
+            open: true,
+            balance: typeof startData?.current === "number" ? startData.current : null,
+          })
+          return
+        }
+
+        if (!startRes.ok || !startData?.videoId || !startData?.predictionId) {
+          throw new Error(startData?.error || "Video failed")
+        }
+
+        const videoUrl = await pollVideoGeneration(startData.predictionId, startData.videoId)
+        setGenState(s => ({ ...s, [key]: { status: "done", videoUrl } }))
+        setGeneratedOnce(true)
+        return
+      }
+
       if (activeGenerationSource === "trained-model") {
         const startRes = await fetch("/api/app-v3/maya/custom-model/generate", {
           method: "POST",

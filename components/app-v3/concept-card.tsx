@@ -15,6 +15,7 @@ export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
+  videoUrl?: string
   error?: string
   /** Progressive partial frame (data URL) while streaming — the photo "develops" in place. */
   previewUrl?: string
@@ -37,6 +38,7 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   "reel-cover": "aspect-[9/16]",
   "story-slide": "aspect-[9/16]",
   carousel: "aspect-[4/5]",
+  video: "aspect-[9/16]",
 }
 
 export function ConceptCard({
@@ -50,15 +52,24 @@ export function ConceptCard({
 }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
   const images = gen.imageUrls ?? []
+  const videoUrl = gen.videoUrl
   const isDone = gen.status === "done" && images.length > 0
+  const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
       {/* Visual area ONLY exists once we're generating or done — never an empty placeholder box. */}
-      {(isGenerating || isDone) && (
+      {(isGenerating || isDone || isVideoDone) && (
         <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
-          {isDone ? (
+          {isVideoDone ? (
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : isDone ? (
             <button
               type="button"
               onClick={() => onOpen?.(images)}
@@ -119,13 +130,23 @@ export function ConceptCard({
           </p>
         )}
 
-        {isDone ? (
+        {isDone || isVideoDone ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
-              Saved to your gallery
+              {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
-              {isCarousel ? (
+              {isVideoDone ? (
+                <a
+                  href={videoUrl}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                >
+                  Download video
+                </a>
+              ) : isCarousel ? (
                 <button
                   type="button"
                   onClick={() => onOpen?.(images)}
@@ -155,7 +176,7 @@ export function ConceptCard({
                   Download
                 </a>
               )}
-              {onEdit && !isCarousel && (
+              {onEdit && !isCarousel && !isVideoDone && (
                 <button
                   type="button"
                   onClick={onEdit}

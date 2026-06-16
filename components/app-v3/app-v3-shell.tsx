@@ -57,6 +57,7 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "reel-cover": "Reel cover",
   carousel: "carousel",
   "story-slide": "Story slide",
+  video: "video",
 }
 
 function ShellInner({
