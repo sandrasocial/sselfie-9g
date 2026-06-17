@@ -57,34 +57,13 @@ const btnDark = {
 const btnOutlineDark = { ...btnDark, background: "transparent", color: PORCELAIN, border: `1px solid ${PORCELAIN}` } as const
 const btnLight = { ...btnDark, background: PORCELAIN, color: OBSIDIAN } as const
 
-// Swap each black block for the real before/after image when ready (Sandra supplies). Keep as swappable slot.
-function Placeholder({ label, height }: { label: string; height: number }) {
-  return (
-    <div
-      style={{
-        background: OBSIDIAN,
-        color: PORCELAIN,
-        height,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        fontFamily: inter.style.fontFamily,
-        fontSize: "9px",
-        letterSpacing: "0.24em",
-        textTransform: "uppercase",
-      }}
-    >
-      <span style={{ opacity: 0.45 }}>{label}</span>
-    </div>
-  )
-}
-
 const COLLECTIONS = [
-  { name: "Selfie Glow Up", desc: "Your everyday selfie, brighter and softer. The flattering one." },
-  { name: "White Aesthetics", desc: "Clean, airy, light. For the calm, minimal feed." },
-  { name: "Fashion Street Style", desc: "Editorial and city-cool. Your photos, off-duty model." },
-  { name: "Moody Film", desc: "Dark, warm, lived-in. That noir film mood." },
+  { name: "Selfie Glow Up", desc: "Your everyday selfie, brighter and softer. The flattering one.", before: "/images/presets/collection-selfie-glow-up.jpg", after: "/images/presets/collection-selfie-glow-up-after.jpg" },
+  { name: "Scandinavian Light & Dreamy", desc: "Soft, pale, airy. That quiet Nordic light.", before: "/images/presets/collection-scandinavian-light-dreamy.jpg", after: "/images/presets/collection-scandinavian-light-dreamy-after.jpg" },
+  { name: "White Filter", desc: "Clean and bright. The fresh, minimal white look.", before: "/images/presets/collection-white-filter.jpg", after: "/images/presets/collection-white-filter-after.jpg" },
+  { name: "Beige Coffee", desc: "Warm beige and caramel. Cozy, café, lived-in.", before: "/images/presets/collection-beige-coffee.jpg", after: "/images/presets/collection-beige-coffee-after.jpg" },
+  { name: "Nordic Deep Urban", desc: "Cool and editorial. Off-duty model on a grey city day.", before: "/images/presets/collection-nordic-deep-urban.jpg", after: "/images/presets/collection-nordic-deep-urban-after.jpg" },
+  { name: "Scandinavian Dark & Moody", desc: "Deep shadows, warm tones. That noir film mood.", before: "/images/presets/collection-scandinavian-dark-moody.jpg", after: "/images/presets/collection-scandinavian-dark-moody-after.jpg" },
 ]
 
 export default function PresetsPage() {
@@ -120,7 +99,16 @@ export default function PresetsPage() {
       <section style={{ padding: "30px 0 10px", maxWidth: 760, margin: "0 auto" }}>
         {COLLECTIONS.map((c) => (
           <div key={c.name}>
-            <Placeholder label={`${c.name} · before / after`} height={360} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+              <div style={{ position: "relative" }}>
+                <Image src={c.before} alt={`${c.name}, before`} width={933} height={1400} sizes="(max-width: 760px) 50vw, 380px" style={{ width: "100%", height: "auto", display: "block" }} />
+                <span style={{ position: "absolute", top: 12, left: 12, background: "rgba(10,10,10,0.55)", color: PORCELAIN, fontSize: "9px", letterSpacing: "0.24em", textTransform: "uppercase", padding: "5px 10px", fontFamily: inter.style.fontFamily }}>Before</span>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Image src={c.after} alt={`${c.name}, after`} width={932} height={1400} sizes="(max-width: 760px) 50vw, 380px" style={{ width: "100%", height: "auto", display: "block" }} />
+                <span style={{ position: "absolute", top: 12, left: 12, background: "rgba(10,10,10,0.55)", color: PORCELAIN, fontSize: "9px", letterSpacing: "0.24em", textTransform: "uppercase", padding: "5px 10px", fontFamily: inter.style.fontFamily }}>After</span>
+              </div>
+            </div>
             <div style={{ textAlign: "center", padding: "18px 24px 40px" }}>
               <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "26px", margin: "0 0 4px" }}>{c.name}</p>
               <p style={{ fontSize: "13px", color: SMOKE, margin: 0 }}>{c.desc}</p>
