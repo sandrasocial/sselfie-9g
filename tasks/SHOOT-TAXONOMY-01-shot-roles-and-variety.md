@@ -24,9 +24,11 @@ and "detail" shots drift back to portraits. Root cause = the planning/prompt lay
 - Roles = varied FRAMINGS OF HER (Sandra's approved content is her in every frame):
   `establishing-full-body` · `seated-hero` · `profile` · `movement/lifestyle-action` ·
   `close-portrait` · `cover-safe-hero` (negative space for text).
-- **Refinement (Sandra's call):** a faceless `true-detail` (object/hands/fabric, no face) is
-  OPTIONAL, not required — her approved shoots are all-her. Do NOT mandate a faceless shot. (This
-  also keeps it consistent with CONTENT-CAROUSEL-03-FIX: no faceless filler.)
+- **Detail shots (Sandra clarified 2026-06-15):** every photoshoot includes **1-2 faceless
+  `true-detail` shots** (object/hands/fabric/setting, no face) — at least 1, never more than 2.
+  They complement the set so it feels like a real photoshoot. NOT all-her, but not zero either.
+  (Distinct from carousels, which stay all-her per CONTENT-CAROUSEL-03-FIX — a photoshoot is a
+  shot set, so a couple of detail shots belong.)
 - The planning layer (persona / emit_concepts for user-facing; the create prompt for admin) must
   ASSIGN a role per shot and produce a varied set, not 6-9 of the same world/pose.
 - `compilePhotoPrompt` and the shoot prompt must RECEIVE `shotRole` and express it concretely
@@ -38,7 +40,8 @@ and "detail" shots drift back to portraits. Root cause = the planning/prompt lay
 - No two shots share the same pose + background (enforce variety).
 - Same outfit family across the shoot unless the user intentionally varies it.
 - Shot roles are diverse (not all close-portrait); at least 2-3 distinct framings.
-- If a role is `true-detail`, it must NOT render as a face portrait.
+- Exactly 1-2 `true-detail` (faceless) shots per photoshoot — enforce min 1, max 2; they must NOT
+  render as a face portrait.
 - On violation: re-plan (ask the model to diversify) rather than render a repetitive set.
 
 ### 3. Move outfit safety upstream
@@ -60,8 +63,8 @@ selfie" is handled by CONTENT-CAROUSEL-03-FIX (faceless-slide removal); don't do
 
 ## Acceptance
 - A full shoot returns a varied, cohesive set: distinct shot roles (establishing/seated/profile/
-  movement/close), consistent outfit family, no repeated pose+background. No mandatory faceless
-  shot. Planned outfit == rendered outfit (sanitizer logged if it fires).
+  movement/close) + 1-2 faceless detail shots, consistent outfit family, no repeated pose+background.
+  Planned outfit == rendered outfit (sanitizer logged if it fires).
 - Tests for the validation rules. Build/invariants green.
 
 ## Confidence (Claude-verified)
