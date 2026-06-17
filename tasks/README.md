@@ -35,12 +35,12 @@ avoids collisions):
 2. `SHOOT-TAXONOMY-01-shot-roles-and-variety.md` (shot roles + variety + 1-2 detail shots)
 3. `CUSTOMER-PHOTOSHOOT-01-photoshoot-chip.md` (Photoshoot chip, built on #2)
 
-**Status 2026-06-15:** all three implemented on branch `codex/content-maya-quality-sequence`
-(533b6d81). QA done: tests 17/17, review PASS-WITH-NITS, customer carousel/reel-cover/story output
-verified on-point. **MERGE HELD** for one item Sandra wants before going live:
-`CUSTOMER-PHOTOSHOOT-02-hero-anchor-cohesion.md` (photoshoot sets currently cohere by prompt text
-only; add hero-first shared-anchor so a set shares one outfit/look). Codex implements on the SAME
-branch → Claude re-verifies a real photoshoot set → then fast-forward main for deploy.
+**✅ COMPLETE, LIVE & VERIFIED 2026-06-17.** All shipped to main (533b6d81 + hero-anchor 5badffae),
+deploy READY, tests 18/18 green. Verified output: customer carousel/reel-cover/story on-point
+(CAROUSEL-04), faceless slides removed (03-FIX), and a real 6-shot photoshoot set is cohesive with
+identity preserved (SHOOT-TAXONOMY-01 + CUSTOMER-PHOTOSHOOT-01/02 hero-anchor). No open items in
+this thread. (Separate lane: presets product also went live in the same merge — pre-sale gates in
+the presets memory: confirm prod Stripe price env + publish collection files + test purchase.)
 
 Older MAYA-FIX/GROUNDING rows below are prior-thread items (mostly shipped); the table is the backlog.
 
