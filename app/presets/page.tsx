@@ -18,8 +18,48 @@ export const metadata: Metadata = {
 }
 
 // DESIGN + COPY owned by Claude. CHECKOUT/FULFILLMENT owned by Codex (see tasks/PRESETS-PRODUCT-01.md).
-const CHECKOUT_BUNDLE =
-  "/checkout/presets?tier=bundle&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=bundle_primary_cta&buyer_stage=micro"
+// Forward any incoming UTM/source params (e.g. from the ManyChat DM/comment automations) into the
+// checkout link, so a sale attributes to where the visitor actually came from rather than the landing
+// page itself. Falls back to the landing's own defaults when no UTMs are present.
+type ForwardedAttribution = {
+  source: string | null
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+  utmContent: string | null
+}
+
+function getForwardedAttribution(sp: Record<string, string | string[] | undefined>): ForwardedAttribution {
+  const pick = (key: string) => {
+    const value = sp[key]
+    const str = Array.isArray(value) ? value[0] : value
+    return str && str.trim() ? str.trim() : null
+  }
+  return {
+    source: pick("source"),
+    utmSource: pick("utm_source"),
+    utmMedium: pick("utm_medium"),
+    utmCampaign: pick("utm_campaign"),
+    utmContent: pick("utm_content"),
+  }
+}
+
+function buildCheckoutHref(
+  base: { tier: "single" | "bundle"; collection?: string; checkoutSource: string },
+  fwd: ForwardedAttribution,
+) {
+  const params = new URLSearchParams()
+  params.set("tier", base.tier)
+  if (base.collection) params.set("collection", base.collection)
+  params.set("source", fwd.source || "presets_landing")
+  params.set("utm_source", fwd.utmSource || "presets_page")
+  params.set("utm_medium", fwd.utmMedium || "site")
+  params.set("utm_campaign", fwd.utmCampaign || "presets_launch")
+  if (fwd.utmContent) params.set("utm_content", fwd.utmContent)
+  params.set("checkout_source", base.checkoutSource)
+  params.set("buyer_stage", "micro")
+  return `/checkout/presets?${params.toString()}`
+}
 
 const OBSIDIAN = "#0A0A0A"
 const PORCELAIN = "#FFFFFF"
@@ -64,11 +104,15 @@ const COLLECTIONS = [
   { name: "Scandinavian Dark & Moody", slug: "scandinavian-dark-moody", desc: "Deep shadows, warm tones. That noir film mood.", before: "/images/presets/collection-scandinavian-dark-moody.jpg", after: "/images/presets/collection-scandinavian-dark-moody-after.jpg" },
 ]
 
-function singleCollectionHref(slug: string) {
-  return `/checkout/presets?tier=single&collection=${slug}&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=collection_card&buyer_stage=micro`
-}
-
-export default function PresetsPage() {
+export default async function PresetsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const fwd = getForwardedAttribution(await searchParams)
+  const checkoutBundle = buildCheckoutHref({ tier: "bundle", checkoutSource: "bundle_primary_cta" }, fwd)
+  const singleCollectionHref = (slug: string) =>
+    buildCheckoutHref({ tier: "single", collection: slug, checkoutSource: "collection_card" }, fwd)
   return (
     <main className={inter.className} style={{ background: PORCELAIN, color: OBSIDIAN, lineHeight: 1.55 }}>
       {/* ── HERO ── */}
@@ -80,7 +124,7 @@ export default function PresetsPage() {
         <p style={{ fontSize: "15px", color: SMOKE, maxWidth: 380, margin: "0 auto 28px" }}>
           The filters I use on every photo. Tap one, your photo&rsquo;s done.
         </p>
-        <Link href={CHECKOUT_BUNDLE} style={btnDark}>Get the presets</Link>
+        <Link href={checkoutBundle} style={btnDark}>Get the presets</Link>
       </section>
       <section style={{ position: "relative", width: "100%", height: "clamp(420px, 78vh, 680px)", marginTop: 44, background: OBSIDIAN }}>
         <Image src="/images/presets/hero.jpg" alt="Sandra, Lake Como" fill priority sizes="100vw" style={{ objectFit: "cover", objectPosition: "50% 28%" }} />
@@ -165,7 +209,7 @@ export default function PresetsPage() {
             <p style={{ ...eyebrow, marginBottom: 14 }}>All of them</p>
             <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "38px", margin: "0 0 4px" }}>$39</p>
             <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 22px" }}>Every collection, and every new one I add. Yours for good.</p>
-            <Link href={CHECKOUT_BUNDLE} style={{ ...btnDark, display: "block", textAlign: "center" }}>Get everything</Link>
+            <Link href={checkoutBundle} style={{ ...btnDark, display: "block", textAlign: "center" }}>Get everything</Link>
           </div>
         </div>
       </section>
@@ -174,7 +218,7 @@ export default function PresetsPage() {
       <section style={{ background: OBSIDIAN, color: PORCELAIN, padding: "58px 24px", textAlign: "center" }}>
         <h2 className={cormorant.className} style={{ fontWeight: 400, fontSize: "clamp(28px, 6vw, 34px)", margin: "0 0 10px" }}>Same you. Better photo.</h2>
         <p style={{ fontSize: "13px", color: ONDARK, margin: "0 0 30px" }}>Tap a filter. Post it. Done.</p>
-        <Link href={CHECKOUT_BUNDLE} style={btnOutlineDark}>Get the presets</Link>
+        <Link href={checkoutBundle} style={btnOutlineDark}>Get the presets</Link>
       </section>
     </main>
   )
