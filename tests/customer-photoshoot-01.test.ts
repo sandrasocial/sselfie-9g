@@ -25,4 +25,20 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
     expect(route).toContain("photoshoot_plan_invalid")
     expect(chatRoute).toContain("shotRole")
   })
+
+  it("generates photoshoot sets with a hero-first cohesion anchor", () => {
+    const route = read("app/api/app-v3/maya/generate/route.ts")
+
+    expect(route).toContain("pickPhotoshootHeroJobIndex")
+    expect(route).toContain("runPhotoshootHeroAnchoredJobs")
+    expect(route).toContain("Photoshoot cohesion role: HERO ANCHOR")
+    expect(route).toContain("Use the uploaded selfies as the identity anchor")
+    expect(route).toContain("Use the generated hero reference only as a style/cohesion anchor")
+    expect(route).toContain("const selfieAndHeroFiles = [...selfieFiles, heroFile]")
+
+    const heroFirst = route.indexOf("const heroBuffer = await runJob(hero.job, selfieFiles)")
+    const restAfter = route.indexOf("restJobs.map(async ({ item, index })")
+    expect(heroFirst).toBeGreaterThan(-1)
+    expect(restAfter).toBeGreaterThan(heroFirst)
+  })
 })

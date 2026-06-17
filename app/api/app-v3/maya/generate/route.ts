@@ -82,6 +82,12 @@ type AppGraphicRedesignJob = {
   recordPrompt: string
 }
 
+type PhotoshootJob = {
+  index: number
+  role: ShootShotRole
+  job: ImageJob
+}
+
 function isRedesignGraphicFormat(format: OutputFormat): boolean {
   return format === "carousel" || format === "reel-cover" || format === "story-slide"
 }
@@ -158,6 +164,44 @@ function validatePhotoshootBriefs(briefs: CreativeBrief[]): string[] {
     errors.push(`photoshoot needs 1-2 true-detail shots, got ${detailCount}`)
   }
   return errors
+}
+
+function pickPhotoshootHeroJobIndex(jobs: PhotoshootJob[]): number {
+  const seatedHero = jobs.findIndex(item => item.role === "seated-hero")
+  if (seatedHero >= 0) return seatedHero
+  const establishingHero = jobs.findIndex(item => item.role === "establishing-full-body")
+  return establishingHero >= 0 ? establishingHero : 0
+}
+
+function withPhotoshootCohesionInstruction(
+  job: ImageJob,
+  role: ShootShotRole,
+  isHero: boolean
+): ImageJob {
+  const instruction = isHero
+    ? [
+        "Photoshoot cohesion role: HERO ANCHOR.",
+        "Generate this shot from the uploaded real selfies only. Establish the exact shared outfit, accessories, hair, makeup, lighting, color grade, palette, and world for the full photoshoot set.",
+        "Do not introduce alternate wardrobe, alternate accessories, or a second location family.",
+      ].join("\n")
+    : [
+        "Photoshoot cohesion role: ANCHORED SET SHOT.",
+        "Use the uploaded selfies as the identity anchor. Use the generated hero reference only as a style/cohesion anchor for outfit, accessories, lighting, palette, and world.",
+        "Match the hero shot's wardrobe, accessories, hair, makeup, color grade, and location mood while creating this shot's distinct role and composition. Do not copy the hero pose unless this shot asks for it.",
+        role === "true-detail"
+          ? "For this true-detail shot, keep the same outfit/world from the hero but do NOT show the full face or full body."
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n")
+
+  return {
+    ...job,
+    passes: job.passes.map(pass => ({
+      ...pass,
+      prompt: `${pass.prompt}\n\n${instruction}`,
+    })),
+  }
 }
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
@@ -290,6 +334,7 @@ export async function POST(request: NextRequest) {
 
     // Per mode: legacy Mode C is retired; Modes A/B generate from the selfie.
     let jobs: ImageJob[] = []
+    let photoshootJobs: PhotoshootJob[] = []
     let graphicJobs: AppGraphicRedesignJob[] = []
     let graphicStyle:
       | Awaited<ReturnType<typeof pickContentStyleReference>>
@@ -356,12 +401,24 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-        jobs = shootBriefs.flatMap((shootBrief, index) =>
-          compileConceptJobs(shootBrief, "photo", { aestheticId: body.aestheticId }).map(job => ({
-            ...job,
-            label: `photoshoot ${index + 1}/${shootBriefs.length} · ${shootBrief.shotRole ?? "shot"}`,
-          }))
-        )
+        const plannedPhotoshootJobs = shootBriefs.map((shootBrief, index) => {
+          const role = shootBrief.shotRole as ShootShotRole
+          const job = compileConceptJobs(shootBrief, "photo", { aestheticId: body.aestheticId })[0]
+          return {
+            index,
+            role,
+            job: {
+              ...job,
+              label: `photoshoot ${index + 1}/${shootBriefs.length} · ${role}`,
+            },
+          }
+        })
+        const heroJobIndex = pickPhotoshootHeroJobIndex(plannedPhotoshootJobs)
+        photoshootJobs = plannedPhotoshootJobs.map((item, index) => ({
+          ...item,
+          job: withPhotoshootCohesionInstruction(item.job, item.role, index === heroJobIndex),
+        }))
+        jobs = photoshootJobs.map(item => item.job)
       } else if (isRedesignGraphicFormat(format)) {
         graphicJobs = buildAppGraphicRedesignJobs({
           brief,
@@ -551,12 +608,15 @@ export async function POST(request: NextRequest) {
 
     // Run one image JOB end to end. Each pass draws its input from its source: the selfie (Mode
     // A/B concept), a retired base image path, or the prior pass's output.
-    const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
+    const runJob = async (
+      job: (typeof jobs)[number],
+      selfieInputFiles: Awaited<ReturnType<typeof toFile>>[] = selfieFiles
+    ): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
         const images =
           pass.input === "selfie"
-            ? selfieFiles
+            ? selfieInputFiles
             : pass.input === "base"
               ? baseFiles
               : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
@@ -564,6 +624,35 @@ export async function POST(request: NextRequest) {
       }
       if (!current) throw new Error("Job produced no image")
       return current
+    }
+
+    const runPhotoshootHeroAnchoredJobs = async (
+      setJobs: PhotoshootJob[]
+    ): Promise<Buffer[]> => {
+      const heroJobIndex = pickPhotoshootHeroJobIndex(setJobs)
+      const hero = setJobs[heroJobIndex]
+      if (!hero) throw new Error("Photoshoot hero job missing")
+
+      // CUSTOMER-PHOTOSHOOT-02: hero first from real selfies only, then every other
+      // shot references selfies FIRST for identity and the generated hero SECOND for cohesion.
+      const heroBuffer = await runJob(hero.job, selfieFiles)
+      const heroFile = await toFile(heroBuffer, "maya-photoshoot-hero-anchor.png", {
+        type: "image/png",
+      })
+      const selfieAndHeroFiles = [...selfieFiles, heroFile]
+      const buffers = new Array<Buffer>(setJobs.length)
+      buffers[heroJobIndex] = heroBuffer
+
+      const restJobs = setJobs
+        .map((item, index) => ({ item, index }))
+        .filter(({ index }) => index !== heroJobIndex)
+      await Promise.all(
+        restJobs.map(async ({ item, index }) => {
+          buffers[index] = await runJob(item.job, selfieAndHeroFiles)
+        })
+      )
+
+      return buffers
     }
 
     // Persist buffers to Blob + gallery. Throws on blob failure (caller refunds).
@@ -763,6 +852,8 @@ export async function POST(request: NextRequest) {
             return result.buffer
           })
         )
+      } else if (photoshootJobs.length > 0) {
+        buffers = await runPhotoshootHeroAnchoredJobs(photoshootJobs)
       } else {
         buffers = await Promise.all(jobs.map(j => runJob(j)))
       }
