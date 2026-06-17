@@ -183,11 +183,11 @@ export async function createLandingCheckoutSession(
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
     ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
-    ...(!isSubscription && {
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    }),
+    // NOTE: `automatic_payment_methods` is a PaymentIntent param, NOT a Checkout Session param.
+    // The Stripe API version 2026-01-28.clover rejects it ("Received unknown parameter:
+    // automatic_payment_methods"), which broke EVERY one-time checkout (vault/starter-kit/presets)
+    // ~2026-06-11. Checkout Sessions get dynamic payment methods from the account's default
+    // payment method configuration automatically, so no param is needed here.
     line_items: [
       {
         price: stripePriceId,
