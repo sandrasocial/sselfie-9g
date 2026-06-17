@@ -14,6 +14,16 @@ type CheckoutEmailCaptureVisual = {
   alt: string
 }
 
+type CheckoutOrderBump = {
+  baseTier: string
+  upgradeTier: string
+  label: string
+  description: string
+  upgradeName: string
+  upgradeMeta: string
+  upgradePrice: string
+}
+
 const DEFAULT_VISUALS: CheckoutEmailCaptureVisual[] = [
   {
     src: "/images/email/prompt-pack-hero.jpg",
@@ -41,8 +51,12 @@ export function PromptVaultCheckoutEmailCapture({
   productName = "Prompt Vault",
   productMeta = "Full editorial prompt collections",
   productPrice = "$27 one-time",
+  orderLabel = "You are joining",
   reassurance = "Your receipt and access link go to this inbox.",
   visuals = DEFAULT_VISUALS,
+  prefillEmail = "",
+  proceedOnSubmit = false,
+  orderBump,
 }: {
   params: CheckoutEmailCaptureParams
   actionPath?: string
@@ -55,13 +69,26 @@ export function PromptVaultCheckoutEmailCapture({
   productName?: string
   productMeta?: string
   productPrice?: string
+  orderLabel?: string
   reassurance?: string
   visuals?: CheckoutEmailCaptureVisual[]
+  prefillEmail?: string
+  proceedOnSubmit?: boolean
+  orderBump?: CheckoutOrderBump
 }) {
-  const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params)
+  const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params).filter((item) => {
+    if (orderBump && item.name === "tier") return false
+    if (proceedOnSubmit && item.name === "skip_email_capture") return false
+    return true
+  })
   const skipHref = buildSkipCheckoutEmailCaptureHref(actionPath, params)
   const heroVisual = visuals[0] || DEFAULT_VISUALS[0]
   const supportingVisuals = (visuals.length > 1 ? visuals.slice(1, 3) : DEFAULT_VISUALS.slice(1, 3))
+  const tierInputId = `${inputId}-tier`
+  const bumpInputId = `${inputId}-bump`
+  const orderNameId = `${inputId}-order-name`
+  const orderMetaId = `${inputId}-order-meta`
+  const orderPriceId = `${inputId}-order-price`
 
   return (
     <main className={inter.className}>
@@ -88,11 +115,11 @@ export function PromptVaultCheckoutEmailCapture({
 
             <div className="pv-order">
               <div>
-                <p className="pv-order-label">You are joining</p>
-                <p className="pv-order-name">{productName}</p>
-                <p className="pv-order-meta">{productMeta}</p>
+                <p className="pv-order-label">{orderLabel}</p>
+                <p className="pv-order-name" id={orderNameId}>{productName}</p>
+                <p className="pv-order-meta" id={orderMetaId}>{productMeta}</p>
               </div>
-              <p className="pv-order-price">{productPrice}</p>
+              <p className="pv-order-price" id={orderPriceId}>{productPrice}</p>
             </div>
 
             <p className="pv-eyebrow">{eyebrow}</p>
@@ -103,6 +130,12 @@ export function PromptVaultCheckoutEmailCapture({
               {hiddenParams.map((item) => (
                 <input key={item.name} type="hidden" name={item.name} value={item.value} />
               ))}
+              {orderBump ? (
+                <input id={tierInputId} type="hidden" name="tier" defaultValue={orderBump.baseTier} />
+              ) : null}
+              {proceedOnSubmit ? (
+                <input type="hidden" name="skip_email_capture" value="1" />
+              ) : null}
               <label htmlFor={inputId} className="pv-label">
                 Email address
               </label>
@@ -113,10 +146,23 @@ export function PromptVaultCheckoutEmailCapture({
                 autoComplete="email"
                 inputMode="email"
                 required
+                defaultValue={prefillEmail}
                 placeholder="you@example.com"
                 className="pv-input"
               />
               <p className="pv-helper">{reassurance}</p>
+              {orderBump ? (
+                <label className="pv-bump" htmlFor={bumpInputId}>
+                  <input id={bumpInputId} type="checkbox" className="pv-bump-check" />
+                  <span className="pv-bump-body">
+                    <span className="pv-bump-head">
+                      <span className="pv-bump-title">{orderBump.label}</span>
+                      <span className="pv-bump-price">{orderBump.upgradePrice}</span>
+                    </span>
+                    <span className="pv-bump-copy">{orderBump.description}</span>
+                  </span>
+                </label>
+              ) : null}
               <button type="submit" className="pv-button">
                 {buttonLabel}
               </button>
@@ -395,7 +441,88 @@ export function PromptVaultCheckoutEmailCapture({
             font-size: clamp(38px, 12vw, 52px);
           }
         }
+
+        .pv-bump {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          margin-top: 4px;
+          padding: 16px;
+          border: 1px solid rgba(13,14,16,0.18);
+          background: rgb(248, 250, 250);
+          cursor: pointer;
+        }
+
+        .pv-bump:hover {
+          border-color: rgb(13, 14, 16);
+        }
+
+        .pv-bump-check {
+          margin-top: 2px;
+          width: 18px;
+          height: 18px;
+          flex: 0 0 auto;
+          accent-color: rgb(13, 14, 16);
+          cursor: pointer;
+        }
+
+        .pv-bump-body {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .pv-bump-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: baseline;
+        }
+
+        .pv-bump-title {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: rgb(13, 14, 16);
+        }
+
+        .pv-bump-price {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgb(13, 14, 16);
+          white-space: nowrap;
+        }
+
+        .pv-bump-copy {
+          font-size: 13px;
+          line-height: 1.55;
+          color: rgb(79, 80, 82);
+        }
       `}</style>
+      {orderBump ? (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+  var cb = document.getElementById(${JSON.stringify(bumpInputId)});
+  var tierInput = document.getElementById(${JSON.stringify(tierInputId)});
+  var nameEl = document.getElementById(${JSON.stringify(orderNameId)});
+  var metaEl = document.getElementById(${JSON.stringify(orderMetaId)});
+  var priceEl = document.getElementById(${JSON.stringify(orderPriceId)});
+  if(!cb || !tierInput) return;
+  var base = ${JSON.stringify({ tier: orderBump.baseTier, name: productName, meta: productMeta, price: productPrice })};
+  var up = ${JSON.stringify({ tier: orderBump.upgradeTier, name: orderBump.upgradeName, meta: orderBump.upgradeMeta, price: orderBump.upgradePrice })};
+  cb.addEventListener('change', function(){
+    var v = cb.checked ? up : base;
+    tierInput.value = v.tier;
+    if(nameEl) nameEl.textContent = v.name;
+    if(metaEl) metaEl.textContent = v.meta;
+    if(priceEl) priceEl.textContent = v.price;
+  });
+})();`,
+          }}
+        />
+      ) : null}
     </main>
   )
 }

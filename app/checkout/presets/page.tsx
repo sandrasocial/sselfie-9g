@@ -202,7 +202,32 @@ export default async function PresetsCheckoutPage({
   const productId = presetsProductIdForTier(tier)
   const collectionSlug = selectedCollection?.slug || null
 
-  if (shouldCaptureEmail) {
+  const isSingle = tier === "single"
+  const alreadyReviewed =
+    params.skip_email_capture === "1" || params.skip_email_capture === "true"
+  // Always give single-collection buyers a visual review step (images + order bump),
+  // even when we already know their email. The skip flag (set on submit) stops the loop.
+  const showCheckoutPanel = shouldCaptureEmail || (isSingle && !alreadyReviewed)
+
+  const presetVisuals = isSingle && selectedCollection
+    ? [
+        {
+          src: `/images/presets/collection-${selectedCollection.slug}-after.jpg`,
+          alt: `${selectedCollection.name} preset applied`,
+        },
+        {
+          src: `/images/presets/collection-${selectedCollection.slug}.jpg`,
+          alt: `${selectedCollection.name} before the preset`,
+        },
+        { src: "/images/presets/lifestyle-moody.jpg", alt: "SSELFIE editorial preset look" },
+      ]
+    : [
+        { src: "/images/presets/hero.jpg", alt: "Sandra with the SSELFIE preset look" },
+        { src: "/images/presets/lifestyle-moody.jpg", alt: "Moody SSELFIE preset look" },
+        { src: "/images/presets/lifestyle-como.jpg", alt: "Lake Como SSELFIE preset look" },
+      ]
+
+  if (showCheckoutPanel) {
     await logAnalyticsEvent({
       eventName: "presets_checkout_email_capture_view",
       userId: authUser?.id || null,
@@ -225,18 +250,43 @@ export default async function PresetsCheckoutPage({
         params={params}
         actionPath="/checkout/presets"
         eyebrow="SSELFIE PRESETS"
-        title="Where should I send your presets?"
-        copy="Add your email before checkout so your presets access link and receipt land in the right inbox."
+        title={isSingle ? "Your collection is ready." : "Where should I send your presets?"}
+        copy={
+          isSingle
+            ? "Add your email so your preset files and receipt land in the right inbox, then continue to secure payment."
+            : "Add your email before checkout so your presets access link and receipt land in the right inbox."
+        }
         inputId="presets-checkout-email"
-        productName={tier === "bundle" ? "SSELFIE Presets · Full Collection" : "SSELFIE Presets · Single Collection"}
-        productMeta={tier === "bundle" ? "Current and future Lightroom collections" : selectedCollection?.name || "One preset collection"}
+        orderLabel="Your order"
+        productName={
+          tier === "bundle"
+            ? "SSELFIE Presets · Full Collection"
+            : selectedCollection?.name || "One preset collection"
+        }
+        productMeta={
+          tier === "bundle"
+            ? "Current and future Lightroom collections"
+            : selectedCollection?.description || "One preset collection, phone and desktop"
+        }
         productPrice={tier === "bundle" ? "$39 one-time" : "$19 one-time"}
         reassurance="Your receipt and preset access link go to this inbox."
-        visuals={[
-          { src: "/images/presets/hero.jpg", alt: "Sandra with the SSELFIE preset look" },
-          { src: "/images/presets/lifestyle-moody.jpg", alt: "Moody SSELFIE preset look" },
-          { src: "/images/presets/lifestyle-como.jpg", alt: "Lake Como SSELFIE preset look" },
-        ]}
+        prefillEmail={checkoutEmail || ""}
+        proceedOnSubmit={isSingle}
+        visuals={presetVisuals}
+        orderBump={
+          isSingle
+            ? {
+                baseTier: "single",
+                upgradeTier: "bundle",
+                label: "Make it the full set",
+                description:
+                  "Get every collection, not just this one. All of them, plus every new drop, yours forever. Add them all for $20 more.",
+                upgradeName: "SSELFIE Presets · Full Collection",
+                upgradeMeta: "Every collection, and every new one added later",
+                upgradePrice: "$39 one-time",
+              }
+            : undefined
+        }
       />
     )
   }
