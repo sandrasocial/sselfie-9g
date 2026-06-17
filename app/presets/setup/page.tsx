@@ -55,14 +55,6 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
   )
 }
 
-function ShotSlot({ label }: { label: string }) {
-  return (
-    <div style={{ background: OBSIDIAN, color: PORCELAIN, aspectRatio: "9 / 16", maxWidth: 150, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontFamily: inter.style.fontFamily, fontSize: "8px", letterSpacing: "0.2em", textTransform: "uppercase", padding: 8 }}>
-      <span style={{ opacity: 0.45 }}>{label}</span>
-    </div>
-  )
-}
-
 export default function PresetSetupPage() {
   return (
     <main className={inter.className} style={{ background: PORCELAIN, color: OBSIDIAN, lineHeight: 1.55 }}>
@@ -108,11 +100,6 @@ export default function PresetSetupPage() {
           <Step n={4}>Open that photo, tap the <strong style={{ fontWeight: 500 }}>•••</strong> in the corner, and choose <strong style={{ fontWeight: 500 }}>Create Preset</strong>. Name it and save it to a &ldquo;SSELFIE&rdquo; group.</Step>
           <Step n={5}>Done. Open any photo → <strong style={{ fontWeight: 500 }}>Presets</strong> → SSELFIE → tap. Your look, one tap.</Step>
         </ol>
-        <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
-          <ShotSlot label="step screenshot · drop image" />
-          <ShotSlot label="step screenshot · drop image" />
-          <ShotSlot label="step screenshot · drop image" />
-        </div>
       </section>
 
       {/* ON DESKTOP */}
