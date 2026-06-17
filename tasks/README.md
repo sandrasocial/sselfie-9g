@@ -26,7 +26,17 @@ The previous active board was stale. Code inspection and recent verification sho
 - IG inbox manual send policy is live. Native IG replies can send manually, automated sends remain
   gated, and ManyChat replies now have the production API key.
 
-## Active Work
+## Active build order — content/Maya thread (Sandra approved 2026-06-15, run in THIS order)
+
+Codex: execute these in sequence (they share `prompt-compiler.ts` + `shoot-generator.ts`, so serial
+avoids collisions):
+1. `CONTENT-CAROUSEL-04-unify-customer-maya.md` + `CONTENT-CAROUSEL-03-FIX-people-free-slides.md`
+   (finish the user-facing carousel/story redesign + remove faceless slides)
+2. `SHOOT-TAXONOMY-01-shot-roles-and-variety.md` (shot roles + variety + 1-2 detail shots)
+3. `CUSTOMER-PHOTOSHOOT-01-photoshoot-chip.md` (Photoshoot chip, built on #2)
+
+After each lands, Claude pulls it, runs checks, and verifies output before the next. Older
+MAYA-FIX/GROUNDING rows below are prior-thread items (mostly shipped); the table is the backlog.
 
 | Priority | Spec | Owner | Why it remains |
 |---:|---|---|---|
