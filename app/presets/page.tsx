@@ -18,8 +18,6 @@ export const metadata: Metadata = {
 }
 
 // DESIGN + COPY owned by Claude. CHECKOUT/FULFILLMENT owned by Codex (see tasks/PRESETS-PRODUCT-01.md).
-const CHECKOUT_SINGLE =
-  "/checkout/presets?tier=single&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=single_pricing_card&buyer_stage=micro"
 const CHECKOUT_BUNDLE =
   "/checkout/presets?tier=bundle&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=bundle_primary_cta&buyer_stage=micro"
 
@@ -58,13 +56,17 @@ const btnOutlineDark = { ...btnDark, background: "transparent", color: PORCELAIN
 const btnLight = { ...btnDark, background: PORCELAIN, color: OBSIDIAN } as const
 
 const COLLECTIONS = [
-  { name: "Selfie Glow Up", desc: "Your everyday selfie, brighter and softer. The flattering one.", before: "/images/presets/collection-selfie-glow-up.jpg", after: "/images/presets/collection-selfie-glow-up-after.jpg" },
-  { name: "Scandinavian Light & Dreamy", desc: "Soft, pale, airy. That quiet Nordic light.", before: "/images/presets/collection-scandinavian-light-dreamy.jpg", after: "/images/presets/collection-scandinavian-light-dreamy-after.jpg" },
-  { name: "White Filter", desc: "Clean and bright. The fresh, minimal white look.", before: "/images/presets/collection-white-filter.jpg", after: "/images/presets/collection-white-filter-after.jpg" },
-  { name: "Beige Coffee", desc: "Warm beige and caramel. Cozy, café, lived-in.", before: "/images/presets/collection-beige-coffee.jpg", after: "/images/presets/collection-beige-coffee-after.jpg" },
-  { name: "Nordic Deep Urban", desc: "Cool and editorial. Off-duty model on a grey city day.", before: "/images/presets/collection-nordic-deep-urban.jpg", after: "/images/presets/collection-nordic-deep-urban-after.jpg" },
-  { name: "Scandinavian Dark & Moody", desc: "Deep shadows, warm tones. That noir film mood.", before: "/images/presets/collection-scandinavian-dark-moody.jpg", after: "/images/presets/collection-scandinavian-dark-moody-after.jpg" },
+  { name: "Selfie Glow Up", slug: "selfie-glow-up", desc: "Your everyday selfie, brighter and softer. The flattering one.", before: "/images/presets/collection-selfie-glow-up.jpg", after: "/images/presets/collection-selfie-glow-up-after.jpg" },
+  { name: "Scandinavian Light & Dreamy", slug: "scandinavian-light-dreamy", desc: "Soft, pale, airy. That quiet Nordic light.", before: "/images/presets/collection-scandinavian-light-dreamy.jpg", after: "/images/presets/collection-scandinavian-light-dreamy-after.jpg" },
+  { name: "White Filter", slug: "white-filter", desc: "Clean and bright. The fresh, minimal white look.", before: "/images/presets/collection-white-filter.jpg", after: "/images/presets/collection-white-filter-after.jpg" },
+  { name: "Beige Coffee", slug: "beige-coffee", desc: "Warm beige and caramel. Cozy, café, lived-in.", before: "/images/presets/collection-beige-coffee.jpg", after: "/images/presets/collection-beige-coffee-after.jpg" },
+  { name: "Nordic Deep Urban", slug: "nordic-deep-urban", desc: "Cool and editorial. Off-duty model on a grey city day.", before: "/images/presets/collection-nordic-deep-urban.jpg", after: "/images/presets/collection-nordic-deep-urban-after.jpg" },
+  { name: "Scandinavian Dark & Moody", slug: "scandinavian-dark-moody", desc: "Deep shadows, warm tones. That noir film mood.", before: "/images/presets/collection-scandinavian-dark-moody.jpg", after: "/images/presets/collection-scandinavian-dark-moody-after.jpg" },
 ]
+
+function singleCollectionHref(slug: string) {
+  return `/checkout/presets?tier=single&collection=${slug}&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=collection_card&buyer_stage=micro`
+}
 
 export default function PresetsPage() {
   return (
@@ -92,9 +94,9 @@ export default function PresetsPage() {
       </section>
 
       {/* ── COLLECTIONS (sequential, full-width) ── */}
-      <section style={{ textAlign: "center", padding: "54px 24px 8px" }}>
+      <section id="collections" style={{ scrollMarginTop: 20, textAlign: "center", padding: "54px 24px 8px" }}>
         <p style={{ ...eyebrow, marginBottom: 6 }}>The collections</p>
-        <p className={cormorant.className} style={{ fontSize: "16px", color: SMOKE, margin: 0 }}>Each one a full mood. Pick yours, or take them all.</p>
+        <p className={cormorant.className} style={{ fontSize: "16px", color: SMOKE, margin: 0 }}>Each one a full mood. Pick the one you want, or take them all.</p>
       </section>
       <section style={{ padding: "30px 0 10px", maxWidth: 760, margin: "0 auto" }}>
         {COLLECTIONS.map((c) => (
@@ -111,7 +113,8 @@ export default function PresetsPage() {
             </div>
             <div style={{ textAlign: "center", padding: "18px 24px 40px" }}>
               <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "26px", margin: "0 0 4px" }}>{c.name}</p>
-              <p style={{ fontSize: "13px", color: SMOKE, margin: 0 }}>{c.desc}</p>
+              <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 16px" }}>{c.desc}</p>
+              <Link href={singleCollectionHref(c.slug)} style={{ ...btnDark, fontSize: "9px", letterSpacing: "0.26em", padding: "13px 28px" }}>Get this collection · $19</Link>
             </div>
           </div>
         ))}
@@ -154,8 +157,8 @@ export default function PresetsPage() {
           <div style={{ border: `1px solid ${WHISPER}`, padding: "30px 24px" }}>
             <p style={{ ...eyebrow, marginBottom: 14 }}>One collection</p>
             <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "38px", margin: "0 0 4px" }}>$19</p>
-            <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 22px" }}>Pick one look. Phone, desktop, and the setup guide.</p>
-            <Link href={CHECKOUT_SINGLE} style={{ ...btnLight, display: "block", textAlign: "center" }}>Get one</Link>
+            <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 22px" }}>Choose any one collection above. Phone, desktop, and the setup guide.</p>
+            <a href="#collections" style={{ ...btnLight, display: "block", textAlign: "center" }}>Pick a collection</a>
           </div>
           <div style={{ border: `1.5px solid ${OBSIDIAN}`, padding: "30px 24px", position: "relative" }}>
             <p style={{ position: "absolute", top: -11, left: 24, background: OBSIDIAN, color: PORCELAIN, fontSize: "9px", letterSpacing: "0.26em", textTransform: "uppercase", padding: "5px 12px" }}>Most pick this</p>
