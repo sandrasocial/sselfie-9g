@@ -51,6 +51,14 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         .studio-3-root .font-serif {
           font-family: var(--font-app-serif), Georgia, "Times New Roman", serif;
         }
+
+        @media (max-width: 767px) {
+          .studio-3-root input,
+          .studio-3-root textarea,
+          .studio-3-root select {
+            font-size: 16px !important;
+          }
+        }
       `}</style>
       {children}
     </div>

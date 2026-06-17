@@ -21,6 +21,16 @@ describe("App v3 shell overflow containment", () => {
     expect(layout).toContain("max-width: 100vw")
   })
 
+  it("keeps app inputs at 16px on mobile so iOS Safari does not auto-zoom and create sideways panning", () => {
+    const layout = read("app/app/layout.tsx")
+
+    expect(layout).toContain("@media (max-width: 767px)")
+    expect(layout).toContain(".studio-3-root input")
+    expect(layout).toContain(".studio-3-root textarea")
+    expect(layout).toContain(".studio-3-root select")
+    expect(layout).toContain("font-size: 16px !important")
+  })
+
   it("keeps the live app shell and Maya drawer from creating sideways pan", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
