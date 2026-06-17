@@ -35,6 +35,7 @@ interface ConceptCardProps {
 
 const FRAME_ASPECT: Record<OutputFormat, string> = {
   photo: "aspect-[4/5]",
+  photoshoot: "aspect-[4/5]",
   "reel-cover": "aspect-[9/16]",
   "story-slide": "aspect-[9/16]",
   carousel: "aspect-[4/5]",

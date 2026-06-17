@@ -103,6 +103,7 @@ export interface CreativePlanValidationResult {
 export function normalizeCreativeMode(mode: string): CreativeMode | null {
   switch (mode) {
     case "photo":
+    case "photoshoot":
       return "photo"
     case "reel-cover":
     case "reel_cover":

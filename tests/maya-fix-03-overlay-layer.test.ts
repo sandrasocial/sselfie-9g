@@ -23,14 +23,12 @@ const brief: CreativeBrief = {
       {
         heading: "Start with one clean base",
         body: "Let the shape do the work",
-        visual: "identity",
       },
-      { heading: "Repeat the same quiet tones", body: "It reads intentional", visual: "detail" },
+      { heading: "Repeat the same quiet tones", body: "It reads intentional" },
       {
         heading: "Save this for your next shoot",
         body: "Use it when you feel stuck",
         role: "cta",
-        visual: "text-only",
       },
     ],
   },

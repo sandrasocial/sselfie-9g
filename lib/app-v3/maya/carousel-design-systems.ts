@@ -2,18 +2,14 @@
 //
 // A carousel is a mini editorial design system, not disconnected AI photos (QA doc §10 and
 // Sandra's reference grids). Each system is a complete visual language for the WHOLE set:
-// palette + grade, baked typography, decoration rules, and how each slide TYPE is treated. Slides
-// come in three visual roles:
-//   - "identity":  she appears (kept recognizable — the No-Fake doctrine). Default for most slides.
-//   - "detail":    a styled close-up, object, screenshot, hand, reflection, or scene moment. Use only on purpose.
-//   - "text-only": a designed typographic slide, optionally with her as a subtle photo element.
+// palette + grade, baked typography, decoration rules, and how each slide is treated. Customer
+// slides are always real-image redesigns: the person appears, or a tutorial screenshot/reference
+// is preserved. There are no faceless object-only or text-only cards.
 //
 // CAROUSEL-03: the image model is the designer. Finished slides bake type/callouts in the
 // generated image; there is no local text-overlay renderer after generation.
 // Doctrine: docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md — realism over perfection,
 // recognizable over idealized, creative direction over deception.
-
-export type SlideVisual = "identity" | "detail" | "text-only"
 
 export interface CarouselDesignSystem {
   id: string
@@ -24,10 +20,6 @@ export interface CarouselDesignSystem {
   setDna: string
   /** How an identity slide is composed in this system (input: selfie). */
   identityTreatment: string
-  /** How a detail slide is composed. */
-  detailTreatment: string
-  /** How a text-first slide is composed. */
-  textOnlyTreatment: string
 }
 
 export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
@@ -49,15 +41,6 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "(sticker style) and place her over a softly blurred or flat editorial background from the scene. She is " +
       "medium-small in the frame (about one third), leaving generous space for the headline and one handwritten accent. " +
       "A soft drop shadow under the cutout makes it feel pasted on.",
-    detailTreatment:
-      "A real, tactile close-up photograph of the subject: natural light, shallow depth of field, " +
-      "true textures (ceramic, paper, fabric, glass, metal), slight imperfection so it reads like a phone photo from a " +
-      "beautiful morning, not a stock image. Include her hands, reflection, profile, or outfit detail when it keeps the slide personal. The text sits in the calmest open area, with one handwritten accent pointing " +
-      "to or circling the key phrase.",
-    textOnlyTreatment:
-      "A designed typographic slide on a textured paper or soft plaster background in the set's palette. The message is " +
-      "the hero: large serif statement or a short list with small hand-drawn checkmarks or dashes. One handwritten " +
-      "annotation maximum. Generous margins, lots of calm space.",
   },
   {
     id: "full-bleed-editorial",
@@ -73,12 +56,6 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
     identityTreatment:
       "A candid full-bleed editorial photograph of her, caught mid-moment, composed with generous negative space for " +
       "the headline. She is never centered and posing; the frame breathes.",
-    detailTreatment:
-      "A full-bleed cinematic detail from her world: one hero object, her hand, reflection, profile, or outfit crop when useful, dramatic soft light, deep shadows, " +
-      "the set's grade. Text overlaid in the darkest or calmest region, perfectly legible.",
-    textOnlyTreatment:
-      "A near-black or deep-toned slide with a single large serif statement (or short list) in off-white. One thin rule " +
-      "or small italic supporting line. Gallery-wall minimal.",
   },
   {
     id: "soft-minimal",
@@ -94,12 +71,6 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
     identityTreatment:
       "A bright, soft editorial photograph of her in natural window light, plenty of clean negative space (white wall, " +
       "linen, sky) where the headline sits. Calm and unposed.",
-    detailTreatment:
-      "A bright minimal detail: one or two objects, her hands, a profile crop, or a clean light surface, soft daylight, true texture. " +
-      "Text in the open space above or beside the objects.",
-    textOnlyTreatment:
-      "An off-white slide with the message set like a beautifully typeset magazine quote or checklist: serif headline, " +
-      "small sans details, one hairline rule. Nothing else.",
   },
 ]
 
@@ -110,26 +81,13 @@ export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
   return CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === key) ?? CAROUSEL_DESIGN_SYSTEMS[0]
 }
 
-/**
- * Default visual mix when Maya doesn't tag slides (back-compat + safety net).
- * Doctrine: carousels should feel like part of the user's photoshoot, not disconnected
- * still-life slides. Identity is the default; detail/text-only happen only when Maya
- * deliberately tags them.
- */
-export function defaultSlideVisual(
-  role: "hook" | "value" | "cta",
-  _valueIndex: number
-): SlideVisual {
-  return role === "value" || role === "hook" || role === "cta" ? "identity" : "detail"
-}
-
 /** The carousel design guide injected into Maya's system prompt (carousel format only). */
 export function getCarouselDesignGuide(): string {
   const systems = CAROUSEL_DESIGN_SYSTEMS.map(s => `- "${s.id}" (${s.name}): ${s.whenToUse}`).join(
     "\n"
   )
   return [
-    "## CAROUSEL DESIGN SYSTEMS (a carousel is a mini editorial design system, not 5 photos of her with text)",
+    "## CAROUSEL DESIGN SYSTEMS (a carousel is a mini editorial design system, not 5 template cards)",
     "",
     "Pick ONE design system per concept (set brief.graphic.designSystem) that fits her brand and the topic:",
     systems,
@@ -141,12 +99,10 @@ export function getCarouselDesignGuide(): string {
     "- If she asks for a specific style, or repeats one she loved, honor that instead.",
     "",
     "Slide mix rules (non-negotiable):",
-    '- Tag every slide with "visual": "identity" | "detail" | "text-only".',
-    "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot. Use identity slides by default for hook, value, and CTA slides so the person stays present and recognizable.",
-    "- Detail slides are optional, not default. Use them only when a screenshot, object, phone, product, texture, hand, reflection, or crop genuinely explains the point better than another full person-in-scene image.",
-    "- Text-only slides (when used) carry lists, the big statement, or the CTA. The copy is the hero, but the slide can still include her as a subtle cutout or photo element if it fits.",
-    "- Keep identity slides natural and recognizable — never an idealized stranger. Vary crop, pose, and text placement so it does not feel repetitive.",
-    '- When you deliberately choose a detail slide, give it a concrete "detailSubject" that VISUALIZES that slide\'s message, not just the scene (the slide "stop using flash" -> a phone face-down by a window with soft daylight).',
+    '- Every customer carousel slide is a real-image redesign: the person appears, recognizable and natural, with text baked into the finished image.',
+    "- Do not create object-only, screenshot-only, or typography-only cards for customer carousels. If a slide is a hook, list, big statement, or CTA, it still uses a real photo moment of her.",
+    "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot, so the person stays present and recognizable.",
+    "- Vary crop, pose, background, scale, and text placement so the set does not feel repetitive.",
     "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
     "- The whole set shares one palette and one voice. Vary the slide compositions so the carousel feels designed, never repetitive.",
   ].join("\n")

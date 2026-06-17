@@ -3,7 +3,7 @@
 
 /** The output format the user is creating. The OpenAI engine renders all of these
  *  natively in one synchronous call (photo, or structured marketing graphics). */
-export type OutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide" | "video"
+export type OutputFormat = "photo" | "photoshoot" | "reel-cover" | "carousel" | "story-slide" | "video"
 
 /** A single aesthetic the user can pick from the Visual Front Door. Derived from the
  *  existing Prompt Vault collections so the grid always reflects the real vault. */

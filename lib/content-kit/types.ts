@@ -47,6 +47,13 @@ export type CarouselSlide = {
   imageUrl?: string
   /** Tutorial scene slides can ask gpt-image-2 to bake short text into the generated image. */
   headlineRender?: "baked" | "composited"
+  /** CAROUSEL-04: app/customer Maya can pass the shared Creative Plan through to the redesign engine. */
+  purpose?: string
+  visualConcept?: string
+  imagePromptDirection?: string
+  referenceImageStrategy?: string
+  visualReason?: string
+  textSafeArea?: string
   /** 2x2 grid images for kind "grid" (the prompts.ig signature: same person,
    * four worlds). Title overlays the grid when present. */
   gridUrls?: string[]
@@ -100,9 +107,20 @@ export type StorySequence = {
 
 // SHOOT-STUDIO-01: an inspiration-driven photoshoot — the content unit everything spins from.
 
+export type ShootShotRole =
+  | "establishing-full-body"
+  | "movement-lifestyle-action"
+  | "seated-hero"
+  | "profile"
+  | "close-portrait"
+  | "cover-safe-hero"
+  | "true-detail"
+
 export type ShootShot = {
   /** Stable per-shoot id, "shot-1".."shot-n". */
   id: string
+  /** Structural role used to keep a shoot varied and stop detail shots from becoming portraits. */
+  shotRole?: ShootShotRole
   /** "Collection Name · Shot Name" (middle dot, vault card convention). */
   title: string
   /** Sandra-voice posting guidance (vault whenToUse convention). */

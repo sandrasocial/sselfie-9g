@@ -43,7 +43,6 @@ describe("app-v3 customer carousel planning", () => {
         {
           heading: "Denim Street",
           body: "The casual one that still looks expensive.",
-          visual: "identity",
           purpose: "teach the first Vault style",
           visualConcept: "same woman in a denim street-style scene",
           imagePrompt: "same woman, light denim, soft blazer, street corner, natural daylight",

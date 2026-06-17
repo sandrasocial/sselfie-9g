@@ -25,12 +25,19 @@ import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import {
+  buildGraphicRedesignSlides,
   compileConceptJobs,
   conceptOpenAISize,
   validateCustomerCarouselBrief,
   type ImageJob,
 } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
+import {
+  pickContentStyleReference,
+  redesignContentSlideToBuffer,
+  type StyleReferenceCategory,
+} from "@/lib/content-kit/slide-redesign-generator"
+import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
 
@@ -43,7 +50,16 @@ const sql = getDbClient()
 // default also flips the input_fidelity branch below, which was an unintended behavior change;
 // production sets OPENAI_IMAGE_MODEL explicitly so the default only matters as a safe fallback.
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: OutputFormat[] = ["photo", "photoshoot", "reel-cover", "carousel", "story-slide"]
+const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
+  "establishing-full-body",
+  "movement-lifestyle-action",
+  "seated-hero",
+  "profile",
+  "close-portrait",
+  "cover-safe-hero",
+  "true-detail",
+])
 
 // Image quality (low | medium | high). MEASURED 2026-06-10 on real prompts: medium ~82s/$0.06,
 // high ~191s/$0.22 per image. Members buy "premium presence", so single images default HIGH
@@ -55,6 +71,93 @@ function qualityForFormat(format: OutputFormat): ImgQuality {
   if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high")
     return QUALITY_OVERRIDE
   return format === "carousel" ? "medium" : "high"
+}
+
+type AppGraphicRedesignJob = {
+  label: string
+  slide: CarouselSlide
+  category: StyleReferenceCategory
+  topic: string
+  referenceUrl: string
+  recordPrompt: string
+}
+
+function isRedesignGraphicFormat(format: OutputFormat): boolean {
+  return format === "carousel" || format === "reel-cover" || format === "story-slide"
+}
+
+function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
+  return format === "carousel" ? "photoshoot-carousel" : "story-sequence"
+}
+
+function topicForGraphicBrief(
+  brief: CreativeBrief,
+  format: OutputFormat,
+  conceptTitle?: string
+): string {
+  return (
+    brief.graphic?.creativePlan?.userIntent ||
+    brief.graphic?.carouselTitle ||
+    conceptTitle ||
+    brief.graphic?.headline ||
+    brief.graphic?.slides?.[0]?.heading ||
+    (format === "reel-cover" ? "Reel cover" : format === "story-slide" ? "Story slide" : "Carousel")
+  )
+}
+
+function buildAppGraphicRedesignJobs({
+  brief,
+  format,
+  conceptTitle,
+  referenceUrls,
+}: {
+  brief: CreativeBrief
+  format: OutputFormat
+  conceptTitle?: string
+  referenceUrls: string[]
+}): AppGraphicRedesignJob[] {
+  const category = categoryForGraphicFormat(format)
+  const topic = topicForGraphicBrief(brief, format, conceptTitle)
+  const slides = buildGraphicRedesignSlides(brief, format, conceptTitle)
+  return slides.map((slide, index) => ({
+    label: `${format} ${index + 1}/${slides.length}`,
+    slide,
+    category,
+    topic,
+    referenceUrl: referenceUrls[index % referenceUrls.length],
+    recordPrompt: [
+      `SSELFIE redesign engine (${category})`,
+      `Topic: ${topic}`,
+      `Slide: ${slide.title}`,
+      slide.body ? `Body: ${slide.body}` : "",
+      slide.purpose ? `Purpose: ${slide.purpose}` : "",
+      slide.visualConcept ? `Visual concept: ${slide.visualConcept}` : "",
+      slide.imagePromptDirection ? `Image direction: ${slide.imagePromptDirection}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  }))
+}
+
+function normalizeShootBriefs(raw: unknown, fallback: CreativeBrief): CreativeBrief[] {
+  const candidates = Array.isArray(raw) ? raw : []
+  const briefs = candidates.map(normalizeBrief).filter((brief): brief is CreativeBrief => !!brief)
+  return briefs.length > 0 ? briefs.slice(0, 9) : [fallback]
+}
+
+function validatePhotoshootBriefs(briefs: CreativeBrief[]): string[] {
+  const errors: string[] = []
+  if (briefs.length < 6) errors.push(`photoshoot needs at least 6 shots, got ${briefs.length}`)
+  const roles = briefs.map(brief => brief.shotRole).filter(Boolean)
+  if (roles.length !== briefs.length) errors.push("every photoshoot shot needs a shotRole")
+  if (new Set(roles).size < Math.min(4, briefs.length)) {
+    errors.push("photoshoot needs at least 4 distinct shot roles")
+  }
+  const detailCount = roles.filter(role => role === "true-detail").length
+  if (detailCount < 1 || detailCount > 2) {
+    errors.push(`photoshoot needs 1-2 true-detail shots, got ${detailCount}`)
+  }
+  return errors
 }
 
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
@@ -133,6 +236,7 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
   if (typeof b.outfit !== "string" || b.outfit.trim().length === 0) return null
   if (typeof b.setting !== "string" || b.setting.trim().length === 0) return null
   const str = (v: unknown) => (typeof v === "string" ? v : "")
+  const shotRole = str(b.shotRole) as ShootShotRole
   return {
     outfit: b.outfit,
     setting: b.setting,
@@ -140,6 +244,7 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
     pose: str(b.pose),
     cameraSpec: str(b.cameraSpec),
     lighting: str(b.lighting),
+    shotRole: SHOOT_SHOT_ROLES.has(shotRole) ? shotRole : undefined,
     graphic:
       b.graphic && typeof b.graphic === "object"
         ? (b.graphic as CreativeBrief["graphic"])
@@ -170,6 +275,8 @@ export async function POST(request: NextRequest) {
       | (MayaGenerateConceptRequest & {
           /** Retired MODE C: local text overlays no longer exist. */
           baseImageUrl?: string
+          /** CUSTOMER-PHOTOSHOOT-01: full set briefs generated by Maya in one plan. */
+          shootBriefs?: unknown
         })
       | null
     if (!body) {
@@ -182,7 +289,11 @@ export async function POST(request: NextRequest) {
     const baseImageUrl = typeof body.baseImageUrl === "string" ? body.baseImageUrl : null
 
     // Per mode: legacy Mode C is retired; Modes A/B generate from the selfie.
-    let jobs: ImageJob[]
+    let jobs: ImageJob[] = []
+    let graphicJobs: AppGraphicRedesignJob[] = []
+    let graphicStyle:
+      | Awaited<ReturnType<typeof pickContentStyleReference>>
+      | null = null
     let referenceUrls: string[] = []
     const baseImageSource: string | null = null
 
@@ -232,16 +343,54 @@ export async function POST(request: NextRequest) {
           ].filter(isAllowedReferenceUrl)
         )
       ).slice(0, 4)
-      jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
+      if (format === "photoshoot") {
+        const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
+        const validationErrors = validatePhotoshootBriefs(shootBriefs)
+        if (validationErrors.length > 0) {
+          return NextResponse.json(
+            {
+              error: "That photoshoot plan was too thin. Ask Maya for a fuller shoot plan.",
+              code: "photoshoot_plan_invalid",
+              details: validationErrors,
+            },
+            { status: 400 }
+          )
+        }
+        jobs = shootBriefs.flatMap((shootBrief, index) =>
+          compileConceptJobs(shootBrief, "photo", { aestheticId: body.aestheticId }).map(job => ({
+            ...job,
+            label: `photoshoot ${index + 1}/${shootBriefs.length} · ${shootBrief.shotRole ?? "shot"}`,
+          }))
+        )
+      } else if (isRedesignGraphicFormat(format)) {
+        graphicJobs = buildAppGraphicRedesignJobs({
+          brief,
+          format,
+          conceptTitle: body.conceptTitle,
+          referenceUrls,
+        })
+        graphicStyle = await pickContentStyleReference(categoryForGraphicFormat(format))
+        if (!graphicStyle) {
+          return NextResponse.json(
+            { error: "No SSELFIE style references are configured for this format." },
+            { status: 500 }
+          )
+        }
+      } else {
+        jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
+      }
     }
 
     const size = conceptOpenAISize(format)
     const IMAGE_QUALITY = qualityForFormat(format)
     // Charge once per final image (slide), regardless of how many passes produce it.
-    const imageCount = jobs.length
+    const imageCount = graphicJobs.length > 0 ? graphicJobs.length : jobs.length
     const totalCost = CREDIT_COSTS.IMAGE * imageCount
     // What we store as the image's prompt (all passes, so descriptors + baked slide text are searchable).
-    const recordPrompts = jobs.map(j => j.passes.map(p => p.prompt).join("\n\n--- pass ---\n\n"))
+    const recordPrompts =
+      graphicJobs.length > 0
+        ? graphicJobs.map(j => j.recordPrompt)
+        : jobs.map(j => j.passes.map(p => p.prompt).join("\n\n--- pass ---\n\n"))
 
     // ── Neon user ──
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
@@ -400,42 +549,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Pure generation (no image input) for "none" passes — carousel detail and text-only
-    // slides. No selfie attached means her face physically cannot appear or drift there.
-    const runGenerate = async (promptText: string): Promise<Buffer> => {
-      const response = await openai.images.generate({
-        model: OPENAI_IMAGE_MODEL,
-        prompt: promptText,
-        n: 1,
-        size,
-        quality: IMAGE_QUALITY,
-        output_format: "png",
-      } as any)
-      const b64 = response.data?.[0]?.b64_json
-      if (!b64) throw new Error("No image data returned from OpenAI")
-      return Buffer.from(b64, "base64")
-    }
-
-    const runGenerateWithRetry = async (promptText: string): Promise<Buffer> => {
-      try {
-        return await runGenerate(promptText)
-      } catch (firstError) {
-        if (isContentPolicyError(firstError)) {
-          return await runGenerate(sanitizePromptForModeration(promptText))
-        }
-        throw firstError
-      }
-    }
-
     // Run one image JOB end to end. Each pass draws its input from its source: the selfie (Mode
-    // A/B concept), a retired base image path, the prior pass's output, or nothing at all.
+    // A/B concept), a retired base image path, or the prior pass's output.
     const runJob = async (job: (typeof jobs)[number]): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
-        if (pass.input === "none") {
-          current = await runGenerateWithRetry(pass.prompt)
-          continue
-        }
         const images =
           pass.input === "selfie"
             ? selfieFiles
@@ -506,7 +624,7 @@ export async function POST(request: NextRequest) {
     // One streaming pass: partial frames go to onPartial as they form; resolves the final image.
     const runStreamingPass = async (
       promptText: string,
-      images: Awaited<ReturnType<typeof toFile>>[] | null,
+      images: Awaited<ReturnType<typeof toFile>>[],
       onPartial: (b64: string) => void
     ): Promise<Buffer> => {
       const base: Record<string, unknown> = {
@@ -519,13 +637,11 @@ export async function POST(request: NextRequest) {
         stream: true,
         partial_images: 2,
       }
-      if (images && OPENAI_IMAGE_MODEL !== "gpt-image-2") base.input_fidelity = "high"
-      const events = images
-        ? await openai.images.edit({
-            ...base,
-            image: images.length === 1 ? images[0] : images,
-          } as any)
-        : await openai.images.generate(base as any)
+      if (OPENAI_IMAGE_MODEL !== "gpt-image-2") base.input_fidelity = "high"
+      const events = await openai.images.edit({
+        ...base,
+        image: images.length === 1 ? images[0] : images,
+      } as any)
       let final: Buffer | null = null
       for await (const event of events as unknown as AsyncIterable<{
         type?: string
@@ -541,7 +657,7 @@ export async function POST(request: NextRequest) {
 
     const runStreamingPassWithRetry = async (
       promptText: string,
-      images: Awaited<ReturnType<typeof toFile>>[] | null,
+      images: Awaited<ReturnType<typeof toFile>>[],
       onPartial: (b64: string) => void
     ): Promise<Buffer> => {
       try {
@@ -569,18 +685,14 @@ export async function POST(request: NextRequest) {
             for (let pi = 0; pi < job.passes.length; pi++) {
               const pass = job.passes[pi]
               const isFinal = pi === job.passes.length - 1
-              const images: Awaited<ReturnType<typeof toFile>>[] | null =
-                pass.input === "none"
-                  ? null
-                  : pass.input === "selfie"
-                    ? selfieFiles
-                    : pass.input === "base"
-                      ? baseFiles
-                      : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
+              const images: Awaited<ReturnType<typeof toFile>>[] =
+                pass.input === "selfie"
+                  ? selfieFiles
+                  : pass.input === "base"
+                    ? baseFiles
+                    : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
               if (!isFinal) {
-                current = images
-                  ? await runEditWithRetry(pass.prompt, images)
-                  : await runGenerateWithRetry(pass.prompt)
+                current = await runEditWithRetry(pass.prompt, images)
                 continue
               }
               current = await runStreamingPassWithRetry(pass.prompt, images, b64 =>
@@ -635,7 +747,25 @@ export async function POST(request: NextRequest) {
     // ── Generate every image (jobs run in parallel; passes within a job run sequentially) ──
     let buffers: Buffer[]
     try {
-      buffers = await Promise.all(jobs.map(j => runJob(j)))
+      if (graphicJobs.length > 0) {
+        if (!graphicStyle) throw new Error("Missing style reference for graphic generation")
+        buffers = await Promise.all(
+          graphicJobs.map(async job => {
+            const result = await redesignContentSlideToBuffer({
+              referenceUrl: job.referenceUrl,
+              styleReferenceUrl: graphicStyle.imageUrl,
+              styleLabel: graphicStyle.label,
+              category: job.category,
+              topic: job.topic,
+              slide: job.slide,
+              referenceMode: "identity-scene",
+            })
+            return result.buffer
+          })
+        )
+      } else {
+        buffers = await Promise.all(jobs.map(j => runJob(j)))
+      }
     } catch (genError) {
       await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(
         () => {}

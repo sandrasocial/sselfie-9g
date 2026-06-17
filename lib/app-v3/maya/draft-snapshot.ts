@@ -1,6 +1,12 @@
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 
-export type ServerOutputFormat = "photo" | "reel-cover" | "carousel" | "story-slide" | "video"
+export type ServerOutputFormat =
+  | "photo"
+  | "photoshoot"
+  | "reel-cover"
+  | "carousel"
+  | "story-slide"
+  | "video"
 
 export type ServerAestheticSnapshot = {
   id: string
@@ -40,7 +46,14 @@ export type ServerMayaDraftSnapshot = {
   setupOpen: boolean
 }
 
-const VALID_FORMATS: ServerOutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
+const VALID_FORMATS: ServerOutputFormat[] = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+  "video",
+]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 function nowish(value: unknown): value is number {

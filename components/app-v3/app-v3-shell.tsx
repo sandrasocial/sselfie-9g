@@ -54,6 +54,7 @@ const MAYA_GENERAL: Aesthetic = {
 
 const FORMAT_LABEL: Record<OutputFormat, string> = {
   photo: "photo",
+  photoshoot: "photoshoot",
   "reel-cover": "Reel cover",
   carousel: "carousel",
   "story-slide": "Story slide",

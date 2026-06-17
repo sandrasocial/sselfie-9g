@@ -79,6 +79,7 @@ function deriveTitle(msgs: any[]): string | null {
 
 const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "photo", label: "Photo" },
+  { id: "photoshoot", label: "Photoshoot" },
   { id: "reel-cover", label: "Reel cover" },
   { id: "carousel", label: "Carousel" },
   { id: "story-slide", label: "Story slide" },
@@ -88,6 +89,7 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
 // Tapping a format is the first guided step: it asks Maya (in natural words) to pull directions.
 const FORMAT_PHRASE: Record<OutputFormat, string> = {
   photo: "Let's create photos.",
+  photoshoot: "Let's create a full photoshoot.",
   "reel-cover": "Let's make a Reel cover.",
   carousel: "Let's make a carousel.",
   "story-slide": "Let's make a Story slide.",
@@ -100,6 +102,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 // Sandra-approved short openers (2026-06-11): two lines max before anything happens.
 const FORMAT_OPENER: Record<OutputFormat, string> = {
   photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
+  photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
   "reel-cover": "Tell me what your reel's about and I'll design the cover.",
   carousel: "Give me the topic and I'll build slides that feel like you.",
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
@@ -108,6 +111,8 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
     "Your selfie's in, and your face stays yours. Hit create and pick the direction that feels most like you.",
+  photoshoot:
+    "Your selfie's in, and your face stays yours. Hit create and I'll build the full shoot plan.",
   "reel-cover":
     "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
   carousel: "Your selfie's in, and your face stays yours. Hit create, then give me the topic.",
@@ -119,6 +124,7 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
 // so the customer never has to type to move forward.
 const CTA_LABEL: Record<OutputFormat, string> = {
   photo: "Create my photo directions",
+  photoshoot: "Create my shoot plan",
   "reel-cover": "Create my cover directions",
   carousel: "Create my carousel directions",
   "story-slide": "Create my story directions",
@@ -900,6 +906,70 @@ export function MayaConcierge({
     }
   }
 
+  async function generatePhotoshootSet(key: string, concepts: ConceptCardData[]) {
+    if (!referenceSelfieUrl) {
+      setGenState(s => ({
+        ...s,
+        [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
+      }))
+      return
+    }
+    const shootConcepts = concepts.slice(0, 9)
+    if (shootConcepts.length < 6) {
+      setGenState(s => ({
+        ...s,
+        [key]: { status: "error", error: "Ask Maya for a fuller shoot plan first." },
+      }))
+      return
+    }
+    setGenState(s => ({ ...s, [key]: { status: "generating" } }))
+    try {
+      const res = await fetch("/api/app-v3/maya/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brief: shootConcepts[0].brief,
+          shootBriefs: shootConcepts.map(concept => concept.brief),
+          format: "photoshoot",
+          referenceSelfieUrl,
+          referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          aestheticId: aesthetic.id,
+          conceptTitle: "Full photoshoot",
+          stream: false,
+        }),
+      })
+      const data = (await res.json().catch(() => null)) as {
+        imageUrl?: string
+        imageUrls?: string[]
+        error?: string
+        code?: string
+        current?: number
+      } | null
+      if (res.status === 402 || data?.code === "insufficient_credits") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setCreditModal({
+          open: true,
+          balance: typeof data?.current === "number" ? data.current : null,
+        })
+        return
+      }
+      const urls =
+        Array.isArray(data?.imageUrls) && data.imageUrls.length > 0
+          ? data.imageUrls
+          : data?.imageUrl
+            ? [data.imageUrl]
+            : []
+      if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
+      setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
+      setGeneratedOnce(true)
+    } catch (e) {
+      setGenState(s => ({
+        ...s,
+        [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
+      }))
+    }
+  }
+
   const hasStarted = messages.length > 0
   // Are Maya's direction cards already on screen? Drives the loading-vs-typing copy.
   const hasConcepts = messages.some(
@@ -1516,7 +1586,79 @@ export function MayaConcierge({
                   </div>
                 )}
 
-                {conceptPart && conceptPart.length > 0 && (
+                {conceptPart && conceptPart.length > 0 && format === "photoshoot" && (
+                  <div className="min-w-0 max-w-full space-y-3 rounded-[8px] border border-[#D8D4CE] bg-white p-4 [overflow-x:clip]">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
+                        Full photoshoot
+                      </p>
+                      <p className="mt-1 text-[15px] leading-relaxed text-[#282728]">
+                        One cohesive set · {conceptPart.length} shots · one look, varied angles.
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {conceptPart.slice(0, 9).map((concept, index) => (
+                        <div
+                          key={concept.id}
+                          className="min-w-0 rounded-[6px] bg-[#F7F4EF] px-3 py-2"
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.16em] text-[#8B8178]">
+                            {String(index + 1).padStart(2, "0")} ·{" "}
+                            {concept.brief.shotRole?.replaceAll("-", " ") || "shot"}
+                          </p>
+                          <p className="mt-1 truncate text-[13px] text-[#282728]">
+                            {concept.title}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {(() => {
+                      const key = `${m.id}:photoshoot-set`
+                      const gen = genState[key] ?? { status: "idle" as const }
+                      const urls = gen.imageUrls ?? []
+                      return (
+                        <div className="space-y-3">
+                          {urls.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setLightbox({ images: urls })}
+                              className="grid w-full grid-cols-3 gap-2 text-left"
+                            >
+                              {urls.slice(0, 6).map((url, index) => (
+                                <img
+                                  key={`${url}-${index}`}
+                                  src={url}
+                                  alt=""
+                                  className="aspect-[4/5] w-full rounded-[6px] object-cover"
+                                />
+                              ))}
+                            </button>
+                          )}
+                          {gen.status === "error" && (
+                            <p className="text-[13px] text-[#8A3B2E]">{gen.error}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void generatePhotoshootSet(key, conceptPart)}
+                            disabled={
+                              gen.status === "generating" ||
+                              !referenceSelfieUrl
+                            }
+                            className="inline-flex min-h-11 items-center rounded-full bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {gen.status === "generating"
+                              ? "Creating shoot..."
+                              : urls.length > 0
+                                ? "Create another set"
+                                : "Create full photoshoot"}
+                          </button>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {conceptPart && conceptPart.length > 0 && format !== "photoshoot" && (
                   <div className="min-w-0 max-w-full space-y-3 [overflow-x:clip]">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
                       Choose your direction

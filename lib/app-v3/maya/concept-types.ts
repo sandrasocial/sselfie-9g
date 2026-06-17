@@ -5,6 +5,7 @@
 
 import type { OutputFormat } from "@/components/app-v3/types"
 import type { CreativePlan, CreativeUseCase } from "@/lib/app-v3/maya/creative-plan"
+import type { ShootShotRole } from "@/lib/content-kit/types"
 
 /**
  * The structured creative brief Maya produces for ONE concept.
@@ -25,6 +26,8 @@ export interface CreativeBrief {
   cameraSpec: string
   /** 4 — Named lighting setup, e.g. "soft north-facing window light, gentle falloff". */
   lighting: string
+  /** Optional full-shoot role. Required when Maya is planning a cohesive 6-9 shot photoshoot. */
+  shotRole?: ShootShotRole
   /** Optional on-image graphic direction for non-photo formats. */
   graphic?: ConceptGraphicSpec
 }
@@ -59,15 +62,12 @@ export interface ConceptGraphicSpec {
     mood?: string
     reason?: string
   }[]
-  /** Per-slide copy for carousels (one entry per slide). `visual` picks the slide type
-   *  (identity = she appears; detail = a grounded close-up or scene detail when it explains the point;
-   *  text-only = designed typographic slide). `detailSubject` grounds detail slides. */
+  /** Per-slide copy for carousels (one entry per slide). Customer slides are always real-image
+   *  redesigns featuring the person or a real reference frame, with text baked into the image. */
   slides?: {
     heading: string
     body?: string
     role?: "hook" | "value" | "cta"
-    visual?: "identity" | "detail" | "text-only"
-    detailSubject?: string
     /** Why this slide exists in the carousel arc. */
     purpose?: string
     /** Slide-specific visual idea before image generation. */

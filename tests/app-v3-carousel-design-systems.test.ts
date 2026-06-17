@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from "vitest"
 import {
+  buildGraphicRedesignSlides,
   compileConceptJobs,
   MAX_CAROUSEL_SLIDES,
   validateCustomerCarouselBrief,
@@ -23,10 +24,10 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
   it("keeps all customer carousel slides grounded in the selfie reference", () => {
     const jobs = compileConceptJobs(
       baseBrief([
-        { heading: "Hook", visual: "identity" },
-        { heading: "Value 1", visual: "detail", detailSubject: "cappuccino beside her phone" },
-        { heading: "Value 2", visual: "text-only" },
-        { heading: "Save this", role: "cta", visual: "text-only" },
+        { heading: "Hook" },
+        { heading: "Value 1" },
+        { heading: "Value 2" },
+        { heading: "Save this", role: "cta" },
       ]),
       "carousel",
     )
@@ -39,10 +40,10 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
   it("does not cap identity slides out of longer educational carousels", () => {
     const jobs = compileConceptJobs(
       baseBrief([
-        { heading: "S1", visual: "identity" },
-        { heading: "S2", visual: "identity" },
-        { heading: "S3", visual: "identity" },
-        { heading: "S4", visual: "identity" },
+        { heading: "S1" },
+        { heading: "S2" },
+        { heading: "S3" },
+        { heading: "S4" },
       ]),
       "carousel",
     )
@@ -67,11 +68,10 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
   it("passes slide-specific creative planning into the image prompts", () => {
     const jobs = compileConceptJobs(
       baseBrief([
-        { heading: "Hook", visual: "identity" },
+        { heading: "Hook" },
         {
           heading: "The 3 rules",
           body: "Keep your face. Keep your age. Keep your energy.",
-          visual: "text-only",
           purpose: "make the rule easy to save",
           visualConcept: "editorial note beside a mirror selfie",
           imagePrompt: "same woman, mirror, handwritten note, soft window light",
@@ -79,8 +79,6 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
         },
         {
           heading: "Start here",
-          visual: "detail",
-          detailSubject: "an open notebook with a pen",
           purpose: "show the first action",
           visualConcept: "hands planning beside a phone",
           imagePrompt: "same woman, hands, phone, notebook, marble cafe table",
@@ -90,24 +88,23 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       "carousel",
     )
     const textPrompt = jobs[1].passes[0].prompt
-    const detailPrompt = jobs[2].passes[0].prompt
-    for (const p of [textPrompt, detailPrompt]) {
+    const actionPrompt = jobs[2].passes[0].prompt
+    for (const p of [textPrompt, actionPrompt]) {
       expect(p).toContain("Slide-specific creative plan")
       expect(p).toContain("same woman")
     }
     expect(textPrompt).toContain('"The 3 rules"')
     expect(textPrompt).toContain("Keep your face. Keep your age. Keep your energy.")
     expect(textPrompt).toContain("editorial note beside a mirror selfie")
-    expect(detailPrompt).toContain("an open notebook with a pen")
-    expect(detailPrompt).toContain("hands planning beside a phone")
+    expect(actionPrompt).toContain("hands planning beside a phone")
   })
 
   it("shares one design system DNA across every slide for cohesion", () => {
     const jobs = compileConceptJobs(
       baseBrief([
-        { heading: "Hook", visual: "identity" },
-        { heading: "V1", visual: "detail" },
-        { heading: "CTA", visual: "text-only" },
+        { heading: "Hook" },
+        { heading: "V1" },
+        { heading: "CTA" },
       ]),
       "carousel",
     )
@@ -135,6 +132,29 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
     }))
     const jobs = compileConceptJobs(baseBrief(slides), "carousel")
     expect(jobs).toHaveLength(9)
+  })
+
+  it("converts customer carousel briefs into redesign-engine slides", () => {
+    const slides = buildGraphicRedesignSlides(
+      baseBrief([
+        {
+          heading: "Style 1",
+          purpose: "show the first Vault style",
+          visualConcept: "same woman in a marble cafe world",
+          imagePrompt: "same woman, marble cafe, soft morning light",
+          visualReason: "the marble setting matches the style",
+        },
+      ]),
+      "carousel",
+      "5 AI photo styles you already own"
+    )
+    expect(slides[0]).toMatchObject({
+      kind: "hook",
+      title: "Style 1",
+      purpose: "show the first Vault style",
+      visualConcept: "same woman in a marble cafe world",
+      imagePromptDirection: "same woman, marble cafe, soft morning light",
+    })
   })
 
   it("rejects a thin customer carousel plan before rendering", () => {

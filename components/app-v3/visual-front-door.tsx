@@ -25,6 +25,7 @@ const MAYA_BLANK: Aesthetic = {
 
 const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] = [
   { format: "photo", label: "Photo", line: "One AI-ready selfie into a shot you can post." },
+  { format: "photoshoot", label: "Photoshoot", line: "A cohesive set in one world." },
   { format: "reel-cover", label: "Reel cover", line: "A clear cover for the idea you are sharing." },
   { format: "carousel", label: "Carousel", line: "Teach something useful in a simple slide flow." },
   { format: "story-slide", label: "Story", line: "A quick story frame for a poll, offer, or reminder." },
@@ -225,7 +226,7 @@ export function VisualFrontDoor({
                 image={formatImage}
                 eyebrow="Not sure yet"
                 title="Choose the format first."
-                body="Pick photo, cover, carousel, story, or video. Maya will ask only what she needs."
+                body="Pick photo, photoshoot, cover, carousel, story, or video. Maya will ask only what she needs."
                 action="Pick a format"
                 onClick={() => openWithAesthetic(MAYA_BLANK)}
               />

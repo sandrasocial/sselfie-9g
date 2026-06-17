@@ -5,7 +5,7 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, callContentKitVision } from "@/lib/content-kit/llm"
-import type { Shoot, ShootMessage, ShootShot } from "@/lib/content-kit/types"
+import type { Shoot, ShootMessage, ShootShot, ShootShotRole } from "@/lib/content-kit/types"
 import { ensureVaultCollectionsSchema } from "@/lib/vault/published-collections"
 import {
   audienceBlock,
@@ -23,6 +23,18 @@ import {
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const PORTRAIT_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
 const DEFAULT_SHOTS_PER_SHOOT = 6
+const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
+  "establishing-full-body",
+  "movement-lifestyle-action",
+  "seated-hero",
+  "profile",
+  "close-portrait",
+  "true-detail",
+]
+const SHOT_ROLES = new Set<ShootShotRole>([
+  ...SHOT_ROLE_SEQUENCE,
+  "cover-safe-hero",
+])
 
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
@@ -54,6 +66,32 @@ function buildImageSafetyGuard(): string {
     "If a style reference or written prompt implies revealing clothing, translate it into a covered editorial outfit with the same color, light, mood and location.",
     "No swimwear, lingerie, cleavage, sheer fabric, erotic posing, nudity, exposed torso or sexualized styling.",
   ].join(" ")
+}
+
+function shotRoleInstruction(role?: ShootShotRole): string {
+  switch (role) {
+    case "establishing-full-body":
+      return "Shot role: establishing full-body. Show the full outfit, full body, natural proportions, and enough location context to establish the shoot world."
+    case "movement-lifestyle-action":
+      return "Shot role: movement/lifestyle action. Capture her in a candid useful action, with natural motion and a distinct pose from the other shots."
+    case "seated-hero":
+      return "Shot role: seated hero. Strong seated or leaning hero frame, face clear, outfit visible, calm confident posture."
+    case "profile":
+      return "Shot role: profile. Use a true side profile or three-quarter profile angle, not another front-facing portrait."
+    case "close-portrait":
+      return "Shot role: close portrait. Crop tighter around face and upper torso, natural skin texture, clear eyes, no plastic retouching."
+    case "cover-safe-hero":
+      return "Shot role: cover-safe hero. Leave clean negative space for text while keeping face, outfit, and mood strong."
+    case "true-detail":
+      return "Shot role: true detail. Do NOT show her full face or full body. Focus on hands, fabric, jewelry, coffee, phone, table texture, bag, shoes, or an outfit detail from the same shoot world."
+    default:
+      return ""
+  }
+}
+
+function normalizeShotRole(value: unknown, index: number): ShootShotRole {
+  const role = String(value || "").trim() as ShootShotRole
+  return SHOT_ROLES.has(role) ? role : SHOT_ROLE_SEQUENCE[index % SHOT_ROLE_SEQUENCE.length]
 }
 
 function sanitizePromptForImageSafety(prompt: string): string {
@@ -167,6 +205,7 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
   "title": "Collection name, 2-4 words, editorial (e.g. 'Quiet Luxury London')",
   "shots": [
     {
+      "shotRole": "one of: establishing-full-body, movement-lifestyle-action, seated-hero, profile, close-portrait, cover-safe-hero, true-detail",
       "title": "Collection Name · Shot Name",
       "whenToUse": "1-2 sentences in Sandra's voice: where to post it, what caption energy.",
       "mood": "five · dot · separated · lowercase · tags",
@@ -191,7 +230,11 @@ ${audienceBlock()}
 PROOF CONTEXT FOR SHOT UTILITY ONLY:
 ${proofBlock()}
 
-Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile/detail crops, seated hero, close-up, and cover-safe negative space. Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
+Choose one generation-safe outfit up front and keep it consistent. Avoid risky terms that later need rewriting: no halter dress, open back, deep V, sheer fabric, cleavage, exposed torso, swimwear, lingerie or mid-thigh styling. Use covered editorial fashion with the same color, light, mood, location and style.
+
+Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile, seated hero, close-up, cover-safe negative space, and exactly 1-2 true-detail shots. Assign shotRole on every shot. A true-detail shot is faceless: hands, fabric, jewelry, coffee, phone, table texture, bag, shoes, or an outfit/setting detail from the same world.
+
+Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
 ${SHOOT_JSON_CONTRACT}`
 }
@@ -211,17 +254,43 @@ function sanitizeShots(
 ): Omit<ShootShot, "id" | "status">[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned no shots")
   if (raw.length < limit) throw new Error(`LLM returned ${raw.length} shots, expected ${limit}`)
-  return raw.slice(0, limit).map(shot => {
+  const shots = raw.slice(0, limit).map((shot, index) => {
     if (typeof shot?.prompt !== "string" || shot.prompt.trim().length < 200) {
       throw new Error("LLM returned an incomplete shot prompt")
     }
     return {
+      shotRole: normalizeShotRole(shot.shotRole, index),
       title: stripEmDashes(String(shot.title || "Untitled shot")).trim(),
       whenToUse: stripEmDashes(String(shot.whenToUse || "")).trim(),
       mood: stripEmDashes(String(shot.mood || "")).trim(),
       prompt: stripEmDashes(shot.prompt).trim(),
     }
   })
+  validateShotSet(shots)
+  return shots
+}
+
+function validateShotSet(shots: Array<Pick<ShootShot, "shotRole" | "prompt" | "title">>) {
+  const roles = shots.map(shot => shot.shotRole)
+  const uniqueRoles = new Set(roles)
+  if (shots.length >= DEFAULT_SHOTS_PER_SHOOT && uniqueRoles.size < 4) {
+    throw new Error("Shoot plan is too repetitive: expected at least 4 distinct shot roles")
+  }
+  const detailCount = roles.filter(role => role === "true-detail").length
+  if (detailCount < 1 || detailCount > 2) {
+    throw new Error(`Shoot plan must include 1-2 true-detail shots, got ${detailCount}`)
+  }
+  const normalizedPrompts = shots.map(shot =>
+    stripEmDashes(shot.prompt)
+      .toLowerCase()
+      .replace(/\b(shot|image|create|the|a|an|and|with|of|in|on|for|to)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180)
+  )
+  if (new Set(normalizedPrompts).size < Math.min(shots.length, 4)) {
+    throw new Error("Shoot plan is too repetitive: prompts are not distinct enough")
+  }
 }
 
 function toPromptShot({ imageUrl: _imageUrl, status: _status, ...rest }: ShootShot) {
@@ -236,6 +305,7 @@ export async function generateShotImage(input: {
   selfieUrls: string[]
   inspirationUrls: string[]
   prompt: string
+  shotRole?: ShootShotRole
   quality: ImgQuality
 }): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY
@@ -254,7 +324,11 @@ export async function generateShotImage(input: {
     )
   )
 
-  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${sanitizePromptForImageSafety(input.prompt)}\n\n${buildIdentityGuard(selfieUrls.length)}`
+  const sanitizedPrompt = sanitizePromptForImageSafety(input.prompt)
+  if (sanitizedPrompt !== input.prompt) {
+    console.warn("[shoot-studio] safety sanitizer changed a shot prompt; planner should avoid risky outfit/body terms upstream")
+  }
+  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${shotRoleInstruction(input.shotRole)}\n\n${sanitizedPrompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
@@ -378,13 +452,32 @@ export async function createShoot(input: {
   const selfieUrls = input.selfieUrls.filter(isAllowedUrl).slice(0, 4)
   if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
 
-  const raw = await callContentKitVision(
-    buildCreatePrompt(input.notes?.trim() || undefined),
-    inspirationUrls
-  )
-  const parsed = extractJsonObject(raw)
+  let parsed: any = null
+  let drafts: Omit<ShootShot, "id" | "status">[] = []
+  let lastPlanError: unknown = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const retryNote =
+      attempt === 0
+        ? input.notes?.trim() || undefined
+        : [
+            input.notes?.trim(),
+            "Re-plan the shoot. The previous version failed validation. Use distinct shotRole values, exactly 1-2 true-detail shots, and avoid repeating the same pose/background.",
+          ]
+            .filter(Boolean)
+            .join("\n")
+    const raw = await callContentKitVision(buildCreatePrompt(retryNote), inspirationUrls)
+    parsed = extractJsonObject(raw)
+    try {
+      drafts = sanitizeShots(parsed.shots)
+      lastPlanError = null
+      break
+    } catch (error) {
+      lastPlanError = error
+      console.warn("[shoot-studio] shoot plan failed validation:", error)
+    }
+  }
+  if (lastPlanError) throw lastPlanError
   const title = stripEmDashes(String(parsed.title || "Untitled shoot")).trim()
-  const drafts = sanitizeShots(parsed.shots)
 
   const shots: ShootShot[] = drafts.map((shot, i) => ({
     ...shot,
@@ -414,11 +507,12 @@ export async function createShoot(input: {
 
   // Draft pass renders medium (~82s, ~$0.06/shot). Finals re-roll high per shot.
   const results = await Promise.allSettled(
-    shoot.shots.map(shot =>
+    shoot.shots.map((shot, index) =>
       generateShotImage({
         selfieUrls: shoot.selfieUrls,
         inspirationUrls,
         prompt: shot.prompt,
+        shotRole: normalizeShotRole(shot.shotRole, index),
         quality: "medium",
       })
     )
@@ -509,6 +603,7 @@ ${REFINE_CONTRACT}`
         selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: nextShots[i].prompt,
+        shotRole: normalizeShotRole(nextShots[i].shotRole, i),
         quality: "medium",
       })
     )
@@ -537,14 +632,17 @@ export async function regenerateShot(
   const idx = shoot.shots.findIndex(shot => shot.id === shotId)
   if (idx === -1) throw new Error("Shot not found")
 
+  const shotRole = normalizeShotRole(shoot.shots[idx].shotRole, idx)
   const imageUrl = await generateShotImage({
     selfieUrls: shoot.selfieUrls,
     inspirationUrls: shoot.inspirationUrls,
     prompt: shoot.shots[idx].prompt,
+    shotRole,
     quality,
   })
   shoot.shots[idx] = {
     ...shoot.shots[idx],
+    shotRole,
     imageUrl,
     status: quality === "high" ? shoot.shots[idx].status : "draft",
   }
@@ -605,6 +703,7 @@ Exactly ${safeCount} new shots.`
         selfieUrls: shoot.selfieUrls,
         inspirationUrls: shoot.inspirationUrls,
         prompt: shot.prompt,
+        shotRole: shot.shotRole,
         quality: "medium",
       })
     )

@@ -12,7 +12,14 @@ export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
 export const MAYA_DRAFT_STORAGE_KEY = "sselfie.appV3.mayaDraft.v1"
 
 const VALID_SECTIONS: AppV3Section[] = ["create", "photos", "content", "library", "account"]
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
+const VALID_FORMATS: OutputFormat[] = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+  "video",
+]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 export type ConciergeSnapshot = {

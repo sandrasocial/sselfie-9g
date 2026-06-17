@@ -11,6 +11,7 @@ const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
 const STORY_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
 
 export type StyleReferenceCategory = "tutorial" | "photoshoot-carousel" | "story-sequence"
+export type RedesignReferenceMode = "preserve-frame" | "identity-scene"
 
 type StyleReference = {
   imageUrl: string
@@ -56,20 +57,36 @@ function slideText(slide: CarouselSlide): string {
   return parts.filter(Boolean).join("\n")
 }
 
+function slidePlan(slide: CarouselSlide): string {
+  const parts = [
+    slide.purpose ? `Slide purpose: ${slide.purpose}` : "",
+    slide.visualConcept ? `Visual concept: ${slide.visualConcept}` : "",
+    slide.imagePromptDirection ? `Image direction: ${slide.imagePromptDirection}` : "",
+    slide.referenceImageStrategy ? `Reference strategy: ${slide.referenceImageStrategy}` : "",
+    slide.visualReason ? `Why this visual matches: ${slide.visualReason}` : "",
+    slide.textSafeArea ? `Text-safe area: ${slide.textSafeArea}` : "",
+  ]
+  return parts.filter(Boolean).join("\n")
+}
+
 function promptForSlide({
   slide,
   category,
   topic,
   styleLabel,
+  referenceMode,
 }: {
   slide: CarouselSlide
   category: StyleReferenceCategory
   topic: string
   styleLabel?: string | null
+  referenceMode?: RedesignReferenceMode
 }) {
   const tutorialGrounding =
     category === "tutorial"
       ? "The FIRST reference image is the real reel frame. Preserve its meaning exactly: if it is a phone camera screenshot, keep the UI values, controls, settings labels, sliders and visual instruction truthful. You may restage it as a phone screen inside an editorial scene, but do not invent different settings or change the teaching point."
+      : referenceMode === "identity-scene"
+        ? "The FIRST reference image is the identity reference. Preserve the person's face, age, skin texture, hair, body proportions and recognizable energy. Do not copy a plain selfie background unless the slide explicitly asks for it. Build a new slide-specific editorial scene from the visual concept and image direction."
       : "The FIRST reference image is the visual base. Preserve the important subject, identity cues, mood and meaning while redesigning the slide."
 
   return `Create one finished SSELFIE editorial slide.
@@ -86,6 +103,9 @@ Match the SECOND reference image's style: premium editorial, quiet luxury, elega
 Render the slide text inside the image, integrated into the scene:
 ${slideText(slide)}
 
+Slide-specific creative plan:
+${slidePlan(slide) || "Use the slide title/body as the creative direction, and make the image meaning match the copy."}
+
 Rules:
 - Render all text spelled exactly as written.
 - No extra words, placeholder letters, random UI labels, logos, emoji, green checks, neon, bright red, chunky social captions, or black-outlined text.
@@ -101,6 +121,7 @@ export async function redesignContentSlide({
   category,
   topic,
   slide,
+  referenceMode,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -108,7 +129,46 @@ export async function redesignContentSlide({
   category: StyleReferenceCategory
   topic: string
   slide: CarouselSlide
+  referenceMode?: RedesignReferenceMode
 }): Promise<string> {
+  const { buffer } = await redesignContentSlideToBuffer({
+    referenceUrl,
+    styleReferenceUrl,
+    styleLabel,
+    category,
+    topic,
+    slide,
+    referenceMode,
+  })
+
+  const blob = await put(
+    `content-kit/styled-slides/${Date.now()}-${Math.floor(Math.random() * 1e6)}.png`,
+    buffer,
+    {
+      access: "public",
+      contentType: "image/png",
+    }
+  )
+  return blob.url
+}
+
+export async function redesignContentSlideToBuffer({
+  referenceUrl,
+  styleReferenceUrl,
+  styleLabel,
+  category,
+  topic,
+  slide,
+  referenceMode,
+}: {
+  referenceUrl: string
+  styleReferenceUrl: string
+  styleLabel?: string | null
+  category: StyleReferenceCategory
+  topic: string
+  slide: CarouselSlide
+  referenceMode?: RedesignReferenceMode
+}): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
 
@@ -120,7 +180,7 @@ export async function redesignContentSlide({
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files,
-    prompt: promptForSlide({ slide, category, topic, styleLabel }),
+    prompt: promptForSlide({ slide, category, topic, styleLabel, referenceMode }),
     n: 1,
     size: category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE,
     quality: "high",
@@ -132,13 +192,8 @@ export async function redesignContentSlide({
   const b64 = response.data?.[0]?.b64_json
   if (!b64) throw new Error("No image data returned from OpenAI")
 
-  const blob = await put(
-    `content-kit/styled-slides/${Date.now()}-${Math.floor(Math.random() * 1e6)}.png`,
-    Buffer.from(b64, "base64"),
-    {
-      access: "public",
-      contentType: "image/png",
-    }
-  )
-  return blob.url
+  return {
+    buffer: Buffer.from(b64, "base64"),
+    prompt: String(editInput.prompt),
+  }
 }

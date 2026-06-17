@@ -25,7 +25,23 @@ import { NextResponse } from "next/server"
 
 export const maxDuration = 300
 
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide", "video"]
+const VALID_FORMATS: OutputFormat[] = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+  "video",
+]
+const SHOOT_SHOT_ROLES = [
+  "establishing-full-body",
+  "movement-lifestyle-action",
+  "seated-hero",
+  "profile",
+  "close-portrait",
+  "cover-safe-hero",
+  "true-detail",
+] as const
 
 // Concept turns are token-heavy: Maya's prose + an emit_concepts call with 3 full briefs (and,
 // for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
@@ -195,19 +211,6 @@ const graphicSpec = z
           heading: z.string(),
           body: z.string().optional(),
           role: z.enum(["hook", "value", "cta"]).optional(),
-          visual: z
-            .enum(["identity", "detail", "text-only"])
-            .optional()
-            .describe(
-              "Slide type: identity = she appears, detail = object shot from her world, " +
-                "text-only = designed typographic slide. The image model bakes the finished slide."
-            ),
-          detailSubject: z
-            .string()
-            .optional()
-            .describe(
-              'For detail slides: the concrete subject, e.g. "cappuccino on a marble table beside her phone".'
-            ),
           purpose: z.string().optional().describe("Why this slide exists in the carousel arc."),
           visualConcept: z
             .string()
@@ -260,6 +263,10 @@ const conceptSchema = z.object({
     pose: z.string().describe("One simple, natural pose — a real moment."),
     cameraSpec: z.string().describe("A NAMED camera body + lens matched to the positioning."),
     lighting: z.string().describe("A NAMED lighting setup, not 'soft light'."),
+    shotRole: z
+      .enum(SHOOT_SHOT_ROLES)
+      .optional()
+      .describe("Required for full photoshoot/series requests: the structural shot role."),
     graphic: graphicSpec,
   }),
 })
@@ -269,7 +276,7 @@ const emitConcepts = tool({
     "Present photo/graphic concept directions sized to her ask: 3 distinct directions by default, " +
     "1-2 when she described one specific photo, and 6-9 cohesive shots when she asked for a full shoot. " +
     "Call this once you understand what they want. Each concept's brief must be production-grade with " +
-    "exact brand names, a named camera body, and named lighting.",
+    "exact brand names, a named camera body, named lighting, and shotRole when it is a full shoot.",
   inputSchema: z.object({
     concepts: z
       .array(conceptSchema)
@@ -296,7 +303,7 @@ const setFormat = tool({
     "short line and do not present concepts in the same turn.",
   inputSchema: z.object({
     format: z
-      .enum(["photo", "reel-cover", "carousel", "story-slide", "video"])
+      .enum(["photo", "photoshoot", "reel-cover", "carousel", "story-slide", "video"])
       .describe("The format she asked for."),
   }),
   execute: async input => input,

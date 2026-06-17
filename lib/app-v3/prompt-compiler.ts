@@ -5,6 +5,7 @@
 
 import type { GraphicTextSpec, OutputFormat } from "@/components/app-v3/types"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
+import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import {
   IDENTITY_ANCHOR,
   REALISM_TOKENS,
@@ -22,9 +23,7 @@ import {
 import { getVaultSignatureDna } from "@/lib/app-v3/maya/vault-styles"
 import {
   resolveDesignSystem,
-  defaultSlideVisual,
   type CarouselDesignSystem,
-  type SlideVisual,
 } from "@/lib/app-v3/maya/carousel-design-systems"
 import {
   buildDefaultCreativePlanValidationRules,
@@ -146,12 +145,11 @@ function carouselTopicFromBrief(brief: CreativeBrief, fallbackTitle?: string): s
 
 function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativePlanOutput {
   const title = clean(slide.heading) || `Slide ${index + 1}`
-  const visualConcept = clean(slide.visualConcept) || clean(slide.detailSubject) || title
+  const visualConcept = clean(slide.visualConcept) || title
   const imagePromptDirection =
     clean(slide.imagePromptDirection) ||
     clean(slide.imagePrompt) ||
     clean(slide.visualConcept) ||
-    clean(slide.detailSubject) ||
     title
 
   return {
@@ -301,12 +299,10 @@ export type TextRenderMode = "two_pass" | "one_pass"
  * - "selfie": attach the user's selfie(s) (identity) — new-photo generation (images.edit).
  * - "prev": prior generated pass.
  * - "base": legacy only; retired local text overlays no longer call OpenAI.
- * - "none": NO image input — pure generation. Avoid for CAROUSEL-03 graphic slides unless a
- *   future workflow has no grounded reference at all.
  */
 export interface PromptPass {
   prompt: string
-  input: "selfie" | "prev" | "base" | "none"
+  input: "selfie" | "prev" | "base"
 }
 
 /** One final image. Graphic text/callouts are baked into the returned image. */
@@ -337,6 +333,27 @@ function gradeLine(opts?: CompileConceptOptions): string {
     "Color grading: refined neutral editorial palette, true-to-life skin, soft natural contrast, " +
     "gentle film grain, no heavy filter."
   )
+}
+
+function shotRoleInstruction(role?: ShootShotRole): string {
+  switch (role) {
+    case "establishing-full-body":
+      return "Shot role: establishing full-body. Show the complete outfit, full body, location context, natural proportions, and enough environment to establish the shoot world."
+    case "movement-lifestyle-action":
+      return "Shot role: movement/lifestyle action. Capture a candid mid-action moment, natural motion, hands doing something believable, not a static pose."
+    case "seated-hero":
+      return "Shot role: seated hero. A strong seated or leaning hero frame with face clear, outfit visible, and calm confident posture."
+    case "profile":
+      return "Shot role: profile. Use a true side profile or three-quarter profile angle. Face shape remains recognizable, not front-facing."
+    case "close-portrait":
+      return "Shot role: close portrait. Crop tighter around face and upper torso, natural skin texture, clear eyes, no plastic retouching."
+    case "cover-safe-hero":
+      return "Shot role: cover-safe hero. Leave clean negative space for text while keeping face, outfit, and mood strong."
+    case "true-detail":
+      return "Shot role: true detail. Do NOT show the full face or full body. Focus on hands, fabric, jewelry, coffee, phone, table texture, bag, shoes, or an outfit detail from the same shoot world. It should feel like a real photoshoot cutaway."
+    default:
+      return ""
+  }
 }
 
 /** Per-role composition guidance for where the model should integrate slide typography. */
@@ -415,6 +432,7 @@ function compilePhotoPrompt(
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
     "Hair: keep her natural hair color and texture from the reference photo.",
     ACCESSORIES_NOTE,
+    shotRoleInstruction(brief.shotRole),
     clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
     composition,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
@@ -468,10 +486,9 @@ function compileSingleGraphicPrompt(
     .join("\n")
 }
 
-// ─── MAYA-REBUILD-16: carousel design systems (per-slide visual roles) ─────────
+// ─── MAYA-REBUILD-16 / CAROUSEL-03-FIX: carousel design systems ────────────────
 // A carousel is a mini editorial design system (QA §10 + Sandra's reference grids):
-// identity, detail, and text-first slides all share one palette, type system, and
-// decoration language while staying grounded in the user's selfie.
+// every customer slide is a real image of her/reference with baked typography.
 
 /** Identity slide (input: selfie) — she appears, with text baked into the finished slide. */
 function compileCarouselIdentityPrompt(
@@ -519,68 +536,84 @@ function compileCarouselIdentityPrompt(
     .join("\n")
 }
 
-/** Detail slide: a finished object/world slide with text baked by the model. */
-function compileCarouselDetailPrompt(
-  brief: CreativeBrief,
-  system: CarouselDesignSystem,
-  text: { heading: string; body?: string },
-  subject: string | undefined,
-  slidePlan: string,
-  opts?: CompileConceptOptions
-): string {
-  const heading = clean(text.heading)
-  const body = clean(text.body)
-  const resolvedSubject =
-    clean(subject) ||
-    `a beautiful real-life detail that belongs to this scene (a coffee cup, a notebook and pen, a phone on the table, fabric, or an interior corner): ${clean(brief.setting)}`
-  return [
-    "Create a finished premium editorial scene/detail slide for an Instagram carousel (4:5), using the same woman from the reference image when it feels natural to the slide.",
-    IDENTITY_ANCHOR,
-    // SUITE-UX-02: the image must express the slide's message, not just the set's scenery —
-    // this line is what keeps the photograph and the copy telling the same story.
-    `This slide's message: "${heading}".${body ? ` Supporting line: "${body}".` : ""} Compose and style the photograph so it visually expresses that message.`,
-    `Subject: ${resolvedSubject}.`,
-    `It belongs to the same world as the rest of the set: ${clean(brief.setting)}. Mood: ${clean(brief.mood)}.`,
-    slidePlan,
-    system.detailTreatment,
-    system.setDna,
-    gradeLine(opts),
-    paletteLine(opts?.brandKit),
-    `Render this exact headline inside the image: "${heading}".`,
-    body ? `Render this exact supporting line too: "${body}".` : "",
-    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
-    "Real textures and believable light, like a beautiful phone photo, never stock-photo gloss or CGI.",
-    CAROUSEL_QUALITY,
-  ]
-    .filter(Boolean)
-    .join("\n")
+function slideKindForRole(
+  role: "hook" | "value" | "cta",
+  index: number,
+  total: number
+): CarouselSlide["kind"] {
+  if (role === "hook" || index === 0) return "hook"
+  if (role === "cta" || index === total - 1) return "cta"
+  return "photo"
 }
 
-/** Text-led slide: the model designs the full typographic slide. */
-function compileCarouselTextPrompt(
+export function buildGraphicRedesignSlides(
   brief: CreativeBrief,
-  system: CarouselDesignSystem,
-  text: { heading: string; body?: string },
-  role: "hook" | "value" | "cta",
-  slidePlan: string,
-  opts?: CompileConceptOptions
-): string {
-  const heading = clean(text.heading)
-  const body = clean(text.body)
+  format: OutputFormat,
+  conceptTitle?: string
+): CarouselSlide[] {
+  const g = brief.graphic
+
+  if (format === "carousel") {
+    const rawSlides = (g?.slides ?? []).filter(s => clean(s.heading)).slice(0, MAX_CAROUSEL_SLIDES)
+    const slides =
+      rawSlides.length > 0
+        ? rawSlides
+        : [{ heading: clean(g?.headline) || clean(conceptTitle) || "Slide 1" }]
+    const plan = buildCustomerCarouselCreativePlan(brief, conceptTitle)
+
+    return slides.map((slide, index) => {
+      const role = resolveRole(slide.role, index, slides.length)
+      const planOutput = plan.outputs[index]
+      return {
+        kind: slideKindForRole(role, index, slides.length),
+        eyebrow: role,
+        title: clean(slide.heading) || clean(planOutput?.title) || `Slide ${index + 1}`,
+        body: clean(slide.body),
+        stepNumber: role === "value" ? index : undefined,
+        purpose: clean(slide.purpose) || clean(planOutput?.purpose),
+        visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
+        imagePromptDirection:
+          clean(slide.imagePromptDirection) ||
+          clean(slide.imagePrompt) ||
+          clean(planOutput?.imagePromptDirection),
+        referenceImageStrategy:
+          clean(slide.referenceImageStrategy) || clean(planOutput?.referenceImageStrategy),
+        visualReason:
+          clean(slide.reasonThisMatchesUserIntent) ||
+          clean(slide.visualReason) ||
+          clean(planOutput?.reasonThisMatchesUserIntent),
+        textSafeArea: clean(slide.textSafeArea) || clean(planOutput?.textSafeArea),
+      }
+    })
+  }
+
+  const planOutput = g?.creativePlan?.outputs?.[0]
+  const title =
+    clean(g?.headline) ||
+    clean(planOutput?.title) ||
+    clean(conceptTitle) ||
+    (format === "reel-cover" ? "Reel cover" : "Story slide")
+  const role = resolveRole(g?.role, 0, 1)
   return [
-    "Create a finished premium editorial typographic slide for an Instagram carousel (4:5). It may include the same woman from the reference image as a subtle editorial cutout, silhouette, or photo moment when that makes the slide feel more personal.",
-    IDENTITY_ANCHOR,
-    `Render this exact ${role} headline inside the image: "${heading}".`,
-    body ? `Render this exact supporting line too: "${body}".` : "",
-    slidePlan,
-    system.textOnlyTreatment,
-    system.setDna,
-    paletteLine(opts?.brandKit),
-    "Generous quiet spacing, premium print texture, editorial typography, no white lesson card.",
-    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
+    {
+      kind: role === "cta" ? "cta" : "photo",
+      eyebrow: format === "reel-cover" ? "reel cover" : "story",
+      title,
+      body: clean(g?.subline),
+      purpose:
+        clean(planOutput?.purpose) ||
+        (format === "reel-cover" ? "make the reel topic instantly clear" : "create one story beat"),
+      visualConcept: clean(planOutput?.visualConcept) || clean(brief.pose) || title,
+      imagePromptDirection:
+        clean(planOutput?.imagePromptDirection) ||
+        [brief.setting, brief.outfit, brief.pose, brief.mood].map(clean).filter(Boolean).join(". "),
+      referenceImageStrategy: clean(planOutput?.referenceImageStrategy) || "selfie identity anchor",
+      visualReason:
+        clean(planOutput?.reasonThisMatchesUserIntent) ||
+        "The image keeps the user present while the baked text carries the message.",
+      textSafeArea: clean(planOutput?.textSafeArea) || "keep headline away from face and UI edges",
+    },
   ]
-    .filter(Boolean)
-    .join("\n")
 }
 
 /**
@@ -596,7 +629,7 @@ export function compileConceptJobs(
   opts?: CompileConceptOptions,
   _mode: TextRenderMode = "two_pass"
 ): ImageJob[] {
-  if (format === "photo") {
+  if (format === "photo" || format === "photoshoot") {
     return [
       {
         label: "photo",
@@ -653,42 +686,16 @@ export function compileConceptJobs(
           : role === "cta"
             ? CTA_LAYOUT
             : VALUE_LAYOUTS[valueIdx % VALUE_LAYOUTS.length]
-      const valueIndex = role === "value" ? valueIdx++ : 0
-      // Maya tags the visual; untagged slides get the photoshoot-first default mix.
-      const visual: SlideVisual =
-        (slide as { visual?: SlideVisual }).visual ?? defaultSlideVisual(role, valueIndex)
+      if (role === "value") valueIdx++
       const text = { heading: clean(slide.heading), body: clean(slide.body) }
-      const label = `slide ${i + 1}/${total} (${role} · ${visual})`
+      const label = `slide ${i + 1}/${total} (${role} · identity)`
       const plan = slideCreativePlan(slide as CarouselSlidePlanLike, creativePlan.outputs[i])
 
-      if (visual === "identity") {
-        return {
-          label,
-          passes: [
-            {
-              prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, plan, opts),
-              input: "selfie" as const,
-            },
-          ],
-        }
-      }
-      if (visual === "detail") {
-        const subject = (slide as { detailSubject?: string }).detailSubject
-        return {
-          label,
-          passes: [
-            {
-              prompt: compileCarouselDetailPrompt(brief, system, text, subject, plan, opts),
-              input: "selfie" as const,
-            },
-          ],
-        }
-      }
       return {
         label,
         passes: [
           {
-            prompt: compileCarouselTextPrompt(brief, system, text, role, plan, opts),
+            prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, plan, opts),
             input: "selfie" as const,
           },
         ],
@@ -758,6 +765,13 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
       const prompt = editPrefix
         ? `${editPrefix}${extra}. ${BRAND_PHOTO_STYLE}`
         : `${aestheticIntent} ${BRAND_PHOTO_STYLE}${extra ? ` Extra direction: ${extra}.` : ""}`
+      return { prompts: [prompt], size: "1024x1792" }
+    }
+
+    case "photoshoot": {
+      const prompt = editPrefix
+        ? `${editPrefix}${extra}. ${BRAND_PHOTO_STYLE}`
+        : `${aestheticIntent} Cohesive editorial photoshoot set. ${BRAND_PHOTO_STYLE}${extra ? ` Extra direction: ${extra}.` : ""}`
       return { prompts: [prompt], size: "1024x1792" }
     }
 

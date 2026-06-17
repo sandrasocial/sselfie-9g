@@ -23,6 +23,7 @@ interface Recommendation {
 
 const FORMAT_LABEL: Record<OutputFormat, string> = {
   photo: "Photo",
+  photoshoot: "Photoshoot",
   "reel-cover": "Reel cover",
   carousel: "Carousel",
   "story-slide": "Story slide",
@@ -31,6 +32,7 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
 
 const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
   { format: "photo", label: "A photo", line: "An editorial brand shot." },
+  { format: "photoshoot", label: "A photoshoot", line: "A cohesive set from one look." },
   { format: "reel-cover", label: "A Reel cover", line: "A scroll-stopping cover with your words." },
   { format: "carousel", label: "A carousel", line: "A few cohesive slides that teach or tell." },
   {

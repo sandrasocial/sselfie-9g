@@ -37,27 +37,26 @@ describe("MAYA-FIX-01 quick wins", () => {
     expect(concierge).toContain("Create my carousel directions")
   })
 
-  it("caps explicit identity slides at two per carousel set", () => {
+  it("keeps customer carousel slides on the selfie/reference path", () => {
     const jobs = compileConceptJobs(
       carouselBrief([
-        { heading: "S1", visual: "identity" },
-        { heading: "S2", visual: "identity" },
-        { heading: "S3", visual: "identity" },
-        { heading: "S4", visual: "identity" },
+        { heading: "S1" },
+        { heading: "S2" },
+        { heading: "S3" },
+        { heading: "S4" },
       ]),
       "carousel",
     )
 
     const inputs = jobs.map((job) => job.passes[0].input)
-    expect(inputs.filter((input) => input === "selfie")).toHaveLength(2)
-    expect(inputs.filter((input) => input === "none")).toHaveLength(2)
+    expect(inputs).toEqual(["selfie", "selfie", "selfie", "selfie"])
   })
 
   it("makes carousel guidance face-first and removes the banned flawless example", () => {
     const persona = read("lib/app-v3/maya/persona.ts")
 
-    expect(persona).toContain("default hook/value/CTA slides to identity")
-    expect(persona).toContain("detail is opt-in")
+    expect(persona).toContain("Every customer slide should be a real-image moment")
+    expect(persona).toContain("1 to 2 true-detail shots")
     expect(persona).not.toMatch(/flawless/i)
   })
 })
