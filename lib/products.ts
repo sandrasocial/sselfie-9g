@@ -27,6 +27,8 @@ export type PricingProductId =
   | "visibility_suite"
   | "academy_mini_product"
   | "prompt_vault"
+  | "presets_single"
+  | "presets_bundle"
   | "selfie_to_brand_shoot_system"
 
 export type ProductLifecycleStatus = "live" | "archived" | "legacy_access_only"
@@ -51,6 +53,8 @@ export interface PricingProduct {
     | "visibility_suite"
     | "academy_mini_product"
     | "prompt_vault"
+    | "presets_single"
+    | "presets_bundle"
     | "selfie_to_brand_shoot_system"
   lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
@@ -251,6 +255,39 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     ],
   },
   {
+    id: "presets_single",
+    name: "SSELFIE Presets · Single Collection",
+    displayName: "SSELFIE Presets · Single Collection",
+    description:
+      "One SSELFIE Lightroom preset collection for phone and desktop, with setup guide access.",
+    priceInCents: 1900,
+    type: "presets_single",
+    tag: "bought_presets_single",
+    features: [
+      "One selected preset collection",
+      "Mobile .dng presets",
+      "Desktop .xmp presets",
+      "Quick Preset Setup Guide",
+    ],
+  },
+  {
+    id: "presets_bundle",
+    name: "SSELFIE Presets · Full Collection",
+    displayName: "SSELFIE Presets · Full Collection",
+    description:
+      "Every current SSELFIE preset collection for phone and desktop, plus new collections added over time.",
+    priceInCents: 3900,
+    type: "presets_bundle",
+    tag: "bought_presets_bundle",
+    features: [
+      "Every current preset collection",
+      "New collections added over time",
+      "Mobile .dng presets",
+      "Desktop .xmp presets",
+      "Quick Preset Setup Guide",
+    ],
+  },
+  {
     id: "selfie_to_brand_shoot_system",
     name: "The Selfie to Brand Shoot System",
     displayName: "The Selfie to Brand Shoot System",
@@ -427,6 +464,20 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:prompt_vault",
     successNextAction: "/access/prompt-vault/[token]",
     lifecycleEmailEntryPoint: "prompt_vault_delivery",
+  },
+  presets_single: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/presets?tier=single",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:presets_single",
+    successNextAction: "/access/presets/[token]",
+    lifecycleEmailEntryPoint: "presets_delivery",
+  },
+  presets_bundle: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/presets?tier=bundle",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:presets_bundle",
+    successNextAction: "/access/presets/[token]",
+    lifecycleEmailEntryPoint: "presets_delivery",
   },
   selfie_to_brand_shoot_system: {
     lifecycleStatus: "live",

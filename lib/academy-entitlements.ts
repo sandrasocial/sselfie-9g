@@ -16,6 +16,8 @@ const DIRECT_ONE_TIME_ACADEMY_TYPES = [
   "starter_kit",
   "masterclass",
   "prompt_vault",
+  "presets_single",
+  "presets_bundle",
   "selfie_to_brand_shoot_system",
 ] as const
 
@@ -148,6 +150,8 @@ const PRODUCT_THUMBNAILS: Record<string, string> = {
   starter_kit: "/images/starter-kit/hero.png",
   masterclass: "/academy/sselfie-minimalism/academy-masterclass.jpg",
   prompt_vault: "/images/ai-prompts/ai-prompts-hero.jpg",
+  presets_single: "/images/presets/hero.jpg",
+  presets_bundle: "/images/presets/hero.jpg",
   selfie_to_brand_shoot_system: "/landing/lookbook-on-location.png",
   selfie_guide: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
   selfie_guide_bundle: "/academy/sselfie-minimalism/academy-selfie-guide.jpg",
@@ -302,6 +306,8 @@ function getFallbackMetadata(productId: string): FallbackMetadata {
     const directAccessTargets: Record<string, string> = {
       brand_strategy_pack: "brand-strategy",
       prompt_vault: "prompt-vault",
+      presets_single: "presets",
+      presets_bundle: "presets",
       selfie_to_brand_shoot_system: "selfie-to-brand-shoot",
       starter_kit: "starter-kit",
       masterclass: "masterclass",
@@ -366,6 +372,10 @@ function resolveAcademyProductPurchaseUrl(
     return "/prompt-vault"
   }
 
+  if (product.id === "presets_single" || product.id === "presets_bundle") {
+    return "/presets"
+  }
+
   if (product.id === "visibility_suite") {
     // LEGACY_ACCESS_ONLY: existing suite buyers keep access, but new visitors go to Masterclass.
     return "/masterclass"
@@ -378,6 +388,9 @@ function resolveAcademyProductPurchaseUrl(
     }
     if (product.accessTarget === "starter-kit") {
       return "/starter-kit"
+    }
+    if (product.accessTarget === "presets") {
+      return "/presets"
     }
     return "/selfie-guide"
   }

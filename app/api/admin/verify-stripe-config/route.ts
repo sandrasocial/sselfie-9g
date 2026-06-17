@@ -43,6 +43,8 @@ export async function GET() {
       "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
       "STRIPE_PRICE_SELFIE_GUIDE",
       "STRIPE_PRICE_PROMPT_VAULT",
+      "STRIPE_PRICE_PRESETS_SINGLE",
+      "STRIPE_PRICE_PRESETS_BUNDLE",
       "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
     ]
     
@@ -127,6 +129,18 @@ export async function GET() {
         envVar: "STRIPE_PRICE_PROMPT_VAULT",
         expectedAmount: 2700,
         expectedAmountFormatted: "$27.00",
+        expectedRecurring: false,
+      },
+      presets_single: {
+        envVar: "STRIPE_PRICE_PRESETS_SINGLE",
+        expectedAmount: 1900,
+        expectedAmountFormatted: "$19.00",
+        expectedRecurring: false,
+      },
+      presets_bundle: {
+        envVar: "STRIPE_PRICE_PRESETS_BUNDLE",
+        expectedAmount: 3900,
+        expectedAmountFormatted: "$39.00",
         expectedRecurring: false,
       },
       selfie_to_brand_shoot_system: {

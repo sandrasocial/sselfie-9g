@@ -28,6 +28,8 @@ export const CHECKOUT_EMAIL_CAPTURE_PARAM_KEYS = [
   "vault_credit",
   "starter_kit_credit",
   "upgrade_credit",
+  "tier",
+  "collection",
 ] as const
 
 function cleanParam(value?: string | null): string | null {

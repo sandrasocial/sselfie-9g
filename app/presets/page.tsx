@@ -1,0 +1,190 @@
+import Image from "next/image"
+import Link from "next/link"
+import type { Metadata } from "next"
+import { Cormorant_Garamond, Inter } from "next/font/google"
+
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"] })
+const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500"] })
+
+export const metadata: Metadata = {
+  title: "The SSELFIE Presets · SSELFIE",
+  description:
+    "The exact filters Sandra uses on every photo. One tap and your photo is done. Phone and desktop Lightroom presets. From $19.",
+  openGraph: {
+    title: "The SSELFIE Presets · SSELFIE",
+    description:
+      "The exact filters Sandra uses on every photo. One tap and your photo is done. Phone and desktop. From $19.",
+  },
+}
+
+// DESIGN + COPY owned by Claude. CHECKOUT/FULFILLMENT owned by Codex (see tasks/PRESETS-PRODUCT-01.md).
+const CHECKOUT_SINGLE =
+  "/checkout/presets?tier=single&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=single_pricing_card&buyer_stage=micro"
+const CHECKOUT_BUNDLE =
+  "/checkout/presets?tier=bundle&source=presets_landing&utm_source=presets_page&utm_medium=site&utm_campaign=presets_launch&checkout_source=bundle_primary_cta&buyer_stage=micro"
+
+const OBSIDIAN = "#0A0A0A"
+const PORCELAIN = "#FFFFFF"
+const CREAM = "#F5F5F5"
+const SMOKE = "#666666"
+const STONE = "#8A8780"
+const WHISPER = "#E5E5E5"
+const ONDARK = "#B4B2A9"
+
+const eyebrow = {
+  fontFamily: inter.style.fontFamily,
+  fontSize: "10px",
+  letterSpacing: "0.44em",
+  textTransform: "uppercase",
+  color: STONE,
+  margin: 0,
+} as const
+
+const btnDark = {
+  display: "inline-block",
+  background: OBSIDIAN,
+  color: PORCELAIN,
+  border: `1px solid ${OBSIDIAN}`,
+  fontFamily: inter.style.fontFamily,
+  fontSize: "10px",
+  fontWeight: 500,
+  letterSpacing: "0.3em",
+  textTransform: "uppercase",
+  padding: "16px 36px",
+  textDecoration: "none",
+} as const
+
+const btnOutlineDark = { ...btnDark, background: "transparent", color: PORCELAIN, border: `1px solid ${PORCELAIN}` } as const
+const btnLight = { ...btnDark, background: PORCELAIN, color: OBSIDIAN } as const
+
+// Swap each black block for the real before/after image when ready (Sandra supplies). Keep as swappable slot.
+function Placeholder({ label, height }: { label: string; height: number }) {
+  return (
+    <div
+      style={{
+        background: OBSIDIAN,
+        color: PORCELAIN,
+        height,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        fontFamily: inter.style.fontFamily,
+        fontSize: "9px",
+        letterSpacing: "0.24em",
+        textTransform: "uppercase",
+      }}
+    >
+      <span style={{ opacity: 0.45 }}>{label}</span>
+    </div>
+  )
+}
+
+const COLLECTIONS = [
+  { name: "Selfie Glow Up", desc: "Your everyday selfie, brighter and softer. The flattering one." },
+  { name: "White Aesthetics", desc: "Clean, airy, light. For the calm, minimal feed." },
+  { name: "Fashion Street Style", desc: "Editorial and city-cool. Your photos, off-duty model." },
+  { name: "Moody Film", desc: "Dark, warm, lived-in. That noir film mood." },
+]
+
+export default function PresetsPage() {
+  return (
+    <main className={inter.className} style={{ background: PORCELAIN, color: OBSIDIAN, lineHeight: 1.55 }}>
+      {/* ── HERO ── */}
+      <section style={{ textAlign: "center", padding: "60px 24px 0", maxWidth: 760, margin: "0 auto" }}>
+        <p style={{ ...eyebrow, marginBottom: 22 }}>The SSELFIE Presets</p>
+        <h1 className={cormorant.className} style={{ fontWeight: 400, fontSize: "clamp(40px, 8vw, 64px)", lineHeight: 1.04, margin: "0 0 18px" }}>
+          Your photos, in one tap.
+        </h1>
+        <p style={{ fontSize: "15px", color: SMOKE, maxWidth: 380, margin: "0 auto 28px" }}>
+          The filters I use on every photo. Tap one, your photo&rsquo;s done.
+        </p>
+        <Link href={CHECKOUT_BUNDLE} style={btnDark}>Get the presets</Link>
+      </section>
+      <section style={{ position: "relative", width: "100%", height: "clamp(420px, 78vh, 680px)", marginTop: 44, background: OBSIDIAN }}>
+        <Image src="/images/presets/hero.jpg" alt="Sandra, Lake Como" fill priority sizes="100vw" style={{ objectFit: "cover", objectPosition: "50% 28%" }} />
+      </section>
+
+      {/* ── ITALIC DIVIDER (the real DM quote) ── */}
+      <section style={{ background: CREAM, padding: "48px 24px", textAlign: "center" }}>
+        <p className={cormorant.className} style={{ fontStyle: "italic", fontWeight: 400, fontSize: "clamp(22px, 4.5vw, 28px)", lineHeight: 1.4, margin: 0, maxWidth: 620, marginInline: "auto" }}>
+          &ldquo;What do you edit with?&rdquo; I get that DM every week. This is my answer.
+        </p>
+      </section>
+
+      {/* ── COLLECTIONS (sequential, full-width) ── */}
+      <section style={{ textAlign: "center", padding: "54px 24px 8px" }}>
+        <p style={{ ...eyebrow, marginBottom: 6 }}>The collections</p>
+        <p className={cormorant.className} style={{ fontSize: "16px", color: SMOKE, margin: 0 }}>Each one a full mood. Pick yours, or take them all.</p>
+      </section>
+      <section style={{ padding: "30px 0 10px", maxWidth: 760, margin: "0 auto" }}>
+        {COLLECTIONS.map((c) => (
+          <div key={c.name}>
+            <Placeholder label={`${c.name} · before / after`} height={360} />
+            <div style={{ textAlign: "center", padding: "18px 24px 40px" }}>
+              <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "26px", margin: "0 0 4px" }}>{c.name}</p>
+              <p style={{ fontSize: "13px", color: SMOKE, margin: 0 }}>{c.desc}</p>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ── FULL-BLEED LIFESTYLE 1 (moody) ── */}
+      <section style={{ background: OBSIDIAN, padding: "40px 24px", textAlign: "center" }}>
+        <Image src="/images/presets/lifestyle-moody.jpg" alt="The SSELFIE look, moody editorial" width={420} height={747} style={{ width: "min(100%, 420px)", height: "auto", display: "inline-block" }} />
+      </section>
+
+      {/* ── CURATED BY SANDRA ── */}
+      <section style={{ background: OBSIDIAN, color: PORCELAIN, padding: "8px 24px 56px", maxWidth: 760, margin: "0 auto" }}>
+        <p style={{ ...eyebrow, color: STONE, marginBottom: 18 }}>Curated by Sandra</p>
+        <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "clamp(24px, 5vw, 28px)", lineHeight: 1.3, margin: "0 0 16px" }}>
+          I made these because I needed them. Not to sell.
+        </p>
+        <p style={{ fontSize: "14px", color: ONDARK, maxWidth: 440, margin: 0 }}>
+          For years I edited every photo by hand, in the car between school runs. These are that look, saved. The one I use on everything I post. Now they&rsquo;re yours too.
+        </p>
+      </section>
+
+      {/* ── FULL-BLEED LIFESTYLE 2 (Lake Como) ── */}
+      <section style={{ position: "relative", width: "100%", height: "clamp(440px, 82vh, 760px)", background: OBSIDIAN }}>
+        <Image src="/images/presets/lifestyle-como.jpg" alt="The SSELFIE look, Lake Como" fill sizes="100vw" style={{ objectFit: "cover", objectPosition: "50% 30%" }} />
+      </section>
+
+      {/* ── SOCIAL PROOF: real DM demand (swap for preset reviews when they come in) ── */}
+      <section style={{ background: PORCELAIN, padding: "52px 24px", textAlign: "center" }}>
+        <p style={{ ...eyebrow, marginBottom: 16 }}>You asked for these</p>
+        <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "clamp(26px, 5.5vw, 32px)", lineHeight: 1.25, margin: "0 auto 10px", maxWidth: 520 }}>
+          I showed my presets once. My DMs did the rest.
+        </p>
+        <p style={{ fontSize: "14px", color: SMOKE, margin: 0 }}>Hundreds of you asked how to get them. So here they are.</p>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section style={{ padding: "54px 24px", textAlign: "center" }}>
+        <p style={{ ...eyebrow, marginBottom: 28 }}>Pick your start</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 540, margin: "0 auto", textAlign: "left" }}>
+          <div style={{ border: `1px solid ${WHISPER}`, padding: "30px 24px" }}>
+            <p style={{ ...eyebrow, marginBottom: 14 }}>One collection</p>
+            <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "38px", margin: "0 0 4px" }}>$19</p>
+            <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 22px" }}>Pick one look. Phone, desktop, and the setup guide.</p>
+            <Link href={CHECKOUT_SINGLE} style={{ ...btnLight, display: "block", textAlign: "center" }}>Get one</Link>
+          </div>
+          <div style={{ border: `1.5px solid ${OBSIDIAN}`, padding: "30px 24px", position: "relative" }}>
+            <p style={{ position: "absolute", top: -11, left: 24, background: OBSIDIAN, color: PORCELAIN, fontSize: "9px", letterSpacing: "0.26em", textTransform: "uppercase", padding: "5px 12px" }}>Most pick this</p>
+            <p style={{ ...eyebrow, marginBottom: 14 }}>All of them</p>
+            <p className={cormorant.className} style={{ fontWeight: 400, fontSize: "38px", margin: "0 0 4px" }}>$39</p>
+            <p style={{ fontSize: "13px", color: SMOKE, margin: "0 0 22px" }}>Every collection, and every new one I add. Yours for good.</p>
+            <Link href={CHECKOUT_BUNDLE} style={{ ...btnDark, display: "block", textAlign: "center" }}>Get everything</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CLOSE ── */}
+      <section style={{ background: OBSIDIAN, color: PORCELAIN, padding: "58px 24px", textAlign: "center" }}>
+        <h2 className={cormorant.className} style={{ fontWeight: 400, fontSize: "clamp(28px, 6vw, 34px)", margin: "0 0 10px" }}>Same you. Better photo.</h2>
+        <p style={{ fontSize: "13px", color: ONDARK, margin: "0 0 30px" }}>Tap a filter. Post it. Done.</p>
+        <Link href={CHECKOUT_BUNDLE} style={btnOutlineDark}>Get the presets</Link>
+      </section>
+    </main>
+  )
+}

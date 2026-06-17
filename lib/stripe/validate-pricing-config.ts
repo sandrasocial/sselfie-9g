@@ -88,6 +88,18 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
     expectedRecurring: false,
   },
   {
+    envVarName: "STRIPE_PRICE_PRESETS_SINGLE",
+    productType: "presets_single",
+    expectedAmount: 1900, // $19
+    expectedRecurring: false,
+  },
+  {
+    envVarName: "STRIPE_PRICE_PRESETS_BUNDLE",
+    productType: "presets_bundle",
+    expectedAmount: 3900, // $39
+    expectedRecurring: false,
+  },
+  {
     envVarName: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
     productType: "selfie_to_brand_shoot_system",
     expectedAmount: 19700, // $197
@@ -265,6 +277,8 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_PRICE_SELFIE_GUIDE_BUNDLE = Active price for $27 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE = Active price for $17 one-time payment",
       "  STRIPE_PRICE_PROMPT_VAULT = Active price for $27 one-time payment",
+      "  STRIPE_PRICE_PRESETS_SINGLE = Active price for $19 one-time payment",
+      "  STRIPE_PRICE_PRESETS_BUNDLE = Active price for $39 one-time payment",
       "  STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM = Active price for $197 one-time payment",
       "",
       "=" .repeat(80),

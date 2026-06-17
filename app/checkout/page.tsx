@@ -32,6 +32,8 @@ const ATTRIBUTION_KEYS = [
   "vault_credit",
   "starter_kit_credit",
   "upgrade_credit",
+  "tier",
+  "collection",
 ] as const
 
 function checkoutAttributionProperties(searchParams: URLSearchParams) {
@@ -82,6 +84,20 @@ const CHECKOUT_COPY: Record<
     blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
     footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
+  presets_single: {
+    heroTitle: "Complete your presets order",
+    heroBody: "Your selected SSELFIE preset collection is delivered right after payment.",
+    heading: "SSELFIE Presets · Single Collection",
+    blurb: "One $19 payment unlocks one Lightroom preset collection for phone and desktop.",
+    footer: "One-time digital purchase. Your preset access link is delivered right after payment.",
+  },
+  presets_bundle: {
+    heroTitle: "Complete your presets order",
+    heroBody: "Get every current SSELFIE preset collection, plus new collections added over time.",
+    heading: "SSELFIE Presets · Full Collection",
+    blurb: "One $39 payment unlocks the full presets library for phone and desktop.",
+    footer: "One-time digital purchase. Your preset access link is delivered right after payment.",
+  },
   selfie_to_brand_shoot_system: {
     heroTitle: "Start your first AI brand shoot",
     heroBody: "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
@@ -118,6 +134,18 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "No subscription or credit plan",
     "Use the prompts in ChatGPT with your own selfie",
   ],
+  presets_single: [
+    "Instant access after payment",
+    "One-time $19 purchase",
+    "Mobile and desktop presets",
+    "Setup guide included",
+  ],
+  presets_bundle: [
+    "Instant access after payment",
+    "One-time $39 purchase",
+    "Current and future collections",
+    "Mobile and desktop presets",
+  ],
   selfie_to_brand_shoot_system: [
     "Instant course access after payment",
     "One-time $197 purchase",
@@ -133,6 +161,7 @@ function CheckoutContent() {
   const [error, setError] = useState<string | null>(null)
   const productType = searchParams.get("product_type") || "unknown"
   const isPromptVault = productType === "prompt_vault"
+  const isPresets = productType === "presets_single" || productType === "presets_bundle"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
   const isStarterKit = productType === "starter_kit"
   const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
@@ -164,6 +193,20 @@ function CheckoutContent() {
         .then(({ trackAnalyticsEvent }) =>
           trackAnalyticsEvent({
             event: "prompt_vault_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
+    if (isPresets) {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "presets_payment_form_rendered",
             properties: {
               product_type: productType,
               checkout_session_id: secret.split("_secret_")[0] || null,
@@ -218,7 +261,7 @@ function CheckoutContent() {
     }
 
     setClientSecret(secret)
-  }, [hasVaultCredit, productType, searchParams])
+  }, [hasVaultCredit, isPresets, productType, searchParams])
 
   const handleComplete = async () => {
     if (clientSecret) {

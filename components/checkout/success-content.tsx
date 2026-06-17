@@ -51,6 +51,10 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Starter Kit"
     case "prompt_vault":
       return "The AI Photo Prompt Vault"
+    case "presets_single":
+      return "SSELFIE Presets · Single Collection"
+    case "presets_bundle":
+      return "SSELFIE Presets · Full Collection"
     case "selfie_to_brand_shoot_system":
       return "Selfie to Brand Shoot System"
     case "masterclass":
@@ -102,6 +106,12 @@ const PROMPT_VAULT_INCLUDES = [
   "Cozy Leather + Oversized Knit Mirror Editorial",
   "Copy-paste prompts with example photos",
 ]
+const PRESETS_INCLUDES = [
+  "Mobile Lightroom preset files",
+  "Desktop Lightroom preset files",
+  "Quick setup guide",
+  "Tokenized access page",
+]
 const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
   "Guided Selfie to Brand Shoot workflow",
   "Source selfie and angle guidance",
@@ -151,6 +161,17 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
       helper:
         "Your Prompt Vault is ready. If this page does not open it automatically, use the access link in your inbox.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Prompt%20Vault%20access",
+      secondaryLabel: "Need help? Email support",
+    }
+  }
+
+  if (productType === "presets_single" || productType === "presets_bundle") {
+    return {
+      href: "/presets",
+      label: "Check your email for access",
+      helper:
+        "Your presets are ready. If this page does not open them automatically, use the access link in your inbox.",
+      secondaryHref: "mailto:support@sselfie.ai?subject=SSELFIE%20Presets%20access",
       secondaryLabel: "Need help? Email support",
     }
   }
@@ -270,6 +291,7 @@ export function SuccessContent({
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
   const isPromptVaultPurchase = purchaseType === "prompt_vault"
+  const isPresetsPurchase = purchaseType === "presets_single" || purchaseType === "presets_bundle"
   const isSelfieToBrandShootPurchase = purchaseType === "selfie_to_brand_shoot_system"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -357,6 +379,13 @@ export function SuccessContent({
   const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
     "Your payment went through. Your Prompt Vault access is still syncing.",
   )
+  const [isPollingPresetsAccess, setIsPollingPresetsAccess] = useState(Boolean(isPresetsPurchase && sessionId))
+  const [presetsPollAttempts, setPresetsPollAttempts] = useState(0)
+  const [presetsStatus, setPresetsStatus] = useState("Preparing your SSELFIE Presets. This can take up to 2 minutes.")
+  const [showPresetsTimeout, setShowPresetsTimeout] = useState(false)
+  const [presetsRecoveryMessage, setPresetsRecoveryMessage] = useState(
+    "Your payment went through. Your SSELFIE Presets access is still syncing.",
+  )
   const [isPollingSelfieToBrandShootAccess, setIsPollingSelfieToBrandShootAccess] = useState(false)
   const [selfieToBrandShootPollAttempts, setSelfieToBrandShootPollAttempts] = useState(0)
   const [selfieToBrandShootStatus, setSelfieToBrandShootStatus] = useState("Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes.")
@@ -368,6 +397,8 @@ export function SuccessContent({
   const selfieGuideFailureTrackedRef = useRef(false)
   const promptVaultResolutionTrackedRef = useRef(false)
   const promptVaultFailureTrackedRef = useRef(false)
+  const presetsResolutionTrackedRef = useRef(false)
+  const presetsFailureTrackedRef = useRef(false)
   const selfieToBrandShootResolutionTrackedRef = useRef(false)
   const selfieToBrandShootFailureTrackedRef = useRef(false)
   // purchaseType (from URL ?type=) is the authoritative source — it reflects what was just
@@ -414,6 +445,13 @@ export function SuccessContent({
         return
       }
 
+      if (isPresetsPurchase && sessionId) {
+        setIsPollingPresetsAccess(true)
+        setPresetsPollAttempts(0)
+        setShowPresetsTimeout(false)
+        return
+      }
+
       if (user && isSelfieToBrandShootPurchase && sessionId) {
         setIsPollingSelfieToBrandShootAccess(true)
         setSelfieToBrandShootPollAttempts(0)
@@ -428,7 +466,7 @@ export function SuccessContent({
       }
     }
     checkAuth()
-  }, [isPromptVaultPurchase, isSelfieGuidePurchase, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
+  }, [isPresetsPurchase, isPromptVaultPurchase, isSelfieGuidePurchase, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
     if (!isPollingPromptVaultAccess || !isPromptVaultPurchase || !sessionId) {
@@ -533,6 +571,110 @@ export function SuccessContent({
 
     return () => clearInterval(interval)
   }, [isPollingPromptVaultAccess, isPromptVaultPurchase, purchaseType, router, sessionId])
+
+  useEffect(() => {
+    if (!isPollingPresetsAccess || !isPresetsPurchase || !sessionId) {
+      return
+    }
+
+    const pollPresetsAccess = async () => {
+      try {
+        const response = await fetch(
+          `/api/presets/access-token?session_id=${encodeURIComponent(sessionId)}`,
+          { cache: "no-store" },
+        )
+        const data = await response.json()
+
+        if (response.ok && data.accessToken) {
+          setIsPollingPresetsAccess(false)
+          setPresetsStatus("SSELFIE Presets ready. Opening now...")
+
+          if (!presetsResolutionTrackedRef.current) {
+            presetsResolutionTrackedRef.current = true
+            trackClientEvent("presets_access_resolved", {
+              purchase_type: purchaseType || "presets",
+              session_id: sessionId,
+            })
+          }
+
+          setTimeout(() => {
+            router.push(`/access/presets/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+          }, 400)
+          return
+        }
+
+        if (response.status >= 400 && response.status < 500 && response.status !== 409) {
+          setIsPollingPresetsAccess(false)
+          setShowPresetsTimeout(true)
+          setPresetsRecoveryMessage(data.error || "We couldn't verify your SSELFIE Presets access yet.")
+
+          if (!presetsFailureTrackedRef.current) {
+            presetsFailureTrackedRef.current = true
+            trackClientEvent("presets_access_failed", {
+              purchase_type: purchaseType || "presets",
+              session_id: sessionId,
+              reason: data.error || "client_error",
+            })
+          }
+          return
+        }
+
+        setPresetsPollAttempts((prev) => {
+          const next = prev + 1
+
+          if (next < 20) {
+            setPresetsStatus("Preparing your SSELFIE Presets. This can take up to 2 minutes.")
+          } else if (next < 40) {
+            setPresetsStatus("Payment confirmed. Finalizing your presets access...")
+          } else {
+            setPresetsStatus("Almost there. Your presets link is still syncing.")
+          }
+
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingPresetsAccess(false)
+            setShowPresetsTimeout(true)
+            setPresetsRecoveryMessage("Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected.")
+
+            if (!presetsFailureTrackedRef.current) {
+              presetsFailureTrackedRef.current = true
+              trackClientEvent("presets_access_failed", {
+                purchase_type: purchaseType || "presets",
+                session_id: sessionId,
+                reason: "timeout",
+              })
+            }
+          }
+
+          return next
+        })
+      } catch (error) {
+        console.error("[SUCCESS PAGE] SSELFIE Presets polling error:", error)
+        setPresetsPollAttempts((prev) => {
+          const next = prev + 1
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingPresetsAccess(false)
+            setShowPresetsTimeout(true)
+            setPresetsRecoveryMessage("Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected.")
+
+            if (!presetsFailureTrackedRef.current) {
+              presetsFailureTrackedRef.current = true
+              trackClientEvent("presets_access_failed", {
+                purchase_type: purchaseType || "presets",
+                session_id: sessionId,
+                reason: "network_error",
+              })
+            }
+          }
+          return next
+        })
+      }
+    }
+
+    const interval = setInterval(pollPresetsAccess, 2000)
+    pollPresetsAccess()
+
+    return () => clearInterval(interval)
+  }, [isPollingPresetsAccess, isPresetsPurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
     if (!isPollingSelfieToBrandShootAccess || !isSelfieToBrandShootPurchase || !sessionId) {
@@ -998,6 +1140,61 @@ export function SuccessContent({
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             <a href="mailto:support@sselfie.ai?subject=Prompt%20Vault%20access%20help">Email Support</a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isPollingPresetsAccess && isPresetsPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-brand-porcelain">{presetsStatus}</p>
+        <p className="text-sm text-brand-pearl">
+          Estimated time remaining: {Math.max(0, 120 - (presetsPollAttempts * 2))}s
+        </p>
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
+          <div
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(presetsPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (showPresetsTimeout && isPresetsPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
+            Your presets are still syncing
+          </h2>
+          <p className="text-brand-pearl max-w-md">{presetsRecoveryMessage}</p>
+          <p className="text-sm text-brand-pearl">
+            Your access link is also sent by email after payment.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => {
+              setShowPresetsTimeout(false)
+              setPresetsPollAttempts(0)
+              setPresetsStatus("Preparing your SSELFIE Presets. This can take up to 2 minutes.")
+              setIsPollingPresetsAccess(true)
+            }}
+            variant="default"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
+          >
+            Try Again
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
+          >
+            <a href="mailto:support@sselfie.ai?subject=SSELFIE%20Presets%20access%20help">Email Support</a>
           </Button>
         </div>
       </div>
@@ -1584,6 +1781,16 @@ export function SuccessContent({
                     <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
                     <div className="text-right space-y-1">
                       {PROMPT_VAULT_INCLUDES.map(item => (
+                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(resolvedProductType === "presets_single" || resolvedProductType === "presets_bundle") && (
+                  <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <div className="text-right space-y-1">
+                      {PRESETS_INCLUDES.map(item => (
                         <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
                       ))}
                     </div>

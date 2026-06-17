@@ -10,6 +10,7 @@ import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { addOrUpdateResendContact, updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { handlePromptVaultCheckout } from "@/lib/payments/handlers/prompt-vault"
+import { handlePresetsCheckout } from "@/lib/payments/handlers/presets"
 import { handleStarterKitCheckout } from "@/lib/payments/handlers/starter-kit"
 import { handleSelfieToBrandShootCheckout } from "@/lib/payments/handlers/selfie-to-brand-shoot"
 import { handleCreditTopupCheckout } from "@/lib/payments/handlers/credit-topup"
@@ -888,6 +889,8 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
                 productType !== "starter_kit" &&
                 productType !== "masterclass" &&
                 productType !== "prompt_vault" &&
+                productType !== "presets_single" &&
+                productType !== "presets_bundle" &&
                 productType !== "selfie_to_brand_shoot_system" &&
                 productType !== "visibility_suite" &&
                 !isTransformProductType(productType)
@@ -1024,6 +1027,7 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
                     productType === "starter_kit" ? "/academy/access/starter-kit" :
                     productType === "masterclass" ? "/academy/access/brand-strategy" :
                     productType === "prompt_vault" ? "/prompt-vault" :
+                    productType === "presets_single" || productType === "presets_bundle" ? "/presets" :
                     productType === "selfie_to_brand_shoot_system" ? "/academy/access/selfie-to-brand-shoot" :
                     isTransformProductType(productType) ? "/transform/studio" :
                     productType === "selfie_guide" || productType === "selfie_guide_bundle" ? "/selfie-guide" :
@@ -1088,6 +1092,8 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
                     productType === "starter_kit" ||
                     productType === "masterclass" ||
                     productType === "prompt_vault" ||
+                    productType === "presets_single" ||
+                    productType === "presets_bundle" ||
                     productType === "selfie_to_brand_shoot_system" ||
                     productType === "visibility_suite"
                   ) {
@@ -1341,6 +1347,8 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
             await handleMasterclassCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source })
           } else if (productType === "prompt_vault") {
             await handlePromptVaultCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source })
+          } else if (productType === "presets_single" || productType === "presets_bundle") {
+            await handlePresetsCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source })
           } else if (productType === "selfie_to_brand_shoot_system") {
             await handleSelfieToBrandShootCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source })
           } else if (productType === "paid_blueprint") {

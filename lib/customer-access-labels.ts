@@ -11,6 +11,11 @@ export function getProductDisplayName(productType?: string | null): string {
     case "prompt_vault":
     case "prompt-vault-paid":
       return "Prompt Vault"
+    case "presets_single":
+    case "presets_bundle":
+    case "presets-single-paid":
+    case "presets-bundle-paid":
+      return "SSELFIE Presets"
     case "selfie_to_brand_shoot_system":
     case "selfie-to-brand-shoot-paid":
       return "Selfie to Brand Shoot"

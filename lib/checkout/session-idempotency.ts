@@ -7,6 +7,8 @@ const IDEMPOTENT_ONE_TIME_PRODUCT_TYPES = new Set([
   "masterclass",
   "brand_strategy_pack",
   "prompt_vault",
+  "presets_single",
+  "presets_bundle",
   "selfie_to_brand_shoot_system",
 ])
 

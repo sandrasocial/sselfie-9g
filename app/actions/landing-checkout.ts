@@ -17,6 +17,8 @@ import {
 
 type LandingCheckoutOptions = {
   bonusCredits?: number
+  presetTier?: "single" | "bundle"
+  presetCollectionSlug?: string | null
 } & CheckoutAttributionInput
 
 function normalizeStripeCustomerEmail(email?: string | null): string | null {
@@ -44,7 +46,12 @@ export async function createLandingCheckoutSession(
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
-  const allowManualPromotionCodes = !isSubscription && product.type !== "prompt_vault" && product.type !== "starter_kit"
+  const allowManualPromotionCodes =
+    !isSubscription &&
+    product.type !== "prompt_vault" &&
+    product.type !== "starter_kit" &&
+    product.type !== "presets_single" &&
+    product.type !== "presets_bundle"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)
   const bonusCredits =
@@ -91,6 +98,8 @@ export async function createLandingCheckoutSession(
     sselfie_studio_membership_annual: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
     sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
     prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
+    presets_single: "STRIPE_PRICE_PRESETS_SINGLE",
+    presets_bundle: "STRIPE_PRICE_PRESETS_BUNDLE",
     selfie_to_brand_shoot_system: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
   }
   const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
@@ -118,6 +127,10 @@ export async function createLandingCheckoutSession(
     stripePriceId = product.stripePriceId
   } else if (product.type === "prompt_vault") {
     stripePriceId = process.env.STRIPE_PRICE_PROMPT_VAULT
+  } else if (product.type === "presets_single") {
+    stripePriceId = process.env.STRIPE_PRICE_PRESETS_SINGLE
+  } else if (product.type === "presets_bundle") {
+    stripePriceId = process.env.STRIPE_PRICE_PRESETS_BUNDLE
   } else if (product.type === "selfie_to_brand_shoot_system") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM
   }
@@ -211,6 +224,8 @@ export async function createLandingCheckoutSession(
       credits: product.credits?.toString() || "0",
       ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
       ...checkoutAttributionMetadata,
+      ...(options?.presetTier ? { preset_tier: options.presetTier } : {}),
+      ...(options?.presetCollectionSlug ? { preset_collection_slug: options.presetCollectionSlug } : {}),
       ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
       ...(promoCode && { promo_code: promoCode }),
     },
