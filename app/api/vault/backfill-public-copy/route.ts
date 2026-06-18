@@ -15,9 +15,9 @@ type VaultPromptCopyRow = {
 }
 
 function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.VAULT_EMAIL_DROP_SECRET
+  const secret = process.env.VAULT_EMAIL_DROP_SECRET?.trim()
   if (!secret) return false
-  const header = request.headers.get("authorization") || ""
+  const header = request.headers.get("authorization")?.trim() || ""
   return header === `Bearer ${secret}`
 }
 
