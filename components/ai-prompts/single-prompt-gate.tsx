@@ -174,7 +174,7 @@ export function SinglePromptGate({
 
         {!revealed ? (
           <form className="sp-form" onSubmit={handleSubmit} noValidate>
-            <p>Here&apos;s the exact prompt from the reel. Pop your email in and I&apos;ll unlock it here.</p>
+            <p>Here&apos;s the exact prompt from the reel. Drop your email and it&apos;s yours (I&apos;ll send a copy too, so it doesn&apos;t get lost in your DMs).</p>
             <label htmlFor="single-prompt-email">Your email</label>
             <div className="sp-form-row">
               <input
