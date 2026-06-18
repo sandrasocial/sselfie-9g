@@ -9,7 +9,7 @@ For MANYCHAT-FUNNEL-01. Sandra's voice, No-Fake, no em-dashes, contractions. Not
 ### Before email (the gate)
 **Eyebrow:** PROMPT #{number}
 **Headline:** {prompt_title}
-**Subhead:** Here's the exact prompt from the reel. Pop your email in and I'll unlock it (and send you a copy so you don't lose it).
+**Subhead:** Here's the exact prompt from the reel. Drop your email and it's yours (I'll send a copy too, so it doesn't get lost in your DMs).
 **[ example image — the result, blurred/teased ]**
 **Field:** Your email
 **Button:** Send me the prompt
