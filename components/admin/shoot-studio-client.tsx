@@ -58,6 +58,11 @@ function ShotCard({
         </div>
       )}
       <div className="p-3">
+        {shot.promptNumber && (
+          <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-stone-400">
+            Prompt #{shot.promptNumber}
+          </p>
+        )}
         <p className="text-sm font-medium text-stone-950">{shot.title}</p>
         <p className="mt-1 line-clamp-2 text-xs text-stone-500">{shot.whenToUse}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -234,7 +239,11 @@ function ShootThread({
   }
 
   const readiness = getShootPublishReadiness(shoot)
-  const giveaway = shoot.shots.find((shot) => shot.id === readiness.giveawayShotId)?.prompt ?? ""
+  const giveawayShot = shoot.shots.find((shot) => shot.id === readiness.giveawayShotId)
+  const giveaway = giveawayShot?.prompt ?? ""
+  const promptNumbers = shoot.shots
+    .map((shot) => shot.promptNumber)
+    .filter((number): number is string => Boolean(number))
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -251,6 +260,11 @@ function ShootThread({
           <span className="text-xs text-stone-400">
             {shoot.shots.length} shots · {readiness.approvedCount} approved
           </span>
+          {promptNumbers.length > 0 && (
+            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs uppercase tracking-wide text-stone-600">
+              Prompts #{promptNumbers[0]}-{promptNumbers[promptNumbers.length - 1]}
+            </span>
+          )}
           {shoot.publishedVaultSlug && (
             <span className="rounded-full bg-stone-100 px-3 py-1 text-xs uppercase tracking-wide text-stone-600">
               Published
@@ -311,8 +325,12 @@ function ShootThread({
           {/* The giveaway asset */}
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-stone-50 p-3">
             <p className="text-xs text-stone-500">
-              The reel giveaway uses the first approved shot:
+              The reel giveaway uses the first approved shot
+              {giveawayShot?.promptNumber ? ` · prompt #${giveawayShot.promptNumber}` : ""}:
             </p>
+            {giveawayShot?.promptNumber && (
+              <CopyChip label={`Copy #${giveawayShot.promptNumber}`} text={giveawayShot.promptNumber} />
+            )}
             <CopyChip label="Copy giveaway prompt" text={giveaway} />
             {!giveaway && (
               <span className="text-xs text-stone-400">Approve a rendered shot first.</span>

@@ -131,6 +131,8 @@ export type ShootShot = {
   prompt: string
   /** Generated image (Vercel Blob URL). Absent until generation completes. */
   imageUrl?: string
+  /** Global Prompt Vault number after this shot is published, used for reels/posts. */
+  promptNumber?: string | null
   status: "draft" | "approved" | "killed"
 }
 

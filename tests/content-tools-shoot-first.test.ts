@@ -14,6 +14,8 @@ describe("Content tools shoot-first workflow", () => {
     const storyGenerator = read("lib/content-kit/story-generator.ts")
     const uploadRoute = read("app/api/admin/content-kit/assets/upload/route.ts")
     const types = read("lib/content-kit/types.ts")
+    const shootGenerator = read("lib/content-kit/shoot-generator.ts")
+    const shootStudioClient = read("components/admin/shoot-studio-client.tsx")
 
     expect(adminPage).toContain("shootOptions")
     expect(adminPage).not.toContain("Your selfie")
@@ -28,6 +30,11 @@ describe("Content tools shoot-first workflow", () => {
     expect(storyGenerator).toContain("Approve at least 2 rendered shoot images")
     expect(uploadRoute).toContain("content-kit/${kind")
     expect(types).toContain("overlayAssets?: ContentOverlayAsset[]")
+    expect(types).toContain("promptNumber?: string | null")
+    expect(shootGenerator).toContain("published_prompt_numbers")
+    expect(shootGenerator).toContain("ensurePublishedVaultPromptNumbers")
+    expect(shootStudioClient).toContain("Prompt #{shot.promptNumber}")
+    expect(shootStudioClient).toContain("Copy #${giveawayShot.promptNumber}")
   })
 
   it("keeps member Maya carousels photoshoot-first by default", () => {

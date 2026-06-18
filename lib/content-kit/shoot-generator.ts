@@ -6,7 +6,10 @@ import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, callContentKitVision } from "@/lib/content-kit/llm"
 import type { Shoot, ShootMessage, ShootShot, ShootShotRole } from "@/lib/content-kit/types"
-import { ensureVaultCollectionsSchema } from "@/lib/vault/published-collections"
+import {
+  ensurePublishedVaultPromptNumbers,
+  ensureVaultCollectionsSchema,
+} from "@/lib/vault/published-collections"
 import {
   audienceBlock,
   noFakeBlock,
@@ -357,7 +360,24 @@ export async function generateShotImage(input: {
 
 // ── Row mapping + persistence ───────────────────────────────────────────────────
 
+function parsePublishedPromptNumbers(value: unknown): Record<string, string> {
+  let parsed: unknown
+  try {
+    parsed = typeof value === "string" ? JSON.parse(value || "{}") : value
+  } catch {
+    return {}
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+  return Object.fromEntries(
+    Object.entries(parsed as Record<string, unknown>)
+      .filter(([shotId, number]) => shotId && number)
+      .map(([shotId, number]) => [shotId, String(number)]),
+  )
+}
+
 function mapRow(row: any): Shoot {
+  const publishedPromptNumbers = parsePublishedPromptNumbers(row.published_prompt_numbers)
+  const rawShots = Array.isArray(row.shots) ? row.shots : []
   return {
     id: row.id,
     title: row.title,
@@ -377,7 +397,10 @@ function mapRow(row: any): Shoot {
         : row.selfie_url
           ? [row.selfie_url]
           : [],
-    shots: Array.isArray(row.shots) ? row.shots : [],
+    shots: rawShots.map((shot: ShootShot) => ({
+      ...shot,
+      promptNumber: publishedPromptNumbers[shot.id] ?? shot.promptNumber ?? null,
+    })),
     messages: Array.isArray(row.messages) ? row.messages : [],
     createdAt: new Date(row.created_at).toISOString(),
   }
@@ -399,14 +422,21 @@ async function saveShots(id: number, shots: ShootShot[], messages?: ShootMessage
 
 export async function listShoots(limit = 20): Promise<Shoot[]> {
   await ensureVaultCollectionsSchema()
+  await ensurePublishedVaultPromptNumbers()
   const rows = (await sql`
     SELECT
       cs.*,
       vc.slug AS published_vault_slug,
       vc.published_at AS vault_published_at,
-      vc.email_drop_status AS email_drop_status
+      vc.email_drop_status AS email_drop_status,
+      vpn.prompt_numbers AS published_prompt_numbers
     FROM content_shoots cs
     LEFT JOIN vault_collections vc ON vc.source_shoot_id = cs.id AND vc.status = 'published'
+    LEFT JOIN LATERAL (
+      SELECT json_object_agg(vp.source_shot_id, vp.number ORDER BY vp.sort_order ASC) AS prompt_numbers
+      FROM vault_prompts vp
+      WHERE vp.collection_id = vc.id AND vp.status = 'published'
+    ) vpn ON TRUE
     WHERE cs.status != 'archived'
     ORDER BY cs.created_at DESC
     LIMIT ${limit}
@@ -416,14 +446,21 @@ export async function listShoots(limit = 20): Promise<Shoot[]> {
 
 export async function getShoot(id: number): Promise<Shoot | null> {
   await ensureVaultCollectionsSchema()
+  await ensurePublishedVaultPromptNumbers()
   const rows = (await sql`
     SELECT
       cs.*,
       vc.slug AS published_vault_slug,
       vc.published_at AS vault_published_at,
-      vc.email_drop_status AS email_drop_status
+      vc.email_drop_status AS email_drop_status,
+      vpn.prompt_numbers AS published_prompt_numbers
     FROM content_shoots cs
     LEFT JOIN vault_collections vc ON vc.source_shoot_id = cs.id AND vc.status = 'published'
+    LEFT JOIN LATERAL (
+      SELECT json_object_agg(vp.source_shot_id, vp.number ORDER BY vp.sort_order ASC) AS prompt_numbers
+      FROM vault_prompts vp
+      WHERE vp.collection_id = vc.id AND vp.status = 'published'
+    ) vpn ON TRUE
     WHERE cs.id = ${id}
     LIMIT 1
   `) as any[]
