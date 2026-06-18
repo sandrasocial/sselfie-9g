@@ -146,6 +146,12 @@ function getSessionCustomerId(session: any, paymentIntent?: any | null): string 
   )
 }
 
+function canFulfillCheckoutWithoutUser(productType?: string | null): boolean {
+  // Prompt Vault grants access by email + access token. A buyer should not need an
+  // existing app user row before the product handler can deliver their purchase.
+  return productType === "prompt_vault"
+}
+
 async function recordCheckoutSessionRevenue(params: {
   event: any
   session: any
@@ -1224,6 +1230,10 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
                   { status: 500 }
                 )
               }
+            } else if (canFulfillCheckoutWithoutUser(productType)) {
+              console.log(
+                `[v0] No user found for ${productType}, but this product can fulfill by email token. Continuing to product handler.`
+              )
             } else {
               console.error(
                 `[v0] No user found for email ${customerEmail} and source=${source || "missing"} is not a public paid checkout source. Revenue has been recorded; skipping user-bound fulfillment.`
@@ -1259,6 +1269,31 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
             await handleAcademyProductCheckout({ event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source, isNewUserForEmail, purchasePasswordSetupLink, ...({ productType } as any) })
 
             return
+          }
+
+          if (!userId && canFulfillCheckoutWithoutUser(productType)) {
+            if (productType === "prompt_vault") {
+              await handlePromptVaultCheckout({
+                event,
+                session,
+                isPaymentPaid,
+                customerEmail,
+                userId: userId ?? null,
+                referralPurchaseUserId: referralPurchaseUserId ?? null,
+                source,
+              })
+            }
+
+            await markEventProcessed("stripe", event.id).catch((statusError) => {
+              console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
+            })
+
+            return NextResponse.json({
+              received: true,
+              recorded: revenueRecord.recorded,
+              fulfilled_without_user: true,
+              product_type: productType,
+            })
           }
 
           if (!userId) {

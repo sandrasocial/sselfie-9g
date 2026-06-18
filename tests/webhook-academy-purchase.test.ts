@@ -8,6 +8,8 @@ const checkWebhookRateLimitMock = vi.fn()
 const addOrUpdateResendContactMock = vi.fn()
 const sendEmailMock = vi.fn()
 
+vi.mock("server-only", () => ({}))
+
 vi.mock("crypto", () => ({
   randomUUID: vi.fn(() => "uuid_test_123"),
 }))

@@ -8,6 +8,9 @@ const retrievePaymentIntentMock = vi.fn()
 const checkWebhookRateLimitMock = vi.fn()
 const markEventFailedMock = vi.fn()
 const markEventProcessedMock = vi.fn()
+const handlePromptVaultCheckoutMock = vi.fn()
+
+vi.mock("server-only", () => ({}))
 
 vi.mock("@/lib/db/client", () => ({
   sql: sqlMock,
@@ -43,6 +46,10 @@ vi.mock("@/lib/resend/manage-contact", () => ({
 
 vi.mock("@/lib/email/send-email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ success: true }),
+}))
+
+vi.mock("@/lib/payments/handlers/prompt-vault", () => ({
+  handlePromptVaultCheckout: handlePromptVaultCheckoutMock,
 }))
 
 vi.mock("@/lib/credits", () => ({
@@ -104,6 +111,7 @@ describe("stripe checkout payment recording", () => {
     checkWebhookRateLimitMock.mockResolvedValue({ success: true })
     markEventProcessedMock.mockResolvedValue(undefined)
     markEventFailedMock.mockResolvedValue(undefined)
+    handlePromptVaultCheckoutMock.mockResolvedValue(undefined)
     retrievePaymentIntentMock.mockResolvedValue({
       id: "pi_guest_prompt_vault_123",
       amount: 2700,
@@ -147,7 +155,7 @@ describe("stripe checkout payment recording", () => {
     })
   })
 
-  it("records guest paid checkout revenue even when no user can be resolved", async () => {
+  it("records guest paid checkout revenue and fulfills Prompt Vault access even when no user can be resolved", async () => {
     const { POST } = await import("@/app/api/webhooks/stripe/route")
 
     const response = await POST(
@@ -161,6 +169,14 @@ describe("stripe checkout payment recording", () => {
     expect(response.status).toBe(200)
     expect(markEventFailedMock).not.toHaveBeenCalled()
     expect(markEventProcessedMock).toHaveBeenCalledWith("stripe", "evt_guest_prompt_vault_1")
+    expect(handlePromptVaultCheckoutMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerEmail: "guest-vault@example.com",
+        userId: null,
+        source: "unexpected_source",
+        isPaymentPaid: true,
+      })
+    )
 
     const stripePaymentInsert = sqlMock.mock.calls.find(([strings, ...values]) => {
       const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
@@ -175,5 +191,12 @@ describe("stripe checkout payment recording", () => {
     })
 
     expect(stripePaymentInsert).toBeTruthy()
+
+    const reviewInsert = sqlMock.mock.calls.some(([strings]) => {
+      const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
+      return query.includes("INSERT INTO webhook_events_needs_review")
+    })
+
+    expect(reviewInsert).toBe(false)
   })
 })

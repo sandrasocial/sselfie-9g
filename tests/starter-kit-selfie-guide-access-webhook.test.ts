@@ -11,6 +11,8 @@ const handleStarterKitCheckoutMock = vi.hoisted(() => vi.fn())
 const createAdminClientMock = vi.hoisted(() => vi.fn())
 const getOrCreateNeonUserMock = vi.hoisted(() => vi.fn())
 
+vi.mock("server-only", () => ({}))
+
 vi.mock("@/lib/db/client", () => ({
   sql: sqlMock,
   getDb: vi.fn(() => sqlMock),
