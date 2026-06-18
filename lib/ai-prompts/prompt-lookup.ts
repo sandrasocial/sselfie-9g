@@ -2,6 +2,7 @@ import "server-only"
 
 import { sql } from "@/lib/db/client"
 import {
+  extractPromptNumber,
   getStaticPromptByNumber,
   getStaticVaultPromptCards,
   normalizePromptNumber,
@@ -79,7 +80,7 @@ export async function getLiveVaultPromptCount(): Promise<number> {
 }
 
 export async function getPromptByNumber(value: string | number): Promise<NumberedPrompt | null> {
-  const number = normalizePromptNumber(value)
+  const number = extractPromptNumber(value)
   if (!number) return null
 
   const staticPrompt = getStaticPromptByNumber(number)

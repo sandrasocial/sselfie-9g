@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 vi.mock("server-only", () => ({}))
 
 import {
+  extractPromptNumber,
   getHighestStaticPromptNumber,
   getStaticPromptByNumber,
   getStaticVaultPromptCards,
@@ -28,6 +29,23 @@ describe("numbered prompt funnel", () => {
     expect(getStaticVaultPromptCards().length).toBeGreaterThan(90)
     expect(getHighestStaticPromptNumber()).toBeGreaterThanOrEqual(104)
     expect(normalizePromptNumber("0014")).toBe("14")
+  })
+
+  it("extracts the prompt number from real-world comment text", () => {
+    // numbered requests resolve to the matching number
+    expect(extractPromptNumber("14")).toBe("14")
+    expect(extractPromptNumber("prompt 14")).toBe("14")
+    expect(extractPromptNumber("#14")).toBe("14")
+    expect(extractPromptNumber("14!! 😍")).toBe("14")
+    expect(extractPromptNumber("  014 ")).toBe("14")
+    // generic / non-numeric requests safely yield no number (caller falls back)
+    expect(extractPromptNumber("PROMPT")).toBeNull()
+    expect(extractPromptNumber("fourteen")).toBeNull()
+    expect(extractPromptNumber("0")).toBeNull()
+    expect(extractPromptNumber("")).toBeNull()
+    // strict normalizer is unchanged: messy text stays rejected there
+    expect(normalizePromptNumber("prompt 14")).toBeNull()
+    expect(normalizePromptNumber("14")).toBe("14")
   })
 
   it("builds a prompt-page Vault checkout link with prompt_n attribution", () => {
