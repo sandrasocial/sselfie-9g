@@ -6,6 +6,14 @@ const root = process.cwd()
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8")
 
 describe("MAYA-ADMIN-01 content tools in chat", () => {
+  it("keeps the admin Content screen focused on support tools, not embedded Suite Maya", () => {
+    const page = read("app/admin/content-brief/page.tsx")
+
+    expect(page).not.toContain("AdminMaya")
+    expect(page).toContain("ShootStudioClient")
+    expect(page).toContain("Shoot studio")
+  })
+
   it("adds admin-only content tools to the Maya chat route", () => {
     const route = read("app/api/app-v3/maya/chat/route.ts")
 

@@ -1,7 +1,6 @@
 import { AdminNav } from "@/components/admin/admin-nav"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { buildMemberPulse, type MemberPulse } from "@/lib/admin/member-pulse"
-import { AdminMaya } from "@/components/admin/admin-maya"
 import { ContentBriefClient } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
@@ -15,20 +14,22 @@ import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 
 export const dynamic = "force-dynamic"
 
-// MAYA-ADMIN-01: Maya IS the content surface. Everything else on this page is collapsed
-// support tooling until it's absorbed into her as tools (carousel, story, shoot studio).
+// Admin content is tool-first. Keep Suite Maya out of this screen so Shoot Studio remains
+// the single source for inspiration-image photoshoots.
 
 function Collapsed({
   title,
   hint,
+  defaultOpen = false,
   children,
 }: {
   title: string
   hint: string
+  defaultOpen?: boolean
   children: React.ReactNode
 }) {
   return (
-    <details className="group mt-3 rounded-2xl border border-stone-200 bg-white">
+    <details open={defaultOpen} className="group mt-3 rounded-2xl border border-stone-200 bg-white">
       <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
         <span className="font-serif text-lg font-light tracking-tight text-stone-950">{title}</span>
         <span className="text-xs text-stone-400 group-open:hidden">{hint}</span>
@@ -163,15 +164,20 @@ export default async function ContentBriefPage() {
         <div className="mb-2">
           <h1 className="font-serif text-3xl font-light tracking-tight text-stone-950">Content</h1>
           <p className="mt-2 text-sm text-stone-600">
-            Pick a vault vibe and create with Maya: keep the world, change the outfit or location in
-            chat. Nothing posts without you.
+            Create shoot collections, turn approved shots into content, and review every handoff
+            before anything publishes.
           </p>
         </div>
 
-        <AdminMaya />
-
-        <div className="mt-10">
-          <p className="text-xs uppercase tracking-wide text-stone-400">Support tools</p>
+        <div className="mt-8">
+          <p className="text-xs uppercase tracking-wide text-stone-400">Content tools</p>
+          <Collapsed
+            title="Shoot studio"
+            hint="Inspiration-image photoshoots"
+            defaultOpen
+          >
+            <ShootStudioClient initialShoots={shoots} selfies={selfies} />
+          </Collapsed>
           <Collapsed
             title="Member pulse"
             hint="What members do with Maya: loved, friction, missing"
@@ -180,12 +186,6 @@ export default async function ContentBriefPage() {
           </Collapsed>
           <Collapsed title="Weekly brief" hint="Post performance, copies, DMs, hooks">
             <ContentBriefClient initialReports={reports as any} />
-          </Collapsed>
-          <Collapsed
-            title="Shoot studio"
-            hint="Inspiration-image photoshoots (being absorbed into Maya)"
-          >
-            <ShootStudioClient initialShoots={shoots} selfies={selfies} />
           </Collapsed>
           <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
             <VaultDropEmailPreview />

@@ -32,7 +32,7 @@ const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "seated-hero",
   "profile",
   "close-portrait",
-  "true-detail",
+  "cover-safe-hero",
 ]
 const SHOT_ROLES = new Set<ShootShotRole>([
   ...SHOT_ROLE_SEQUENCE,
@@ -48,8 +48,8 @@ const SHOT_ROLES = new Set<ShootShotRole>([
 function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
   const stylePriority =
     styleCount > 1
-      ? "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible. Use the later style references only as secondary support when they do not conflict with the first style reference."
-      : "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible."
+      ? "The FIRST style reference image is the primary visual anchor for atmosphere: translate its location, light, color grading, camera distance, accessory energy and mood into a covered, premium brand-shoot look. Use the later style references only as secondary support when they do not conflict with the first style reference."
+      : "The FIRST style reference image is the primary visual anchor for atmosphere: translate its location, light, color grading, camera distance, accessory energy and mood into a covered, premium brand-shoot look."
   if (selfieCount <= 1) {
     return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
   }
@@ -100,6 +100,12 @@ function normalizeShotRole(value: unknown, index: number): ShootShotRole {
 function sanitizePromptForImageSafety(prompt: string): string {
   return prompt
     .replace(/deep\s+v\s+neckline/gi, "modest rounded neckline")
+    .replace(/off[-\s]?shoulder(?:ed)?/gi, "covered bateau-neck")
+    .replace(/strapless/gi, "covered sleeveless")
+    .replace(/bardot\s+neckline/gi, "covered bateau neckline")
+    .replace(/low[-\s]?cut/gi, "modest cut")
+    .replace(/plunging\s+neckline/gi, "modest neckline")
+    .replace(/bare\s+shoulders?/gi, "covered shoulders")
     .replace(/open\s+back/gi, "covered back")
     .replace(/halter\s+dress/gi, "sleeveless linen midi dress with a modest neckline")
     .replace(/mid-thigh/gi, "midi length")
@@ -219,7 +225,7 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
 Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 
 function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for style, outfit family, lighting direction, camera distance, makeup finish, accessories, location materials, color grade and mood. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for the world: location materials, light direction, camera distance, color grade, accessory energy, pose language and mood. Translate the outfit into a covered, premium brand-shoot version rather than copying revealing cuts literally. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that captures that world as copy-paste ChatGPT prompts.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
@@ -233,9 +239,9 @@ ${audienceBlock()}
 PROOF CONTEXT FOR SHOT UTILITY ONLY:
 ${proofBlock()}
 
-Choose one generation-safe outfit up front and keep it consistent. Avoid risky terms that later need rewriting: no halter dress, open back, deep V, sheer fabric, cleavage, exposed torso, swimwear, lingerie or mid-thigh styling. Use covered editorial fashion with the same color, light, mood, location and style.
+Choose one generation-safe outfit up front and keep it consistent. Avoid risky terms that later need rewriting: no off-shoulder, strapless, halter dress, open back, deep V, sheer fabric, cleavage, exposed torso, swimwear, lingerie or mid-thigh styling. Use covered editorial fashion with the same color, light, mood, location and style.
 
-Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile, seated hero, close-up, cover-safe negative space, and exactly 1-2 true-detail shots. Assign shotRole on every shot. A true-detail shot is faceless: hands, fabric, jewelry, coffee, phone, table texture, bag, shoes, or an outfit/setting detail from the same world.
+Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile, seated hero, close-up, and cover-safe negative space. Assign shotRole on every shot. Prioritize six usable, face-forward brand images of her. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
@@ -280,8 +286,8 @@ function validateShotSet(shots: Array<Pick<ShootShot, "shotRole" | "prompt" | "t
     throw new Error("Shoot plan is too repetitive: expected at least 4 distinct shot roles")
   }
   const detailCount = roles.filter(role => role === "true-detail").length
-  if (detailCount < 1 || detailCount > 2) {
-    throw new Error(`Shoot plan must include 1-2 true-detail shots, got ${detailCount}`)
+  if (detailCount > 1) {
+    throw new Error(`Shoot plan has too many true-detail shots, got ${detailCount}`)
   }
   const normalizedPrompts = shots.map(shot =>
     stripEmDashes(shot.prompt)
@@ -498,7 +504,7 @@ export async function createShoot(input: {
         ? input.notes?.trim() || undefined
         : [
             input.notes?.trim(),
-            "Re-plan the shoot. The previous version failed validation. Use distinct shotRole values, exactly 1-2 true-detail shots, and avoid repeating the same pose/background.",
+            "Re-plan the shoot. The previous version failed validation. Use distinct shotRole values, prioritize face-forward usable brand images, use at most one true-detail shot, and avoid repeating the same pose/background.",
           ]
             .filter(Boolean)
             .join("\n")

@@ -32,13 +32,16 @@ describe("SHOOT-TAXONOMY-01 shot roles", () => {
     expect(fullBodyPrompt).toContain("complete outfit")
   })
 
-  it("pins the admin Shoot Studio role contract and validation", () => {
+  it("pins the admin Shoot Studio as taste-first, not forced-detail taxonomy", () => {
     const source = readFileSync("lib/content-kit/shoot-generator.ts", "utf8")
 
     expect(source).toContain('"shotRole"')
-    expect(source).toContain("exactly 1-2 true-detail shots")
+    expect(source).toContain("true-detail is optional")
+    expect(source).toContain("Do not force a faceless detail shot")
     expect(source).toContain("validateShotSet")
+    expect(source).not.toContain("Shoot plan must include 1-2 true-detail shots")
     expect(source).toContain("shotRoleInstruction(input.shotRole)")
     expect(source).toContain("safety sanitizer changed a shot prompt")
+    expect(source).toContain("off-shoulder")
   })
 })
