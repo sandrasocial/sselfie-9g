@@ -2699,6 +2699,20 @@ export function normalizePromptNumber(value: string | number | null | undefined)
   return String(parsed)
 }
 
+// Lenient entry-point parser: pulls the prompt number out of real-world comment
+// text like "14", "prompt 14", "#14", "14!! 😍". Used where the input comes from a
+// human (ManyChat comment text, the /p/{n} URL slug). Internal equality checks still
+// use the strict normalizePromptNumber above.
+export function extractPromptNumber(value: string | number | null | undefined): string | null {
+  const direct = normalizePromptNumber(value)
+  if (direct) return direct
+  const raw = String(value ?? "").trim()
+  if (!raw) return null
+  const match = raw.match(/\d{1,4}/)
+  if (!match) return null
+  return normalizePromptNumber(match[0])
+}
+
 export function getStaticVaultPromptRecords(): StaticVaultPromptRecord[] {
   return STATIC_VAULT_COLLECTION_SERIES.flatMap(series => {
     const first = series[0]
