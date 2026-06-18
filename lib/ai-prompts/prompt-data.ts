@@ -2673,7 +2673,7 @@ export const FREEBIE_COLLECTION_PREVIEWS: PromptCard[] = [
   ...(MARBLE_CAFE_SERIES.length > 0 ? [MARBLE_CAFE_SERIES[0]] : []),
 ]
 
-const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
+export const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
   MYSTERIOUS_VOGUE_SERIES,
   QUIET_LUXURY_LONDON_SERIES,
   NOIR_FEMME_SERIES,
@@ -2685,6 +2685,53 @@ const STATIC_VAULT_COLLECTION_SERIES: PromptCard[][] = [
   DENIM_STREET_SERIES,
   MARBLE_CAFE_SERIES,
 ]
+
+export type StaticVaultPromptRecord = {
+  card: PromptCard
+  collectionName: string
+}
+
+export function normalizePromptNumber(value: string | number | null | undefined): string | null {
+  const raw = String(value ?? "").trim()
+  if (!/^\d+$/.test(raw)) return null
+  const parsed = Number.parseInt(raw, 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) return null
+  return String(parsed)
+}
+
+export function getStaticVaultPromptRecords(): StaticVaultPromptRecord[] {
+  return STATIC_VAULT_COLLECTION_SERIES.flatMap(series => {
+    const first = series[0]
+    if (!first) return []
+    const meta = VAULT_COLLECTION_META.find(entry => entry.previewCardId === first.id)
+    const collectionName = meta?.name || first.title
+    return series.map(card => ({ card, collectionName }))
+  })
+}
+
+export function getStaticVaultPromptCards(): PromptCard[] {
+  return getStaticVaultPromptRecords().map(record => record.card)
+}
+
+export function getStaticVaultPromptNumbers(): Set<number> {
+  return new Set(
+    getStaticVaultPromptCards()
+      .map(card => normalizePromptNumber(card.number))
+      .filter((value): value is string => Boolean(value))
+      .map(value => Number.parseInt(value, 10)),
+  )
+}
+
+export function getHighestStaticPromptNumber(): number {
+  const numbers = Array.from(getStaticVaultPromptNumbers())
+  return numbers.length > 0 ? Math.max(...numbers) : 0
+}
+
+export function getStaticPromptByNumber(value: string | number): StaticVaultPromptRecord | null {
+  const number = normalizePromptNumber(value)
+  if (!number) return null
+  return getStaticVaultPromptRecords().find(record => normalizePromptNumber(record.card.number) === number) ?? null
+}
 
 export type StaticVaultInventoryCollection = {
   name: string

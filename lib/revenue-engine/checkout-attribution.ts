@@ -26,6 +26,7 @@ export type CheckoutAttributionInput = {
   freebieSource?: string | null
   checkoutSource?: string | null
   ctaKeyword?: string | null
+  promptNumber?: string | null
   quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
@@ -47,6 +48,7 @@ export type NormalizedCheckoutAttribution = {
   freebieSource: string | null
   checkoutSource: string | null
   ctaKeyword: string | null
+  promptNumber: string | null
   quizResult: string | null
   returnTo: string | null
   entryPath: string | null
@@ -75,6 +77,7 @@ export type CheckoutAttributionRecord = {
   freebieSource?: string | null
   checkoutSource?: string | null
   ctaKeyword?: string | null
+  promptNumber?: string | null
   quizResult?: string | null
   returnTo?: string | null
   entryPath?: string | null
@@ -165,6 +168,7 @@ export function normalizeCheckoutAttribution(
     freebieSource: safeString(input?.freebieSource, 120),
     checkoutSource: safeString(input?.checkoutSource, 120),
     ctaKeyword: safeString(input?.ctaKeyword, 40)?.toUpperCase() || null,
+    promptNumber: safeString(input?.promptNumber, 40),
     quizResult: safeString(input?.quizResult, 80),
     returnTo: safeString(input?.returnTo, 500),
     entryPath: safeString(input?.entryPath, 500),
@@ -192,6 +196,7 @@ export function getCheckoutAttributionFromParams(
     freebieSource: params.freebie_source || defaults?.freebieSource || null,
     checkoutSource: params.checkout_source || defaults?.checkoutSource || null,
     ctaKeyword: params.cta_keyword || defaults?.ctaKeyword || null,
+    promptNumber: params.prompt_n || params.prompt_number || defaults?.promptNumber || null,
     quizResult: params.quiz_result || defaults?.quizResult || null,
     returnTo: params.returnTo || params.return_to || defaults?.returnTo || null,
     entryPath: params.entry_path || defaults?.entryPath || null,
@@ -214,6 +219,7 @@ const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
   "freebie_source",
   "guide_cta",
   "cta_keyword",
+  "prompt_n",
   "quiz_result",
   "return_to",
   "entry_path",
@@ -266,6 +272,7 @@ export function buildCheckoutAttributionMetadata(
     ...(normalized.freebieSource ? { freebie_source: normalized.freebieSource } : {}),
     ...(normalized.checkoutSource ? { checkout_source: normalized.checkoutSource } : {}),
     ...(normalized.ctaKeyword ? { cta_keyword: normalized.ctaKeyword } : {}),
+    ...(normalized.promptNumber ? { prompt_n: normalized.promptNumber, prompt_number: normalized.promptNumber } : {}),
     ...(normalized.quizResult ? { quiz_result: normalized.quizResult } : {}),
     ...(normalized.returnTo ? { return_to: normalized.returnTo } : {}),
     ...(normalized.entryPath ? { entry_path: normalized.entryPath } : {}),
@@ -301,6 +308,7 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
       freebie_source TEXT,
       checkout_source TEXT,
       cta_keyword TEXT,
+      prompt_number TEXT,
       quiz_result TEXT,
       return_to TEXT,
       entry_path TEXT,
@@ -330,6 +338,7 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS freebie_source TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS checkout_source TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
+  await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS prompt_number TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS quiz_result TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS buyer_stage TEXT;`
@@ -338,6 +347,7 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovery_email_message_id TEXT;`
   await sql`ALTER TABLE checkout_attribution ADD COLUMN IF NOT EXISTS recovered_at TIMESTAMPTZ;`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_cta_keyword_idx ON checkout_attribution (cta_keyword, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_prompt_number_idx ON checkout_attribution (prompt_number, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_quiz_result_idx ON checkout_attribution (quiz_result, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_entry_post_slug_idx ON checkout_attribution (entry_post_slug, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS checkout_attribution_buyer_stage_idx ON checkout_attribution (buyer_stage, created_at DESC);`
@@ -354,6 +364,7 @@ export async function ensureRevenueEngineSchema(): Promise<void> {
   await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS utm_content TEXT;`
   await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS checkout_source TEXT;`
   await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS cta_keyword TEXT;`
+  await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS prompt_number TEXT;`
   await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS entry_post_slug TEXT;`
   await sql`ALTER TABLE stripe_payments ADD COLUMN IF NOT EXISTS buyer_stage TEXT;`
   await sql`CREATE INDEX IF NOT EXISTS stripe_payments_customer_email_idx ON stripe_payments (LOWER(customer_email), payment_date DESC);`
@@ -386,6 +397,7 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       freebie_source,
       checkout_source,
       cta_keyword,
+      prompt_number,
       quiz_result,
       return_to,
       entry_path,
@@ -414,6 +426,7 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       ${record.freebieSource || null},
       ${record.checkoutSource || null},
       ${record.ctaKeyword || null},
+      ${record.promptNumber || null},
       ${record.quizResult || null},
       ${record.returnTo || null},
       ${record.entryPath || null},
@@ -443,6 +456,7 @@ export async function upsertCheckoutAttribution(record: CheckoutAttributionRecor
       freebie_source = COALESCE(EXCLUDED.freebie_source, checkout_attribution.freebie_source),
       checkout_source = COALESCE(EXCLUDED.checkout_source, checkout_attribution.checkout_source),
       cta_keyword = COALESCE(EXCLUDED.cta_keyword, checkout_attribution.cta_keyword),
+      prompt_number = COALESCE(EXCLUDED.prompt_number, checkout_attribution.prompt_number),
       quiz_result = COALESCE(EXCLUDED.quiz_result, checkout_attribution.quiz_result),
       return_to = COALESCE(EXCLUDED.return_to, checkout_attribution.return_to),
       entry_path = COALESCE(EXCLUDED.entry_path, checkout_attribution.entry_path),

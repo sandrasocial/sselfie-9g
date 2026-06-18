@@ -332,6 +332,7 @@ async function hydrateStripePaymentAttributionFromCheckout(params: {
       utm_content = COALESCE(utm_content, ${checkoutMetadataString(metadata, "utm_content")}),
       checkout_source = COALESCE(checkout_source, ${checkoutMetadataString(metadata, "checkout_source")}),
       cta_keyword = COALESCE(cta_keyword, ${checkoutMetadataString(metadata, "cta_keyword")}),
+      prompt_number = COALESCE(prompt_number, ${checkoutMetadataString(metadata, "prompt_number") || checkoutMetadataString(metadata, "prompt_n")}),
       entry_post_slug = COALESCE(entry_post_slug, ${checkoutMetadataString(metadata, "entry_post_slug")}),
       buyer_stage = COALESCE(buyer_stage, ${checkoutMetadataString(metadata, "buyer_stage")}),
       updated_at = NOW()

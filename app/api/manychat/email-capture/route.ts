@@ -108,6 +108,9 @@ export async function POST(request: NextRequest) {
     const firstName = firstNameFrom(pickString(body, ["first_name", "firstName", "name"]))
     const subscriberId = pickString(body, ["subscriber_id", "subscriberId", "user_id", "userId"])
     const source = pickString(body, ["source"]) // optional, free-form ManyChat label
+    const rawPromptNumber = pickString(body, ["prompt_number", "promptNumber", "prompt_n"])
+    const promptNumber = rawPromptNumber && /^\d{1,6}$/.test(rawPromptNumber) ? rawPromptNumber : null
+    const ctaKeyword = promptNumber && /^\d+$/.test(promptNumber) ? promptNumber : "VAULT"
     const signupDate = new Date().toISOString().split("T")[0]
 
     // --- Resend audience + AI Photoshoot segment (no delivery email) ---
@@ -142,7 +145,14 @@ export async function POST(request: NextRequest) {
           utm_source   = COALESCE(utm_source, 'instagram'),
           utm_medium   = COALESCE(utm_medium, 'manychat'),
           utm_campaign = COALESCE(utm_campaign, 'vault_keyword'),
-          cta_keyword  = COALESCE(cta_keyword, 'VAULT'),
+          cta_keyword  = COALESCE(cta_keyword, ${ctaKeyword}),
+          email_tags   = ARRAY(
+            SELECT DISTINCT tag FROM unnest(
+              COALESCE(email_tags, ARRAY[]::text[]) ||
+              ARRAY['prompt-requester']::text[] ||
+              CASE WHEN ${promptNumber} IS NOT NULL THEN ARRAY[${`prompt-${promptNumber}`}]::text[] ELSE ARRAY[]::text[] END
+            ) AS tag
+          ),
           updated_at   = NOW()
         WHERE id = ${existing[0].id}
       `
@@ -152,6 +162,7 @@ export async function POST(request: NextRequest) {
         INSERT INTO freebie_subscribers (
           email, name, source, access_token,
           utm_source, utm_medium, utm_campaign, cta_keyword,
+          email_tags,
           created_at, updated_at,
           guide_access_email_sent, guide_access_email_sent_at
         )
@@ -163,7 +174,8 @@ export async function POST(request: NextRequest) {
           'instagram',
           'manychat',
           'vault_keyword',
-          'VAULT',
+          ${ctaKeyword},
+          ${promptNumber ? ["prompt-requester", `prompt-${promptNumber}`] : ["prompt-requester"]}::text[],
           NOW(),
           NOW(),
           false,
@@ -181,6 +193,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         manychat_subscriber_id: subscriberId,
         manychat_source: source,
+        prompt_number: promptNumber,
       },
     }).catch((err) => {
       console.error("[manychat/email-capture] analytics error:", err)

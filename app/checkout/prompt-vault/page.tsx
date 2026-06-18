@@ -87,6 +87,7 @@ function promptVaultCheckoutProperties(
     utm_content: attribution.utmContent || null,
     campaign_id: attribution.campaignId ? String(attribution.campaignId) : null,
     cta_keyword: attribution.ctaKeyword || null,
+    prompt_number: attribution.promptNumber || null,
     entry_post_slug: attribution.entryPostSlug || null,
     buyer_stage: attribution.buyerStage || null,
     checkout_source: attribution.checkoutSource || null,
@@ -112,6 +113,8 @@ export default async function PromptVaultCheckoutPage({
     freebie_source?: string
     guide_cta?: string
     cta_keyword?: string
+    prompt_n?: string
+    prompt_number?: string
     quiz_result?: string
     entry_path?: string
     entry_post_slug?: string

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { addContactToSegment, addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateAiPromptsDay0DeliveryEmail } from "@/lib/email/templates/ai-prompts-day0-delivery"
+import { generateAiPromptsSinglePromptDeliveryEmail } from "@/lib/email/templates/ai-prompts-single-prompt-delivery"
 import { sendEmail } from "@/lib/email/send-email"
 import { normalizeFreebieEmail, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
 import { hasResendApiKey } from "@/lib/resend/api-key"
@@ -36,7 +37,11 @@ function firstNameFrom(stored: string | null | undefined, fallback: string): str
   return (stored || fallback).trim().split(/\s+/)[0] || fallback.trim()
 }
 
-function buildEmailTags(existingTags: string[] | null, utmSource: string | null | undefined): string[] {
+function buildEmailTags(
+  existingTags: string[] | null,
+  utmSource: string | null | undefined,
+  promptNumber?: string | null,
+): string[] {
   const set = new Set<string>(buildAiPhotoshootEmailTags(existingTags, ["curious"]))
   set.add("ai-prompts-subscriber")
   set.add("freebie-subscriber")
@@ -45,6 +50,11 @@ function buildEmailTags(existingTags: string[] | null, utmSource: string | null 
     set.add(`ai-prompts-source-${utm.toLowerCase()}`)
   } else {
     set.add("ai-prompts-source-direct")
+  }
+  const cleanPromptNumber = safeAttribution(promptNumber, 40)
+  if (cleanPromptNumber && /^\d+$/.test(cleanPromptNumber)) {
+    set.add("prompt-requester")
+    set.add(`prompt-${cleanPromptNumber}`)
   }
   return Array.from(set)
 }
@@ -58,12 +68,15 @@ async function addToAiPhotoshootSegment(email: string) {
   })
 }
 
-async function recentlySentDeliveryEmail(email: string): Promise<boolean> {
+async function recentlySentDeliveryEmail(
+  email: string,
+  emailType = "ai_prompts_delivery",
+): Promise<boolean> {
   const rows = await sql`
     SELECT 1
     FROM email_logs
     WHERE LOWER(BTRIM(user_email)) = ${email}
-      AND email_type = 'ai_prompts_delivery'
+      AND email_type = ${emailType}
       AND status IN ('sent', 'delivered')
       AND COALESCE(sent_at, created_at) > NOW() - (${`${DELIVERY_RESEND_COOLDOWN_MINUTES} minutes`}::interval)
     LIMIT 1
@@ -75,17 +88,33 @@ async function sendDeliveryEmail(input: {
   email: string
   firstName: string
   accessUrl: string
+  deliveryContext?: "prompt_pack" | "single_prompt"
+  promptNumber?: string | null
+  promptTitle?: string | null
+  promptUrl?: string | null
 }): Promise<{ emailSent: boolean; emailError: string | null }> {
   if (!hasResendApiKey()) {
     console.log("[ai-prompts/subscribe] RESEND_API_KEY not configured, skipping email")
     return { emailSent: false, emailError: "RESEND_API_KEY not configured" }
   }
 
-  const { html, text, subject } = generateAiPromptsDay0DeliveryEmail({
-    firstName: input.firstName,
-    recipientEmail: input.email,
-    accessUrl: input.accessUrl,
-  })
+  const isSinglePrompt =
+    input.deliveryContext === "single_prompt" &&
+    Boolean(input.promptNumber?.trim()) &&
+    Boolean(input.promptTitle?.trim()) &&
+    Boolean(input.promptUrl?.trim())
+  const { html, text, subject } = isSinglePrompt
+    ? generateAiPromptsSinglePromptDeliveryEmail({
+        firstName: input.firstName,
+        promptNumber: input.promptNumber!.trim(),
+        promptTitle: input.promptTitle!.trim(),
+        promptUrl: input.promptUrl!.trim(),
+      })
+    : generateAiPromptsDay0DeliveryEmail({
+        firstName: input.firstName,
+        recipientEmail: input.email,
+        accessUrl: input.accessUrl,
+      })
 
   const result = await sendEmail({
     from: "SSELFIE <hello@sselfie.ai>",
@@ -94,8 +123,8 @@ async function sendDeliveryEmail(input: {
     subject,
     html,
     text,
-    tags: ["ai-prompts-delivery"],
-    emailType: "ai_prompts_delivery",
+    tags: isSinglePrompt ? ["ai-prompts", "single-prompt-delivery"] : ["ai-prompts-delivery"],
+    emailType: isSinglePrompt ? "ai_prompts_single_prompt_delivery" : "ai_prompts_delivery",
   })
 
   if (!result.success) {
@@ -121,14 +150,26 @@ export async function POST(request: NextRequest) {
       entry_post_slug,
       landing_path,
       referrer,
+      prompt_number,
+      prompt_title,
+      prompt_page_url,
+      delivery_context,
     } = body
 
-    if (!email || !firstName) {
+    const promptNumber = safeAttribution(prompt_number, 40)
+    const promptTitle = safeAttribution(prompt_title, 160)
+    const promptPageUrl = safeAttribution(prompt_page_url, 500)
+    const deliveryContext =
+      delivery_context === "single_prompt" && promptNumber && promptTitle && promptPageUrl
+        ? "single_prompt"
+        : "prompt_pack"
+
+    if (!email || (!firstName && deliveryContext !== "single_prompt")) {
       return NextResponse.json({ error: "Email and first name are required" }, { status: 400 })
     }
 
     const normalizedEmail = normalizeFreebieEmail(String(email))
-    const trimmedFirstName = String(firstName).trim()
+    const trimmedFirstName = String(firstName || "there").trim()
 
     if (!normalizedEmail || !trimmedFirstName) {
       return NextResponse.json({ error: "Email and first name are required" }, { status: 400 })
@@ -152,7 +193,7 @@ export async function POST(request: NextRequest) {
       const subscriber = existing[0]
       const { accessToken, wasGenerated } = resolveAccessToken(subscriber.access_token)
       const existingTags = Array.isArray(subscriber.email_tags) ? (subscriber.email_tags as string[]) : null
-      const updatedTags = buildEmailTags(existingTags, utm_source)
+      const updatedTags = buildEmailTags(existingTags, utm_source, promptNumber)
 
       const tagsNeedUpdate =
         wasGenerated ||
@@ -205,7 +246,10 @@ export async function POST(request: NextRequest) {
       }
 
       const accessUrl = aiPromptsAccessUrl(accessToken)
-      const cooldownActive = await recentlySentDeliveryEmail(normalizedEmail)
+      const cooldownActive = await recentlySentDeliveryEmail(
+        normalizedEmail,
+        deliveryContext === "single_prompt" ? "ai_prompts_single_prompt_delivery" : "ai_prompts_delivery",
+      )
 
       if (cooldownActive) {
         console.log("[ai-prompts/subscribe] cooldown active, skipping resend")
@@ -225,12 +269,34 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           firstName: firstNameFrom(subscriber.name, trimmedFirstName),
           accessUrl,
+          deliveryContext,
+          promptNumber,
+          promptTitle,
+          promptUrl: promptPageUrl,
         })
         emailSent = delivery.emailSent
         emailError = delivery.emailError
       } catch (err: unknown) {
         emailError = err instanceof Error ? err.message : "Unknown email error"
       }
+
+      logAnalyticsEvent({
+        eventName: "ai_prompts_subscribed",
+        path: landing_path || (deliveryContext === "single_prompt" && promptNumber ? `/p/${promptNumber}` : "/ai-prompts"),
+        utm: {
+          source: utm_source || null,
+          medium: utm_medium || null,
+          campaign: utm_campaign || null,
+        },
+        properties: {
+          email: normalizedEmail,
+          prompt_number: promptNumber || null,
+          prompt_title: promptTitle || null,
+          delivery_context: deliveryContext,
+        },
+      }).catch((err) => {
+        console.error("[ai-prompts/subscribe] analytics error:", err)
+      })
 
       return NextResponse.json({ success: true, accessUrl, emailSent, emailError, alreadySubscribed: true })
     }
@@ -239,7 +305,7 @@ export async function POST(request: NextRequest) {
     // New subscriber path
     // -----------------------------------------------------------------------
     const accessToken = crypto.randomUUID()
-    const emailTags = buildEmailTags(null, utm_source)
+    const emailTags = buildEmailTags(null, utm_source, promptNumber)
 
     console.log("[ai-prompts/subscribe] inserting new subscriber")
     const result = await sql`
@@ -311,6 +377,10 @@ export async function POST(request: NextRequest) {
         firstName: resolvedFirstName,
         email: normalizedEmail,
         accessUrl,
+        deliveryContext,
+        promptNumber,
+        promptTitle,
+        promptUrl: promptPageUrl,
       })
       emailSent = delivery.emailSent
       emailError = delivery.emailError
@@ -331,13 +401,18 @@ export async function POST(request: NextRequest) {
     // Analytics — fire and forget
     logAnalyticsEvent({
       eventName: "ai_prompts_subscribed",
-      path: "/ai-prompts",
+      path: landing_path || (deliveryContext === "single_prompt" && promptNumber ? `/p/${promptNumber}` : "/ai-prompts"),
       utm: {
         source: utm_source || null,
         medium: utm_medium || null,
         campaign: utm_campaign || null,
       },
-      properties: { email: normalizedEmail },
+      properties: {
+        email: normalizedEmail,
+        prompt_number: promptNumber || null,
+        prompt_title: promptTitle || null,
+        delivery_context: deliveryContext,
+      },
     }).catch((err) => {
       console.error("[ai-prompts/subscribe] analytics error:", err)
     })

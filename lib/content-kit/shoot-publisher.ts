@@ -3,11 +3,18 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { getApprovedPublishableShots, getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
-import { ensureVaultCollectionsSchema, extractMoodLine, toVaultSlug } from "@/lib/vault/published-collections"
+import {
+  ensurePublishedVaultPromptNumbers,
+  ensureVaultCollectionsSchema,
+  extractMoodLine,
+  toVaultSlug,
+} from "@/lib/vault/published-collections"
 import { derivePublicVaultWhenToUse } from "@/lib/vault/public-copy"
+import { getHighestStaticPromptNumber, normalizePromptNumber } from "@/lib/ai-prompts/prompt-data"
 
 export async function publishShootToVault(id: number) {
   await ensureVaultCollectionsSchema()
+  await ensurePublishedVaultPromptNumbers()
   const shoot = await getShoot(id)
   if (!shoot) throw new Error("Shoot not found")
 
@@ -16,8 +23,31 @@ export async function publishShootToVault(id: number) {
 
   const approvedShots = getApprovedPublishableShots(shoot)
   const slug = toVaultSlug(shoot.title, shoot.id)
+  const existingNumberRows = (await sql`
+    SELECT p.source_shot_id, p.number
+    FROM vault_prompts p
+    INNER JOIN vault_collections c ON c.id = p.collection_id
+    WHERE c.source_shoot_id = ${shoot.id}
+      AND p.status = 'published'
+  `) as Array<{ source_shot_id: string; number: string | null }>
+  const existingNumberByShotId = new Map(
+    existingNumberRows.flatMap(row => {
+      const number = normalizePromptNumber(row.number)
+      return number ? [[String(row.source_shot_id), number] as const] : []
+    }),
+  )
+  const maxRows = (await sql`
+    SELECT MAX((number)::int)::int AS max_number
+    FROM vault_prompts
+    WHERE number ~ '^[0-9]+$'
+  `) as Array<{ max_number: number | null }>
+  let nextPromptNumber = Math.max(
+    getHighestStaticPromptNumber(),
+    Number(maxRows[0]?.max_number || 0),
+  ) + 1
   const cards = approvedShots.map((shot, index) => ({
-    number: String(index + 1),
+    number: existingNumberByShotId.get(shot.id) || String(nextPromptNumber++),
+    sortOrder: index + 1,
     id: `${slug}-${shot.id}`,
     title: shot.title,
     whenToUse: derivePublicVaultWhenToUse({
@@ -97,7 +127,7 @@ export async function publishShootToVault(id: number) {
       VALUES (
         ${collection.id},
         ${card.sourceShotId},
-        ${Number(card.number)},
+        ${card.sortOrder},
         ${card.number},
         ${card.id},
         ${card.title},

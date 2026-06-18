@@ -71,8 +71,9 @@ export async function createLandingCheckoutSession(
     ...options,
     source: attribution.source,
     referralCode: attribution.referralCode,
-    checkoutSource: options?.checkoutSource || checkoutSource,
-  })
+      checkoutSource: options?.checkoutSource || checkoutSource,
+      promptNumber: options?.promptNumber || null,
+    })
 
   const actualPrice = product.priceInCents
 
@@ -273,6 +274,7 @@ export async function createLandingCheckoutSession(
       freebieSource: attribution.freebieSource,
       checkoutSource: attribution.checkoutSource,
       ctaKeyword: attribution.ctaKeyword,
+      promptNumber: attribution.promptNumber,
       quizResult: attribution.quizResult,
       returnTo: attribution.returnTo,
       entryPath: attribution.entryPath,

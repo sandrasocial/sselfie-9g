@@ -6,6 +6,11 @@ import type {
   VaultCollectionMeta,
   VaultFreebieCollectionPreview,
 } from "@/lib/ai-prompts/prompt-data"
+import {
+  getHighestStaticPromptNumber,
+  getStaticVaultPromptNumbers,
+  normalizePromptNumber,
+} from "@/lib/ai-prompts/prompt-data"
 import { selectRotatingPublishedFreebieCollections } from "@/lib/vault/freebie-curation"
 import { derivePublicVaultWhenToUse } from "@/lib/vault/public-copy"
 
@@ -25,6 +30,7 @@ export type PublishedVaultCollection = {
 }
 
 let schemaReady: Promise<void> | null = null
+let promptNumbersReady: Promise<void> | null = null
 
 export function toVaultSlug(title: string, sourceId?: number | null): string {
   const base = title
@@ -107,6 +113,67 @@ export async function ensureVaultCollectionsSchema(): Promise<void> {
   await schemaReady
 }
 
+export async function ensurePublishedVaultPromptNumbers(): Promise<void> {
+  promptNumbersReady ??= (async () => {
+    await ensureVaultCollectionsSchema()
+
+    const rows = (await sql`
+      SELECT
+        p.id,
+        p.number,
+        p.collection_id,
+        p.source_shot_id,
+        p.sort_order,
+        c.published_at
+      FROM vault_prompts p
+      INNER JOIN vault_collections c ON c.id = p.collection_id
+      WHERE p.status = 'published'
+        AND c.status = 'published'
+      ORDER BY c.published_at ASC, c.id ASC, p.sort_order ASC, p.id ASC
+    `) as Array<{
+      id: number
+      number: string | null
+      collection_id: number
+      source_shot_id: string
+      sort_order: number
+      published_at: string
+    }>
+
+    if (rows.length === 0) return
+
+    const usedNumbers = getStaticVaultPromptNumbers()
+    let nextNumber = Math.max(getHighestStaticPromptNumber(), ...Array.from(usedNumbers), 0) + 1
+
+    for (const row of rows) {
+      const normalized = normalizePromptNumber(row.number || "")
+      const parsed = normalized ? Number.parseInt(normalized, 10) : Number.NaN
+      const canKeep =
+        Number.isFinite(parsed) &&
+        parsed > getHighestStaticPromptNumber() &&
+        !usedNumbers.has(parsed)
+
+      if (canKeep) {
+        usedNumbers.add(parsed)
+        continue
+      }
+
+      while (usedNumbers.has(nextNumber)) nextNumber += 1
+      const assigned = String(nextNumber)
+      usedNumbers.add(nextNumber)
+      nextNumber += 1
+
+      await sql`
+        UPDATE vault_prompts
+        SET number = ${assigned},
+            updated_at = NOW()
+        WHERE id = ${row.id}
+      `
+    }
+  })()
+
+  await promptNumbersReady
+}
+
 function parseCards(value: unknown): PromptCard[] {
   const raw = typeof value === "string" ? JSON.parse(value) : value
   if (!Array.isArray(raw)) return []
@@ -133,6 +200,7 @@ function parseCards(value: unknown): PromptCard[] {
 export async function getPublishedVaultCollections(): Promise<PublishedVaultCollection[]> {
   try {
     await ensureVaultCollectionsSchema()
+    await ensurePublishedVaultPromptNumbers()
     const rows = (await sql`
       SELECT
         c.id,

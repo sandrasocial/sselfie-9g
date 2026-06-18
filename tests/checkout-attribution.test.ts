@@ -64,12 +64,13 @@ describe("checkout attribution contract", () => {
       utm_content: "dark_balcony_story",
       entry_post_slug: "dark-balcony-reel-cover-hero",
       cta_keyword: "PROMPT",
+      prompt_n: "14",
       buyer_stage: "lead",
       ignored: "nope",
     })
 
     expect(url).toBe(
-      "/checkout?client_secret=cs_test_123_secret_456&product_type=prompt_vault&source=instagram_manychat&utm_source=instagram&utm_medium=dm&utm_campaign=prompt_my_selfie&utm_content=dark_balcony_story&cta_keyword=PROMPT&entry_post_slug=dark-balcony-reel-cover-hero&buyer_stage=lead",
+      "/checkout?client_secret=cs_test_123_secret_456&product_type=prompt_vault&source=instagram_manychat&utm_source=instagram&utm_medium=dm&utm_campaign=prompt_my_selfie&utm_content=dark_balcony_story&cta_keyword=PROMPT&prompt_n=14&entry_post_slug=dark-balcony-reel-cover-hero&buyer_stage=lead",
     )
   })
 
@@ -80,6 +81,7 @@ describe("checkout attribution contract", () => {
       utmCampaign: "nurture_day_5",
       campaignId: 81,
       referralCode: "SSE123456",
+      promptNumber: "14",
       buyerStage: "studio",
     })
 
@@ -91,6 +93,8 @@ describe("checkout attribution contract", () => {
       utm_campaign: "nurture_day_5",
       campaign_id: "81",
       referral_code: "SSE123456",
+      prompt_n: "14",
+      prompt_number: "14",
       buyer_stage: "studio",
     })
   })
