@@ -48,12 +48,14 @@ const SHOT_ROLES = new Set<ShootShotRole>([
 function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
   const stylePriority =
     styleCount > 1
-      ? "The FIRST style reference image is the primary visual anchor for atmosphere: translate its location, light, color grading, camera distance, accessory energy and mood into a covered, premium brand-shoot look. Use the later style references only as secondary support when they do not conflict with the first style reference."
-      : "The FIRST style reference image is the primary visual anchor for atmosphere: translate its location, light, color grading, camera distance, accessory energy and mood into a covered, premium brand-shoot look."
+      ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel. Use the later style references only as secondary support when they do not conflict with the first style reference."
+      : styleCount === 1
+        ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel."
+        : "No separate style reference image was attached, so preserve identity from the selfie references and follow the written shoot prompt exactly."
   if (selfieCount <= 1) {
-    return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
+    return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading, pose language and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
   }
-  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
+  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading, pose language and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
 }
 
 function buildIdentityGuard(selfieCount: number): string {
@@ -225,7 +227,7 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
 Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 
 function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for the world: location materials, light direction, camera distance, color grade, accessory energy, pose language and mood. Translate the outfit into a covered, premium brand-shoot version rather than copying revealing cuts literally. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that captures that world as copy-paste ChatGPT prompts.
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary visual reference for the world, not a loose vibe board: location materials, light direction, camera distance, color grade, accessory energy, pose language, outfit family and mood. The planned shoot must visibly belong to that inspiration image while replacing any person in it with the user's uploaded reference-photo identity. Translate the outfit into a covered, premium brand-shoot version rather than copying revealing cuts literally. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that captures that world as copy-paste ChatGPT prompts.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
@@ -323,7 +325,9 @@ export async function generateShotImage(input: {
 
   // Selfies FIRST (identity, up to 4 angles), inspiration after (style, up to 3).
   const selfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
-  const styleUrls = input.inspirationUrls.slice(0, 3)
+  const styleUrls = input.inspirationUrls.filter(Boolean).slice(0, 3)
+  if (selfieUrls.length === 0) throw new Error("At least one selfie reference is required")
+  if (styleUrls.length === 0) throw new Error("At least one inspiration reference is required")
   const urls = [...selfieUrls, ...styleUrls]
   const files = await Promise.all(
     urls.map(async (url, i) =>
