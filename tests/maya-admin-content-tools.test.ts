@@ -33,8 +33,9 @@ describe("MAYA-ADMIN-01 content tools in chat", () => {
     expect(card).toContain("/api/admin/content-kit/render/")
     expect(card).toContain("/api/admin/content-kit/story/")
     expect(card).toContain("/api/admin/vault-drop-email")
-    expect(card).toContain("Start live run")
-    expect(card).toContain("Process next batch")
+    expect(card).toContain("Send live now")
+    expect(card).toContain("Continue sending")
+    expect(card).not.toContain("No emails have sent yet")
     expect(card).toContain("Source shoot")
   })
 

@@ -41,7 +41,7 @@ export function VaultDropEmailPreview() {
   const [audience, setAudience] = useState<Audience>("nonbuyer")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState<Audience | null>(null)
-  const [starting, setStarting] = useState(false)
+  const [liveSending, setLiveSending] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -86,24 +86,29 @@ export function VaultDropEmailPreview() {
     }
   }
 
-  async function startLiveRun() {
-    setStarting(true)
+  async function sendLiveNow() {
+    setLiveSending(true)
     setError(null)
     setMessage(null)
     try {
       const response = await fetch("/api/admin/vault-drop-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "start_live_run", collectionIds: selectedCollectionIds }),
+        body: JSON.stringify({ action: "send_live_now", collectionIds: selectedCollectionIds }),
       })
       const data = await response.json()
-      if (!response.ok || !data.success) throw new Error(data.error || "Could not create live run")
+      if (!response.ok || !data.success) throw new Error(data.error || "Could not send live email")
       setRun(data.run)
-      setMessage(data.existing ? "Using the existing live run for these collections." : "Live run created. No emails have sent yet.")
+      setMessage(
+        data.done?.all
+          ? "Done. The drop email was sent."
+          : "Started sending. Click Continue sending if there are more people left.",
+      )
+      await load(selectedCollectionIds)
     } catch (err: any) {
-      setError(err?.message || "Could not create live run")
+      setError(err?.message || "Could not send live email")
     } finally {
-      setStarting(false)
+      setLiveSending(false)
     }
   }
 
@@ -126,7 +131,8 @@ export function VaultDropEmailPreview() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Batch failed")
-      setMessage(data.done?.all ? "Drop complete." : "Batch processed. Keep going until both segments are done.")
+      if (data.run) setRun(data.run)
+      setMessage(data.done?.all ? "Done. The drop email was sent." : "Batch sent. Keep going until both groups are done.")
       await load(selectedCollectionIds)
     } catch (err: any) {
       setError(err?.message || "Batch failed")
@@ -178,7 +184,7 @@ export function VaultDropEmailPreview() {
       <div>
         <h3 className="font-serif text-2xl font-light text-stone-950">Vault drop email</h3>
         <p className="mt-1 text-sm text-stone-600">
-          Preview the exact drop email and send a test to ssa@ssasocial.com before any live run.
+          Preview the exact drop email. Send a test first, then send live when you are ready.
         </p>
       </div>
 
@@ -275,7 +281,7 @@ export function VaultDropEmailPreview() {
               disabled={!payload.ready || processing || run.status === "completed" || run.status === "partially_completed"}
               className="rounded-full bg-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-40"
             >
-              {processing ? "Processing" : "Process next batch"}
+              {processing ? "Sending" : "Continue sending"}
             </button>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -307,11 +313,11 @@ export function VaultDropEmailPreview() {
           </button>
           <button
             type="button"
-            onClick={startLiveRun}
-            disabled={!payload.ready || starting || Boolean(run)}
+            onClick={sendLiveNow}
+            disabled={!payload.ready || liveSending || run?.status === "completed" || run?.status === "partially_completed"}
             className="rounded-full border border-stone-950 px-4 py-2 text-xs uppercase tracking-wide text-stone-950 disabled:opacity-40"
           >
-            {starting ? "Starting" : "Start live run"}
+            {liveSending ? "Sending live" : "Send live now"}
           </button>
         </div>
         <iframe

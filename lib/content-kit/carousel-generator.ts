@@ -6,6 +6,7 @@ import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
+import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
 import {
   pickContentStyleReference,
   redesignContentSlide,
@@ -78,6 +79,19 @@ async function resolveShootImages(
   id: number | null
 }> {
   if (!sourceShootId) return { imageUrls: [], title: null, id: null }
+  const publishedCollection = await getPublishedVaultCollectionBySourceShootId(sourceShootId)
+  const publishedImages =
+    publishedCollection?.cards
+      .map((card) => card.exampleImage)
+      .filter((url): url is string => Boolean(url)) ?? []
+  if (publishedCollection && publishedImages.length >= minApprovedImages) {
+    return {
+      imageUrls: publishedImages,
+      title: publishedCollection.title,
+      id: sourceShootId,
+    }
+  }
+
   const shoot = await getShoot(sourceShootId)
   if (!shoot) throw new Error("Shoot not found")
   const images = shoot.shots

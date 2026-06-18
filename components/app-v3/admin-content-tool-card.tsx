@@ -326,17 +326,17 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
       if (data.run) setRun(data.run)
       if (action === "send_test") {
         setMessage(`Test sent to ${data.to}.`)
-      } else if (action === "start_live_run") {
+      } else if (action === "send_live_now") {
         setMessage(
-          data.existing
-            ? "Using the existing live run."
-            : "Live run created. No emails have sent yet."
+          data.done?.all
+            ? "Done. The drop email was sent."
+            : "Started sending. Click Continue sending if there are more people left."
         )
       } else {
         setMessage(
           data.done?.all
-            ? "Drop complete."
-            : "Batch processed. Keep going until both segments are done."
+            ? "Done. The drop email was sent."
+            : "Batch sent. Keep going until both groups are done."
         )
       }
     } catch (err: any) {
@@ -367,11 +367,16 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
         </button>
         <button
           type="button"
-          onClick={() => post("start_live_run")}
-          disabled={!dropEmail.ready || busy !== null || Boolean(run)}
+          onClick={() => post("send_live_now")}
+          disabled={
+            !dropEmail.ready ||
+            busy !== null ||
+            run?.status === "completed" ||
+            run?.status === "partially_completed"
+          }
           className="rounded-[4px] border border-[#0D0E10] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[#0D0E10] disabled:opacity-40"
         >
-          {busy === "start_live_run" ? "Starting" : "Start live run"}
+          {busy === "send_live_now" ? "Sending" : "Send live now"}
         </button>
         <button
           type="button"
@@ -385,7 +390,7 @@ function VaultDropActions({ dropEmail }: { dropEmail: AdminVaultDropEmail }) {
           }
           className="rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] disabled:opacity-40"
         >
-          {busy === "process_batch" ? "Processing" : "Process next batch"}
+          {busy === "process_batch" ? "Sending" : "Continue sending"}
         </button>
       </div>
       {run && (

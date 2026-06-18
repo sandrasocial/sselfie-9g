@@ -18,7 +18,7 @@ describe("Vault drop email admin workflow", () => {
     expect(workflow).toContain("generateVaultDropBuyerEmail")
     expect(workflow).toContain("createVaultDropLiveRun")
     expect(route).toContain("idempotencyKey")
-    expect(route).toContain('action === "start_live_run"')
+    expect(route).toContain('action === "send_live_now"')
     expect(route).toContain('action === "process_batch"')
     expect(route).toContain("/api/vault/email-drop/process")
 
@@ -26,10 +26,13 @@ describe("Vault drop email admin workflow", () => {
     expect(component).toContain("Buyer email")
     expect(component).toContain("Free preview email")
     expect(component).toContain("sendTest(audience)")
-    expect(component).toContain("startLiveRun")
+    expect(component).toContain("sendLiveNow")
+    expect(component).toContain("Send live now")
+    expect(component).toContain("Continue sending")
     expect(component).toContain("processBatch")
     expect(component).toContain("selectedCollectionIds")
     expect(component).toContain("srcDoc")
+    expect(component).not.toContain("No emails have sent yet")
 
     expect(adminPage).toContain("VaultDropEmailPreview")
     expect(sendEmail).toContain("idempotencyKey?: string")

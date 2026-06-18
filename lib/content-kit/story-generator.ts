@@ -4,6 +4,7 @@ import { sql } from "@/lib/db/client"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
+import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
 import {
   pickContentStyleReference,
   redesignContentSlide,
@@ -75,6 +76,15 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   id: number | null
 }> {
   if (!sourceShootId) return { imageUrls: [], title: null, id: null }
+  const publishedCollection = await getPublishedVaultCollectionBySourceShootId(sourceShootId)
+  const publishedImages =
+    publishedCollection?.cards
+      .map((card) => card.exampleImage)
+      .filter((url): url is string => Boolean(url)) ?? []
+  if (publishedCollection && publishedImages.length >= 2) {
+    return { imageUrls: publishedImages, title: publishedCollection.title, id: sourceShootId }
+  }
+
   const shoot = await getShoot(sourceShootId)
   if (!shoot) throw new Error("Shoot not found")
   const imageUrls = shoot.shots

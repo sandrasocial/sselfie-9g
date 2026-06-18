@@ -5,12 +5,16 @@ import { EMAIL_CONFIG } from "@/lib/email/config"
 import {
   createVaultDropLiveRun,
   getVaultDropEmailPreview,
+  getVaultDropRun,
   selectedVaultDropIdsFromInput,
 } from "@/lib/admin/vault-drop-email-workflow"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 300
 
 const ADMIN_TEST_EMAIL = "ssa@ssasocial.com"
+const LIVE_SEND_TIME_BUDGET_MS = 260_000
+const LIVE_SEND_DEFAULT_MAX_BATCHES = 12
 
 async function requireAdminResponse() {
   const admin = await requireAdmin()
@@ -18,6 +22,45 @@ async function requireAdminResponse() {
     return NextResponse.json({ error: admin.error || "Unauthorized" }, { status: 401 })
   }
   return null
+}
+
+async function processVaultDropBatch({
+  request,
+  runId,
+  audienceType,
+  batchSize,
+}: {
+  request: NextRequest
+  runId: string
+  audienceType: "all" | "buyer" | "non_buyer"
+  batchSize: number
+}) {
+  const secret = process.env.VAULT_EMAIL_DROP_SECRET
+  if (!secret) {
+    const data = {
+      success: false,
+      error: "VAULT_EMAIL_DROP_SECRET is missing, so the batch processor cannot run.",
+    }
+    return {
+      response: NextResponse.json(data, { status: 500 }),
+      data,
+    }
+  }
+
+  const response = await fetch(new URL("/api/vault/email-drop/process", request.url), {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${secret}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      runId,
+      audienceType,
+      batchSize,
+    }),
+  })
+  const data = await response.json()
+  return { response, data }
 }
 
 export async function GET(request: NextRequest) {
@@ -59,34 +102,100 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result, { status: "status" in result ? result.status ?? 200 : 200 })
     }
 
+    if (action === "send_live_now") {
+      const result = await createVaultDropLiveRun(selectedIds)
+      if (!result.success || !result.run) {
+        return NextResponse.json(result, { status: "status" in result ? result.status ?? 200 : 200 })
+      }
+
+      const runId = result.run.id
+      const batchSize = Number(body.batchSize || 25)
+      const maxBatches = Math.max(1, Math.min(Number(body.maxBatches || LIVE_SEND_DEFAULT_MAX_BATCHES), 40))
+      const startedAt = Date.now()
+      let batchesProcessed = 0
+      const totals = {
+        batchSent: { nonBuyer: 0, buyer: 0 },
+        batchFailed: { nonBuyer: 0, buyer: 0 },
+        batchSkipped: { nonBuyer: 0, buyer: 0 },
+      }
+      let done = { nonBuyer: false, buyer: false, all: false }
+      let lastData: any = null
+
+      while (
+        batchesProcessed < maxBatches &&
+        Date.now() - startedAt < LIVE_SEND_TIME_BUDGET_MS &&
+        !done.all
+      ) {
+        const { response, data } = await processVaultDropBatch({
+          request,
+          runId,
+          audienceType: "all",
+          batchSize,
+        })
+        lastData = data
+        if (!response.ok || data.success === false) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: data?.error || "Could not send the live drop email.",
+              run: await getVaultDropRun(runId),
+              batchesProcessed,
+            },
+            { status: response.status },
+          )
+        }
+
+        batchesProcessed += 1
+        totals.batchSent.nonBuyer += Number(data.batchSent?.nonBuyer || 0)
+        totals.batchSent.buyer += Number(data.batchSent?.buyer || 0)
+        totals.batchFailed.nonBuyer += Number(data.batchFailed?.nonBuyer || 0)
+        totals.batchFailed.buyer += Number(data.batchFailed?.buyer || 0)
+        totals.batchSkipped.nonBuyer += Number(data.batchSkipped?.nonBuyer || 0)
+        totals.batchSkipped.buyer += Number(data.batchSkipped?.buyer || 0)
+        done = data.done || done
+
+        const batchWork =
+          Number(data.batchSent?.nonBuyer || 0) +
+          Number(data.batchSent?.buyer || 0) +
+          Number(data.batchFailed?.nonBuyer || 0) +
+          Number(data.batchFailed?.buyer || 0) +
+          Number(data.batchSkipped?.nonBuyer || 0) +
+          Number(data.batchSkipped?.buyer || 0)
+        if (batchWork === 0 && !done.all) break
+      }
+
+      const run = await getVaultDropRun(runId)
+      return NextResponse.json({
+        success: true,
+        existing: "existing" in result ? result.existing ?? false : false,
+        run,
+        done,
+        batchesProcessed,
+        ...totals,
+        progress: lastData?.progress,
+        message: done.all
+          ? "Done. The drop email was sent."
+          : "Started sending. Click Continue sending if there are more people left.",
+      })
+    }
+
     if (action === "process_batch") {
       const runId = typeof body.runId === "string" ? body.runId : payload.latestRun?.id
       if (!runId) {
         return NextResponse.json({ success: false, error: "Create a live run before processing batches." }, { status: 422 })
       }
-
-      const secret = process.env.VAULT_EMAIL_DROP_SECRET
-      if (!secret) {
-        return NextResponse.json(
-          { success: false, error: "VAULT_EMAIL_DROP_SECRET is missing, so the batch processor cannot run." },
-          { status: 500 },
-        )
-      }
-
-      const response = await fetch(new URL("/api/vault/email-drop/process", request.url), {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${secret}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          runId,
-          audienceType: body.audienceType || "all",
-          batchSize: Number(body.batchSize || 25),
-        }),
+      const audienceType =
+        body.audienceType === "buyer" || body.audienceType === "non_buyer" ? body.audienceType : "all"
+      const { response, data } = await processVaultDropBatch({
+        request,
+        runId,
+        audienceType,
+        batchSize: Number(body.batchSize || 25),
       })
-      const data = await response.json()
-      return NextResponse.json({ success: response.ok, ...data }, { status: response.status })
+      return NextResponse.json(
+        { success: response.ok, ...data, run: await getVaultDropRun(runId) },
+        { status: response.status },
+      )
     }
 
     const email = audience === "buyer" ? payload.previews.buyer : payload.previews.nonbuyer

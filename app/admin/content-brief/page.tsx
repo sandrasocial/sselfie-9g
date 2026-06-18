@@ -11,6 +11,7 @@ import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { listShoots } from "@/lib/content-kit/shoot-generator"
 import { listStorySequences } from "@/lib/content-kit/story-generator"
+import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 
 export const dynamic = "force-dynamic"
 
@@ -128,16 +129,32 @@ export default async function ContentBriefPage() {
   const selfies = await listAdminSelfies().catch(() => [])
   const stories = await listStorySequences().catch(() => [])
   const shoots = await listShoots().catch(() => [])
+  const publishedCollections = await getPublishedVaultCollections().catch(() => [])
+  const publishedByShootId = new Map(
+    publishedCollections
+      .filter((collection) => collection.sourceShootId !== null)
+      .map((collection) => [collection.sourceShootId as number, collection]),
+  )
 
-  const shootOptions = shoots.map(shoot => ({
-    id: shoot.id,
-    title: shoot.title,
-    status: shoot.status,
-    createdAt: shoot.createdAt,
-    shots: shoot.shots
-      .filter(shot => shot.status === "approved" && shot.imageUrl)
-      .map(shot => ({ id: shot.id, title: shot.title, url: shot.imageUrl as string })),
-  }))
+  const shootOptions = shoots.map(shoot => {
+    const publishedCollection = publishedByShootId.get(shoot.id)
+    const publishedShots =
+      publishedCollection?.cards
+        .filter(card => card.exampleImage)
+        .map(card => ({ id: card.id, title: card.title, url: card.exampleImage as string })) ?? []
+    return {
+      id: shoot.id,
+      title: shoot.title,
+      status: publishedShots.length > 0 ? "approved" : shoot.status,
+      createdAt: shoot.createdAt,
+      shots:
+        publishedShots.length > 0
+          ? publishedShots
+          : shoot.shots
+              .filter(shot => shot.status === "approved" && shot.imageUrl)
+              .map(shot => ({ id: shot.id, title: shot.title, url: shot.imageUrl as string })),
+    }
+  })
 
   return (
     <div className="min-h-screen bg-stone-50">

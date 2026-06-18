@@ -4,6 +4,7 @@ import { sql } from "@/lib/db/client"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { getApprovedPublishableShots, getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
 import { ensureVaultCollectionsSchema, extractMoodLine, toVaultSlug } from "@/lib/vault/published-collections"
+import { derivePublicVaultWhenToUse } from "@/lib/vault/public-copy"
 
 export async function publishShootToVault(id: number) {
   await ensureVaultCollectionsSchema()
@@ -19,7 +20,12 @@ export async function publishShootToVault(id: number) {
     number: String(index + 1),
     id: `${slug}-${shot.id}`,
     title: shot.title,
-    whenToUse: shot.whenToUse,
+    whenToUse: derivePublicVaultWhenToUse({
+      title: shot.title,
+      mood: shot.mood,
+      whenToUse: shot.whenToUse,
+      shotRole: shot.shotRole,
+    }),
     mood: shot.mood,
     prompt: shot.prompt,
     exampleImage: shot.imageUrl,
@@ -104,7 +110,18 @@ export async function publishShootToVault(id: number) {
     `
   }
 
-  await sql`UPDATE content_shoots SET status = 'approved', updated_at = NOW() WHERE id = ${shoot.id}`
+  const publishedShotIds = new Set(cards.map((card) => card.sourceShotId))
+  const downstreamApprovedShots = shoot.shots.map((shot) =>
+    publishedShotIds.has(shot.id) ? { ...shot, status: "approved" as const } : shot,
+  )
+
+  await sql`
+    UPDATE content_shoots
+    SET status = 'approved',
+        shots = ${JSON.stringify(downstreamApprovedShots)}::jsonb,
+        updated_at = NOW()
+    WHERE id = ${shoot.id}
+  `
   const updatedShoot = await getShoot(shoot.id)
   return {
     shoot: updatedShoot ?? { ...shoot, status: "approved" as const },

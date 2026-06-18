@@ -190,6 +190,16 @@ export function formatVaultDropRun(run: VaultDropRunRow | undefined | null): Vau
   }
 }
 
+export async function getVaultDropRun(runId: string): Promise<VaultDropRunPreview | null> {
+  if (!runId) return null
+  const rows = (await sql`
+    SELECT * FROM vault_drop_runs
+    WHERE id = ${runId}
+    LIMIT 1
+  `) as VaultDropRunRow[]
+  return formatVaultDropRun(rows[0])
+}
+
 async function latestRunForDropKey(dropKey: string) {
   if (!dropKey) return null
   try {

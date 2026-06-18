@@ -7,6 +7,7 @@ import type {
   VaultFreebieCollectionPreview,
 } from "@/lib/ai-prompts/prompt-data"
 import { selectRotatingPublishedFreebieCollections } from "@/lib/vault/freebie-curation"
+import { derivePublicVaultWhenToUse } from "@/lib/vault/public-copy"
 
 export type PublishedVaultCollection = {
   id: number
@@ -116,7 +117,11 @@ function parseCards(value: unknown): PromptCard[] {
         number: String(card.number || ""),
         id: String(card.id),
         title: String(card.title),
-        whenToUse: String(card.whenToUse || ""),
+        whenToUse: derivePublicVaultWhenToUse({
+          title: String(card.title),
+          mood: String(card.mood || ""),
+          whenToUse: String(card.whenToUse || ""),
+        }),
         mood: String(card.mood || ""),
         prompt: String(card.prompt),
         exampleImage: typeof card.exampleImage === "string" ? card.exampleImage : undefined,
@@ -188,6 +193,13 @@ export async function getPublishedVaultCollections(): Promise<PublishedVaultColl
     console.error("[vault] published collection load failed:", error)
     return []
   }
+}
+
+export async function getPublishedVaultCollectionBySourceShootId(
+  sourceShootId: number
+): Promise<PublishedVaultCollection | null> {
+  const collections = await getPublishedVaultCollections()
+  return collections.find((collection) => collection.sourceShootId === sourceShootId) ?? null
 }
 
 export async function getPublishedVaultCollectionMeta(): Promise<VaultCollectionMeta[]> {
