@@ -21,7 +21,8 @@ The free `/ai-prompts` pack over-delivers and satisfies the desire that should d
 - No-Fake language throughout (keeps your face; never "no one will know"/"fake"/"flawless").
 
 ### 3. ManyChat integration (set once)
-- Sandra (or Claude via browser) configures ONE evergreen comment-trigger scoped to ALL posts/reels + a matching DM keyword trigger, listening for a number. Opening DM is a tappable button (Meta policy), then delivers a link to `sselfie.ai/p/{number}`.
+- NOTE (verified 2026-06-18): the evergreen all-posts comment trigger ALREADY EXISTS — "Prompt Pack Automation" fires on "User comments on any Post or Reel contains PROMPT" (7,674 runs, 44.6% CTR, live). It captured only 3 emails across 7,791 sends — the email-capture hole this task fixes. So Codex's job is NOT to create the trigger; it's to (a) build the pages/endpoint below and (b) re-point this automation's delivery at the single-prompt page + add the email-capture step. Sandra/Claude updates the ManyChat flow once those exist.
+- The flow: opening DM is a tappable button (Meta policy), then delivers a link to `sselfie.ai/p/{number}`.
 - **Zero-touch routing endpoint (build this):** `GET /api/manychat/prompt?n={number}` → returns `{ ok, number, title, pageUrl, found }` for a valid number, and a graceful fallback for an unknown/not-yet-published number ("that one's coming, here's the Vault"). This lets a single ManyChat flow resolve any number without a new keyword row per prompt. Secure it (shared token / allowlist) so it isn't a public scrape surface.
 - Tag requesters (e.g. `prompt-requester`) and stamp the number so we can attribute Vault sales to the originating prompt.
 
