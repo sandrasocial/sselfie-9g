@@ -44,6 +44,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         aesthetic,
         outputFormat: opts?.format ?? null,
         referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
+        videoSourceUrl: opts?.videoSourceUrl ?? null,
         graphicText: null,
         seedPrompt: opts?.seed ?? null,
         startedAt,
@@ -58,6 +59,10 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
 
   const setReferenceSelfieUrl = useCallback((url: string | null) => {
     setSession(prev => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
+  }, [])
+
+  const setVideoSourceUrl = useCallback((url: string | null) => {
+    setSession(prev => (prev ? { ...prev, videoSourceUrl: url } : prev))
   }, [])
 
   const resetCurrentSession = useCallback(() => {
@@ -119,6 +124,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
+      setVideoSourceUrl,
       setGraphicText,
       close,
     }),
@@ -129,6 +135,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
+      setVideoSourceUrl,
       setGraphicText,
       close,
     ]

@@ -92,6 +92,8 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     : null
   const referenceSelfieUrl =
     typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null
+  const videoSourceUrl =
+    typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null
   const seedPrompt = typeof session.seedPrompt === "string" ? session.seedPrompt : null
 
   return {
@@ -108,6 +110,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     },
     outputFormat,
     referenceSelfieUrl,
+    videoSourceUrl,
     graphicText:
       session.graphicText && typeof session.graphicText === "object"
         ? (session.graphicText as ConciergeSession["graphicText"])

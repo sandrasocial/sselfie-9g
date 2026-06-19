@@ -22,6 +22,7 @@ export type ServerConciergeSessionSnapshot = {
   aesthetic: ServerAestheticSnapshot
   outputFormat: ServerOutputFormat | null
   referenceSelfieUrl: string | null
+  videoSourceUrl: string | null
   graphicText: unknown | null
   seedPrompt?: string | null
   startedAt: number
@@ -97,6 +98,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     outputFormat: (session.outputFormat as ServerOutputFormat | null) ?? null,
     referenceSelfieUrl:
       typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null,
+    videoSourceUrl: typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null,
     graphicText:
       session.graphicText && typeof session.graphicText === "object" ? session.graphicText : null,
     seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,

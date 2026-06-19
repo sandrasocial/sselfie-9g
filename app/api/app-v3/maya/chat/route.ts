@@ -336,6 +336,7 @@ interface ChatBody {
   aestheticId?: string
   format?: OutputFormat
   inspirationImageUrl?: string | null
+  videoSourceUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
   /** MAYA-ADMIN-01: the /admin surface sets this; only honored for the admin email. */
   adminSession?: boolean
@@ -490,6 +491,7 @@ async function getAdminBriefContext(): Promise<string> {
       reportType: "content_brief_weekly",
       limit: 1,
     })
+
     const report = reports[0]
     if (!report?.payload) return ""
     const payload = report.payload as Record<string, unknown>
@@ -639,6 +641,10 @@ export async function POST(req: Request) {
       // EVERY generation path carries Vault DNA, never a generic posed-studio default.
       vaultStyleGuide,
     })
+
+    if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {
+      system = `${system}\n\nVIDEO SOURCE CONTEXT: The user has already selected the still image she wants to animate. Create motion directions for that exact selected image. Do not ask her for another selfie or a new photo unless she asks to replace it.`
+    }
 
     // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
     // Server-gated on the admin email — the flag alone does nothing for anyone else.

@@ -47,6 +47,8 @@ export interface ConciergeSession {
   outputFormat: OutputFormat | null
   /** URL of the uploaded reference selfie (written to user_avatar_images server-side). */
   referenceSelfieUrl: string | null
+  /** URL of the still image selected for image-to-video generation. */
+  videoSourceUrl: string | null
   /** On-image text for graphic formats. */
   graphicText: GraphicTextSpec | null
   /** Optional first message to seed Maya with (e.g. a Content recommendation idea). */
@@ -61,6 +63,8 @@ export interface OpenConciergeOptions {
   seed?: string
   /** Optional already-saved image to use as the active reference when opening Maya. */
   referenceSelfieUrl?: string | null
+  /** Optional gallery/uploaded image to animate when opening Maya in video mode. */
+  videoSourceUrl?: string | null
 }
 
 export interface ConciergeContextValue {
@@ -73,6 +77,7 @@ export interface ConciergeContextValue {
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */
   setOutputFormat: (format: OutputFormat | null) => void
   setReferenceSelfieUrl: (url: string | null) => void
+  setVideoSourceUrl: (url: string | null) => void
   setGraphicText: (spec: GraphicTextSpec) => void
   close: () => void
 }

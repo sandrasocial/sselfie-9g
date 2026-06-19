@@ -21,6 +21,7 @@ const SLOT_TO_TYPE: Record<string, string> = {
   side: "side-profile",
   body: "full-body",
   inspiration: "inspiration",
+  video: "video-source",
 }
 // Slots that hold exactly ONE active image: a new upload replaces the old one.
 const SINGLE_ACTIVE_TYPES = new Set(["side-profile", "full-body", "inspiration"])
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
   const imageType = SLOT_TO_TYPE[slot]
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
-    if (neonUserId) {
+    if (neonUserId && imageType !== "video-source") {
       if (SINGLE_ACTIVE_TYPES.has(imageType)) {
         await sql`
           UPDATE user_avatar_images SET is_active = false

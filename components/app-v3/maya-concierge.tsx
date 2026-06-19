@@ -131,7 +131,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
   video: "Create my video directions",
 }
 
-type UploadSlot = "face" | "side" | "body" | "inspiration"
+type UploadSlot = "face" | "side" | "body" | "inspiration" | "video"
 type GenerationSource = "selfie" | "trained-model"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
@@ -267,12 +267,20 @@ export function MayaConcierge({
   admin = false,
   hasTrainedModel = false,
 }: { admin?: boolean; hasTrainedModel?: boolean } = {}) {
-  const { session, isOpen, resetCurrentSession, setOutputFormat, setReferenceSelfieUrl, close } =
-    useConcierge()
+  const {
+    session,
+    isOpen,
+    resetCurrentSession,
+    setOutputFormat,
+    setReferenceSelfieUrl,
+    setVideoSourceUrl,
+    close,
+  } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
   const sideInput = useRef<HTMLInputElement>(null)
   const bodyInput = useRef<HTMLInputElement>(null)
   const inspoInput = useRef<HTMLInputElement>(null)
+  const videoInput = useRef<HTMLInputElement>(null)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
   const restoredDraftRef = useRef<MayaDraftSnapshot | null>(null)
@@ -323,6 +331,8 @@ export function MayaConcierge({
   // Cross-session memory (Phase E): what Maya already knows + the name she was given.
   const [memory, setMemory] = useState<Memory | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
+  const [videoGalleryImages, setVideoGalleryImages] = useState<string[] | null>(null)
+  const [videoGalleryError, setVideoGalleryError] = useState<string | null>(null)
   const [nameDraft, setNameDraft] = useState("")
   const [namingDismissed, setNamingDismissed] = useState(false)
   const [justNamed, setJustNamed] = useState<string | null>(null)
@@ -349,6 +359,16 @@ export function MayaConcierge({
         setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null })
       )
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen || session?.outputFormat !== "video") return
+    setVideoGalleryImages(null)
+    setVideoGalleryError(null)
+    fetch("/api/app-v3/gallery")
+      .then(r => r.json())
+      .then(d => setVideoGalleryImages(Array.isArray(d?.images) ? d.images.slice(0, 12) : []))
+      .catch(() => setVideoGalleryError("Couldn't load your photos. Upload one instead."))
+  }, [isOpen, session?.outputFormat])
 
   // Identity persistence (QA P1-3): returning members shouldn't re-upload their face. When Maya
   // opens with no active selfie, quietly restore the newest saved one (user_avatar_images).
@@ -391,6 +411,7 @@ export function MayaConcierge({
     aestheticId: string
     format: OutputFormat
     referenceSelfieUrl: string | null
+    videoSourceUrl: string | null
     inspirationImageUrl: string | null
     /** MAYA-ADMIN-01: set by the /admin mount; server-verified against the admin email. */
     adminSession?: boolean
@@ -400,6 +421,7 @@ export function MayaConcierge({
     aestheticId: "",
     format: "photo",
     referenceSelfieUrl: null,
+    videoSourceUrl: null,
     inspirationImageUrl: null,
     adminSession: admin || undefined,
   })
@@ -559,7 +581,8 @@ export function MayaConcierge({
     if (!fmt || isThinking) return
     const canUseTrainedModelWithoutSelfie =
       hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
-    if (!session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
+    if (fmt === "video" && !session.videoSourceUrl) return
+    if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
@@ -605,12 +628,17 @@ export function MayaConcierge({
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const format: OutputFormat = outputFormat ?? "photo"
+  const videoSourceUrl = session.videoSourceUrl
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
   const activeGenerationSource: GenerationSource = customModelAvailable ? generationSource : "selfie"
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
       ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
-      : referenceSelfieUrl
+      : format === "video"
+        ? videoSourceUrl
+          ? FORMAT_OPENER_READY[outputFormat]
+          : FORMAT_OPENER[outputFormat]
+        : referenceSelfieUrl
         ? FORMAT_OPENER_READY[outputFormat]
         : FORMAT_OPENER[outputFormat]
     : referenceSelfieUrl
@@ -624,6 +652,7 @@ export function MayaConcierge({
     aestheticId: aesthetic.id,
     format,
     referenceSelfieUrl,
+    videoSourceUrl,
     inspirationImageUrl: inspirationUrl,
     adminSession: admin || undefined,
   }
@@ -634,7 +663,8 @@ export function MayaConcierge({
     try {
       const form = new FormData()
       form.append("file", file)
-      form.append("slot", slot) // persisted under its own type so each slot survives refresh
+      // Video uploads are transient sources; selfie/reference slots persist for reuse.
+      form.append("slot", slot)
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
@@ -644,7 +674,10 @@ export function MayaConcierge({
         setSetupOpen(false) // replacement done: give the screen back to the thread
       } else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
-      else setInspirationUrl(data.url)
+      else if (slot === "video") {
+        setVideoSourceUrl(data.url)
+        setSetupOpen(false)
+      } else setInspirationUrl(data.url)
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
@@ -720,7 +753,15 @@ export function MayaConcierge({
   }
 
   async function generateConcept(key: string, concept: ConceptCardData) {
-    if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
+    if (format === "video" && !videoSourceUrl) {
+      setGenState(s => ({
+        ...s,
+        [key]: { status: "error", error: "Choose or upload the photo you want to animate first." },
+      }))
+      setSetupOpen(true)
+      return
+    }
+    if (format !== "video" && !referenceSelfieUrl && activeGenerationSource !== "trained-model") {
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
@@ -737,7 +778,7 @@ export function MayaConcierge({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            imageUrl: referenceSelfieUrl,
+            imageUrl: videoSourceUrl,
             motionPrompt: buildVideoMotionPrompt(concept.brief),
             imageDescription: concept.description,
             category: "editorial",
@@ -1137,11 +1178,11 @@ export function MayaConcierge({
         {hasStarted && !setupOpen && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
             <span className="flex min-w-0 items-center gap-2.5">
-              {referenceSelfieUrl && (
+              {(format === "video" ? videoSourceUrl : referenceSelfieUrl) && (
                 <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
                   <Image
-                    src={referenceSelfieUrl}
-                    alt="Your selfie"
+                    src={(format === "video" ? videoSourceUrl : referenceSelfieUrl) as string}
+                    alt={format === "video" ? "Image to animate" : "Your selfie"}
                     fill
                     className="object-cover"
                     sizes="28px"
@@ -1155,7 +1196,13 @@ export function MayaConcierge({
                     ? " · My trained model"
                     : " · Selfie engine"
                   : ""}
-                {referenceSelfieUrl ? " · Selfie in" : " · No selfie yet"}
+                {format === "video"
+                  ? videoSourceUrl
+                    ? " · Image selected"
+                    : " · Pick image"
+                  : referenceSelfieUrl
+                    ? " · Selfie in"
+                    : " · No selfie yet"}
               </span>
             </span>
             <button
@@ -1238,8 +1285,110 @@ export function MayaConcierge({
               </div>
             )}
 
+            {format === "video" && (
+              <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                      Image to animate
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                      Pick from your photos or upload a new still image. Maya will send this exact
+                      image to the video pipeline.
+                    </p>
+                  </div>
+                  {videoSourceUrl && (
+                    <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[4px] border border-[#C5C6C8]/50">
+                      <Image
+                        src={videoSourceUrl}
+                        alt="Selected image to animate"
+                        fill
+                        className="object-cover"
+                        sizes="44px"
+                      />
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                      Pick from your photos
+                    </p>
+                    {videoGalleryImages === null && !videoGalleryError && (
+                      <p className="text-[12px] text-[#818283]">Loading photos...</p>
+                    )}
+                    {videoGalleryError && (
+                      <p className="text-[12px] text-[#818283]">{videoGalleryError}</p>
+                    )}
+                    {videoGalleryImages && videoGalleryImages.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {videoGalleryImages.map(url => {
+                          const selected = videoSourceUrl === url
+                          return (
+                            <button
+                              key={url}
+                              type="button"
+                              onClick={() => setVideoSourceUrl(url)}
+                              className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] border-2 ${
+                                selected
+                                  ? "border-[#0D0E10]"
+                                  : "border-[#C5C6C8]/50 hover:border-[#0D0E10]/50"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt="Gallery photo"
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {videoGalleryImages && videoGalleryImages.length === 0 && (
+                      <p className="text-[12px] text-[#818283]">
+                        No gallery photos yet. Upload one from your device.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => videoInput.current?.click()}
+                      disabled={uploadingSlot === "video"}
+                      className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+                    >
+                      {uploadingSlot === "video" ? "Uploading..." : "Upload new photo"}
+                    </button>
+                    {videoSourceUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoSourceUrl(null)}
+                        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  ref={videoInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f) void handleUpload("video", f)
+                    if (videoInput.current) videoInput.current.value = ""
+                  }}
+                />
+              </div>
+            )}
+
             {/* Front-face selfie: an action before upload, a calm status after. */}
-            {referenceSelfieUrl ? (
+            {format !== "video" && referenceSelfieUrl ? (
               <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex min-w-0 items-center gap-2.5">
@@ -1269,7 +1418,7 @@ export function MayaConcierge({
                   Maya will keep your face, skin tone, and natural features recognizable.
                 </p>
               </div>
-            ) : (
+            ) : format !== "video" ? (
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -1287,7 +1436,7 @@ export function MayaConcierge({
                   Use a past selfie
                 </button>
               </div>
-            )}
+            ) : null}
             <input
               ref={fileInput}
               type="file"
@@ -1310,7 +1459,9 @@ export function MayaConcierge({
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
                   // upload — the gated auto-pull then starts the moment her selfie is in.
                   handlePickFormat(outputFormat)
-                  if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
+                  if (outputFormat === "video" && !videoSourceUrl) {
+                    videoInput.current?.click()
+                  } else if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
                     fileInput.current?.click()
                   }
                 }}
@@ -1321,6 +1472,10 @@ export function MayaConcierge({
                   ? "Creating…"
                   : !outputFormat
                     ? "Pick a format to start"
+                    : outputFormat === "video"
+                      ? videoSourceUrl
+                        ? CTA_LABEL[outputFormat]
+                        : "Choose image to animate"
                     : referenceSelfieUrl || activeGenerationSource === "trained-model"
                       ? CTA_LABEL[outputFormat]
                       : "Add my selfie to start"}
@@ -1328,15 +1483,17 @@ export function MayaConcierge({
             )}
 
             {/* Optional extras — tucked away so a single selfie still just works */}
-            <button
-              type="button"
-              onClick={() => setShowMore(v => !v)}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
-            >
-              {showMore ? "Hide extras" : "Add more angles (optional)"}
-            </button>
+            {format !== "video" && (
+              <button
+                type="button"
+                onClick={() => setShowMore(v => !v)}
+                className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
+              >
+                {showMore ? "Hide extras" : "Add more angles (optional)"}
+              </button>
+            )}
 
-            {showMore && (
+            {format !== "video" && showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
                   For best results, add one full-body shot and one side profile so Maya can keep
@@ -1488,7 +1645,35 @@ export function MayaConcierge({
 
           {/* Prominent selfie requirement: once Maya has proposed directions but there's no
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
-          {!referenceSelfieUrl && hasStarted && activeGenerationSource !== "trained-model" && (
+          {format === "video" && !videoSourceUrl && hasStarted && (
+            <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
+              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
+                Choose what to animate
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                Pick a gallery photo or upload a still image, then Maya can create motion options.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSetupOpen(true)}
+                  className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white"
+                >
+                  Pick image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => videoInput.current?.click()}
+                  disabled={uploadingSlot === "video"}
+                  className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+                >
+                  {uploadingSlot === "video" ? "Uploading..." : "Upload"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {format !== "video" && !referenceSelfieUrl && hasStarted && activeGenerationSource !== "trained-model" && (
             <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
               <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
                 Start your brand shoot
@@ -1677,7 +1862,11 @@ export function MayaConcierge({
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format })
                           }}
-                          disabled={!referenceSelfieUrl && activeGenerationSource !== "trained-model"}
+                          disabled={
+                            format === "video"
+                              ? !videoSourceUrl
+                              : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
+                          }
                         />
                       )
                     })}

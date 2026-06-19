@@ -103,7 +103,7 @@ function ShellInner({
   function createMotionFromImage(imageUrl: string) {
     openWithAesthetic(MAYA_GENERAL, {
       format: "video",
-      referenceSelfieUrl: imageUrl,
+      videoSourceUrl: imageUrl,
       seed: "Let's add subtle editorial motion to this exact image. Keep it natural, polished, and true to the original.",
     })
   }
