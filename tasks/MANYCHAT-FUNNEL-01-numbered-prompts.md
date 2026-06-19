@@ -1,7 +1,7 @@
 # MANYCHAT-FUNNEL-01 — Numbered single-prompt funnel
 
 **Owner:** Codex (app build) · spec by Claude (Cowork)
-**Status:** Ready to build
+**Status:** Built and strategy-adjusted 2026-06-19. Prompt numbers stay in the product, but `PROMPT` is the default ManyChat keyword. `/p/latest` and `/api/manychat/prompt` now support current-prompt fallback so Sandra does not need per-prompt ManyChat wiring.
 **Decided by Sandra 2026-06-18:** free = ONE exact prompt per post (a taste, not a pack); light email gate on delivery (protect list growth + nurture); numbered keywords per prompt post.
 **Strategy source:** `docs/strategy/manychat-funnel-plan-2026-06-18.md` + `docs/strategy/competitor-aivideoskool-2026-06-18.md`. Governed by [[no-fake-ai-psychology]]; money rules in CLAUDE.md.
 

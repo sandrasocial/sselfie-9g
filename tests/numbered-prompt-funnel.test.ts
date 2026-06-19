@@ -13,7 +13,11 @@ import {
   getStaticVaultPromptCards,
   normalizePromptNumber,
 } from "@/lib/ai-prompts/prompt-data"
-import { buildPromptPageVaultCheckoutHref } from "@/lib/ai-prompts/prompt-lookup"
+import {
+  buildPromptPageVaultCheckoutHref,
+  getCurrentFreePrompt,
+} from "@/lib/ai-prompts/prompt-lookup"
+import { GET as resolveManychatPrompt } from "@/app/api/manychat/prompt/route"
 
 describe("numbered prompt funnel", () => {
   afterEach(() => {
@@ -73,11 +77,42 @@ describe("numbered prompt funnel", () => {
     expect(route).toContain("MANYCHAT_BRIDGE_SECRET")
     expect(route).toContain("x-bridge-secret")
     expect(route).toContain("getPromptByNumber")
-    expect(route).toContain("found: false")
+    expect(route).toContain("getCurrentFreePrompt")
+    expect(route).toContain("fallback: true")
+  })
+
+  it("resolves a deterministic current free prompt for /p/latest and ManyChat fallback", async () => {
+    vi.stubEnv("CURRENT_FREE_PROMPT_NUMBER", "14")
+
+    const prompt = await getCurrentFreePrompt()
+
+    expect(prompt?.number).toBe("14")
+    expect(prompt?.card.id).toBe("marble-wine-shot-2")
+  })
+
+  it("lets ManyChat resolve PROMPT with no number to /p/latest", async () => {
+    vi.stubEnv("MANYCHAT_BRIDGE_SECRET", "test-secret")
+    vi.stubEnv("CURRENT_FREE_PROMPT_NUMBER", "14")
+
+    const response = await resolveManychatPrompt(
+      new Request("https://www.sselfie.ai/api/manychat/prompt", {
+        headers: { "x-bridge-secret": "test-secret" },
+      }) as any,
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.ok).toBe(true)
+    expect(json.found).toBe(false)
+    expect(json.fallback).toBe(true)
+    expect(json.number).toBe("14")
+    expect(json.pageUrl).toBe("https://www.sselfie.ai/p/latest")
+    expect(json.vaultCheckoutUrl).toContain("prompt_n=14")
   })
 
   it("renders the single prompt page through the shared prompt lookup", () => {
     const page = fs.readFileSync(path.join(process.cwd(), "app/p/[number]/page.tsx"), "utf8")
+    const latestPage = fs.readFileSync(path.join(process.cwd(), "app/p/latest/page.tsx"), "utf8")
     const gate = fs.readFileSync(
       path.join(process.cwd(), "components/ai-prompts/single-prompt-gate.tsx"),
       "utf8",
@@ -85,6 +120,7 @@ describe("numbered prompt funnel", () => {
 
     expect(page).toContain("getPromptByNumber")
     expect(page).toContain("getLiveVaultPromptCount")
+    expect(latestPage).toContain("getCurrentFreePrompt")
     expect(gate).toContain("delivery_context: \"single_prompt\"")
     expect(gate).toContain("prompt_number: promptNumber")
     expect(gate).toContain("ai_prompts_prompt_copied")

@@ -1,31 +1,40 @@
-# ManyChat bridge wiring — the last step (2026-06-18)
+# ManyChat bridge wiring — PROMPT-first setup (updated 2026-06-19)
 
-The code is live (MANYCHAT-FUNNEL-01, commit 5d442304). This is the one remaining ManyChat-side setup: wire the comment trigger to call the resolver so a number → the right prompt page automatically. ⚠️ The secret must be entered by Sandra (Claude is not permitted to type API secrets/tokens into fields).
+The app-side code is ready for the PROMPT-first model. The default public CTA is still `PROMPT`; prompt numbers stay as internal/product IDs and optional exact links.
+
+The one remaining live-platform step is to update the existing `Prompt Pack Automation` delivery so it sends one current prompt page, not the full `/ai-prompts` pack. Any live ManyChat publish should be confirmed by Sandra before saving.
 
 ## The resolver contract (verified in code)
-- **Method/URL:** `GET https://www.sselfie.ai/api/manychat/prompt?n={{number}}`
+- **Default method/URL:** `GET https://www.sselfie.ai/api/manychat/prompt`
+- **Exact optional lookup:** `GET https://www.sselfie.ai/api/manychat/prompt?n={{number}}`
 - **Auth (pick one):** header `x-bridge-secret: <MANYCHAT_BRIDGE_SECRET>` (preferred), or header `x-manychat-secret:`, or `&secret=` in the URL. The value is the `MANYCHAT_BRIDGE_SECRET` set in Vercel env. No secret / wrong secret → 401.
-- **Response when the number exists:**
+- **Response when a number exists:**
   ```json
-  { "ok": true, "found": true, "number": 14, "title": "Marble Café · Outfit Shot",
+  { "ok": true, "found": true, "fallback": false, "number": "14", "title": "Marble Café · Outfit Shot",
     "pageUrl": "https://www.sselfie.ai/p/14",
     "vaultCheckoutUrl": "https://www.sselfie.ai/checkout/prompt-vault?...prompt_n=14",
     "sourceCollection": "..." }
   ```
-- **Response when not published yet:** `{ "ok": true, "found": false, "title": "That prompt is coming", "pageUrl": "<vault fallback>", "fallbackMessage": "..." }` — so unknown numbers gracefully send to the Vault, never a dead end.
+- **Response with no number or an unknown number:** returns the current free prompt with `found: false`, `fallback: true`, and `pageUrl: "https://www.sselfie.ai/p/latest"`. This keeps old comments and generic `PROMPT` comments frictionless.
 
-## ManyChat setup (in "Prompt Pack Automation", or a new numbered flow)
-1. **Trigger:** evergreen "User comments on any Post or Reel" — keyword = a number (or keep PROMPT and capture the number from the comment text).
+## ManyChat setup (existing "Prompt Pack Automation")
+1. **Trigger:** keep the live evergreen "User comments on any Post or Reel" and DM triggers that contain `PROMPT`.
 2. **External Request action:**
-   - GET `https://www.sselfie.ai/api/manychat/prompt?n={{number}}`
+   - GET `https://www.sselfie.ai/api/manychat/prompt`
    - Header `x-bridge-secret` = the secret (Sandra pastes this).
    - Map response fields → custom fields: `pageUrl` → "Prompt Page URL", `title` → "Prompt Title", `vaultCheckoutUrl` → "Vault URL".
 3. **Opening DM (Meta needs a tap):** button "Send me the prompt".
-4. **Delivery DM:** `Here you go, {{Prompt Title}} 📸 👉 {{Prompt Page URL}}` + a "See the Vault" button → `{{Vault URL}}`.
+4. **Delivery DM:** `Here you go, {{Prompt Title}}. Tap here: {{Prompt Page URL}}` + optional "See the Vault" button → `{{Vault URL}}`.
 
-## The one fiddly bit: capturing `{{number}}`
-The number lives in the comment text. ManyChat needs to pass that into the request as `n`. Easiest reliable path is to test with a known number first (comment "14" → confirm the DM sends the /p/14 link). If pulling the number out of the comment text proves awkward in ManyChat, the fallback is one keyword row per number (add "14" → request with n=14) — still one automation, ~20s per post, no per-post automation rebuild.
+## Optional exact-prompt route for evergreen posts
+For high-performing old reels where the prompt must stay exact:
+
+1. Add a post-specific ManyChat comment trigger for that reel only.
+2. Use the same master flow, but set/request `n=<prompt number>` before delivery.
+3. The resolver returns `/p/{number}`.
+
+Do not make numbered comments the default operating model. Numbers are for exact links, tracking, Vault labels, and the few evergreen posts worth mapping.
 
 ## Who does what
-- Sandra: enters the secret + builds/tests the external request (Claude can guide live but cannot type the secret).
-- Claude: can drive the non-secret parts via browser on Sandra's screen and verify the test DM.
+- Sandra: approves any live ManyChat publish and enters the secret if the external request is used.
+- Claude/Codex: can guide non-secret browser wiring, verify the test DM, and keep this doc aligned with code.

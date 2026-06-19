@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 import {
+  buildLatestPromptPageUrl,
   buildPromptPageUrl,
   buildPromptPageVaultCheckoutHref,
+  getCurrentFreePrompt,
   getPromptByNumber,
 } from "@/lib/ai-prompts/prompt-lookup"
 
@@ -40,12 +42,14 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url)
   const number = url.searchParams.get("n")?.trim() || ""
-  const prompt = await getPromptByNumber(number)
+  const exactPrompt = number ? await getPromptByNumber(number) : null
+  const prompt = exactPrompt || await getCurrentFreePrompt()
 
   if (!prompt) {
     return NextResponse.json({
       ok: true,
       found: false,
+      fallback: true,
       number,
       title: "That prompt is coming",
       pageUrl: `${url.origin.replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")}/prompt-vault?source=manychat_prompt_lookup&utm_source=instagram&utm_medium=manychat&utm_campaign=numbered_prompt_fallback&cta_keyword=${encodeURIComponent(number || "UNKNOWN")}`,
@@ -53,17 +57,24 @@ export async function GET(request: NextRequest) {
     })
   }
 
+  const fallback = !exactPrompt
+
   return NextResponse.json({
     ok: true,
-    found: true,
+    found: Boolean(exactPrompt),
+    fallback,
+    requestedNumber: number || null,
     number: prompt.number,
     title: prompt.card.title,
-    pageUrl: buildPromptPageUrl(prompt.number),
+    pageUrl: fallback ? buildLatestPromptPageUrl() : buildPromptPageUrl(prompt.number),
     vaultCheckoutUrl: buildPromptPageVaultCheckoutHref({
       promptNumber: prompt.number,
       promptId: prompt.card.id,
       promptTitle: prompt.card.title,
     }),
+    fallbackMessage: fallback
+      ? "Here is today’s free prompt. For older reels, use a post-specific URL when you know the exact prompt."
+      : null,
     sourceCollection: prompt.sourceCollection,
   })
 }

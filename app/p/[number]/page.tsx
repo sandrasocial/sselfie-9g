@@ -7,6 +7,7 @@ import { SinglePromptGate } from "@/components/ai-prompts/single-prompt-gate"
 import {
   buildPromptPageUrl,
   buildPromptPageVaultCheckoutHref,
+  getCurrentFreePrompt,
   getLiveVaultPromptCount,
   getPromptByNumber,
 } from "@/lib/ai-prompts/prompt-lookup"
@@ -20,9 +21,15 @@ type PromptPageProps = {
   params: Promise<{ number: string }>
 }
 
+async function resolvePromptPageValue(value: string) {
+  return value.trim().toLowerCase() === "latest"
+    ? getCurrentFreePrompt()
+    : getPromptByNumber(value)
+}
+
 export async function generateMetadata({ params }: PromptPageProps): Promise<Metadata> {
   const { number } = await params
-  const prompt = await getPromptByNumber(number)
+  const prompt = await resolvePromptPageValue(number)
 
   if (!prompt) {
     return {
@@ -40,7 +47,7 @@ export async function generateMetadata({ params }: PromptPageProps): Promise<Met
 export default async function NumberedPromptPage({ params }: PromptPageProps) {
   const { number } = await params
   const [prompt, vaultCount] = await Promise.all([
-    getPromptByNumber(number),
+    resolvePromptPageValue(number),
     getLiveVaultPromptCount(),
   ])
 

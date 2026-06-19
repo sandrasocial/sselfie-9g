@@ -3,6 +3,7 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import {
   extractPromptNumber,
+  FREEBIE_COLLECTION_PREVIEWS,
   getStaticPromptByNumber,
   getStaticVaultPromptCards,
   normalizePromptNumber,
@@ -29,6 +30,10 @@ export function siteUrl(): string {
 export function buildPromptPageUrl(number: string | number): string {
   const normalized = normalizePromptNumber(number) || String(number).trim()
   return `${siteUrl()}/p/${encodeURIComponent(normalized)}`
+}
+
+export function buildLatestPromptPageUrl(): string {
+  return `${siteUrl()}/p/latest`
 }
 
 export function buildPromptPageVaultCheckoutHref(input: {
@@ -79,6 +84,106 @@ export async function getLiveVaultPromptCount(): Promise<number> {
   return getStaticVaultPromptCards().length + publishedCount
 }
 
+function mapPublishedPromptRow(row: {
+  number: string
+  card_id: string
+  title: string
+  when_to_use: string
+  mood: string
+  prompt: string
+  example_image: string | null
+  collection_title: string
+}): NumberedPrompt {
+  return {
+    number: row.number,
+    source: "published",
+    sourceCollection: row.collection_title,
+    card: {
+      number: row.number,
+      id: row.card_id,
+      title: row.title,
+      whenToUse: row.when_to_use,
+      mood: row.mood,
+      prompt: row.prompt,
+      exampleImage: row.example_image || undefined,
+    },
+  }
+}
+
+async function getNewestPublishedFreePrompt(): Promise<NumberedPrompt | null> {
+  try {
+    await ensureVaultCollectionsSchema()
+    await ensurePublishedVaultPromptNumbers()
+    const rows = (await sql`
+      SELECT
+        p.number,
+        p.card_id,
+        p.title,
+        p.when_to_use,
+        p.mood,
+        p.prompt,
+        p.example_image,
+        c.title AS collection_title
+      FROM vault_prompts p
+      INNER JOIN vault_collections c ON c.id = p.collection_id
+      WHERE p.status = 'published'
+        AND c.status = 'published'
+      ORDER BY
+        c.published_at DESC,
+        c.id DESC,
+        CASE
+          WHEN c.giveaway_shot_id IS NOT NULL AND p.source_shot_id = c.giveaway_shot_id THEN 0
+          ELSE 1
+        END,
+        p.sort_order ASC,
+        p.id ASC
+      LIMIT 1
+    `) as Array<{
+      number: string
+      card_id: string
+      title: string
+      when_to_use: string
+      mood: string
+      prompt: string
+      example_image: string | null
+      collection_title: string
+    }>
+
+    const row = rows[0]
+    return row ? mapPublishedPromptRow(row) : null
+  } catch (error) {
+    console.error("[prompt-lookup] failed to resolve newest published free prompt:", error)
+    return null
+  }
+}
+
+export async function getCurrentFreePrompt(): Promise<NumberedPrompt | null> {
+  const configuredNumber = normalizePromptNumber(
+    process.env.CURRENT_FREE_PROMPT_NUMBER ||
+      process.env.NEXT_PUBLIC_CURRENT_FREE_PROMPT_NUMBER ||
+      "",
+  )
+
+  if (configuredNumber) {
+    const configuredPrompt = await getPromptByNumber(configuredNumber)
+    if (configuredPrompt) return configuredPrompt
+  }
+
+  const publishedPrompt = await getNewestPublishedFreePrompt()
+  if (publishedPrompt) return publishedPrompt
+
+  const staticNumber = FREEBIE_COLLECTION_PREVIEWS[0]?.number
+  const staticPrompt = staticNumber ? getStaticPromptByNumber(staticNumber) : null
+  if (!staticPrompt) return null
+
+  return {
+    card: staticPrompt.card,
+    number: normalizePromptNumber(staticPrompt.card.number) || staticPrompt.card.number,
+    sourceCollection: staticPrompt.collectionName,
+    source: "static",
+  }
+}
+
 export async function getPromptByNumber(value: string | number): Promise<NumberedPrompt | null> {
   const number = extractPromptNumber(value)
   if (!number) return null
@@ -126,20 +231,7 @@ export async function getPromptByNumber(value: string | number): Promise<Numbere
     const row = rows[0]
     if (!row) return null
 
-    return {
-      number,
-      source: "published",
-      sourceCollection: row.collection_title,
-      card: {
-        number: row.number,
-        id: row.card_id,
-        title: row.title,
-        whenToUse: row.when_to_use,
-        mood: row.mood,
-        prompt: row.prompt,
-        exampleImage: row.example_image || undefined,
-      },
-    }
+    return mapPublishedPromptRow(row)
   } catch (error) {
     console.error("[prompt-lookup] failed to resolve prompt:", error)
     return null
