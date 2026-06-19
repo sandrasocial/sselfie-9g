@@ -27,9 +27,17 @@ export function siteUrl(): string {
     .replace(/\/+$/, "")
 }
 
-export function buildPromptPageUrl(number: string | number): string {
+export function buildPromptPageUrl(
+  number: string | number,
+  attribution?: Record<string, string | number | null | undefined>,
+): string {
   const normalized = normalizePromptNumber(number) || String(number).trim()
-  return `${siteUrl()}/p/${encodeURIComponent(normalized)}`
+  const url = new URL(`${siteUrl()}/p/${encodeURIComponent(normalized)}`)
+  for (const [key, value] of Object.entries(attribution || {})) {
+    const clean = String(value ?? "").trim()
+    if (clean) url.searchParams.set(key, clean.slice(0, 500))
+  }
+  return url.toString()
 }
 
 export function buildLatestPromptPageUrl(): string {
@@ -41,6 +49,18 @@ export function buildPromptPageVaultCheckoutHref(input: {
   promptId?: string | null
   promptTitle?: string | null
   freebieToken?: string | null
+  attribution?: {
+    source?: string | null
+    utm_source?: string | null
+    utm_medium?: string | null
+    utm_campaign?: string | null
+    utm_content?: string | null
+    checkout_source?: string | null
+    cta_keyword?: string | null
+    entry_post_slug?: string | null
+    buyer_stage?: string | null
+    landing_path?: string | null
+  }
 }) {
   const number = normalizePromptNumber(input.promptNumber) || String(input.promptNumber).trim()
   const params = new URLSearchParams({
@@ -56,6 +76,12 @@ export function buildPromptPageVaultCheckoutHref(input: {
     entry_path: `/p/${number}`,
   })
 
+  for (const [key, value] of Object.entries(input.attribution || {})) {
+    const clean = String(value ?? "").trim()
+    if (clean) params.set(key, clean.slice(0, 500))
+  }
+  params.set("prompt_n", number)
+  params.set("entry_path", `/p/${number}`)
   if (input.promptId?.trim()) params.set("prompt_id", input.promptId.trim())
   if (input.promptTitle?.trim()) params.set("prompt_title", input.promptTitle.trim().slice(0, 120))
   if (input.freebieToken?.trim()) params.set("freebie_token", input.freebieToken.trim())

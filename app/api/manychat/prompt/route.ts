@@ -58,6 +58,16 @@ export async function GET(request: NextRequest) {
   }
 
   const fallback = !exactPrompt
+  const pageAttribution = {
+    source: fallback ? "prompt_latest" : "instagram_manychat",
+    utm_source: "instagram",
+    utm_medium: "manychat",
+    utm_campaign: fallback ? "current_free_prompt" : "numbered_prompt",
+    utm_content: fallback ? "prompt_latest" : `prompt_${prompt.number}`,
+    checkout_source: "manychat_prompt_reply",
+    cta_keyword: fallback ? "PROMPT" : prompt.number,
+    buyer_stage: "lead",
+  }
 
   return NextResponse.json({
     ok: true,
@@ -66,11 +76,12 @@ export async function GET(request: NextRequest) {
     requestedNumber: number || null,
     number: prompt.number,
     title: prompt.card.title,
-    pageUrl: fallback ? buildLatestPromptPageUrl() : buildPromptPageUrl(prompt.number),
+    pageUrl: fallback ? buildLatestPromptPageUrl() : buildPromptPageUrl(prompt.number, pageAttribution),
     vaultCheckoutUrl: buildPromptPageVaultCheckoutHref({
       promptNumber: prompt.number,
       promptId: prompt.card.id,
       promptTitle: prompt.card.title,
+      attribution: pageAttribution,
     }),
     fallbackMessage: fallback
       ? "Here is today’s free prompt. For older reels, use a post-specific URL when you know the exact prompt."

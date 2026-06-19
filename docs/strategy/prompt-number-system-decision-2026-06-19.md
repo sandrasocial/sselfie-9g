@@ -2,7 +2,7 @@
 
 Date: 2026-06-19  
 Owner: Claude/Codex planning, Sandra approved implementation path  
-Status: app-side implementation in progress/ready; live ManyChat publish still requires Sandra confirmation
+Status: app-side implementation shipped; live PROMPT automation updated 2026-06-19 with tracked `/p/latest` button
 
 ## Decision
 

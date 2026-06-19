@@ -38,6 +38,10 @@ function appendParams(path: string, params: Record<string, string | string[] | u
   if (!search.has("utm_source")) search.set("utm_source", "instagram")
   if (!search.has("utm_medium")) search.set("utm_medium", "manychat")
   if (!search.has("utm_campaign")) search.set("utm_campaign", "current_free_prompt")
+  if (!search.has("utm_content")) search.set("utm_content", "prompt_latest")
+  if (!search.has("checkout_source")) search.set("checkout_source", "manychat_prompt_reply")
+  if (!search.has("cta_keyword")) search.set("cta_keyword", "PROMPT")
+  if (!search.has("buyer_stage")) search.set("buyer_stage", "lead")
   return `${path}?${search.toString()}`
 }
 

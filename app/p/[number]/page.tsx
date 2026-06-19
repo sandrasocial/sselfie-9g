@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic"
 
 type PromptPageProps = {
   params: Promise<{ number: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
 async function resolvePromptPageValue(value: string) {
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: PromptPageProps): Promise<Met
   }
 }
 
-export default async function NumberedPromptPage({ params }: PromptPageProps) {
+export default async function NumberedPromptPage({ params, searchParams }: PromptPageProps) {
   const { number } = await params
   const [prompt, vaultCount] = await Promise.all([
     resolvePromptPageValue(number),
@@ -82,6 +83,7 @@ export default async function NumberedPromptPage({ params }: PromptPageProps) {
     promptNumber: prompt.number,
     promptId: prompt.card.id,
     promptTitle: prompt.card.title,
+    attribution: readPromptPageAttribution((await searchParams) || {}),
   })
 
   return (
@@ -355,4 +357,24 @@ export default async function NumberedPromptPage({ params }: PromptPageProps) {
       `}</style>
     </main>
   )
+}
+
+function firstParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0]?.trim() || null
+  return value?.trim() || null
+}
+
+function readPromptPageAttribution(params: Record<string, string | string[] | undefined>) {
+  return {
+    source: firstParam(params.source),
+    utm_source: firstParam(params.utm_source),
+    utm_medium: firstParam(params.utm_medium),
+    utm_campaign: firstParam(params.utm_campaign),
+    utm_content: firstParam(params.utm_content),
+    checkout_source: firstParam(params.checkout_source),
+    cta_keyword: firstParam(params.cta_keyword),
+    entry_post_slug: firstParam(params.entry_post_slug),
+    buyer_stage: firstParam(params.buyer_stage),
+    landing_path: firstParam(params.landing_path),
+  }
 }

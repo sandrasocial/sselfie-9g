@@ -68,6 +68,28 @@ describe("numbered prompt funnel", () => {
     expect(url.searchParams.get("freebie_token")).toBe("token_123")
   })
 
+  it("keeps generic PROMPT attribution separate from the prompt number", () => {
+    const href = buildPromptPageVaultCheckoutHref({
+      promptNumber: "14",
+      promptId: "marble-wine-shot-2",
+      promptTitle: "Marble Café · Wine Close-Up",
+      attribution: {
+        source: "prompt_latest",
+        utm_campaign: "current_free_prompt",
+        utm_content: "prompt_latest",
+        checkout_source: "manychat_prompt_reply",
+        cta_keyword: "PROMPT",
+        buyer_stage: "lead",
+      },
+    })
+    const url = new URL(href, "https://www.sselfie.ai")
+
+    expect(url.searchParams.get("cta_keyword")).toBe("PROMPT")
+    expect(url.searchParams.get("prompt_n")).toBe("14")
+    expect(url.searchParams.get("utm_campaign")).toBe("current_free_prompt")
+    expect(url.searchParams.get("checkout_source")).toBe("manychat_prompt_reply")
+  })
+
   it("keeps the ManyChat prompt resolver behind the shared secret", () => {
     const route = fs.readFileSync(
       path.join(process.cwd(), "app/api/manychat/prompt/route.ts"),
@@ -107,6 +129,7 @@ describe("numbered prompt funnel", () => {
     expect(json.fallback).toBe(true)
     expect(json.number).toBe("14")
     expect(json.pageUrl).toBe("https://www.sselfie.ai/p/latest")
+    expect(json.vaultCheckoutUrl).toContain("cta_keyword=PROMPT")
     expect(json.vaultCheckoutUrl).toContain("prompt_n=14")
   })
 
@@ -121,6 +144,8 @@ describe("numbered prompt funnel", () => {
     expect(page).toContain("getPromptByNumber")
     expect(page).toContain("getLiveVaultPromptCount")
     expect(latestPage).toContain("getCurrentFreePrompt")
+    expect(latestPage).toContain("cta_keyword")
+    expect(latestPage).toContain("PROMPT")
     expect(gate).toContain("delivery_context: \"single_prompt\"")
     expect(gate).toContain("prompt_number: promptNumber")
     expect(gate).toContain("ai_prompts_prompt_copied")
