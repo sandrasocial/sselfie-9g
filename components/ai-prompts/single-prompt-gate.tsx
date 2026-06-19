@@ -121,6 +121,7 @@ export function SinglePromptGate({
   function copyPrompt() {
     const markCopied = () => {
       setCopied(true)
+      const attribution = readAttributionParams(promptNumber)
       trackAnalyticsEvent({
         event: "ai_prompts_prompt_copied",
         properties: {
@@ -129,9 +130,24 @@ export function SinglePromptGate({
           prompt_title: promptTitle,
           prompt_number: promptNumber,
           mood: promptMood || null,
-          ...readAttributionParams(promptNumber),
+          ...attribution,
         },
       })
+      const storageKey = `sselfie_prompt_${promptNumber}_after_copy_vault_cta_viewed`
+      if (window.sessionStorage.getItem(storageKey) !== "1") {
+        window.sessionStorage.setItem(storageKey, "1")
+        trackAnalyticsEvent({
+          event: "ai_prompts_after_copy_vault_cta_view",
+          properties: {
+            source: "single-prompt-page",
+            prompt_id: promptId,
+            prompt_title: promptTitle,
+            prompt_number: promptNumber,
+            mood: promptMood || null,
+            ...attribution,
+          },
+        })
+      }
       window.setTimeout(() => setCopied(false), 1800)
     }
 
@@ -218,12 +234,16 @@ export function SinglePromptGate({
         )}
 
         <div className="sp-vault">
-          <p className="sp-vault-eyebrow">WANT THE REST?</p>
-          <h2>This is 1 of {vaultCount}.</h2>
+          <p className="sp-vault-eyebrow">NEXT STEP</p>
+          <h2>Want the whole shoot world?</h2>
           <p>
-            That&apos;s one shoot. The Vault is every shoot world I&apos;ve built, in one place, so
-            one selfie becomes shoot after shoot, anytime your brand needs to show up. New drops
-            added all the time. $27, one time, yours for good.
+            This is one exact prompt. The Vault gives you the full collection around it:
+            hero shots, close-ups, outfit angles, street scenes, café moments, and new drops
+            when your content needs to feel fresh again.
+          </p>
+          <p>
+            One selfie can become a full editorial shoot library you actually want to post.
+            {` ${vaultCount}`} prompts, $27, one time.
           </p>
           <Link
             href={checkoutHref}
@@ -240,7 +260,7 @@ export function SinglePromptGate({
               })
             }}
           >
-            See what&apos;s inside the Vault
+            Get the full Vault
           </Link>
           <p className="sp-heart">
             You don&apos;t need a photographer or a perfect day. You need one selfie and somewhere

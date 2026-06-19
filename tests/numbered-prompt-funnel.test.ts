@@ -154,6 +154,8 @@ describe("numbered prompt funnel", () => {
     expect(gate).toContain("delivery_context: \"single_prompt\"")
     expect(gate).toContain("prompt_number: promptNumber")
     expect(gate).toContain("ai_prompts_prompt_copied")
+    expect(gate).toContain("ai_prompts_after_copy_vault_cta_view")
+    expect(gate).toContain("Get the full Vault")
     expect(gate).toContain("...readAttributionParams(promptNumber)")
     expect(subscribeRoute).toContain("cta_keyword: safeAttribution(cta_keyword")
     expect(subscribeRoute).toContain("entry_post_slug: safeAttribution(entry_post_slug")

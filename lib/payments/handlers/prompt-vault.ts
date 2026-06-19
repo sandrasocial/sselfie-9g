@@ -10,6 +10,7 @@ import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { markRevenueEnginePurchase } from "../shared"
+import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
 import {
   AI_PHOTOSHOOT_AUDIENCE,
@@ -18,6 +19,14 @@ import {
 } from "@/lib/audience/ai-photoshoot-segment"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
+
+function metadataValue(
+  metadata: Record<string, string> | null | undefined,
+  key: string,
+): string | null {
+  const value = metadata?.[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
 
 async function upsertPromptVaultSubscriber(email: string, name?: string | null) {
   const resolvedName = (name || email.split("@")[0] || "Prompt Vault buyer").trim()
@@ -125,6 +134,8 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
 
       if (vaultCustomerIdForStorage) {
         try {
+          const metadata = session.metadata || {}
+          await ensureRevenueEngineSchema()
           await sql`
             INSERT INTO stripe_payments (
               stripe_payment_id,
@@ -137,6 +148,18 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
               product_type,
               description,
               metadata,
+              customer_email,
+              checkout_session_id,
+              source,
+              utm_source,
+              utm_medium,
+              utm_campaign,
+              utm_content,
+              checkout_source,
+              cta_keyword,
+              prompt_number,
+              entry_post_slug,
+              buyer_stage,
               payment_date,
               is_test_mode,
               created_at,
@@ -153,6 +176,18 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
               'prompt_vault',
               'The AI Photo Prompt Vault',
               ${JSON.stringify(session.metadata || {})},
+              ${customerEmail || session.customer_details?.email || session.customer_email || null},
+              ${session.id},
+              ${metadataValue(metadata, "source") || source || "prompt_vault_paid"},
+              ${metadataValue(metadata, "utm_source")},
+              ${metadataValue(metadata, "utm_medium")},
+              ${metadataValue(metadata, "utm_campaign")},
+              ${metadataValue(metadata, "utm_content")},
+              ${metadataValue(metadata, "checkout_source")},
+              ${metadataValue(metadata, "cta_keyword")},
+              ${metadataValue(metadata, "prompt_number") || metadataValue(metadata, "prompt_n")},
+              ${metadataValue(metadata, "entry_post_slug")},
+              ${metadataValue(metadata, "buyer_stage")},
               NOW(),
               ${isTestMode},
               NOW(),
@@ -161,6 +196,18 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
             ON CONFLICT (stripe_payment_id)
             DO UPDATE SET
               status = 'succeeded',
+              customer_email = COALESCE(stripe_payments.customer_email, EXCLUDED.customer_email),
+              checkout_session_id = COALESCE(stripe_payments.checkout_session_id, EXCLUDED.checkout_session_id),
+              source = COALESCE(stripe_payments.source, EXCLUDED.source),
+              utm_source = COALESCE(stripe_payments.utm_source, EXCLUDED.utm_source),
+              utm_medium = COALESCE(stripe_payments.utm_medium, EXCLUDED.utm_medium),
+              utm_campaign = COALESCE(stripe_payments.utm_campaign, EXCLUDED.utm_campaign),
+              utm_content = COALESCE(stripe_payments.utm_content, EXCLUDED.utm_content),
+              checkout_source = COALESCE(stripe_payments.checkout_source, EXCLUDED.checkout_source),
+              cta_keyword = COALESCE(stripe_payments.cta_keyword, EXCLUDED.cta_keyword),
+              prompt_number = COALESCE(stripe_payments.prompt_number, EXCLUDED.prompt_number),
+              entry_post_slug = COALESCE(stripe_payments.entry_post_slug, EXCLUDED.entry_post_slug),
+              buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
               updated_at = NOW()
           `
         } catch (paymentError: any) {
