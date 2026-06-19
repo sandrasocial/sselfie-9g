@@ -198,7 +198,7 @@ export default async function PromptVaultPage({
               maxWidth: "400px",
             }}
           >
-            The free starter shoot gives you a taste. The Vault gives you the complete shoot
+            The free preview gives you a taste. The Vault gives you the complete shoot
             library: every current collection, every shot direction, every example image, and every
             new drop I add.
           </p>
@@ -312,7 +312,7 @@ export default async function PromptVaultPage({
               The Vault is the complete shoot library.
             </h2>
             <p className="pvf-section-note">
-              The free starter shoot helps you test the idea. The Vault unlocks the rest of the
+              The free preview helps you test the idea. The Vault unlocks the rest of the
               shoot: matching angles, poses, moods, and prompts so one look becomes a full content
               set.
             </p>
@@ -321,8 +321,8 @@ export default async function PromptVaultPage({
             {[
               {
                 n: "01",
-                title: "Starter shoot",
-                body: "A small free taste so you can test the result with your own selfie.",
+                title: "Free preview",
+                body: "Five newest shoot previews so you can test the result with your own selfie.",
               },
               {
                 n: "02",
@@ -523,7 +523,7 @@ export default async function PromptVaultPage({
                 color: "#4F5052",
               }}
             >
-              The free starter shoot is the taste. The Vault is the whole library: all current
+              The free preview is the taste. The Vault is the whole library: all current
               collections, all matching shots, all prompts, and every new SSELFIE drop I add.
             </p>
             <ul className="pvf-upsell-list">

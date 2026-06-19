@@ -12,11 +12,9 @@ import { SuiteDoor } from "@/components/marketing/suite-door"
 import { buildPromptVaultFreebieCheckoutHref } from "@/lib/revenue-engine/prompt-vault-freebie-checkout-url"
 import {
   REUSABLE_STARTER,
-  MAIN_LOOKS,
-  BONUS_LOOKS,
-  WORKFLOW_PROMPTS,
   FREEBIE_ROTATING_DROP_LIMIT,
-  getCuratedStaticVaultFreebieCollections,
+  getStaticVaultFreebieCollections,
+  selectLatestFreebieShootCollections,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
 import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-collections"
@@ -64,76 +62,6 @@ async function validateToken(token: string): Promise<TokenResult> {
 async function isCurrentUserAdmin(): Promise<boolean> {
   const { user } = await getAuthenticatedUser()
   return isAdminEmail(user?.email)
-}
-
-// ---------------------------------------------------------------------------
-// Prompt card component (server — CopyButton is the only client leaf)
-// ---------------------------------------------------------------------------
-
-function PromptCardEl({
-  card,
-  isWorkflow,
-  upgradeHref,
-}: {
-  card: PromptCard
-  isWorkflow?: boolean
-  /** When present, copying shows the persistent Vault bridge (the after-copy moment). */
-  upgradeHref?: string
-}) {
-  return (
-    <article id={card.id} className={`pc ${isWorkflow ? "pc-workflow" : ""}`}>
-      {card.exampleImage && (
-        <div className="pc-example-image-wrap">
-          <Image
-            src={card.exampleImage}
-            alt={`Example result for ${card.title}`}
-            width={600}
-            height={900}
-            className="pc-example-image"
-          />
-        </div>
-      )}
-      <div className="pc-header">
-        <span className="pc-number">{card.number}</span>
-        <h3 className={`pc-title ${cormorant.className}`}>{card.title}</h3>
-      </div>
-      <p className="pc-when-label">When to use it</p>
-      <p className="pc-when">{card.whenToUse}</p>
-      <p className="pc-mood">{card.mood}</p>
-      <div className="pc-prompt-wrap">
-        <p className="pc-prompt-text">{card.prompt}</p>
-        <div className="pc-copy-row">
-          <CopyButton
-            text={card.prompt}
-            promptTitle={card.title}
-            promptNumber={card.number}
-            {...(upgradeHref && !isWorkflow
-              ? {
-                  afterCopyHref: upgradeHref,
-                  afterCopyTitle: "That's one photo. Want the whole shoot?",
-                  afterCopyLabel: "Get the full Vault · $27",
-                  afterCopyNote:
-                    "One good photo is a start. The Vault gives you the full shoot for every look: matching shots, same light, same mood, so your feed finally feels like one brand. New shoots added all the time.",
-                  afterCopyFootnote: "One payment. Yours for good.",
-                  afterCopyViewEvent: "ai_prompts_after_copy_vault_cta_view",
-                  afterCopyTrackEvent: "ai_prompts_prompt_vault_click",
-                  afterCopyTrackProperties: {
-                    source: "ai-prompts",
-                    destination: "checkout-prompt-vault",
-                    utm_campaign: "ai_prompts_to_prompt_vault",
-                    utm_content: `copy_${card.id}`,
-                    checkout_source: "after_copy_free_prompt",
-                    cta_position: "after_copy_free_prompt",
-                    prompt_id: card.id,
-                    prompt_title: card.title,
-                  },
-                }
-              : {})}
-          />
-        </div>
-      </div>
-    </article>
-  )
 }
 
 function PreviewCardEl({
@@ -216,7 +144,10 @@ export default async function AiPromptsAccessPage({
   const publishedCollections = await getPublishedFreebieCollectionPreviews({
     limit: FREEBIE_ROTATING_DROP_LIMIT,
   })
-  const freebieCollections = [...publishedCollections, ...getCuratedStaticVaultFreebieCollections()]
+  const freebieCollections = selectLatestFreebieShootCollections(
+    publishedCollections,
+    getStaticVaultFreebieCollections()
+  )
   const heroCollection = freebieCollections[0] ?? null
   const heroImageSrc = heroCollection?.freeCard.exampleImage ?? null
   const lockedTileCount = freebieCollections.reduce(
@@ -349,8 +280,8 @@ export default async function AiPromptsAccessPage({
             Your Updated Photoshoot Preview.
           </h1>
           <p className="ap-hero-sub">
-            Start with Sandra&apos;s starter shoot. Pick a visual identity, copy the prompt, upload
-            one selfie, and see which version of you feels most like you.
+            Start with the newest SSELFIE shoot previews. Pick a visual identity, copy the prompt,
+            upload one selfie, and see which version of you feels most like you.
           </p>
           {heroCollection && (
             <p className="ap-hero-current">Newest Vault world: {heroCollection.name}</p>
@@ -372,9 +303,11 @@ export default async function AiPromptsAccessPage({
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
             <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
-            <h2 className={`ap-section-title ${cormorant.className}`}>Your starter shoot.</h2>
+            <h2 className={`ap-section-title ${cormorant.className}`}>
+              The latest five shoot previews.
+            </h2>
             <p className="ap-workflow-note">
-              These are the best first looks to test before you buy. Each one gives you a different
+              These are the newest free looks to test before you buy. Each one gives you a different
               visual direction from one selfie. The complete shoot library lives inside the Vault.
             </p>
             <div className="ap-vault-grid">
@@ -561,81 +494,6 @@ export default async function AiPromptsAccessPage({
               <CopyButton text={REUSABLE_STARTER} />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* 4→7. Vault preview moved — now appears after free content below */}
-
-      <section className="ap-section ap-bonus-section">
-        <div className="ap-section-inner">
-          <details className="ap-bonus-library">
-            <summary>
-              <span className="ap-eyebrow">BONUS PROMPT LIBRARY</span>
-              <span className={`ap-section-title ap-summary-title ${cormorant.className}`}>
-                Extra prompts for experimenting.
-              </span>
-              <span className="ap-workflow-note ap-summary-note">
-                These are support prompts from the original free pack. Start with the visual
-                photoshoot previews above; open this library when you want more variations.
-              </span>
-            </summary>
-
-            <div className="ap-bonus-content">
-              <div className="ap-bonus-group">
-                <p className="ap-eyebrow">EXTRA LOOKS</p>
-                <h2 className={`ap-section-title ${cormorant.className}`}>
-                  More transformations to test.
-                </h2>
-                <div className="ap-cards ap-main-grid">
-                  {MAIN_LOOKS.map(card => (
-                    <PromptCardEl
-                      key={card.id}
-                      card={card}
-                      upgradeHref={buildPromptVaultFreebieCheckoutHref({
-                        promptId: card.id,
-                        accessToken: token,
-                      })}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="ap-bonus-group">
-                <p className="ap-eyebrow">BONUS LOOKS</p>
-                <h2 className={`ap-section-title ${cormorant.className}`}>
-                  Specific moments and quick variations.
-                </h2>
-                <div className="ap-cards">
-                  {BONUS_LOOKS.map(card => (
-                    <PromptCardEl
-                      key={card.id}
-                      card={card}
-                      upgradeHref={buildPromptVaultFreebieCheckoutHref({
-                        promptId: card.id,
-                        accessToken: token,
-                      })}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="ap-bonus-group">
-                <p className="ap-eyebrow">SSELFIE WORKFLOW</p>
-                <h2 className={`ap-section-title ${cormorant.className}`}>
-                  Make the photo useful for content.
-                </h2>
-                <p className="ap-workflow-note">
-                  These do not change how you look. They help you understand your photo, edit it,
-                  caption it, and turn it into a content plan.
-                </p>
-                <div className="ap-cards">
-                  {WORKFLOW_PROMPTS.map(card => (
-                    <PromptCardEl key={card.id} card={card} isWorkflow />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </details>
         </div>
       </section>
 
@@ -978,110 +836,6 @@ export default async function AiPromptsAccessPage({
           color: #4F5052;
         }
 
-        .ap-cards {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .pc {
-          border: 1px solid rgba(197, 198, 200, 0.35);
-          border-radius: 18px;
-          padding: 32px 28px 24px;
-          background: #FFFFFF;
-          overflow: hidden;
-        }
-
-        /* Inside the vault item, the card's bottom corners are flat so the
-           thumbnail strip connects seamlessly below it */
-        .ap-vault-item > .pc {
-          border-radius: 18px 18px 0 0;
-          border-bottom: none;
-        }
-
-        .pc-example-image-wrap {
-          margin: -32px -28px 24px;
-          overflow: hidden;
-          border-radius: 18px 18px 0 0;
-        }
-
-        .pc-example-image {
-          width: 100%;
-          height: auto;
-          max-height: 420px;
-          object-fit: cover;
-          object-position: center top;
-          display: block;
-        }
-
-        .pc-workflow {
-          background: #FFFFFF;
-          border-color: rgba(197, 198, 200, 0.35);
-        }
-
-        .pc-header {
-          display: flex;
-          align-items: baseline;
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
-        .pc-number {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.18em;
-          color: #818283;
-          flex-shrink: 0;
-        }
-
-        .pc-title {
-          margin: 0;
-          font-size: clamp(1.45rem, 4vw, 1.9rem);
-          font-weight: 300;
-          line-height: 1.05;
-          color: #0D0E10;
-        }
-
-        .pc-when-label {
-          margin: 0 0 6px;
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          color: #818283;
-        }
-
-        .pc-when {
-          margin: 0 0 16px;
-          font-size: 14px;
-          line-height: 1.7;
-          color: #4F5052;
-        }
-
-        .pc-mood {
-          margin: 0 0 24px;
-          font-size: 11px;
-          line-height: 1.6;
-          color: #818283;
-          letter-spacing: 0.04em;
-        }
-
-        .pc-prompt-wrap {
-          border: 1px solid #FFFFFF;
-          border-radius: 10px;
-          padding: 20px 20px 14px;
-          background: #F8FAFA;
-        }
-
-        .pc-prompt-text {
-          margin: 0 0 16px;
-          font-size: 14px;
-          line-height: 1.85;
-          color: #4F5052;
-          white-space: normal;
-          word-break: break-word;
-        }
-
         .pc-copy-row {
           display: flex;
           justify-content: flex-end;
@@ -1251,7 +1005,7 @@ export default async function AiPromptsAccessPage({
           border-top: 1px solid rgba(197, 198, 200, 0.35);
         }
 
-        /* Vault grid — same responsive behaviour as ap-cards but without last-child span */
+        /* Vault grid */
         .ap-vault-grid {
           display: flex;
           flex-direction: column;
@@ -1453,14 +1207,6 @@ export default async function AiPromptsAccessPage({
           .ap-kit-bridge {
             padding: 80px 72px;
           }
-          .ap-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-          }
-          .ap-cards.ap-main-grid > .pc:last-child {
-            grid-column: 1 / -1;
-          }
           .ap-path-inner {
             max-width: 1080px;
             grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
@@ -1492,8 +1238,7 @@ export default async function AiPromptsAccessPage({
         .ap-section {
           background: #F8FAFA;
         }
-        .ap-vault-preview,
-        .ap-bonus-section {
+        .ap-vault-preview {
           background: #FFFFFF;
         }
         .ap-before,
@@ -1501,13 +1246,10 @@ export default async function AiPromptsAccessPage({
         .ap-kit-bridge {
           background: #F8FAFA;
         }
-        .ap-eyebrow,
-        .pc-number,
-        .pc-when-label {
+        .ap-eyebrow {
           color: #818283;
         }
         .ap-section-title,
-        .pc-title,
         .ap-bridge-title {
           color: #0D0E10;
           letter-spacing: 0;
@@ -1516,31 +1258,17 @@ export default async function AiPromptsAccessPage({
         .ap-starter-note,
         .ap-before-list li,
         .ap-bridge-body,
-        .ap-kit-body,
-        .pc-when {
+        .ap-kit-body {
           color: rgba(13, 12, 11, 0.64);
         }
-        .pc,
         .ap-starter-card {
           background: #FFFFFF;
           border-color: rgba(197, 198, 200, 0.35);
           border-radius: 8px;
         }
-        .pc-example-image-wrap {
-          border-radius: 8px 8px 0 0;
-        }
-        .ap-vault-item > .pc {
-          border-radius: 8px 8px 0 0;
-        }
-        .pc-prompt-wrap {
-          background: #F8FAFA;
-          border-color: rgba(197, 198, 200, 0.35);
-        }
-        .pc-prompt-text,
         .ap-starter-text {
           color: rgba(13, 12, 11, 0.74);
         }
-        .pc-mood,
         .ap-thumb-note,
         .ap-kit-question {
           color: rgba(13, 12, 11, 0.48);
@@ -1589,35 +1317,6 @@ export default async function AiPromptsAccessPage({
         }
         .ap-bridge {
           background: #FFFFFF;
-        }
-        .ap-bonus-library {
-          border: 1px solid rgba(197, 198, 200, 0.35);
-          background: #FFFFFF;
-          border-radius: 8px;
-          padding: 24px;
-        }
-        .ap-bonus-library summary {
-          cursor: pointer;
-          list-style: none;
-        }
-        .ap-bonus-library summary::-webkit-details-marker {
-          display: none;
-        }
-        .ap-summary-title {
-          display: block;
-          margin-bottom: 16px;
-        }
-        .ap-summary-note {
-          display: block;
-          margin: 0;
-        }
-        .ap-bonus-content {
-          margin-top: 40px;
-          padding-top: 40px;
-          border-top: 1px solid rgba(13, 12, 11, 0.08);
-        }
-        .ap-bonus-group + .ap-bonus-group {
-          margin-top: 56px;
         }
         .ap-preview-card {
           background: #FFFFFF;

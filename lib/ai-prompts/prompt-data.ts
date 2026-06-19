@@ -9,8 +9,7 @@
 // FREEBIE RULE: When adding a new collection:
 //   1. Add the full collection as [NAME]_SERIES above COZY_LEATHER_SERIES (newest at top)
 //   2. Add it to STATIC_VAULT_COLLECTION_SERIES / VAULT_COLLECTION_META for paid Vault surfaces.
-//   Do NOT append every new shot 1 to the freebie. The freebie is a curated starter shoot
-//   plus one rotating newest-drop preview. The full series goes to the Vault.
+//   The freebie shows only the newest five shoot previews. The full series stays in the Vault.
 // ---------------------------------------------------------------------------
 
 export type PromptCard = {
@@ -2474,9 +2473,11 @@ export type VaultFreebieCollectionPreview = {
   lockedShots: VaultLockedShotPreview[]
 }
 
+export const FREEBIE_TOTAL_SHOOT_LIMIT = 5
+
 export const FREEBIE_STATIC_STARTER_LIMIT = 5
 
-export const FREEBIE_ROTATING_DROP_LIMIT = 1
+export const FREEBIE_ROTATING_DROP_LIMIT = FREEBIE_TOTAL_SHOOT_LIMIT
 
 const FREEBIE_STATIC_STARTER_CARD_IDS = [
   "mysterious-vogue-shot-1",
@@ -2650,8 +2651,8 @@ export const VAULT_COLLECTION_META: VaultCollectionMeta[] = [
 // FREEBIE COLLECTION PREVIEWS
 //
 // Legacy complete list of static collection first shots. The public freebie
-// should use getCuratedStaticVaultFreebieCollections(), not this full list,
-// so the freebie stays a starter shoot instead of becoming a free mini-Vault.
+// should use selectLatestFreebieShootCollections(), not this full list,
+// so the freebie stays capped instead of becoming a free mini-Vault.
 //
 // HOW TO UPDATE WHEN ADDING A NEW COLLECTION:
 //   Do not update this array for normal new drops. Add the full collection
@@ -2798,4 +2799,22 @@ export function getCuratedStaticVaultFreebieCollections(): VaultFreebieCollectio
   return FREEBIE_STATIC_STARTER_CARD_IDS.map(cardId => byCardId.get(cardId))
     .filter((collection): collection is VaultFreebieCollectionPreview => Boolean(collection))
     .slice(0, FREEBIE_STATIC_STARTER_LIMIT)
+}
+
+export function selectLatestFreebieShootCollections(
+  publishedCollections: VaultFreebieCollectionPreview[],
+  staticCollections: VaultFreebieCollectionPreview[] = getStaticVaultFreebieCollections(),
+): VaultFreebieCollectionPreview[] {
+  const seen = new Set<string>()
+  const selected: VaultFreebieCollectionPreview[] = []
+
+  for (const collection of [...publishedCollections, ...staticCollections]) {
+    const id = collection.freeCard.id
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    selected.push(collection)
+    if (selected.length >= FREEBIE_TOTAL_SHOOT_LIMIT) break
+  }
+
+  return selected
 }

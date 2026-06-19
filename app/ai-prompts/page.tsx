@@ -6,7 +6,8 @@ import { OptInForm } from "@/components/ai-prompts/opt-in-form"
 import {
   VAULT_COLLECTION_META,
   FREEBIE_ROTATING_DROP_LIMIT,
-  getCuratedStaticVaultFreebieCollections,
+  getStaticVaultFreebieCollections,
+  selectLatestFreebieShootCollections,
 } from "@/lib/ai-prompts/prompt-data"
 import {
   getPublishedFreebieCollectionPreviews,
@@ -53,7 +54,7 @@ const HERO_IMAGE: string = "/images/ai-prompts/quiet-luxury-london-shot-3.jpg"
  * Do not show cards without a valid image src.
  */
 function buildHeroPreviews(
-  freebiePreviews = getCuratedStaticVaultFreebieCollections().map(
+  freebiePreviews = getStaticVaultFreebieCollections().map(
     collection => collection.freeCard
   ),
   vaultMeta = VAULT_COLLECTION_META
@@ -74,14 +75,14 @@ const VALUE_ITEMS = [
   "Free AI photoshoot prompts you can test with your own selfies.",
   "Editorial looks for personal brand images, profile photos, and content.",
   "Beginner-friendly instructions so you know what to paste and where.",
-  "A starter shoot from the SSELFIE visual world, with a fresh drop preview when new shoots are added.",
+  "The five newest SSELFIE shoot previews, so the freebie stays useful without becoming the full Vault.",
 ]
 
 const FUNNEL_STEPS = [
   {
     label: "01",
     title: "Free Preview",
-    body: "Start with a starter shoot and see what your own selfie can become.",
+    body: "Start with the five newest shoot previews and see what your own selfie can become.",
   },
   {
     label: "02",
@@ -100,12 +101,12 @@ export default async function AiPromptsOptInPage() {
     getPublishedFreebieCollectionPreviews({ limit: FREEBIE_ROTATING_DROP_LIMIT }),
     getPublishedVaultCollectionMeta(),
   ])
-  const publishedPreviewCards = publishedPreviews.map(collection => collection.freeCard)
+  const freebieCollections = selectLatestFreebieShootCollections(
+    publishedPreviews,
+    getStaticVaultFreebieCollections()
+  )
   const heroPreviews = buildHeroPreviews(
-    [
-      ...publishedPreviewCards,
-      ...getCuratedStaticVaultFreebieCollections().map(collection => collection.freeCard),
-    ],
+    freebieCollections.map(collection => collection.freeCard),
     [...publishedMeta, ...VAULT_COLLECTION_META]
   )
 

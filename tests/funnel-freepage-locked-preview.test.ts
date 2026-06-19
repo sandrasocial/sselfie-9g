@@ -7,8 +7,10 @@ import { isAllowedAnalyticsEventName } from "@/lib/analytics/event-contract"
 import {
   FREEBIE_ROTATING_DROP_LIMIT,
   FREEBIE_STATIC_STARTER_LIMIT,
+  FREEBIE_TOTAL_SHOOT_LIMIT,
   getCuratedStaticVaultFreebieCollections,
   getStaticVaultFreebieCollections,
+  selectLatestFreebieShootCollections,
 } from "@/lib/ai-prompts/prompt-data"
 import { selectRotatingPublishedFreebieCollections } from "@/lib/vault/freebie-curation"
 
@@ -41,7 +43,7 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(isAllowedAnalyticsEventName("ai_prompts_locked_vault_tile_click")).toBe(true)
   })
 
-  it("caps the freebie to a curated evergreen starter shoot", () => {
+  it("keeps the old curated static helper capped for legacy callers", () => {
     const allCollections = getStaticVaultFreebieCollections()
     const curated = getCuratedStaticVaultFreebieCollections()
 
@@ -56,7 +58,7 @@ describe("AI prompts free page locked Vault previews", () => {
     ])
   })
 
-  it("keeps published Shoot Studio drops rotating instead of appending forever", () => {
+  it("caps published Shoot Studio freebie previews instead of appending forever", () => {
     const makeCollection = (slug: string, publishedAt: string) => ({
       id: Number(publishedAt.slice(-1)),
       slug,
@@ -95,12 +97,17 @@ describe("AI prompts free page locked Vault previews", () => {
       [
         makeCollection("newest-drop", "2026-06-15T10:00:00.000Z"),
         makeCollection("older-drop", "2026-06-08T10:00:00.000Z"),
+        makeCollection("older-drop-2", "2026-06-07T10:00:00.000Z"),
+        makeCollection("older-drop-3", "2026-06-06T10:00:00.000Z"),
+        makeCollection("older-drop-4", "2026-06-05T10:00:00.000Z"),
+        makeCollection("older-drop-5", "2026-06-04T10:00:00.000Z"),
       ],
       { limit: FREEBIE_ROTATING_DROP_LIMIT }
     )
 
-    expect(curated).toHaveLength(1)
+    expect(curated).toHaveLength(FREEBIE_ROTATING_DROP_LIMIT)
     expect(curated[0].freeCard.id).toBe("newest-drop-shot-1")
+    expect(curated.map(collection => collection.freeCard.id)).not.toContain("older-drop-5-shot-1")
     expect(curated[0].lockedShots).toEqual([
       {
         title: "newest-drop · Shot 2",
@@ -110,17 +117,51 @@ describe("AI prompts free page locked Vault previews", () => {
     expect("prompt" in curated[0].lockedShots[0]).toBe(false)
   })
 
+  it("caps the delivered freebie to the latest five shoot previews", () => {
+    const makePublishedPreview = (id: string) => ({
+      freeCard: {
+        number: id.replace(/\D/g, "") || "1",
+        id,
+        title: `${id} title`,
+        whenToUse: "Use it.",
+        mood: "test",
+        prompt: "free prompt",
+        exampleImage: "/image.jpg",
+      },
+      name: `${id} collection`,
+      shotCount: 2,
+      lockedShots: [{ title: `${id} locked`, exampleImage: "/locked.jpg" }],
+    })
+
+    const selected = selectLatestFreebieShootCollections(
+      [
+        makePublishedPreview("published-1"),
+        makePublishedPreview("published-2"),
+      ],
+      getStaticVaultFreebieCollections(),
+    )
+
+    expect(selected).toHaveLength(FREEBIE_TOTAL_SHOOT_LIMIT)
+    expect(selected.slice(0, 2).map(collection => collection.freeCard.id)).toEqual([
+      "published-1",
+      "published-2",
+    ])
+    expect(selected.map(collection => collection.freeCard.id)).not.toContain("dark-balcony-shot-1")
+  })
+
   it("keeps the free prompt pack and paid Vault in separate lanes", () => {
     const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
     const vaultLandingContents = read("app/prompt-vault/page.tsx")
     const vaultAccessContents = read("app/access/prompt-vault/[token]/page.tsx")
 
-    expect(freePageContents).toContain("Your starter shoot.")
+    expect(freePageContents).toContain("The latest five shoot previews.")
+    expect(freePageContents).not.toContain("BONUS PROMPT LIBRARY")
+    expect(freePageContents).not.toContain("MAIN_LOOKS.map")
     expect(vaultLandingContents).toContain("Unlock the")
     expect(vaultLandingContents).toContain("full AI")
     expect(vaultLandingContents).toContain("photoshoot")
     expect(vaultLandingContents).toContain("library.")
-    expect(vaultLandingContents).toContain("The free starter shoot gives you a taste.")
+    expect(vaultLandingContents).toContain("The free preview gives you a taste.")
     expect(vaultLandingContents).not.toContain("Turn one<br />selfie into<br />unlimited")
     expect(vaultLandingContents).not.toContain("import { CopyButton }")
 
