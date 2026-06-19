@@ -62,9 +62,22 @@ type AttributionRow = {
   utm_campaign: string | null
   entry_post_slug: string | null
   cta_keyword: string | null
+  prompt_number: string | null
   checkout_starts: number
   purchases: number
   recovery_sends: number
+}
+
+type PromptFunnelRow = {
+  prompt_number: string | null
+  prompt_title: string | null
+  cta_keyword: string | null
+  entry_post_slug: string | null
+  page_views: number
+  prompt_copies: number
+  email_captures: number
+  checkout_starts: number
+  purchases: number
 }
 
 type RecentPurchaseRow = {
@@ -187,16 +200,94 @@ async function getPromptVaultMetrics(windowDays: number) {
       NULLIF(utm_campaign, '') AS utm_campaign,
       NULLIF(entry_post_slug, '') AS entry_post_slug,
       NULLIF(cta_keyword, '') AS cta_keyword,
+      NULLIF(prompt_number, '') AS prompt_number,
       COUNT(*)::int AS checkout_starts,
       COUNT(*) FILTER (WHERE status = 'completed')::int AS purchases,
       COUNT(*) FILTER (WHERE recovery_email_sent_at IS NOT NULL)::int AS recovery_sends
     FROM checkout_attribution
     WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
       AND product_type = 'prompt_vault'
-    GROUP BY 1, 2, 3, 4, 5
+    GROUP BY 1, 2, 3, 4, 5, 6
     ORDER BY checkout_starts DESC, purchases DESC
     LIMIT 10
   `) as AttributionRow[]
+
+  const promptFunnelRows = (await sql`
+    WITH prompt_events AS (
+      SELECT
+        NULLIF(properties->>'prompt_number', '') AS prompt_number,
+        NULLIF(properties->>'prompt_title', '') AS prompt_title,
+        NULLIF(properties->>'cta_keyword', '') AS cta_keyword,
+        NULLIF(properties->>'entry_post_slug', '') AS entry_post_slug,
+        COUNT(*) FILTER (
+          WHERE event_name = 'prompt_vault_prompt_viewed'
+            AND properties->>'source' = 'single-prompt-page'
+        )::int AS page_views,
+        COUNT(*) FILTER (
+          WHERE event_name = 'ai_prompts_prompt_copied'
+            AND properties->>'source' = 'single-prompt-page'
+        )::int AS prompt_copies,
+        COUNT(*) FILTER (
+          WHERE event_name = 'ai_prompts_subscribed'
+            AND properties->>'delivery_context' = 'single_prompt'
+        )::int AS email_captures,
+        0::int AS checkout_starts,
+        0::int AS purchases
+      FROM analytics_events
+      WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
+        AND event_name IN (
+          'prompt_vault_prompt_viewed',
+          'ai_prompts_prompt_copied',
+          'ai_prompts_subscribed'
+        )
+      GROUP BY 1, 2, 3, 4
+    ),
+    checkout_rows AS (
+      SELECT
+        NULLIF(prompt_number, '') AS prompt_number,
+        NULL::text AS prompt_title,
+        NULLIF(cta_keyword, '') AS cta_keyword,
+        NULLIF(entry_post_slug, '') AS entry_post_slug,
+        0::int AS page_views,
+        0::int AS prompt_copies,
+        0::int AS email_captures,
+        COUNT(*)::int AS checkout_starts,
+        COUNT(*) FILTER (WHERE status = 'completed')::int AS purchases
+      FROM checkout_attribution
+      WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
+        AND product_type = 'prompt_vault'
+        AND (
+          NULLIF(prompt_number, '') IS NOT NULL
+          OR NULLIF(cta_keyword, '') IS NOT NULL
+          OR NULLIF(entry_post_slug, '') IS NOT NULL
+        )
+      GROUP BY 1, 2, 3, 4
+    )
+    SELECT
+      prompt_number,
+      MAX(prompt_title) AS prompt_title,
+      cta_keyword,
+      entry_post_slug,
+      SUM(page_views)::int AS page_views,
+      SUM(prompt_copies)::int AS prompt_copies,
+      SUM(email_captures)::int AS email_captures,
+      SUM(checkout_starts)::int AS checkout_starts,
+      SUM(purchases)::int AS purchases
+    FROM (
+      SELECT * FROM prompt_events
+      UNION ALL
+      SELECT * FROM checkout_rows
+    ) rows
+    GROUP BY 1, 3, 4
+    HAVING
+      SUM(page_views) > 0
+      OR SUM(prompt_copies) > 0
+      OR SUM(email_captures) > 0
+      OR SUM(checkout_starts) > 0
+      OR SUM(purchases) > 0
+    ORDER BY email_captures DESC, checkout_starts DESC, page_views DESC, prompt_copies DESC
+    LIMIT 12
+  `) as PromptFunnelRow[]
 
   const [systemUpgradeCountsRow] = await sql`
     SELECT
@@ -270,7 +361,7 @@ async function getPromptVaultMetrics(windowDays: number) {
     revenue_cents: toInt(systemUpgradeCountsRow?.revenue_cents),
   }
 
-  return { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, recentPurchases }
+  return { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, promptFunnelRows, recentPurchases }
 }
 
 export default async function PromptVaultAdminPage({
@@ -281,7 +372,7 @@ export default async function PromptVaultAdminPage({
   const params = await searchParams
   const requestedDays = Number(params.days || 14)
   const windowDays = [7, 14, 30].includes(requestedDays) ? requestedDays : 14
-  const { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, recentPurchases } =
+  const { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, promptFunnelRows, recentPurchases } =
     await getPromptVaultMetrics(windowDays)
 
   return (
@@ -496,6 +587,61 @@ export default async function PromptVaultAdminPage({
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="bg-white border border-stone-200 p-6 rounded-none lg:col-span-2">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-2 text-[10px] uppercase tracking-[0.24em] text-stone-400">
+                  ManyChat Funnel
+                </p>
+                <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                  PROMPT DEMAND BY LINK
+                </h2>
+              </div>
+              <p className="max-w-xl text-xs leading-relaxed text-stone-500">
+                Source: analytics_events for views, copies, and email captures. checkout_attribution for starts and purchases. Money still comes from Stripe below.
+              </p>
+            </div>
+            {promptFunnelRows.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-[10px] tracking-[0.18em] uppercase text-stone-400">
+                    <tr className="border-b border-stone-100">
+                      <th className="py-3 pr-4 font-medium">Prompt</th>
+                      <th className="py-3 pr-4 font-medium">Keyword</th>
+                      <th className="py-3 pr-4 font-medium">Reel</th>
+                      <th className="py-3 pr-4 font-medium text-right">Views</th>
+                      <th className="py-3 pr-4 font-medium text-right">Emails</th>
+                      <th className="py-3 pr-4 font-medium text-right">Copies</th>
+                      <th className="py-3 pr-4 font-medium text-right">Starts</th>
+                      <th className="py-3 font-medium text-right">Sales</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {promptFunnelRows.map((row) => (
+                      <tr key={`${row.prompt_number}-${row.cta_keyword}-${row.entry_post_slug}`}>
+                        <td className="py-3 pr-4 text-stone-950">
+                          {row.prompt_number ? `#${row.prompt_number}` : "-"}
+                          {row.prompt_title ? <span className="block max-w-xs truncate text-xs text-stone-500">{row.prompt_title}</span> : null}
+                        </td>
+                        <td className="py-3 pr-4 text-stone-500">{row.cta_keyword || "-"}</td>
+                        <td className="py-3 pr-4 text-stone-500">{row.entry_post_slug || "-"}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.page_views}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.email_captures}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.prompt_copies}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
+                        <td className="py-3 text-right text-stone-950">{row.purchases}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-stone-500 leading-relaxed">
+                No single-prompt funnel rows in this window yet. New rows appear when `/p/latest` or `/p/[number]` traffic carries ManyChat attribution.
+              </p>
+            )}
+          </section>
+
           <section className="bg-white border border-stone-200 p-6 rounded-none">
             <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               TOP VIEWED TRANSFORMATIONS
@@ -565,6 +711,7 @@ export default async function PromptVaultAdminPage({
                       <th className="py-3 pr-4 font-medium">Campaign</th>
                       <th className="py-3 pr-4 font-medium">Reel</th>
                       <th className="py-3 pr-4 font-medium">Keyword</th>
+                      <th className="py-3 pr-4 font-medium">Prompt</th>
                       <th className="py-3 pr-4 font-medium text-right">Starts</th>
                       <th className="py-3 pr-4 font-medium text-right">Sales</th>
                       <th className="py-3 font-medium text-right">Recovery</th>
@@ -572,11 +719,12 @@ export default async function PromptVaultAdminPage({
                   </thead>
                   <tbody className="divide-y divide-stone-100">
                     {attributionRows.map((row) => (
-                      <tr key={`${row.source}-${row.utm_campaign}-${row.entry_post_slug}-${row.cta_keyword}`}>
+                      <tr key={`${row.source}-${row.utm_campaign}-${row.entry_post_slug}-${row.cta_keyword}-${row.prompt_number}`}>
                         <td className="py-3 pr-4 text-stone-950">{row.source || row.utm_source || "direct"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.utm_campaign || "-"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.entry_post_slug || "-"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.cta_keyword || "-"}</td>
+                        <td className="py-3 pr-4 text-stone-500">{row.prompt_number ? `#${row.prompt_number}` : "-"}</td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.purchases}</td>
                         <td className="py-3 text-right text-stone-950">{row.recovery_sends}</td>

@@ -2,7 +2,7 @@
 
 The app-side code is ready for the PROMPT-first model. The default public CTA is still `PROMPT`; prompt numbers stay as internal/product IDs and optional exact links.
 
-Live update 2026-06-19: the existing `Prompt Pack Automation` delivery now sends one current prompt page, not the full `/ai-prompts` pack. The button keeps Sandra's approved copy and points to a tracked `/p/latest` URL.
+Live update 2026-06-19: the existing `Prompt Pack Automation` delivery now sends one current prompt page, not the full `/ai-prompts` pack. The button keeps Sandra's approved copy and opens attached `Send Message #1`; that delivery message sends the tracked `/p/latest` URL inside the DM window.
 
 ## The resolver contract (verified in code)
 - **Default method/URL:** `GET https://www.sselfie.ai/api/manychat/prompt`
@@ -26,7 +26,7 @@ Live update 2026-06-19: the existing `Prompt Pack Automation` delivery now sends
 3. **Opening DM (Meta needs a tap):** button "Send me the prompt".
 4. **Delivery DM:** `Here you go, {{Prompt Title}}. Tap here: {{Prompt Page URL}}` + optional "See the Vault" button → `{{Vault URL}}`.
 
-Current live shortcut: the high-volume PROMPT flow still uses a website button in the first private reply. It is now tracked, but ManyChat's docs say website buttons do not opt the person in or open the 24-hour window. Clone/rebuild this flow before adding follow-up nurture.
+Current live setup: the high-volume PROMPT flow is now tap-first. The first private reply creates the user interaction, then the attached delivery message sends the tracked prompt link. Do not convert it back to a first-message website button.
 
 ## Optional exact-prompt route for evergreen posts
 For high-performing old reels where the prompt must stay exact:

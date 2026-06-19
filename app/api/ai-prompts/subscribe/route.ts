@@ -293,6 +293,10 @@ export async function POST(request: NextRequest) {
           prompt_number: promptNumber || null,
           prompt_title: promptTitle || null,
           delivery_context: deliveryContext,
+          cta_keyword: safeAttribution(cta_keyword, 80),
+          entry_post_slug: safeAttribution(entry_post_slug, 160),
+          checkout_source: safeAttribution(checkout_source, 120),
+          landing_path: safeAttribution(landing_path, 500),
         },
       }).catch((err) => {
         console.error("[ai-prompts/subscribe] analytics error:", err)
@@ -412,6 +416,10 @@ export async function POST(request: NextRequest) {
         prompt_number: promptNumber || null,
         prompt_title: promptTitle || null,
         delivery_context: deliveryContext,
+        cta_keyword: safeAttribution(cta_keyword, 80),
+        entry_post_slug: safeAttribution(entry_post_slug, 160),
+        checkout_source: safeAttribution(checkout_source, 120),
+        landing_path: safeAttribution(landing_path, 500),
       },
     }).catch((err) => {
       console.error("[ai-prompts/subscribe] analytics error:", err)

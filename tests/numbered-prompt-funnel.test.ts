@@ -140,6 +140,11 @@ describe("numbered prompt funnel", () => {
       path.join(process.cwd(), "components/ai-prompts/single-prompt-gate.tsx"),
       "utf8",
     )
+    const subscribeRoute = fs.readFileSync(
+      path.join(process.cwd(), "app/api/ai-prompts/subscribe/route.ts"),
+      "utf8",
+    )
+    const adminPage = fs.readFileSync(path.join(process.cwd(), "app/admin/prompt-vault/page.tsx"), "utf8")
 
     expect(page).toContain("getPromptByNumber")
     expect(page).toContain("getLiveVaultPromptCount")
@@ -149,5 +154,11 @@ describe("numbered prompt funnel", () => {
     expect(gate).toContain("delivery_context: \"single_prompt\"")
     expect(gate).toContain("prompt_number: promptNumber")
     expect(gate).toContain("ai_prompts_prompt_copied")
+    expect(gate).toContain("...readAttributionParams(promptNumber)")
+    expect(subscribeRoute).toContain("cta_keyword: safeAttribution(cta_keyword")
+    expect(subscribeRoute).toContain("entry_post_slug: safeAttribution(entry_post_slug")
+    expect(adminPage).toContain("PROMPT DEMAND BY LINK")
+    expect(adminPage).toContain("promptFunnelRows")
+    expect(adminPage).toContain("NULLIF(prompt_number, '') AS prompt_number")
   })
 })

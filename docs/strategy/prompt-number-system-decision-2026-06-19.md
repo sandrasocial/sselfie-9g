@@ -2,7 +2,7 @@
 
 Date: 2026-06-19  
 Owner: Claude/Codex planning, Sandra approved implementation path  
-Status: app-side implementation shipped; live PROMPT automation updated 2026-06-19 with tracked `/p/latest` button
+Status: app-side implementation shipped; live PROMPT automation updated 2026-06-19 to tap-first delivery with tracked `/p/latest`
 
 ## Decision
 
@@ -165,6 +165,8 @@ One live flow:
 - Optional advanced path: if a number is captured reliably, exact prompt lookup
 
 Sandra should never need to create per-prompt automations.
+
+Live status 2026-06-19: `Prompt Pack Automation` follows this default. The first private reply button opens an attached delivery step, and the delivery message sends `/p/latest` with `cta_keyword=PROMPT`, `utm_content=prompt_pack_delivery`, and `checkout_source=manychat_prompt_delivery`.
 
 ## Recommendation
 

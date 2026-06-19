@@ -60,6 +60,7 @@ export function SinglePromptGate({
   }, [promptNumber])
 
   useEffect(() => {
+    const attribution = readAttributionParams(promptNumber)
     trackAnalyticsEvent({
       event: "prompt_vault_prompt_viewed",
       properties: {
@@ -68,6 +69,7 @@ export function SinglePromptGate({
         prompt_title: promptTitle,
         prompt_number: promptNumber,
         mood: promptMood || null,
+        ...attribution,
       },
     })
   }, [promptId, promptMood, promptNumber, promptTitle])
@@ -127,6 +129,7 @@ export function SinglePromptGate({
           prompt_title: promptTitle,
           prompt_number: promptNumber,
           mood: promptMood || null,
+          ...readAttributionParams(promptNumber),
         },
       })
       window.setTimeout(() => setCopied(false), 1800)
@@ -232,6 +235,7 @@ export function SinglePromptGate({
                   prompt_id: promptId,
                   prompt_title: promptTitle,
                   prompt_number: promptNumber,
+                  ...readAttributionParams(promptNumber),
                 },
               })
             }}

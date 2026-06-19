@@ -2,10 +2,13 @@
 
 ## What changed live
 
-- `Prompt Pack Automation` is still live and still uses Sandra's current message/button copy.
-- The `Grab it here 🥰` button now points to:
-  `https://www.sselfie.ai/p/latest?source=prompt_pack_automation&utm_source=instagram&utm_medium=manychat&utm_campaign=current_free_prompt&utm_content=prompt_pack_automation&cta_keyword=PROMPT&checkout_source=manychat_prompt_button&buyer_stage=lead`
+- `Prompt Pack Automation` is still live and still uses Sandra's current first-message copy and `Grab it here 🥰` button.
+- The first private reply is now tap-first: `Grab it here 🥰` sends the contact to the attached `Send Message #1` step instead of opening a website button directly.
+- `Send Message #1` delivers the tracked prompt URL inside the 24-hour DM window:
+  `https://www.sselfie.ai/p/latest?source=prompt_pack_automation&utm_source=instagram&utm_medium=manychat&utm_campaign=current_free_prompt&utm_content=prompt_pack_delivery&cta_keyword=PROMPT&checkout_source=manychat_prompt_delivery&buyer_stage=lead`
 - App-side `/p/latest`, `/p/{number}`, and Prompt Vault checkout links now preserve generic `PROMPT` attribution separately from the resolved prompt number.
+- Admin now has a `PROMPT DEMAND BY LINK` report that joins prompt views, email captures, copy events, checkout starts, and purchases by prompt/reel/source attribution.
+- Live-editor note: an unattached `Randomizer` step remains in the Prompt Pack Automation because ManyChat did not expose a safe delete path during this session. It is not attached to the PROMPT route; both randomizer branches were assigned existing steps only so the live update could publish.
 
 ## Current best-practice baseline
 
@@ -30,7 +33,7 @@ Rules we should use for SSELFIE:
 
 | Automation | Status | Runs | Current pattern | Notes |
 | --- | --- | ---: | --- | --- |
-| Prompt Pack Automation | Live | 7,889 | Comment/DM keyword -> private reply -> website button | Highest-volume flow. Now tracked to `/p/latest`. Still not a true opt-in follow-up because the button is `Open website`. |
+| Prompt Pack Automation | Live | 7,889 | Comment/DM keyword -> private reply -> button tap -> delivery message | Highest-volume flow. Now true tap-first with tracked `/p/latest` delivery inside the DM window. |
 | SELFIE | Live | 6,005 | Easy Builder tap-first flow | Good structure: comment reply variations, “Send me the link” button, delivery message, reminder. Needs URL tracking audit next. |
 | Selfie Starter Kit Automation | Live | 3,174 | Older file builder | High volume, low visible CTR on comment trigger. Migrate/audit carefully before edits. |
 | STUDIO | Live | 386 | Easy Builder tap-first flow | Good structure. Copy sounds older than current voice and should be refreshed later. |
@@ -52,15 +55,12 @@ Rules we should use for SSELFIE:
 ## Recommended next implementation
 
 1. Keep `PROMPT` as the public keyword.
-2. For the top 5 old evergreen prompt reels, create post-specific triggers with exact `/p/{number}` links and `entry_post_slug`.
-3. Migrate the PROMPT flow to a true opt-in pattern in a cloned/draft automation:
-   - First private reply: Sandra's welcome copy + quick reply/button `Send me the prompt`.
-   - Delivery message: link button to the tracked prompt page.
-   - Optional 20-60 second follow-up: soft Vault bridge.
-4. Add a small admin report section for prompt funnel demand:
-   - prompt page views by `prompt_number`
-   - email captures by `cta_keyword`
-   - Vault checkout starts by `prompt_n`, `cta_keyword`, `entry_post_slug`
+2. For the top 5 old evergreen prompt reels, create post-specific triggers with exact `/p/{number}` links and `entry_post_slug` after Sandra confirms the reel-to-prompt mapping.
+3. Keep the live PROMPT flow tap-first:
+   - First private reply: Sandra's welcome copy + button.
+   - Delivery message: tracked `/p/latest` link.
+   - Optional 20-60 second follow-up: soft Vault bridge, only after the current flow has baseline conversion data.
+4. Use the new admin `PROMPT DEMAND BY LINK` report to decide which older reels deserve exact prompt URLs.
 5. Audit URL tracking inside SELFIE, KIT, STUDIO, PRESET, and Visibility before changing copy.
 
 ## Do not do
