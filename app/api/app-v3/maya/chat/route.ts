@@ -91,11 +91,18 @@ const creativePlanOutputSchema = z.object({
   imagePromptDirection: z
     .string()
     .optional()
-    .describe("Image prompt direction: subject, scene, outfit, pose, mood, lighting, crop, text-safe area."),
-  videoPromptDirection: z.string().optional().describe("Video prompt direction. Do not use for carousel."),
+    .describe(
+      "Image prompt direction: subject, scene, outfit, pose, mood, lighting, crop, text-safe area."
+    ),
+  videoPromptDirection: z
+    .string()
+    .optional()
+    .describe("Video prompt direction. Do not use for carousel."),
   textSafeArea: textSafeAreaSchema.optional(),
   referenceImageStrategy: referenceImageStrategySchema,
-  reasonThisMatchesUserIntent: z.string().describe("Why this output matches the user's selected request."),
+  reasonThisMatchesUserIntent: z
+    .string()
+    .describe("Why this output matches the user's selected request."),
 })
 
 const creativePlanSchema = z.object({
@@ -151,10 +158,14 @@ const graphicSpec = z
     motionPrompt: z
       .string()
       .optional()
-      .describe("For video concepts: subject motion, camera motion, environment motion, pace, and stability."),
+      .describe(
+        "For video concepts: subject motion, camera motion, environment motion, pace, and stability."
+      ),
     creativePlan: creativePlanSchema
       .optional()
-      .describe("The shared Maya Creative Plan. Required for customer-facing carousel concepts and encouraged for video."),
+      .describe(
+        "The shared Maya Creative Plan. Required for customer-facing carousel concepts and encouraged for video."
+      ),
     carouselTitle: z
       .string()
       .optional()
@@ -178,11 +189,15 @@ const graphicSpec = z
         "product-vault",
       ])
       .optional()
-      .describe("Planner classification. Educational/tutorial/Vault carousels usually need 6-9 slides."),
+      .describe(
+        "Planner classification. Educational/tutorial/Vault carousels usually need 6-9 slides."
+      ),
     desiredOutcome: z
       .string()
       .optional()
-      .describe("What the carousel should do: teach, sell, explain, inspire, build trust, or drive comments."),
+      .describe(
+        "What the carousel should do: teach, sell, explain, inspire, build trust, or drive comments."
+      ),
     slideCount: z
       .number()
       .int()
@@ -204,7 +219,9 @@ const graphicSpec = z
         })
       )
       .optional()
-      .describe("Vault styles/prompts used as creative context when the topic connects to the Vault."),
+      .describe(
+        "Vault styles/prompts used as creative context when the topic connects to the Vault."
+      ),
     slides: z
       .array(
         z.object({
@@ -276,8 +293,12 @@ const emitConcepts = tool({
     "Present photo/graphic concept directions sized to her ask: 3 distinct directions by default, " +
     "1-2 when she described one specific photo, and 6-9 cohesive shots when she asked for a full shoot. " +
     "Call this once you understand what they want. Each concept's brief must be production-grade with " +
-    "exact brand names, a named camera body, named lighting, and shotRole when it is a full shoot.",
+    "exact brand names, a named camera body, named lighting, and shotRole when it is a full shoot. " +
+    "Always include the output format for this concept batch so the app creates the clicked card with the correct pipeline.",
   inputSchema: z.object({
+    format: z
+      .enum(["photo", "photoshoot", "reel-cover", "carousel", "story-slide", "video"])
+      .describe("The output format these concepts are for."),
     concepts: z
       .array(conceptSchema)
       .min(1)
@@ -288,7 +309,7 @@ const emitConcepts = tool({
   }),
   // Echo the concepts as the tool output so the client renders them from part.output.concepts,
   // matching the app's existing tool-part convention. Default stop-after-step keeps this terminal.
-  execute: async ({ concepts }) => ({ concepts }),
+  execute: async ({ concepts, format }) => ({ concepts, format }),
 })
 
 // SUITE-UX-02 slice 4: conversational format switching. The format chips are shortcuts, not
@@ -691,7 +712,9 @@ export async function POST(req: Request) {
         .catch(() => {})
     }
 
-    const cleanUiMessages = sanitizeMayaMessages(uiMessages, { admin: isAdminSession }) as UIMessage[]
+    const cleanUiMessages = sanitizeMayaMessages(uiMessages, {
+      admin: isAdminSession,
+    }) as UIMessage[]
     if (cleanUiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }

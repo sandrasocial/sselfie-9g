@@ -132,6 +132,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "trial_expired",
   "membership_checkout_email_capture_view",
   "membership_checkout_recovery_sent",
+  "suite_home_viewed",
+  "first_action_selected",
   // ManyChat vault-step DM email capture (behavior/lead-source only; never money)
   "manychat_vault_email_captured",
   // SUITE-UX-02 — member pulse: what members DO with Maya in /app (behavior only, never money).

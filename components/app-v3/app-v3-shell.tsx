@@ -17,7 +17,7 @@ import { GalleryView } from "./gallery-view"
 import { ContentView } from "./content-view"
 import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
-import type { Aesthetic, OutputFormat } from "./types"
+import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 
@@ -25,8 +25,10 @@ export interface AppV3ShellProps {
   firstName?: string | null
   /** BRIDGE-01 Phase D: "full" member, "trial" (badge + days left), "limited" (no generation). */
   accessLevel?: "full" | "trial" | "limited"
+  analyticsCohort?: AppV3AnalyticsCohort
   trialDaysLeft?: number | null
   trialHasGeneratedImages?: boolean
+  trialHasSavedSelfie?: boolean
   initialSection?: AppV3Section
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
   hasTrainedModel?: boolean
@@ -64,16 +66,25 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
 function ShellInner({
   firstName,
   accessLevel = "full",
+  analyticsCohort,
   trialDaysLeft,
   trialHasGeneratedImages = false,
+  trialHasSavedSelfie = false,
   initialSection = "create",
   hasTrainedModel = false,
 }: AppV3ShellProps) {
-  const [section, setSection] = useState<AppV3Section>(() =>
-    initialSection === "create" ? readStoredAppSection(initialSection) : initialSection
-  )
+  const [section, setSection] = useState<AppV3Section>(initialSection)
   const { openWithAesthetic } = useConcierge()
   const limited = accessLevel === "limited"
+  const cohort: AppV3AnalyticsCohort =
+    analyticsCohort ??
+    (accessLevel === "trial" ? "trial" : accessLevel === "limited" ? "limited" : "member")
+
+  useEffect(() => {
+    if (initialSection !== "create") return
+    const stored = readStoredAppSection(initialSection)
+    if (stored !== initialSection) setSection(stored)
+  }, [initialSection])
 
   function goToSection(next: AppV3Section) {
     setSection(next)
@@ -149,7 +160,7 @@ function ShellInner({
         (limited ? (
           <div className="relative">
             <div className="pointer-events-none select-none opacity-60" aria-hidden>
-              <VisualFrontDoor />
+              <VisualFrontDoor cohort={cohort} hasSelfie={trialHasSavedSelfie} />
             </div>
             <div className="absolute inset-x-0 top-0 z-10 mx-auto max-w-3xl px-5 pt-10">
               <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
@@ -173,9 +184,13 @@ function ShellInner({
           </div>
         ) : (
           <VisualFrontDoor
-            showTrialFirstRunStep={accessLevel === "trial" && !trialHasGeneratedImages}
+            showTrialFirstRunStep={
+              accessLevel === "trial" && !trialHasGeneratedImages && !trialHasSavedSelfie
+            }
             hasTrainedModel={hasTrainedModel}
             onUseTrainedModel={createWithTrainedModel}
+            cohort={cohort}
+            hasSelfie={trialHasSavedSelfie}
           />
         ))}
       {section === "photos" && <GalleryView onMakeMotion={createMotionFromImage} />}
@@ -198,7 +213,7 @@ function ShellInner({
         />
       )}
 
-      {!limited && <MayaConcierge hasTrainedModel={hasTrainedModel} />}
+      {!limited && <MayaConcierge hasTrainedModel={hasTrainedModel} analyticsCohort={cohort} />}
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">

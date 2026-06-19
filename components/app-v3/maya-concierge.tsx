@@ -26,13 +26,14 @@ import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import {
   buildCustomModelConceptPrompt,
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
-import type { OutputFormat } from "./types"
+import type { AppV3AnalyticsCohort, OutputFormat } from "./types"
 import {
   clearMayaDraft,
   readMayaDraftForSession,
@@ -148,6 +149,15 @@ function extractConcepts(part: any): ConceptCardData[] | null {
   )
 }
 
+/** Pull the format attached to an emit_concepts batch. This prevents an old sticky session
+ *  mode (for example video) from hijacking a newly emitted photo/card batch. */
+function extractConceptFormat(part: any): OutputFormat | null {
+  if (!part || typeof part !== "object") return null
+  if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
+  const fmt = part.output?.format ?? part.input?.format ?? part.rawInput?.format
+  return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
 /** Did this assistant part attempt emit_concepts at all? (Drives the lost-cards retry state.) */
 function isConceptToolPart(part: any): boolean {
   if (!part || typeof part !== "object") return false
@@ -221,10 +231,13 @@ function wait(ms: number): Promise<void> {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
 
-async function pollCustomModelGeneration(predictionId: string, generationId: number): Promise<string> {
+async function pollCustomModelGeneration(
+  predictionId: string,
+  generationId: number
+): Promise<string> {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     const res = await fetch(
-      `/api/app-v3/maya/custom-model/check?predictionId=${encodeURIComponent(predictionId)}&generationId=${generationId}`,
+      `/api/app-v3/maya/custom-model/check?predictionId=${encodeURIComponent(predictionId)}&generationId=${generationId}`
     )
     const data = (await res.json().catch(() => null)) as {
       status?: string
@@ -245,7 +258,7 @@ async function pollCustomModelGeneration(predictionId: string, generationId: num
 async function pollVideoGeneration(predictionId: string, videoId: number): Promise<string> {
   for (let attempt = 0; attempt < 80; attempt += 1) {
     const res = await fetch(
-      `/api/app-v3/maya/video/check?predictionId=${encodeURIComponent(predictionId)}&videoId=${videoId}`,
+      `/api/app-v3/maya/video/check?predictionId=${encodeURIComponent(predictionId)}&videoId=${videoId}`
     )
     const data = (await res.json().catch(() => null)) as {
       status?: string
@@ -266,7 +279,13 @@ async function pollVideoGeneration(predictionId: string, videoId: number): Promi
 export function MayaConcierge({
   admin = false,
   hasTrainedModel = false,
-}: { admin?: boolean; hasTrainedModel?: boolean } = {}) {
+  analyticsCohort,
+}: {
+  admin?: boolean
+  hasTrainedModel?: boolean
+  analyticsCohort?: AppV3AnalyticsCohort
+} = {}) {
+  const cohort: AppV3AnalyticsCohort = analyticsCohort ?? (admin ? "admin" : "member")
   const {
     session,
     isOpen,
@@ -622,6 +641,21 @@ export function MayaConcierge({
   }, [messages, isThinking, session, setOutputFormat])
 
   useEffect(() => {
+    if (isThinking) return
+    let latest: OutputFormat | null = null
+    for (const m of messages as any[]) {
+      if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+      for (const p of m.parts) {
+        const fmt = extractConceptFormat(p)
+        if (fmt) latest = fmt
+      }
+    }
+    if (!latest || session?.outputFormat === latest) return
+    lastPulledFormatRef.current = latest
+    setOutputFormat(latest)
+  }, [messages, isThinking, session, setOutputFormat])
+
+  useEffect(() => {
     if (!hasTrainedModel && generationSource !== "selfie") setGenerationSource("selfie")
   }, [generationSource, hasTrainedModel])
 
@@ -630,7 +664,9 @@ export function MayaConcierge({
   const format: OutputFormat = outputFormat ?? "photo"
   const videoSourceUrl = session.videoSourceUrl
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
-  const activeGenerationSource: GenerationSource = customModelAvailable ? generationSource : "selfie"
+  const activeGenerationSource: GenerationSource = customModelAvailable
+    ? generationSource
+    : "selfie"
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
       ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -639,8 +675,8 @@ export function MayaConcierge({
           ? FORMAT_OPENER_READY[outputFormat]
           : FORMAT_OPENER[outputFormat]
         : referenceSelfieUrl
-        ? FORMAT_OPENER_READY[outputFormat]
-        : FORMAT_OPENER[outputFormat]
+          ? FORMAT_OPENER_READY[outputFormat]
+          : FORMAT_OPENER[outputFormat]
     : referenceSelfieUrl
       ? "Pick what we're making next. Your selfie is already in."
       : "Pick what we're making next, then add one selfie."
@@ -672,6 +708,10 @@ export function MayaConcierge({
         setSelfieRestored(false) // she chose this one herself
         setReferenceSelfieUrl(data.url)
         setSetupOpen(false) // replacement done: give the screen back to the thread
+        void trackAnalyticsEvent({
+          event: "activation_selfie_uploaded",
+          properties: { cohort, source: "maya_drawer" },
+        })
       } else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
       else if (slot === "video") {
@@ -752,8 +792,14 @@ export function MayaConcierge({
     }
   }
 
-  async function generateConcept(key: string, concept: ConceptCardData) {
-    if (format === "video" && !videoSourceUrl) {
+  async function generateConcept(
+    key: string,
+    concept: ConceptCardData,
+    targetFormat: OutputFormat = format
+  ) {
+    const canUseCustomModel = activeGenerationSource === "trained-model" && targetFormat === "photo"
+
+    if (targetFormat === "video" && !videoSourceUrl) {
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Choose or upload the photo you want to animate first." },
@@ -761,7 +807,7 @@ export function MayaConcierge({
       setSetupOpen(true)
       return
     }
-    if (format !== "video" && !referenceSelfieUrl && activeGenerationSource !== "trained-model") {
+    if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
@@ -773,7 +819,7 @@ export function MayaConcierge({
     const rerun = genState[key]?.status === "done"
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
-      if (format === "video") {
+      if (targetFormat === "video") {
         const startRes = await fetch("/api/app-v3/maya/video/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -811,7 +857,7 @@ export function MayaConcierge({
         return
       }
 
-      if (activeGenerationSource === "trained-model") {
+      if (canUseCustomModel) {
         const startRes = await fetch("/api/app-v3/maya/custom-model/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -854,14 +900,15 @@ export function MayaConcierge({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brief: concept.brief,
-          format,
+          format: targetFormat,
           referenceSelfieUrl,
           referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
           rerun,
           // Single-image formats stream progressive previews; carousels keep the JSON path.
-          stream: format !== "carousel",
+          stream: targetFormat !== "carousel",
         }),
       })
 
@@ -974,6 +1021,7 @@ export function MayaConcierge({
           format: "photoshoot",
           referenceSelfieUrl,
           referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: "Full photoshoot",
           stream: false,
@@ -1476,9 +1524,9 @@ export function MayaConcierge({
                       ? videoSourceUrl
                         ? CTA_LABEL[outputFormat]
                         : "Choose image to animate"
-                    : referenceSelfieUrl || activeGenerationSource === "trained-model"
-                      ? CTA_LABEL[outputFormat]
-                      : "Add my selfie to start"}
+                      : referenceSelfieUrl || activeGenerationSource === "trained-model"
+                        ? CTA_LABEL[outputFormat]
+                        : "Add my selfie to start"}
               </button>
             )}
 
@@ -1497,8 +1545,8 @@ export function MayaConcierge({
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
                   For best results, add one full-body shot and one side profile so Maya can keep
-                  your face and body true to you. You can also add an inspo picture and ask Maya
-                  for that same face, that vibe. All optional.
+                  your face and body true to you. You can also add an inspo picture and ask Maya for
+                  that same face, that vibe. All optional.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1588,9 +1636,7 @@ export function MayaConcierge({
               <p>
                 {aesthetic.name}. {aesthetic.blurb}
               </p>
-              <p className="mt-2">
-                {openerLine}
-              </p>
+              <p className="mt-2">{openerLine}</p>
             </div>
           </div>
 
@@ -1673,33 +1719,36 @@ export function MayaConcierge({
             </div>
           )}
 
-          {format !== "video" && !referenceSelfieUrl && hasStarted && activeGenerationSource !== "trained-model" && (
-            <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
-              <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
-                Start your brand shoot
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-                Add one clear selfie and Maya turns it into your first brand shoot.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  disabled={uploadingSlot === "face"}
-                  className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
-                >
-                  {uploadingSlot === "face" ? "Uploading…" : "Upload selfie"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLibraryOpen(true)}
-                  className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
-                >
-                  Use existing
-                </button>
+          {format !== "video" &&
+            !referenceSelfieUrl &&
+            hasStarted &&
+            activeGenerationSource !== "trained-model" && (
+              <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
+                <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
+                  Start your brand shoot
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                  Add one clear selfie and Maya turns it into your first brand shoot.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInput.current?.click()}
+                    disabled={uploadingSlot === "face"}
+                    className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
+                  >
+                    {uploadingSlot === "face" ? "Uploading…" : "Upload selfie"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLibraryOpen(true)}
+                    className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+                  >
+                    Use existing
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {messages.map((m: any) => {
             const isUser = m.role === "user"
@@ -1711,6 +1760,8 @@ export function MayaConcierge({
             const conceptPart = parts.map(extractConcepts).find(Boolean) as
               | ConceptCardData[]
               | undefined
+            const conceptFormat =
+              (parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ?? format
             const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
             const adminContentPart = parts.map(extractAdminContentTool).find(Boolean) as
               | AdminContentToolResult
@@ -1771,7 +1822,7 @@ export function MayaConcierge({
                   </div>
                 )}
 
-                {conceptPart && conceptPart.length > 0 && format === "photoshoot" && (
+                {conceptPart && conceptPart.length > 0 && conceptFormat === "photoshoot" && (
                   <div className="min-w-0 max-w-full space-y-3 rounded-[8px] border border-[#D8D4CE] bg-white p-4 [overflow-x:clip]">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
@@ -1825,10 +1876,7 @@ export function MayaConcierge({
                           <button
                             type="button"
                             onClick={() => void generatePhotoshootSet(key, conceptPart)}
-                            disabled={
-                              gen.status === "generating" ||
-                              !referenceSelfieUrl
-                            }
+                            disabled={gen.status === "generating" || !referenceSelfieUrl}
                             className="inline-flex min-h-11 items-center rounded-full bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {gen.status === "generating"
@@ -1843,7 +1891,7 @@ export function MayaConcierge({
                   </div>
                 )}
 
-                {conceptPart && conceptPart.length > 0 && format !== "photoshoot" && (
+                {conceptPart && conceptPart.length > 0 && conceptFormat !== "photoshoot" && (
                   <div className="min-w-0 max-w-full space-y-3 [overflow-x:clip]">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
                       Choose your direction
@@ -1855,15 +1903,15 @@ export function MayaConcierge({
                           key={key}
                           concept={concept}
                           gen={genState[key] ?? { status: "idle" }}
-                          format={format}
-                          onGenerate={() => void generateConcept(key, concept)}
+                          format={conceptFormat}
+                          onGenerate={() => void generateConcept(key, concept, conceptFormat)}
                           onOpen={urls => setLightbox({ images: urls })}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
-                            if (url) setEditTarget({ key, url, format })
+                            if (url) setEditTarget({ key, url, format: conceptFormat })
                           }}
                           disabled={
-                            format === "video"
+                            conceptFormat === "video"
                               ? !videoSourceUrl
                               : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                           }

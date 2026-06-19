@@ -6,11 +6,12 @@
 // Design system: light luxury editorial - Seasalt surfaces, Night for contrast, Cormorant
 // display, generous spacing, no icons/emojis, no gradients/color.
 
-import { memo, useEffect, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
-import type { Aesthetic, OutputFormat } from "./types"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
 const MAYA_BLANK: Aesthetic = {
   id: "maya-blank",
@@ -26,9 +27,17 @@ const MAYA_BLANK: Aesthetic = {
 const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] = [
   { format: "photo", label: "Photo", line: "One AI-ready selfie into a shot you can post." },
   { format: "photoshoot", label: "Photoshoot", line: "A cohesive set in one world." },
-  { format: "reel-cover", label: "Reel cover", line: "A clear cover for the idea you are sharing." },
+  {
+    format: "reel-cover",
+    label: "Reel cover",
+    line: "A clear cover for the idea you are sharing.",
+  },
   { format: "carousel", label: "Carousel", line: "Teach something useful in a simple slide flow." },
-  { format: "story-slide", label: "Story", line: "A quick story frame for a poll, offer, or reminder." },
+  {
+    format: "story-slide",
+    label: "Story",
+    line: "A quick story frame for a poll, offer, or reminder.",
+  },
   { format: "video", label: "Video", line: "Add subtle motion to a photo you already made." },
 ]
 
@@ -131,6 +140,8 @@ export function VisualFrontDoor({
   note = "Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · your gallery",
   compact = false,
   showTrialFirstRunStep = false,
+  cohort = "member",
+  hasSelfie = false,
   hasTrainedModel = false,
   onUseTrainedModel,
 }: {
@@ -140,13 +151,23 @@ export function VisualFrontDoor({
   note?: string | null
   compact?: boolean
   showTrialFirstRunStep?: boolean
+  cohort?: AppV3AnalyticsCohort
+  hasSelfie?: boolean
   hasTrainedModel?: boolean
   onUseTrainedModel?: () => void
 } = {}) {
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
   const { openWithAesthetic } = useConcierge()
+  const firstRunSelfieInputRef = useRef<HTMLInputElement>(null)
+  const homeTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
+  const [frontDoorUploading, setFrontDoorUploading] = useState(false)
+  const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
+  const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
+
+  const effectiveHasSelfie = hasSelfie || frontDoorHasSelfie
+  const shouldShowTrialFirstRun = showTrialFirstRunStep && !effectiveHasSelfie
 
   useEffect(() => {
     let alive = true
@@ -162,9 +183,92 @@ export function VisualFrontDoor({
     }
   }, [])
 
+  useEffect(() => {
+    setFrontDoorHasSelfie(hasSelfie)
+  }, [hasSelfie])
+
+  useEffect(() => {
+    if (homeTrackedRef.current) return
+    homeTrackedRef.current = true
+    void trackAnalyticsEvent({
+      event: "suite_home_viewed",
+      properties: { cohort, hasSelfie: effectiveHasSelfie, section: "create" },
+    })
+  }, [cohort, effectiveHasSelfie])
+
   const heroImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
   const selfieImage = aesthetics[1]?.coverImage || heroImage
   const formatImage = aesthetics[2]?.coverImage || heroImage
+
+  function trackFirstAction(action: string) {
+    void trackAnalyticsEvent({
+      event: "first_action_selected",
+      properties: { cohort, action },
+    })
+  }
+
+  function openBlank() {
+    trackFirstAction("start_blank")
+    openWithAesthetic(MAYA_BLANK)
+  }
+
+  function openSelfieStart() {
+    trackFirstAction("add_selfie")
+    openWithAesthetic(MAYA_BLANK, {
+      format: "photo",
+      seed: "I want to start with one selfie and make a photo I can post.",
+    })
+  }
+
+  function openFormatPicker() {
+    trackFirstAction("pick_format")
+    openWithAesthetic(MAYA_BLANK)
+  }
+
+  function openFormat(format: OutputFormat, label: string) {
+    trackFirstAction(`format_${format}`)
+    openWithAesthetic(MAYA_BLANK, {
+      format,
+      seed: `Let's create a ${label.toLowerCase()}.`,
+    })
+  }
+
+  function openAesthetic(aesthetic: Aesthetic) {
+    trackFirstAction("vault_look")
+    openWithAesthetic(aesthetic)
+  }
+
+  function openTrainedModel() {
+    trackFirstAction("use_trained_model")
+    onUseTrainedModel?.()
+  }
+
+  async function handleFirstRunSelfie(file: File) {
+    setFrontDoorUploading(true)
+    setFrontDoorUploadError(null)
+    try {
+      const form = new FormData()
+      form.append("file", file)
+      form.append("slot", "face")
+      const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
+      const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
+      if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
+      setFrontDoorHasSelfie(true)
+      void trackAnalyticsEvent({
+        event: "activation_selfie_uploaded",
+        properties: { cohort, source: "front_door" },
+      })
+      openWithAesthetic(MAYA_BLANK, {
+        format: "photo",
+        referenceSelfieUrl: data.url,
+        seed: "I added my selfie. Help me make my first photo.",
+      })
+    } catch (e) {
+      setFrontDoorUploadError(e instanceof Error ? e.message : "Upload failed")
+    } finally {
+      setFrontDoorUploading(false)
+    }
+  }
 
   return (
     <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16"}>
@@ -181,13 +285,40 @@ export function VisualFrontDoor({
         {note && <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[#818283]">{note}</p>}
       </header>
 
-      {showTrialFirstRunStep && (
-        <p className="mb-5 border-l border-[#0D0E10] bg-white px-4 py-3 text-[13px] leading-relaxed text-[#3A3632]">
-          Step 1: add one selfie so Maya keeps your face.
-        </p>
+      {shouldShowTrialFirstRun && (
+        <div className="mb-9">
+          <LookbookAction
+            image={selfieImage}
+            eyebrow="SSELFIE SUITE"
+            title="Hi, I'm Maya. Let's make your first photo."
+            body="Add one clear selfie and I'll keep your real face, then build the rest around you."
+            action={frontDoorUploading ? "Uploading..." : "Add my selfie"}
+            tall
+            onClick={() => {
+              trackFirstAction("add_selfie")
+              firstRunSelfieInputRef.current?.click()
+            }}
+          />
+          {frontDoorUploadError && (
+            <p className="mt-3 text-[13px] leading-relaxed text-[#282728]">
+              {frontDoorUploadError}
+            </p>
+          )}
+          <input
+            ref={firstRunSelfieInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) void handleFirstRunSelfie(file)
+              if (firstRunSelfieInputRef.current) firstRunSelfieInputRef.current.value = ""
+            }}
+          />
+        </div>
       )}
 
-      {!compact && (
+      {!shouldShowTrialFirstRun && !compact && (
         <div className="mb-9 grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_0.8fr] lg:gap-4">
           <LookbookAction
             image={heroImage}
@@ -196,7 +327,7 @@ export function VisualFrontDoor({
             body="No look required. Start with an idea, a product, a caption, a photo, or the content you need today."
             action="Start blank"
             tall
-            onClick={() => openWithAesthetic(MAYA_BLANK)}
+            onClick={openBlank}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:gap-4">
             <LookbookAction
@@ -205,12 +336,7 @@ export function VisualFrontDoor({
               title="Start with one selfie."
               body="Best when you want Maya to help you make the first photo, cover, or content direction."
               action="Add one selfie"
-              onClick={() =>
-                openWithAesthetic(MAYA_BLANK, {
-                  format: "photo",
-                  seed: "I want to start with one selfie and make a photo I can post.",
-                })
-              }
+              onClick={openSelfieStart}
             />
             {hasTrainedModel && onUseTrainedModel ? (
               <LookbookAction
@@ -219,7 +345,7 @@ export function VisualFrontDoor({
                 title="Use your trained model."
                 body="Create with the model you already trained, inside the new Maya flow."
                 action="Use my model"
-                onClick={onUseTrainedModel}
+                onClick={openTrainedModel}
               />
             ) : (
               <LookbookAction
@@ -228,14 +354,14 @@ export function VisualFrontDoor({
                 title="Choose the format first."
                 body="Pick photo, photoshoot, cover, carousel, story, or video. Maya will ask only what she needs."
                 action="Pick a format"
-                onClick={() => openWithAesthetic(MAYA_BLANK)}
+                onClick={openFormatPicker}
               />
             )}
           </div>
         </div>
       )}
 
-      {!compact && (
+      {!shouldShowTrialFirstRun && !compact && (
         <div className="mb-10 border-y border-[#C5C6C8]/50 py-4">
           <p className="mb-3 text-[10px] uppercase tracking-[0.26em] text-[#818283]">
             What are we making?
@@ -245,12 +371,7 @@ export function VisualFrontDoor({
               <button
                 key={item.format}
                 type="button"
-                onClick={() =>
-                  openWithAesthetic(MAYA_BLANK, {
-                    format: item.format,
-                    seed: `Let's create a ${item.label.toLowerCase()}.`,
-                  })
-                }
+                onClick={() => openFormat(item.format, item.label)}
                 className="min-h-[92px] rounded-[6px] border border-[#C5C6C8]/60 bg-white px-3 py-3 text-left transition-colors hover:border-[#0D0E10]/40 active:translate-y-px"
               >
                 <span className="block text-[12px] uppercase tracking-[0.18em] text-[#0D0E10]">
@@ -265,7 +386,7 @@ export function VisualFrontDoor({
         </div>
       )}
 
-      {!compact && (
+      {!shouldShowTrialFirstRun && !compact && (
         <div className="mb-5">
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">
             Or start from a Vault look
@@ -277,13 +398,15 @@ export function VisualFrontDoor({
       )}
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
-      <div className="[column-fill:_balance] columns-1 gap-3 min-[380px]:columns-2 sm:columns-3 sm:gap-4 lg:columns-4">
-        {aesthetics.map((aesthetic, i) => (
-          <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">
-            <AestheticTile aesthetic={aesthetic} index={i} onOpen={openWithAesthetic} />
-          </div>
-        ))}
-      </div>
+      {!shouldShowTrialFirstRun && (
+        <div className="[column-fill:_balance] columns-1 gap-3 min-[380px]:columns-2 sm:columns-3 sm:gap-4 lg:columns-4">
+          {aesthetics.map((aesthetic, i) => (
+            <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">
+              <AestheticTile aesthetic={aesthetic} index={i} onOpen={openAesthetic} />
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

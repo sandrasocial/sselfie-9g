@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { ALLOWED_ANALYTICS_EVENTS, isAllowedAnalyticsEventName } from "@/lib/analytics/event-contract"
+import {
+  ALLOWED_ANALYTICS_EVENTS,
+  isAllowedAnalyticsEventName,
+} from "@/lib/analytics/event-contract"
 
 describe("analytics event contract", () => {
   it("includes guided activation and onboarding lifecycle events", () => {
@@ -52,6 +55,8 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_checkout_start")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_checkout_success")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_access_opened")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_home_viewed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("first_action_selected")
   })
 
   it("rejects unknown event names", () => {
@@ -81,5 +86,7 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_checkout_start")).toBe(true)
     expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_checkout_success")).toBe(true)
     expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_access_opened")).toBe(true)
+    expect(isAllowedAnalyticsEventName("suite_home_viewed")).toBe(true)
+    expect(isAllowedAnalyticsEventName("first_action_selected")).toBe(true)
   })
 })

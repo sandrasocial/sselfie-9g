@@ -48,7 +48,7 @@ describe("SUITE trial first-image activation", () => {
     expect(route).toContain("trial_first_generation")
     expect(route).toContain("NOT EXISTS")
     expect(route).toContain("ae.event_name = 'trial_first_generation'")
-    expect(route).toContain("alreadyEmailed(trial.email, \"suite_trial_no_first_image\")")
+    expect(route).toContain('alreadyEmailed(trial.email, "suite_trial_no_first_image")')
   })
 
   it("shows the first-run selfie step only for trials with zero generated images", () => {
@@ -58,10 +58,15 @@ describe("SUITE trial first-image activation", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(appPage).toContain("trialHasGeneratedImages")
+    expect(appPage).toContain("trialHasSavedSelfie")
     expect(appPage).toContain("FROM ai_images")
+    expect(appPage).toContain("FROM user_avatar_images")
     expect(shell).toContain("showTrialFirstRunStep")
-    expect(shell).toContain("accessLevel === \"trial\" && !trialHasGeneratedImages")
-    expect(frontDoor).toContain("Step 1: add one selfie so Maya keeps your face.")
+    expect(shell).toContain(
+      'accessLevel === "trial" && !trialHasGeneratedImages && !trialHasSavedSelfie'
+    )
+    expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
+    expect(frontDoor).toContain("Add my selfie")
     expect(concierge).toContain("For best results")
     expect(concierge).toContain("one full-body shot and one side profile")
     expect(concierge).toContain("All optional.")

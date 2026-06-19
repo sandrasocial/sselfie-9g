@@ -50,7 +50,13 @@ const sql = getDbClient()
 // default also flips the input_fidelity branch below, which was an unintended behavior change;
 // production sets OPENAI_IMAGE_MODEL explicitly so the default only matters as a safe fallback.
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const VALID_FORMATS: OutputFormat[] = ["photo", "photoshoot", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: OutputFormat[] = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+]
 const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
   "establishing-full-body",
   "movement-lifestyle-action",
@@ -204,6 +210,22 @@ function withPhotoshootCohesionInstruction(
   }
 }
 
+function withInspirationReferenceInstruction(job: ImageJob): ImageJob {
+  const instruction = [
+    "Inspiration reference handling:",
+    "The uploaded inspiration image is pose, wardrobe, lighting, color, and composition guidance only.",
+    "Keep the user's identity anchored to the uploaded selfies. Do not copy the inspiration person's face.",
+  ].join("\n")
+
+  return {
+    ...job,
+    passes: job.passes.map(pass => ({
+      ...pass,
+      prompt: `${pass.prompt}\n\n${instruction}`,
+    })),
+  }
+}
+
 /** True when an OpenAI error looks like a moderation / content-policy rejection. */
 function isContentPolicyError(err: unknown): boolean {
   const m = (err instanceof Error ? err.message : String(err)).toLowerCase()
@@ -336,10 +358,9 @@ export async function POST(request: NextRequest) {
     let jobs: ImageJob[] = []
     let photoshootJobs: PhotoshootJob[] = []
     let graphicJobs: AppGraphicRedesignJob[] = []
-    let graphicStyle:
-      | Awaited<ReturnType<typeof pickContentStyleReference>>
-      | null = null
+    let graphicStyle: Awaited<ReturnType<typeof pickContentStyleReference>> | null = null
     let referenceUrls: string[] = []
+    let inspirationReferenceUrl: string | null = null
     const baseImageSource: string | null = null
 
     if (baseImageUrl) {
@@ -378,8 +399,14 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      // Front face first, then any optional angles. Dedup + cap at 4. The selfie is the ONLY image
-      // input; the Vault connects as text DNA, never as an attached example image.
+      inspirationReferenceUrl =
+        typeof body.inspirationImageUrl === "string" &&
+        isAllowedReferenceUrl(body.inspirationImageUrl)
+          ? body.inspirationImageUrl
+          : null
+      // Front face first, then any optional identity angles. Dedup + cap at 4. Inspiration is
+      // attached separately after identity references so it can guide pose/style without becoming
+      // the face anchor.
       referenceUrls = Array.from(
         new Set(
           [
@@ -414,10 +441,19 @@ export async function POST(request: NextRequest) {
           }
         })
         const heroJobIndex = pickPhotoshootHeroJobIndex(plannedPhotoshootJobs)
-        photoshootJobs = plannedPhotoshootJobs.map((item, index) => ({
-          ...item,
-          job: withPhotoshootCohesionInstruction(item.job, item.role, index === heroJobIndex),
-        }))
+        photoshootJobs = plannedPhotoshootJobs.map((item, index) => {
+          const cohesiveJob = withPhotoshootCohesionInstruction(
+            item.job,
+            item.role,
+            index === heroJobIndex
+          )
+          return {
+            ...item,
+            job: inspirationReferenceUrl
+              ? withInspirationReferenceInstruction(cohesiveJob)
+              : cohesiveJob,
+          }
+        })
         jobs = photoshootJobs.map(item => item.job)
       } else if (isRedesignGraphicFormat(format)) {
         graphicJobs = buildAppGraphicRedesignJobs({
@@ -435,6 +471,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
+        if (inspirationReferenceUrl) jobs = jobs.map(withInspirationReferenceInstruction)
       }
     }
 
@@ -550,8 +587,11 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
     // Prepare the selfie reference file(s) once, reused across every pass and job (Modes A/B).
+    const generationReferenceUrls = inspirationReferenceUrl
+      ? Array.from(new Set([...referenceUrls, inspirationReferenceUrl]))
+      : referenceUrls
     const selfieFiles = await Promise.all(
-      referenceUrls.map(async (url, i) => {
+      generationReferenceUrls.map(async (url, i) => {
         const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
         return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
       })
@@ -626,9 +666,7 @@ export async function POST(request: NextRequest) {
       return current
     }
 
-    const runPhotoshootHeroAnchoredJobs = async (
-      setJobs: PhotoshootJob[]
-    ): Promise<Buffer[]> => {
+    const runPhotoshootHeroAnchoredJobs = async (setJobs: PhotoshootJob[]): Promise<Buffer[]> => {
       const heroJobIndex = pickPhotoshootHeroJobIndex(setJobs)
       const hero = setJobs[heroJobIndex]
       if (!hero) throw new Error("Photoshoot hero job missing")

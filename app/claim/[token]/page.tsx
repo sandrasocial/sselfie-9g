@@ -29,19 +29,15 @@ function InvalidLink() {
           This link isn&apos;t valid anymore.
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-[#4F5052]">
-          If you bought the Prompt Vault or Starter Kit and think this is a mistake, reply to
-          your delivery email or write to support@sselfie.ai and I&apos;ll sort it out.
+          If you bought the Prompt Vault or Starter Kit and think this is a mistake, reply to your
+          delivery email or write to support@sselfie.ai and I&apos;ll sort it out.
         </p>
       </div>
     </main>
   )
 }
 
-export default async function ClaimTrialPage({
-  params,
-}: {
-  params: Promise<{ token: string }>
-}) {
+export default async function ClaimTrialPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const cleanToken = (token || "").trim()
   if (!cleanToken || cleanToken.length < 16) return <InvalidLink />
@@ -51,7 +47,9 @@ export default async function ClaimTrialPage({
     WHERE access_token = ${cleanToken}
     LIMIT 1
   `
-  const subscriber = subscribers[0] as { id: number; email: string; name: string | null } | undefined
+  const subscriber = subscribers[0] as
+    | { id: number; email: string; name: string | null }
+    | undefined
   if (!subscriber?.email) return <InvalidLink />
 
   let destination = "/app"
@@ -63,7 +61,7 @@ export default async function ClaimTrialPage({
     // is a lookup first, create only as the fallback for older buyers.
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     let authUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === subscriber.email.toLowerCase()
+      u => u.email?.toLowerCase() === subscriber.email.toLowerCase()
     )
 
     if (!authUser) {
@@ -116,9 +114,11 @@ export default async function ClaimTrialPage({
       }
     }
 
-    // She came from an email, so she almost certainly has no session. If she's never set a
-    // password, the recovery link signs her in and lands her in /app after setup.
-    const setupLink = await generatePasswordSetupLinkForPurchase(userId, subscriber.email, "/app")
+    // She came from an email, so she almost certainly has no session. For the trial claim path,
+    // sign her in and land directly in /app; password setup can happen later from account.
+    const setupLink = await generatePasswordSetupLinkForPurchase(userId, subscriber.email, "/app", {
+      skipPasswordSetup: true,
+    })
     if (setupLink) destination = setupLink
   } catch (e) {
     console.error("[claim] trial claim failed:", e)

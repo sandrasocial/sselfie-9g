@@ -20,7 +20,8 @@ export function getSubscriptionPeriod(sub: any): { start: number | null; end: nu
 export async function generatePasswordSetupLinkForPurchase(
   userId: string | null | undefined,
   email: string,
-  nextAfterSetup = "/studio"
+  nextAfterSetup = "/studio",
+  options: { skipPasswordSetup?: boolean } = {}
 ) {
   if (!userId) {
     return undefined
@@ -36,7 +37,10 @@ export async function generatePasswordSetupLinkForPurchase(
     }
 
     const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-    const redirectTarget = `${productionUrl}/auth/setup-password?next=${encodeURIComponent(nextAfterSetup)}`
+    const redirectPath = options.skipPasswordSetup
+      ? nextAfterSetup
+      : `/auth/setup-password?next=${encodeURIComponent(nextAfterSetup)}`
+    const redirectTarget = `${productionUrl}${redirectPath}`
     const supabaseAdmin = createAdminClient()
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
@@ -55,7 +59,7 @@ export async function generatePasswordSetupLinkForPurchase(
       const token = url.searchParams.get("token")
       const type = url.searchParams.get("type") || "recovery"
       if (token) {
-        link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=${encodeURIComponent(`/auth/setup-password?next=${encodeURIComponent(nextAfterSetup)}`)}`
+        link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectPath)}`
       }
     }
 

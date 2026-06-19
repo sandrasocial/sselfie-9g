@@ -8,6 +8,7 @@ import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 
 export const dynamic = "force-dynamic"
 
@@ -18,7 +19,7 @@ function planLabel(raw: unknown): string | null {
   if (key === "sselfie_studio_membership") return "SSELFIE SUITE"
   if (key === "paid_blueprint") return "Feed Planner Blueprint"
   // Fallback: humanize the raw value rather than leaking snake_case.
-  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export async function GET() {
@@ -27,7 +28,15 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const empty = { plan: null, status: null, renewsAt: null, credits: null, email: user.email ?? null }
+  const creditsUnlimited = isAdminEmail(user.email)
+  const empty = {
+    plan: null,
+    status: null,
+    renewsAt: null,
+    credits: null,
+    creditsUnlimited,
+    email: user.email ?? null,
+  }
 
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
@@ -59,6 +68,7 @@ export async function GET() {
             ? new Date(periodEnd).toISOString()
             : null,
       credits,
+      creditsUnlimited,
       email: user.email ?? null,
     })
   } catch (e) {

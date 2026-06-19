@@ -67,6 +67,8 @@ export interface OpenConciergeOptions {
   videoSourceUrl?: string | null
 }
 
+export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"
+
 export interface ConciergeContextValue {
   session: ConciergeSession | null
   isOpen: boolean

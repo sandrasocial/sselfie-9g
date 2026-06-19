@@ -12,6 +12,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
 import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -50,8 +51,10 @@ export default async function StudioV3Page({
   // the limited shell (Library + Photos stay open, generation locked server-side too).
   // Rollback is one env flip (APP_V3_MEMBERS_ENABLED=false returns members to /studio).
   let accessLevel: "full" | "trial" | "limited" = "full"
+  let analyticsCohort: AppV3AnalyticsCohort = "member"
   let trialDaysLeft: number | null = null
   let trialHasGeneratedImages = false
+  let trialHasSavedSelfie = false
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
@@ -70,19 +73,37 @@ export default async function StudioV3Page({
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft
             try {
-              const rows = await import("@/lib/db/client").then(({ sql }) => sql`
+              const rows = await import("@/lib/db/client").then(
+                ({ sql }) => sql`
                 SELECT 1
                 FROM ai_images
                 WHERE user_id = ${neonUserId}
                   AND image_url IS NOT NULL
                   AND (generation_status = 'completed' OR generation_status IS NULL)
                 LIMIT 1
-              `)
+              `
+              )
               trialHasGeneratedImages = rows.length > 0
             } catch (imageErr) {
               console.error("[/app gate] trial generated-image check failed:", imageErr)
             }
           } else if (access.level === "limited") resolved = "limited"
+
+          try {
+            const rows = await import("@/lib/db/client").then(
+              ({ sql }) => sql`
+              SELECT 1
+              FROM user_avatar_images
+              WHERE user_id = ${String(neonUserId)}
+                AND is_active = ${true}
+                AND (image_type IS NULL OR image_type NOT IN ('side-profile', 'full-body', 'inspiration'))
+              LIMIT 1
+            `
+            )
+            trialHasSavedSelfie = rows.length > 0
+          } catch (selfieErr) {
+            console.error("[/app gate] saved-selfie check failed:", selfieErr)
+          }
 
           try {
             const { hasCompletedTrainedModel } = await import("@/lib/data/training")
@@ -97,7 +118,9 @@ export default async function StudioV3Page({
     }
     if (resolved === "none") redirect("/studio")
     accessLevel = resolved
+    analyticsCohort = resolved === "trial" ? "trial" : resolved === "limited" ? "limited" : "member"
   } else {
+    analyticsCohort = "admin"
     // Admin: still surface the legacy entry if a real trained model exists.
     try {
       const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
@@ -120,10 +143,12 @@ export default async function StudioV3Page({
     <AppV3Shell
       firstName={firstName}
       accessLevel={accessLevel}
+      analyticsCohort={analyticsCohort}
       trialDaysLeft={trialDaysLeft}
       initialSection={initialSection}
       hasTrainedModel={hasTrainedModel}
       trialHasGeneratedImages={trialHasGeneratedImages}
+      trialHasSavedSelfie={trialHasSavedSelfie}
     />
   )
 }

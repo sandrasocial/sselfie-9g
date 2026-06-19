@@ -15,6 +15,7 @@ interface AccountData {
   status: string | null
   renewsAt: string | null
   credits: number | null
+  creditsUnlimited?: boolean
   email: string | null
 }
 
@@ -200,7 +201,11 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Credits</p>
           <p className="mt-2 font-serif text-[22px] font-light text-[#0D0E10]">
-            {typeof data?.credits === "number" ? `${data.credits} credits` : "—"}
+            {typeof data?.credits === "number"
+              ? `${data.credits} credits`
+              : data?.creditsUnlimited
+                ? "Unlimited"
+                : "Couldn't load credits"}
           </p>
           <p className="mt-1 text-[13px] text-[#818283]">
             Each image is one credit. Your plan refills monthly.

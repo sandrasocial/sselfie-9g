@@ -150,6 +150,8 @@ export interface MayaGenerateConceptRequest {
   referenceSelfieUrl: string
   /** Optional extra identity angles (side profile, full body) for better fidelity. */
   referenceSelfieUrls?: string[]
+  /** Optional pose/style reference. Never identity; attached after selfie references. */
+  inspirationImageUrl?: string | null
   /** Front-door aesthetic id, so the compiler injects the vision-extracted look. */
   aestheticId?: string
   conceptTitle?: string
