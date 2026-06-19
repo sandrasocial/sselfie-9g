@@ -18,7 +18,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const dynamic = "force-dynamic"
 
 type PromptPageProps = {
-  params: Promise<{ number: string }>
+  params: Promise<{ username: string }>
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
@@ -29,8 +29,8 @@ async function resolvePromptPageValue(value: string) {
 }
 
 export async function generateMetadata({ params }: PromptPageProps): Promise<Metadata> {
-  const { number } = await params
-  const prompt = await resolvePromptPageValue(number)
+  const { username } = await params
+  const prompt = await resolvePromptPageValue(username)
 
   if (!prompt) {
     return {
@@ -46,9 +46,9 @@ export async function generateMetadata({ params }: PromptPageProps): Promise<Met
 }
 
 export default async function NumberedPromptPage({ params, searchParams }: PromptPageProps) {
-  const { number } = await params
+  const { username } = await params
   const [prompt, vaultCount] = await Promise.all([
-    resolvePromptPageValue(number),
+    resolvePromptPageValue(username),
     getLiveVaultPromptCount(),
   ])
 
@@ -165,8 +165,7 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
         }
 
         .sp-image-locked {
-          filter: saturate(0.82) contrast(0.98) blur(2px);
-          transform: scale(1.012);
+          filter: saturate(0.9) contrast(1.02);
         }
 
         .sp-image-fallback {

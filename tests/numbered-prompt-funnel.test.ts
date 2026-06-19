@@ -134,7 +134,7 @@ describe("numbered prompt funnel", () => {
   })
 
   it("renders the single prompt page through the shared prompt lookup", () => {
-    const page = fs.readFileSync(path.join(process.cwd(), "app/p/[number]/page.tsx"), "utf8")
+    const page = fs.readFileSync(path.join(process.cwd(), "app/p/[username]/page.tsx"), "utf8")
     const latestPage = fs.readFileSync(path.join(process.cwd(), "app/p/latest/page.tsx"), "utf8")
     const gate = fs.readFileSync(
       path.join(process.cwd(), "components/ai-prompts/single-prompt-gate.tsx"),
@@ -160,5 +160,12 @@ describe("numbered prompt funnel", () => {
     expect(adminPage).toContain("PROMPT DEMAND BY LINK")
     expect(adminPage).toContain("promptFunnelRows")
     expect(adminPage).toContain("NULLIF(prompt_number, '') AS prompt_number")
+  })
+
+  it("keeps the free prompt preview image crisp on mobile before email reveal", () => {
+    const page = fs.readFileSync(path.join(process.cwd(), "app/p/[username]/page.tsx"), "utf8")
+
+    expect(page).toContain(".sp-image-locked")
+    expect(page).not.toMatch(/\.sp-image-locked\s*{[^}]*blur\(/s)
   })
 })
