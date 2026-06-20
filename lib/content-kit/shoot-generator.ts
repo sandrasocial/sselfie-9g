@@ -65,6 +65,30 @@ function buildIdentityGuard(selfieCount: number): string {
   return `Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
 }
 
+function buildCloseRecreationGuard(): string {
+  return `Use the uploaded identity reference images as the ONLY source of facial identity.
+
+Identity Priority: 100%
+- Preserve the person's exact facial structure.
+- Preserve eye shape, brow shape, nose shape, jawline, lips, cheekbones, skin texture, pores, age markers and facial proportions.
+- Preserve the person's natural age.
+- Do not beautify, make younger, make thinner, or change facial proportions.
+- Do not inherit facial features from any inspiration image.
+- No face blending, no face morphing, no celebrity-style replacement.
+
+Use the inspiration image ONLY for:
+- pose
+- composition
+- wardrobe energy
+- lighting direction
+- mood
+- framing
+- editorial styling
+- crop and subject scale
+
+Recreate the inspiration image composition as closely as possible while keeping the real identity fully intact. The final image should look as if the same person from the identity references was photographed in the inspiration image's outfit family, pose, lighting, framing and location. A person who knows the subject should immediately recognize them.`
+}
+
 function buildImageSafetyGuard(): string {
   return [
     "Non-sexual adult fashion editorial. Modest styling only.",
@@ -347,7 +371,7 @@ export async function generateShotImage(input: {
   if (sanitizedPrompt !== input.prompt) {
     console.warn("[shoot-studio] safety sanitizer changed a shot prompt; planner should avoid risky outfit/body terms upstream")
   }
-  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${shotRoleInstruction(input.shotRole)}\n\n${sanitizedPrompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
+  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${buildCloseRecreationGuard()}\n\n${shotRoleInstruction(input.shotRole)}\n\n${sanitizedPrompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
