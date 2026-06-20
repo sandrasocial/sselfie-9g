@@ -38,10 +38,7 @@ const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "close-portrait",
   "cover-safe-hero",
 ]
-const SHOT_ROLES = new Set<ShootShotRole>([
-  ...SHOT_ROLE_SEQUENCE,
-  "cover-safe-hero",
-])
+const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "cover-safe-hero"])
 
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
@@ -89,6 +86,28 @@ function buildImageSafetyGuard(): string {
     "If a style reference or written prompt implies revealing clothing, translate it into a covered editorial outfit with the same color, light, mood and location.",
     "No swimwear, lingerie, cleavage, sheer fabric, erotic posing, nudity, exposed torso or sexualized styling.",
   ].join(" ")
+}
+
+function buildShotRenderPrompt(input: {
+  selfieCount: number
+  styleCount: number
+  prompt: string
+  shotRole?: ShootShotRole
+}): string {
+  const roleInstruction = shotRoleInstruction(input.shotRole)
+  return [
+    buildImageSafetyGuard(),
+    "WRITTEN SHOT PROMPT (secondary planning notes, not the visual source of truth):",
+    input.prompt,
+    roleInstruction,
+    "FINAL RENDER AUTHORITY:",
+    buildImageRoleGuard(input.selfieCount, input.styleCount),
+    buildShootInspirationGuard(input.prompt),
+    "If the written shot prompt invents or alters visible details from the attached inspiration image, ignore the written prompt for those details and follow the inspiration image. This includes dress length, garment cut, accessories, bag, hat/no hat, shoes, architecture, crop, pose geometry, shadow direction, color grade, camera distance and subject scale.",
+    buildIdentityGuard(input.selfieCount),
+  ]
+    .filter(Boolean)
+    .join("\n\n")
 }
 
 function shotRoleInstruction(role?: ShootShotRole): string {
@@ -140,7 +159,10 @@ function sanitizePromptForImageSafety(prompt: string): string {
     .replace(/body proportions/gi, "natural proportions")
     .replace(/head-to-body ratio/gi, "natural overall proportion")
     .replace(/body angled/gi, "person angled")
-    .replace(/shoulders proportional to hips and torso/gi, "shoulders and torso naturally proportioned")
+    .replace(
+      /shoulders proportional to hips and torso/gi,
+      "shoulders and torso naturally proportioned"
+    )
     .replace(/shoulders proportional to torso/gi, "shoulders naturally proportioned")
     .replace(/shoulder width proportional/gi, "shoulder width natural")
     .replace(/\bhips\b/gi, "frame")
@@ -253,6 +275,9 @@ PRIMARY INSPIRATION LOCK:
 - Do not force a full-body opening shot. If the FIRST inspiration image is a close portrait, make shot 1 a close-portrait or cover-safe-hero. If it is full-body, then a full-body opener is fine.
 - Do not turn a close, shadow-driven, face-led inspiration into a generic neutral studio outfit set. Stay close to the reference world's visual grammar first; utility shots come second.
 - Do not invent props, hats, bags, furniture, scene elements or accessories that are not visibly present in the FIRST inspiration image. If a shadow source is unclear, describe the shadow shape, position, intensity and edge softness instead of inventing an object to explain it.
+- Describe only what is visible or structurally implied by the FIRST inspiration image. Do not change maxi to midi, off-white to white, full-length to cropped, doorway to courtyard, archway to studio wall, direct sun to soft diffused light, or visible bag/jewelry/sunglasses into different accessories.
+- When a detail is uncertain, write the closest visible relationship from the image ("same long cream patterned dress silhouette as the inspiration image", "same visible woven handbag logic", "same villa steps and arched doorway") instead of inventing a more generic fashion prompt.
+- The written prompt is a portable vault prompt, but the admin render will also receive the inspiration image. Make the text cooperate with that image; do not compete with it.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
@@ -364,9 +389,16 @@ export async function generateShotImage(input: {
 
   const sanitizedPrompt = sanitizePromptForImageSafety(input.prompt)
   if (sanitizedPrompt !== input.prompt) {
-    console.warn("[shoot-studio] safety sanitizer changed a shot prompt; planner should avoid risky outfit/body terms upstream")
+    console.warn(
+      "[shoot-studio] safety sanitizer changed a shot prompt; planner should avoid risky outfit/body terms upstream"
+    )
   }
-  const fullPrompt = `${buildImageSafetyGuard()}\n\n${buildImageRoleGuard(selfieUrls.length, styleUrls.length)}\n\n${buildShootInspirationGuard(sanitizedPrompt)}\n\n${shotRoleInstruction(input.shotRole)}\n\n${sanitizedPrompt}\n\n${buildIdentityGuard(selfieUrls.length)}`
+  const fullPrompt = buildShotRenderPrompt({
+    selfieCount: selfieUrls.length,
+    styleCount: styleUrls.length,
+    prompt: sanitizedPrompt,
+    shotRole: input.shotRole,
+  })
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
@@ -406,7 +438,7 @@ function parsePublishedPromptNumbers(value: unknown): Record<string, string> {
   return Object.fromEntries(
     Object.entries(parsed as Record<string, unknown>)
       .filter(([shotId, number]) => shotId && number)
-      .map(([shotId, number]) => [shotId, String(number)]),
+      .map(([shotId, number]) => [shotId, String(number)])
   )
 }
 

@@ -1,7 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { getShootPublishReadiness, MIN_VAULT_PUBLISH_SHOTS } from "@/lib/content-kit/shoot-readiness"
+import {
+  getShootPublishReadiness,
+  MIN_VAULT_PUBLISH_SHOTS,
+} from "@/lib/content-kit/shoot-readiness"
 import type { Shoot } from "@/lib/content-kit/types"
 
 function makeShoot(overrides: Partial<Shoot> = {}): Shoot {
@@ -32,7 +35,7 @@ describe("Shoot Studio publish pipeline", () => {
   it("requires at least six approved rendered shots before publishing", () => {
     const shoot = makeShoot({
       shots: makeShoot().shots.map((shot, index) =>
-        index < 4 ? shot : { ...shot, status: "draft" as const },
+        index < 4 ? shot : { ...shot, status: "draft" as const }
       ),
     })
 
@@ -77,20 +80,31 @@ describe("Shoot Studio publish pipeline", () => {
   it("keeps the generator and API wired for six shots, extension, publish, and HQ preserve", () => {
     const root = process.cwd()
     const generator = fs.readFileSync(path.join(root, "lib/content-kit/shoot-generator.ts"), "utf8")
-    const route = fs.readFileSync(path.join(root, "app/api/admin/content-kit/shoots/route.ts"), "utf8")
-    const client = fs.readFileSync(path.join(root, "components/admin/shoot-studio-client.tsx"), "utf8")
+    const route = fs.readFileSync(
+      path.join(root, "app/api/admin/content-kit/shoots/route.ts"),
+      "utf8"
+    )
+    const client = fs.readFileSync(
+      path.join(root, "components/admin/shoot-studio-client.tsx"),
+      "utf8"
+    )
     const types = fs.readFileSync(path.join(root, "lib/content-kit/types.ts"), "utf8")
 
     expect(generator).toContain("const DEFAULT_SHOTS_PER_SHOOT = 6")
     expect(generator).toContain("export async function extendShoot")
     expect(generator).toContain('quality === "high" ? shoot.shots[idx].status : "draft"')
     expect(generator).toContain("selfie_urls")
-    expect(generator).toContain("buildImageRoleGuard(selfieUrls.length, styleUrls.length)")
+    expect(generator).toContain("buildShotRenderPrompt({")
+    expect(generator).toContain("buildImageRoleGuard(input.selfieCount, input.styleCount)")
     expect(generator).toContain("FIRST attached inspiration image as the primary visual reference")
     expect(generator).toContain("FIRST style reference image is a mandatory visual reference")
     expect(generator).toContain("mirror the FIRST inspiration image's camera distance")
     expect(generator).toContain("Do not force a full-body opening shot")
     expect(generator).toContain("must visibly belong to that reference world")
+    expect(generator).toContain("WRITTEN SHOT PROMPT (secondary planning notes")
+    expect(generator).toContain("FINAL RENDER AUTHORITY")
+    expect(generator).toContain("Describe only what is visible or structurally implied")
+    expect(generator).toContain("If the written shot prompt invents or alters visible details")
     expect(generator).not.toContain("full-body/everyday-location starts")
     expect(route).toContain("Array.isArray(body.selfieUrls)")
     expect(route).toContain("selfieUrls,")

@@ -69,10 +69,9 @@ describe("Shoot Studio reference payload", () => {
         "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png",
         "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-side.png",
       ],
-      inspirationUrls: [
-        "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png",
-      ],
-      prompt: "Create image 1 of a 6-part editorial photoshoot. Scene: marble cafe. Outfit: black blazer. Pose: walking.",
+      inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
+      prompt:
+        "Create image 1 of a 6-part editorial photoshoot. Scene: marble cafe. Outfit: black blazer. Pose: walking.",
       shotRole: "movement-lifestyle-action",
       quality: "medium",
     })
@@ -95,11 +94,21 @@ describe("Shoot Studio reference payload", () => {
     ])
     expect(payload.prompt).toContain("the FIRST 2 input images are all the SAME woman")
     expect(payload.prompt).toContain("Every image after the first 2 is a style reference ONLY")
-    expect(payload.prompt).toContain("Use the uploaded identity reference images as the ONLY source of facial identity.")
+    expect(payload.prompt).toContain(
+      "Use the uploaded identity reference images as the ONLY source of facial identity."
+    )
     expect(payload.prompt).toContain("Identity Priority: 100%")
     expect(payload.prompt).toContain("Use the inspiration image ONLY for:")
-    expect(payload.prompt).toContain("Recreate the inspiration image composition as closely as possible")
-    expect(payload.prompt).toContain("A person who knows the subject should immediately recognize them.")
+    expect(payload.prompt).toContain(
+      "Recreate the inspiration image composition as closely as possible"
+    )
+    expect(payload.prompt).toContain(
+      "A person who knows the subject should immediately recognize them."
+    )
+    expect(payload.prompt).toContain(
+      "WRITTEN SHOT PROMPT (secondary planning notes, not the visual source of truth):"
+    )
+    expect(payload.prompt).toContain("FINAL RENDER AUTHORITY:")
     expect(payload.prompt).not.toContain("Sandra's exact facial structure")
     expect(payload.prompt).toContain("mandatory visual reference")
     expect(payload.prompt).toContain("crop, framing, subject scale")
@@ -129,10 +138,42 @@ describe("Shoot Studio reference payload", () => {
     const variationPrompt = mocks.edit.mock.calls[1][0].prompt
 
     expect(heroPrompt).toContain("TASK TYPE: IMAGE RECONSTRUCTION")
-    expect(heroPrompt).toContain("Recreate the inspiration image composition as closely as possible")
+    expect(heroPrompt).toContain(
+      "Recreate the inspiration image composition as closely as possible"
+    )
     expect(variationPrompt).toContain("TASK TYPE: STYLE-WORLD VARIATION")
     expect(variationPrompt).toContain("Poses and angles may vary")
     expect(variationPrompt).toContain("Do not restyle the set into a generic new scene")
     expect(variationPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
+  })
+
+  it("makes the attached inspiration image outrank hallucinated written shot details at render time", async () => {
+    const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
+
+    await generateShotImage({
+      selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png"],
+      inspirationUrls: [
+        "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/mediterranean-inspo.png",
+      ],
+      prompt:
+        "Create image 1 of a 6-part Mediterranean Moment editorial photoshoot. Outfit: Off-white linen midi dress, nude leather sandals, no pattern. Scene: pale stucco courtyard.",
+      shotRole: "establishing-full-body",
+      quality: "medium",
+    })
+
+    const prompt = mocks.edit.mock.calls[0][0].prompt
+    const writtenPromptIndex = prompt.indexOf("Off-white linen midi dress")
+    const finalAuthorityIndex = prompt.indexOf("FINAL RENDER AUTHORITY:")
+    const conflictRuleIndex = prompt.lastIndexOf(
+      "If the written shot prompt invents or alters visible details from the attached inspiration image"
+    )
+
+    expect(writtenPromptIndex).toBeGreaterThan(-1)
+    expect(finalAuthorityIndex).toBeGreaterThan(writtenPromptIndex)
+    expect(conflictRuleIndex).toBeGreaterThan(finalAuthorityIndex)
+    expect(prompt).toContain("dress length, garment cut, accessories, bag, hat/no hat, shoes")
+    expect(prompt).toContain(
+      "If any written prompt conflicts with the inspiration image, the inspiration image wins"
+    )
   })
 })
