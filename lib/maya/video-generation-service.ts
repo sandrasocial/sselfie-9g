@@ -71,7 +71,7 @@ function videoResolution(model: string): VideoResolution {
     if (!model.includes("wan-2.2") && requested === "480p") return "720p"
     return requested
   }
-  return model.includes("wan-2.2") ? "480p" : "720p"
+  return "720p"
 }
 
 function videoPromptExpansionEnabled(): boolean {

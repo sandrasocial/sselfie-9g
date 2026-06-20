@@ -113,7 +113,7 @@ describe("app-v3 video generation service", () => {
         input: expect.objectContaining({
           image: "https://cdn.example.com/source.png",
           prompt: expect.stringContaining("Face stays steady"),
-          resolution: "480p",
+          resolution: "720p",
           go_fast: true,
         }),
       })
