@@ -249,7 +249,7 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Your selfies</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-            The selfies Maya can use to keep your face in every shoot. Your newest one is used
+            The selfies Maya can use to keep you recognizable in every shoot. Your newest one is used
             automatically.
           </p>
           {selfies && selfies.length > 0 && (

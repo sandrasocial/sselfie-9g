@@ -23,7 +23,7 @@ export function generateAiPromptsDay5EditMakesPostableEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Most weird results come from the original photo: blurry light, heavy shadow, sunglasses, or an angle where ChatGPT cannot read your face clearly.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try one clean selfie in soft window light. Paste the anchor line first, then paste the look you want.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Run it once. If the face still drifts, reply and tell me what changed.</p>
-    <div style="margin:26px 0 16px;">${renderStoneButton("Open the Prompt Pack", promptPackUrl)}</div>
+    <div style="margin:26px 0 16px;">${renderStoneButton("Open my prompts", promptPackUrl)}</div>
   `
 
   const html = renderStoneShell({
@@ -45,7 +45,7 @@ Try one clean selfie in soft window light. Paste the anchor line first, then pas
 
 Run it once. If the face still drifts, reply and tell me what changed.
 
-Open the Prompt Pack:
+Open my prompts:
 ${promptPackUrl}
 
 Sandra x`

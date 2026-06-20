@@ -91,7 +91,7 @@ export function buildFallbackPromptPack(
     {
       title: "Editorial Reel Cover",
       purpose: "Reel cover, carousel cover, hook visual.",
-      copy: "Use this when you need a stronger image for Reels, carousel covers, or a post that needs to stop the scroll. Keep the same face, colors, lighting, and mood, but make the composition more editorial.",
+      copy: "Use this when you need a stronger image for Reels, carousel covers, or a post that needs to stop the scroll. Keep you recognizable, plus the colors, lighting, and mood, but make the composition more editorial.",
       prompt: `Use my uploaded source selfie as the identity reference. Create an Editorial Reel Cover inside ${world}. Preserve my face and keep the same visual code. ${codeLine} Make the composition stronger with clean negative space for text, a confident crop, and a premium editorial feeling. Vertical 9:16 or 4:5 safe. No text, no logo, no extra people.`,
     },
     {

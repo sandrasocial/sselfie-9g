@@ -111,13 +111,13 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
-    "Your selfie's in, and your face stays yours. Hit create and pick the direction that feels most like you.",
+    "Your selfie's in, and it's still you. Hit create and pick the direction that feels most like you.",
   photoshoot:
-    "Your selfie's in, and your face stays yours. Hit create and I'll build the full shoot plan.",
+    "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
   "reel-cover":
-    "Your selfie's in, and your face stays yours. Hit create, then tell me what the reel's about.",
-  carousel: "Your selfie's in, and your face stays yours. Hit create, then give me the topic.",
-  "story-slide": "Your selfie's in, and your face stays yours. Hit create, then tell me the goal.",
+    "Your selfie's in, and it's still you. Hit create, then tell me what the reel's about.",
+  carousel: "Your selfie's in, and it's still you. Hit create, then give me the topic.",
+  "story-slide": "Your selfie's in, and it's still you. Hit create, then tell me the goal.",
   video: "Your image is in. Hit create and pick the motion that feels most natural.",
 }
 
@@ -810,7 +810,7 @@ export function MayaConcierge({
     if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
       setGenState(s => ({
         ...s,
-        [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
+        [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
       }))
       return
     }
@@ -998,7 +998,7 @@ export function MayaConcierge({
     if (!referenceSelfieUrl) {
       setGenState(s => ({
         ...s,
-        [key]: { status: "error", error: "Add a selfie first so Maya keeps your face." },
+        [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
       }))
       return
     }
@@ -1463,7 +1463,7 @@ export function MayaConcierge({
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
-                  Maya will keep your face, skin tone, and natural features recognizable.
+                  Maya will keep your skin tone and natural features recognizable, so it's still you.
                 </p>
               </div>
             ) : format !== "video" ? (
@@ -1545,8 +1545,8 @@ export function MayaConcierge({
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
                   For best results, add one full-body shot and one side profile so Maya can keep
-                  your face and body true to you. You can also add an inspo picture and ask Maya for
-                  that same face, that vibe. All optional.
+                  you recognizable and your body true to you. You can also add an inspo picture and
+                  ask Maya for that same vibe, still you. All optional.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[

@@ -20,7 +20,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     const events = read("lib/analytics/event-contract.ts")
 
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
-    expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
+    expect(frontDoor).toContain("Add one clear selfie and you're still you")
     expect(frontDoor).toContain("Add my selfie")
     expect(frontDoor).toContain("suite_home_viewed")
     expect(frontDoor).toContain("first_action_selected")

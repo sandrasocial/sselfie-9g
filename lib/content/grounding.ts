@@ -41,7 +41,7 @@ export const APPROVED_LANGUAGE = [
   "one photo can become a week of content",
   "photos you actually want to post",
   "a personal brand that looks like you",
-  "keeps your face",
+  "still looks like you",
   "still you",
   "realistic",
   "editorial",
@@ -183,7 +183,7 @@ export const NO_FAKE = {
   redFlags:
     "Do not change her whole face, make her look 15 years younger, pretend she was somewhere she wasn't, imply fake wealth, fake results, plastic skin, or hiding AI in a sneaky way.",
   realYouMethod:
-    "Keep the face. Keep the age. Keep the body language. Add real-world texture. Upgrade the environment. Control the styling. Use honest context.",
+    "Keep you recognizable. Keep the age. Keep the body language. Add real-world texture. Upgrade the environment. Control the styling. Use honest context.",
   signatureLines: [
     "AI should not erase you. It should frame you.",
     "Fake is pretending. Creative is positioning.",

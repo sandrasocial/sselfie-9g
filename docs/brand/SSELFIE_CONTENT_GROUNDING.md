@@ -39,7 +39,7 @@ leverage · synergy · transform · game-changer · skyrocket · unlock · "unlo
 **"elevate / elevated" is fully banned (locked 2026-06-15).** It was previously baked into the no-fake doctrine as core positioning, so it's replaced everywhere in this doc (see the signature promise in Part 4). Wherever the old docs said "elevated," the replacement is: **polished · editorial · premium · true-to-you · high-end**, depending on context.
 
 ### Approved language (sounds like her)
-phone-first · AI-ready selfie · cinematic personal brand content · visual transformation (when visual and specific) · high-end visuals · "make your content look expensive" · one photo can become a week of content · photos you actually want to post · a personal brand that looks like you · keeps your face · still you · realistic · editorial · recognizable · tasteful · polished · true-to-you · creative direction · brand world · premium presence · real features · natural texture.
+phone-first · AI-ready selfie · cinematic personal brand content · visual transformation (when visual and specific) · high-end visuals · "make your content look expensive" · one photo can become a week of content · photos you actually want to post · a personal brand that looks like you · still looks like you · still you · realistic · editorial · recognizable · tasteful · polished · true-to-you · creative direction · brand world · premium presence · real features · natural texture.
 
 > **Approved nuance (2026-06-15):** "make your content look **expensive**" / "expensive-looking visuals" is allowed (it's about the photo). "look **rich**" / "luxury lifestyle" as a claim about her life is banned.
 
@@ -112,7 +112,7 @@ A winner is **40x to 180x** baseline (baseline ~10-12k views; mega-winners 300k-
 3. **Numbered, stealable steps**, text on screen. She leaves with a skill, not a vibe.
 4. **One comment keyword** (SELFIE / KIT / PROMPT), said in the video AND caption → ManyChat → email → funnel.
 5. **A promise about HER, not Sandra** ("your legs", "your outfit", "your next selfie").
-Plus: honest AI language ("keeps your face", "still you"). Never "no one will know."
+Plus: honest AI language ("still looks like you", "still you", "recognizable"). Never "no one will know."
 
 ### What flops every time (cap at ~20%)
 Aesthetic outfit/lifestyle reels with no teaching and no keyword. Pure emotional monologues with no concrete payoff. Anything where the first 3 seconds don't show a transformation or make a promise. (Note: emotional/story reels CAN reach — one hit 202k — but with no keyword = reach without capture. Story is a supporting pillar, not the engine.)
@@ -150,7 +150,7 @@ Changing her whole face; making her look 15 years younger; pretending she was so
 Keeping her real face, age, body, hair, skin texture, energy. AI as an editorial backdrop / brand-shoot concept. Visuals for carousels, covers, profiles, lead magnets. Saying "AI-assisted brand image" when needed. AI as creative direction, not deception.
 
 ### The Real You Method (signature framework)
-1. Keep the face · 2. Keep the age · 3. Keep the body language · 4. Add real-world texture · 5. Upgrade the environment · 6. Control the styling · 7. Use honest context.
+1. Keep you recognizable · 2. Keep the age · 3. Keep the body language · 4. Add real-world texture · 5. Upgrade the environment · 6. Control the styling · 7. Use honest context.
 
 ### Signature lines (repeat everywhere)
 - **"AI should not erase you. It should frame you."**
