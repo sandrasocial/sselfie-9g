@@ -28,11 +28,11 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">In the free pack, you got the opening shot of every world. The half-light close-up. The clean-girl morning. The denim street.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One shot each. Just the door.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">In the free preview, you got the newest looks to test. The half-light close-up. The clean-girl morning. The denim street.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">A few shots to try. Just the door.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's what most people miss. Each of those is shot 1 of a whole story.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Take Quiet Luxury London. It's not one café photo. It's nine. The arrival. The coffee run. The seated hero shot. The reel-cover exit. A whole day, from one selfie.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault has ten of those worlds. 92 shots, start to finish. Every one keeps your face. Still you, just on your best day.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault has ten of those worlds. 92 shots, start to finish. Still you, just on your best day.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You already know it works. You've watched your own selfie turn into something you'd actually post.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the rest of it.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $27 · one time", promptVaultUrl)}</div>
@@ -50,15 +50,15 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
     footerSignoff: "",
   })
 
-  const text = `In the free pack, you got the opening shot of every world. The half-light close-up. The clean-girl morning. The denim street.
+  const text = `In the free preview, you got the newest looks to test. The half-light close-up. The clean-girl morning. The denim street.
 
-One shot each. Just the door.
+A few shots to try. Just the door.
 
 Here's what most people miss. Each of those is shot 1 of a whole story.
 
 Take Quiet Luxury London. It's not one café photo. It's nine. The arrival. The coffee run. The seated hero shot. The reel-cover exit. A whole day, from one selfie.
 
-The Vault has ten of those worlds. 92 shots, start to finish. Every one keeps your face. Still you, just on your best day.
+The Vault has ten of those worlds. 92 shots, start to finish. Still you, just on your best day.
 
 You already know it works. You've watched your own selfie turn into something you'd actually post.
 

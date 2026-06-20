@@ -34,8 +34,8 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
       : `A while back you bought the ${productLabel} from me. This email is something extra.`
   const bridge =
     variant === "legacy"
-      ? `What you bought still works. But my Studio has grown since then. Maya is the creative director inside it now. She pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.`
-      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps your face in every photo, and gets smarter the more you use her.`
+      ? `What you bought still works. But my Studio has grown since then. Maya is the creative director inside it now. She pulls the looks for you, keeps it looking like you in every photo, and gets smarter the more you use her.`
+      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps it looking like you in every photo, and gets smarter the more you use her.`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
@@ -85,7 +85,7 @@ export function generateTrialDay0Email(params: {
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your 7 days just started. Step 1 is simple: add one clear selfie.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is how Maya can keep your real face in the image. Not a random AI version of you. You, framed in the visual world you choose.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is how Maya can keep it looking like you in the image. Not a random AI version of you. You, framed in the visual world you choose.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the app, pick a vibe, and add the selfie when Maya asks. She'll take it from there.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your Studio", appUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">One promise before you start: these photos will look like you. AI should not erase you. It should frame you.</p>
@@ -103,7 +103,7 @@ Hey ${name},
 
 Your 7 days just started. Step 1 is simple: add one clear selfie.
 
-This is how Maya can keep your real face in the image. Not a random AI version of you. You, framed in the visual world you choose.
+This is how Maya can keep it looking like you in the image. Not a random AI version of you. You, framed in the visual world you choose.
 
 Open the app, pick a vibe, and add the selfie when Maya asks. She'll take it from there.
 
@@ -129,7 +129,7 @@ export function generateTrialNoFirstImageEmail(params: {
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You haven't made your first photo yet, so here is the only step I want you to do today:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the Studio and add one clear selfie. Maya uses it to keep your face, your features, and the image feeling like you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the Studio and add one clear selfie. Maya uses it to keep you recognizable, your features, and the image feeling like you.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">After that, choose the visual world you want. The first image doesn't need to be perfect. It just needs to exist.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Make your first photo", appUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Start with one selfie. Let Maya do the rest.</p>
@@ -147,7 +147,7 @@ Hey ${name},
 
 You haven't made your first photo yet, so here is the only step I want you to do today:
 
-Open the Studio and add one clear selfie. Maya uses it to keep your face, your features, and the image feeling like you.
+Open the Studio and add one clear selfie. Maya uses it to keep you recognizable, your features, and the image feeling like you.
 
 After that, choose the visual world you want. The first image doesn't need to be perfect. It just needs to exist.
 

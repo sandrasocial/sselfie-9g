@@ -23,7 +23,7 @@ describe("SUITE trial first-image activation", () => {
 
     expect(email.subject).toBe("You're in. Here's step one 🤍")
     expect(email.text).toContain("Step 1 is simple: add one clear selfie.")
-    expect(email.text).toContain("Maya can keep your real face")
+    expect(email.text).toContain("Maya can keep it looking like you")
     expect(email.text).toContain("AI should not erase you. It should frame you.")
     expect(email.text).not.toContain("Pick a look. Maya pulls three concepts")
   })

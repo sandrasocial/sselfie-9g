@@ -17,7 +17,7 @@ export function generateMembershipCheckoutRecoveryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You were one click from joining SSELFIE SUITE. If something held you back, that's okay. &euro;97 is a real decision.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">So decide with your own photos instead: here's 7 days inside, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Maya pulls the looks for you, keeps your face in every photo, and writes captions that sound like you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Maya pulls the looks for you, keeps it looking like you in every photo, and writes captions that sound like you.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If it's not for you, your photos stay yours anyway.</p>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
@@ -38,7 +38,7 @@ You were one click from joining SSELFIE SUITE. If something held you back, that'
 
 So decide with your own photos instead: here's 7 days inside, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.
 
-Maya pulls the looks for you, keeps your face in every photo, and writes captions that sound like you.
+Maya pulls the looks for you, keeps it looking like you in every photo, and writes captions that sound like you.
 
 Claim your 7 days:
 ${claimUrl}

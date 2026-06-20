@@ -50,7 +50,7 @@ The enemy is not AI. The enemy is **fake life energy**.
 - hiding the AI in a way that feels sneaky
 
 **Green flag (safe, modern, premium — always teach):**
-- keeping her real face, age, body type, hair, skin texture, and energy
+- keeping her recognizable: her age, body type, hair, skin texture, and energy, so it still looks like her
 - AI as an editorial backdrop or brand-shoot concept
 - visuals for carousels, covers, profile images, lead magnets, launch graphics
 - saying "AI-assisted brand image" when needed; real self in Stories/Reels too
@@ -86,7 +86,7 @@ The transformation: **from hidden and unsure → to visible and proud.**
 
 | Step | What it protects | Why it matters |
 |---|---|---|
-| 1. Keep the face | Recognition | She still looks like herself |
+| 1. Keep her recognizable | Recognition | She still looks like herself |
 | 2. Keep the age | Trust | No uncanny "teen filter" energy |
 | 3. Keep the body language | Identity | Her natural energy stays intact |
 | 4. Add real-world texture | Realism | Skin, fabric, lighting, shadows feel believable |
@@ -122,7 +122,7 @@ You become the woman who says: *"No babe, not that prompt. That one gives catfis
 
 ## How this maps to the product surface
 
-- **Maya (/app + /studio):** the engine already encodes this (identity anchor from real selfies, realism tokens, anti-plastic avoid list, candid-not-posed briefs). Every Maya copy surface should speak "keeps your face / made from you" language. Future carousel design systems must include the discernment voice.
+- **Maya (/app + /studio):** the engine already encodes this (identity anchor from real selfies, realism tokens, anti-plastic avoid list, candid-not-posed briefs). Every Maya copy surface should speak "still you / recognizable / made from you" language. Future carousel design systems must include the discernment voice.
 - **Prompt Vault:** position as the tasteful, realistic, trust-safe way — full shoots around the real her, never "fool people" framing.
 - **SUITE door / membership copy:** identity-first ("Ready to become her?"), face-kept, no deception energy.
 - **Naming direction (future offers):** "The No-Fake AI Brand Photo Method" energy — create AI-assisted brand photos that look elevated, realistic, and still feel like you.

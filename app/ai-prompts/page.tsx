@@ -75,7 +75,7 @@ const VALUE_ITEMS = [
   "Free AI photoshoot prompts you can test with your own selfies.",
   "Editorial looks for personal brand images, profile photos, and content.",
   "Beginner-friendly instructions so you know what to paste and where.",
-  "The five newest SSELFIE shoot previews, so the freebie stays useful without becoming the full Vault.",
+  "The five newest SSELFIE shoot previews to test with your own selfies.",
 ]
 
 const FUNNEL_STEPS = [

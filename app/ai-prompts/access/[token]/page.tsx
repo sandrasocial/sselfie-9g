@@ -277,7 +277,7 @@ export default async function AiPromptsAccessPage({
         <div className="ap-hero-content">
           <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
-            Your Updated Photoshoot Preview.
+            Your free shoot preview.
           </h1>
           <p className="ap-hero-sub">
             Start with the newest SSELFIE shoot previews. Pick a visual identity, copy the prompt,

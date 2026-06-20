@@ -709,7 +709,7 @@ const FAQS = {
     { question: "Is this just another AI image generator?",
       answer: "No. Image tools hand you a picture and leave. Maya builds the whole visual layer of your brand: photoshoots, carousels, reel covers, captions, and a plan for what to post. And she remembers your brand, so it gets easier every week." },
     { question: "What makes this different from ChatGPT?",
-      answer: "Same class of engine money can rent. What you can't rent is a creative director who already knows your brand. Maya remembers your style, your colors, what you said no to, and she keeps your face in every photo." },
+      answer: "Same class of engine money can rent. What you can't rent is a creative director who already knows your brand. Maya remembers your style, your colors, what you said no to, and you're still you in every photo." },
     { question: "Will the photos actually look like me?",
       answer: "Yes. That's the whole product. Maya works from your reference selfies. If something doesn't feel like you, you tell her and she remembers." },
     { question: "Do I need to learn prompts?",
@@ -1280,7 +1280,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
           </div>
         }
         imgSrc={SUITE_IMG.honest}
-        imgAlt="Realistic AI-assisted brand photo that keeps your face"
+        imgAlt="Realistic AI-assisted brand photo that still looks like you"
         dark
       />
 

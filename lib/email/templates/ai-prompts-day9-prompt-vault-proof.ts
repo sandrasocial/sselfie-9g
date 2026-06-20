@@ -44,7 +44,7 @@ export function generateAiPromptsDay9PromptVaultProofEmail({
   const html = renderStoneShell({
     title: "Will it actually look like me?",
     eyebrow: "Prompt Vault",
-    subtitle: "It keeps your face. That is the point.",
+    subtitle: "It's still you. That is the point.",
     bodyHtml,
     footerLead: "AI should not erase you. It should frame you.",
     footerSignoff: "",

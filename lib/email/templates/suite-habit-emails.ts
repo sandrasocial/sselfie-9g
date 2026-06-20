@@ -23,7 +23,7 @@ export function generateSuiteDay0Email({ firstName }: { firstName: string }) {
       <li>Upload the selfie, pick the look that feels most like you, and hit create.</li>
     </ol>
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your studio", STUDIO_URL)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's it. Maya keeps your face, your age, your features. The photos will look like you, because they're made from you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's it. Maya keeps you recognizable, your age, your features. The photos will look like you, because they're made from you.</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">The first time you see yourself in a real brand shoot is the moment this clicks. Go get it.</p>
   `
   return {
@@ -46,7 +46,7 @@ Before anything else, let's get your first photos done today. It takes about 5 m
 2. Open your studio: ${STUDIO_URL}
 3. Upload the selfie, pick the look that feels most like you, and hit create.
 
-That's it. Maya keeps your face, your age, your features. The photos will look like you, because they're made from you.
+That's it. Maya keeps you recognizable, your age, your features. The photos will look like you, because they're made from you.
 
 The first time you see yourself in a real brand shoot is the moment this clicks. Go get it.
 

@@ -24,7 +24,7 @@ export function generateAiPromptsDay2TryFirstPromptEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Did you try one prompt yet?</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, start with Clean Editorial. Upload one selfie to ChatGPT, paste the prompt, and see what comes back.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Do not overthink it. One photo is enough.</p>
-    <div style="margin:26px 0 26px;">${renderStoneButton("Open the Prompt Pack", promptPackUrl)}</div>
+    <div style="margin:26px 0 26px;">${renderStoneButton("Open my prompts", promptPackUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Reply and tell me what happened. Even if it looked weird. That is useful too.</p>
   `
 
@@ -47,7 +47,7 @@ If not, start with Clean Editorial. Upload one selfie to ChatGPT, paste the prom
 
 Do not overthink it. One photo is enough.
 
-Open the Prompt Pack:
+Open my prompts:
 ${promptPackUrl}
 
 Reply and tell me what happened. Even if it looked weird. That is useful too.
