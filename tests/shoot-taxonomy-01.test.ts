@@ -17,10 +17,8 @@ const baseBrief: CreativeBrief = {
 
 describe("SHOOT-TAXONOMY-01 shot roles", () => {
   it("adds concrete role direction to user-facing photo prompts", () => {
-    const detailPrompt = compileConceptJobs(
-      { ...baseBrief, shotRole: "true-detail" },
-      "photo"
-    )[0].passes[0].prompt
+    const detailPrompt = compileConceptJobs({ ...baseBrief, shotRole: "true-detail" }, "photo")[0]
+      .passes[0].prompt
     const fullBodyPrompt = compileConceptJobs(
       { ...baseBrief, shotRole: "establishing-full-body" },
       "photo"
@@ -36,12 +34,13 @@ describe("SHOOT-TAXONOMY-01 shot roles", () => {
     const source = readFileSync("lib/content-kit/shoot-generator.ts", "utf8")
 
     expect(source).toContain('"shotRole"')
+    expect(source).toContain('"true-detail"')
     expect(source).toContain("true-detail is optional")
     expect(source).toContain("Do not force a faceless detail shot")
     expect(source).toContain("validateShotSet")
     expect(source).not.toContain("Shoot plan must include 1-2 true-detail shots")
-    expect(source).toContain("shotRoleInstruction(input.shotRole)")
-    expect(source).toContain("safety sanitizer changed a shot prompt")
-    expect(source).toContain("off-shoulder")
+    expect(source).toContain("shotRoleRenderInstruction(input.shotRole)")
+    expect(source).toContain("Safety retry:")
+    expect(source).toContain("off[-\\s]?shoulder")
   })
 })

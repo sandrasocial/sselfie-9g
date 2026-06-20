@@ -34,7 +34,7 @@ const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "close-portrait",
   "cover-safe-hero",
 ]
-const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "cover-safe-hero"])
+const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "true-detail"])
 
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
@@ -42,47 +42,106 @@ const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "cover-safe-he
 // could lift a face from the inspiration. Structural no-fake guard, not prompt-dependent.
 // Built per generation: the first `selfieCount` images are all the SAME woman (different
 // angles: front, side profiles, full body) and define identity; the rest are style only.
-function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
-  const stylePriority =
-    styleCount > 1
-      ? "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible. Use the later style references only as secondary support when they do not conflict with the first style reference."
-      : styleCount === 1
-        ? "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible."
-        : "No separate style reference image was attached, so preserve identity from the selfie references and follow the written shoot prompt exactly."
-  if (selfieCount <= 1) {
-    return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
-  }
-  return `Image roles for this generation: the FIRST ${selfieCount} input images are all the SAME woman from different angles (front, side profiles, full body). Use ALL of them together as the single source of her face, identity, skin tone, hair color and body, and preserve them exactly, natural and recognizable. Every image after the first ${selfieCount} is a style reference ONLY, for outfit, location, light, color grading and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
-}
-
-function buildIdentityGuard(selfieCount: number): string {
-  if (selfieCount <= 1) {
-    return "Keep the face natural, recognizable and completely true to the first reference image. Do not alter facial features, skin texture or identity."
-  }
-  return `Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
-}
-
-function buildImageSafetyGuard(): string {
-  return [
-    "Non-sexual adult fashion editorial. Modest styling only.",
-    "If a style reference or written prompt implies revealing clothing, translate it into a covered editorial outfit with the same color, light, mood and location.",
-    "No swimwear, lingerie, cleavage, sheer fabric, erotic posing, nudity, exposed torso or sexualized styling.",
-  ].join(" ")
-}
-
 function buildShotRenderPrompt(input: {
   selfieCount: number
   styleCount: number
   prompt: string
+  shotRole?: ShootShotRole
+  safetyRetry?: boolean
 }): string {
+  const identityRange =
+    input.selfieCount <= 1 ? "input image 1" : `input images 1-${input.selfieCount}`
+  const firstStyleIndex = input.selfieCount + 1
+  const styleRange =
+    input.styleCount <= 1
+      ? `input image ${firstStyleIndex}`
+      : `input images ${firstStyleIndex}-${input.selfieCount + input.styleCount}`
+  const shotNumber = shotNumberFromPrompt(input.prompt)
+  const shotDirection = extractShotRenderDirection(input.prompt)
+
   return [
-    buildImageSafetyGuard(),
-    buildImageRoleGuard(input.selfieCount, input.styleCount),
-    input.prompt,
-    buildIdentityGuard(input.selfieCount),
+    `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
+      "image  of",
+      "one image of"
+    ),
+    `Use ${identityRange} as IDENTITY REFERENCES ONLY. Preserve the person's recognizable face, facial structure, age, skin texture, skin tone, body proportions, hair color, and overall look from these identity images.`,
+    `Use ${styleRange} as INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
+    input.styleCount > 1
+      ? "The first inspiration image is the primary visual source. Later inspiration images are secondary support only."
+      : "",
+    "If the inspiration image contains a person, treat that person only as a placeholder for pose, styling, wardrobe, lighting, and composition. Do not copy, average, blend, or borrow their face, age, body, hair, or skin.",
+    shotNumber === null || shotNumber <= 1
+      ? "For this first image, stay very close to the inspiration image's visual feel while replacing the person with the identity-reference person."
+      : "For this additional set image, keep the same inspiration-image world and vary only the pose, angle, or crop enough to make a useful photoshoot set.",
+    shotRoleRenderInstruction(input.shotRole),
+    shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
+    "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
+    input.safetyRetry
+      ? "Safety retry: keep the styling fully clothed, tasteful, non-sexual, and editorial while preserving the same inspiration mood."
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n")
+}
+
+function shotNumberFromPrompt(prompt: string): number | null {
+  const match = prompt.match(/\bCreate image\s+(\d+)\b/i)
+  if (!match?.[1]) return null
+  const value = Number(match[1])
+  return Number.isFinite(value) ? value : null
+}
+
+function shotRoleRenderInstruction(role?: ShootShotRole): string {
+  switch (role) {
+    case "establishing-full-body":
+      return "Shot role: establishing/wider context. Show enough of the outfit and location to establish the world, while preserving natural proportions."
+    case "movement-lifestyle-action":
+      return "Shot role: lifestyle/action. Capture a believable candid movement or useful brand moment in the same visual world."
+    case "seated-hero":
+      return "Shot role: seated or leaning hero. Calm, confident, polished, with face clear and outfit/world visible."
+    case "profile":
+      return "Shot role: profile or three-quarter profile. Keep the face shape recognizable and the pose editorial."
+    case "close-portrait":
+      return "Shot role: close portrait. Face-led crop, clear eyes, natural skin texture, intimate editorial framing."
+    case "cover-safe-hero":
+      return "Shot role: cover-safe hero. Strong image with clean negative space for text, but no text rendered in the image."
+    case "true-detail":
+      return "Shot role: detail. Focus on fabric, hands, accessories, setting texture, or outfit detail from the same world. Full face is optional."
+    default:
+      return ""
+  }
+}
+
+function extractShotRenderDirection(prompt: string): string {
+  const sections = ["Pose", "Camera + lens", "Camera angle", "Composition"]
+    .map(label => extractPromptSection(prompt, label))
+    .filter(Boolean)
+  return sections.join(" ")
+}
+
+function extractPromptSection(prompt: string, label: string): string {
+  const labels = [
+    "Scene",
+    "Outfit",
+    "Hair",
+    "Makeup",
+    "Accessories/props",
+    "Pose",
+    "Camera \\+ lens",
+    "Camera angle",
+    "Composition",
+    "Body proportion lock",
+    "Mood",
+    "Color grading",
+    "Image quality",
+    "Avoid",
+  ]
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const otherLabels = labels.filter(item => item !== escapedLabel).join("|")
+  const match = prompt.match(
+    new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)(?=\\s+(?:${otherLabels}):|$)`, "i")
+  )
+  return match?.[1]?.replace(/\s+/g, " ").trim().slice(0, 700) || ""
 }
 
 function normalizeShotRole(value: unknown, index: number): ShootShotRole {
@@ -137,6 +196,22 @@ function getGenerationFailureSummary(error: unknown): string {
   return [status && `status=${status}`, code && `code=${code}`, type && `type=${type}`, message]
     .filter(Boolean)
     .join(" · ")
+}
+
+function isContentPolicyError(error: unknown): boolean {
+  const candidate = error as { message?: unknown; code?: unknown; type?: unknown }
+  const haystack = [candidate?.message, candidate?.code, candidate?.type]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase()
+  return (
+    haystack.includes("content_policy") ||
+    haystack.includes("content policy") ||
+    haystack.includes("safety") ||
+    haystack.includes("moderation") ||
+    haystack.includes("violat") ||
+    haystack.includes("rejected")
+  )
 }
 
 function isAllowedUrl(value: string): boolean {
@@ -235,7 +310,7 @@ ${audienceBlock()}
 PROOF CONTEXT FOR SHOT UTILITY ONLY:
 ${proofBlock()}
 
-Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after/transformation-friendly frames, profile/detail crops, seated hero, close-up, cover-safe negative space. Assign shotRole on every shot.
+Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after/transformation-friendly frames, profile/detail crops, seated hero, close-up, cover-safe negative space. Assign shotRole on every shot. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
@@ -329,16 +404,11 @@ export async function generateShotImage(input: {
     )
   )
 
-  const sanitizedPrompt = sanitizePromptForImageSafety(input.prompt)
-  if (sanitizedPrompt !== input.prompt) {
-    console.warn(
-      "[shoot-studio] safety sanitizer changed a shot prompt; planner should avoid risky outfit/body terms upstream"
-    )
-  }
   const fullPrompt = buildShotRenderPrompt({
     selfieCount: selfieUrls.length,
     styleCount: styleUrls.length,
-    prompt: sanitizedPrompt,
+    prompt: input.prompt,
+    shotRole: input.shotRole,
   })
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
@@ -351,7 +421,20 @@ export async function generateShotImage(input: {
   }
   if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 
-  const response = await openai.images.edit(editInput as any)
+  let response
+  try {
+    response = await openai.images.edit(editInput as any)
+  } catch (error) {
+    if (!isContentPolicyError(error)) throw error
+    const retryPrompt = buildShotRenderPrompt({
+      selfieCount: selfieUrls.length,
+      styleCount: styleUrls.length,
+      prompt: sanitizePromptForImageSafety(input.prompt),
+      shotRole: input.shotRole,
+      safetyRetry: true,
+    })
+    response = await openai.images.edit({ ...editInput, prompt: retryPrompt } as any)
+  }
   const b64 = response.data?.[0]?.b64_json
   if (!b64) throw new Error("No image data returned from OpenAI")
 

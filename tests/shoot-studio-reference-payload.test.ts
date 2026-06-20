@@ -61,7 +61,7 @@ describe("Shoot Studio reference payload", () => {
     vi.clearAllMocks()
   })
 
-  it("sends selected selfies first and keeps inspiration as the Blue Stripe-era style anchor", async () => {
+  it("sends selected selfies first and uses a short ChatGPT-like render prompt", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 
     await generateShotImage({
@@ -71,7 +71,7 @@ describe("Shoot Studio reference payload", () => {
       ],
       inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
       prompt:
-        "Create image 1 of a 6-part editorial photoshoot. Scene: marble cafe. Outfit: black blazer. Pose: walking.",
+        "Create image 1 of a 6-part editorial photoshoot. Scene: marble cafe. Outfit: black blazer. Pose: walking toward camera with relaxed hands. Camera + lens: 85mm close portrait.",
       shotRole: "movement-lifestyle-action",
       quality: "medium",
     })
@@ -92,27 +92,26 @@ describe("Shoot Studio reference payload", () => {
         content: expect.stringContaining("inspo.png"),
       }),
     ])
-    expect(payload.prompt).toContain("the FIRST 2 input images are all the SAME woman")
-    expect(payload.prompt).toContain("Every image after the first 2 is a style reference ONLY")
+    expect(payload.prompt).toContain("Use input images 1-2 as IDENTITY REFERENCES ONLY")
+    expect(payload.prompt).toContain("Use input image 3 as INSPIRATION REFERENCES ONLY")
     expect(payload.prompt).toContain(
-      "The FIRST style reference image is the primary visual anchor: match its outfit family, lighting direction, camera distance, makeup finish, accessories, color grading, location materials and mood as closely as possible."
+      "Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling."
     )
     expect(payload.prompt).toContain(
-      "Never copy a face, skin, hair color or body from the style references."
+      "Do not copy, average, blend, or borrow their face, age, body, hair, or skin."
     )
+    expect(payload.prompt).toContain("Shot role: lifestyle/action")
     expect(payload.prompt).toContain(
-      "Keep the face natural, recognizable and completely true to the first 2 reference images"
+      "Shot-specific direction from the plan: walking toward camera with relaxed hands."
     )
+    expect(payload.prompt).toContain("85mm close portrait.")
 
-    const safetyIndex = payload.prompt.indexOf("Non-sexual adult fashion editorial")
-    const roleIndex = payload.prompt.indexOf("Image roles for this generation")
-    const writtenPromptIndex = payload.prompt.indexOf("Create image 1 of a 6-part")
-    const identityIndex = payload.prompt.indexOf("Keep the face natural")
-    expect(safetyIndex).toBeGreaterThanOrEqual(0)
-    expect(roleIndex).toBeGreaterThan(safetyIndex)
-    expect(writtenPromptIndex).toBeGreaterThan(roleIndex)
-    expect(identityIndex).toBeGreaterThan(writtenPromptIndex)
-
+    expect(payload.prompt.length).toBeLessThan(2200)
+    expect(payload.prompt).not.toContain("Scene: marble cafe")
+    expect(payload.prompt).not.toContain("Outfit: black blazer")
+    expect(payload.prompt).not.toContain("Use the uploaded reference photos")
+    expect(payload.prompt).not.toContain("Body proportion lock:")
+    expect(payload.prompt).not.toContain("Image quality:")
     expect(payload.prompt).not.toContain("WRITTEN SHOT PROMPT")
     expect(payload.prompt).not.toContain("FINAL RENDER AUTHORITY")
     expect(payload.prompt).not.toContain("FINAL IDENTITY AUTHORITY")
@@ -147,9 +146,11 @@ describe("Shoot Studio reference payload", () => {
     const heroPrompt = mocks.edit.mock.calls[0][0].prompt
     const variationPrompt = mocks.edit.mock.calls[1][0].prompt
 
-    expect(heroPrompt).toContain("The FIRST style reference image is the primary visual anchor")
+    expect(heroPrompt).toContain(
+      "For this first image, stay very close to the inspiration image's visual feel"
+    )
     expect(variationPrompt).toContain(
-      "The FIRST style reference image is the primary visual anchor"
+      "For this additional set image, keep the same inspiration-image world"
     )
     expect(heroPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
     expect(heroPrompt).not.toContain(
@@ -161,7 +162,7 @@ describe("Shoot Studio reference payload", () => {
     expect(variationPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
   })
 
-  it("does not make attached inspiration outrank the written shot prompt at render time", async () => {
+  it("does not forward planner-invented outfit and scene details into the render prompt", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 
     await generateShotImage({
@@ -176,14 +177,13 @@ describe("Shoot Studio reference payload", () => {
     })
 
     const prompt = mocks.edit.mock.calls[0][0].prompt
-    const writtenPromptIndex = prompt.indexOf("Off-white linen midi dress")
-    const roleIndex = prompt.indexOf("Image roles for this generation")
-    const identityIndex = prompt.indexOf("Keep the face natural")
-
-    expect(writtenPromptIndex).toBeGreaterThan(-1)
-    expect(roleIndex).toBeGreaterThan(-1)
-    expect(writtenPromptIndex).toBeGreaterThan(roleIndex)
-    expect(identityIndex).toBeGreaterThan(writtenPromptIndex)
+    expect(prompt).toContain("Use input image 2 as INSPIRATION REFERENCES ONLY")
+    expect(prompt).toContain("Shot role: establishing/wider context")
+    expect(prompt).not.toContain("Off-white linen midi dress")
+    expect(prompt).not.toContain("nude leather sandals")
+    expect(prompt).not.toContain("pale stucco courtyard")
+    expect(prompt).not.toContain("Scene:")
+    expect(prompt).not.toContain("Outfit:")
     expect(prompt).not.toContain("FINAL RENDER AUTHORITY:")
     expect(prompt).not.toContain("dress length, garment cut, accessories, bag, hat/no hat, shoes")
     expect(prompt).not.toContain(
@@ -192,5 +192,29 @@ describe("Shoot Studio reference payload", () => {
     expect(prompt).not.toContain(
       "If the written shot prompt invents or alters visible details from the attached inspiration image"
     )
+  })
+
+  it("only applies the safer prompt wording after a content-policy rejection", async () => {
+    mocks.edit
+      .mockRejectedValueOnce(
+        Object.assign(new Error("content_policy violation"), { code: "content_policy" })
+      )
+      .mockResolvedValueOnce({
+        data: [{ b64_json: Buffer.from("rendered").toString("base64") }],
+      })
+    const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
+
+    await generateShotImage({
+      selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png"],
+      inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
+      prompt:
+        "Create image 1 of a 6-part editorial photoshoot. Pose: soft eye contact. Camera + lens: 85mm portrait.",
+      shotRole: "close-portrait",
+      quality: "medium",
+    })
+
+    expect(mocks.edit).toHaveBeenCalledTimes(2)
+    expect(mocks.edit.mock.calls[0][0].prompt).not.toContain("Safety retry:")
+    expect(mocks.edit.mock.calls[1][0].prompt).toContain("Safety retry:")
   })
 })
