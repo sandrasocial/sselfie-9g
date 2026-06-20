@@ -194,7 +194,12 @@ function ShellInner({
             hasSelfie={trialHasSavedSelfie}
           />
         ))}
-      {section === "photos" && <GalleryView onMakeMotion={createMotionFromImage} />}
+      {section === "photos" && (
+        <GalleryView
+          onMakeMotion={createMotionFromImage}
+          onStartCreate={limited ? undefined : () => createFormat("photo")}
+        />
+      )}
       {section === "content" && (
         <ContentView
           firstName={firstName}

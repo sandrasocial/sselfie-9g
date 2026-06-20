@@ -109,6 +109,7 @@ const AssetTile = memo(function AssetTile({
   index,
   selected,
   selectionMode,
+  showLabel,
   onOpen,
   onToggleSelect,
   onFavorite,
@@ -120,6 +121,7 @@ const AssetTile = memo(function AssetTile({
   index: number
   selected: boolean
   selectionMode: boolean
+  showLabel: boolean
   onOpen: (asset: AppV3GalleryAsset, index: number) => void
   onToggleSelect: (id: string) => void
   onFavorite: (asset: AppV3GalleryAsset) => void
@@ -129,7 +131,11 @@ const AssetTile = memo(function AssetTile({
 }) {
   const isVideo = asset.kind === "video"
   return (
-    <div className="group relative overflow-hidden rounded-[6px] border border-[#C5C6C8]/50 bg-[#F1F2F2]">
+    <div
+      className={`group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
+        selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"
+      }`}
+    >
       <button
         type="button"
         onClick={() => (selectionMode ? onToggleSelect(asset.id) : onOpen(asset, index))}
@@ -142,7 +148,7 @@ const AssetTile = memo(function AssetTile({
                 src={asset.thumbnailUrl}
                 alt=""
                 fill
-                className="object-cover opacity-80"
+                className="object-cover opacity-90"
                 sizes="(max-width:640px) 45vw, 240px"
               />
             ) : (
@@ -150,9 +156,9 @@ const AssetTile = memo(function AssetTile({
                 <Film size={26} className="text-[#818283]" />
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0D0E10]">
-                <Play size={18} fill="currentColor" />
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0D0E10]/15">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0D0E10] shadow-sm">
+                <Play size={18} fill="currentColor" className="ml-0.5" />
               </span>
             </div>
           </>
@@ -165,71 +171,90 @@ const AssetTile = memo(function AssetTile({
             sizes="(max-width:640px) 45vw, 240px"
           />
         )}
-        <span className="absolute left-2 top-2 rounded-[4px] bg-white/90 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-[#4F5052]">
-          {assetLabel(asset)}
-        </span>
-        {selectionMode && (
-          <span
-            className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border ${
-              selected
-                ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                : "border-white bg-white/80 text-[#818283]"
-            }`}
-          >
-            {selected && <Check size={15} />}
-          </span>
-        )}
       </button>
 
-      <div className="flex items-center justify-between gap-1 bg-white px-2 py-2">
-        <div className="flex min-w-0 items-center gap-1">
-          {asset.canFavorite && (
-            <button
-              type="button"
-              onClick={() => onFavorite(asset)}
-              aria-label={asset.isFavorite ? "Remove favorite" : "Favorite"}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
-            >
-              <Heart
-                size={15}
-                className={asset.isFavorite ? "fill-[#0D0E10] text-[#0D0E10]" : ""}
-              />
-            </button>
-          )}
+      {/* Overlays live OUTSIDE the tap button (a button can't nest a button) and sit above it. */}
+      {/* Quiet type label — only in the mixed "All" view, where it actually disambiguates. */}
+      {showLabel && (
+        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/55 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-white backdrop-blur-sm">
+          {assetLabel(asset)}
+        </span>
+      )}
+
+      {/* Selection check replaces the favorite affordance while selecting. */}
+      {selectionMode ? (
+        <span
+          className={`pointer-events-none absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border ${
+            selected
+              ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+              : "border-white/80 bg-[#0D0E10]/20 text-white"
+          }`}
+        >
+          {selected && <Check size={15} />}
+        </span>
+      ) : (
+        asset.canFavorite && (
           <button
             type="button"
-            onClick={() => onDownload(asset)}
-            aria-label="Download"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
+            onClick={() => onFavorite(asset)}
+            aria-label={asset.isFavorite ? "Remove favorite" : "Favorite"}
+            className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55"
           >
-            <Download size={15} />
+            <Heart size={15} className={asset.isFavorite ? "fill-white text-white" : ""} />
           </button>
-          {asset.canDelete && (
+        )
+      )}
+
+      {/* Action row stays out of the way while selecting (bulk bar owns the screen then). */}
+      {!selectionMode && (
+        <div className="flex items-center justify-between gap-1 bg-white px-1.5 py-1.5">
+          <div className="flex min-w-0 items-center">
             <button
               type="button"
-              onClick={() => onDelete(asset)}
-              aria-label="Delete"
+              onClick={() => onDownload(asset)}
+              aria-label="Download"
               className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
             >
-              <Trash2 size={15} />
+              <Download size={15} />
+            </button>
+            {asset.canDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(asset)}
+                aria-label="Delete"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
+          {asset.kind === "image" && onMakeMotion && (
+            <button
+              type="button"
+              onClick={() => onMakeMotion(asset.url)}
+              className="flex min-h-8 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
+            >
+              <Film size={11} />
+              Move
             </button>
           )}
         </div>
-        {asset.kind === "image" && onMakeMotion && (
-          <button
-            type="button"
-            onClick={() => onMakeMotion(asset.url)}
-            className="min-h-8 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white"
-          >
-            Move
-          </button>
-        )}
-      </div>
+      )}
     </div>
   )
 })
 
-export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => void }) {
+// Core chips are always offered; content-type chips only appear once Maya has made that kind,
+// so the row stays quiet for someone whose library is mostly plain photos.
+const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "video"])
+
+export function GalleryView({
+  onMakeMotion,
+  onStartCreate,
+}: {
+  onMakeMotion?: (url: string) => void
+  onStartCreate?: () => void
+}) {
   const [assets, setAssets] = useState<AppV3GalleryAsset[] | null>(null)
   const [counts, setCounts] = useState<AppV3GalleryCounts | null>(null)
   const [filter, setFilter] = useState<GalleryFilter>("all")
@@ -346,7 +371,18 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
     clearSelection()
   }
 
+  function selectAllVisible() {
+    setSelectedIds(new Set(displayedAssets.map(asset => asset.id)))
+  }
+
   const hasAssets = Boolean(assets && assets.length > 0)
+  // Until counts load, only the core chips show (avoids a flash of every chip then collapse).
+  const visibleFilters = FILTERS.filter(option => {
+    if (CORE_FILTERS.has(option.id)) return true
+    return (countForFilter(option.id, counts) ?? 0) > 0
+  })
+  const allVisibleSelected =
+    displayedAssets.length > 0 && selectedIds.size >= displayedAssets.length
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
@@ -373,7 +409,7 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
 
       <div className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none]">
         <div className="flex min-w-max gap-2">
-          {FILTERS.map(option => {
+          {visibleFilters.map(option => {
             const active = filter === option.id
             const count = countForFilter(option.id, counts)
             return (
@@ -384,14 +420,20 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
                   setFilter(option.id)
                   clearSelection()
                 }}
-                className={`min-h-9 rounded-full border px-3 text-[10px] uppercase tracking-[0.14em] ${
+                className={`min-h-9 rounded-full border px-3 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                   active
                     ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                    : "border-[#C5C6C8] bg-white text-[#4F5052]"
+                    : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
                 }`}
               >
                 {option.label}
-                {typeof count === "number" ? ` ${count}` : ""}
+                {typeof count === "number" && count > 0 ? (
+                  <span className={active ? "ml-1.5 text-white/60" : "ml-1.5 text-[#A9AAAB]"}>
+                    {count}
+                  </span>
+                ) : (
+                  ""
+                )}
               </button>
             )
           })}
@@ -400,7 +442,16 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
 
       {selectionMode && (
         <div className="sticky top-3 z-20 mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
-          <span className="text-[12px] text-[#4F5052]">{selectedIds.size} selected</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-[#4F5052]">{selectedIds.size} selected</span>
+            <button
+              type="button"
+              onClick={allVisibleSelected ? () => setSelectedIds(new Set()) : selectAllVisible}
+              className="text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+            >
+              {allVisibleSelected ? "Clear" : "Select all"}
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -437,12 +488,21 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
       )}
       {error && <p className="mb-4 text-[13px] text-[#282728]">{error}</p>}
       {assets && assets.length === 0 && (
-        <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
+        <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
           <ImageIcon size={24} className="mx-auto mb-3 text-[#818283]" />
-          <p className="text-[15px] text-[#282728]">Nothing here yet.</p>
-          <p className="mt-1 text-[13px] text-[#818283]">
-            Create your first shot and it&apos;ll live here.
+          <p className="font-serif text-[20px] font-light text-[#0D0E10]">Nothing here yet.</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-[#818283]">
+            Everything you make with Maya lives here. Photos, shoots, videos, all in one place.
           </p>
+          {onStartCreate && (
+            <button
+              type="button"
+              onClick={onStartCreate}
+              className="mt-5 inline-block rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+            >
+              Create with Maya
+            </button>
+          )}
         </div>
       )}
       {assets && assets.length > 0 && displayedAssets.length === 0 && (
@@ -462,6 +522,7 @@ export function GalleryView({ onMakeMotion }: { onMakeMotion?: (url: string) => 
               index={i}
               selected={selectedIds.has(asset.id)}
               selectionMode={selectionMode}
+              showLabel={filter === "all"}
               onOpen={openAsset}
               onToggleSelect={toggleSelected}
               onFavorite={toggleFavorite}
