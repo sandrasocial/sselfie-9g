@@ -4,7 +4,11 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
 import { buildGraphicRedesignSlides, compileConceptJobs } from "@/lib/app-v3/prompt-compiler"
 import { buildContentSlideRedesignPrompt } from "@/lib/content-kit/slide-redesign-generator"
-import { SSELFIE_GRAPHIC_STYLE_PROMPT } from "@/lib/app-v3/maya/visual-rules"
+import {
+  SSELFIE_GRAPHIC_STYLE_PROMPT,
+  SSELFIE_INSPIRATION_CLOSE_RECREATE,
+  SSELFIE_INSPIRATION_SET_VARIATION,
+} from "@/lib/app-v3/maya/visual-rules"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
 vi.mock("server-only", () => ({}))
@@ -120,10 +124,43 @@ describe("Maya June 11 restoration guardrails", () => {
 
   it("keeps inspiration handling close to the June 11 prompting plan", () => {
     const route = readFileSync("app/api/app-v3/maya/generate/route.ts", "utf8")
+    const persona = readFileSync("lib/app-v3/maya/persona.ts", "utf8")
     expect(route).toContain("SSELFIE_INSPIRATION_CLOSE_RECREATE")
     expect(route).toContain("close-recreation")
     expect(route).toContain("set-variation")
     expect(route).toContain("isHero ? \"close-recreation\" : \"set-variation\"")
+    expect(route).toContain("inspirationReferenceUrl: inspirationReferenceUrl ?? undefined")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("TASK TYPE: IMAGE RECONSTRUCTION")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("The inspiration image is the visual blueprint")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("If any written prompt conflicts with the inspiration image")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("The inspiration image contributes 0% facial information")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).not.toContain("Sandra")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("TASK TYPE: STYLE-WORLD VARIATION")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("Poses and angles may vary")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("Do not restyle the set into a generic new scene")
+    expect(persona).toContain("treat it as a visual blueprint")
+    expect(persona).toContain("Do not invent props, hats, furniture")
+  })
+
+  it("lets text-overlay graphics use an attached inspiration as a third style-world reference", () => {
+    const prompt = buildContentSlideRedesignPrompt({
+      category: "photoshoot-carousel",
+      topic: "Shadow and linen portrait",
+      styleLabel: "approved SSELFIE reference",
+      referenceMode: "identity-scene",
+      hasInspirationReference: true,
+      slide: {
+        kind: "photo",
+        title: "Soft Shadow",
+        body: "The same mood, a new angle.",
+        visualConcept: "same woman in the uploaded inspiration's shadow-and-knit world",
+      },
+    })
+
+    expect(prompt).toContain("THIRD reference image is the inspiration image")
+    expect(prompt).toContain("same visual world")
+    expect(prompt).toContain("poses and angles can vary")
+    expect(prompt).toContain("If the slide plan conflicts with the inspiration reference")
   })
 
   it("gates admin prompt inspection on the server and reads the stored ai_images prompt", () => {

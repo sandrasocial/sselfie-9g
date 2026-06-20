@@ -5,7 +5,10 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
-import { SSELFIE_GRAPHIC_STYLE_PROMPT } from "@/lib/app-v3/maya/visual-rules"
+import {
+  SSELFIE_GRAPHIC_STYLE_PROMPT,
+  SSELFIE_INSPIRATION_SET_VARIATION,
+} from "@/lib/app-v3/maya/visual-rules"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
@@ -93,12 +96,14 @@ export function buildContentSlideRedesignPrompt({
   topic,
   styleLabel,
   referenceMode,
+  hasInspirationReference,
 }: {
   slide: CarouselSlide
   category: StyleReferenceCategory
   topic: string
   styleLabel?: string | null
   referenceMode?: RedesignReferenceMode
+  hasInspirationReference?: boolean
 }) {
   const tutorialGrounding =
     category === "tutorial"
@@ -106,6 +111,9 @@ export function buildContentSlideRedesignPrompt({
       : referenceMode === "identity-scene"
         ? "The FIRST reference image is the identity reference. Preserve the person's face, age, skin texture, hair, body proportions and recognizable energy. Do not copy a plain selfie background unless the slide explicitly asks for it. Build a new slide-specific editorial scene from the visual concept and image direction."
       : "The FIRST reference image is the visual base. Preserve the important subject, identity cues, mood and meaning while redesigning the slide."
+  const inspirationGrounding = hasInspirationReference
+    ? `The THIRD reference image is the inspiration image. Keep the same visual world from that reference while this slide's pose, angle, crop, or text-safe area may vary. For carousel, reel-cover, and story-sequence graphics, poses and angles can vary by slide role, but the image must keep the same visual world: wardrobe energy, material texture, lighting direction, shadow language, color grade, mood, background simplicity, lens feel, and editorial styling. If the slide plan conflicts with the inspiration reference, the inspiration reference wins for visual world and visible props.\n${SSELFIE_INSPIRATION_SET_VARIATION}`
+    : ""
 
   return `Create one finished SSELFIE editorial slide.
 
@@ -117,6 +125,8 @@ Style anchor: ${styleLabel || "approved SSELFIE reference"}
 ${tutorialGrounding}
 
 Match the SECOND reference image's approved SSELFIE style while following this shared style contract: ${SSELFIE_GRAPHIC_STYLE_PROMPT}
+
+${inspirationGrounding}
 
 Render the slide text inside the image, integrated into the scene:
 ${slideText(slide)}
@@ -141,9 +151,11 @@ export async function redesignContentSlide({
   topic,
   slide,
   referenceMode,
+  inspirationReferenceUrl,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
+  inspirationReferenceUrl?: string
   styleLabel?: string | null
   category: StyleReferenceCategory
   topic: string
@@ -153,6 +165,7 @@ export async function redesignContentSlide({
   const { buffer } = await redesignContentSlideToBuffer({
     referenceUrl,
     styleReferenceUrl,
+    inspirationReferenceUrl,
     styleLabel,
     category,
     topic,
@@ -179,9 +192,11 @@ export async function redesignContentSlideToBuffer({
   topic,
   slide,
   referenceMode,
+  inspirationReferenceUrl,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
+  inspirationReferenceUrl?: string
   styleLabel?: string | null
   category: StyleReferenceCategory
   topic: string
@@ -195,11 +210,25 @@ export async function redesignContentSlideToBuffer({
   const files = [
     await toFile(await toPng(referenceUrl), "reference-frame.png", { type: "image/png" }),
     await toFile(await toPng(styleReferenceUrl), "style-anchor.png", { type: "image/png" }),
+    ...(inspirationReferenceUrl
+      ? [
+          await toFile(await toPng(inspirationReferenceUrl), "inspiration-reference.png", {
+            type: "image/png",
+          }),
+        ]
+      : []),
   ]
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files,
-    prompt: buildContentSlideRedesignPrompt({ slide, category, topic, styleLabel, referenceMode }),
+    prompt: buildContentSlideRedesignPrompt({
+      slide,
+      category,
+      topic,
+      styleLabel,
+      referenceMode,
+      hasInspirationReference: Boolean(inspirationReferenceUrl),
+    }),
     n: 1,
     size: category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE,
     quality: "high",

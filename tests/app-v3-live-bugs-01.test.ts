@@ -72,6 +72,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
   it("passes inspiration references through final generation, not only concept planning", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const generateRoute = read("app/api/app-v3/maya/generate/route.ts")
+    const visualRules = read("lib/app-v3/maya/visual-rules.ts")
     const types = read("lib/app-v3/maya/concept-types.ts")
 
     expect(types).toContain("inspirationImageUrl?: string | null")
@@ -79,6 +80,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(generateRoute).toContain("withInspirationReferenceInstruction")
     expect(generateRoute).toContain("body.inspirationImageUrl")
     expect(generateRoute).toContain("generationReferenceUrls")
-    expect(generateRoute).toContain("Do not copy the inspiration person's face")
+    expect(visualRules).toContain("The inspiration image contributes 0% facial information")
+    expect(visualRules).toContain("Do not inherit eyes, lips, nose, jawline")
   })
 })

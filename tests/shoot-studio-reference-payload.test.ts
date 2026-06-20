@@ -106,4 +106,33 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("do not widen it into a full-body studio fashion image")
     expect(payload.prompt).toContain("must visibly belong to that reference world")
   })
+
+  it("uses reconstruction for shot one and style-world variation for later photoshoot shots", async () => {
+    const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
+
+    await generateShotImage({
+      selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png"],
+      inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
+      prompt: "Create image 1 of a 6-part editorial photoshoot. Pose: match the hero.",
+      shotRole: "close-portrait",
+      quality: "medium",
+    })
+    await generateShotImage({
+      selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png"],
+      inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
+      prompt: "Create image 2 of the same editorial photoshoot. Pose: profile variation.",
+      shotRole: "profile",
+      quality: "medium",
+    })
+
+    const heroPrompt = mocks.edit.mock.calls[0][0].prompt
+    const variationPrompt = mocks.edit.mock.calls[1][0].prompt
+
+    expect(heroPrompt).toContain("TASK TYPE: IMAGE RECONSTRUCTION")
+    expect(heroPrompt).toContain("Recreate the inspiration image composition as closely as possible")
+    expect(variationPrompt).toContain("TASK TYPE: STYLE-WORLD VARIATION")
+    expect(variationPrompt).toContain("Poses and angles may vary")
+    expect(variationPrompt).toContain("Do not restyle the set into a generic new scene")
+    expect(variationPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
+  })
 })

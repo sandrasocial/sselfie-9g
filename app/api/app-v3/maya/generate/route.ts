@@ -90,6 +90,7 @@ type AppGraphicRedesignJob = {
   category: StyleReferenceCategory
   topic: string
   referenceUrl: string
+  inspirationReferenceUrl?: string
   recordPrompt: string
 }
 
@@ -133,11 +134,13 @@ function buildAppGraphicRedesignJobs({
   format,
   conceptTitle,
   referenceUrls,
+  inspirationReferenceUrl,
 }: {
   brief: CreativeBrief
   format: OutputFormat
   conceptTitle?: string
   referenceUrls: string[]
+  inspirationReferenceUrl?: string
 }): AppGraphicRedesignJob[] {
   const category = categoryForGraphicFormat(format)
   const topic = topicForGraphicBrief(brief, format, conceptTitle)
@@ -148,6 +151,7 @@ function buildAppGraphicRedesignJobs({
     category,
     topic,
     referenceUrl: referenceUrls[index % referenceUrls.length],
+    inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
     recordPrompt: [
       `SSELFIE redesign engine (${category})`,
       `Topic: ${topic}`,
@@ -480,6 +484,7 @@ export async function POST(request: NextRequest) {
           format,
           conceptTitle: body.conceptTitle,
           referenceUrls,
+          inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
         })
         graphicStyle = await pickContentStyleReference(
           categoryForGraphicFormat(format),
@@ -932,6 +937,7 @@ export async function POST(request: NextRequest) {
               topic: job.topic,
               slide: job.slide,
               referenceMode: "identity-scene",
+              inspirationReferenceUrl: job.inspirationReferenceUrl,
             })
             actualPromptRecords[index] = [
               `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
@@ -945,6 +951,9 @@ export async function POST(request: NextRequest) {
               `Style anchor: ${graphicStyle.label ?? "approved SSELFIE reference"}`,
               `Reference URL used: ${job.referenceUrl}`,
               `Style reference URL used: ${graphicStyle.imageUrl}`,
+              job.inspirationReferenceUrl
+                ? `Inspiration reference URL used: ${job.inspirationReferenceUrl}`
+                : "",
             ].join("\n")
             return result.buffer
           })
