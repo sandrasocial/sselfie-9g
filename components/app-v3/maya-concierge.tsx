@@ -1463,7 +1463,8 @@ export function MayaConcierge({
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
-                  Maya will keep your skin tone and natural features recognizable, so it's still you.
+                  Maya will keep your skin tone and natural features recognizable, so it&apos;s still
+                  you.
                 </p>
               </div>
             ) : format !== "video" ? (
@@ -1544,9 +1545,9 @@ export function MayaConcierge({
             {format !== "video" && showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
-                  For best results, add one full-body shot and one side profile so Maya can keep
-                  you recognizable and your body true to you. You can also add an inspo picture and
-                  ask Maya for that same vibe, still you. All optional.
+                  For best results, add one full-body shot and one side profile so Maya can keep you
+                  recognizable and your body true to you. You can also add an inspo picture and ask
+                  Maya for that same vibe, still you. All optional.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1715,6 +1716,40 @@ export function MayaConcierge({
                 >
                   {uploadingSlot === "video" ? "Uploading..." : "Upload"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {format === "video" && videoSourceUrl && (
+            <div className="flex min-w-0 max-w-full items-end gap-2">
+              <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+              <div className="min-w-0 max-w-[calc(100%-2.25rem)] rounded-[8px] border border-[#C5C6C8]/60 bg-white p-3 [overflow-x:clip] sm:max-w-[84%]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-[5px] bg-[#F1F2F2]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={videoSourceUrl}
+                      alt="Selected photo to animate"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                      Animating this photo
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                      Maya will use this still as the reference for the motion options and the final
+                      video.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSetupOpen(true)}
+                      className="mt-1 inline-flex min-h-9 items-center text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+                    >
+                      Change photo
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         message: "Too many video requests. Please wait a moment before trying again.",
         retryAfter: rateLimitResult.retryAfter,
       },
-      { status: 429 },
+      { status: 429 }
     )
   }
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             code: "generation_locked",
             action: "open_membership_checkout",
           },
-          { status: 403 },
+          { status: 403 }
         )
       }
     }
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       estimatedTime: "1-3 minutes",
       creditsDeducted: result.creditsDeducted,
       newBalance: result.newBalance,
+      motionPrompt: result.motionPrompt,
     })
   } catch (error) {
     if (error instanceof VideoGenerationError) {

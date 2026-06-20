@@ -21,11 +21,15 @@ describe("App v3 video source flow", () => {
 
   it("sends the selected video source image to the Replicate video pipeline", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
+    const chatRoute = read("app/api/app-v3/maya/chat/route.ts")
 
     expect(concierge).toContain("const videoSourceUrl = session.videoSourceUrl")
     expect(concierge).toContain('if (fmt === "video" && !session.videoSourceUrl) return')
     expect(concierge).toContain("imageUrl: videoSourceUrl")
+    expect(concierge).toContain("Animating this photo")
     expect(concierge).toContain("Pick from your photos")
     expect(concierge).toContain('handleUpload("video"')
+    expect(chatRoute).toContain("attachVideoSource")
+    expect(chatRoute).toContain("VIDEO SOURCE IMAGE ATTACHED")
   })
 })

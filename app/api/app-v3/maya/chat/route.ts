@@ -567,11 +567,17 @@ function isAllowedInspirationUrl(value: unknown): value is string {
   }
 }
 
-/**
- * If an inspiration image is attached, append it (plus a one-line instruction) to the most
- * recent user message so the multimodal model can read its pose + wardrobe. Mutates a copy.
- */
-function attachInspiration(messages: any[], url: string): any[] {
+function isAllowedVideoSourceUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+function attachReferenceImage(messages: any[], url: string, instruction: string): any[] {
   const next = [...messages]
   for (let i = next.length - 1; i >= 0; i--) {
     if (next[i]?.role !== "user") continue
@@ -586,16 +592,33 @@ function attachInspiration(messages: any[], url: string): any[] {
       ...next[i],
       content: [
         ...textParts,
-        {
-          type: "text",
-          text: "Inspiration image attached — use its pose and wardrobe/styling in the concepts (do not copy the face).",
-        },
+        { type: "text", text: instruction },
         { type: "image", image: new URL(url) },
       ],
     }
     return next
   }
   return next
+}
+
+/**
+ * If an inspiration image is attached, append it (plus a one-line instruction) to the most
+ * recent user message so the multimodal model can read its pose + wardrobe. Mutates a copy.
+ */
+function attachInspiration(messages: any[], url: string): any[] {
+  return attachReferenceImage(
+    messages,
+    url,
+    "Inspiration image attached. Use its pose and wardrobe/styling in the concepts (do not copy the face)."
+  )
+}
+
+function attachVideoSource(messages: any[], url: string): any[] {
+  return attachReferenceImage(
+    messages,
+    url,
+    "VIDEO SOURCE IMAGE ATTACHED. This is the exact still image the user wants to animate. Read what is visible and create motion directions for this image only. Preserve the person, outfit, setting, composition, and identity."
+  )
 }
 
 export async function POST(req: Request) {
@@ -722,6 +745,9 @@ export async function POST(req: Request) {
     let modelMessages = await convertToModelMessages(cleanUiMessages)
     if (isAllowedInspirationUrl(body?.inspirationImageUrl)) {
       modelMessages = attachInspiration(modelMessages, body.inspirationImageUrl)
+    }
+    if (format === "video" && isAllowedVideoSourceUrl(body?.videoSourceUrl)) {
+      modelMessages = attachVideoSource(modelMessages, body.videoSourceUrl)
     }
 
     // SUITE-UX-02: Maya learns as she goes. When the user expresses a lasting brand fact or

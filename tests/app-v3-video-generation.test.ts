@@ -11,6 +11,7 @@ const mockGetMayaUserSnapshot = vi.fn()
 const mockReplicateCreate = vi.fn()
 const mockReplicateGet = vi.fn()
 const mockPut = vi.fn()
+const mockGenerateMotionPromptWithVisionFallbacks = vi.fn()
 
 vi.mock("@/lib/credits", () => ({
   checkCredits: mockCheckCredits,
@@ -32,6 +33,10 @@ vi.mock("@/lib/generation/prompt", () => ({
 
 vi.mock("@/lib/maya/user-snapshot", () => ({
   getMayaUserSnapshot: mockGetMayaUserSnapshot,
+}))
+
+vi.mock("@/lib/maya/motion-prompt-llm", () => ({
+  generateMotionPromptWithVisionFallbacks: mockGenerateMotionPromptWithVisionFallbacks,
 }))
 
 vi.mock("@/lib/replicate-client", () => ({
@@ -64,6 +69,9 @@ describe("app-v3 video generation service", () => {
         "natural blink, subtle breathing, gentle camera push-in, preserve identity, no subtitles",
       metadata: { builder: "video-authority-contextual-v1" },
     })
+    mockGenerateMotionPromptWithVisionFallbacks.mockResolvedValue(
+      "Face stays steady with a natural blink, soft breathing, and a gentle camera push-in."
+    )
     mockGetMayaUserSnapshot.mockResolvedValue({
       memoryData: { user_preference_notes: ["cinematic and subtle"] },
       offerBrief: { prefill: {} },
@@ -93,7 +101,7 @@ describe("app-v3 video generation service", () => {
         status: "processing",
         creditsDeducted: 3,
         newBalance: 17,
-      }),
+      })
     )
     expect(mockDeductCredits).toHaveBeenCalledWith("user-1", 3, "animation", "Animated image")
     expect(mockReplicateCreate).toHaveBeenCalledWith(
@@ -101,12 +109,17 @@ describe("app-v3 video generation service", () => {
         model: "wan-video/wan-2.5-i2v-fast",
         input: expect.objectContaining({
           image: "https://cdn.example.com/source.png",
-          prompt: expect.stringContaining("gentle camera push-in"),
+          prompt: expect.stringContaining("Face stays steady"),
           negative_prompt: expect.stringContaining("subtitles"),
           duration: 5,
           resolution: "1080p",
         }),
-      }),
+      })
+    )
+    expect(mockGenerateMotionPromptWithVisionFallbacks).toHaveBeenCalledWith(
+      expect.stringContaining("brand-safe motion director"),
+      expect.stringContaining("Reference image is provided"),
+      "https://cdn.example.com/source.png"
     )
     const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
     expect(insertSql).toContain("INSERT INTO generated_videos")
@@ -123,7 +136,7 @@ describe("app-v3 video generation service", () => {
       startVideoGeneration({
         userId: "user-1",
         imageUrl: "https://cdn.example.com/source.png",
-      }),
+      })
     ).rejects.toMatchObject({
       status: 402,
       payload: expect.objectContaining({
@@ -141,7 +154,7 @@ describe("app-v3 video generation service", () => {
       startVideoGeneration({
         userId: "user-1",
         imageUrl: null,
-      }),
+      })
     ).rejects.toMatchObject({
       status: 400,
       payload: expect.objectContaining({
@@ -163,7 +176,7 @@ describe("app-v3 video generation service", () => {
         status: 200,
         statusText: "OK",
         blob: async () => new Blob([new ArrayBuffer(2048)], { type: "video/mp4" }),
-      }),
+      })
     )
     mockSql.mockResolvedValueOnce([{ id: 77 }]).mockResolvedValueOnce([])
 

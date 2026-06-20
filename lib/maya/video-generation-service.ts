@@ -1,8 +1,21 @@
 import { put } from "@vercel/blob"
-import { addCredits, checkCredits, CREDIT_COSTS, deductCredits, getUserCredits } from "@/lib/credits"
+import {
+  addCredits,
+  checkCredits,
+  CREDIT_COSTS,
+  deductCredits,
+  getUserCredits,
+} from "@/lib/credits"
 import { getDbClient } from "@/lib/db/client"
 import { generatePrompt } from "@/lib/generation/prompt"
+import { generateMotionPromptWithVisionFallbacks } from "@/lib/maya/motion-prompt-llm"
 import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
+import {
+  buildMayaMotionPromptInput,
+  cleanGeneratedMotionPrompt,
+  isMotionPromptReferenceImageUrl,
+  resolveFluxPromptForMotion,
+} from "@/lib/maya/video-motion-context"
 import { getReplicateClient } from "@/lib/replicate-client"
 
 export type VideoGenerationInput = {
@@ -40,6 +53,17 @@ export class VideoGenerationError extends Error {
     this.payload = payload
   }
 }
+
+const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
+
+Your job is to write one motion prompt for the selected still image so the generated video stays recognizable, elegant, and physically believable.
+
+Rules:
+- Use what is visible in the image. Do not invent a new outfit, location, person, product, or camera setup.
+- Keep movement subtle-to-moderate: natural blink, tiny expression shift, soft breathing, fabric or hair movement, gentle push-in, slow parallax, ambient movement.
+- Preserve identity, face shape, skin tone, body proportions, outfit, composition, and scene.
+- Avoid subtitles, text overlays, aggressive camera shake, big body changes, extra people, face morphing, or scene changes.
+- Output exactly one line with no markdown, bullets, headings, or quotes.`
 
 function validateImageUrl(value: unknown): string {
   if (typeof value !== "string") {
@@ -81,6 +105,27 @@ function normalizeOptionalImageId(value: string | number | null | undefined): nu
 
 async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
   const snapshot = await getMayaUserSnapshot(input.userId)
+  const effectiveScene = resolveFluxPromptForMotion({
+    fluxPrompt: input.motionPrompt,
+    description: input.imageDescription,
+    imageUrl: input.imageUrl,
+  })
+  if (effectiveScene && isMotionPromptReferenceImageUrl(input.imageUrl)) {
+    const promptInput = buildMayaMotionPromptInput({
+      fluxPrompt: effectiveScene,
+      description: typeof input.imageDescription === "string" ? input.imageDescription : "",
+      category: typeof input.category === "string" ? input.category : "",
+      imageUrl: input.imageUrl,
+      snapshot,
+    })
+    const generatedPrompt = await generateMotionPromptWithVisionFallbacks(
+      MOTION_PROMPT_SYSTEM,
+      promptInput,
+      input.imageUrl
+    )
+    return cleanGeneratedMotionPrompt(generatedPrompt)
+  }
+
   const rawPreferenceNotes =
     snapshot.memoryData && typeof snapshot.memoryData === "object"
       ? (snapshot.memoryData as Record<string, unknown>).user_preference_notes
@@ -108,7 +153,7 @@ async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
 }
 
 export async function startVideoGeneration(
-  input: VideoGenerationInput,
+  input: VideoGenerationInput
 ): Promise<VideoGenerationResult> {
   const userId = String(input.userId)
   const imageUrl = validateImageUrl(input.imageUrl)
@@ -168,7 +213,7 @@ export async function startVideoGeneration(
       userId,
       CREDIT_COSTS.ANIMATION,
       "refund",
-      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`,
+      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
     ).catch(() => {})
     const message = error instanceof Error ? error.message : String(error)
     throw new VideoGenerationError("Failed to create video prediction", 500, {
@@ -207,7 +252,7 @@ export async function startVideoGeneration(
       userId,
       CREDIT_COSTS.ANIMATION,
       "refund",
-      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`,
+      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
     ).catch(() => {})
     const message = error instanceof Error ? error.message : String(error)
     throw new VideoGenerationError("Could not save video generation", 500, {
@@ -270,7 +315,8 @@ export async function checkVideoGeneration(input: {
   }
 
   if (prediction.status !== "succeeded" || !prediction.output) {
-    const progress = prediction.status === "starting" ? 10 : prediction.status === "processing" ? 50 : 0
+    const progress =
+      prediction.status === "starting" ? 10 : prediction.status === "processing" ? 50 : 0
     await sql`
       UPDATE generated_videos
       SET progress = ${progress}, updated_at = NOW()
