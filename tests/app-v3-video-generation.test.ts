@@ -19,7 +19,7 @@ vi.mock("@/lib/credits", () => ({
   getUserCredits: mockGetUserCredits,
   addCredits: mockAddCredits,
   CREDIT_COSTS: {
-    ANIMATION: 3,
+    ANIMATION: 10,
   },
 }))
 
@@ -86,7 +86,7 @@ describe("app-v3 video generation service", () => {
     mockPut.mockResolvedValue({ url: "https://blob.example.com/video.mp4" })
   })
 
-  it("starts image-to-video generation without requiring a trained model", async () => {
+  it("starts Kling Omni image-to-video generation by default without requiring a trained model", async () => {
     const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
 
     const result = await startVideoGeneration({
@@ -102,11 +102,49 @@ describe("app-v3 video generation service", () => {
         videoId: 77,
         predictionId: "pred_video_123",
         status: "processing",
-        creditsDeducted: 3,
+        creditsDeducted: 10,
         newBalance: 17,
       })
     )
-    expect(mockDeductCredits).toHaveBeenCalledWith("user-1", 3, "animation", "Animated image")
+    expect(mockDeductCredits).toHaveBeenCalledWith("user-1", 10, "animation", "Animated image")
+    expect(mockReplicateCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "kwaivgi/kling-v3-omni-video",
+        input: expect.objectContaining({
+          start_image: "https://cdn.example.com/source.png",
+          prompt: expect.stringContaining("Face stays steady"),
+          mode: "standard",
+          duration: 5,
+          generate_audio: false,
+        }),
+      })
+    )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("image")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("resolution")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("seed")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("negative_prompt")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("enable_prompt_expansion")
+    expect(mockGenerateMotionPromptWithVisionFallbacks).toHaveBeenCalledWith(
+      expect.stringContaining("brand-safe motion director"),
+      expect.stringContaining("Reference image is provided"),
+      "https://cdn.example.com/source.png"
+    )
+    const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
+    expect(insertSql).toContain("INSERT INTO generated_videos")
+    expect(insertSql).not.toContain("user_models")
+  })
+
+  it("keeps the Wan 2.2 fast input shape behind an explicit model override", async () => {
+    process.env.APP_V3_VIDEO_MODEL = "wan-video/wan-2.2-i2v-fast"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+    })
+
     expect(mockReplicateCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "wan-video/wan-2.2-i2v-fast",
@@ -121,14 +159,6 @@ describe("app-v3 video generation service", () => {
     expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("duration")
     expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("negative_prompt")
     expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("enable_prompt_expansion")
-    expect(mockGenerateMotionPromptWithVisionFallbacks).toHaveBeenCalledWith(
-      expect.stringContaining("brand-safe motion director"),
-      expect.stringContaining("Reference image is provided"),
-      "https://cdn.example.com/source.png"
-    )
-    const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
-    expect(insertSql).toContain("INSERT INTO generated_videos")
-    expect(insertSql).not.toContain("user_models")
   })
 
   it("keeps the Wan 2.5 input shape behind an explicit model override", async () => {
@@ -337,7 +367,7 @@ describe("app-v3 video generation service", () => {
     })
     expect(mockAddCredits).toHaveBeenCalledWith(
       "user-1",
-      3,
+      10,
       "refund",
       "Refund for failed app-v3 video prediction: 77"
     )

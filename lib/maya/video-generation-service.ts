@@ -54,7 +54,7 @@ export class VideoGenerationError extends Error {
   }
 }
 
-const DEFAULT_VIDEO_MODEL = "wan-video/wan-2.2-i2v-fast"
+const DEFAULT_VIDEO_MODEL = "kwaivgi/kling-v3-omni-video"
 const VIDEO_DURATION_SECONDS = 5
 const VIDEO_NEGATIVE_PROMPT =
   "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake"

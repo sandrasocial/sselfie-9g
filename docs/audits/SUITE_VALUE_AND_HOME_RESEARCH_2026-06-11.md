@@ -11,7 +11,7 @@ Research: codebase inventory of actual SUITE deliverables + two web research pas
 
 ## 1. What a SUITE member actually gets today (verified in code)
 
-- 200 credits/month (≈100 Pro photos OR ≈200 Classic, video at 3 credits, training at 20). Credits roll over indefinitely — no cap.
+- 200 credits/month (≈100 Pro photos OR ≈200 Classic, Kling video at 10 credits, training at 20). Credits roll over indefinitely — no cap.
 - Custom Flux LoRA model training (the identity-consistency engine).
 - Maya chat + photo + video generation.
 - Feed Planner: unlimited planners, full grid, gallery.
@@ -98,7 +98,7 @@ The live experience is exactly the locked interaction model: tap-first visual fr
 We run gpt-image-2 ourselves, so the moat is NOT the engine — it is everything wrapped around it: Maya's taste (Vault DNA + vision-extracted aesthetic recipes), brand memory, the 3-concept contract, zero prompt labor, and identity handling (reference-selfie edit flow; consumer ChatGPT still mangles/blocks self-likeness). Pitch: "Same engine money can rent. What you can't rent: a creative director who already knows your brand."
 
 ### Three real gaps found in v3 (the "do something different" list)
-1. **Video is GONE.** Legacy had Replicate video (3 credits); v3 has zero video code. The €97 story claimed photos + video. Either ship VIDEO-01 in v3 (research verdict: Kling 3.0 for lifestyle motion ~$0.08–0.11/sec, HeyGen Avatar IV for talking head $4/min) or stop claiming video.
+1. **Video is restored in App v3.** Maya's video path now uses Kling Omni as the production quality default at 10 credits per 5-second video.
 2. **Members can't reach what they own.** No links from v3 to Feed Planner or Academy (deliberate per `app-v3-shell.tsx` comment), yet the front-door copy says "feed planning" is included, and D3 just made membership include ALL products. v3 needs a "Your SSELFIE" surface (Account tab or own tab): owned products open, unowned locked. **This replaces the separate HOME-01 page idea — App v3 IS the home.**
 3. **Memory doesn't auto-learn.** "She gets smarter every time" is the pitch, but `app_v3_memory` only stores what the member types into a form (name/brand/preferences prompts). Maya should save learnings from conversations automatically (with member visibility/edit in the Memory modal). This makes the North Star pricing line true.
 

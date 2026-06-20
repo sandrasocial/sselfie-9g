@@ -64,7 +64,7 @@ export default function CreditBalance() {
           </div>
           <div className="bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.15)] rounded-xl p-3">
             <p className="text-[#8a8780] mb-1 font-['Inter']">Animation</p>
-            <p className="font-['Inter'] font-medium text-[#f0ede8]">3 credits</p>
+            <p className="font-['Inter'] font-medium text-[#f0ede8]">10 credits</p>
           </div>
         </div>
 

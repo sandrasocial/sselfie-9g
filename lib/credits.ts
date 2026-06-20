@@ -6,7 +6,7 @@ import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 export const CREDIT_COSTS = {
   TRAINING: 20, // $3.00 / $0.15 per credit (actual API cost)
   IMAGE: 1, // $0.15 per credit (actual API cost)
-  ANIMATION: 3, // Video/B-roll generation (cost TBD)
+  ANIMATION: 10, // Kling Omni 720p 5s video/B-roll generation
 } as const
 
 // NOTE: Credits are priced at cost ($0.15/credit). Profit comes from subscription pricing, not credit markup.

@@ -15,7 +15,7 @@ Purpose: compare higher-quality image-to-video models for Maya's "Make it move" 
 | Model | Prediction | Output | Runtime | Price for Tested Settings | Approx 5s Cost | Notes |
 | --- | --- | --- | ---: | ---: | ---: | --- |
 | `wan-video/wan-2.7-i2v` | `5w308397chrmt0cywj5ajysq8m` | https://replicate.delivery/xezq/RNPTuSfGrd2fHU9f1IhMs3t1zPfeT65B64SBqpNPyBjVoNI2C/tmpc8l3ia_j.mp4 | 67.0s | $0.10/sec at 720p | $0.50 | Fastest of the premium tests. Cinematic, realistic, good scene continuity. More face/head motion than the current subtle ideal, but usable. |
-| `kwaivgi/kling-v3-omni-video` | `vwerh116hnrmr0cywj59hbf2qr` | https://replicate.delivery/xezq/T90KGFvuwQIpL9EW6zT1blkK48RpqndXk31UGmRNyGWgbQsF/tmps1mtf7t5.mp4 | 130.2s | $0.168/sec standard no-audio | $0.84 | Stable early frames and strong image adherence. Introduces a larger pose/hand shift later. Good candidate if we want a premium tier. |
+| `kwaivgi/kling-v3-omni-video` | `vwerh116hnrmr0cywj59hbf2qr` | https://replicate.delivery/xezq/T90KGFvuwQIpL9EW6zT1blkK48RpqndXk31UGmRNyGWgbQsF/tmps1mtf7t5.mp4 | 130.2s | $0.168/sec standard no-audio | $0.84 | Selected production default. Best face preservation and least cartoonish drift in Sandra's review. |
 | `bytedance/seedance-2.0` | `710mnd96j5rmw0cywj5a3dbwtw` | https://replicate.delivery/xezq/mGdWfYh6EF1PKqyMgrgcZR6jo6gPs53FjwwASy9QfqrGuBxWA/tmpe8rt9ez7.mp4 | 135.4s | $0.18/sec at 720p image input | $0.90 | Smooth and polished, but more assertive hand/body motion than requested. Strong multimodal future option because it accepts reference images/videos/audio. |
 
 Local comparison files from this run:
@@ -57,10 +57,10 @@ The backend now supports these model-specific input shapes behind `APP_V3_VIDEO_
 - `kwaivgi/kling-v3-omni-video`: sends `start_image`, `mode`, `duration`, `generate_audio: false`
 - `bytedance/seedance-2.0`: sends `image`, `duration`, `resolution`, `aspect_ratio: adaptive`, `generate_audio: false`, `seed`
 
-Production default remains `wan-video/wan-2.2-i2v-fast` at 720p until Sandra chooses a new default.
+Production default is now `kwaivgi/kling-v3-omni-video` in standard mode at 10 credits per 5-second video. The previous Wan defaults remain available through `APP_V3_VIDEO_MODEL` overrides for testing or rollback.
 
 ## Recommendation
 
-Use `wan-video/wan-2.7-i2v` as the first premium A/B candidate. It is the cheapest and fastest of the three premium tests, and its quality is closest to the current SSELFIE "luxury b-roll from a still image" use case.
+Sandra selected `kwaivgi/kling-v3-omni-video` after reviewing the outputs because it preserved face identity and avoided the cartoonish drift seen in the other two tests. Use Kling Omni as the production quality default.
 
-Keep Seedance and Kling as second-pass candidates for a future "premium video" or "advanced motion" mode, especially if we later want multi-reference guidance from selfies, gallery images, or motion reference clips.
+Price the standard 720p/no-audio 5-second output at 10 credits. Keep Seedance and Wan 2.7 as fallback/research options only.
