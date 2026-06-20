@@ -96,6 +96,8 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("the FIRST 2 input images are all the SAME woman")
     expect(payload.prompt).toContain("Every image after the first 2 is a style reference ONLY")
     expect(payload.prompt).toContain("mandatory visual reference")
+    expect(payload.prompt).toContain("crop, framing, subject scale")
+    expect(payload.prompt).toContain("do not widen it into a full-body studio fashion image")
     expect(payload.prompt).toContain("must visibly belong to that reference world")
   })
 })

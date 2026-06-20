@@ -48,9 +48,9 @@ const SHOT_ROLES = new Set<ShootShotRole>([
 function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
   const stylePriority =
     styleCount > 1
-      ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel. Use the later style references only as secondary support when they do not conflict with the first style reference."
+      ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, crop, framing, subject scale, shadow pattern, foreground occlusion, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel. If the first style reference is a close-cropped portrait, do not widen it into a full-body studio fashion image unless the shot prompt explicitly asks for full body. Use the later style references only as secondary support when they do not conflict with the first style reference."
       : styleCount === 1
-        ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel."
+        ? "The FIRST style reference image is a mandatory visual reference, not just mood. The generated shot must visibly belong to that reference world: location materials, light direction, camera distance, crop, framing, subject scale, shadow pattern, foreground occlusion, color palette, color grade, outfit family, accessory energy, pose language and overall editorial feel. If the first style reference is a close-cropped portrait, do not widen it into a full-body studio fashion image unless the shot prompt explicitly asks for full body."
         : "No separate style reference image was attached, so preserve identity from the selfie references and follow the written shoot prompt exactly."
   if (selfieCount <= 1) {
     return `Image roles for this generation: the FIRST input image is the woman whose face, identity, skin tone, hair color and body must be preserved exactly, natural and recognizable. Every other input image is a style reference ONLY, for outfit, location, light, color grading, pose language and mood. ${stylePriority} Never copy a face, skin, hair color or body from the style references.`
@@ -206,7 +206,7 @@ function buildVaultAnatomy(totalShots = DEFAULT_SHOTS_PER_SHOOT): string {
 15. "Image quality:" "vertical 9:16 portrait, 2K quality, minimum 1440 x 2560 px if available, crisp editorial sharpness, no blur, no low-resolution softness, no compression haze."
 16. "Avoid:" comma list, always including: distorted hands, extra fingers, plastic skin, heavy glam makeup, cartoonish AI style, CGI, blur, random logos. Plus shot-specific failure modes.
 
-Series consistency: ONE shoot means same outfit, hair, makeup, location and grade in every shot. Only Scene details, Accessories/props, Pose, Camera and Composition vary. Shot arc: arrival/establishing, lifestyle action, seated or still hero, close-up or detail.
+Series consistency: ONE shoot means same outfit, hair, makeup, location and grade in every shot. Only Scene details, Accessories/props, Pose, Camera and Composition vary. Shot arc follows the FIRST inspiration image's visual logic: style-match hero first, then useful variations that still preserve the reference world's crop, light, texture, shadow language and camera distance.
 
 The prompts must work for ANY woman pasting them into ChatGPT with her own selfie. Never reference a specific person. No em-dashes anywhere. No-fake doctrine: realistic, recognizable, true-to-you; never "perfect face", "flawless skin", "look rich", "no one will know".`
 }
@@ -227,7 +227,13 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
 Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 
 function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary visual reference for the world, not a loose vibe board: location materials, light direction, camera distance, color grade, accessory energy, pose language, outfit family and mood. The planned shoot must visibly belong to that inspiration image while replacing any person in it with the user's uploaded reference-photo identity. Translate the outfit into a covered, premium brand-shoot version rather than copying revealing cuts literally. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that captures that world as copy-paste ChatGPT prompts.
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary visual reference for the world, not a loose vibe board: location materials, light direction, camera distance, crop, framing, subject scale, shadow pattern, foreground occlusion, color grade, accessory energy, pose language, outfit family and mood. The planned shoot must visibly belong to that inspiration image while replacing any person in it with the user's uploaded reference-photo identity. Translate the outfit into a covered, premium brand-shoot version rather than copying revealing cuts literally. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that captures that world as copy-paste ChatGPT prompts.
+
+PRIMARY INSPIRATION LOCK:
+- First extract the FIRST inspiration image's camera distance, crop, subject scale, face/body framing, light direction, shadow pattern, foreground occlusion, background simplicity, texture language, color grade and pose energy.
+- Shot 1 must mirror the FIRST inspiration image's camera distance, crop, composition, light/shadow logic and material texture as a style-match hero with the user's identity.
+- Do not force a full-body opening shot. If the FIRST inspiration image is a close portrait, make shot 1 a close-portrait or cover-safe-hero. If it is full-body, then a full-body opener is fine.
+- Do not turn a close, shadow-driven, face-led inspiration into a generic neutral studio outfit set. Stay close to the reference world's visual grammar first; utility shots come second.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
@@ -243,7 +249,7 @@ ${proofBlock()}
 
 Choose one generation-safe outfit up front and keep it consistent. Avoid risky terms that later need rewriting: no off-shoulder, strapless, halter dress, open back, deep V, sheer fabric, cleavage, exposed torso, swimwear, lingerie or mid-thigh styling. Use covered editorial fashion with the same color, light, mood, location and style.
 
-Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after or transformation-friendly frames, profile, seated hero, close-up, and cover-safe negative space. Assign shotRole on every shot. Prioritize six usable, face-forward brand images of her. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
+Make the shot mix useful for the proven formats without overriding the primary inspiration lock: style-match hero, profile or three-quarter angle, close portrait, seated/leaning hero when it belongs to the reference world, one wider context shot only if the inspiration supports it, and cover-safe negative space. Assign shotRole on every shot. Prioritize six usable, face-forward brand images of her that still visibly belong to the FIRST inspiration image. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
