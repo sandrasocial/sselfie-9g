@@ -13,6 +13,7 @@ import type { OutputFormat } from "@/components/app-v3/types"
 import type { BrandKit } from "./concept-types"
 import { CAMERA_SPECS, LIGHTING_OPTIONS, QUIET_LUXURY_FALLBACK } from "./ingredients"
 import { getCarouselDesignGuide } from "./carousel-design-systems"
+import { SSELFIE_GRAPHIC_STYLE_PROMPT, SSELFIE_VISUAL_IDENTITY } from "./visual-rules"
 
 // Re-export the brain so app-v3 imports it from one place.
 export { MAYA_VOICE, MAYA_CORE_INTELLIGENCE, MAYA_PROMPT_PHILOSOPHY }
@@ -138,6 +139,7 @@ Chosen styling intent: ${ctx.aestheticIntent}
 **The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
 ${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
+${ctx.format === "photo" || ctx.format === "photoshoot" ? `\nShared SSELFIE image direction: ${SSELFIE_VISUAL_IDENTITY}\n` : `\nShared SSELFIE graphic direction: ${SSELFIE_GRAPHIC_STYLE_PROMPT}\n`}
 ${ctx.format === "carousel" ? `\n${getCarouselDesignGuide()}\n\n## CUSTOMER CAROUSEL CREATIVE PLAN\n\nMaya is a creative director, not a template engine. For every carousel concept, brief.graphic.creativePlan is mandatory.\n\nUse this exact planning shape inside brief.graphic.creativePlan:\n- mode: "carousel"\n- userIntent: the user's exact carousel topic/request\n- useCase: one of "educational", "tutorial", "sales", "behind_the_scenes", "opinion", "trust", "vault_product", "soft_cta"\n- audienceEmotion: what the viewer should feel or realize\n- contentGoal: teach, sell, explain, inspire, build trust, or drive comments\n- visualDirection: the cohesive luxury/editorial direction for the set\n- vaultStyleReferences: real Vault styles by name when the topic connects to Vault/prompts/styles\n- inspirationInterpretation: how any inspiration image guides outfit, lighting, color grade, mood, and accessories without overriding the topic or copying a face\n- referenceHandling: identityStrategy should usually be "selfie_identity_anchor"; inspirationStrategy can be "inspiration_style_only"\n- outputCount: the number of slides\n- outputs: one object per slide with title, purpose, visualConcept, imagePromptDirection, textSafeArea, referenceImageStrategy, and reasonThisMatchesUserIntent\n- validationRules: include the rules this plan must pass\n\nCarousel rules:\n- Choose slide count from the topic. Educational/tutorial/Vault carousels are usually 7 to 9 slides. Never make a 3-slide educational carousel unless she explicitly asks for short.\n- If the topic mentions 5/five styles, prompts, or Vault looks, include five distinct style slides and name the relevant Vault styles from the guide above.\n- A five-style Vault carousel should usually be: hook, context, style 1, style 2, style 3, style 4, style 5, how to use/choose, CTA.\n- Every slide needs a different job and a different visual idea when the meaning changes. Do not repeat the same background across the whole deck unless the user asked for a repeated background.\n- For each slide, mirror the Creative Plan output into brief.graphic.slides: purpose, visualConcept, imagePrompt, referenceImageStrategy, textSafeArea, and visualReason.\n- imagePromptDirection/imagePrompt should include subject, scene, outfit/style, pose, mood, lighting, composition, crop, text-safe area, and what not to include.\n- The slide copy can stay short and beautiful. The intelligence lives in the plan and slide-specific visuals.\n` : ""}
 
 ${brandKitLine(ctx.brandKit)}
@@ -199,7 +201,7 @@ You are also a gentle Selfie Coach, but DON'T lecture every time. Most women jus
 
 ### If she attached an inspiration image
 
-She may attach an optional inspiration image (a pose or vibe she likes). If one is present, study it and weave what you see, the **pose** and the **wardrobe/styling**, into each concept's brief (outfit + pose fields), adapted to her chosen aesthetic. Never copy a real person's face. The inspiration is only for pose and styling.
+She may attach an optional inspiration image, a pose or vibe she likes. If one is present, study it and weave what you see, the pose, wardrobe/styling, lighting, color grade, mood, and composition, into each concept's brief, adapted to her chosen aesthetic. For the first photo or the hero shot in a photoshoot, plan a close recreation of the inspiration's composition and styling as the user. For the remaining photoshoot shots, keep the same world and styling language while varying the shot role. Never copy or blend a real person's face. The user's selfie is the identity source.
 
 ### Learn her as you go (the remember tool)
 

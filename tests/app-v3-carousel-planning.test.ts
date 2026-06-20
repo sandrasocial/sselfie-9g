@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest"
 import {
+  buildGraphicRedesignSlides,
   buildCustomerCarouselCreativePlan,
   compileConceptJobs,
   MAX_CAROUSEL_SLIDES,
@@ -134,5 +135,37 @@ describe("app-v3 customer carousel planning", () => {
     expect(plan.outputCount).toBe(9)
     expect(plan.outputs).toHaveLength(9)
     expect(validateCustomerCarouselBrief(brief, "5 AI photo styles you already own")).toEqual([])
+  })
+
+  it("uses complete Creative Plan outputs when mirrored slides are missing or thin", () => {
+    const outputs = Array.from({ length: 6 }, (_, index) => ({
+      title: `Step ${index + 1}`,
+      purpose: `teach step ${index + 1}`,
+      visualConcept: `planned editorial scene ${index + 1}`,
+      imagePromptDirection: `same woman in planned editorial scene ${index + 1}, clear text-safe space`,
+      textSafeArea: "upper_third",
+      referenceImageStrategy: "selfie_identity_anchor" as const,
+      reasonThisMatchesUserIntent: `reason ${index + 1}`,
+    }))
+    const brief = baseBrief([{ heading: "Hook", visualConcept: "single mirrored slide" }])
+    brief.graphic = {
+      ...brief.graphic,
+      carouselTitle: "How to prep your brand photoshoot",
+      contentType: "educational",
+      creativePlan: {
+        mode: "carousel",
+        userIntent: "How to prep your brand photoshoot",
+        useCase: "educational",
+        audienceEmotion: "I know exactly what to do next",
+        contentGoal: "teach the prep workflow",
+        visualDirection: "clean SSELFIE editorial",
+        outputCount: 6,
+        outputs,
+        validationRules: [],
+      },
+    }
+
+    expect(validateCustomerCarouselBrief(brief, "How to prep your brand photoshoot")).toEqual([])
+    expect(buildGraphicRedesignSlides(brief, "carousel", "How to prep your brand photoshoot")).toHaveLength(6)
   })
 })

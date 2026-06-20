@@ -1,4 +1,4 @@
-export const TUTORIAL_BURGUNDY = "#6E2A35"
+export const TUTORIAL_ACCENT = "#3A3A3A"
 
 /** Hand-drawn underline: a slightly wobbly stroke for editorial emphasis. */
 export function Squiggle({ color, width: w }: { color: string; width: number }) {

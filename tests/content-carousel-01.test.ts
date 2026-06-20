@@ -21,11 +21,11 @@ describe("CONTENT-CAROUSEL-01 tutorial carousel mode", () => {
     expect(types).toContain('fit?: "cover" | "contain"')
   })
 
-  it("keeps the burgundy tutorial accent scoped and reusable", () => {
+  it("keeps the neutral tutorial accent scoped and reusable", () => {
     const accents = read("lib/content-kit/accents.tsx")
     const designSystem = read("docs/SSELFIE_DESIGN_SYSTEM.md")
 
-    expect(accents).toContain('TUTORIAL_BURGUNDY = "#6E2A35"')
+    expect(accents).toContain('TUTORIAL_ACCENT = "#3A3A3A"')
     expect(designSystem).toContain("tutorial carousel annotations")
   })
 

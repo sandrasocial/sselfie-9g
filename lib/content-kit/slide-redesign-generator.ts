@@ -5,12 +5,13 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
+import { SSELFIE_GRAPHIC_STYLE_PROMPT } from "@/lib/app-v3/maya/visual-rules"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
 const STORY_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
 
-export type StyleReferenceCategory = "tutorial" | "photoshoot-carousel" | "story-sequence"
+export type StyleReferenceCategory = "tutorial" | "photoshoot-carousel" | "story-sequence" | "reel-cover"
 export type RedesignReferenceMode = "preserve-frame" | "identity-scene"
 
 type StyleReference = {
@@ -32,7 +33,8 @@ async function toPng(url: string): Promise<Buffer> {
 }
 
 export async function pickContentStyleReference(
-  category: StyleReferenceCategory
+  category: StyleReferenceCategory,
+  fallbackCategory?: StyleReferenceCategory
 ): Promise<StyleReference | null> {
   const rows = (await sql`
     SELECT image_url, label
@@ -43,6 +45,7 @@ export async function pickContentStyleReference(
   `) as Array<{ image_url: string; label: string | null }>
 
   const row = rows[0]
+  if (!row && fallbackCategory) return pickContentStyleReference(fallbackCategory)
   return row ? { imageUrl: row.image_url, label: row.label } : null
 }
 
@@ -69,7 +72,7 @@ function slidePlan(slide: CarouselSlide): string {
   return parts.filter(Boolean).join("\n")
 }
 
-function promptForSlide({
+export function buildContentSlideRedesignPrompt({
   slide,
   category,
   topic,
@@ -98,7 +101,7 @@ Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
 
-Match the SECOND reference image's style: premium editorial, quiet luxury, elegant serif typography, clean supporting type, muted oxblood accent (#6E2A35), warm neutral palette, calm Scandinavian spacing. Never a white lesson card, never a flat Canva template.
+Match the SECOND reference image's approved SSELFIE style while following this shared style contract: ${SSELFIE_GRAPHIC_STYLE_PROMPT}
 
 Render the slide text inside the image, integrated into the scene:
 ${slideText(slide)}
@@ -111,7 +114,7 @@ Rules:
 - No extra words, placeholder letters, random UI labels, logos, emoji, green checks, neon, bright red, chunky social captions, or black-outlined text.
 - Keep the original reference frame recognizable and useful.
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.
-- Use subtle burgundy callouts only where they clarify the tutorial.`
+- If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts.`
 }
 
 export async function redesignContentSlide({
@@ -180,7 +183,7 @@ export async function redesignContentSlideToBuffer({
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files,
-    prompt: promptForSlide({ slide, category, topic, styleLabel, referenceMode }),
+    prompt: buildContentSlideRedesignPrompt({ slide, category, topic, styleLabel, referenceMode }),
     n: 1,
     size: category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE,
     quality: "high",

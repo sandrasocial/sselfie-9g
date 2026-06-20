@@ -33,6 +33,11 @@ import {
 } from "@/lib/app-v3/prompt-compiler"
 import { IDENTITY_ANCHOR, IDENTITY_ANCHOR_SAFE } from "@/lib/app-v3/maya/ingredients"
 import {
+  SSELFIE_INSPIRATION_CLOSE_RECREATE,
+  SSELFIE_INSPIRATION_SET_VARIATION,
+  SSELFIE_PROMPT_VERSION,
+} from "@/lib/app-v3/maya/visual-rules"
+import {
   pickContentStyleReference,
   redesignContentSlideToBuffer,
   type StyleReferenceCategory,
@@ -99,7 +104,13 @@ function isRedesignGraphicFormat(format: OutputFormat): boolean {
 }
 
 function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
-  return format === "carousel" ? "photoshoot-carousel" : "story-sequence"
+  if (format === "carousel") return "photoshoot-carousel"
+  if (format === "reel-cover") return "reel-cover"
+  return "story-sequence"
+}
+
+function fallbackCategoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory | undefined {
+  return format === "reel-cover" ? "story-sequence" : undefined
 }
 
 function topicForGraphicBrief(
@@ -210,11 +221,15 @@ function withPhotoshootCohesionInstruction(
   }
 }
 
-function withInspirationReferenceInstruction(job: ImageJob): ImageJob {
+function withInspirationReferenceInstruction(
+  job: ImageJob,
+  mode: "close-recreation" | "set-variation" = "close-recreation"
+): ImageJob {
   const instruction = [
     "Inspiration reference handling:",
-    "The uploaded inspiration image is pose, wardrobe, lighting, color, and composition guidance only.",
-    "Keep the user's identity anchored to the uploaded selfies. Do not copy the inspiration person's face.",
+    mode === "close-recreation"
+      ? SSELFIE_INSPIRATION_CLOSE_RECREATE
+      : SSELFIE_INSPIRATION_SET_VARIATION,
   ].join("\n")
 
   return {
@@ -442,15 +457,19 @@ export async function POST(request: NextRequest) {
         })
         const heroJobIndex = pickPhotoshootHeroJobIndex(plannedPhotoshootJobs)
         photoshootJobs = plannedPhotoshootJobs.map((item, index) => {
+          const isHero = index === heroJobIndex
           const cohesiveJob = withPhotoshootCohesionInstruction(
             item.job,
             item.role,
-            index === heroJobIndex
+            isHero
           )
           return {
             ...item,
             job: inspirationReferenceUrl
-              ? withInspirationReferenceInstruction(cohesiveJob)
+              ? withInspirationReferenceInstruction(
+                  cohesiveJob,
+                  isHero ? "close-recreation" : "set-variation"
+                )
               : cohesiveJob,
           }
         })
@@ -462,7 +481,10 @@ export async function POST(request: NextRequest) {
           conceptTitle: body.conceptTitle,
           referenceUrls,
         })
-        graphicStyle = await pickContentStyleReference(categoryForGraphicFormat(format))
+        graphicStyle = await pickContentStyleReference(
+          categoryForGraphicFormat(format),
+          fallbackCategoryForGraphicFormat(format)
+        )
         if (!graphicStyle) {
           return NextResponse.json(
             { error: "No SSELFIE style references are configured for this format." },
@@ -471,7 +493,9 @@ export async function POST(request: NextRequest) {
         }
       } else {
         jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
-        if (inspirationReferenceUrl) jobs = jobs.map(withInspirationReferenceInstruction)
+        if (inspirationReferenceUrl) {
+          jobs = jobs.map(job => withInspirationReferenceInstruction(job, "close-recreation"))
+        }
       }
     }
 
@@ -485,6 +509,9 @@ export async function POST(request: NextRequest) {
       graphicJobs.length > 0
         ? graphicJobs.map(j => j.recordPrompt)
         : jobs.map(j => j.passes.map(p => p.prompt).join("\n\n--- pass ---\n\n"))
+    let actualPromptRecords = recordPrompts.map(prompt =>
+      [`Prompt version: ${SSELFIE_PROMPT_VERSION}`, prompt].join("\n")
+    )
 
     // ── Neon user ──
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
@@ -590,6 +617,23 @@ export async function POST(request: NextRequest) {
     const generationReferenceUrls = inspirationReferenceUrl
       ? Array.from(new Set([...referenceUrls, inspirationReferenceUrl]))
       : referenceUrls
+    actualPromptRecords = recordPrompts.map((prompt, index) =>
+      [
+        `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
+        `Model provider: openai`,
+        `Model: ${OPENAI_IMAGE_MODEL}`,
+        `Format: ${format}`,
+        `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
+        `Reference URLs used: ${generationReferenceUrls.join(", ") || "none"}`,
+        photoshootJobs.length > 0
+          ? "Photoshoot reference flow: hero shot uses uploaded identity references; non-hero shots use uploaded identity references plus generated hero anchor."
+          : "",
+        "",
+        prompt,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
     const selfieFiles = await Promise.all(
       generationReferenceUrls.map(async (url, i) => {
         const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
@@ -706,12 +750,13 @@ export async function POST(request: NextRequest) {
           })
           let id: number | null = null
           try {
+            const storedPrompt = actualPromptRecords[i] ?? recordPrompts[i] ?? recordPrompts[0]
             const inserted = await sql`
               INSERT INTO ai_images (
                 user_id, image_url, prompt, generated_prompt, prediction_id,
                 generation_status, source, category, created_at
               ) VALUES (
-                ${neonUser.id}, ${blob.url}, ${recordPrompts[i] ?? recordPrompts[0]}, ${recordPrompts[i] ?? recordPrompts[0]},
+                ${neonUser.id}, ${blob.url}, ${storedPrompt}, ${storedPrompt},
                 ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
               ) RETURNING id
             `
@@ -837,6 +882,7 @@ export async function POST(request: NextRequest) {
                 imageUrls: [persisted[0].url],
                 imageCount: 1,
                 aiImageId: persisted[0].id,
+                aiImageIds: [persisted[0].id],
                 creditsDeducted: totalCost,
                 newBalance: deduction.newBalance,
               })
@@ -877,7 +923,7 @@ export async function POST(request: NextRequest) {
       if (graphicJobs.length > 0) {
         if (!graphicStyle) throw new Error("Missing style reference for graphic generation")
         buffers = await Promise.all(
-          graphicJobs.map(async job => {
+          graphicJobs.map(async (job, index) => {
             const result = await redesignContentSlideToBuffer({
               referenceUrl: job.referenceUrl,
               styleReferenceUrl: graphicStyle.imageUrl,
@@ -887,6 +933,19 @@ export async function POST(request: NextRequest) {
               slide: job.slide,
               referenceMode: "identity-scene",
             })
+            actualPromptRecords[index] = [
+              `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
+              result.prompt,
+              "",
+              "Prompt metadata:",
+              `Format: ${format}`,
+              `Content type: ${job.category}`,
+              `Topic: ${job.topic}`,
+              `Slide: ${job.slide.title}`,
+              `Style anchor: ${graphicStyle.label ?? "approved SSELFIE reference"}`,
+              `Reference URL used: ${job.referenceUrl}`,
+              `Style reference URL used: ${graphicStyle.imageUrl}`,
+            ].join("\n")
             return result.buffer
           })
         )
@@ -945,6 +1004,7 @@ export async function POST(request: NextRequest) {
       imageUrls,
       imageCount: imageUrls.length,
       aiImageId: persisted[0]?.id ?? null,
+      aiImageIds: persisted.map(p => p.id),
       creditsDeducted: totalCost,
       newBalance: deduction.newBalance,
     })

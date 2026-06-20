@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCarousel } from "@/lib/content-kit/carousel-generator"
-import { Arrow, KeywordCircle, Squiggle, TUTORIAL_BURGUNDY } from "@/lib/content-kit/accents"
+import { Arrow, KeywordCircle, Squiggle, TUTORIAL_ACCENT } from "@/lib/content-kit/accents"
 import type { CarouselSlide, ContentAccent, ContentOverlayAsset } from "@/lib/content-kit/types"
 
 export const dynamic = "force-dynamic"
@@ -18,8 +18,6 @@ const SMOKE = "#666666"
 const WHISPER = "#E5E5E5"
 const STONE = "#8A8780"
 const STONE_SOFT = "#D4D1CC"
-const TUTORIAL_ACCENT = TUTORIAL_BURGUNDY
-
 const WIDTH = 1080
 const HEIGHT = 1350
 const PAD = 96

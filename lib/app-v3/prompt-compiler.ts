@@ -37,6 +37,11 @@ import {
   type CreativeUseCase,
   type VaultStyleReference,
 } from "@/lib/app-v3/maya/creative-plan"
+import {
+  SSELFIE_GRAPHIC_STYLE_PROMPT,
+  SSELFIE_NEUTRAL_PALETTE,
+  SSELFIE_PHOTO_STYLE_PROMPT,
+} from "@/lib/app-v3/maya/visual-rules"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -72,12 +77,10 @@ export const MAX_CAROUSEL_SLIDES = 9
 const BRAND_PHOTO_STYLE =
   "Editorial brand photograph. Keep the person's face and likeness from the reference image accurate and natural. " +
   "Soft, flattering light, refined styling, calm composition, premium magazine quality. Natural skin texture, not plastic. " +
-  "No added text, no logos, no graphic overlays."
+  "No added text, no logos, no graphic overlays. " +
+  SSELFIE_PHOTO_STYLE_PROMPT
 
-const BRAND_GRAPHIC_STYLE =
-  "Premium SSELFIE editorial slide: calm, spacious, high-end magazine feel. Neutral palette, " +
-  "generous negative space, refined composition, elegant serif display type, clean supporting type, " +
-  "muted oxblood accents where useful. No emojis, no clip-art, no gradients, no clutter, no white lesson card."
+const BRAND_GRAPHIC_STYLE = SSELFIE_GRAPHIC_STYLE_PROMPT
 
 function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
@@ -166,6 +169,39 @@ function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativeP
   }
 }
 
+function outputAsSlide(output: CreativePlanOutput, index: number): CarouselSlidePlanLike {
+  return {
+    heading: clean(output.title) || `Slide ${index + 1}`,
+    purpose: clean(output.purpose),
+    visualConcept: clean(output.visualConcept),
+    imagePrompt: clean(output.imagePromptDirection),
+    imagePromptDirection: clean(output.imagePromptDirection),
+    referenceImageStrategy: output.referenceImageStrategy,
+    textSafeArea: output.textSafeArea,
+    visualReason: clean(output.reasonThisMatchesUserIntent),
+    reasonThisMatchesUserIntent: clean(output.reasonThisMatchesUserIntent),
+  }
+}
+
+function effectiveCarouselSlides(
+  brief: CreativeBrief,
+  conceptTitle?: string
+): CarouselSlidePlanLike[] {
+  const g = brief.graphic
+  const rawSlides = (g?.slides ?? []).filter(s => clean(s.heading))
+  const suppliedOutputs = g?.creativePlan?.outputs ?? []
+  if (suppliedOutputs.length > rawSlides.length) {
+    return suppliedOutputs.map((output, index) => ({
+      ...outputAsSlide(output, index),
+      ...(rawSlides[index] ?? {}),
+    }))
+  }
+  if (rawSlides.length > 0) return rawSlides
+  if (suppliedOutputs.length > 0) return suppliedOutputs.map(outputAsSlide)
+  const fallback = clean(g?.headline) || clean(conceptTitle)
+  return fallback ? [{ heading: fallback }] : []
+}
+
 export function buildCustomerCarouselCreativePlan(
   brief: CreativeBrief,
   conceptTitle?: string
@@ -174,10 +210,10 @@ export function buildCustomerCarouselCreativePlan(
   const topic = carouselTopicFromBrief(brief, conceptTitle)
   const supplied = g?.creativePlan
   const useCase = normalizeUseCase(supplied?.useCase ?? g?.contentType, topic)
-  const outputs =
-    supplied && supplied.outputs.length === (g?.slides?.length ?? -1)
-      ? supplied.outputs
-      : (g?.slides ?? []).map((slide, index) => outputFromSlide(slide, index))
+  const effectiveSlides = effectiveCarouselSlides(brief, conceptTitle)
+  const outputs = supplied?.outputs?.length
+    ? supplied.outputs
+    : effectiveSlides.map((slide, index) => outputFromSlide(slide, index))
   const vaultStyleReferences = supplied?.vaultStyleReferences?.length
     ? supplied.vaultStyleReferences
     : vaultStyleReferencesFromBrief(brief)
@@ -220,18 +256,19 @@ export function validateCustomerCarouselBrief(
   const plan = buildCustomerCarouselCreativePlan(brief, conceptTitle)
   const result = validateCreativePlan(plan)
   const errors = [...result.errors]
+  const slides = effectiveCarouselSlides(brief, conceptTitle)
 
-  if (plan.outputCount !== brief.graphic?.slides?.length) {
-    errors.push(`carousel has ${brief.graphic?.slides?.length ?? 0} slides, but creativePlan.outputCount is ${plan.outputCount}`)
+  if (plan.outputCount !== slides.length) {
+    errors.push(`carousel has ${slides.length} slides, but creativePlan.outputCount is ${plan.outputCount}`)
   }
 
   if (
     plan.mode === "carousel" &&
     (plan.useCase === "educational" || plan.useCase === "tutorial" || plan.useCase === "vault_product") &&
     !isShortCreativeRequest(plan.userIntent) &&
-    (brief.graphic?.slides?.length ?? 0) < 6
+    slides.length < 6
   ) {
-    errors.push(`educational carousel needs at least 6 slides, got ${brief.graphic?.slides?.length ?? 0}`)
+    errors.push(`educational carousel needs at least 6 slides, got ${slides.length}`)
   }
 
   if (isFiveStylesRequest(plan.userIntent)) {
@@ -437,6 +474,7 @@ function compilePhotoPrompt(
     composition,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
+    SSELFIE_PHOTO_STYLE_PROMPT,
     `Lighting: ${lighting}.`,
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
@@ -477,6 +515,7 @@ function compileSingleGraphicPrompt(
     `Text placement: ${layout.space} Keep it readable and calm around the ${layout.place}. Do not cover her face, eyes, phone, hands, or strongest outfit details.`,
     BRAND_GRAPHIC_STYLE,
     paletteLine(opts?.brandKit),
+    SSELFIE_NEUTRAL_PALETTE,
     gradeLine(opts),
     "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
     REALISM_TOKENS + ".",
@@ -522,6 +561,7 @@ function compileCarouselIdentityPrompt(
     `Typography placement: ${layout.space}`,
     system.identityTreatment,
     system.setDna,
+    BRAND_GRAPHIC_STYLE,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
     `Lighting: ${lighting}.`,
@@ -554,7 +594,7 @@ export function buildGraphicRedesignSlides(
   const g = brief.graphic
 
   if (format === "carousel") {
-    const rawSlides = (g?.slides ?? []).filter(s => clean(s.heading)).slice(0, MAX_CAROUSEL_SLIDES)
+    const rawSlides = effectiveCarouselSlides(brief, conceptTitle).slice(0, MAX_CAROUSEL_SLIDES)
     const slides =
       rawSlides.length > 0
         ? rawSlides
@@ -659,7 +699,7 @@ export function compileConceptJobs(
   const g = brief.graphic
   const rawSlides =
     format === "carousel"
-      ? (g?.slides ?? []).filter(s => clean(s.heading)).slice(0, MAX_CAROUSEL_SLIDES)
+      ? effectiveCarouselSlides(brief).slice(0, MAX_CAROUSEL_SLIDES)
       : [
           {
             heading: clean(g?.headline) || clean(brief.outfit) || "Slide 1",

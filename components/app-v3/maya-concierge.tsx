@@ -231,6 +231,11 @@ function wait(ms: number): Promise<void> {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
 
+function promptAssetIdFromGen(gen?: ConceptGenState): string | null {
+  const id = gen?.aiImageId ?? gen?.aiImageIds?.find(item => typeof item === "number") ?? null
+  return typeof id === "number" ? `ai_${id}` : null
+}
+
 async function pollCustomModelGeneration(
   predictionId: string,
   generationId: number
@@ -928,8 +933,14 @@ export function MayaConcierge({
           for (const chunk of chunks) {
             const line = chunk.trim()
             if (!line.startsWith("data: ")) continue
-            let evt: { type?: string; b64?: string; imageUrls?: string[]; error?: string } | null =
-              null
+            let evt: {
+              type?: string
+              b64?: string
+              imageUrls?: string[]
+              aiImageId?: number | null
+              aiImageIds?: Array<number | null>
+              error?: string
+            } | null = null
             try {
               evt = JSON.parse(line.slice(6))
             } catch {
@@ -943,7 +954,15 @@ export function MayaConcierge({
               Array.isArray(evt.imageUrls) &&
               evt.imageUrls.length > 0
             ) {
-              setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: evt!.imageUrls } }))
+              setGenState(s => ({
+                ...s,
+                [key]: {
+                  status: "done",
+                  imageUrls: evt!.imageUrls,
+                  aiImageId: evt!.aiImageId ?? null,
+                  aiImageIds: evt!.aiImageIds,
+                },
+              }))
               setGeneratedOnce(true)
               settled = true
             } else if (evt?.type === "error") {
@@ -964,6 +983,8 @@ export function MayaConcierge({
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         imageUrls?: string[]
+        aiImageId?: number | null
+        aiImageIds?: Array<number | null>
         error?: string
         code?: string
         current?: number
@@ -984,7 +1005,15 @@ export function MayaConcierge({
             ? [data.imageUrl]
             : []
       if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
-      setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
+      setGenState(s => ({
+        ...s,
+        [key]: {
+          status: "done",
+          imageUrls: urls,
+          aiImageId: data?.aiImageId ?? null,
+          aiImageIds: data?.aiImageIds,
+        },
+      }))
       setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
     } catch (e) {
       setGenState(s => ({
@@ -1030,6 +1059,8 @@ export function MayaConcierge({
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         imageUrls?: string[]
+        aiImageId?: number | null
+        aiImageIds?: Array<number | null>
         error?: string
         code?: string
         current?: number
@@ -1049,7 +1080,15 @@ export function MayaConcierge({
             ? [data.imageUrl]
             : []
       if (!res.ok || urls.length === 0) throw new Error(data?.error || "Generation failed")
-      setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: urls } }))
+      setGenState(s => ({
+        ...s,
+        [key]: {
+          status: "done",
+          imageUrls: urls,
+          aiImageId: data?.aiImageId ?? null,
+          aiImageIds: data?.aiImageIds,
+        },
+      }))
       setGeneratedOnce(true)
     } catch (e) {
       setGenState(s => ({
@@ -1887,6 +1926,7 @@ export function MayaConcierge({
                       const key = `${m.id}:photoshoot-set`
                       const gen = genState[key] ?? { status: "idle" as const }
                       const urls = gen.imageUrls ?? []
+                      const promptAssetId = admin ? promptAssetIdFromGen(gen) : null
                       return (
                         <div className="space-y-3">
                           {urls.length > 0 && (
@@ -1920,6 +1960,16 @@ export function MayaConcierge({
                                 ? "Create another set"
                                 : "Create full photoshoot"}
                           </button>
+                          {promptAssetId && (
+                            <a
+                              href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
+                            >
+                              View prompt
+                            </a>
+                          )}
                         </div>
                       )
                     })()}
@@ -1933,11 +1983,12 @@ export function MayaConcierge({
                     </p>
                     {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
+                      const gen = genState[key] ?? { status: "idle" as const }
                       return (
                         <ConceptCard
                           key={key}
                           concept={concept}
-                          gen={genState[key] ?? { status: "idle" }}
+                          gen={gen}
                           format={conceptFormat}
                           onGenerate={() => void generateConcept(key, concept, conceptFormat)}
                           onOpen={urls => setLightbox({ images: urls })}
@@ -1950,6 +2001,7 @@ export function MayaConcierge({
                               ? !videoSourceUrl
                               : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                           }
+                          promptAssetId={admin ? promptAssetIdFromGen(gen) : null}
                         />
                       )
                     })}

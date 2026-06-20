@@ -19,7 +19,7 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
     const chatRoute = read("app/api/app-v3/maya/chat/route.ts")
 
     expect(concierge).toContain("generatePhotoshootSet")
-    expect(concierge).toContain("format === \"photoshoot\"")
+    expect(concierge).toContain("conceptFormat === \"photoshoot\"")
     expect(concierge).toContain("Create full photoshoot")
     expect(route).toContain("validatePhotoshootBriefs")
     expect(route).toContain("photoshoot_plan_invalid")

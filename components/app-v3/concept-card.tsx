@@ -15,6 +15,8 @@ export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
+  aiImageId?: number | null
+  aiImageIds?: Array<number | null>
   videoUrl?: string
   error?: string
   /** Progressive partial frame (data URL) while streaming — the photo "develops" in place. */
@@ -30,6 +32,8 @@ interface ConceptCardProps {
   onOpen?: (imageUrls: string[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
+  /** Admin-only prompt inspector asset id, e.g. ai_123. */
+  promptAssetId?: string | null
   disabled?: boolean
 }
 
@@ -49,6 +53,7 @@ export function ConceptCard({
   onGenerate,
   onOpen,
   onEdit,
+  promptAssetId,
   disabled,
 }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
@@ -185,6 +190,16 @@ export function ConceptCard({
                 >
                   Edit this photo
                 </button>
+              )}
+              {promptAssetId && !isVideoDone && (
+                <a
+                  href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                >
+                  View prompt
+                </a>
               )}
             </div>
             <button
