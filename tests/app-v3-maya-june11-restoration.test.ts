@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
-import { compileConceptJobs } from "@/lib/app-v3/prompt-compiler"
+import { buildGraphicRedesignSlides, compileConceptJobs } from "@/lib/app-v3/prompt-compiler"
 import { buildContentSlideRedesignPrompt } from "@/lib/content-kit/slide-redesign-generator"
 import { SSELFIE_GRAPHIC_STYLE_PROMPT } from "@/lib/app-v3/maya/visual-rules"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
@@ -58,6 +58,64 @@ describe("Maya June 11 restoration guardrails", () => {
     expect(prompt).toContain("Premium SSELFIE editorial slide")
     expect(prompt).toContain("No red accent palette")
     expectNoRetiredAccentTerms(prompt)
+  })
+
+  it("keeps internal section roles out of rendered text-overlay prompts", () => {
+    const brief: CreativeBrief = {
+      outfit: "oversized espresso knit cardigan",
+      setting: "quiet marble kitchen table with laptop and morning window light",
+      mood: "intimate, grounded, editorial",
+      pose: "seated with one knee tucked up, looking toward the window",
+      cameraSpec: "Hasselblad X2D 100C, 55mm f/2.5",
+      lighting: "soft north-facing window light",
+      graphic: {
+        headline: "The Morning I Stopped Waiting",
+        subline: "A private founder note.",
+        role: "hook",
+        slides: [
+          {
+            role: "hook",
+            heading: "I Built a Business From This Kitchen Table",
+            body: "The honest beginning.",
+          },
+          {
+            role: "value",
+            heading: "At 39, I Was Completely Broke",
+            body: "Single mom of three in a 2-bedroom apartment.",
+          },
+          {
+            role: "cta",
+            heading: "Want the prompts?",
+            body: "DM me PROMPT.",
+          },
+        ],
+      },
+    }
+
+    const reelPrompt = compileConceptJobs(brief, "reel-cover")[0]?.passes[0]?.prompt ?? ""
+    const carouselPrompts = buildGraphicRedesignSlides(brief, "carousel", "Founder story").map(slide =>
+      buildContentSlideRedesignPrompt({
+        category: "photoshoot-carousel",
+        topic: "Founder story",
+        styleLabel: "approved SSELFIE reference",
+        referenceMode: "identity-scene",
+        slide,
+      })
+    )
+    const directCarouselPrompts = compileConceptJobs(brief, "carousel").map(
+      job => job.passes[0]?.prompt ?? ""
+    )
+
+    const combinedPrompt = [reelPrompt, ...carouselPrompts, ...directCarouselPrompts].join("\n\n")
+    expect(combinedPrompt).toContain("The Morning I Stopped Waiting")
+    expect(combinedPrompt).toContain("I Built a Business From This Kitchen Table")
+    expect(combinedPrompt).toContain("At 39, I Was Completely Broke")
+    expect(combinedPrompt).not.toContain("Finished slide role:")
+    expect(combinedPrompt).not.toContain('Small label: "reel cover"')
+    expect(combinedPrompt).not.toContain('Small label: "hook"')
+    expect(combinedPrompt).not.toContain('Small label: "value"')
+    expect(combinedPrompt).not.toContain('Small label: "cta"')
+    expect(combinedPrompt).not.toContain('Step number: "01"')
   })
 
   it("keeps inspiration handling close to the June 11 prompting plan", () => {

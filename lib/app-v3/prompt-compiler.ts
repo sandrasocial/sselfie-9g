@@ -568,7 +568,7 @@ function compileCarouselIdentityPrompt(
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     paletteLine(opts?.brandKit),
-    `Finished slide role: ${role}. Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos. Keep her face and eyes clear of busy background detail.`,
+    `Internal slide role (do not render): ${role}. Render only the headline and supporting line text spelled exactly as written. No extra words, no placeholder text, no random letters, no labels, no logos. Keep her face and eyes clear of busy background detail.`,
     CAROUSEL_QUALITY,
     AVOID_LIST,
   ]
@@ -606,10 +606,8 @@ export function buildGraphicRedesignSlides(
       const planOutput = plan.outputs[index]
       return {
         kind: slideKindForRole(role, index, slides.length),
-        eyebrow: role,
         title: clean(slide.heading) || clean(planOutput?.title) || `Slide ${index + 1}`,
         body: clean(slide.body),
-        stepNumber: role === "value" ? index : undefined,
         purpose: clean(slide.purpose) || clean(planOutput?.purpose),
         visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
         imagePromptDirection:
@@ -637,7 +635,6 @@ export function buildGraphicRedesignSlides(
   return [
     {
       kind: role === "cta" ? "cta" : "photo",
-      eyebrow: format === "reel-cover" ? "reel cover" : "story",
       title,
       body: clean(g?.subline),
       purpose:

@@ -10,6 +10,16 @@ import { SSELFIE_GRAPHIC_STYLE_PROMPT } from "@/lib/app-v3/maya/visual-rules"
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
 const STORY_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+const INTERNAL_VISIBLE_LABELS = new Set([
+  "hook",
+  "value",
+  "cta",
+  "reel cover",
+  "reel-cover",
+  "story",
+  "story slide",
+  "photo",
+])
 
 export type StyleReferenceCategory = "tutorial" | "photoshoot-carousel" | "story-sequence" | "reel-cover"
 export type RedesignReferenceMode = "preserve-frame" | "identity-scene"
@@ -50,12 +60,17 @@ export async function pickContentStyleReference(
 }
 
 function slideText(slide: CarouselSlide): string {
+  const eyebrow = slide.eyebrow?.trim()
+  const shouldRenderEyebrow =
+    eyebrow && !INTERNAL_VISIBLE_LABELS.has(eyebrow.toLowerCase().replace(/\s+/g, " "))
   const parts = [
-    slide.eyebrow ? `Small label: "${slide.eyebrow}"` : "",
+    shouldRenderEyebrow ? `Small label: "${eyebrow}"` : "",
     slide.title ? `Main headline: "${slide.title}"` : "",
     slide.body ? `Supporting line: "${slide.body}"` : "",
     slide.items?.length ? `List items: ${slide.items.map(item => `"${item}"`).join(", ")}` : "",
-    slide.stepNumber ? `Step number: "${String(slide.stepNumber).padStart(2, "0")}"` : "",
+    slide.kind === "step" && slide.stepNumber
+      ? `Step number: "${String(slide.stepNumber).padStart(2, "0")}"`
+      : "",
   ]
   return parts.filter(Boolean).join("\n")
 }
@@ -96,7 +111,7 @@ export function buildContentSlideRedesignPrompt({
 
 Content type: ${category}
 Topic: ${topic}
-Slide kind: ${slide.kind}
+Internal slide kind (do not render): ${slide.kind}
 Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
@@ -110,7 +125,8 @@ Slide-specific creative plan:
 ${slidePlan(slide) || "Use the slide title/body as the creative direction, and make the image meaning match the copy."}
 
 Rules:
-- Render all text spelled exactly as written.
+- Render only the text listed under "Render the slide text inside the image" and spell it exactly as written.
+- Do not render internal labels such as hook, value, cta, reel cover, story, slide kind, or content type.
 - No extra words, placeholder letters, random UI labels, logos, emoji, green checks, neon, bright red, chunky social captions, or black-outlined text.
 - Keep the original reference frame recognizable and useful.
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.

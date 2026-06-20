@@ -116,7 +116,7 @@ function storySlideToCarouselSlide(slide: StorySlide, index: number): CarouselSl
   const support = slide.lines.filter(line => line.size === "support")
   return {
     kind: index === 0 ? "hook" : slide.role === "cta" ? "cta" : "photo",
-    eyebrow: slide.note || slide.role,
+    eyebrow: slide.note,
     title: lead.map(line => line.text).join(" "),
     body: support.map(line => line.text).join(" "),
   }
