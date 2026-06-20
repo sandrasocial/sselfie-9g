@@ -13,6 +13,7 @@ import { useEffect, useState } from "react"
 import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
+import { MayaFloatingLauncher } from "./maya-floating-launcher"
 import { GalleryView } from "./gallery-view"
 import { ContentView } from "./content-view"
 import { LibraryView } from "./library-view"
@@ -214,6 +215,7 @@ function ShellInner({
       )}
 
       {!limited && <MayaConcierge hasTrainedModel={hasTrainedModel} analyticsCohort={cohort} />}
+      {!limited && <MayaFloatingLauncher />}
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">

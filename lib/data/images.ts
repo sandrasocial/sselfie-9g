@@ -1,6 +1,5 @@
 import { sql } from "@/lib/db/client"
 
-
 export interface AIImage {
   id: number
   user_id: string
@@ -59,6 +58,7 @@ export async function getUserImages(
       SELECT COUNT(*) as total
       FROM ai_images
       WHERE user_id = ${userId}
+        AND (generation_status = 'completed' OR generation_status IS NULL)
     `
     const total = Number(countResult[0]?.total || 0)
 
@@ -76,6 +76,7 @@ export async function getUserImages(
         created_at
       FROM ai_images
       WHERE user_id = ${userId}
+        AND (generation_status = 'completed' OR generation_status IS NULL)
       ORDER BY created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}
@@ -121,6 +122,7 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         created_at
       FROM ai_images
       WHERE user_id = ${userId}
+        AND (generation_status = 'completed' OR generation_status IS NULL)
       ORDER BY created_at DESC
     `
 

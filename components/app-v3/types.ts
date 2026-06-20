@@ -3,7 +3,13 @@
 
 /** The output format the user is creating. The OpenAI engine renders all of these
  *  natively in one synchronous call (photo, or structured marketing graphics). */
-export type OutputFormat = "photo" | "photoshoot" | "reel-cover" | "carousel" | "story-slide" | "video"
+export type OutputFormat =
+  | "photo"
+  | "photoshoot"
+  | "reel-cover"
+  | "carousel"
+  | "story-slide"
+  | "video"
 
 /** A single aesthetic the user can pick from the Visual Front Door. Derived from the
  *  existing Prompt Vault collections so the grid always reflects the real vault. */
@@ -72,6 +78,8 @@ export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"
 export interface ConciergeContextValue {
   session: ConciergeSession | null
   isOpen: boolean
+  /** Reopen the current conversation, or start a blank general Maya session if none exists. */
+  open: () => void
   /** Open the concierge with a chosen aesthetic preloaded (the Handoff). */
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Start a clean thread while keeping the active reference image available. */

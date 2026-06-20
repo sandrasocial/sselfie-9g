@@ -30,6 +30,17 @@ import {
 
 const ConciergeContext = createContext<ConciergeContextValue | null>(null)
 
+const GENERAL_MAYA_AESTHETIC: Aesthetic = {
+  id: "maya-general",
+  name: "SSELFIE",
+  blurb: "Let's make something that's truly you.",
+  coverImage: "",
+  thumbnails: [],
+  shotCount: 0,
+  intent:
+    "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
+}
+
 export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const restoredSavedAtRef = useRef<number | null>(null)
   const [session, setSession] = useState<ConciergeSession | null>(null)
@@ -75,13 +86,31 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             seedPrompt: null,
             startedAt: Date.now(),
           }
-        : prev,
+        : prev
     )
     setIsOpen(true)
   }, [])
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
+  }, [])
+
+  const open = useCallback(() => {
+    startTransition(() => {
+      setSession(
+        prev =>
+          prev ?? {
+            aesthetic: GENERAL_MAYA_AESTHETIC,
+            outputFormat: null,
+            referenceSelfieUrl: null,
+            videoSourceUrl: null,
+            graphicText: null,
+            seedPrompt: null,
+            startedAt: Date.now(),
+          }
+      )
+      setIsOpen(true)
+    })
   }, [])
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -120,6 +149,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       isOpen,
+      open,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,
@@ -131,6 +161,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     [
       session,
       isOpen,
+      open,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,
