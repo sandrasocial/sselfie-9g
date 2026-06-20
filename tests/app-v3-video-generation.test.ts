@@ -64,6 +64,9 @@ describe("app-v3 video generation service", () => {
     mockAddCredits.mockResolvedValue({ success: true, newBalance: 20 })
     mockGetDbClient.mockReturnValue(mockSql)
     mockSql.mockResolvedValue([{ id: 77 }])
+    delete process.env.APP_V3_VIDEO_MODEL
+    delete process.env.APP_V3_VIDEO_RESOLUTION
+    delete process.env.APP_V3_VIDEO_PROMPT_EXPANSION
     mockGeneratePrompt.mockResolvedValue({
       prompt:
         "natural blink, subtle breathing, gentle camera push-in, preserve identity, no subtitles",
@@ -106,17 +109,18 @@ describe("app-v3 video generation service", () => {
     expect(mockDeductCredits).toHaveBeenCalledWith("user-1", 3, "animation", "Animated image")
     expect(mockReplicateCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "wan-video/wan-2.5-i2v-fast",
+        model: "wan-video/wan-2.2-i2v-fast",
         input: expect.objectContaining({
           image: "https://cdn.example.com/source.png",
           prompt: expect.stringContaining("Face stays steady"),
-          negative_prompt: expect.stringContaining("subtitles"),
-          duration: 5,
-          resolution: "720p",
-          enable_prompt_expansion: false,
+          resolution: "480p",
+          go_fast: true,
         }),
       })
     )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("duration")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("negative_prompt")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("enable_prompt_expansion")
     expect(mockGenerateMotionPromptWithVisionFallbacks).toHaveBeenCalledWith(
       expect.stringContaining("brand-safe motion director"),
       expect.stringContaining("Reference image is provided"),
@@ -125,6 +129,32 @@ describe("app-v3 video generation service", () => {
     const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
     expect(insertSql).toContain("INSERT INTO generated_videos")
     expect(insertSql).not.toContain("user_models")
+  })
+
+  it("keeps the Wan 2.5 input shape behind an explicit model override", async () => {
+    process.env.APP_V3_VIDEO_MODEL = "wan-video/wan-2.5-i2v-fast"
+    process.env.APP_V3_VIDEO_RESOLUTION = "720p"
+    process.env.APP_V3_VIDEO_PROMPT_EXPANSION = "true"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+    })
+
+    expect(mockReplicateCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "wan-video/wan-2.5-i2v-fast",
+        input: expect.objectContaining({
+          duration: 5,
+          resolution: "720p",
+          negative_prompt: expect.stringContaining("identity drift"),
+          enable_prompt_expansion: true,
+        }),
+      })
+    )
   })
 
   it("returns structured low-credit errors before creating a prediction", async () => {

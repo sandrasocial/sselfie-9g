@@ -54,16 +54,54 @@ export class VideoGenerationError extends Error {
   }
 }
 
-type VideoResolution = "720p" | "1080p"
+const DEFAULT_VIDEO_MODEL = "wan-video/wan-2.2-i2v-fast"
+const WAN25_NEGATIVE_PROMPT =
+  "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake"
 
-function videoResolution(): VideoResolution {
-  return process.env.APP_V3_VIDEO_RESOLUTION === "1080p" ? "1080p" : "720p"
+type VideoResolution = "480p" | "720p" | "1080p"
+
+function videoModel(): string {
+  return process.env.APP_V3_VIDEO_MODEL?.trim() || DEFAULT_VIDEO_MODEL
+}
+
+function videoResolution(model: string): VideoResolution {
+  const requested = process.env.APP_V3_VIDEO_RESOLUTION?.trim()
+  if (requested === "480p" || requested === "720p" || requested === "1080p") {
+    if (model.includes("wan-2.2") && requested === "1080p") return "720p"
+    if (!model.includes("wan-2.2") && requested === "480p") return "720p"
+    return requested
+  }
+  return model.includes("wan-2.2") ? "480p" : "720p"
 }
 
 function videoPromptExpansionEnabled(): boolean {
   const value = process.env.APP_V3_VIDEO_PROMPT_EXPANSION
   if (value === undefined || value === null || value.trim() === "") return false
   return ["1", "true", "yes"].includes(value.trim().toLowerCase())
+}
+
+function buildPredictionInput(input: { model: string; imageUrl: string; motionPrompt: string }) {
+  const seed = Math.floor(Math.random() * 1_000_000)
+  const resolution = videoResolution(input.model)
+  if (input.model.includes("wan-2.2")) {
+    return {
+      image: input.imageUrl,
+      prompt: input.motionPrompt,
+      resolution,
+      go_fast: true,
+      seed,
+    }
+  }
+
+  return {
+    image: input.imageUrl,
+    prompt: input.motionPrompt,
+    duration: 5,
+    resolution,
+    negative_prompt: WAN25_NEGATIVE_PROMPT,
+    enable_prompt_expansion: videoPromptExpansionEnabled(),
+    seed,
+  }
 }
 
 const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
@@ -203,21 +241,13 @@ export async function startVideoGeneration(
       "subtle natural movement, gentle camera push-in, preserve identity, no subtitles"
   }
 
-  const predictionInput = {
-    image: imageUrl,
-    prompt: finalMotionPrompt,
-    duration: 5,
-    resolution: videoResolution(),
-    negative_prompt:
-      "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake",
-    enable_prompt_expansion: videoPromptExpansionEnabled(),
-    seed: Math.floor(Math.random() * 1_000_000),
-  }
+  const model = videoModel()
+  const predictionInput = buildPredictionInput({ model, imageUrl, motionPrompt: finalMotionPrompt })
 
   let prediction
   try {
     prediction = await getReplicateClient().predictions.create({
-      model: process.env.APP_V3_VIDEO_MODEL || "wan-video/wan-2.5-i2v-fast",
+      model,
       input: predictionInput,
     })
   } catch (error) {
