@@ -112,7 +112,8 @@ describe("app-v3 video generation service", () => {
           prompt: expect.stringContaining("Face stays steady"),
           negative_prompt: expect.stringContaining("subtitles"),
           duration: 5,
-          resolution: "1080p",
+          resolution: "720p",
+          enable_prompt_expansion: false,
         }),
       })
     )
@@ -198,5 +199,59 @@ describe("app-v3 video generation service", () => {
     const updateSql = (mockSql.mock.calls[1][0] as TemplateStringsArray).join(" ")
     expect(updateSql).toContain("WHERE id =")
     expect(updateSql).toContain("AND user_id =")
+  })
+
+  it("refunds credits once when Replicate marks the prediction failed", async () => {
+    mockReplicateGet.mockResolvedValue({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    const result = await checkVideoGeneration({
+      userId: "user-1",
+      predictionId: "pred_video_123",
+      videoId: 77,
+    })
+
+    expect(result).toEqual({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    expect(mockAddCredits).toHaveBeenCalledWith(
+      "user-1",
+      3,
+      "refund",
+      "Refund for failed app-v3 video prediction: 77"
+    )
+    const updateSql = (mockSql.mock.calls[1][0] as TemplateStringsArray).join(" ")
+    expect(updateSql).toContain("SET status = 'failed'")
+  })
+
+  it("does not refund a video row already marked failed", async () => {
+    mockSql.mockResolvedValueOnce([
+      {
+        id: 77,
+        status: "failed",
+        error_message: "An error occurred while processing your request (E002)",
+      },
+    ])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    const result = await checkVideoGeneration({
+      userId: "user-1",
+      predictionId: "pred_video_123",
+      videoId: 77,
+    })
+
+    expect(result).toEqual({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    expect(mockReplicateGet).not.toHaveBeenCalled()
+    expect(mockAddCredits).not.toHaveBeenCalled()
   })
 })

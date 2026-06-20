@@ -54,6 +54,18 @@ export class VideoGenerationError extends Error {
   }
 }
 
+type VideoResolution = "720p" | "1080p"
+
+function videoResolution(): VideoResolution {
+  return process.env.APP_V3_VIDEO_RESOLUTION === "1080p" ? "1080p" : "720p"
+}
+
+function videoPromptExpansionEnabled(): boolean {
+  const value = process.env.APP_V3_VIDEO_PROMPT_EXPANSION
+  if (value === undefined || value === null || value.trim() === "") return false
+  return ["1", "true", "yes"].includes(value.trim().toLowerCase())
+}
+
 const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
 
 Your job is to write one motion prompt for the selected still image so the generated video stays recognizable, elegant, and physically believable.
@@ -195,10 +207,10 @@ export async function startVideoGeneration(
     image: imageUrl,
     prompt: finalMotionPrompt,
     duration: 5,
-    resolution: "1080p",
+    resolution: videoResolution(),
     negative_prompt:
       "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake",
-    enable_prompt_expansion: true,
+    enable_prompt_expansion: videoPromptExpansionEnabled(),
     seed: Math.floor(Math.random() * 1_000_000),
   }
 
@@ -280,7 +292,7 @@ export async function checkVideoGeneration(input: {
   const sql = getDbClient()
 
   const ownedRows = await sql`
-    SELECT id
+    SELECT id, status, error_message
     FROM generated_videos
     WHERE id = ${videoId}
       AND user_id = ${input.userId}
@@ -289,6 +301,15 @@ export async function checkVideoGeneration(input: {
   `
   if (ownedRows.length === 0) {
     throw new VideoGenerationError("Video not found", 404, { error: "Video not found" })
+  }
+  if (ownedRows[0]?.status === "failed") {
+    return {
+      status: "failed",
+      error:
+        typeof ownedRows[0]?.error_message === "string"
+          ? ownedRows[0].error_message
+          : "Video generation failed",
+    }
   }
 
   let prediction
@@ -305,6 +326,12 @@ export async function checkVideoGeneration(input: {
   if (prediction.status === "failed") {
     const errorMessage =
       typeof prediction.error === "string" ? prediction.error : "Video generation failed"
+    await addCredits(
+      String(input.userId),
+      CREDIT_COSTS.ANIMATION,
+      "refund",
+      `Refund for failed app-v3 video prediction: ${videoId}`
+    ).catch(() => {})
     await sql`
       UPDATE generated_videos
       SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
