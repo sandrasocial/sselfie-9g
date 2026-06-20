@@ -55,7 +55,8 @@ export class VideoGenerationError extends Error {
 }
 
 const DEFAULT_VIDEO_MODEL = "wan-video/wan-2.2-i2v-fast"
-const WAN25_NEGATIVE_PROMPT =
+const VIDEO_DURATION_SECONDS = 5
+const VIDEO_NEGATIVE_PROMPT =
   "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake"
 
 type VideoResolution = "480p" | "720p" | "1080p"
@@ -64,14 +65,34 @@ function videoModel(): string {
   return process.env.APP_V3_VIDEO_MODEL?.trim() || DEFAULT_VIDEO_MODEL
 }
 
+function isWan22(model: string): boolean {
+  return model.includes("wan-2.2")
+}
+
+function isWan27I2V(model: string): boolean {
+  return model.includes("wan-2.7-i2v")
+}
+
+function isSeedance20(model: string): boolean {
+  return model.includes("seedance-2.0")
+}
+
+function isKlingV3Omni(model: string): boolean {
+  return model.includes("kling-v3-omni-video")
+}
+
 function videoResolution(model: string): VideoResolution {
   const requested = process.env.APP_V3_VIDEO_RESOLUTION?.trim()
   if (requested === "480p" || requested === "720p" || requested === "1080p") {
-    if (model.includes("wan-2.2") && requested === "1080p") return "720p"
-    if (!model.includes("wan-2.2") && requested === "480p") return "720p"
+    if (isWan22(model) && requested === "1080p") return "720p"
+    if (!isWan22(model) && requested === "480p") return "720p"
     return requested
   }
   return "720p"
+}
+
+function klingModeForResolution(resolution: VideoResolution): "standard" | "pro" {
+  return resolution === "1080p" ? "pro" : "standard"
 }
 
 function videoPromptExpansionEnabled(): boolean {
@@ -83,7 +104,7 @@ function videoPromptExpansionEnabled(): boolean {
 function buildPredictionInput(input: { model: string; imageUrl: string; motionPrompt: string }) {
   const seed = Math.floor(Math.random() * 1_000_000)
   const resolution = videoResolution(input.model)
-  if (input.model.includes("wan-2.2")) {
+  if (isWan22(input.model)) {
     return {
       image: input.imageUrl,
       prompt: input.motionPrompt,
@@ -93,18 +114,52 @@ function buildPredictionInput(input: { model: string; imageUrl: string; motionPr
     }
   }
 
+  if (isWan27I2V(input.model)) {
+    return {
+      first_frame: input.imageUrl,
+      prompt: input.motionPrompt,
+      duration: VIDEO_DURATION_SECONDS,
+      resolution,
+      negative_prompt: VIDEO_NEGATIVE_PROMPT,
+      enable_prompt_expansion: videoPromptExpansionEnabled(),
+      seed,
+    }
+  }
+
+  if (isSeedance20(input.model)) {
+    return {
+      image: input.imageUrl,
+      prompt: input.motionPrompt,
+      duration: VIDEO_DURATION_SECONDS,
+      resolution,
+      aspect_ratio: "adaptive",
+      generate_audio: false,
+      seed,
+    }
+  }
+
+  if (isKlingV3Omni(input.model)) {
+    return {
+      start_image: input.imageUrl,
+      prompt: input.motionPrompt,
+      mode: klingModeForResolution(resolution),
+      duration: VIDEO_DURATION_SECONDS,
+      generate_audio: false,
+    }
+  }
+
   return {
     image: input.imageUrl,
     prompt: input.motionPrompt,
-    duration: 5,
+    duration: VIDEO_DURATION_SECONDS,
     resolution,
-    negative_prompt: WAN25_NEGATIVE_PROMPT,
+    negative_prompt: VIDEO_NEGATIVE_PROMPT,
     enable_prompt_expansion: videoPromptExpansionEnabled(),
     seed,
   }
 }
 
-const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
+const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for image-to-video generation.
 
 Your job is to write one motion prompt for the selected still image so the generated video stays recognizable, elegant, and physically believable.
 

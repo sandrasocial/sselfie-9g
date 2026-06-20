@@ -157,6 +157,91 @@ describe("app-v3 video generation service", () => {
     )
   })
 
+  it("uses the Wan 2.7 image-to-video input shape behind an explicit model override", async () => {
+    process.env.APP_V3_VIDEO_MODEL = "wan-video/wan-2.7-i2v"
+    process.env.APP_V3_VIDEO_RESOLUTION = "1080p"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+    })
+
+    expect(mockReplicateCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "wan-video/wan-2.7-i2v",
+        input: expect.objectContaining({
+          first_frame: "https://cdn.example.com/source.png",
+          duration: 5,
+          resolution: "1080p",
+          negative_prompt: expect.stringContaining("identity drift"),
+          enable_prompt_expansion: false,
+        }),
+      })
+    )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("image")
+  })
+
+  it("uses the Seedance 2.0 image-to-video input shape behind an explicit model override", async () => {
+    process.env.APP_V3_VIDEO_MODEL = "bytedance/seedance-2.0"
+    process.env.APP_V3_VIDEO_RESOLUTION = "720p"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+    })
+
+    expect(mockReplicateCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "bytedance/seedance-2.0",
+        input: expect.objectContaining({
+          image: "https://cdn.example.com/source.png",
+          duration: 5,
+          resolution: "720p",
+          aspect_ratio: "adaptive",
+          generate_audio: false,
+        }),
+      })
+    )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("negative_prompt")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty(
+      "enable_prompt_expansion"
+    )
+  })
+
+  it("uses the Kling V3 Omni input shape behind an explicit model override", async () => {
+    process.env.APP_V3_VIDEO_MODEL = "kwaivgi/kling-v3-omni-video"
+    process.env.APP_V3_VIDEO_RESOLUTION = "1080p"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+    })
+
+    expect(mockReplicateCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "kwaivgi/kling-v3-omni-video",
+        input: expect.objectContaining({
+          start_image: "https://cdn.example.com/source.png",
+          mode: "pro",
+          duration: 5,
+          generate_audio: false,
+        }),
+      })
+    )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("image")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("resolution")
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("seed")
+  })
+
   it("returns structured low-credit errors before creating a prediction", async () => {
     mockCheckCredits.mockResolvedValue(false)
     mockGetUserCredits.mockResolvedValue(1)
