@@ -98,6 +98,13 @@ describe("Shoot Studio reference payload", () => {
       "Use the uploaded identity reference images as the ONLY source of facial identity."
     )
     expect(payload.prompt).toContain("Identity Priority: 100%")
+    expect(payload.prompt).toContain("FINAL IDENTITY AUTHORITY:")
+    expect(payload.prompt).toContain(
+      "The identity reference images outrank the inspiration image for every human trait."
+    )
+    expect(payload.prompt).toContain(
+      "Do not copy, average, blend, borrow or soften toward the inspiration person's face"
+    )
     expect(payload.prompt).toContain("Use the inspiration image ONLY for:")
     expect(payload.prompt).toContain(
       "Recreate the inspiration image composition as closely as possible"
@@ -114,6 +121,9 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("crop, framing, subject scale")
     expect(payload.prompt).toContain("do not widen it into a full-body studio fashion image")
     expect(payload.prompt).toContain("must visibly belong to that reference world")
+    expect(payload.prompt.lastIndexOf("FINAL IDENTITY AUTHORITY:")).toBeGreaterThan(
+      payload.prompt.lastIndexOf("If the written shot prompt invents or alters visible details")
+    )
   })
 
   it("uses reconstruction for shot one and style-world variation for later photoshoot shots", async () => {
@@ -175,5 +185,6 @@ describe("Shoot Studio reference payload", () => {
     expect(prompt).toContain(
       "If any written prompt conflicts with the inspiration image, the inspiration image wins"
     )
+    expect(prompt.lastIndexOf("FINAL IDENTITY AUTHORITY:")).toBeGreaterThan(conflictRuleIndex)
   })
 })

@@ -60,10 +60,18 @@ function buildImageRoleGuard(selfieCount: number, styleCount: number): string {
 }
 
 function buildIdentityGuard(selfieCount: number): string {
+  const finalIdentityAuthority = [
+    "FINAL IDENTITY AUTHORITY:",
+    "The identity reference images outrank the inspiration image for every human trait.",
+    "If the inspiration image contains a person, treat that person as a pose, wardrobe, lighting and composition placeholder only.",
+    "Do not copy, average, blend, borrow or soften toward the inspiration person's face, eye shape, eye spacing, brow shape, nose, lips, jawline, cheeks, chin, forehead, complexion, age, hairline, hair color, body type, body proportions, facial proportions, makeup structure or beauty retouching.",
+    "Before returning the image, compare the generated subject to the identity references. If any facial feature looks more like the inspiration person than the identity references, correct it back to the identity references while keeping the inspiration style.",
+    "The result must look like the identity-reference person photographed in the inspiration world's styling, not like the inspiration person restyled with the user's general vibe.",
+  ].join(" ")
   if (selfieCount <= 1) {
-    return "Keep the face natural, recognizable and completely true to the first reference image. Do not alter facial features, skin texture or identity."
+    return `${finalIdentityAuthority} Keep the face natural, recognizable and completely true to the first reference image. Do not alter facial features, skin texture or identity.`
   }
-  return `Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
+  return `${finalIdentityAuthority} Keep the face natural, recognizable and completely true to the first ${selfieCount} reference images (the same woman from multiple angles). Do not alter facial features, skin texture or identity.`
 }
 
 function shotNumberFromPrompt(prompt: string): number | null {
@@ -442,9 +450,27 @@ function parsePublishedPromptNumbers(value: unknown): Record<string, string> {
   )
 }
 
+function parseJsonArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value
+  if (typeof value !== "string") return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function parseStringArray(value: unknown): string[] {
+  return parseJsonArray(value).filter(
+    (item): item is string => typeof item === "string" && item.length > 0
+  )
+}
+
 function mapRow(row: any): Shoot {
   const publishedPromptNumbers = parsePublishedPromptNumbers(row.published_prompt_numbers)
-  const rawShots = Array.isArray(row.shots) ? row.shots : []
+  const rawShots = parseJsonArray(row.shots) as ShootShot[]
+  const selfieUrls = parseStringArray(row.selfie_urls)
   return {
     id: row.id,
     title: row.title,
@@ -455,20 +481,15 @@ function mapRow(row: any): Shoot {
       ? new Date(row.vault_published_at).toISOString()
       : null,
     emailDropStatus: row.email_drop_status ?? null,
-    inspirationUrls: Array.isArray(row.inspiration_urls) ? row.inspiration_urls : [],
+    inspirationUrls: parseStringArray(row.inspiration_urls),
     selfieUrl: row.selfie_url,
     // Older shoots predate selfie_urls; fall back to the single selfie_url.
-    selfieUrls:
-      Array.isArray(row.selfie_urls) && row.selfie_urls.length > 0
-        ? row.selfie_urls
-        : row.selfie_url
-          ? [row.selfie_url]
-          : [],
+    selfieUrls: selfieUrls.length > 0 ? selfieUrls : row.selfie_url ? [row.selfie_url] : [],
     shots: rawShots.map((shot: ShootShot) => ({
       ...shot,
       promptNumber: publishedPromptNumbers[shot.id] ?? shot.promptNumber ?? null,
     })),
-    messages: Array.isArray(row.messages) ? row.messages : [],
+    messages: parseJsonArray(row.messages) as ShootMessage[],
     createdAt: new Date(row.created_at).toISOString(),
   }
 }
@@ -553,8 +574,14 @@ export async function createShoot(input: {
 }): Promise<Shoot> {
   const inspirationUrls = input.inspirationUrls.filter(isAllowedUrl).slice(0, 3)
   if (inspirationUrls.length === 0) throw new Error("Add at least one inspiration image")
-  const selfieUrls = input.selfieUrls.filter(isAllowedUrl).slice(0, 4)
+  const requestedSelfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
+  const selfieUrls = requestedSelfieUrls.filter(isAllowedUrl)
   if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
+  if (selfieUrls.length !== requestedSelfieUrls.length) {
+    throw new Error(
+      "One or more selected selfies could not be used. Re-upload or reselect your selfies."
+    )
+  }
 
   let parsed: any = null
   let drafts: Omit<ShootShot, "id" | "status">[] = []
@@ -607,7 +634,7 @@ export async function createShoot(input: {
             ${JSON.stringify(shots)}::jsonb, ${JSON.stringify(messages)}::jsonb)
     RETURNING *
   `) as any[]
-  const shoot = mapRow(rows[0])
+  const shoot = { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
 
   // Draft pass renders medium (~82s, ~$0.06/shot). Finals re-roll high per shot.
   const results = await Promise.allSettled(
