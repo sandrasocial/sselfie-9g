@@ -8,7 +8,6 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
-import { SuiteDoor } from "@/components/marketing/suite-door"
 import { buildPromptVaultFreebieCheckoutHref } from "@/lib/revenue-engine/prompt-vault-freebie-checkout-url"
 import {
   REUSABLE_STARTER,
@@ -373,24 +372,6 @@ export default async function AiPromptsAccessPage({
                             </TrackedLink>
                           ))}
                         </div>
-                        <TrackedLink
-                          href={upgradeHref}
-                          className="ap-shoot-cta"
-                          trackEvent="ai_prompts_prompt_vault_click"
-                          trackProperties={{
-                            source: "ai-prompts",
-                            destination: "checkout-prompt-vault",
-                            utm_campaign: "ai_prompts_to_prompt_vault",
-                            utm_content: `shoot_${card.id}`,
-                            checkout_source: "free_prompt_shoot_cta",
-                            cta_position: "shoot_preview",
-                            prompt_id: card.id,
-                            prompt_title: card.title,
-                            collection_name: collection.name,
-                          }}
-                        >
-                          Unlock all {collection.shotCount} shots · $27
-                        </TrackedLink>
                         <p className="ap-shoot-cta-note">
                           One-time access to the rest of this shoot, the full Vault, and future
                           photoshoots.
@@ -547,23 +528,6 @@ export default async function AiPromptsAccessPage({
           </TrackedLink>
         </div>
       </section>
-
-      {/* 11. The SUITE door — the membership invitation, after she's seen everything free. */}
-      <SuiteDoor
-        eyebrow="When you're ready"
-        title="Ready to become her?"
-        body="Prompts are the manual way. SSELFIE SUITE is your own AI creative director. Her name is Maya. You upload your selfies once, and she creates brand-shoot photos that actually look like you, tells you what to post, and plans your feed. The same you in every post. That's when a feed starts feeling like a brand."
-        bullets={[
-          "Your face, kept. Maya works from your real selfies, not a pasted prompt.",
-          "Photoshoot-level photos every month, without booking a photographer.",
-          "Never wonder what to post. Maya plans it with you.",
-        ]}
-        ctaLabel="See SSELFIE SUITE"
-        href="/join/studio?source=suite_door_free_prompts&utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=suite_door&utm_content=free_access_page"
-        footnote="Monthly membership · cancel anytime · your photos are yours to keep"
-        placement="free_prompts_access"
-        serifClassName={cormorant.className}
-      />
 
       <style>{`
         html,

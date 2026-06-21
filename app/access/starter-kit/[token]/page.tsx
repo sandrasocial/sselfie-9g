@@ -308,26 +308,6 @@ export default async function StarterKitAccessPage({
         </article>
       </section>
 
-      <section className="system-upgrade">
-        <div className="system-upgrade-copy">
-          <p className="eyebrow">Next Step</p>
-          <h2 className={cormorant.className}>Now turn the selfie into the shoot.</h2>
-          <p>
-            The Starter Kit helps you create the source photo. Selfie to Brand Shoot shows you how
-            to turn that one clear selfie into your first AI brand images, choose the results that
-            still look like you, and use them in your content.
-          </p>
-        </div>
-        <div className="system-upgrade-card">
-          <span>$37 credit applied</span>
-          <strong className={cormorant.className}>Complete the System for $160.</strong>
-          <p>You keep the Starter Kit and add the guided brand shoot path.</p>
-          <Link href={systemUpgradeHref} className="primary-cta">
-            Complete the System
-          </Link>
-        </div>
-      </section>
-
       <style>{`
         .starter-kit-page {
           min-height: 100vh;

@@ -50,6 +50,32 @@ describe("anonymous checkout email capture", () => {
     ).toBe(false)
   })
 
+  it("still captures email when a freebie token or skip flag does not provide a recoverable email", () => {
+    expect(
+      shouldShowPromptVaultCheckoutEmailCapture({
+        params: {
+          source: "instagram_manychat",
+          freebie_token: "token_without_email",
+        },
+        hasRecoverableEmail: false,
+        hasAuthUser: false,
+        hasFreebieToken: true,
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldShowPromptVaultCheckoutEmailCapture({
+        params: {
+          source: "instagram_manychat",
+          skip_email_capture: "1",
+        },
+        hasRecoverableEmail: false,
+        hasAuthUser: false,
+        hasFreebieToken: false,
+      }),
+    ).toBe(true)
+  })
+
   it("preserves attribution through the capture form and skip link", () => {
     const params = {
       source: "instagram_manychat",

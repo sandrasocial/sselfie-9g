@@ -26,7 +26,7 @@ import { generatePasswordSetupLinkForPurchase, markRevenueEnginePurchase, markEm
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { completeReferralForPurchase, isReferralPurchaseEligible, isReferralSignupEligible, trackReferralSignup } from "@/lib/referrals/service"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
-import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
+import { ensureRevenueEngineSchema, persistCheckoutAttributionContact } from "@/lib/revenue-engine/checkout-attribution"
 import { markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 
@@ -391,6 +391,22 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event): Promi
           session.customer_details?.email ||
           session.customer_email ||
           session.metadata?.customer_email
+        if (customerEmail) {
+          try {
+            await persistCheckoutAttributionContact({
+              sessionId: session.id,
+              userEmail: customerEmail,
+              stripeCustomerId:
+                typeof session.customer === "string" ? session.customer : session.customer?.id || null,
+              stripeSubscriptionId: getCheckoutSessionSubscriptionId(session),
+            })
+          } catch (contactAttributionError: any) {
+            console.error(
+              `[v0] Failed to persist checkout attribution contact for ${session.id}:`,
+              contactAttributionError.message,
+            )
+          }
+        }
         if (customerEmail) {
           try {
             const firstName = getFirstNameForEmail({

@@ -56,6 +56,7 @@ export function PromptVaultCheckoutEmailCapture({
   visuals = DEFAULT_VISUALS,
   prefillEmail = "",
   proceedOnSubmit = false,
+  allowSkip = false,
   orderBump,
 }: {
   params: CheckoutEmailCaptureParams
@@ -74,6 +75,7 @@ export function PromptVaultCheckoutEmailCapture({
   visuals?: CheckoutEmailCaptureVisual[]
   prefillEmail?: string
   proceedOnSubmit?: boolean
+  allowSkip?: boolean
   orderBump?: CheckoutOrderBump
 }) {
   const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params).filter((item) => {
@@ -81,7 +83,7 @@ export function PromptVaultCheckoutEmailCapture({
     if (proceedOnSubmit && item.name === "skip_email_capture") return false
     return true
   })
-  const skipHref = buildSkipCheckoutEmailCaptureHref(actionPath, params)
+  const skipHref = allowSkip ? buildSkipCheckoutEmailCaptureHref(actionPath, params) : null
   const heroVisual = visuals[0] || DEFAULT_VISUALS[0]
   const supportingVisuals = (visuals.length > 1 ? visuals.slice(1, 3) : DEFAULT_VISUALS.slice(1, 3))
   const tierInputId = `${inputId}-tier`
@@ -168,9 +170,11 @@ export function PromptVaultCheckoutEmailCapture({
               </button>
             </form>
 
-            <a href={skipHref} className="pv-skip">
-              {skipLabel}
-            </a>
+            {skipHref ? (
+              <a href={skipHref} className="pv-skip">
+                {skipLabel}
+              </a>
+            ) : null}
           </div>
         </div>
       </section>

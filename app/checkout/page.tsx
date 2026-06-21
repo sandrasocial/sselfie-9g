@@ -46,6 +46,17 @@ function checkoutAttributionProperties(searchParams: URLSearchParams) {
   }, {})
 }
 
+function getPaymentEntryEvent(productType: string): string {
+  if (productType === "prompt_vault") return "prompt_vault_checkout_payment_entry_shown"
+  if (productType === "starter_kit") return "starter_kit_checkout_payment_entry_shown"
+  if (productType === "selfie_to_brand_shoot_system") return "selfie_to_brand_shoot_checkout_payment_entry_shown"
+  if (productType === "presets_single" || productType === "presets_bundle") return "presets_checkout_payment_entry_shown"
+  if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+    return "studio_membership_checkout_payment_entry_shown"
+  }
+  return "checkout_payment_entry_shown"
+}
+
 const CHECKOUT_COPY: Record<
   string,
   {
@@ -188,6 +199,18 @@ function CheckoutContent() {
       ...checkoutAttributionProperties(searchParams),
       checkout_session_id: secret.split("_secret_")[0] || null,
     })
+    import("@/lib/analytics/client")
+      .then(({ trackAnalyticsEvent }) =>
+        trackAnalyticsEvent({
+          event: getPaymentEntryEvent(productType),
+          properties: {
+            product_type: productType,
+            checkout_session_id: secret.split("_secret_")[0] || null,
+            ...checkoutAttributionProperties(searchParams),
+          },
+        }),
+      )
+      .catch(() => {})
     if (productType === "prompt_vault") {
       import("@/lib/analytics/client")
         .then(({ trackAnalyticsEvent }) =>

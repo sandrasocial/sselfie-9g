@@ -57,8 +57,7 @@ export function shouldShowPromptVaultCheckoutEmailCapture(input: {
   hasAuthUser: boolean
   hasFreebieToken: boolean
 }): boolean {
-  if (input.hasRecoverableEmail || input.hasAuthUser || input.hasFreebieToken) return false
-  if (input.params.skip_email_capture === "1") return false
+  if (input.hasRecoverableEmail || input.hasAuthUser) return false
   return true
 }
 

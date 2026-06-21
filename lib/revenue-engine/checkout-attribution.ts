@@ -102,6 +102,13 @@ export type CompletedCheckoutAttribution = {
   purchasedAt?: Date | string | null
 }
 
+export type CheckoutAttributionContactUpdate = {
+  sessionId: string
+  userEmail?: string | null
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+}
+
 let ensured = false
 
 function safeString(value: unknown, maxLength: number): string | null {
@@ -523,4 +530,25 @@ export async function markCheckoutAttributionCompleted(update: CompletedCheckout
          OR (stripe_subscription_id IS NULL AND user_id = ${update.userId || ""} AND funnel_stage = 'studio_membership')
     `
   }
+}
+
+export async function persistCheckoutAttributionContact(
+  update: CheckoutAttributionContactUpdate,
+): Promise<void> {
+  const userEmail = safeString(update.userEmail, 320)
+  if (!update.sessionId || !userEmail) return
+
+  await ensureRevenueEngineSchema()
+
+  const sql = getDb()
+
+  await sql`
+    UPDATE checkout_attribution
+    SET
+      user_email = COALESCE(user_email, ${userEmail}),
+      stripe_customer_id = COALESCE(stripe_customer_id, ${update.stripeCustomerId || null}),
+      stripe_subscription_id = COALESCE(stripe_subscription_id, ${update.stripeSubscriptionId || null}),
+      updated_at = NOW()
+    WHERE session_id = ${update.sessionId}
+  `
 }
