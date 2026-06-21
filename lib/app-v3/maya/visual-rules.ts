@@ -24,6 +24,17 @@ export const SSELFIE_PHOTO_STYLE_PROMPT = [
   "The image should feel like a real on-location shoot from the SSELFIE Vault, not studio stock.",
 ].join(" ")
 
+// Shared lighting/integration DNA (SHOOT-PARITY-01). Both admin Shoot Studio and suite Maya
+// photo/photoshoot renders use this so the subject is lit BY the scene and color-matched to the
+// background, instead of carrying the selfie's own studio lighting and reading as a composite.
+export const SSELFIE_ENVIRONMENT_INTEGRATION =
+  "Lighting and integration: light the person with the scene's own light, matching the location's " +
+  "light direction, color temperature, intensity, and ambient color bounce. Match the background's " +
+  "exposure, contrast, and color grade so the subject is color-matched to the environment, with " +
+  "natural contact shadows and reflected light from the setting. The person must look genuinely " +
+  "photographed inside this location, fully integrated into it, never brightly studio-lit on top " +
+  "of the background, never a cut-out or composite pasted into the scene."
+
 export const SSELFIE_INSPIRATION_CLOSE_RECREATE = [
   "TASK TYPE: IMAGE RECONSTRUCTION.",
   "The inspiration image is the visual blueprint, not a loose mood board and not a prose suggestion.",

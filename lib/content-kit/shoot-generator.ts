@@ -18,9 +18,11 @@ import {
   voiceBlock,
 } from "@/lib/content/grounding"
 import {
+  SSELFIE_ENVIRONMENT_INTEGRATION,
   SSELFIE_INSPIRATION_CLOSE_RECREATE,
   SSELFIE_INSPIRATION_SET_VARIATION,
 } from "@/lib/app-v3/maya/visual-rules"
+import { AVOID_LIST } from "@/lib/app-v3/maya/ingredients"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -83,16 +85,8 @@ function extractShotRenderBrief(prompt: string, labels: readonly string[]): stri
     .join("\n")
 }
 
-// Fixes the "copy-paste into a location" look: gpt-image-2 otherwise carries the selfie's own
-// studio lighting and exposure onto the subject, leaving them brighter than and disconnected from
-// the scene. Force the subject to be lit BY the environment and color-matched to the background.
-const SSELFIE_ENVIRONMENT_INTEGRATION =
-  "Lighting and integration: light the person with the scene's own light, matching the location's " +
-  "light direction, color temperature, intensity, and ambient color bounce. Match the background's " +
-  "exposure, contrast, and color grade so the subject is color-matched to the environment, with " +
-  "natural contact shadows and reflected light from the setting. The person must look genuinely " +
-  "photographed inside this location, fully integrated into it, never brightly studio-lit on top " +
-  "of the background, never a cut-out or composite pasted into the scene."
+// SSELFIE_ENVIRONMENT_INTEGRATION now lives in lib/app-v3/maya/visual-rules.ts so admin and suite
+// share one source of truth (SHOOT-PARITY-01).
 
 // Mirrors suite Maya's CANDID_EDITORIAL: the identity references are for likeness only, never a
 // pose/expression to copy. Stops close-ups from looking like a stiff duplicate of the selfie.
@@ -175,6 +169,7 @@ function buildShotRenderPrompt(input: {
     SSELFIE_ENVIRONMENT_INTEGRATION,
     SSELFIE_CANDID_REALISM,
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
+    AVOID_LIST,
     input.safetyRetry
       ? "Safety retry: keep the styling fully clothed, tasteful, non-sexual, and editorial while preserving the same inspiration mood."
       : "",

@@ -38,6 +38,7 @@ import {
   type VaultStyleReference,
 } from "@/lib/app-v3/maya/creative-plan"
 import {
+  SSELFIE_ENVIRONMENT_INTEGRATION,
   SSELFIE_GRAPHIC_STYLE_PROMPT,
   SSELFIE_NEUTRAL_PALETTE,
   SSELFIE_PHOTO_STYLE_PROMPT,
@@ -476,6 +477,7 @@ function compilePhotoPrompt(
     gradeLine(opts),
     SSELFIE_PHOTO_STYLE_PROMPT,
     `Lighting: ${lighting}.`,
+    SSELFIE_ENVIRONMENT_INTEGRATION,
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     quality,
