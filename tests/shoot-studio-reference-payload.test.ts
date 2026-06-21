@@ -100,6 +100,12 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain(
       "Do not copy, average, blend, or borrow their face, age, body, hair, or skin."
     )
+    expect(payload.prompt).toContain(
+      "Identity lock: the uploaded selfies are the only source for the person's face and features in every shot."
+    )
+    expect(payload.prompt).toContain(
+      "without copying any selfie pose, selfie crop, selfie expression, or selfie lighting"
+    )
     expect(payload.prompt).toContain("Shot role: lifestyle/action")
     expect(payload.prompt).toContain(
       "Shot-specific direction from the plan: marble cafe. walking toward camera with relaxed hands."
@@ -114,7 +120,6 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).not.toContain("Image quality:")
     expect(payload.prompt).not.toContain("WRITTEN SHOT PROMPT")
     expect(payload.prompt).not.toContain("FINAL RENDER AUTHORITY")
-    expect(payload.prompt).not.toContain("FINAL IDENTITY AUTHORITY")
     expect(payload.prompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
     expect(payload.prompt).not.toContain("TASK TYPE: STYLE-WORLD VARIATION")
     expect(payload.prompt).not.toContain("mandatory visual reference")
@@ -146,8 +151,13 @@ describe("Shoot Studio reference payload", () => {
     const heroPrompt = mocks.edit.mock.calls[0][0].prompt
     const variationPrompt = mocks.edit.mock.calls[1][0].prompt
 
+    expect(heroPrompt).toContain("The inspiration image is the blueprint.")
+    expect(heroPrompt).toContain("Recreate the inspiration image as closely as possible.")
     expect(heroPrompt).toContain(
-      "For this first image, recreate the original inspiration image's pose, angle, crop, composition"
+      "Keep: crop, composition, framing, pose, lighting, shadow pattern, wardrobe, expression, camera distance, and lens perspective."
+    )
+    expect(heroPrompt).toContain(
+      "Only replace the person with the identity from the uploaded selfies."
     )
     expect(variationPrompt).toContain(
       "For this additional set image, keep the same real photoshoot world from the original inspiration reference"
@@ -194,6 +204,12 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("Use input image 2 as ORIGINAL INSPIRATION REFERENCES ONLY")
     expect(payload.prompt).toContain(
       "Use input image 3 as GENERATED SET CONTINUITY REFERENCES ONLY"
+    )
+    expect(payload.prompt).toContain(
+      "If a generated continuity image shows a face, ignore that face, facial structure, skin, hair, age, and body features."
+    )
+    expect(payload.prompt).toContain(
+      "Do not inherit facial features from the inspiration image or generated continuity images."
     )
     expect(payload.prompt).toContain(
       "keep the same real photoshoot world from the original inspiration and generated continuity reference"

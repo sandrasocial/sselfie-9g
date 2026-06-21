@@ -75,14 +75,15 @@ function buildShotRenderPrompt(input: {
     `Use ${identityRange} as IDENTITY REFERENCES ONLY. Preserve the person's recognizable face, facial structure, age, skin texture, skin tone, body proportions, hair color, and overall look from these identity images.`,
     `Use ${styleRange} as ORIGINAL INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
     continuityCount > 0
-      ? `Use ${continuityRange} as GENERATED SET CONTINUITY REFERENCES ONLY. They show the already-approved visual world for this shoot: outfit family, hair/makeup finish, lighting, palette, image realism, location mood, and editorial treatment. Do not use them as the identity source.`
+      ? `Use ${continuityRange} as GENERATED SET CONTINUITY REFERENCES ONLY. They show the already-approved visual world for this shoot: outfit family, hair/makeup finish, lighting, palette, image realism, location mood, and editorial treatment. Do not use them as the identity source. If a generated continuity image shows a face, ignore that face, facial structure, skin, hair, age, and body features.`
       : "",
     input.styleCount > 1
       ? "The first inspiration image is the primary visual source. Later inspiration images are secondary support only."
       : "",
     "If the inspiration image contains a person, treat that person only as a placeholder for pose, styling, wardrobe, lighting, and composition. Do not copy, average, blend, or borrow their face, age, body, hair, or skin.",
+    "Identity lock: the uploaded selfies are the only source for the person's face and features in every shot. Keep the same recognizable person across the full set without copying any selfie pose, selfie crop, selfie expression, or selfie lighting unless the shot direction asks for it. Do not inherit facial features from the inspiration image or generated continuity images.",
     shotNumber === null || shotNumber <= 1
-      ? "For this first image, recreate the original inspiration image's pose, angle, crop, composition, camera distance, lighting direction, shadow pattern, wardrobe family, and styling as closely as possible while replacing the person with the identity-reference person."
+      ? "The inspiration image is the blueprint. Recreate the inspiration image as closely as possible. Keep: crop, composition, framing, pose, lighting, shadow pattern, wardrobe, expression, camera distance, and lens perspective. Only replace the person with the identity from the uploaded selfies."
       : continuityCount > 0
         ? "For this additional set image, keep the same real photoshoot world from the original inspiration and generated continuity reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot."
         : "For this additional set image, keep the same real photoshoot world from the original inspiration reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot.",
