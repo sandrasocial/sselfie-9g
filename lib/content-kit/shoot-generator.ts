@@ -28,7 +28,11 @@ import {
 // Same flagship pipeline as app-v3 (app/api/app-v3/maya/generate/route.ts).
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const PORTRAIT_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+// True 9:16 at the highest non-experimental resolution gpt-image-2 supports in the edit endpoint:
+// 1440x2560 (both divisible by 16, 16:9 portrait, ~3.7MP). The previous 1024x1536 was 2:3, not
+// 9:16. Kept just under the >2560px "experimental" tier so renders stay reliable inside the route's
+// 300s budget. Own env var so this stays independent of suite Maya's APP_V3_PORTRAIT_SIZE.
+const PORTRAIT_SIZE = process.env.SHOOT_STUDIO_PORTRAIT_SIZE || "1440x2560"
 const DEFAULT_SHOTS_PER_SHOOT = 6
 const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "establishing-full-body",
