@@ -79,6 +79,25 @@ function extractShotRenderBrief(prompt: string, labels: readonly string[]): stri
     .join("\n")
 }
 
+// Fixes the "copy-paste into a location" look: gpt-image-2 otherwise carries the selfie's own
+// studio lighting and exposure onto the subject, leaving them brighter than and disconnected from
+// the scene. Force the subject to be lit BY the environment and color-matched to the background.
+const SSELFIE_ENVIRONMENT_INTEGRATION =
+  "Lighting and integration: light the person with the scene's own light, matching the location's " +
+  "light direction, color temperature, intensity, and ambient color bounce. Match the background's " +
+  "exposure, contrast, and color grade so the subject is color-matched to the environment, with " +
+  "natural contact shadows and reflected light from the setting. The person must look genuinely " +
+  "photographed inside this location, fully integrated into it, never brightly studio-lit on top " +
+  "of the background, never a cut-out or composite pasted into the scene."
+
+// Mirrors suite Maya's CANDID_EDITORIAL: the identity references are for likeness only, never a
+// pose/expression to copy. Stops close-ups from looking like a stiff duplicate of the selfie.
+const SSELFIE_CANDID_REALISM =
+  "Keep the pose and expression candid and caught-in-the-moment, natural to this environment, " +
+  "relaxed and unposed, never a stiff studio pose, never a forced smile at the camera, and never a " +
+  "copy of the selfies' pose, head angle, or expression. When recreating the inspiration image, " +
+  "match its pose and energy but render it as a believable natural moment, not a rigid copy."
+
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
 // attach selfie + inspiration together, so the image roles must be explicit or the model
@@ -134,7 +153,7 @@ function buildShotRenderPrompt(input: {
       "image  of",
       "one image of"
     ),
-    `Use ${identityRange} as IDENTITY REFERENCES ONLY. Preserve the person's recognizable face, facial structure, age, skin texture, skin tone, body proportions, hair color, and overall look from these identity images.`,
+    `Use ${identityRange} as IDENTITY REFERENCES ONLY. Take from them only the person's facial structure, face shape, skin tone, natural skin texture, age, hair color, body proportions, and recognizable likeness. Do NOT copy the selfies' lighting, white balance, exposure, background, framing, head angle, pose, or expression. The identity references define the person; the scene, lighting, pose, and mood are defined below.`,
     `Use ${styleRange} as ORIGINAL INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
     continuityCount > 0
       ? `Use ${continuityRange} as GENERATED SET CONTINUITY REFERENCES ONLY. They show the already-approved visual world for this shoot: outfit family, hair/makeup finish, lighting, palette, image realism, location mood, and editorial treatment. Do not use them as the identity source. If a generated continuity image shows a face, ignore that face, facial structure, skin, hair, age, and body features.`
@@ -149,6 +168,8 @@ function buildShotRenderPrompt(input: {
       : "",
     roleInstruction,
     shotBriefInstruction,
+    SSELFIE_ENVIRONMENT_INTEGRATION,
+    SSELFIE_CANDID_REALISM,
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
     input.safetyRetry
       ? "Safety retry: keep the styling fully clothed, tasteful, non-sexual, and editorial while preserving the same inspiration mood."
