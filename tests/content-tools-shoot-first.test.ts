@@ -65,6 +65,13 @@ describe("Content tools shoot-first workflow", () => {
 
     // Types carry the new composited controls.
     expect(types).toContain('textZone?: "top" | "bottom"')
+
+    // STORY-OVERLAY-02: a vision pass picks placement (zone/align/crop) per photo; the renderer obeys.
+    expect(storyGenerator).toContain("callContentKitVision")
+    expect(storyGenerator).toContain("analyzeBackgroundForOverlay")
+    expect(renderer).toContain("slide.objectPosition")
+    expect(renderer).toContain("slide.textAlign")
+    expect(types).toContain("objectPosition?: string")
   })
 
   it("keeps member Maya carousels photoshoot-first by default", () => {

@@ -1,7 +1,7 @@
 import "server-only"
 
 import { sql } from "@/lib/db/client"
-import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
+import { callContentKitLlm, callContentKitVision, extractJsonArray } from "@/lib/content-kit/llm"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
@@ -107,12 +107,77 @@ function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
   }))
 }
 
-// STORY-OVERLAY-01: deterministic compositing. We do NOT send story slides through gpt-image-2
-// anymore — that regenerated the photo (breaking Sandra's "preserve the photo exactly" rule) and
-// garbled text. Each slide keeps the admin-selected background untouched as its imageUrl and is
-// flagged "composited" so the local renderer draws her real fonts + accents over the real photo.
-// Screenshot/proof images attach to proof-style slides as overlayAssets (kept pixel-perfect too).
-function compositeStorySlides({
+// STORY-OVERLAY-02: a vision pass reads each background and decides where the text should sit so it
+// lands in the photo's clean negative space (away from the face), plus a smart-crop focal point and
+// how much scrim it needs. The deterministic renderer then obeys these fields — the LLM proposes,
+// the renderer (and later, Sandra's editor) disposes. We never regenerate the photo.
+type OverlayPlacement = {
+  textZone: "top" | "bottom"
+  textAlign: "left" | "center" | "right"
+  objectPosition: string
+  scrimStrength: "light" | "medium" | "strong"
+}
+
+const DEFAULT_PLACEMENT: OverlayPlacement = {
+  textZone: "bottom",
+  textAlign: "left",
+  objectPosition: "50% 50%",
+  scrimStrength: "medium",
+}
+
+const OVERLAY_VISION_SYSTEM = "You are a precise visual layout analyst. Return only valid JSON."
+
+const OVERLAY_VISION_PROMPT = `You are placing a text overlay on a vertical 1080x1920 (9:16) Instagram Story that uses this photo as the full-bleed background. The text must sit in clean empty space and must NEVER cover the person's face, eyes, hands, or the main subject.
+
+Return ONLY this JSON, no commentary:
+{
+  "textZone": "top" or "bottom" (the empty band away from the face/subject where the text should go),
+  "textAlign": "left" | "center" | "right" (the side with the most clean negative space),
+  "focalX": 0-100 (horizontal percent of the subject's face/centre, for cropping),
+  "focalY": 0-100 (vertical percent of the subject's face/centre),
+  "scrim": "light" | "medium" | "strong" (how much dark overlay the text needs to stay readable: light if the text area is already dark and simple, strong if it is bright or busy)
+}
+
+Rules: textZone is the band WITHOUT the face. If the subject fills the frame, pick the side with the least important detail. Prefer "top" for wide or landscape shots with open sky. Never put text over the face.`
+
+function clampPct(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(n)) return 50
+  return Math.max(0, Math.min(100, Math.round(n)))
+}
+
+function parsePlacement(raw: string): OverlayPlacement {
+  const start = raw.indexOf("{")
+  const end = raw.lastIndexOf("}")
+  if (start === -1 || end === -1) return DEFAULT_PLACEMENT
+  let obj: any
+  try {
+    obj = JSON.parse(raw.slice(start, end + 1))
+  } catch {
+    return DEFAULT_PLACEMENT
+  }
+  return {
+    textZone: obj?.textZone === "top" ? "top" : "bottom",
+    textAlign: obj?.textAlign === "center" ? "center" : obj?.textAlign === "right" ? "right" : "left",
+    objectPosition: `${clampPct(obj?.focalX)}% ${clampPct(obj?.focalY)}%`,
+    scrimStrength: obj?.scrim === "light" || obj?.scrim === "strong" ? obj.scrim : "medium",
+  }
+}
+
+function analyzeBackgroundForOverlay(
+  url: string,
+  cache: Map<string, Promise<OverlayPlacement>>
+): Promise<OverlayPlacement> {
+  const cached = cache.get(url)
+  if (cached) return cached
+  const promise = callContentKitVision(OVERLAY_VISION_PROMPT, [url], OVERLAY_VISION_SYSTEM)
+    .then(parsePlacement)
+    .catch(() => DEFAULT_PLACEMENT)
+  cache.set(url, promise)
+  return promise
+}
+
+async function compositeStorySlides({
   slides,
   backgroundUrls,
   overlayUrls,
@@ -120,11 +185,13 @@ function compositeStorySlides({
   slides: StorySlide[]
   backgroundUrls: string[]
   overlayUrls: string[]
-}): StorySlide[] {
+}): Promise<StorySlide[]> {
   const backgrounds = backgroundUrls.filter(isAllowedImageUrl)
   const proof = overlayUrls.filter(isAllowedImageUrl)
+
+  // First pass (sync, deterministic order): resolve the background + any proof image per slide.
   let proofCursor = 0
-  return slides.map((slide, index) => {
+  const base = slides.map((slide, index) => {
     // Respect the admin-selected order; cycle if there are fewer backgrounds than slides.
     const imageUrl =
       backgrounds.length > 0 ? backgrounds[index % backgrounds.length] : slide.imageUrl
@@ -133,13 +200,29 @@ function compositeStorySlides({
       wantsProof && proofCursor < proof.length
         ? [{ url: proof[proofCursor++], placement: "middle-right" as const }]
         : undefined
-    return {
-      ...slide,
-      imageUrl,
-      headlineRender: "composited" as const,
-      overlayAssets,
-    }
+    return { slide, imageUrl, overlayAssets }
   })
+
+  // Second pass (parallel, cached per URL): vision placement. CTA stays centered + bottom (the
+  // keyword is the hero); other slides follow the vision pass. Falls back to safe defaults on error.
+  const placementCache = new Map<string, Promise<OverlayPlacement>>()
+  return Promise.all(
+    base.map(async ({ slide, imageUrl, overlayAssets }) => {
+      const isCta = slide.role === "cta"
+      const placement =
+        imageUrl && !isCta ? await analyzeBackgroundForOverlay(imageUrl, placementCache) : DEFAULT_PLACEMENT
+      return {
+        ...slide,
+        imageUrl,
+        headlineRender: "composited" as const,
+        textZone: isCta ? ("bottom" as const) : placement.textZone,
+        textAlign: isCta ? ("center" as const) : placement.textAlign,
+        objectPosition: placement.objectPosition,
+        scrimStrength: placement.scrimStrength,
+        overlayAssets,
+      }
+    })
+  )
 }
 
 export async function generateStorySequence(input: {
@@ -195,7 +278,7 @@ Return ONLY a JSON array of slides, no commentary:
   const fallbackSelfies = imageUrls.length
     ? []
     : await listAdminSelfies().catch(() => [] as string[])
-  const slides = compositeStorySlides({
+  const slides = await compositeStorySlides({
     slides: sanitizeSlides(raw.slice(0, 8)),
     backgroundUrls: [...imageUrls, ...fallbackSelfies],
     overlayUrls,

@@ -96,6 +96,13 @@ export type StorySlide = {
   textZone?: "top" | "bottom"
   /** STORY-OVERLAY-01: draw a subtle semi-opaque panel behind the text when the photo is busy. */
   textPanel?: boolean
+  /** STORY-OVERLAY-02: horizontal side the text sits on (LLM-picked from the photo's negative space). */
+  textAlign?: "left" | "center" | "right"
+  /** STORY-OVERLAY-02: CSS object-position for the 9:16 cover crop, e.g. "50% 30%", so the subject
+   * stays framed instead of a blind center crop. */
+  objectPosition?: string
+  /** STORY-OVERLAY-02: how much scrim the text needs to stay readable on this photo. */
+  scrimStrength?: "light" | "medium" | "strong"
   /** Legacy/fallback screenshots or proof images for pre-CAROUSEL-03 story decks. */
   overlayAssets?: ContentOverlayAsset[]
 }

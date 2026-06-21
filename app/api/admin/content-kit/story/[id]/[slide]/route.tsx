@@ -194,10 +194,19 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
   }
 
   const zone: "top" | "bottom" = slide.textZone === "top" ? "top" : "bottom"
+  // Horizontal placement from the vision pass (default left); CTA stays centered.
+  const align = isCta
+    ? "center"
+    : slide.textAlign === "center"
+      ? "center"
+      : slide.textAlign === "right"
+        ? "flex-end"
+        : "flex-start"
   // Zone-local scrim: darken ONLY the half the text sits in. The center band (where the face
-  // usually is) stays at 0 alpha, so we never put a heavy gradient over her face. textPanel
-  // deepens that scrim when the photo behind the text is busy.
-  const panelStrength = slide.textPanel ? 0.9 : 0.74
+  // usually is) stays at 0 alpha, so we never put a heavy gradient over her face. The vision pass
+  // picks the strength per photo; textPanel forces the strongest scrim for a busy background.
+  const scrimByStrength = slide.scrimStrength === "light" ? 0.5 : slide.scrimStrength === "strong" ? 0.9 : 0.74
+  const panelStrength = slide.textPanel ? 0.9 : scrimByStrength
   const zoneScrim =
     zone === "bottom"
       ? `linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 46%, rgba(10,10,10,${panelStrength}) 100%)`
@@ -223,7 +232,13 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           src={slide.imageUrl}
           width={WIDTH}
           height={HEIGHT}
-          style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            objectFit: "cover",
+            objectPosition: slide.objectPosition || "50% 50%",
+          }}
         />
       )}
       {hasImage && (
@@ -292,7 +307,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           ...(zone === "bottom" ? { bottom: TEXT_BOTTOM } : { top: TEXT_TOP }),
           display: "flex",
           flexDirection: "column",
-          alignItems: isCta ? "center" : "flex-start",
+          alignItems: align,
         }}
       >
         {!isCta && (
