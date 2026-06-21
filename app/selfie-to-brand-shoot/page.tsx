@@ -63,6 +63,37 @@ const forYouIf = [
   "You want to look like the woman you are becoming online.",
 ]
 
+const systemValue = [
+  "Full 5-module guided system",
+  "Prompt Vault included",
+  "Visual Consistency Code worksheet",
+  "Maya Prompt Concierge workflow",
+  "Keep / Fix / Delete image filter",
+  "7-day content-use plan",
+]
+
+const systemFaq = [
+  {
+    question: "What is Selfie to Brand Shoot?",
+    answer:
+      "It is the guided system that shows you how to turn one clear selfie into your first small AI brand shoot, then use the images in your content.",
+  },
+  {
+    question: "Will the images still feel like me?",
+    answer:
+      "That is the point. You learn how to choose images that still look recognizable, fit your visual world, and feel believable enough to post.",
+  },
+  {
+    question: "Do I need a photographer or studio?",
+    answer: "No. You start with one clear selfie, your phone, and a simple visual direction.",
+  },
+  {
+    question: "What if I already bought the Vault or Starter Kit?",
+    answer:
+      "Your $27 Vault purchase or $37 Starter Kit purchase can be credited toward the System when you come from your buyer access page.",
+  },
+]
+
 const transformationProof = [
   {
     label: "Source selfie",
@@ -184,14 +215,20 @@ export default async function SelfieToBrandShootLandingPage({
             first AI brand images, choose the ones that still look like you, and turn them into
             content you can actually post.
           </p>
+          <p className="sbs-price-line">
+            The full System. $197 one-time. Prompt Vault included.
+          </p>
           <div className="sbs-actions">
             <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
-              Start The System
+              Start The System · $197
             </Link>
             <Link href="/prompt-vault" className="sbs-secondary">
               View The Vault
             </Link>
           </div>
+          <p className="sbs-risk-line">
+            One payment. Instant access. Reply to me and a real person, usually me, helps.
+          </p>
         </div>
         <div className="sbs-sales-board" aria-label="SSELFIE visual identity previews">
           {featured.slice(0, 3).map((collection, index) => (
@@ -249,6 +286,22 @@ export default async function SelfieToBrandShootLandingPage({
           across your Instagram, website, offers, stories, and everyday content. The full Prompt
           Vault is included, but this is not just a folder of prompts.
         </p>
+      </section>
+
+      <section className="sbs-value-stack">
+        <div>
+          <p className="sbs-label">WHAT IS INCLUDED</p>
+          <h2 className={cormorant.className}>The guided path, not just another prompt folder.</h2>
+          <p>
+            If you bought the Vault or Starter Kit, that purchase can come off when you enter from
+            your buyer access page.
+          </p>
+        </div>
+        <div className="sbs-value-list">
+          {systemValue.map(item => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
       </section>
 
       <section className="sbs-sales-deliverables">
@@ -375,8 +428,26 @@ export default async function SelfieToBrandShootLandingPage({
             your Vault access page.
           </p>
           <Link href="/checkout/selfie-to-brand-shoot" className="sbs-primary">
-            Enter Selfie To Brand Shoot
+            Enter Selfie To Brand Shoot · $197
           </Link>
+          <p className="sbs-risk-line">
+            One payment. Instant access. Reply to me and a real person, usually me, helps.
+          </p>
+        </div>
+      </section>
+
+      <section className="sbs-faq">
+        <div>
+          <p className="sbs-label">A FEW QUICK ANSWERS</p>
+          <h2 className={cormorant.className}>Before you start the System.</h2>
+        </div>
+        <div className="sbs-faq-list">
+          {systemFaq.map(item => (
+            <article key={item.question}>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -450,6 +521,19 @@ export default async function SelfieToBrandShootLandingPage({
           gap: 12px;
           margin-top: 28px;
         }
+        .sbs-price-line {
+          margin: 24px 0 0;
+          color: #0D0E10;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+        .sbs-risk-line {
+          margin: 12px 0 0;
+          max-width: 430px;
+          color: #818283;
+          font-size: 12px;
+          line-height: 1.7;
+        }
         .sbs-primary,
         .sbs-secondary {
           min-height: 48px;
@@ -508,9 +592,11 @@ export default async function SelfieToBrandShootLandingPage({
         .sbs-sales-learn,
         .sbs-sales-for-you,
         .sbs-proof-strip,
+        .sbs-value-stack,
         .sbs-world-proof,
         .sbs-system-preview,
-        .sbs-sales-proof {
+        .sbs-sales-proof,
+        .sbs-faq {
           max-width: 1180px;
           margin: 0 auto;
           padding: clamp(46px, 7vw, 84px) clamp(20px, 5vw, 64px);
@@ -524,13 +610,31 @@ export default async function SelfieToBrandShootLandingPage({
         }
         .sbs-sales-learn,
         .sbs-proof-strip,
+        .sbs-value-stack,
         .sbs-world-proof,
         .sbs-system-preview,
-        .sbs-sales-for-you {
+        .sbs-sales-for-you,
+        .sbs-faq {
           display: grid;
           grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
           gap: clamp(28px, 5vw, 68px);
           align-items: start;
+        }
+        .sbs-value-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-value-list p {
+          max-width: none;
+          margin: 0;
+          padding: 20px;
+          background: #FFFFFF;
+          color: #0D0E10;
+          font-size: 14px;
+          line-height: 1.6;
         }
         .sbs-proof-intro {
           position: sticky;
@@ -741,15 +845,40 @@ export default async function SelfieToBrandShootLandingPage({
           background: #FFFFFF;
           overflow: hidden;
         }
+        .sbs-faq-list {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-faq-list article {
+          padding: 24px;
+          background: #FFFFFF;
+        }
+        .sbs-faq-list h3 {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+        .sbs-faq-list p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
+        }
         @media (max-width: 860px) {
           .sbs-sales-hero,
           .sbs-sales-strip,
           .sbs-sales-learn,
           .sbs-proof-strip,
+          .sbs-value-stack,
           .sbs-world-proof,
           .sbs-system-preview,
           .sbs-sales-for-you,
           .sbs-sales-proof,
+          .sbs-faq,
           .sbs-retry-banner {
             grid-template-columns: 1fr;
           }
@@ -783,6 +912,9 @@ export default async function SelfieToBrandShootLandingPage({
             min-height: 460px;
           }
           .sbs-sales-deliverables {
+            grid-template-columns: 1fr;
+          }
+          .sbs-value-list {
             grid-template-columns: 1fr;
           }
           .sbs-sales-path article {

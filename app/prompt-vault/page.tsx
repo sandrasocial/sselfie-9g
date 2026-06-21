@@ -59,6 +59,30 @@ function BuyButton({ label = "Unlock the Vault · $27" }: { label?: string }) {
   )
 }
 
+function RiskLine() {
+  return (
+    <p className="pvf-risk-line">
+      One payment. Instant access. Reply to me and a real person, usually me, helps.
+    </p>
+  )
+}
+
+const vaultFaq = [
+  {
+    question: "Will it still look like me?",
+    answer:
+      "That is the goal. You use your own selfie, then check the result before you post. The image should feel recognizable, not like a stranger.",
+  },
+  {
+    question: "What if I only have my phone?",
+    answer: "That is enough to start. One clear selfie in soft light gives AI a much better base.",
+  },
+  {
+    question: "Is $27 really it?",
+    answer: "Yes. One payment, instant access, and every new collection I add lands in your Vault.",
+  },
+]
+
 export default async function PromptVaultPage({
   searchParams,
 }: {
@@ -201,6 +225,10 @@ export default async function PromptVaultPage({
             The free preview gives you a taste. The Vault gives you the complete shoot
             library: every current collection, every shot direction, every example image, and every
             new drop I add.
+          </p>
+          <p className="pvf-reassurance">
+            Still you. Still recognizable. Just elevated. AI should not erase you. It should
+            frame you.
           </p>
           <div className="pvf-hero-stats" aria-label="Vault library size">
             <span>{vaultCollectionCount} collections</span>
@@ -389,6 +417,7 @@ export default async function PromptVaultPage({
                       </p>
                     )}
                     <BuyButton label="Unlock full sequence · $27" />
+                    <RiskLine />
                   </div>
                 </article>
               )
@@ -553,7 +582,23 @@ export default async function PromptVaultPage({
                 One-time payment. Access link sent to your inbox.
               </p>
             </div>
+            <RiskLine />
           </div>
+        </div>
+      </section>
+
+      <section className="pvf-faq">
+        <div className="pvf-faq-copy">
+          <p className="pvf-eyebrow">A FEW QUICK ANSWERS</p>
+          <h2 className={`pvf-section-title ${cormorant.className}`}>Before you enter the Vault.</h2>
+        </div>
+        <div className="pvf-faq-list">
+          {vaultFaq.map(item => (
+            <article key={item.question}>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -621,6 +666,22 @@ export default async function PromptVaultPage({
           font-size: 16px;
           line-height: 1.85;
           color: #4F5052;
+        }
+        .pvf-reassurance {
+          max-width: 430px;
+          margin: -12px 0 30px;
+          padding-left: 14px;
+          border-left: 1px solid rgba(13,14,16,0.34);
+          color: #0D0E10;
+          font-size: 14px;
+          line-height: 1.75;
+        }
+        .pvf-risk-line {
+          margin: 12px 0 0;
+          max-width: 420px;
+          color: #818283;
+          font-size: 12px;
+          line-height: 1.7;
         }
 
         /* Product ladder */
@@ -859,6 +920,38 @@ export default async function PromptVaultPage({
           color: #4F5052;
           line-height: 1.6;
         }
+        .pvf-faq {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: clamp(60px, 8vw, 88px) clamp(18px, 4vw, 40px);
+          border-top: 1px solid rgba(197,198,200,0.35);
+          display: grid;
+          grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+          gap: clamp(28px, 5vw, 70px);
+        }
+        .pvf-faq-list {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.42);
+          border: 1px solid rgba(197,198,200,0.42);
+        }
+        .pvf-faq-list article {
+          background: #FFFFFF;
+          padding: 24px;
+        }
+        .pvf-faq-list h3 {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+        .pvf-faq-list p {
+          margin: 0;
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
+        }
 
         /* Mobile */
         @media (max-width: 760px) {
@@ -884,6 +977,9 @@ export default async function PromptVaultPage({
           }
           .pvf-upsell-strip {
             grid-template-columns: repeat(2, 1fr);
+          }
+          .pvf-faq {
+            grid-template-columns: 1fr;
           }
         }
 
