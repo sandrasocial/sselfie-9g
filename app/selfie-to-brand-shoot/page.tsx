@@ -166,6 +166,15 @@ const systemPreview = [
   },
 ]
 
+const customerProof = {
+  name: "Laurie Garcia",
+  detail: "48-year-old business owner and esthetician",
+  quote:
+    "It took one session and 1 post for my reel views to go up by 40%. The technology and effort that has been put into this app is absolutely amazing and worth every penny.",
+  note:
+    "Laurie described SSELFIE as her personal photographer, assistant, marketer, advisor, strategist, cheerleader, tech guide, and social media expert.",
+}
+
 export default async function SelfieToBrandShootLandingPage({
   searchParams,
 }: {
@@ -274,6 +283,25 @@ export default async function SelfieToBrandShootLandingPage({
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="sbs-customer-proof">
+        <div>
+          <p className="sbs-label">REAL CUSTOMER PROOF</p>
+          <h2 className={cormorant.className}>This is for women who are ready to be seen online.</h2>
+          <p>
+            The result is not only a prettier image. It is clarity around how your face, story, and
+            visuals can start working together.
+          </p>
+        </div>
+        <article className="sbs-customer-quote">
+          <blockquote>&ldquo;{customerProof.quote}&rdquo;</blockquote>
+          <div>
+            <strong>{customerProof.name}</strong>
+            <span>{customerProof.detail}</span>
+          </div>
+          <p>{customerProof.note}</p>
+        </article>
       </section>
 
       <section className="sbs-sales-strip">
@@ -592,6 +620,7 @@ export default async function SelfieToBrandShootLandingPage({
         .sbs-sales-learn,
         .sbs-sales-for-you,
         .sbs-proof-strip,
+        .sbs-customer-proof,
         .sbs-value-stack,
         .sbs-world-proof,
         .sbs-system-preview,
@@ -610,6 +639,7 @@ export default async function SelfieToBrandShootLandingPage({
         }
         .sbs-sales-learn,
         .sbs-proof-strip,
+        .sbs-customer-proof,
         .sbs-value-stack,
         .sbs-world-proof,
         .sbs-system-preview,
@@ -619,6 +649,46 @@ export default async function SelfieToBrandShootLandingPage({
           grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
           gap: clamp(28px, 5vw, 68px);
           align-items: start;
+        }
+        .sbs-customer-quote {
+          display: grid;
+          gap: 24px;
+          padding: clamp(24px, 4vw, 40px);
+          background: #FFFFFF;
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .sbs-customer-quote blockquote {
+          margin: 0;
+          color: #0D0E10;
+          font-size: clamp(1.45rem, 2.3vw, 2.35rem);
+          font-weight: 300;
+          line-height: 1.42;
+        }
+        .sbs-customer-quote strong,
+        .sbs-customer-quote span {
+          display: block;
+        }
+        .sbs-customer-quote strong {
+          margin-bottom: 6px;
+          color: #0D0E10;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .sbs-customer-quote span {
+          color: #818283;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        .sbs-customer-quote p {
+          max-width: none;
+          margin: 0;
+          padding-top: 22px;
+          border-top: 1px solid rgba(197,198,200,0.35);
+          color: #4F5052;
+          font-size: 14px;
+          line-height: 1.75;
         }
         .sbs-value-list {
           display: grid;
@@ -873,6 +943,7 @@ export default async function SelfieToBrandShootLandingPage({
           .sbs-sales-strip,
           .sbs-sales-learn,
           .sbs-proof-strip,
+          .sbs-customer-proof,
           .sbs-value-stack,
           .sbs-world-proof,
           .sbs-system-preview,

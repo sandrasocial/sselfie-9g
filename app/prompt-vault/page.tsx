@@ -83,6 +83,26 @@ const vaultFaq = [
   },
 ]
 
+const vaultProof = [
+  {
+    quote:
+      "I have been playing with this for a few days... and I am blown away. I am so picky its not even funny.. but this... my GOD!",
+    name: "SSELFIE customer",
+    context: "AI Photoshoot",
+  },
+  {
+    quote:
+      "This is incredible... I started just having fun with the photos but then I started tweaking the way I looked and asking Maya to make adjustments and WOW!!!",
+    name: "SSELFIE customer",
+    context: "AI Photoshoot + Maya",
+  },
+  {
+    quote: "BEST APP EVER !!!!",
+    name: "Hafdis",
+    context: "SSELFIE Studio",
+  },
+]
+
 export default async function PromptVaultPage({
   searchParams,
 }: {
@@ -370,6 +390,30 @@ export default async function PromptVaultPage({
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="pvf-proof">
+        <div className="pvf-proof-copy">
+          <p className="pvf-eyebrow">REAL CUSTOMER WORDS</p>
+          <h2 className={`pvf-section-title ${cormorant.className}`}>
+            Women are not just making images. They are seeing what is possible.
+          </h2>
+          <p className="pvf-section-note">
+            The Vault is the starting point: one selfie, one visual direction, and prompts that help
+            the result still feel like you.
+          </p>
+        </div>
+        <div className="pvf-proof-grid">
+          {vaultProof.map(item => (
+            <article key={item.quote} className="pvf-proof-card">
+              <p>&ldquo;{item.quote}&rdquo;</p>
+              <div>
+                <strong>{item.name}</strong>
+                <span>{item.context}</span>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -683,6 +727,54 @@ export default async function PromptVaultPage({
           font-size: 12px;
           line-height: 1.7;
         }
+        .pvf-proof {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: clamp(60px, 7vw, 88px) clamp(18px, 4vw, 40px);
+          display: grid;
+          grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+          gap: clamp(28px, 5vw, 68px);
+          align-items: start;
+          border-top: 1px solid rgba(197,198,200,0.35);
+        }
+        .pvf-proof-copy {
+          position: sticky;
+          top: 88px;
+        }
+        .pvf-proof-grid {
+          display: grid;
+          gap: 1px;
+          background: rgba(197,198,200,0.35);
+          border: 1px solid rgba(197,198,200,0.35);
+        }
+        .pvf-proof-card {
+          background: #FFFFFF;
+          padding: clamp(22px, 3vw, 30px);
+        }
+        .pvf-proof-card p {
+          margin: 0 0 24px;
+          color: #0D0E10;
+          font-size: clamp(17px, 2vw, 22px);
+          line-height: 1.62;
+          font-weight: 300;
+        }
+        .pvf-proof-card strong,
+        .pvf-proof-card span {
+          display: block;
+        }
+        .pvf-proof-card strong {
+          margin-bottom: 6px;
+          color: #0D0E10;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        .pvf-proof-card span {
+          color: #818283;
+          font-size: 12px;
+          line-height: 1.6;
+        }
 
         /* Product ladder */
         .pvf-ladder {
@@ -970,6 +1062,12 @@ export default async function PromptVaultPage({
           }
           .pvf-preview-grid {
             grid-template-columns: 1fr;
+          }
+          .pvf-proof {
+            grid-template-columns: 1fr;
+          }
+          .pvf-proof-copy {
+            position: static;
           }
           .pvf-steps-grid {
             grid-template-columns: 1fr;
