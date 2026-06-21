@@ -61,7 +61,7 @@ describe("Shoot Studio reference payload", () => {
     vi.clearAllMocks()
   })
 
-  it("sends selected selfies first and uses a short ChatGPT-like render prompt", async () => {
+  it("sends selected selfies first and uses the shared suite inspiration contract", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 
     await generateShotImage({
@@ -97,15 +97,11 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain(
       "Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling."
     )
-    expect(payload.prompt).toContain(
-      "Do not copy, average, blend, or borrow their face, age, body, hair, or skin."
-    )
-    expect(payload.prompt).toContain(
-      "Identity lock: the uploaded selfies are the only source for the person's face and features in every shot."
-    )
-    expect(payload.prompt).toContain(
-      "without copying any selfie pose, selfie crop, selfie expression, or selfie lighting"
-    )
+    expect(payload.prompt).toContain("Inspiration reference handling:")
+    expect(payload.prompt).toContain("TASK TYPE: IMAGE RECONSTRUCTION.")
+    expect(payload.prompt).toContain("The inspiration image is the visual blueprint")
+    expect(payload.prompt).toContain("Identity Priority: 100%.")
+    expect(payload.prompt).toContain("The inspiration image contributes 0% facial information")
     expect(payload.prompt).toContain("Shot role: lifestyle/action")
     expect(payload.prompt).toContain(
       "Shot-specific direction from the plan: marble cafe. walking toward camera with relaxed hands."
@@ -113,24 +109,19 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("marble cafe.")
     expect(payload.prompt).toContain("85mm close portrait.")
 
-    expect(payload.prompt.length).toBeLessThan(2200)
     expect(payload.prompt).not.toContain("Outfit: black blazer")
     expect(payload.prompt).not.toContain("Use the uploaded reference photos")
     expect(payload.prompt).not.toContain("Body proportion lock:")
     expect(payload.prompt).not.toContain("Image quality:")
     expect(payload.prompt).not.toContain("WRITTEN SHOT PROMPT")
     expect(payload.prompt).not.toContain("FINAL RENDER AUTHORITY")
-    expect(payload.prompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
-    expect(payload.prompt).not.toContain("TASK TYPE: STYLE-WORLD VARIATION")
     expect(payload.prompt).not.toContain("mandatory visual reference")
-    expect(payload.prompt).not.toContain("crop, framing, subject scale")
-    expect(payload.prompt).not.toContain("If the written shot prompt conflicts")
     expect(payload.prompt).not.toContain(
       "If the written shot prompt invents or alters visible details from the attached inspiration image"
     )
   })
 
-  it("does not switch shot one into reconstruction mode or later shots into separate variation mode", async () => {
+  it("uses close recreation for shot one and set variation for later shots", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 
     await generateShotImage({
@@ -151,24 +142,14 @@ describe("Shoot Studio reference payload", () => {
     const heroPrompt = mocks.edit.mock.calls[0][0].prompt
     const variationPrompt = mocks.edit.mock.calls[1][0].prompt
 
-    expect(heroPrompt).toContain("The inspiration image is the blueprint.")
-    expect(heroPrompt).toContain("Recreate the inspiration image as closely as possible.")
+    expect(heroPrompt).toContain("TASK TYPE: IMAGE RECONSTRUCTION.")
+    expect(heroPrompt).toContain("The inspiration image is the visual blueprint")
     expect(heroPrompt).toContain(
-      "Keep: crop, composition, framing, pose, lighting, shadow pattern, wardrobe, expression, camera distance, and lens perspective."
+      "Only replace the person with the identity from the uploaded identity reference images."
     )
-    expect(heroPrompt).toContain(
-      "Only replace the person with the identity from the uploaded selfies."
-    )
-    expect(variationPrompt).toContain(
-      "For this additional set image, keep the same real photoshoot world from the original inspiration reference"
-    )
-    expect(heroPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
-    expect(heroPrompt).not.toContain(
-      "Recreate the inspiration image composition as closely as possible"
-    )
-    expect(variationPrompt).not.toContain("TASK TYPE: STYLE-WORLD VARIATION")
-    expect(variationPrompt).not.toContain("Poses and angles may vary")
-    expect(variationPrompt).not.toContain("Do not restyle the set into a generic new scene")
+    expect(variationPrompt).toContain("TASK TYPE: STYLE-WORLD VARIATION.")
+    expect(variationPrompt).toContain("Poses and angles may vary")
+    expect(variationPrompt).toContain("Do not restyle the set into a generic new scene")
     expect(variationPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
   })
 
@@ -209,10 +190,10 @@ describe("Shoot Studio reference payload", () => {
       "If a generated continuity image shows a face, ignore that face, facial structure, skin, hair, age, and body features."
     )
     expect(payload.prompt).toContain(
-      "Do not inherit facial features from the inspiration image or generated continuity images."
+      "Use the generated continuity reference only as a style/cohesion anchor"
     )
     expect(payload.prompt).toContain(
-      "keep the same real photoshoot world from the original inspiration and generated continuity reference"
+      "Match the generated continuity reference's wardrobe, accessories, hair, makeup, color grade, and location mood"
     )
     expect(payload.prompt).toContain("across the street in the same light.")
     expect(payload.prompt).toContain("three-quarter turn.")
@@ -242,7 +223,7 @@ describe("Shoot Studio reference payload", () => {
     expect(prompt).not.toContain("Outfit:")
     expect(prompt).not.toContain("FINAL RENDER AUTHORITY:")
     expect(prompt).not.toContain("dress length, garment cut, accessories, bag, hat/no hat, shoes")
-    expect(prompt).not.toContain(
+    expect(prompt).toContain(
       "If any written prompt conflicts with the inspiration image, the inspiration image wins"
     )
     expect(prompt).not.toContain(

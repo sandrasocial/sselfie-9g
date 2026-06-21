@@ -17,6 +17,10 @@ import {
   sanitizeGroundedText,
   voiceBlock,
 } from "@/lib/content/grounding"
+import {
+  SSELFIE_INSPIRATION_CLOSE_RECREATE,
+  SSELFIE_INSPIRATION_SET_VARIATION,
+} from "@/lib/app-v3/maya/visual-rules"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -66,6 +70,10 @@ function buildShotRenderPrompt(input: {
       : `input images ${firstContinuityIndex}-${lastStyleIndex + continuityCount}`
   const shotNumber = shotNumberFromPrompt(input.prompt)
   const shotDirection = extractShotRenderDirection(input.prompt)
+  const inspirationContract =
+    shotNumber === null || shotNumber <= 1
+      ? SSELFIE_INSPIRATION_CLOSE_RECREATE
+      : SSELFIE_INSPIRATION_SET_VARIATION
 
   return [
     `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
@@ -80,13 +88,11 @@ function buildShotRenderPrompt(input: {
     input.styleCount > 1
       ? "The first inspiration image is the primary visual source. Later inspiration images are secondary support only."
       : "",
-    "If the inspiration image contains a person, treat that person only as a placeholder for pose, styling, wardrobe, lighting, and composition. Do not copy, average, blend, or borrow their face, age, body, hair, or skin.",
-    "Identity lock: the uploaded selfies are the only source for the person's face and features in every shot. Keep the same recognizable person across the full set without copying any selfie pose, selfie crop, selfie expression, or selfie lighting unless the shot direction asks for it. Do not inherit facial features from the inspiration image or generated continuity images.",
-    shotNumber === null || shotNumber <= 1
-      ? "The inspiration image is the blueprint. Recreate the inspiration image as closely as possible. Keep: crop, composition, framing, pose, lighting, shadow pattern, wardrobe, expression, camera distance, and lens perspective. Only replace the person with the identity from the uploaded selfies."
-      : continuityCount > 0
-        ? "For this additional set image, keep the same real photoshoot world from the original inspiration and generated continuity reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot."
-        : "For this additional set image, keep the same real photoshoot world from the original inspiration reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot.",
+    "Inspiration reference handling:",
+    inspirationContract,
+    continuityCount > 0
+      ? "Photoshoot cohesion role: ANCHORED SET SHOT. Use the uploaded selfies as the identity anchor. Use the generated continuity reference only as a style/cohesion anchor for outfit, accessories, lighting, palette, and world. Match the generated continuity reference's wardrobe, accessories, hair, makeup, color grade, and location mood while creating this shot's distinct role and composition. Do not copy the continuity reference pose unless this shot asks for it."
+      : "",
     shotRoleRenderInstruction(input.shotRole),
     shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",

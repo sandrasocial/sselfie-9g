@@ -95,6 +95,8 @@ describe("Shoot Studio publish pipeline", () => {
     expect(generator).toContain('quality === "high" ? shoot.shots[idx].status : "draft"')
     expect(generator).toContain("selfie_urls")
     expect(generator).toContain("buildShotRenderPrompt({")
+    expect(generator).toContain("SSELFIE_INSPIRATION_CLOSE_RECREATE")
+    expect(generator).toContain("SSELFIE_INSPIRATION_SET_VARIATION")
     expect(generator).toContain("IDENTITY REFERENCES ONLY")
     expect(generator).toContain("ORIGINAL INSPIRATION REFERENCES ONLY")
     expect(generator).toContain("GENERATED SET CONTINUITY REFERENCES ONLY")
