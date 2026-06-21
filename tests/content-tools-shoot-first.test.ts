@@ -23,11 +23,18 @@ describe("Content tools shoot-first workflow", () => {
     expect(carouselClient).toContain("overlayUrls")
     expect(storyClient).toContain("sourceShootId")
     expect(storyClient).toContain("overlayUrls")
+    expect(storyClient).toContain('fetch("/api/app-v3/gallery")')
+    expect(storyClient).toContain("Selected story backgrounds")
+    expect(storyClient).toContain("removeBackground")
     expect(adminPage).toContain("getPublishedVaultCollections")
     expect(carouselGenerator).toContain("getPublishedVaultCollectionBySourceShootId")
     expect(storyGenerator).toContain("getPublishedVaultCollectionBySourceShootId")
-    expect(carouselGenerator).toContain("Approve at least ${minApprovedImages} rendered shoot image")
-    expect(storyGenerator).toContain("Approve at least 2 rendered shoot images")
+    expect(carouselGenerator).toContain(
+      "Approve at least ${minApprovedImages} rendered shoot image"
+    )
+    expect(storyGenerator).toContain(
+      "selectedImageUrls.length > 0 ? selectedImageUrls : sourceShoot.imageUrls"
+    )
     expect(uploadRoute).toContain("content-kit/${kind")
     expect(types).toContain("overlayAssets?: ContentOverlayAsset[]")
     expect(types).toContain("promptNumber?: string | null")

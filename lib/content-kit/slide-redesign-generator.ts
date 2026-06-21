@@ -24,7 +24,11 @@ const INTERNAL_VISIBLE_LABELS = new Set([
   "photo",
 ])
 
-export type StyleReferenceCategory = "tutorial" | "photoshoot-carousel" | "story-sequence" | "reel-cover"
+export type StyleReferenceCategory =
+  | "tutorial"
+  | "photoshoot-carousel"
+  | "story-sequence"
+  | "reel-cover"
 export type RedesignReferenceMode = "preserve-frame" | "identity-scene"
 
 type StyleReference = {
@@ -106,11 +110,13 @@ export function buildContentSlideRedesignPrompt({
   hasInspirationReference?: boolean
 }) {
   const tutorialGrounding =
-    category === "tutorial"
-      ? "The FIRST reference image is the real reel frame. Preserve its meaning exactly: if it is a phone camera screenshot, keep the UI values, controls, settings labels, sliders and visual instruction truthful. You may restage it as a phone screen inside an editorial scene, but do not invent different settings or change the teaching point."
-      : referenceMode === "identity-scene"
-        ? "The FIRST reference image is the identity reference. Preserve the person's face, age, skin texture, hair, body proportions and recognizable energy. Do not copy a plain selfie background unless the slide explicitly asks for it. Build a new slide-specific editorial scene from the visual concept and image direction."
-      : "The FIRST reference image is the visual base. Preserve the important subject, identity cues, mood and meaning while redesigning the slide."
+    category === "story-sequence"
+      ? "The FIRST reference image is the exact story background photo. Preserve the original photo exactly. Do not change the person's identity, face, body, outfit, pose, lighting, background, colors, composition, skin texture, or natural details. Do not retouch, beautify, smooth skin, reshape the body, alter the face, change the outfit, change the room, or make the image look AI-generated. This is an overlay-only design: only add text, small labels, simple arrows, subtle borders, minimal editorial layout details, or light hand-drawn accents."
+      : category === "tutorial"
+        ? "The FIRST reference image is the real reel frame. Preserve its meaning exactly: if it is a phone camera screenshot, keep the UI values, controls, settings labels, sliders and visual instruction truthful. You may restage it as a phone screen inside an editorial scene, but do not invent different settings or change the teaching point."
+        : referenceMode === "identity-scene"
+          ? "The FIRST reference image is the identity reference. Preserve the person's face, age, skin texture, hair, body proportions and recognizable energy. Do not copy a plain selfie background unless the slide explicitly asks for it. Build a new slide-specific editorial scene from the visual concept and image direction."
+          : "The FIRST reference image is the visual base. Preserve the important subject, identity cues, mood and meaning while redesigning the slide."
   const inspirationGrounding = hasInspirationReference
     ? `The THIRD reference image is the inspiration image. Keep the same visual world from that reference while this slide's pose, angle, crop, or text-safe area may vary. For carousel, reel-cover, and story-sequence graphics, poses and angles can vary by slide role, but the image must keep the same visual world: wardrobe energy, material texture, lighting direction, shadow language, color grade, mood, background simplicity, lens feel, and editorial styling. If the slide plan conflicts with the inspiration reference, the inspiration reference wins for visual world and visible props.\n${SSELFIE_INSPIRATION_SET_VARIATION}`
     : ""
@@ -124,7 +130,7 @@ Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
 
-Match the SECOND reference image's approved SSELFIE style while following this shared style contract: ${SSELFIE_GRAPHIC_STYLE_PROMPT}
+${category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's approved SSELFIE style while following this shared style contract:"} ${SSELFIE_GRAPHIC_STYLE_PROMPT}
 
 ${inspirationGrounding}
 
@@ -138,9 +144,10 @@ Rules:
 - Render only the text listed under "Render the slide text inside the image" and spell it exactly as written.
 - Do not render internal labels such as hook, value, cta, reel cover, story, slide kind, or content type.
 - No extra words, placeholder letters, random UI labels, logos, emoji, green checks, neon, bright red, chunky social captions, or black-outlined text.
-- Keep the original reference frame recognizable and useful.
+- ${category === "story-sequence" ? "Preserve the original photo exactly. Do not change lighting, colors, exposure, contrast, skin, face, body, outfit, background, crop, composition, or image quality." : "Keep the original reference frame recognizable and useful."}
+- ${category === "story-sequence" ? "Place the text in clean negative space. Do not cover the face, eyes, phone, hands, or strongest visual details. If text needs more contrast, add only a very subtle transparent dark or cream overlay behind the text area, not over the face or main subject." : "If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts."}
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.
-- If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts.`
+- Create the final slide in high resolution 2K quality, vertical 9:16 Instagram Story format, crisp and clean, with readable text.`
 }
 
 export async function redesignContentSlide({

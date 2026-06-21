@@ -97,14 +97,15 @@ describe("Maya June 11 restoration guardrails", () => {
     }
 
     const reelPrompt = compileConceptJobs(brief, "reel-cover")[0]?.passes[0]?.prompt ?? ""
-    const carouselPrompts = buildGraphicRedesignSlides(brief, "carousel", "Founder story").map(slide =>
-      buildContentSlideRedesignPrompt({
-        category: "photoshoot-carousel",
-        topic: "Founder story",
-        styleLabel: "approved SSELFIE reference",
-        referenceMode: "identity-scene",
-        slide,
-      })
+    const carouselPrompts = buildGraphicRedesignSlides(brief, "carousel", "Founder story").map(
+      slide =>
+        buildContentSlideRedesignPrompt({
+          category: "photoshoot-carousel",
+          topic: "Founder story",
+          styleLabel: "approved SSELFIE reference",
+          referenceMode: "identity-scene",
+          slide,
+        })
     )
     const directCarouselPrompts = compileConceptJobs(brief, "carousel").map(
       job => job.passes[0]?.prompt ?? ""
@@ -128,16 +129,24 @@ describe("Maya June 11 restoration guardrails", () => {
     expect(route).toContain("SSELFIE_INSPIRATION_CLOSE_RECREATE")
     expect(route).toContain("close-recreation")
     expect(route).toContain("set-variation")
-    expect(route).toContain("isHero ? \"close-recreation\" : \"set-variation\"")
+    expect(route).toContain('isHero ? "close-recreation" : "set-variation"')
     expect(route).toContain("inspirationReferenceUrl: inspirationReferenceUrl ?? undefined")
     expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("TASK TYPE: IMAGE RECONSTRUCTION")
-    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("The inspiration image is the visual blueprint")
-    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("If any written prompt conflicts with the inspiration image")
-    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("The inspiration image contributes 0% facial information")
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain(
+      "The inspiration image is the visual blueprint"
+    )
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain(
+      "If any written prompt conflicts with the inspiration image"
+    )
+    expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain(
+      "The inspiration image contributes 0% facial information"
+    )
     expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).not.toContain("Sandra")
     expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("TASK TYPE: STYLE-WORLD VARIATION")
     expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("Poses and angles may vary")
-    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("Do not restyle the set into a generic new scene")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain(
+      "Do not restyle the set into a generic new scene"
+    )
     expect(persona).toContain("treat it as a visual blueprint")
     expect(persona).toContain("Do not invent props, hats, furniture")
   })
@@ -163,13 +172,33 @@ describe("Maya June 11 restoration guardrails", () => {
     expect(prompt).toContain("If the slide plan conflicts with the inspiration reference")
   })
 
+  it("keeps admin story sequence graphics overlay-only", () => {
+    const prompt = buildContentSlideRedesignPrompt({
+      category: "story-sequence",
+      topic: "The fear behind posting AI photos",
+      styleLabel: "approved SSELFIE reference",
+      slide: {
+        kind: "hook",
+        title: "You do not need to become someone else",
+        body: "You just need to stop hiding.",
+      },
+    })
+
+    expect(prompt).toContain("Preserve the original photo exactly")
+    expect(prompt).toContain("This is an overlay-only design")
+    expect(prompt).toContain("Do not retouch, beautify, smooth skin")
+    expect(prompt).toContain("Use the SECOND reference image for typography")
+    expect(prompt).toContain("Do not use it to alter the first photo")
+    expect(prompt).toContain("Do not cover the face, eyes, phone, hands")
+  })
+
   it("gates admin prompt inspection on the server and reads the stored ai_images prompt", () => {
     const route = readFileSync("app/api/admin/app-v3/generation-prompt/route.ts", "utf8")
     expect(route).toContain("isAdminEmail")
     expect(route).toContain('return NextResponse.json({ error: "Forbidden" }, { status: 403 })')
     expect(route).toContain("FROM ai_images")
     expect(route).toContain("generated_prompt")
-    expect(route).toContain("modelProvider: \"openai\"")
+    expect(route).toContain('modelProvider: "openai"')
   })
 
   it("uses a reel-cover style category before falling back to story references", () => {

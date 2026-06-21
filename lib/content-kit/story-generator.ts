@@ -79,7 +79,7 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
   const publishedCollection = await getPublishedVaultCollectionBySourceShootId(sourceShootId)
   const publishedImages =
     publishedCollection?.cards
-      .map((card) => card.exampleImage)
+      .map(card => card.exampleImage)
       .filter((url): url is string => Boolean(url)) ?? []
   if (publishedCollection && publishedImages.length >= 2) {
     return { imageUrls: publishedImages, title: publishedCollection.title, id: sourceShootId }
@@ -165,10 +165,10 @@ export async function generateStorySequence(input: {
   const topic = input.topic.trim()
   if (topic.length < 5) throw new Error("Tell me the story idea first")
   const sourceShoot = await resolveShootImages(input.sourceShootId)
-  const imageUrls = [
-    ...sourceShoot.imageUrls,
-    ...(input.imageUrls ?? []).filter(isAllowedImageUrl),
-  ].slice(0, 8)
+  const selectedImageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl)
+  const imageUrls = (
+    selectedImageUrls.length > 0 ? selectedImageUrls : sourceShoot.imageUrls
+  ).slice(0, 8)
   const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
 
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
@@ -186,7 +186,7 @@ ${funnelBlock()}
 ${STORY_DOCTRINE}
 
 TODAY'S STORY IDEA (from Sandra): ${topic}
-${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this as story copy layered onto that same approved photoshoot, so it feels like the story version of the shoot, not a separate design.` : ""}
+${sourceShoot.title ? `\nSOURCE PHOTOSHOOT CONTEXT: "${sourceShoot.title}". Sandra may have selected only some images from this shoot. Write this as story copy layered onto the selected image backgrounds, so it feels like the story version of those exact visuals, not a separate design.` : ""}
 
 NO-FAKE REMINDER FOR THE DESIRE/BRIDGE BEAT:
 Identity content must never imply she becomes someone else. The promise is "Look like yourself, at your best." Use story to create recognition and permission, then bridge to the keyword/capture mechanic.

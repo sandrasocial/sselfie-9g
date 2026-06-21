@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { StorySequence } from "@/lib/content-kit/types"
 
 type ShootOption = {
@@ -11,12 +11,49 @@ type ShootOption = {
   shots: Array<{ id: string; title: string; url: string }>
 }
 
-type UploadedAsset = { url: string; label: string }
+type PickedAsset = {
+  url: string
+  label: string
+  source?: "shoot" | "gallery" | "upload" | "overlay"
+}
+type GalleryAsset = {
+  id: string
+  kind: "image" | "video"
+  contentType: string
+  url: string
+  thumbnailUrl?: string | null
+  isFavorite?: boolean
+}
+type GalleryFilter = "favorites" | "photos" | "photoshoots" | "all"
 
 const STATUS_LABELS: Record<StorySequence["status"], string> = {
   draft: "Draft",
   approved: "Approved",
   posted: "Posted",
+}
+
+const GALLERY_FILTERS: Array<{ id: GalleryFilter; label: string }> = [
+  { id: "favorites", label: "Favorites" },
+  { id: "photos", label: "Photos" },
+  { id: "photoshoots", label: "Shoots" },
+  { id: "all", label: "All" },
+]
+
+function uniqueAssets(assets: PickedAsset[]): PickedAsset[] {
+  const seen = new Set<string>()
+  return assets.filter(asset => {
+    if (!asset.url || seen.has(asset.url)) return false
+    seen.add(asset.url)
+    return true
+  })
+}
+
+function assetMatchesFilter(asset: GalleryAsset, filter: GalleryFilter) {
+  if (asset.kind !== "image") return false
+  if (filter === "favorites") return Boolean(asset.isFavorite)
+  if (filter === "photos") return asset.contentType === "photo"
+  if (filter === "photoshoots") return asset.contentType === "photoshoot"
+  return true
 }
 
 function SequenceCard({
@@ -127,13 +164,63 @@ export function ContentStoryClient({
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
   )
-  const [backgrounds, setBackgrounds] = useState<UploadedAsset[]>([])
-  const [overlays, setOverlays] = useState<UploadedAsset[]>([])
+  const [backgrounds, setBackgrounds] = useState<PickedAsset[]>([])
+  const [overlays, setOverlays] = useState<PickedAsset[]>([])
+  const [galleryAssets, setGalleryAssets] = useState<GalleryAsset[]>([])
+  const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("favorites")
+  const [galleryError, setGalleryError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const selectedShoot = shoots.find(shoot => shoot.id === selectedShootId) ?? null
+  const visibleGalleryAssets = galleryAssets.filter(asset =>
+    assetMatchesFilter(asset, galleryFilter)
+  )
+
+  useEffect(() => {
+    if (!selectedShoot) return
+    setBackgrounds(
+      selectedShoot.shots.map(shot => ({
+        url: shot.url,
+        label: shot.title,
+        source: "shoot" as const,
+      }))
+    )
+  }, [selectedShoot])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/app-v3/gallery")
+      .then(response =>
+        response.ok ? response.json() : Promise.reject(new Error("Gallery unavailable"))
+      )
+      .then(data => {
+        if (cancelled) return
+        const assets = Array.isArray(data.assets)
+          ? data.assets.filter((asset: GalleryAsset) => asset.kind === "image" && asset.url)
+          : []
+        setGalleryAssets(assets)
+      })
+      .catch(() => {
+        if (!cancelled) setGalleryError("Could not load gallery photos.")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function addBackgrounds(assets: PickedAsset[]) {
+    setBackgrounds(current => uniqueAssets([...current, ...assets]).slice(0, 12))
+  }
+
+  function removeBackground(url: string) {
+    setBackgrounds(current => current.filter(asset => asset.url !== url))
+  }
+
+  function removeOverlay(url: string) {
+    setOverlays(current => current.filter(asset => asset.url !== url))
+  }
 
   async function upload(kind: "background" | "overlay", files: FileList | null) {
     if (!files?.length) return
@@ -149,18 +236,37 @@ export function ContentStoryClient({
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      if (kind === "background") setBackgrounds(current => [...current, ...data.assets])
-      else setOverlays(current => [...current, ...data.assets])
-    } catch (err: any) {
-      setError(err?.message || "Upload failed")
+      const assets = Array.isArray(data.assets) ? data.assets : []
+      if (kind === "background") {
+        addBackgrounds(
+          assets.map((asset: PickedAsset) => ({
+            url: asset.url,
+            label: asset.label || "Uploaded image",
+            source: "upload" as const,
+          }))
+        )
+      } else {
+        setOverlays(current =>
+          uniqueAssets([
+            ...current,
+            ...assets.map((asset: PickedAsset) => ({
+              url: asset.url,
+              label: asset.label || "Overlay reference",
+              source: "overlay" as const,
+            })),
+          ]).slice(0, 8)
+        )
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setUploading(null)
     }
   }
 
   async function generate() {
-    if (!selectedShootId && backgrounds.length < 2) {
-      setError("Pick an approved shoot, or upload at least 2 background images.")
+    if (backgrounds.length < 1) {
+      setError("Choose at least 1 background image from a shoot, gallery, favorites, or upload.")
       return
     }
     setGenerating(true)
@@ -180,8 +286,8 @@ export function ContentStoryClient({
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setSequences([data.sequence, ...sequences])
       setTopic("")
-    } catch (err: any) {
-      setError(err?.message || "Generation failed")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Generation failed")
     } finally {
       setGenerating(false)
     }
@@ -211,8 +317,8 @@ export function ContentStoryClient({
         Story sequence
       </h2>
       <p className="mt-1 text-sm text-stone-600">
-        Pick an approved shoot first. Stories use those photos as grounded references, then return
-        finished doctrine-led slides with optional screenshot/proof references.
+        Choose the exact background photos first. Stories preserve those images and add clean
+        overlay text, proof accents, and editorial typography.
       </p>
 
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
@@ -235,28 +341,121 @@ export function ContentStoryClient({
             </option>
           ))}
         </select>
-        {selectedShoot ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-3">
-            {selectedShoot.shots.map(shot => (
-              <div
-                key={shot.id}
-                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-wide text-stone-500">
+              Selected story backgrounds · {backgrounds.length}
+            </p>
+            {selectedShoot && (
+              <button
+                type="button"
+                onClick={() =>
+                  addBackgrounds(
+                    selectedShoot.shots.map(shot => ({
+                      url: shot.url,
+                      label: shot.title,
+                      source: "shoot",
+                    }))
+                  )
+                }
+                className="text-xs uppercase tracking-wide text-stone-600 underline underline-offset-4 hover:text-stone-950"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={shot.url}
-                  alt={shot.title}
-                  className="h-24 w-[4.5rem] object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
+                Add all shoot photos
+              </button>
+            )}
           </div>
-        ) : (
-          <p className="mt-2 pb-3 text-sm text-amber-700">
-            Approve at least 2 rendered shots in Shoot Studio before generating a shoot-based story.
-          </p>
-        )}
+          {backgrounds.length > 0 ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {backgrounds.map(asset => (
+                <div
+                  key={asset.url}
+                  className="group relative shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-white"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={asset.url}
+                    alt={asset.label}
+                    className="h-24 w-[4.5rem] object-cover"
+                    loading="lazy"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove ${asset.label}`}
+                    onClick={() => removeBackground(asset.url)}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs leading-none text-stone-700 shadow-sm hover:text-red-700"
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-amber-700">
+              Add at least one background from a shoot, gallery, favorites, or upload.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-stone-200 bg-white p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs uppercase tracking-wide text-stone-500">Add from gallery</p>
+            <div className="flex flex-wrap gap-1">
+              {GALLERY_FILTERS.map(filter => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setGalleryFilter(filter.id)}
+                  className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-wide ${
+                    galleryFilter === filter.id
+                      ? "border-stone-950 bg-stone-950 text-white"
+                      : "border-stone-200 text-stone-500 hover:border-stone-400"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {galleryError ? (
+            <p className="mt-2 text-sm text-amber-700">{galleryError}</p>
+          ) : visibleGalleryAssets.length > 0 ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {visibleGalleryAssets.slice(0, 36).map(asset => {
+                const selected = backgrounds.some(item => item.url === asset.url)
+                return (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    onClick={() =>
+                      addBackgrounds([
+                        {
+                          url: asset.url,
+                          label: `${asset.contentType || "Gallery"} photo`,
+                          source: "gallery",
+                        },
+                      ])
+                    }
+                    className={`relative shrink-0 overflow-hidden rounded-lg border-2 ${
+                      selected ? "border-stone-950" : "border-transparent hover:border-stone-300"
+                    }`}
+                    title={selected ? "Already selected" : "Add to story backgrounds"}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={asset.thumbnailUrl || asset.url}
+                      alt={asset.contentType || "Gallery image"}
+                      className="h-20 w-16 object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-stone-400">No images in this gallery filter yet.</p>
+          )}
+        </div>
+
         <textarea
           value={topic}
           onChange={event => setTopic(event.target.value)}
@@ -267,9 +466,11 @@ export function ContentStoryClient({
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
             <span className="block text-xs uppercase tracking-wide text-stone-500">
-              Extra references
+              Upload background images
             </span>
-            <span className="mt-1 block">Only use if the story needs a non-shoot source.</span>
+            <span className="mt-1 block">
+              Add photos from your device to the selected background pool.
+            </span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -278,14 +479,18 @@ export function ContentStoryClient({
               onChange={event => void upload("background", event.target.files)}
             />
             <span className="mt-2 block text-xs text-stone-400">
-              {uploading === "background" ? "Uploading..." : `${backgrounds.length} uploaded`}
+              {uploading === "background"
+                ? "Uploading..."
+                : `${backgrounds.length} selected backgrounds`}
             </span>
           </label>
           <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
             <span className="block text-xs uppercase tracking-wide text-stone-500">
               Screenshot references
             </span>
-            <span className="mt-1 block">Use for proof, ChatGPT screenshots, or DM examples.</span>
+            <span className="mt-1 block">
+              Use for proof, ChatGPT screenshots, DM examples, or before/after proof.
+            </span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -303,7 +508,7 @@ export function ContentStoryClient({
             {overlays.map(asset => (
               <div
                 key={asset.url}
-                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+                className="relative shrink-0 overflow-hidden rounded-lg border border-stone-200"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -312,6 +517,14 @@ export function ContentStoryClient({
                   className="h-20 w-20 object-cover"
                   loading="lazy"
                 />
+                <button
+                  type="button"
+                  aria-label={`Remove ${asset.label}`}
+                  onClick={() => removeOverlay(asset.url)}
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs leading-none text-stone-700 shadow-sm hover:text-red-700"
+                >
+                  x
+                </button>
               </div>
             ))}
           </div>
@@ -319,7 +532,7 @@ export function ContentStoryClient({
         <button
           type="button"
           onClick={generate}
-          disabled={generating || !topic.trim() || (!selectedShootId && backgrounds.length < 2)}
+          disabled={generating || !topic.trim() || backgrounds.length < 1}
           className="mt-3 rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
         >
           {generating ? "Writing the shoot story" : "Generate shoot story"}
