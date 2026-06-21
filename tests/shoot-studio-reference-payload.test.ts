@@ -107,11 +107,17 @@ describe("Shoot Studio reference payload", () => {
       "Do not convert a close-up inspiration into a full-body, seated, walking, or wider brand shot."
     )
     expect(payload.prompt).not.toContain("Shot-specific direction from the plan:")
-    expect(payload.prompt).not.toContain("marble cafe.")
 
-    expect(payload.prompt).not.toContain("Outfit: black blazer")
+    // Shot 1 forwards the planner's styling + scene brief so Sandra's notes (location, outfit,
+    // mood) reach the image model — the regression was that this was being stripped.
+    expect(payload.prompt).toContain("Written styling brief to follow")
+    expect(payload.prompt).toContain("Scene: marble cafe.")
+    expect(payload.prompt).toContain("Outfit: black blazer.")
+    // ...but shot 1's crop/pose/camera stay locked to the inspiration image, so framing sections
+    // are omitted from its written brief.
+    expect(payload.prompt).not.toContain("Pose: walking toward camera")
+    expect(payload.prompt).not.toContain("Camera + lens: 85mm close portrait")
     expect(payload.prompt).not.toContain("Use the uploaded reference photos")
-    expect(payload.prompt).not.toContain("Body proportion lock:")
     expect(payload.prompt).not.toContain("Image quality:")
     expect(payload.prompt).not.toContain("WRITTEN SHOT PROMPT")
     expect(payload.prompt).not.toContain("FINAL RENDER AUTHORITY")
@@ -202,7 +208,7 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("eye level.")
   })
 
-  it("does not forward planner-invented outfit and scene details into the render prompt", async () => {
+  it("forwards the planner styling brief while keeping the inspiration image authoritative", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 
     await generateShotImage({
@@ -219,15 +225,15 @@ describe("Shoot Studio reference payload", () => {
     const prompt = mocks.edit.mock.calls[0][0].prompt
     expect(prompt).toContain("Use input image 2 as ORIGINAL INSPIRATION REFERENCES ONLY")
     expect(prompt).toContain("Shot role: close recreation of the inspiration image")
-    expect(prompt).not.toContain("Off-white linen midi dress")
-    expect(prompt).not.toContain("nude leather sandals")
-    expect(prompt).not.toContain("Scene:")
-    expect(prompt).not.toContain("Outfit:")
-    expect(prompt).not.toContain("FINAL RENDER AUTHORITY:")
-    expect(prompt).not.toContain("dress length, garment cut, accessories, bag, hat/no hat, shoes")
+    // The styling brief now reaches the image model so notes like location/outfit are honored.
+    expect(prompt).toContain("Written styling brief to follow")
+    expect(prompt).toContain("Off-white linen midi dress")
+    expect(prompt).toContain("Scene: pale stucco courtyard.")
+    // The inspiration image stays authoritative for anything visible in it (conflict resolution).
     expect(prompt).toContain(
       "If any written prompt conflicts with the inspiration image, the inspiration image wins"
     )
+    expect(prompt).not.toContain("FINAL RENDER AUTHORITY:")
     expect(prompt).not.toContain(
       "If the written shot prompt invents or alters visible details from the attached inspiration image"
     )

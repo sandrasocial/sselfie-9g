@@ -40,6 +40,45 @@ const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
 ]
 const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "true-detail"])
 
+// Vault-anatomy sections the planner writes that carry real styling/scene direction. These are
+// forwarded into the render prompt so Sandra's notes (location, outfit, mood) actually reach the
+// image model — the same way suite Maya sends the full compiled brief to gpt-image-2. Without
+// this the image model only sees the inspiration + selfies and drifts back to the selfie.
+const RENDER_BRIEF_LABELS = [
+  "Scene",
+  "Outfit",
+  "Hair",
+  "Makeup",
+  "Accessories/props",
+  "Pose",
+  "Camera + lens",
+  "Camera angle",
+  "Composition",
+  "Body proportion lock",
+  "Mood",
+  "Color grading",
+] as const
+// Shot 1 recreates the inspiration image, so its crop/pose/camera must come from the image itself,
+// not the planner. These framing sections are dropped from shot 1's written brief; the styling and
+// scene sections (Scene, Outfit, Mood, etc.) still flow through so notes like "Iceland" land.
+const SHOT_ONE_FRAMING_LABELS = new Set<string>([
+  "Pose",
+  "Camera + lens",
+  "Camera angle",
+  "Composition",
+  "Body proportion lock",
+])
+
+function extractShotRenderBrief(prompt: string, labels: readonly string[]): string {
+  return labels
+    .map(label => {
+      const value = extractPromptSection(prompt, label)
+      return value ? `${label}: ${value}` : ""
+    })
+    .filter(Boolean)
+    .join("\n")
+}
+
 // Prepended at GENERATION time only — never stored in the shareable prompt. The shareable
 // prompt says "uploaded reference photos" (the buyer's own selfie in ChatGPT); here we
 // attach selfie + inspiration together, so the image roles must be explicit or the model
@@ -69,7 +108,6 @@ function buildShotRenderPrompt(input: {
       ? `input image ${firstContinuityIndex}`
       : `input images ${firstContinuityIndex}-${lastStyleIndex + continuityCount}`
   const shotNumber = shotNumberFromPrompt(input.prompt)
-  const shotDirection = extractShotRenderDirection(input.prompt)
   const isFirstShot = shotNumber === null || shotNumber <= 1
   const inspirationContract = isFirstShot
     ? SSELFIE_INSPIRATION_CLOSE_RECREATE
@@ -77,6 +115,19 @@ function buildShotRenderPrompt(input: {
   const roleInstruction = isFirstShot
     ? "Shot role: close recreation of the inspiration image. Do not convert a close-up inspiration into a full-body, seated, walking, or wider brand shot. Match the inspiration image crop, framing, subject scale, pose geometry, expression energy, camera distance, and lens perspective."
     : shotRoleRenderInstruction(input.shotRole)
+  // Forward the planner's written styling brief (suite Maya parity). Shot 1 omits the framing
+  // sections so its crop/pose stay locked to the inspiration image; later shots get the full brief
+  // so the set can vary. The inspiration contract above keeps the image authoritative whenever the
+  // written brief conflicts with what is visible in the inspiration.
+  const briefLabels = isFirstShot
+    ? RENDER_BRIEF_LABELS.filter(label => !SHOT_ONE_FRAMING_LABELS.has(label))
+    : RENDER_BRIEF_LABELS
+  const shotBrief = extractShotRenderBrief(input.prompt, briefLabels)
+  const shotBriefInstruction = shotBrief
+    ? isFirstShot
+      ? `Written styling brief to follow for wardrobe, location, hair, makeup, mood and color grade, while keeping the inspiration image's exact crop, framing, pose, subject scale and camera. If anything here conflicts with what is visible in the inspiration image, the inspiration image wins:\n${shotBrief}`
+      : `Written shot brief to follow for this set variation. Stay in the same visual world as the inspiration image. If anything here conflicts with what is visible in the inspiration image, the inspiration image wins:\n${shotBrief}`
+    : ""
 
   return [
     `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
@@ -97,7 +148,7 @@ function buildShotRenderPrompt(input: {
       ? "Photoshoot cohesion role: ANCHORED SET SHOT. Use the uploaded selfies as the identity anchor. Use the generated continuity reference only as a style/cohesion anchor for outfit, accessories, lighting, palette, and world. Match the generated continuity reference's wardrobe, accessories, hair, makeup, color grade, and location mood while creating this shot's distinct role and composition. Do not copy the continuity reference pose unless this shot asks for it."
       : "",
     roleInstruction,
-    !isFirstShot && shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
+    shotBriefInstruction,
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
     input.safetyRetry
       ? "Safety retry: keep the styling fully clothed, tasteful, non-sexual, and editorial while preserving the same inspiration mood."
@@ -133,13 +184,6 @@ function shotRoleRenderInstruction(role?: ShootShotRole): string {
     default:
       return ""
   }
-}
-
-function extractShotRenderDirection(prompt: string): string {
-  const sections = ["Scene", "Pose", "Camera + lens", "Camera angle", "Composition"]
-    .map(label => extractPromptSection(prompt, label))
-    .filter(Boolean)
-  return sections.join(" ")
 }
 
 function extractPromptSection(prompt: string, label: string): string {
