@@ -142,8 +142,8 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
       <div
         style={{
           display: "flex",
-          fontSize: 44,
-          lineHeight: 1.45,
+          fontSize: 48,
+          lineHeight: 1.42,
           color: supportColor,
           marginTop: 20,
           maxWidth: 880,

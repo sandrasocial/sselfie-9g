@@ -94,17 +94,25 @@ async function resolveShootImages(sourceShootId?: number): Promise<{
 
 function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
   const clean = (value?: string) => (value ? sanitizeGroundedText(value).trim() : undefined)
-  return slides.map(slide => ({
-    role: slide.role,
-    note: clean(slide.note),
-    lines: (slide.lines || [])
+  return slides.map(slide => {
+    const lines = (slide.lines || [])
       .map(line => ({
         text: clean(line.text) || "",
         size: line.size === "keyword" || line.size === "support" ? line.size : ("lead" as const),
         emphasis: Boolean(line.emphasis),
       }))
-      .filter(line => line.text.length > 0),
-  }))
+      .filter(line => line.text.length > 0)
+    // Guarantee one big serif statement per non-CTA slide, so an all-"support" slide (e.g. a list)
+    // never renders entirely tiny. Promote the first line to lead.
+    if (slide.role !== "cta" && lines.length > 0 && !lines.some(line => line.size === "lead")) {
+      lines[0] = { ...lines[0], size: "lead" }
+    }
+    return {
+      role: slide.role,
+      note: clean(slide.note),
+      lines,
+    }
+  })
 }
 
 // STORY-OVERLAY-02: a vision pass reads each background and decides where the text should sit so it
@@ -127,18 +135,18 @@ const DEFAULT_PLACEMENT: OverlayPlacement = {
 
 const OVERLAY_VISION_SYSTEM = "You are a precise visual layout analyst. Return only valid JSON."
 
-const OVERLAY_VISION_PROMPT = `You are placing a text overlay on a vertical 1080x1920 (9:16) Instagram Story that uses this photo as the full-bleed background. The text must sit in clean empty space and must NEVER cover the person's face, eyes, hands, or the main subject.
+const OVERLAY_VISION_PROMPT = `You are placing a text overlay on a vertical 1080x1920 (9:16) Instagram Story that uses this photo as the full-bleed background. The text must NEVER cover the person's face, eyes, or head.
 
 Return ONLY this JSON, no commentary:
 {
-  "textZone": "top" or "bottom" (the empty band away from the face/subject where the text should go),
-  "textAlign": "left" | "center" | "right" (the side with the most clean negative space),
-  "focalX": 0-100 (horizontal percent of the subject's face/centre, for cropping),
-  "focalY": 0-100 (vertical percent of the subject's face/centre),
-  "scrim": "light" | "medium" | "strong" (how much dark overlay the text needs to stay readable: light if the text area is already dark and simple, strong if it is bright or busy)
+  "faceX": 0-100 (horizontal percent of the centre of the person's face),
+  "faceY": 0-100 (vertical percent of the centre of the person's face; 0 = very top, 100 = very bottom),
+  "subjectFillsFrame": true or false (true if the person fills most of the vertical frame so there is no clean empty band),
+  "textAlign": "left" | "center" | "right" (the horizontal side with the most clean empty space, away from the face),
+  "scrim": "light" | "medium" | "strong" (how much dark overlay the text needs to stay readable: light if the text area is dark and simple, strong if bright or busy)
 }
 
-Rules: textZone is the band WITHOUT the face. If the subject fills the frame, pick the side with the least important detail. Prefer "top" for wide or landscape shots with open sky. Never put text over the face.`
+faceY is the single most important value: the text is placed in the OPPOSITE half of the frame from the face. If the face is in the top half, text goes to the bottom; if the face is in the bottom half, text goes to the top. Look carefully and report the real face position.`
 
 function clampPct(value: unknown): number {
   const n = typeof value === "number" ? value : Number(value)
@@ -156,11 +164,18 @@ function parsePlacement(raw: string): OverlayPlacement {
   } catch {
     return DEFAULT_PLACEMENT
   }
+  const faceX = clampPct(obj?.faceX)
+  const faceY = clampPct(obj?.faceY)
+  const subjectFillsFrame = obj?.subjectFillsFrame === true
+  const scrim = obj?.scrim === "light" || obj?.scrim === "strong" ? obj.scrim : "medium"
   return {
-    textZone: obj?.textZone === "top" ? "top" : "bottom",
+    // Deterministic: text always sits in the opposite vertical half from the face, so it can never
+    // cover her face. This is far more reliable than letting the model free-choose a zone.
+    textZone: faceY < 50 ? "bottom" : "top",
     textAlign: obj?.textAlign === "center" ? "center" : obj?.textAlign === "right" ? "right" : "left",
-    objectPosition: `${clampPct(obj?.focalX)}% ${clampPct(obj?.focalY)}%`,
-    scrimStrength: obj?.scrim === "light" || obj?.scrim === "strong" ? obj.scrim : "medium",
+    objectPosition: `${faceX}% ${faceY}%`,
+    // A subject that fills the frame has no clean band, so the text needs a stronger scrim to read.
+    scrimStrength: subjectFillsFrame ? "strong" : scrim,
   }
 }
 
