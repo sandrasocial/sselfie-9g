@@ -142,11 +142,11 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
       <div
         style={{
           display: "flex",
-          fontSize: 38,
-          lineHeight: 1.5,
+          fontSize: 44,
+          lineHeight: 1.45,
           color: supportColor,
-          marginTop: 18,
-          maxWidth: 820,
+          marginTop: 20,
+          maxWidth: 880,
         }}
       >
         {line.text}
@@ -155,23 +155,23 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", marginTop: 26 }}>
+    <div style={{ display: "flex", flexDirection: "column", marginTop: 22 }}>
       <div
         style={{
           display: "flex",
           fontFamily: "Cormorant Garamond",
           fontWeight: 600,
-          fontSize: 76,
-          lineHeight: 1.14,
+          fontSize: 100,
+          lineHeight: 1.06,
           color: leadColor,
-          maxWidth: 880,
+          maxWidth: 920,
         }}
       >
         {line.text}
       </div>
       {line.emphasis && (
-        <div style={{ display: "flex", marginTop: 10, marginLeft: 6 }}>
-          <Squiggle color={leadColor} width={340} />
+        <div style={{ display: "flex", marginTop: 12, marginLeft: 6 }}>
+          <Squiggle color={leadColor} width={420} />
         </div>
       )}
     </div>
@@ -197,11 +197,11 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
   // Zone-local scrim: darken ONLY the half the text sits in. The center band (where the face
   // usually is) stays at 0 alpha, so we never put a heavy gradient over her face. textPanel
   // deepens that scrim when the photo behind the text is busy.
-  const panelStrength = slide.textPanel ? 0.88 : 0.72
+  const panelStrength = slide.textPanel ? 0.9 : 0.74
   const zoneScrim =
     zone === "bottom"
-      ? `linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 50%, rgba(10,10,10,${panelStrength}) 100%)`
-      : `linear-gradient(0deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 50%, rgba(10,10,10,${panelStrength}) 100%)`
+      ? `linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 46%, rgba(10,10,10,${panelStrength}) 100%)`
+      : `linear-gradient(0deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 46%, rgba(10,10,10,${panelStrength}) 100%)`
   const metaLight = hasImage ? "rgba(255,255,255,0.92)" : STONE
   const metaDim = hasImage ? "rgba(255,255,255,0.8)" : STONE
 
@@ -319,7 +319,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
             style={{
               display: "flex",
               fontFamily: "Caveat",
-              fontSize: 52,
+              fontSize: 58,
               color: noteColor,
               marginTop: 26,
               transform: "rotate(-3deg)",
