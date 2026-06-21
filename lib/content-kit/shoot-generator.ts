@@ -45,6 +45,7 @@ const SHOT_ROLES = new Set<ShootShotRole>([...SHOT_ROLE_SEQUENCE, "true-detail"]
 function buildShotRenderPrompt(input: {
   selfieCount: number
   styleCount: number
+  continuityCount?: number
   prompt: string
   shotRole?: ShootShotRole
   safetyRetry?: boolean
@@ -52,10 +53,17 @@ function buildShotRenderPrompt(input: {
   const identityRange =
     input.selfieCount <= 1 ? "input image 1" : `input images 1-${input.selfieCount}`
   const firstStyleIndex = input.selfieCount + 1
+  const lastStyleIndex = input.selfieCount + input.styleCount
   const styleRange =
     input.styleCount <= 1
       ? `input image ${firstStyleIndex}`
-      : `input images ${firstStyleIndex}-${input.selfieCount + input.styleCount}`
+      : `input images ${firstStyleIndex}-${lastStyleIndex}`
+  const continuityCount = input.continuityCount || 0
+  const firstContinuityIndex = lastStyleIndex + 1
+  const continuityRange =
+    continuityCount <= 1
+      ? `input image ${firstContinuityIndex}`
+      : `input images ${firstContinuityIndex}-${lastStyleIndex + continuityCount}`
   const shotNumber = shotNumberFromPrompt(input.prompt)
   const shotDirection = extractShotRenderDirection(input.prompt)
 
@@ -65,14 +73,19 @@ function buildShotRenderPrompt(input: {
       "one image of"
     ),
     `Use ${identityRange} as IDENTITY REFERENCES ONLY. Preserve the person's recognizable face, facial structure, age, skin texture, skin tone, body proportions, hair color, and overall look from these identity images.`,
-    `Use ${styleRange} as INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
+    `Use ${styleRange} as ORIGINAL INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
+    continuityCount > 0
+      ? `Use ${continuityRange} as GENERATED SET CONTINUITY REFERENCES ONLY. They show the already-approved visual world for this shoot: outfit family, hair/makeup finish, lighting, palette, image realism, location mood, and editorial treatment. Do not use them as the identity source.`
+      : "",
     input.styleCount > 1
       ? "The first inspiration image is the primary visual source. Later inspiration images are secondary support only."
       : "",
     "If the inspiration image contains a person, treat that person only as a placeholder for pose, styling, wardrobe, lighting, and composition. Do not copy, average, blend, or borrow their face, age, body, hair, or skin.",
     shotNumber === null || shotNumber <= 1
-      ? "For this first image, stay very close to the inspiration image's visual feel while replacing the person with the identity-reference person."
-      : "For this additional set image, keep the same inspiration-image world and vary only the pose, angle, or crop enough to make a useful photoshoot set.",
+      ? "For this first image, recreate the original inspiration image's pose, angle, crop, composition, camera distance, lighting direction, shadow pattern, wardrobe family, and styling as closely as possible while replacing the person with the identity-reference person."
+      : continuityCount > 0
+        ? "For this additional set image, keep the same real photoshoot world from the original inspiration and generated continuity reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot."
+        : "For this additional set image, keep the same real photoshoot world from the original inspiration reference. Vary the pose, angle, crop, camera distance, or nearby location only enough to make a believable next frame from the same shoot.",
     shotRoleRenderInstruction(input.shotRole),
     shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
@@ -113,7 +126,7 @@ function shotRoleRenderInstruction(role?: ShootShotRole): string {
 }
 
 function extractShotRenderDirection(prompt: string): string {
-  const sections = ["Pose", "Camera + lens", "Camera angle", "Composition"]
+  const sections = ["Scene", "Pose", "Camera + lens", "Camera angle", "Composition"]
     .map(label => extractPromptSection(prompt, label))
     .filter(Boolean)
   return sections.join(" ")
@@ -382,6 +395,7 @@ type ImgQuality = "low" | "medium" | "high"
 export async function generateShotImage(input: {
   selfieUrls: string[]
   inspirationUrls: string[]
+  continuityUrls?: string[]
   prompt: string
   shotRole?: ShootShotRole
   quality: ImgQuality
@@ -393,9 +407,10 @@ export async function generateShotImage(input: {
   // Selfies FIRST (identity, up to 4 angles), inspiration after (style, up to 3).
   const selfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
   const styleUrls = input.inspirationUrls.filter(Boolean).slice(0, 3)
+  const continuityUrls = (input.continuityUrls || []).filter(isAllowedUrl).slice(0, 2)
   if (selfieUrls.length === 0) throw new Error("At least one selfie reference is required")
   if (styleUrls.length === 0) throw new Error("At least one inspiration reference is required")
-  const urls = [...selfieUrls, ...styleUrls]
+  const urls = [...selfieUrls, ...styleUrls, ...continuityUrls]
   const files = await Promise.all(
     urls.map(async (url, i) =>
       toFile(await normalizeForOpenAI(await readImage(url)), `shoot-input-${i}.png`, {
@@ -407,6 +422,7 @@ export async function generateShotImage(input: {
   const fullPrompt = buildShotRenderPrompt({
     selfieCount: selfieUrls.length,
     styleCount: styleUrls.length,
+    continuityCount: continuityUrls.length,
     prompt: input.prompt,
     shotRole: input.shotRole,
   })
@@ -429,6 +445,7 @@ export async function generateShotImage(input: {
     const retryPrompt = buildShotRenderPrompt({
       selfieCount: selfieUrls.length,
       styleCount: styleUrls.length,
+      continuityCount: continuityUrls.length,
       prompt: sanitizePromptForImageSafety(input.prompt),
       shotRole: input.shotRole,
       safetyRetry: true,
@@ -447,6 +464,58 @@ export async function generateShotImage(input: {
     }
   )
   return blob.url
+}
+
+async function renderShotIndicesWithContinuity(input: {
+  shots: ShootShot[]
+  indices: number[]
+  selfieUrls: string[]
+  inspirationUrls: string[]
+  quality: ImgQuality
+}): Promise<{ shots: ShootShot[]; failures: Array<{ index: number; reason: unknown }> }> {
+  const shots = [...input.shots]
+  const indices = [...new Set(input.indices)]
+    .filter(index => index >= 0 && index < shots.length)
+    .sort((a, b) => a - b)
+  const failures: Array<{ index: number; reason: unknown }> = []
+  let continuityAnchorUrl =
+    shots[0]?.imageUrl && isAllowedUrl(shots[0].imageUrl) ? shots[0].imageUrl : null
+
+  const renderOne = async (index: number, continuityUrls: string[] = []) =>
+    generateShotImage({
+      selfieUrls: input.selfieUrls,
+      inspirationUrls: input.inspirationUrls,
+      continuityUrls,
+      prompt: shots[index].prompt,
+      shotRole: normalizeShotRole(shots[index].shotRole, index),
+      quality: input.quality,
+    })
+
+  if (indices.includes(0)) {
+    try {
+      const imageUrl = await renderOne(0)
+      shots[0] = { ...shots[0], imageUrl }
+      continuityAnchorUrl = imageUrl
+    } catch (reason) {
+      failures.push({ index: 0, reason })
+    }
+  }
+
+  const restIndices = indices.filter(index => index !== 0)
+  const continuityUrls = continuityAnchorUrl ? [continuityAnchorUrl] : []
+  const results = await Promise.allSettled(
+    restIndices.map(index => renderOne(index, continuityUrls))
+  )
+  results.forEach((result, resultIndex) => {
+    const shotIndex = restIndices[resultIndex]
+    if (result.status === "fulfilled") {
+      shots[shotIndex] = { ...shots[shotIndex], imageUrl: result.value }
+    } else {
+      failures.push({ index: shotIndex, reason: result.reason })
+    }
+  })
+
+  return { shots, failures }
 }
 
 // ── Row mapping + persistence ───────────────────────────────────────────────────
@@ -652,33 +721,25 @@ export async function createShoot(input: {
   `) as any[]
   const shoot = { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
 
-  // Draft pass renders medium (~82s, ~$0.06/shot). Finals re-roll high per shot.
-  const results = await Promise.allSettled(
-    shoot.shots.map((shot, index) =>
-      generateShotImage({
-        selfieUrls: shoot.selfieUrls,
-        inspirationUrls,
-        prompt: shot.prompt,
-        shotRole: normalizeShotRole(shot.shotRole, index),
-        quality: "medium",
-      })
-    )
-  )
-  shoot.shots = shoot.shots.map((shot, i) => {
-    const r = results[i]
-    return r.status === "fulfilled" ? { ...shot, imageUrl: r.value } : shot
+  // Draft pass renders shot 1 first as the inspiration recreation. The remaining
+  // shots receive selfies + original inspiration + generated shot 1 for cohesion.
+  const rendered = await renderShotIndicesWithContinuity({
+    shots: shoot.shots,
+    indices: shoot.shots.map((_, index) => index),
+    selfieUrls: shoot.selfieUrls,
+    inspirationUrls,
+    quality: "medium",
   })
-  const failures = results.filter(r => r.status === "rejected").length
+  shoot.shots = rendered.shots
+  const failures = rendered.failures.length
   if (failures > 0) {
-    results.forEach((result, index) => {
-      if (result.status === "rejected") {
-        console.error(
-          `[shoot-studio] shot ${shoot.shots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(result.reason)}`
-        )
-      }
+    rendered.failures.forEach(({ index, reason }) => {
+      console.error(
+        `[shoot-studio] shot ${shoot.shots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
+      )
     })
     console.error(
-      `[shoot-studio] ${failures}/${results.length} shot generations failed for shoot ${shoot.id}`
+      `[shoot-studio] ${failures}/${shoot.shots.length} shot generations failed for shoot ${shoot.id}`
     )
     shoot.messages = [
       ...shoot.messages,
@@ -744,20 +805,20 @@ ${REFINE_CONTRACT}`
   const changedIdx = nextShots
     .map((shot, i) => (shot.imageUrl === undefined ? i : -1))
     .filter(i => i >= 0)
-  const results = await Promise.allSettled(
-    changedIdx.map(i =>
-      generateShotImage({
-        selfieUrls: shoot.selfieUrls,
-        inspirationUrls: shoot.inspirationUrls,
-        prompt: nextShots[i].prompt,
-        shotRole: normalizeShotRole(nextShots[i].shotRole, i),
-        quality: "medium",
-      })
+  const rendered =
+    changedIdx.length > 0
+      ? await renderShotIndicesWithContinuity({
+          shots: nextShots,
+          indices: changedIdx,
+          selfieUrls: shoot.selfieUrls,
+          inspirationUrls: shoot.inspirationUrls,
+          quality: "medium",
+        })
+      : { shots: nextShots, failures: [] }
+  rendered.failures.forEach(({ index, reason }) => {
+    console.error(
+      `[shoot-studio] refined shot ${nextShots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
     )
-  )
-  results.forEach((r, j) => {
-    if (r.status === "fulfilled")
-      nextShots[changedIdx[j]] = { ...nextShots[changedIdx[j]], imageUrl: r.value }
   })
 
   const messages: ShootMessage[] = [
@@ -765,8 +826,8 @@ ${REFINE_CONTRACT}`
     { role: "sandra", text: ask, at: new Date().toISOString() },
     { role: "agent", text: reply, at: new Date().toISOString() },
   ]
-  await saveShots(shoot.id, nextShots, messages)
-  return { ...shoot, shots: nextShots, messages }
+  await saveShots(shoot.id, rendered.shots, messages)
+  return { ...shoot, shots: rendered.shots, messages }
 }
 
 export async function regenerateShot(
@@ -783,6 +844,10 @@ export async function regenerateShot(
   const imageUrl = await generateShotImage({
     selfieUrls: shoot.selfieUrls,
     inspirationUrls: shoot.inspirationUrls,
+    continuityUrls:
+      idx > 0 && shoot.shots[0]?.imageUrl && isAllowedUrl(shoot.shots[0].imageUrl)
+        ? [shoot.shots[0].imageUrl]
+        : [],
     prompt: shoot.shots[idx].prompt,
     shotRole,
     quality,
@@ -844,20 +909,18 @@ Exactly ${safeCount} new shots.`
     status: "draft",
   }))
 
-  const results = await Promise.allSettled(
-    newShots.map(shot =>
-      generateShotImage({
-        selfieUrls: shoot.selfieUrls,
-        inspirationUrls: shoot.inspirationUrls,
-        prompt: shot.prompt,
-        shotRole: shot.shotRole,
-        quality: "medium",
-      })
+  const combinedShots = [...shoot.shots, ...newShots]
+  const rendered = await renderShotIndicesWithContinuity({
+    shots: combinedShots,
+    indices: newShots.map((_, index) => shoot.shots.length + index),
+    selfieUrls: shoot.selfieUrls,
+    inspirationUrls: shoot.inspirationUrls,
+    quality: "medium",
+  })
+  rendered.failures.forEach(({ index, reason }) => {
+    console.error(
+      `[shoot-studio] extended shot ${combinedShots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
     )
-  )
-  const rendered = newShots.map((shot, i) => {
-    const r = results[i]
-    return r.status === "fulfilled" ? { ...shot, imageUrl: r.value } : shot
   })
   const reply = stripEmDashes(
     String(parsed.reply || `Added ${safeCount} more shots to the same world.`)
@@ -870,7 +933,7 @@ Exactly ${safeCount} new shots.`
       at: new Date().toISOString(),
     },
   ]
-  const nextShots = [...shoot.shots, ...rendered]
+  const nextShots = rendered.shots
   await saveShots(shoot.id, nextShots, messages)
   return { ...shoot, shots: nextShots, messages }
 }
