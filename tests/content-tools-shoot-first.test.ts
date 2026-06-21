@@ -47,6 +47,26 @@ describe("Content tools shoot-first workflow", () => {
     expect(shootStudioClient).toContain("Copy #${giveawayShot.promptNumber}")
   })
 
+  it("renders admin stories with the deterministic local overlay, not a baked image", () => {
+    const storyGenerator = read("lib/content-kit/story-generator.ts")
+    const renderer = read("app/api/admin/content-kit/story/[id]/[slide]/route.tsx")
+    const types = read("lib/content-kit/types.ts")
+
+    // STORY-OVERLAY-01: composite over the real selected photo, never regenerate it via gpt-image-2.
+    expect(storyGenerator).toContain("compositeStorySlides")
+    expect(storyGenerator).toContain('headlineRender: "composited"')
+    expect(storyGenerator).not.toContain("redesignContentSlide")
+    expect(storyGenerator).not.toContain("pickContentStyleReference")
+
+    // Renderer: IG safe zones + zone-local scrim (never a full-height gradient over the face).
+    expect(renderer).toContain("TEXT_BOTTOM")
+    expect(renderer).toContain("slide.textZone")
+    expect(renderer).not.toContain("rgba(10,10,10,0.86) 100%")
+
+    // Types carry the new composited controls.
+    expect(types).toContain('textZone?: "top" | "bottom"')
+  })
+
   it("keeps member Maya carousels photoshoot-first by default", () => {
     const designSystems = read("lib/app-v3/maya/carousel-design-systems.ts")
     const compiler = read("lib/app-v3/prompt-compiler.ts")

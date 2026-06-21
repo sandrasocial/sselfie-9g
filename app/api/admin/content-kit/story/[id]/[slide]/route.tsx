@@ -19,6 +19,13 @@ const STONE = "#8A8780"
 
 const WIDTH = 1080
 const HEIGHT = 1920
+// STORY-OVERLAY-01 — Instagram Story safe zones. IG overlays avatar/name/clock up top and the
+// reply bar + reactions at the bottom, so critical text must stay inside this band.
+const SIDE = 80
+const HEADER_TOP = 150
+const FOOTER_BOTTOM = 175
+const TEXT_BOTTOM = 380 // bottom-zone text anchor: lowest critical baseline clears the reply bar
+const TEXT_TOP = 320 // top-zone text anchor: clears the avatar/name row
 
 let fontCache: Promise<{
   serif: Buffer
@@ -96,6 +103,12 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
   const supportColor = light ? "rgba(255,255,255,0.88)" : SMOKE
 
   if (line.size === "keyword") {
+    // Auto-fit so PROMPT / KIT / VAULT / PRESETS / START all stay inside the side margins and the
+    // circle wraps them. The circle box is sized to the padded text so it never clips.
+    const len = Math.max(line.text.length, 1)
+    const fontSize = Math.max(96, Math.min(160, Math.floor((808 / len - 8) / 0.55)))
+    const circleW = Math.round(len * (0.55 * fontSize + 8) + 112)
+    const circleH = fontSize + 36
     return (
       <div
         style={{
@@ -106,13 +119,13 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
           marginBottom: 8,
         }}
       >
-        <KeywordCircle color={leadColor} w={line.text.length * 92 + 112} h={196} />
+        <KeywordCircle color={leadColor} w={circleW} h={circleH} />
         <div
           style={{
             display: "flex",
             fontFamily: "Cormorant Garamond",
             fontWeight: 600,
-            fontSize: 160,
+            fontSize,
             lineHeight: 1,
             letterSpacing: 8,
             color: leadColor,
@@ -180,6 +193,18 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
     )
   }
 
+  const zone: "top" | "bottom" = slide.textZone === "top" ? "top" : "bottom"
+  // Zone-local scrim: darken ONLY the half the text sits in. The center band (where the face
+  // usually is) stays at 0 alpha, so we never put a heavy gradient over her face. textPanel
+  // deepens that scrim when the photo behind the text is busy.
+  const panelStrength = slide.textPanel ? 0.88 : 0.72
+  const zoneScrim =
+    zone === "bottom"
+      ? `linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 50%, rgba(10,10,10,${panelStrength}) 100%)`
+      : `linear-gradient(0deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0) 50%, rgba(10,10,10,${panelStrength}) 100%)`
+  const metaLight = hasImage ? "rgba(255,255,255,0.92)" : STONE
+  const metaDim = hasImage ? "rgba(255,255,255,0.8)" : STONE
+
   return (
     <div
       style={{
@@ -210,8 +235,21 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
             width: WIDTH,
             height: HEIGHT,
             display: "flex",
-            background:
-              "linear-gradient(180deg, rgba(10,10,10,0.32) 0%, rgba(10,10,10,0.00) 18%, rgba(10,10,10,0.00) 42%, rgba(10,10,10,0.86) 100%)",
+            background: zoneScrim,
+          }}
+        />
+      )}
+      {hasImage && (
+        // Confined wordmark scrim: just the top strip, so "SSELFIE" reads without dimming the face.
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: WIDTH,
+            height: 240,
+            display: "flex",
+            background: "linear-gradient(180deg, rgba(10,10,10,0.34) 0%, rgba(10,10,10,0) 100%)",
           }}
         />
       )}
@@ -220,9 +258,9 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
       <div
         style={{
           position: "absolute",
-          top: 96,
-          left: 80,
-          width: WIDTH - 160,
+          top: HEADER_TOP,
+          left: SIDE,
+          width: WIDTH - SIDE * 2,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -235,107 +273,88 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
             fontWeight: 600,
             letterSpacing: 7,
             textTransform: "uppercase",
-            color: hasImage ? "rgba(255,255,255,0.92)" : STONE,
+            color: metaLight,
           }}
         >
           SSELFIE
         </div>
-        <div
-          style={{
-            display: "flex",
-            fontSize: 26,
-            color: hasImage ? "rgba(255,255,255,0.8)" : STONE,
-            letterSpacing: 5,
-          }}
-        >
+        <div style={{ display: "flex", fontSize: 26, color: metaDim, letterSpacing: 5 }}>
           {index + 1} / {total}
         </div>
       </div>
 
-      {/* Doctrine: text in clean lower negative space, never over the face. */}
+      {/* Doctrine: text in clean negative space, never over the face, inside the IG safe band. */}
       <div
         style={{
           position: "absolute",
-          bottom: 110,
-          left: 80,
-          width: WIDTH - 160,
+          left: SIDE,
+          width: WIDTH - SIDE * 2,
+          ...(zone === "bottom" ? { bottom: TEXT_BOTTOM } : { top: TEXT_TOP }),
           display: "flex",
           flexDirection: "column",
           alignItems: isCta ? "center" : "flex-start",
         }}
       >
+        {!isCta && (
+          <div
+            style={{
+              display: "flex",
+              width: 110,
+              height: 2,
+              backgroundColor: light ? PORCELAIN : OBSIDIAN,
+              marginBottom: 18,
+            }}
+          />
+        )}
+        {slide.lines.map((line, lineIndex) => (
+          <Line key={lineIndex} line={line} light={light} />
+        ))}
+        {isCta && (
+          <div style={{ display: "flex", marginTop: 4 }}>
+            <Arrow color={light ? PORCELAIN : OBSIDIAN} />
+          </div>
+        )}
+        {slide.note && (
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Caveat",
+              fontSize: 52,
+              color: noteColor,
+              marginTop: 26,
+              transform: "rotate(-3deg)",
+            }}
+          >
+            {slide.note}
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: FOOTER_BOTTOM,
+          left: SIDE,
+          width: WIDTH - SIDE * 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: isCta ? "center" : "flex-start",
-            marginBottom: 44,
+            fontSize: 26,
+            fontWeight: 600,
+            letterSpacing: 7,
+            textTransform: "uppercase",
+            color: metaLight,
           }}
         >
-          {!isCta && (
-            <div
-              style={{
-                display: "flex",
-                width: 110,
-                height: 2,
-                backgroundColor: light ? PORCELAIN : OBSIDIAN,
-                marginBottom: 18,
-              }}
-            />
-          )}
-          {slide.lines.map((line, lineIndex) => (
-            <Line key={lineIndex} line={line} light={light} />
-          ))}
-          {isCta && (
-            <div style={{ display: "flex", marginTop: 4 }}>
-              <Arrow color={light ? PORCELAIN : OBSIDIAN} />
-            </div>
-          )}
-          {slide.note && (
-            <div
-              style={{
-                display: "flex",
-                fontFamily: "Caveat",
-                fontSize: 52,
-                color: noteColor,
-                marginTop: 26,
-                transform: "rotate(-3deg)",
-              }}
-            >
-              {slide.note}
-            </div>
-          )}
+          @sandra.social
         </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: WIDTH - 160,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 26,
-              fontWeight: 600,
-              letterSpacing: 7,
-              textTransform: "uppercase",
-              color: hasImage ? "rgba(255,255,255,0.92)" : STONE,
-            }}
-          >
-            @sandra.social
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 26,
-              color: hasImage ? "rgba(255,255,255,0.8)" : STONE,
-              letterSpacing: 5,
-            }}
-          >
-            sselfie.ai
-          </div>
+        <div style={{ display: "flex", fontSize: 26, color: metaDim, letterSpacing: 5 }}>
+          sselfie.ai
         </div>
       </div>
     </div>

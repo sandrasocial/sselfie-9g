@@ -88,8 +88,14 @@ export type StorySlide = {
   note?: string
   /** Full-bleed or finished story image (Vercel Blob URL). */
   imageUrl?: string
-  /** CAROUSEL-03: finished story slides can come back from gpt-image-2 with text already baked. */
+  /** STORY-OVERLAY-01: "composited" = our local renderer draws text over the real selected photo
+   * (preferred). "baked" = legacy gpt-image-2 slide with text already in the PNG (back-compat). */
   headlineRender?: "baked" | "composited"
+  /** STORY-OVERLAY-01: which vertical band the text + scrim sit in. Default "bottom" (lower third,
+   * face stays clear). "top" for photos whose subject sits low. */
+  textZone?: "top" | "bottom"
+  /** STORY-OVERLAY-01: draw a subtle semi-opaque panel behind the text when the photo is busy. */
+  textPanel?: boolean
   /** Legacy/fallback screenshots or proof images for pre-CAROUSEL-03 story decks. */
   overlayAssets?: ContentOverlayAsset[]
 }

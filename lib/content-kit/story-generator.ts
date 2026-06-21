@@ -5,11 +5,7 @@ import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
-import {
-  pickContentStyleReference,
-  redesignContentSlide,
-} from "@/lib/content-kit/slide-redesign-generator"
-import type { CarouselSlide, StorySequence, StorySlide } from "@/lib/content-kit/types"
+import type { StorySequence, StorySlide } from "@/lib/content-kit/types"
 import {
   audienceBlock,
   funnelBlock,
@@ -111,49 +107,39 @@ function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
   }))
 }
 
-function storySlideToCarouselSlide(slide: StorySlide, index: number): CarouselSlide {
-  const lead = slide.lines.filter(line => line.size === "lead" || line.size === "keyword")
-  const support = slide.lines.filter(line => line.size === "support")
-  return {
-    kind: index === 0 ? "hook" : slide.role === "cta" ? "cta" : "photo",
-    eyebrow: slide.note,
-    title: lead.map(line => line.text).join(" "),
-    body: support.map(line => line.text).join(" "),
-  }
-}
-
-async function redesignStorySlides({
+// STORY-OVERLAY-01: deterministic compositing. We do NOT send story slides through gpt-image-2
+// anymore — that regenerated the photo (breaking Sandra's "preserve the photo exactly" rule) and
+// garbled text. Each slide keeps the admin-selected background untouched as its imageUrl and is
+// flagged "composited" so the local renderer draws her real fonts + accents over the real photo.
+// Screenshot/proof images attach to proof-style slides as overlayAssets (kept pixel-perfect too).
+function compositeStorySlides({
   slides,
-  topic,
-  referenceUrls,
+  backgroundUrls,
+  overlayUrls,
 }: {
   slides: StorySlide[]
-  topic: string
-  referenceUrls: string[]
-}): Promise<StorySlide[]> {
-  const style = await pickContentStyleReference("story-sequence")
-  if (!style) throw new Error("No story-sequence style references found")
-  const pool = referenceUrls.filter(isAllowedImageUrl)
-  if (pool.length === 0) throw new Error("No story reference image available")
-
-  return Promise.all(
-    slides.map(async (slide, index) => {
-      const imageUrl = await redesignContentSlide({
-        referenceUrl: pool[index % pool.length],
-        styleReferenceUrl: style.imageUrl,
-        styleLabel: style.label,
-        category: "story-sequence",
-        topic,
-        slide: storySlideToCarouselSlide(slide, index),
-      })
-      return {
-        ...slide,
-        imageUrl,
-        headlineRender: "baked" as const,
-        overlayAssets: undefined,
-      }
-    })
-  )
+  backgroundUrls: string[]
+  overlayUrls: string[]
+}): StorySlide[] {
+  const backgrounds = backgroundUrls.filter(isAllowedImageUrl)
+  const proof = overlayUrls.filter(isAllowedImageUrl)
+  let proofCursor = 0
+  return slides.map((slide, index) => {
+    // Respect the admin-selected order; cycle if there are fewer backgrounds than slides.
+    const imageUrl =
+      backgrounds.length > 0 ? backgrounds[index % backgrounds.length] : slide.imageUrl
+    const wantsProof = slide.role === "proof" || slide.role === "teaching"
+    const overlayAssets =
+      wantsProof && proofCursor < proof.length
+        ? [{ url: proof[proofCursor++], placement: "middle-right" as const }]
+        : undefined
+    return {
+      ...slide,
+      imageUrl,
+      headlineRender: "composited" as const,
+      overlayAssets,
+    }
+  })
 }
 
 export async function generateStorySequence(input: {
@@ -209,10 +195,10 @@ Return ONLY a JSON array of slides, no commentary:
   const fallbackSelfies = imageUrls.length
     ? []
     : await listAdminSelfies().catch(() => [] as string[])
-  const slides = await redesignStorySlides({
+  const slides = compositeStorySlides({
     slides: sanitizeSlides(raw.slice(0, 8)),
-    topic,
-    referenceUrls: [...imageUrls, ...overlayUrls, ...fallbackSelfies],
+    backgroundUrls: [...imageUrls, ...fallbackSelfies],
+    overlayUrls,
   })
   const title = topic.slice(0, 90)
   await sql`
