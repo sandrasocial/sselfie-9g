@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { type DragEvent, useEffect, useState } from "react"
 import type { StorySequence } from "@/lib/content-kit/types"
 
 type ShootOption = {
@@ -46,6 +46,22 @@ function uniqueAssets(assets: PickedAsset[]): PickedAsset[] {
     seen.add(asset.url)
     return true
   })
+}
+
+function reorderAssets<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return items
+  }
+  const next = [...items]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
 }
 
 function assetMatchesFilter(asset: GalleryAsset, filter: GalleryFilter) {
@@ -171,6 +187,7 @@ export function ContentStoryClient({
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
+  const [draggingBackgroundIndex, setDraggingBackgroundIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const selectedShoot = shoots.find(shoot => shoot.id === selectedShootId) ?? null
@@ -216,6 +233,21 @@ export function ContentStoryClient({
 
   function removeBackground(url: string) {
     setBackgrounds(current => current.filter(asset => asset.url !== url))
+  }
+
+  function moveBackground(fromIndex: number, toIndex: number) {
+    setBackgrounds(current => reorderAssets(current, fromIndex, toIndex))
+  }
+
+  function dropBackground(event: DragEvent<HTMLDivElement>, toIndex: number) {
+    event.preventDefault()
+    const transferredUrl = event.dataTransfer.getData("text/plain")
+    setBackgrounds(current => {
+      const fromIndex =
+        draggingBackgroundIndex ?? current.findIndex(asset => asset.url === transferredUrl)
+      return reorderAssets(current, fromIndex, toIndex)
+    })
+    setDraggingBackgroundIndex(null)
   }
 
   function removeOverlay(url: string) {
@@ -366,10 +398,27 @@ export function ContentStoryClient({
           </div>
           {backgrounds.length > 0 ? (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {backgrounds.map(asset => (
+              {backgrounds.map((asset, index) => (
                 <div
                   key={asset.url}
-                  className="group relative shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-white"
+                  draggable
+                  onDragStart={event => {
+                    setDraggingBackgroundIndex(index)
+                    event.dataTransfer.effectAllowed = "move"
+                    event.dataTransfer.setData("text/plain", asset.url)
+                  }}
+                  onDragOver={event => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = "move"
+                  }}
+                  onDrop={event => dropBackground(event, index)}
+                  onDragEnd={() => setDraggingBackgroundIndex(null)}
+                  className={`group relative shrink-0 cursor-grab overflow-hidden rounded-lg border bg-white active:cursor-grabbing ${
+                    draggingBackgroundIndex === index
+                      ? "border-stone-950 opacity-60"
+                      : "border-stone-200"
+                  }`}
+                  title="Drag to reorder"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -378,6 +427,9 @@ export function ContentStoryClient({
                     className="h-24 w-[4.5rem] object-cover"
                     loading="lazy"
                   />
+                  <span className="absolute left-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/90 px-1 text-[10px] font-medium text-stone-700 shadow-sm">
+                    {index + 1}
+                  </span>
                   <button
                     type="button"
                     aria-label={`Remove ${asset.label}`}
@@ -386,6 +438,26 @@ export function ContentStoryClient({
                   >
                     x
                   </button>
+                  <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      aria-label={`Move ${asset.label} left`}
+                      disabled={index === 0}
+                      onClick={() => moveBackground(index, index - 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-stone-700 shadow-sm hover:text-stone-950 disabled:opacity-30"
+                    >
+                      {"<"}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move ${asset.label} right`}
+                      disabled={index === backgrounds.length - 1}
+                      onClick={() => moveBackground(index, index + 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-stone-700 shadow-sm hover:text-stone-950 disabled:opacity-30"
+                    >
+                      {">"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
