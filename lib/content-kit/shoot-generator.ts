@@ -70,10 +70,13 @@ function buildShotRenderPrompt(input: {
       : `input images ${firstContinuityIndex}-${lastStyleIndex + continuityCount}`
   const shotNumber = shotNumberFromPrompt(input.prompt)
   const shotDirection = extractShotRenderDirection(input.prompt)
-  const inspirationContract =
-    shotNumber === null || shotNumber <= 1
-      ? SSELFIE_INSPIRATION_CLOSE_RECREATE
-      : SSELFIE_INSPIRATION_SET_VARIATION
+  const isFirstShot = shotNumber === null || shotNumber <= 1
+  const inspirationContract = isFirstShot
+    ? SSELFIE_INSPIRATION_CLOSE_RECREATE
+    : SSELFIE_INSPIRATION_SET_VARIATION
+  const roleInstruction = isFirstShot
+    ? "Shot role: close recreation of the inspiration image. Do not convert a close-up inspiration into a full-body, seated, walking, or wider brand shot. Match the inspiration image crop, framing, subject scale, pose geometry, expression energy, camera distance, and lens perspective."
+    : shotRoleRenderInstruction(input.shotRole)
 
   return [
     `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
@@ -93,8 +96,8 @@ function buildShotRenderPrompt(input: {
     continuityCount > 0
       ? "Photoshoot cohesion role: ANCHORED SET SHOT. Use the uploaded selfies as the identity anchor. Use the generated continuity reference only as a style/cohesion anchor for outfit, accessories, lighting, palette, and world. Match the generated continuity reference's wardrobe, accessories, hair, makeup, color grade, and location mood while creating this shot's distinct role and composition. Do not copy the continuity reference pose unless this shot asks for it."
       : "",
-    shotRoleRenderInstruction(input.shotRole),
-    shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
+    roleInstruction,
+    !isFirstShot && shotDirection ? `Shot-specific direction from the plan: ${shotDirection}` : "",
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
     input.safetyRetry
       ? "Safety retry: keep the styling fully clothed, tasteful, non-sexual, and editorial while preserving the same inspiration mood."
@@ -318,6 +321,10 @@ Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
 function buildCreatePrompt(notes?: string): string {
   return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for style, outfit family, lighting direction, camera distance, makeup finish, accessories, location materials, color grade and mood. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
 
+SHOT 1 NON-NEGOTIABLE: shot 1 must be a close visual reconstruction of the FIRST inspiration image. Preserve its crop, composition, framing, subject scale, pose geometry, expression energy, camera distance, lens perspective, lighting direction, shadow pattern, visible wardrobe silhouette, visible props/accessories, background tone, color grade and mood. If the inspiration image is a tight face crop, shot 1 must stay a tight face crop. Do not turn it into full-body, seated, walking, arrival, lifestyle, wider studio, or outfit-establishing content.
+
+PLANNING RULE: describe only what is visible or structurally implied by the inspiration image. Do not invent jeans, shoes, bags, chairs, locations, full outfits, or body framing when the inspiration image does not show them. For shots 2-${DEFAULT_SHOTS_PER_SHOOT}, create believable variations from the same photoshoot world, but keep the visible garment/fabric family, lens feel, crop family, light, shadow language and color grade anchored to the first inspiration image.
+
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
 
 ${voiceBlock()}
@@ -330,7 +337,7 @@ ${audienceBlock()}
 PROOF CONTEXT FOR SHOT UTILITY ONLY:
 ${proofBlock()}
 
-Make the shot mix useful for the proven formats: full-body/everyday-location starts, visible before-after/transformation-friendly frames, profile/detail crops, seated hero, close-up, cover-safe negative space. Assign shotRole on every shot. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
+After shot 1, make the shot mix useful for the proven formats only when that format naturally belongs to the attached inspiration world: profile/detail crops, seated or still hero, close-up, cover-safe negative space, or a wider frame only if the inspiration image clearly supports a wider outfit/location. Assign shotRole on every shot. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot. Do not force full-body, arrival, or lifestyle-action shots when the inspiration image is a tight portrait or beauty crop.
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 

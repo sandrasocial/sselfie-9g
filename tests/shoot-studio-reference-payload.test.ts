@@ -102,12 +102,12 @@ describe("Shoot Studio reference payload", () => {
     expect(payload.prompt).toContain("The inspiration image is the visual blueprint")
     expect(payload.prompt).toContain("Identity Priority: 100%.")
     expect(payload.prompt).toContain("The inspiration image contributes 0% facial information")
-    expect(payload.prompt).toContain("Shot role: lifestyle/action")
+    expect(payload.prompt).toContain("Shot role: close recreation of the inspiration image.")
     expect(payload.prompt).toContain(
-      "Shot-specific direction from the plan: marble cafe. walking toward camera with relaxed hands."
+      "Do not convert a close-up inspiration into a full-body, seated, walking, or wider brand shot."
     )
-    expect(payload.prompt).toContain("marble cafe.")
-    expect(payload.prompt).toContain("85mm close portrait.")
+    expect(payload.prompt).not.toContain("Shot-specific direction from the plan:")
+    expect(payload.prompt).not.toContain("marble cafe.")
 
     expect(payload.prompt).not.toContain("Outfit: black blazer")
     expect(payload.prompt).not.toContain("Use the uploaded reference photos")
@@ -147,6 +147,8 @@ describe("Shoot Studio reference payload", () => {
     expect(heroPrompt).toContain(
       "Only replace the person with the identity from the uploaded identity reference images."
     )
+    expect(heroPrompt).toContain("Do not convert a close-up inspiration into a full-body")
+    expect(heroPrompt).not.toContain("Shot-specific direction from the plan:")
     expect(variationPrompt).toContain("TASK TYPE: STYLE-WORLD VARIATION.")
     expect(variationPrompt).toContain("Poses and angles may vary")
     expect(variationPrompt).toContain("Do not restyle the set into a generic new scene")
@@ -216,7 +218,7 @@ describe("Shoot Studio reference payload", () => {
 
     const prompt = mocks.edit.mock.calls[0][0].prompt
     expect(prompt).toContain("Use input image 2 as ORIGINAL INSPIRATION REFERENCES ONLY")
-    expect(prompt).toContain("Shot role: establishing/wider context")
+    expect(prompt).toContain("Shot role: close recreation of the inspiration image")
     expect(prompt).not.toContain("Off-white linen midi dress")
     expect(prompt).not.toContain("nude leather sandals")
     expect(prompt).not.toContain("Scene:")
