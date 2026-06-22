@@ -4,6 +4,7 @@ import {
   generateCarousels,
   listCarousels,
   setCarouselStatus,
+  updateCarouselSlides,
 } from "@/lib/content-kit/carousel-generator"
 
 export const dynamic = "force-dynamic"
@@ -71,6 +72,28 @@ export async function POST(request: NextRequest) {
     console.error("[content-kit] generation failed:", error)
     return NextResponse.json(
       { success: false, error: error?.message || "Generation failed" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  if (!(await requireAdmin(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  try {
+    const body = await request.json().catch(() => ({}))
+    const id = Number(body.id)
+    if (!id || !Array.isArray(body.slides)) {
+      return NextResponse.json({ error: "id and slides[] required" }, { status: 400 })
+    }
+    const deck = await updateCarouselSlides(id, body.slides)
+    if (!deck) return NextResponse.json({ error: "Carousel not found" }, { status: 404 })
+    return NextResponse.json({ success: true, deck })
+  } catch (error: any) {
+    console.error("[content-kit] slide update failed:", error)
+    return NextResponse.json(
+      { success: false, error: error?.message || "Update failed" },
       { status: 500 }
     )
   }

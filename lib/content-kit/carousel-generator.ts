@@ -693,3 +693,60 @@ export async function getCarousel(id: number): Promise<CarouselDeck | null> {
 export async function setCarouselStatus(id: number, status: "draft" | "approved" | "posted") {
   await sql`UPDATE content_carousels SET status = ${status} WHERE id = ${id}`
 }
+
+// CAROUSEL editor save: persist hand-edited slides (text, slide type, swapped photo). Cleans copy,
+// validates the kind, and keeps a swapped photo as a composited (never baked) background.
+const CAROUSEL_KINDS = new Set<CarouselSlide["kind"]>([
+  "hook",
+  "step",
+  "list",
+  "quote",
+  "cta",
+  "photo",
+  "grid",
+  "before-after",
+])
+
+function sanitizeEditedCarouselSlides(slides: unknown): CarouselSlide[] {
+  if (!Array.isArray(slides)) throw new Error("slides must be an array")
+  const clean = (value: unknown) =>
+    typeof value === "string" && value.trim() ? sanitizeGroundedText(value).trim() : undefined
+  return slides.slice(0, 12).map((raw: any) => {
+    const kind: CarouselSlide["kind"] = CAROUSEL_KINDS.has(raw?.kind) ? raw.kind : "photo"
+    const imageUrl =
+      typeof raw?.imageUrl === "string" && isAllowedImageUrl(raw.imageUrl) ? raw.imageUrl : undefined
+    const overlayAssets = Array.isArray(raw?.overlayAssets)
+      ? raw.overlayAssets
+          .filter((a: any) => typeof a?.url === "string" && isAllowedImageUrl(a.url))
+          .map((a: any) => ({ url: a.url, placement: a.placement, label: a.label, fit: a.fit }))
+      : undefined
+    return {
+      kind,
+      eyebrow: clean(raw?.eyebrow),
+      title: clean(raw?.title) || "",
+      body: clean(raw?.body),
+      footer: clean(raw?.footer),
+      items: Array.isArray(raw?.items)
+        ? raw.items.map((item: unknown) => clean(item) || "").filter(Boolean)
+        : undefined,
+      stepNumber: typeof raw?.stepNumber === "number" ? raw.stepNumber : undefined,
+      imageUrl,
+      // A swapped photo composites locally; without one the slide is a clean editorial text frame.
+      headlineRender: imageUrl ? ("composited" as const) : undefined,
+      overlayAssets,
+      gridUrls: Array.isArray(raw?.gridUrls)
+        ? raw.gridUrls.filter((u: unknown) => typeof u === "string" && isAllowedImageUrl(u as string))
+        : undefined,
+      accents: Array.isArray(raw?.accents) ? raw.accents : undefined,
+    }
+  })
+}
+
+export async function updateCarouselSlides(
+  id: number,
+  slides: unknown
+): Promise<CarouselDeck | null> {
+  const safe = sanitizeEditedCarouselSlides(slides)
+  await sql`UPDATE content_carousels SET slides = ${JSON.stringify(safe)} WHERE id = ${id}`
+  return getCarousel(id)
+}

@@ -21,6 +21,12 @@ describe("Content tools shoot-first workflow", () => {
     expect(adminPage).not.toContain("Your selfie")
     expect(carouselClient).toContain("sourceShootId")
     expect(carouselClient).toContain("overlayUrls")
+    // Carousel kit now has the gallery/favorites picker + the slide editor (parity with stories).
+    expect(carouselClient).toContain("Add from gallery")
+    expect(carouselClient).toContain("CarouselSlideEditor")
+    expect(carouselGenerator).toContain("export async function updateCarouselSlides")
+    expect(carouselGenerator).toContain("compositePhotoshootCarouselSlides")
+    expect(carouselGenerator).not.toContain("redesignPhotoshootCarouselSlides")
     expect(storyClient).toContain("sourceShootId")
     expect(storyClient).toContain("overlayUrls")
     expect(storyClient).toContain('fetch("/api/app-v3/gallery")')

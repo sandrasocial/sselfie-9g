@@ -1,7 +1,8 @@
 "use client"
 
 import { type DragEvent, useEffect, useState } from "react"
-import type { CarouselDeck } from "@/lib/content-kit/types"
+import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
+import { CarouselSlideEditor } from "@/components/admin/carousel-slide-editor"
 
 type ShootOption = {
   id: number
@@ -94,11 +95,36 @@ const STATUS_LABELS: Record<CarouselDeck["status"], string> = {
 function DeckCard({
   deck,
   onStatus,
+  onSaveSlides,
+  galleryUrls,
 }: {
   deck: CarouselDeck
   onStatus: (id: number, status: CarouselDeck["status"]) => void
+  onSaveSlides: (id: number, slides: CarouselSlide[]) => Promise<boolean>
+  galleryUrls: string[]
 }) {
   const [open, setOpen] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [version, setVersion] = useState(0)
+  const [saving, setSaving] = useState(false)
+
+  const swapOptions = Array.from(
+    new Set([
+      ...deck.slides.map(slide => slide.imageUrl).filter((url): url is string => Boolean(url)),
+      ...galleryUrls,
+    ])
+  )
+
+  async function handleSave(slideIndex: number, updated: CarouselSlide) {
+    setSaving(true)
+    const next = deck.slides.map((slide, i) => (i === slideIndex ? updated : slide))
+    const ok = await onSaveSlides(deck.id, next)
+    setSaving(false)
+    if (ok) {
+      setVersion(v => v + 1)
+      setEditingIndex(null)
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -131,35 +157,72 @@ function DeckCard({
         <div className="mt-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {deck.slides.map((_, index) => (
-              <a
-                key={index}
-                href={`/api/admin/content-kit/render/${deck.id}/${index}`}
-                download={`${deck.slug}-${String(index + 1).padStart(2, "0")}.png`}
-                title="Click to download this slide"
-                className="block shrink-0"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/admin/content-kit/render/${deck.id}/${index}`}
-                  alt={`Slide ${index + 1}`}
-                  className="h-64 w-auto rounded-lg border border-stone-200 transition hover:border-stone-950"
-                  loading="lazy"
-                />
-              </a>
+              <div key={index} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                  title={`Edit slide ${index + 1}`}
+                  className="block"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/admin/content-kit/render/${deck.id}/${index}?v=${version}`}
+                    alt={`Slide ${index + 1}`}
+                    className={`h-64 w-auto cursor-pointer rounded-lg border transition hover:border-stone-950 ${
+                      editingIndex === index
+                        ? "border-stone-950 ring-2 ring-stone-950"
+                        : "border-stone-200"
+                    }`}
+                    loading="lazy"
+                  />
+                </button>
+                <div className="mt-1 flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                    className="text-[11px] uppercase tracking-wide text-stone-700 underline underline-offset-4 hover:text-stone-950"
+                  >
+                    {editingIndex === index ? "Close" : "Edit"}
+                  </button>
+                  <a
+                    href={`/api/admin/content-kit/render/${deck.id}/${index}?v=${version}`}
+                    download={`${deck.slug}-${String(index + 1).padStart(2, "0")}.png`}
+                    className="text-[11px] uppercase tracking-wide text-stone-400 underline underline-offset-4 hover:text-stone-950"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
             ))}
           </div>
           <div className="mt-1 flex items-center justify-between">
             <p className="text-xs text-stone-400">
-              Click a slide to download it as PNG (1080x1350).
+              Click a slide to edit it (text, type, photo). Download saves a single slide PNG
+              (1080x1350).
             </p>
             <a
-              href={`/api/admin/content-kit/render/${deck.id}/0?format=cover`}
+              href={`/api/admin/content-kit/render/${deck.id}/0?format=cover&v=${version}`}
               download={`${deck.slug}-cover.png`}
               className="text-xs uppercase tracking-wide text-stone-950 underline underline-offset-4"
             >
               Reel cover (1080x1920)
             </a>
           </div>
+
+          {editingIndex !== null && deck.slides[editingIndex] && (
+            <CarouselSlideEditor
+              slide={deck.slides[editingIndex]}
+              index={editingIndex}
+              total={deck.slides.length}
+              previewSrc={`/api/admin/content-kit/render/${deck.id}/${editingIndex}?v=${version}`}
+              swapOptions={swapOptions}
+              saving={saving}
+              onSave={updated => {
+                if (editingIndex !== null) void handleSave(editingIndex, updated)
+              }}
+              onCancel={() => setEditingIndex(null)}
+            />
+          )}
 
           <div className="mt-4 rounded-xl bg-stone-50 p-4">
             <div className="flex items-center justify-between">
@@ -351,6 +414,27 @@ export function ContentKitClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     })
+  }
+
+  async function saveSlides(id: number, slides: CarouselSlide[]): Promise<boolean> {
+    setError(null)
+    try {
+      const response = await fetch("/api/admin/content-kit", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, slides }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success || !data.deck) {
+        setError(data.error || "Could not save slide")
+        return false
+      }
+      setDecks(current => current.map(deck => (deck.id === id ? data.deck : deck)))
+      return true
+    } catch {
+      setError("Could not save slide")
+      return false
+    }
   }
 
   return (
@@ -646,7 +730,15 @@ export function ContentKitClient({
             No carousels yet. Hit generate after this week&apos;s brief exists.
           </p>
         ) : (
-          decks.map(deck => <DeckCard key={deck.id} deck={deck} onStatus={updateStatus} />)
+          decks.map(deck => (
+            <DeckCard
+              key={deck.id}
+              deck={deck}
+              onStatus={updateStatus}
+              onSaveSlides={saveSlides}
+              galleryUrls={galleryAssets.slice(0, 60).map(asset => asset.url)}
+            />
+          ))
         )}
       </div>
     </section>
