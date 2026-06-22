@@ -407,6 +407,8 @@ async function redesignPhotoshootCarouselSlides({
         category: "photoshoot-carousel",
         topic,
         slide,
+        // Keep Sandra's chosen photo as the exact background; only design text/accents over it.
+        referenceMode: "preserve-frame",
       })
       return {
         ...slide,
