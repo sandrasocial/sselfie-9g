@@ -36,7 +36,9 @@ describe("CONTENT-CAROUSEL-01 tutorial carousel mode", () => {
     expect(generator).toContain("listContentReelReferences")
     expect(generator).toContain("FROM content_reel_references")
     expect(generator).toContain("generateTutorialCarousels")
-    expect(generator).toContain('kind: "before-after"')
+    // Before-after is no longer forced; when present it composites the polished photo + selfie thumb.
+    expect(generator).toContain('slide.kind === "before-after"')
+    expect(generator).toContain("never force one in")
     expect(generator).toContain("Each carousel: 7 to 10 slides")
   })
 

@@ -38,7 +38,7 @@ const TUTORIAL_SLIDE_RULES = `
 TUTORIAL CAROUSEL RULES:
 - Build one 8 to 10 slide tutorial deck: cover/hook, bad example, setting stack, composition tip, pose tip, before-after, edit/preset, CTA.
 - Allowed kinds: "hook", "step", "list", "quote", "photo", "before-after", "cta".
-- Use "before-after" exactly once.
+- "before-after" is OPTIONAL: include it only when the topic genuinely needs a transformation slide, never by default.
 - Add "accents" to 2-4 practical teaching slides. Accent types: "arrow", "circle", "squiggle". Targets: top-left, top-right, middle-left, middle-right, bottom-left, bottom-right, center, keyword.
 - Real screenshot/reference slides must be redesigned by gpt-image-2 from the real frame, not rebuilt by a coded lesson template.
 - Keep text short because the image model bakes all headline, helper text and callouts into the finished slide.
@@ -198,16 +198,8 @@ function ensureTutorialShape(slides: CarouselSlide[], keyword: string): Carousel
     })
   }
 
-  if (!shaped.some(slide => slide.kind === "before-after")) {
-    const insertAt = Math.min(Math.max(shaped.length - 2, 1), 7)
-    shaped.splice(insertAt, 0, {
-      kind: "before-after",
-      eyebrow: "Before / After",
-      title: "From flat to finished",
-      body: "Same idea. Better light, crop, and styling.",
-      accents: [{ type: "arrow", target: "center" }],
-    })
-  }
+  // Before-after is optional now (Sandra's call): never force one in. The writer includes it only
+  // when the topic genuinely calls for it.
 
   const last = shaped[shaped.length - 1]
   if (last?.kind !== "cta") {
@@ -325,9 +317,12 @@ async function redesignTutorialSlides({
 function compositePhotoshootCarouselSlides({
   slides,
   referenceUrls,
+  originalSelfieUrl,
 }: {
   slides: CarouselSlide[]
   referenceUrls: string[]
+  /** Sandra's most recent original selfie upload, used as the small thumbnail on before-after. */
+  originalSelfieUrl?: string
 }): CarouselSlide[] {
   const pool = referenceUrls.filter(isAllowedImageUrl)
   if (pool.length === 0) throw new Error("No carousel reference image available")
@@ -336,12 +331,15 @@ function compositePhotoshootCarouselSlides({
   return slides.map(slide => {
     if (slide.kind === "grid") return slide
     if (slide.kind === "before-after") {
-      const before = pick(cursor++)
-      const after = pick(cursor++)
+      // Not a 50/50 split: the polished photo with her most recent original selfie as a small
+      // overlay thumbnail (the "from one selfie to this" story). Renders via PhotoFrame.
       return {
         ...slide,
-        imageUrl: before ?? slide.imageUrl,
-        overlayAssets: after ? [{ url: after }] : slide.overlayAssets,
+        imageUrl: pick(cursor++),
+        headlineRender: "composited" as const,
+        overlayAssets: originalSelfieUrl
+          ? [{ url: originalSelfieUrl, placement: "bottom-right" as const, label: "one selfie" }]
+          : slide.overlayAssets,
       }
     }
     const photoBacked = slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta"
@@ -431,7 +429,8 @@ Every carousel must:
 - Use the reach-vs-desire truth: teach the selfie/AI skill, then connect it to the income, identity, relief, or visibility she wants.
 - Use the proof block's save-bait structure: numbered steps, clear cover text, one keyword/save CTA, no known-flop formats.
 - Use Sandra's no-fake doctrine. Promise "Look like yourself, at your best." Never imply trickery.
-- Choose one of the carousel design systems. The image model renders the final slide, so write concise copy that can be baked cleanly into the image.
+- Do not include a before-after slide unless the topic genuinely needs a transformation; default to none.
+- Write concise, punchy copy. Her real photos are the slide backgrounds and clean editorial text is composited over them, so keep titles short and legible.
 
 Return ONLY a JSON array, no commentary:
 [
@@ -458,12 +457,13 @@ Return ONLY a JSON array, no commentary:
   for (const carousel of raw.slice(0, count)) {
     if (!carousel.title || !Array.isArray(carousel.slides) || carousel.slides.length < 5) continue
     const sanitized = sanitizeSlides(carousel.slides)
-    const fallbackSelfies = imageUrls.length
-      ? []
-      : await listAdminSelfies().catch(() => [] as string[])
+    const adminSelfies = await listAdminSelfies().catch(() => [] as string[])
+    const fallbackSelfies = imageUrls.length ? [] : adminSelfies
     const slides = compositePhotoshootCarouselSlides({
       slides: sanitized,
       referenceUrls: [...imageUrls, ...fallbackSelfies],
+      // Most recent first (listAdminSelfies orders by uploaded_at DESC).
+      originalSelfieUrl: adminSelfies[0],
     })
     const slug = (carousel.slug || carousel.title)
       .toLowerCase()
@@ -570,7 +570,6 @@ Return ONLY a JSON array with one object:
       { "kind": "list", "title": "The setting stack", "items": ["...", "..."], "accents": [{ "type": "arrow", "target": "middle-right" }] },
       { "kind": "step", "stepNumber": 2, "title": "...", "body": "..." },
       { "kind": "step", "stepNumber": 3, "title": "...", "body": "..." },
-      { "kind": "before-after", "eyebrow": "Before / After", "title": "From this to this", "body": "..." },
       { "kind": "step", "stepNumber": 4, "title": "The edit", "body": "..." },
       { "kind": "cta", "eyebrow": "Save this", "title": "Comment ${keyword}", "body": "I will send you the simple version to try." }
     ]

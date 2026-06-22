@@ -1096,7 +1096,7 @@ export async function GET(
       <PhotoFrame slide={slide} counter={counter} width={width} height={height} />
     ) : slide.kind === "grid" && slide.gridUrls?.length ? (
       <GridFrame slide={slide} counter={counter} width={width} height={height} />
-    ) : slide.kind === "before-after" ? (
+    ) : slide.kind === "before-after" && !slide.imageUrl ? (
       <BeforeAfterFrame slide={slide} counter={counter} width={width} height={height} />
     ) : slide.imageUrl ? (
       <PhotoFrame slide={slide} counter={counter} width={width} height={height} />
