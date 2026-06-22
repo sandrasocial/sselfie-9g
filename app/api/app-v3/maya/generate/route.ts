@@ -929,39 +929,62 @@ export async function POST(request: NextRequest) {
     try {
       if (graphicJobs.length > 0) {
         if (!graphicStyle) throw new Error("Missing style reference for graphic generation")
-        buffers = await Promise.all(
-          graphicJobs.map(async (job, index) => {
-            const result = await redesignContentSlideToBuffer({
-              referenceUrl: job.referenceUrl,
-              styleReferenceUrl: graphicStyle.imageUrl,
-              styleLabel: graphicStyle.label,
-              category: job.category,
-              topic: job.topic,
-              slide: job.slide,
-              referenceMode: "identity-scene",
-              inspirationReferenceUrl: job.inspirationReferenceUrl,
-              // Suite renders everything at medium (cost control); admin keeps high.
-              quality: IMAGE_QUALITY,
-            })
-            actualPromptRecords[index] = [
-              `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
-              result.prompt,
-              "",
-              "Prompt metadata:",
-              `Format: ${format}`,
-              `Content type: ${job.category}`,
-              `Topic: ${job.topic}`,
-              `Slide: ${job.slide.title}`,
-              `Style anchor: ${graphicStyle.label ?? "approved SSELFIE reference"}`,
-              `Reference URL used: ${job.referenceUrl}`,
-              `Style reference URL used: ${graphicStyle.imageUrl}`,
-              job.inspirationReferenceUrl
-                ? `Inspiration reference URL used: ${job.inspirationReferenceUrl}`
-                : "",
-            ].join("\n")
-            return result.buffer
+        const style = graphicStyle
+
+        const renderGraphicJob = async (
+          job: AppGraphicRedesignJob,
+          index: number,
+          inspirationOverrideUrl?: string
+        ): Promise<Buffer> => {
+          const inspirationReferenceUrl = inspirationOverrideUrl ?? job.inspirationReferenceUrl
+          const result = await redesignContentSlideToBuffer({
+            referenceUrl: job.referenceUrl,
+            styleReferenceUrl: style.imageUrl,
+            styleLabel: style.label,
+            category: job.category,
+            topic: job.topic,
+            slide: job.slide,
+            referenceMode: "identity-scene",
+            inspirationReferenceUrl,
+            // Suite renders everything at medium (cost control); admin keeps high.
+            quality: IMAGE_QUALITY,
           })
-        )
+          actualPromptRecords[index] = [
+            `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
+            result.prompt,
+            "",
+            "Prompt metadata:",
+            `Format: ${format}`,
+            `Content type: ${job.category}`,
+            `Topic: ${job.topic}`,
+            `Slide: ${job.slide.title}`,
+            `Style anchor: ${style.label ?? "approved SSELFIE reference"}`,
+            `Reference URL used: ${job.referenceUrl}`,
+            `Style reference URL used: ${style.imageUrl}`,
+            inspirationReferenceUrl
+              ? `Inspiration reference URL used: ${inspirationReferenceUrl}`
+              : "",
+          ].join("\n")
+          return result.buffer
+        }
+
+        if (graphicJobs.length > 1) {
+          // Hero-anchored like the photoshoot: render slide 1 first, then anchor every other slide
+          // to it (as the shared visual world) so the whole set keeps one outfit/lighting/world and
+          // one consistent person across slides, instead of drifting into a different look each time.
+          const heroBuffer = await renderGraphicJob(graphicJobs[0], 0)
+          const heroBlob = await put(
+            `maya-app-v3/${neonUser.id}/graphic-hero-${Date.now()}.png`,
+            heroBuffer,
+            { access: "public", contentType: "image/png" }
+          )
+          const restBuffers = await Promise.all(
+            graphicJobs.slice(1).map((job, i) => renderGraphicJob(job, i + 1, heroBlob.url))
+          )
+          buffers = [heroBuffer, ...restBuffers]
+        } else {
+          buffers = await Promise.all(graphicJobs.map((job, index) => renderGraphicJob(job, index)))
+        }
       } else if (photoshootJobs.length > 0) {
         buffers = await runPhotoshootHeroAnchoredJobs(photoshootJobs)
       } else {
