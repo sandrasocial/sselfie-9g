@@ -150,7 +150,9 @@ function buildAppGraphicRedesignJobs({
     slide,
     category,
     topic,
-    referenceUrl: referenceUrls[index % referenceUrls.length],
+    // Identity consistency: every slide anchors to the SAME front-face selfie. Cycling through
+    // different selfie angles (front/side/full-body) made each slide read as a different person.
+    referenceUrl: referenceUrls[0],
     inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
     recordPrompt: [
       `SSELFIE redesign engine (${category})`,
