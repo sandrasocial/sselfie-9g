@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/send-scheduled-newsletters",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/resolve-pending-payments",
       "schedule": "*/5 * * * *"
     },
