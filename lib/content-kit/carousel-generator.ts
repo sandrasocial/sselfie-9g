@@ -316,40 +316,38 @@ async function redesignTutorialSlides({
   )
 }
 
-async function redesignPhotoshootCarouselSlides({
+// CAROUSEL-RESTORE: composite the real selected photos with locally-rendered text instead of baking
+// each slide through gpt-image-2. Baking regenerated the slide, over-processed the photo, and
+// garbled text (the "looked better before" regression — same root cause we fixed for stories).
+// Photo-backed slides (hook/photo/cta) carry the real photo and the renderer composites the copy
+// over it; teaching slides (step/list/quote) render as clean editorial text frames; before-after
+// gets a real before+after pair; grid keeps its 2x2 photos.
+function compositePhotoshootCarouselSlides({
   slides,
-  topic,
   referenceUrls,
 }: {
   slides: CarouselSlide[]
-  topic: string
   referenceUrls: string[]
-}): Promise<CarouselSlide[]> {
-  const style = await pickContentStyleReference("photoshoot-carousel")
-  if (!style) throw new Error("No photoshoot-carousel style references found")
+}): CarouselSlide[] {
   const pool = referenceUrls.filter(isAllowedImageUrl)
   if (pool.length === 0) throw new Error("No carousel reference image available")
-
-  return Promise.all(
-    slides.map(async (slide, index) => {
-      const imageUrl = await redesignContentSlide({
-        referenceUrl: pool[index % pool.length],
-        styleReferenceUrl: style.imageUrl,
-        styleLabel: style.label,
-        category: "photoshoot-carousel",
-        topic,
-        slide,
-      })
+  const pick = (i: number) => pool[i % pool.length]
+  let cursor = 0
+  return slides.map(slide => {
+    if (slide.kind === "grid") return slide
+    if (slide.kind === "before-after") {
+      const before = pick(cursor++)
+      const after = pick(cursor++)
       return {
         ...slide,
-        imageUrl,
-        headlineRender: "baked" as const,
-        overlayAssets: undefined,
-        accents: undefined,
-        gridUrls: undefined,
+        imageUrl: before ?? slide.imageUrl,
+        overlayAssets: after ? [{ url: after }] : slide.overlayAssets,
       }
-    })
-  )
+    }
+    const photoBacked = slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta"
+    if (!photoBacked) return slide // clean editorial text frame (step/list/quote)
+    return { ...slide, imageUrl: pick(cursor++), headlineRender: "composited" as const }
+  })
 }
 
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
@@ -462,9 +460,8 @@ Return ONLY a JSON array, no commentary:
     const fallbackSelfies = imageUrls.length
       ? []
       : await listAdminSelfies().catch(() => [] as string[])
-    const slides = await redesignPhotoshootCarouselSlides({
+    const slides = compositePhotoshootCarouselSlides({
       slides: sanitized,
-      topic: input.topic || carousel.title,
       referenceUrls: [...imageUrls, ...fallbackSelfies],
     })
     const slug = (carousel.slug || carousel.title)
