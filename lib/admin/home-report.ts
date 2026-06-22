@@ -4,6 +4,12 @@ import { sql } from "@/lib/db/client"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
+import {
+  FOUNDING_ANNUAL_CAP,
+  FOUNDING_ANNUAL_CLOSES_AT,
+  getFoundingAnnualOfferStatus,
+  getFoundingAnnualPurchaseCount,
+} from "@/lib/launch/cash-launch-pricing"
 
 // Admin data contract: money ONLY from stripe_payments (status succeeded/paid,
 // live mode, payment_date window) or the live Stripe API. Member counts only
@@ -35,6 +41,16 @@ export type AdminHomeReport = {
     expired: number
     converted: number
     source: "subscriptions"
+  }
+  launch: {
+    foundingAnnual: {
+      sold: number
+      remaining: number
+      cap: number
+      available: boolean
+      closesAt: string
+      source: "subscriptions"
+    }
   }
   needsMe: {
     flaggedConversations: number
@@ -70,7 +86,7 @@ function labelProduct(product: string | null) {
 }
 
 export async function getAdminHomeReport(): Promise<AdminHomeReport> {
-  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows, studioHealth] = await Promise.all([
+  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows, studioHealth, foundingCount] = await Promise.all([
     sql`
       SELECT
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days')::int AS week_payments,
@@ -124,6 +140,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       console.error("[admin-home] studio member health failed:", error)
       return null
     }),
+    getFoundingAnnualPurchaseCount().catch((error) => {
+      console.error("[admin-home] founding annual count failed:", error)
+      return 0
+    }),
   ])
 
   const money = moneyRows[0] || {}
@@ -132,6 +152,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
   const brief = (briefReports as any[])[0]?.payload || null
   const firstPiece = brief?.contentPlan?.[0] || null
   const topPrompt = brief?.audienceDemand?.topPrompts?.[0] || null
+  const foundingAnnual = getFoundingAnnualOfferStatus(Number(foundingCount || 0))
 
   return {
     money: {
@@ -166,6 +187,16 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       expired: Number((trialRows as any[])[0]?.expired || 0),
       converted: Number((trialRows as any[])[0]?.converted || 0),
       source: "subscriptions",
+    },
+    launch: {
+      foundingAnnual: {
+        sold: foundingAnnual.sold,
+        remaining: foundingAnnual.remaining,
+        cap: FOUNDING_ANNUAL_CAP,
+        available: foundingAnnual.available,
+        closesAt: FOUNDING_ANNUAL_CLOSES_AT,
+        source: "subscriptions",
+      },
     },
     needsMe: {
       flaggedConversations: Number(needs.flagged_conversations || 0),

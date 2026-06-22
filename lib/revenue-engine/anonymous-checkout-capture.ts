@@ -4,6 +4,7 @@ export type CheckoutEmailCaptureParams = Record<string, string | undefined | nul
 
 export const CHECKOUT_EMAIL_CAPTURE_PARAM_KEYS = [
   "interval",
+  "plan",
   "promo",
   "bonus",
   "source",

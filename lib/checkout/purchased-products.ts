@@ -10,15 +10,17 @@ type SessionWithExpandedLineItems = Stripe.Checkout.Session & {
 }
 
 function buildPriceIdMap() {
-  const pairs = [
+  const pairs: Array<[string | undefined, string]> = [
     [process.env.STRIPE_PRICE_SELFIE_GUIDE?.trim(), "selfie_guide"],
     [process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim(), "brand_strategy_pack"],
     [process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID?.trim(), "paid_blueprint"],
     [process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID?.trim(), "one_time_session"],
     [process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID?.trim(), "sselfie_studio_membership"],
+    [process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID?.trim(), "sselfie_studio_membership"],
+    [process.env.STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID?.trim(), "sselfie_studio_membership"],
     [VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteLaunch, "visibility_suite"],
     [VISIBILITY_TO_PAID_STRIPE_PRICE_IDS.suiteStandard, "visibility_suite"],
-  ] as const
+  ]
 
   return new Map<string, string>(pairs.filter((pair): pair is [string, string] => Boolean(pair[0])))
 }

@@ -251,7 +251,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "Newest drops and future SSELFIE photoshoots",
       "Dark Feminine Café, Dark Balcony, Coastal White, and more",
       "Example photo for every prompt",
-      "$27 one-time access, no account required",
+      "One-time access, no account required",
     ],
   },
   {

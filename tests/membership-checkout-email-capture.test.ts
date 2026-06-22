@@ -15,6 +15,7 @@ describe("membership checkout email capture", () => {
   it("preserves membership checkout params through the email-first step", () => {
     const hidden = buildCheckoutEmailCaptureHiddenParams({
       interval: "year",
+      plan: "founding",
       promo: "FOUNDING",
       bonus: "4credits",
       source: "trial_day5",
@@ -24,6 +25,7 @@ describe("membership checkout email capture", () => {
     expect(hidden).toEqual(
       expect.arrayContaining([
         { name: "interval", value: "year" },
+        { name: "plan", value: "founding" },
         { name: "promo", value: "FOUNDING" },
         { name: "bonus", value: "4credits" },
         { name: "source", value: "trial_day5" },

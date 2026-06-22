@@ -3,6 +3,8 @@ const MEMBERSHIP_PRODUCT_TYPES = new Set(["sselfie_studio_membership", "brand_st
 export function getConfiguredMembershipPriceIds(): string[] {
   return [
     String(process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "").trim(),
+    String(process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID || "").trim(),
+    String(process.env.STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID || "").trim(),
     String(process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID || "").trim(),
   ].filter(Boolean)
 }

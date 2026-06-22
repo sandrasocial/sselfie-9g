@@ -22,8 +22,12 @@ function getProductTypeFromEnvPrice(priceId: string | null | undefined): Product
   if (!priceId) return null
   const map: Record<string, ProductType> = {}
   const studio = (process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "").trim()
+  const annual = (process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID || "").trim()
+  const foundingAnnual = (process.env.STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID || "").trim()
   const brand = (process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID || "").trim()
   if (studio) map[studio] = "sselfie_studio_membership"
+  if (annual) map[annual] = "sselfie_studio_membership"
+  if (foundingAnnual) map[foundingAnnual] = "sselfie_studio_membership"
   if (brand) map[brand] = "brand_studio_membership"
   return map[priceId] || null
 }

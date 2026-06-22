@@ -9,6 +9,10 @@ import {
 } from "@/lib/revenue-engine/checkout-attribution"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
+import {
+  getFoundingAnnualOfferStatus,
+  getFoundingAnnualPurchaseCount,
+} from "@/lib/launch/cash-launch-pricing"
 
 export const dynamic = "force-dynamic"
 
@@ -24,6 +28,7 @@ export default async function MembershipCheckoutPage({
   searchParams: Promise<{
     promo?: string
     interval?: string
+    plan?: string
     fallback?: string
     bonus?: string
     source?: string
@@ -62,10 +67,14 @@ export default async function MembershipCheckoutPage({
   const checkoutEmail = authUser?.email ?? urlEmail ?? null
 
   if (params.interval) {
-    const productId = params.interval === "year"
+    const isAnnual = params.interval === "year" || params.interval === "annual"
+    const wantsFounding = isAnnual && params.plan === "founding"
+    const foundingCount = wantsFounding ? await getFoundingAnnualPurchaseCount() : 0
+    const foundingStatus = wantsFounding ? getFoundingAnnualOfferStatus(foundingCount) : null
+    const foundingAvailable = Boolean(foundingStatus?.available)
+    const productId = isAnnual
       ? "sselfie_studio_membership_annual"
       : "sselfie_studio_membership"
-    const isAnnual = params.interval === "year"
     const captureParams = {
       ...params,
       checkout_source: params.checkout_source || "membership_email_capture",
@@ -114,7 +123,7 @@ export default async function MembershipCheckoutPage({
           skipLabel="Skip and go straight to payment"
           productName="SSELFIE SUITE"
           productMeta="Maya, weekly execution, and your content workspace"
-          productPrice={isAnnual ? "970 EUR / year" : "97 EUR / month"}
+          productPrice={foundingAvailable ? "697 EUR / year · founding" : isAnnual ? "970 EUR / year" : "97 EUR / month"}
           reassurance="Used only for your login, receipt, and access link."
           visuals={[
             {
@@ -138,6 +147,8 @@ export default async function MembershipCheckoutPage({
       const clientSecret = await createLandingCheckoutSession(productId, params.promo, checkoutEmail, {
         bonusCredits,
         ...attribution,
+        membershipPlan: wantsFounding ? "founding" : null,
+        offerSlug: foundingAvailable ? "founding_annual" : attribution.offerSlug,
       })
       if (clientSecret) {
         // product_type lets the embedded checkout page show membership copy and fire the

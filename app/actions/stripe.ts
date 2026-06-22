@@ -12,6 +12,7 @@ import {
   type CheckoutAttributionInput,
   upsertCheckoutAttribution,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { resolvePromptVaultPriceId } from "@/lib/launch/cash-launch-pricing"
 
 export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {
   const creditPackage = getCreditPackageById(packageId)
@@ -185,7 +186,7 @@ export async function startProductCheckoutSession(
   } else if (product.type === "masterclass") {
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   } else if (product.type === "prompt_vault") {
-    stripePriceId = process.env.STRIPE_PRICE_PROMPT_VAULT
+    stripePriceId = resolvePromptVaultPriceId()
   } else if (product.type === "selfie_to_brand_shoot_system") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM
   }

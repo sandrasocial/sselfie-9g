@@ -12,6 +12,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { completeReferralForPurchase, isReferralPurchaseEligible } from "@/lib/referrals/service"
 import { markRevenueEnginePurchase } from "../shared"
+import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 
 export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   // The dispatcher only routes invoice.paid / invoice.payment_succeeded here, so data.object
@@ -72,8 +73,13 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
         if (users.length > 0) {
           const userId = users[0].id
-          const productType =
+          const rawProductType =
             subscription.metadata.product_type || "sselfie_studio_membership"
+          const productType =
+            rawProductType === "sselfie_studio_membership_annual"
+              ? "sselfie_studio_membership"
+              : rawProductType
+          const subscriptionPlan = getSubscriptionPlanFromMetadata(subscription.metadata, productType)
 
           // Billing period on Stripe API 2025-03+ lives at items.data[].current_period_*.
           const periodStart =
@@ -94,7 +100,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
               is_test_mode
             )
             VALUES (
-              ${userId}, ${productType}, ${productType}, ${subscription.status},
+              ${userId}, ${productType}, ${subscriptionPlan}, ${subscription.status},
               ${subscription.id}, ${customerId},
               to_timestamp(${periodStart}),
               to_timestamp(${periodEnd}),

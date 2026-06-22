@@ -14,6 +14,7 @@ import {
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { getSubscriptionPeriod } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
+import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 
 export async function handleStudioMembershipSubscriptionCheckout(
   ctx: CheckoutFulfillmentContext,
@@ -28,7 +29,12 @@ export async function handleStudioMembershipSubscriptionCheckout(
   const metadata = session.metadata || {}
   let userId = metadata.user_id
   const customerEmail = session.customer_details?.email || session.customer_email
-  const productType = metadata.product_type
+  const rawProductType = metadata.product_type
+  const productType =
+    rawProductType === "sselfie_studio_membership_annual"
+      ? "sselfie_studio_membership"
+      : rawProductType || "sselfie_studio_membership"
+  const subscriptionPlan = getSubscriptionPlanFromMetadata(metadata, productType)
   const credits = Number.parseInt(metadata.credits || "250")
 
   if (!userId && customerEmail) {
@@ -92,7 +98,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
             await sql`
               UPDATE subscriptions SET
                 product_type = ${productType},
-                plan = ${productType},
+                plan = ${subscriptionPlan},
                 status = ${subscriptionData.status},
                 stripe_subscription_id = ${subscriptionData.id},
                 stripe_customer_id = ${subscriptionData.customer},
@@ -119,7 +125,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
               VALUES (
                 ${userId},
                 ${productType},
-                ${productType},
+                ${subscriptionPlan},
                 ${subscriptionData.status},
                 ${subscriptionData.id},
                 ${subscriptionData.customer},
@@ -360,7 +366,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
             await sql`
               UPDATE subscriptions SET
                 product_type = ${productType},
-                plan = ${productType},
+                plan = ${subscriptionPlan},
                 status = ${subscriptionData.status},
                 stripe_subscription_id = ${subscriptionData.id},
                 stripe_customer_id = ${subscriptionData.customer},
@@ -387,7 +393,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
               VALUES (
                 ${userId},
                 ${productType},
-                ${productType},
+                ${subscriptionPlan},
                 ${subscriptionData.status},
                 ${subscriptionData.id},
                 ${subscriptionData.customer},
@@ -497,7 +503,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
           await sql`
             UPDATE subscriptions SET
               product_type = ${productType},
-              plan = ${productType},
+              plan = ${subscriptionPlan},
               status = ${subscriptionData.status},
               stripe_subscription_id = ${subscriptionData.id},
               stripe_customer_id = ${subscriptionData.customer},
@@ -524,7 +530,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
             VALUES (
               ${userId},
               ${productType},
-              ${productType},
+                ${subscriptionPlan},
               ${subscriptionData.status},
               ${subscriptionData.id},
               ${subscriptionData.customer},

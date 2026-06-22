@@ -9,6 +9,12 @@ import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-pol
 import { buildCheckoutSessionIdempotencyKey } from "@/lib/checkout/session-idempotency"
 import { normalizeReferralCode, REFERRAL_COOKIE_NAME } from "@/lib/referrals/routing"
 import {
+  FOUNDING_ANNUAL_PLAN,
+  getFoundingAnnualPurchaseCount,
+  resolveMembershipPriceId,
+  resolvePromptVaultPriceId,
+} from "@/lib/launch/cash-launch-pricing"
+import {
   buildCheckoutAttributionMetadata,
   normalizeCheckoutAttribution,
   type CheckoutAttributionInput,
@@ -17,6 +23,7 @@ import {
 
 type LandingCheckoutOptions = {
   bonusCredits?: number
+  membershipPlan?: "founding" | null
   presetTier?: "single" | "bundle"
   presetCollectionSlug?: string | null
 } & CheckoutAttributionInput
@@ -46,6 +53,10 @@ export async function createLandingCheckoutSession(
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
+  const checkoutProductType =
+    product.type === "sselfie_studio_membership_annual"
+      ? "sselfie_studio_membership"
+      : product.type
   const allowManualPromotionCodes =
     !isSubscription &&
     product.type !== "prompt_vault" &&
@@ -67,8 +78,24 @@ export async function createLandingCheckoutSession(
     source: checkoutSource,
     referralCode,
   })
+  const requestedMembershipPlan = options?.membershipPlan === "founding" ? "founding" : null
+  const foundingCount =
+    product.type === "sselfie_studio_membership_annual" && requestedMembershipPlan
+      ? await getFoundingAnnualPurchaseCount()
+      : 0
+  const membershipPrice = isSubscription
+    ? resolveMembershipPriceId({
+        productType: product.type,
+        requestedPlan: requestedMembershipPlan,
+        foundingCount,
+      })
+    : null
+  const appliedMembershipPlan = membershipPrice?.appliedPlan || null
+  const effectiveOfferSlug =
+    appliedMembershipPlan === FOUNDING_ANNUAL_PLAN ? FOUNDING_ANNUAL_PLAN : options?.offerSlug
   const checkoutAttributionMetadata = buildCheckoutAttributionMetadata(productId, {
     ...options,
+    offerSlug: effectiveOfferSlug,
     source: attribution.source,
     referralCode: attribution.referralCode,
       checkoutSource: options?.checkoutSource || checkoutSource,
@@ -79,7 +106,11 @@ export async function createLandingCheckoutSession(
 
   console.log("[landing-checkout] Checkout config:", {
     productId,
-    productType: product.type,
+    productType: checkoutProductType,
+    requestedMembershipPlan,
+    appliedMembershipPlan,
+    foundingCount,
+    foundingAvailable: membershipPrice?.foundingStatus?.available ?? null,
     isSubscription,
     price: actualPrice,
   })
@@ -96,7 +127,10 @@ export async function createLandingCheckoutSession(
     starter_kit: "STRIPE_PRICE_STARTER_KIT",
     masterclass: "STRIPE_PRICE_MASTERCLASS",
     visibility_suite: "STRIPE_PRICE_VISIBILITY_SUITE_LAUNCH",
-    sselfie_studio_membership_annual: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
+    sselfie_studio_membership_annual:
+      appliedMembershipPlan === FOUNDING_ANNUAL_PLAN
+        ? "STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID"
+        : "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
     sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
     prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
     presets_single: "STRIPE_PRICE_PRESETS_SINGLE",
@@ -107,11 +141,8 @@ export async function createLandingCheckoutSession(
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
-  } else if (product.type === "sselfie_studio_membership_annual") {
-    // Requires STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID in Vercel env (value: price_1TA699EVJvME7vkwTyp3CUOl)
-    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID
-  } else if (product.type === "sselfie_studio_membership") {
-    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+  } else if (product.type === "sselfie_studio_membership_annual" || product.type === "sselfie_studio_membership") {
+    stripePriceId = membershipPrice?.stripePriceId
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   } else if (product.type === "brand_strategy_pack") {
@@ -127,7 +158,7 @@ export async function createLandingCheckoutSession(
   } else if (product.type === "visibility_suite") {
     stripePriceId = product.stripePriceId
   } else if (product.type === "prompt_vault") {
-    stripePriceId = process.env.STRIPE_PRICE_PROMPT_VAULT
+    stripePriceId = resolvePromptVaultPriceId()
   } else if (product.type === "presets_single") {
     stripePriceId = process.env.STRIPE_PRICE_PRESETS_SINGLE
   } else if (product.type === "presets_bundle") {
@@ -212,7 +243,9 @@ export async function createLandingCheckoutSession(
       subscription_data: {
         metadata: {
           product_id: productId,
-          product_type: product.type,
+          product_type: checkoutProductType,
+          ...(appliedMembershipPlan && { plan: appliedMembershipPlan }),
+          ...(requestedMembershipPlan && { requested_plan: requestedMembershipPlan }),
           credits: product.credits?.toString() || "0",
           ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
           ...checkoutAttributionMetadata,
@@ -221,7 +254,9 @@ export async function createLandingCheckoutSession(
     }),
     metadata: {
       product_id: productId,
-      product_type: product.type,
+      product_type: checkoutProductType,
+      ...(appliedMembershipPlan && { plan: appliedMembershipPlan }),
+      ...(requestedMembershipPlan && { requested_plan: requestedMembershipPlan }),
       credits: product.credits?.toString() || "0",
       ...(bonusCredits > 0 && { bonus_credits: String(bonusCredits) }),
       ...checkoutAttributionMetadata,
@@ -259,8 +294,8 @@ export async function createLandingCheckoutSession(
       sessionId: session.id,
       checkoutOrigin: "guest",
       productId,
-      productType: product.type,
-      offerSlug: attribution.offerSlug,
+      productType: checkoutProductType,
+      offerSlug: appliedMembershipPlan === FOUNDING_ANNUAL_PLAN ? FOUNDING_ANNUAL_PLAN : attribution.offerSlug,
       funnelStage: attribution.funnelStage,
       source: attribution.source,
       utmSource: attribution.utmSource,

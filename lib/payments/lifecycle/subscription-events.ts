@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
 import { getSubscriptionPeriod } from "@/lib/payments/shared"
+import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 
 /**
  * Resolve a subscription's coupon for DB documentation (e.g. lifetime BETA 50%).
@@ -74,7 +75,12 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
   const event = rawEvent as Stripe.Event & { data: { object: any } }
   const subscription = event.data.object
   let userId = subscription.metadata.user_id
-  const productType = subscription.metadata.product_type || "sselfie_studio_membership"
+  const rawProductType = subscription.metadata.product_type || "sselfie_studio_membership"
+  const productType =
+    rawProductType === "sselfie_studio_membership_annual"
+      ? "sselfie_studio_membership"
+      : rawProductType
+  const subscriptionPlan = getSubscriptionPlanFromMetadata(subscription.metadata, productType)
   const credits = Number.parseInt(subscription.metadata.credits || "250")
 
   if (!userId) {
@@ -135,7 +141,7 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
     await sql`
       UPDATE subscriptions SET
         product_type = ${productType},
-        plan = ${productType},
+        plan = ${subscriptionPlan},
         status = ${subscription.status},
         stripe_subscription_id = ${subscription.id},
         stripe_customer_id = ${subscription.customer},
@@ -165,7 +171,7 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
       )
       VALUES (
         ${userId},
-        ${productType},
+        ${subscriptionPlan},
         ${productType},
         ${subscription.status},
         ${subscription.id},
@@ -370,7 +376,11 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
   // Derive product_type so upgrades (e.g. old product → membership) are reflected in our DB.
   // Only include price IDs that are actually set in env (empty string key would corrupt lookups).
   // When price cannot be mapped, do NOT overwrite product_type/plan — update only status/period.
-  let productType: string | null = (sub.metadata as any)?.product_type || null
+  const rawProductType = (sub.metadata as any)?.product_type || null
+  let productType: string | null =
+    rawProductType === "sselfie_studio_membership_annual"
+      ? "sselfie_studio_membership"
+      : rawProductType
   if (!productType && sub.items?.data?.[0]) {
     const priceId =
       typeof sub.items.data[0].price === "string"
@@ -380,8 +390,12 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
       const priceToProduct: Record<string, string> = {}
       const studioId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
       const brandId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
+      const annualId = process.env.STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID
+      const foundingAnnualId = process.env.STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID
       const oneTimeId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
       if (studioId) priceToProduct[studioId] = "sselfie_studio_membership"
+      if (annualId) priceToProduct[annualId] = "sselfie_studio_membership"
+      if (foundingAnnualId) priceToProduct[foundingAnnualId] = "sselfie_studio_membership"
       if (brandId) priceToProduct[brandId] = "brand_studio_membership"
       if (oneTimeId) priceToProduct[oneTimeId] = "one_time_session"
       productType = priceToProduct[priceId] || null
@@ -395,11 +409,12 @@ export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise
   const updatedDiscountCoupon = updatedResolvedDiscount.coupon
 
   if (productType) {
+    const subscriptionPlan = getSubscriptionPlanFromMetadata(sub.metadata, productType)
     await sql`
       UPDATE subscriptions
       SET
         product_type = ${productType},
-        plan = ${productType},
+        plan = ${subscriptionPlan},
         status = ${stripeStatus},
         current_period_start = ${currentPeriodStart},
         current_period_end = ${currentPeriodEnd},

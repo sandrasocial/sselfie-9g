@@ -11,6 +11,7 @@ import {
 } from "@/lib/revenue-engine/checkout-attribution"
 import { shouldShowPromptVaultCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
+import { getPromptVaultPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
 export const metadata: Metadata = {
   title: "Checkout | The Prompt Vault",
@@ -138,6 +139,7 @@ export default async function PromptVaultCheckoutPage({
   const freebieEmail = authUser?.email ? null : await getEmailFromFreebieToken(params.freebie_token)
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? freebieEmail ?? urlEmail ?? null
+  const promptVaultPrice = getPromptVaultPriceDisplay()
   const shouldCaptureEmail = shouldShowPromptVaultCheckoutEmailCapture({
     params,
     hasRecoverableEmail: Boolean(checkoutEmail),
@@ -163,7 +165,7 @@ export default async function PromptVaultCheckoutPage({
       }),
     })
 
-    return <PromptVaultCheckoutEmailCapture params={params} />
+    return <PromptVaultCheckoutEmailCapture params={params} productPrice={promptVaultPrice.oneTimeLabel} />
   }
 
   try {

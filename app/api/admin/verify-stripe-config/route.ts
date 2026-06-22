@@ -37,12 +37,15 @@ export async function GET() {
     // Check environment variables
     const envVars = [
       "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+      "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
+      "STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID",
       "STRIPE_ONE_TIME_SESSION_PRICE_ID",
       "STRIPE_PAID_BLUEPRINT_PRICE_ID",
       "STRIPE_PRICE_BRAND_STRATEGY_PACK",
       "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
       "STRIPE_PRICE_SELFIE_GUIDE",
       "STRIPE_PRICE_PROMPT_VAULT",
+      "STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH",
       "STRIPE_PRICE_PRESETS_SINGLE",
       "STRIPE_PRICE_PRESETS_BUNDLE",
       "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
@@ -95,6 +98,18 @@ export async function GET() {
         expectedAmountFormatted: "$97.00",
         expectedRecurring: true,
       },
+      sselfie_studio_membership_annual: {
+        envVar: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
+        expectedAmount: 97000,
+        expectedAmountFormatted: "€970.00",
+        expectedRecurring: true,
+      },
+      sselfie_studio_membership_founding_annual: {
+        envVar: "STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID",
+        expectedAmount: 69700,
+        expectedAmountFormatted: "€697.00",
+        expectedRecurring: true,
+      },
       one_time_session: {
         envVar: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
         expectedAmount: 4900,
@@ -129,6 +144,12 @@ export async function GET() {
         envVar: "STRIPE_PRICE_PROMPT_VAULT",
         expectedAmount: 2700,
         expectedAmountFormatted: "$27.00",
+        expectedRecurring: false,
+      },
+      prompt_vault_after_flash: {
+        envVar: "STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH",
+        expectedAmount: 3700,
+        expectedAmountFormatted: "$37.00",
         expectedRecurring: false,
       },
       presets_single: {

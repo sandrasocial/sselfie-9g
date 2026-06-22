@@ -46,6 +46,18 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
     expectedRecurring: true,
   },
   {
+    envVarName: "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
+    productType: "sselfie_studio_membership_annual",
+    expectedAmount: 97000, // €970/year
+    expectedRecurring: true,
+  },
+  {
+    envVarName: "STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID",
+    productType: "sselfie_studio_membership_founding_annual",
+    expectedAmount: 69700, // €697/year founding
+    expectedRecurring: true,
+  },
+  {
     envVarName: "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID",
     productType: "brand_studio_membership",
     expectedAmount: 0, // validate presence + recurring only (amount may vary)
@@ -85,6 +97,12 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
     envVarName: "STRIPE_PRICE_PROMPT_VAULT",
     productType: "prompt_vault",
     expectedAmount: 2700, // $27
+    expectedRecurring: false,
+  },
+  {
+    envVarName: "STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH",
+    productType: "prompt_vault_after_flash",
+    expectedAmount: 3700, // $37
     expectedRecurring: false,
   },
   {

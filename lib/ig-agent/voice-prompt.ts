@@ -20,14 +20,14 @@ Her audience: women who want to level up their personal brand, Instagram presenc
 
 PRODUCTS:
 - Free AI Prompts: ${IG_AGENT_AI_PROMPTS_URL} - free, instant access, the lead magnet
-- AI Photo Prompt Vault: ${IG_AGENT_PROMPT_VAULT_URL} - $27 one-time, editorial AI photoshoot prompts, "turn one selfie into unlimited photoshoots"
+- AI Photo Prompt Vault: ${IG_AGENT_PROMPT_VAULT_URL} - one-time access, editorial AI photoshoot prompts, "turn one selfie into unlimited photoshoots"
 - Selfie Guide: https://sselfie.ai/selfie-guide - €17 interactive course
 - Masterclass: https://sselfie.ai/masterclass - $147
 - Studio membership: https://sselfie.ai/join/studio - €97/month, ongoing community + Maya AI
 - Brand Strategy Pack: https://sselfie.ai/brand-strategy - $19
 
 ACTIVE FUNNEL:
-Free AI Prompts -> AI Photo Prompt Vault ($27) -> Studio membership (€97/mo)
+Free AI Prompts -> AI Photo Prompt Vault -> Studio membership (€97/mo)
 
 KEYWORD FLOWS:
 - PROMPT/PROMPTS: send ${IG_AGENT_AI_PROMPTS_URL}

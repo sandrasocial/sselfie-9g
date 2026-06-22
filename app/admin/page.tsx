@@ -196,6 +196,22 @@ export default async function AdminPage({
                 {report.trials.expired} expired · {report.trials.converted} converted to paid
               </div>
             )}
+            <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-stone-500">Founding annual launch</p>
+                  <p className="mt-1 text-stone-900">
+                    {report.launch.foundingAnnual.sold} of {report.launch.foundingAnnual.cap} founding spots sold
+                  </p>
+                </div>
+                <SourceTag label="subscriptions" />
+              </div>
+              <p className="mt-2 text-xs text-stone-500">
+                {report.launch.foundingAnnual.available
+                  ? `${report.launch.foundingAnnual.remaining} spots left before the founding link closes.`
+                  : "Founding link is closed; annual checkout falls back to the standing annual price."}
+              </p>
+            </div>
             {report.studioHealth && (
               <div className="mt-5 border-t border-stone-100 pt-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -241,7 +257,7 @@ export default async function AdminPage({
                   <div className="mt-3 rounded-xl bg-stone-50 p-3">
                     <p className="text-xs uppercase tracking-wide text-stone-500">Never generated</p>
                     <ul className="mt-2 space-y-1 text-sm text-stone-700">
-                      {report.studioHealth.neverGeneratedMembers.map((member) => (
+                      {report.studioHealth.neverGeneratedMembers.map((member: { id: string; email: string; isSmokeTest?: boolean }) => (
                         <li key={member.id} className="flex flex-wrap items-center justify-between gap-2">
                           <span>{member.email}</span>
                           {member.isSmokeTest && (

@@ -10,6 +10,7 @@ import {
   getPublishedFreebiePreviews,
   getPublishedVaultCollectionMeta,
 } from "@/lib/vault/published-collections"
+import { getPromptVaultPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -17,7 +18,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "The AI Photo Prompt Vault · SSELFIE",
   description:
-    "Unlock the full AI photoshoot library: complete editorial shot sequences, example images, tested prompts, and new visual worlds. $27.",
+    "Unlock the full AI photoshoot library: complete editorial shot sequences, example images, tested prompts, and new visual worlds.",
   openGraph: {
     title: "The AI Photo Prompt Vault · SSELFIE",
     description:
@@ -45,7 +46,7 @@ const BUY_BUTTON_STYLE = {
   cursor: "pointer",
 } as const
 
-function BuyButton({ label = "Unlock the Vault · $27" }: { label?: string }) {
+function BuyButton({ label }: { label: string }) {
   return (
     <Suspense
       fallback={
@@ -78,7 +79,7 @@ const vaultFaq = [
     answer: "That is enough to start. One clear selfie in soft light gives AI a much better base.",
   },
   {
-    question: "Is $27 really it?",
+    question: "Is it really one payment?",
     answer: "Yes. One payment, instant access, and every new collection I add lands in your Vault.",
   },
 ]
@@ -135,6 +136,7 @@ export default async function PromptVaultPage({
   const vaultMeta = [...publishedMeta, ...VAULT_COLLECTION_META]
   const vaultCollectionCount = vaultMeta.length
   const vaultShotCount = vaultMeta.reduce((total, collection) => total + collection.shotCount, 0)
+  const promptVaultPrice = getPromptVaultPriceDisplay()
 
   return (
     <main className={inter.className} style={{ background: "#F8FAFA", color: "#0D0E10" }}>
@@ -170,7 +172,7 @@ export default async function PromptVaultPage({
         >
           SSELFIE
         </Link>
-        <BuyButton label="Unlock the Vault · $27" />
+        <BuyButton label={promptVaultPrice.ctaLabel} />
       </nav>
 
       {checkoutFailed && (
@@ -209,7 +211,7 @@ export default async function PromptVaultPage({
                 Payment did not open correctly. Tap below to try again.
               </p>
             </div>
-            <BuyButton label="Try Checkout Again · $27" />
+            <BuyButton label={`Try Checkout Again · ${promptVaultPrice.label}`} />
           </div>
         </section>
       )}
@@ -477,7 +479,7 @@ export default async function PromptVaultPage({
                         copy-paste prompts unlock inside the Vault.
                       </p>
                     )}
-                    <BuyButton label="Unlock full sequence · $27" />
+                    <BuyButton label={`Unlock full sequence · ${promptVaultPrice.label}`} />
                     <RiskLine />
                   </div>
                 </article>
@@ -622,7 +624,7 @@ export default async function PromptVaultPage({
                 "Full shot sequence for every mood",
                 "Example photo for every prompt",
                 "Newest drops + future SSELFIE photoshoots included",
-                "$27 one-time payment · Instant access",
+                `${promptVaultPrice.label} one-time payment · Instant access`,
               ].map(item => (
                 <li key={item}>
                   <span style={{ color: "#818283", marginRight: "10px" }}>·</span>
@@ -638,7 +640,7 @@ export default async function PromptVaultPage({
                 flexWrap: "wrap",
               }}
             >
-              <BuyButton />
+              <BuyButton label={promptVaultPrice.ctaLabel} />
               <p style={{ margin: 0, fontSize: "13px", color: "#818283" }}>
                 One-time payment. Access link sent to your inbox.
               </p>

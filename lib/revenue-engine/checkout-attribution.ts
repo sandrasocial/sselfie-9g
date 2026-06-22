@@ -214,6 +214,7 @@ export function getCheckoutAttributionFromParams(
 
 const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
   "source",
+  "plan",
   "utm_source",
   "utm_medium",
   "utm_campaign",
