@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       FROM admin_email_campaigns
       WHERE approval_status = 'approved'
         AND status = 'scheduled'
+        AND resend_broadcast_id IS NULL
         AND scheduled_for <= NOW()
       ORDER BY scheduled_for ASC
     `

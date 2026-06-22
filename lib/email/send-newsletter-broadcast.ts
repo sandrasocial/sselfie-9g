@@ -169,7 +169,8 @@ export async function sendNewsletterBroadcast(
       AND resend_broadcast_id IS NULL
   `
 
-  // 6. Create broadcast in Resend
+  // 6. Create broadcast in Resend, then explicitly send/schedule it.
+  // Resend's create call creates a DRAFT. Delivery requires broadcasts.send().
   try {
     const scheduledAt = campaign.scheduled_for
       ? new Date(campaign.scheduled_for)
@@ -183,16 +184,16 @@ export async function sendNewsletterBroadcast(
       scheduledAt: scheduledAt?.toISOString()
     })
 
-    const broadcastPayload: any = {
-      audience_id: audienceId,
+    const broadcastPayload: Parameters<typeof resend.broadcasts.create>[0] = {
+      name: campaign.campaign_name || campaign.subject_line,
+      audienceId,
       from: process.env.RESEND_FROM_EMAIL || 'Sandra @ SSELFIE <hello@sselfie.ai>',
+      ...(campaign.preview_text ? { previewText: campaign.preview_text } : {}),
       subject: campaign.subject_line,
-      html: processedHTML
-    }
-
-    // Add scheduling if needed
-    if (!sendImmediately && scheduledAt) {
-      broadcastPayload.scheduled_at = scheduledAt.toISOString()
+      html: processedHTML,
+      ...(typeof campaign.body_text === "string" && campaign.body_text.trim()
+        ? { text: campaign.body_text }
+        : {}),
     }
 
     const { data: broadcast, error: broadcastError } = await resend.broadcasts.create(broadcastPayload)
@@ -206,7 +207,32 @@ export async function sendNewsletterBroadcast(
       scheduled: !sendImmediately
     })
 
-    // 7. Update campaign with broadcast ID and status
+    await sql`
+      UPDATE admin_email_campaigns
+      SET resend_broadcast_id = ${broadcast.id},
+          metrics = COALESCE(metrics, '{}'::jsonb) || ${JSON.stringify({
+            resend_broadcast_created_at: new Date().toISOString(),
+          })}::jsonb,
+          updated_at = NOW()
+      WHERE id = ${campaignId}
+    `
+
+    const sendOptions = !sendImmediately && scheduledAt
+      ? { scheduledAt: scheduledAt.toISOString() }
+      : {}
+
+    const { data: sendResult, error: sendError } = await resend.broadcasts.send(broadcast.id, sendOptions)
+
+    if (sendError || !sendResult) {
+      throw new Error(`Resend broadcast send failed: ${sendError?.message ?? "unknown error"}`)
+    }
+
+    console.log(`[Newsletter Broadcast] ✅ Broadcast ${sendImmediately ? "sent" : "scheduled"} in Resend:`, {
+      id: sendResult.id,
+      scheduledAt: !sendImmediately ? scheduledAt?.toISOString() : null,
+    })
+
+    // 7. Update campaign only after Resend confirms send/schedule.
     await sql`
       UPDATE admin_email_campaigns
       SET resend_broadcast_id = ${broadcast.id},
