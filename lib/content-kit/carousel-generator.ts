@@ -5,7 +5,7 @@ import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
-import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
+import type { CarouselDeck, CarouselSlide, CarouselSlideKind } from "@/lib/content-kit/types"
 import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
 import {
   pickContentStyleReference,
@@ -59,6 +59,9 @@ type GeneratorInput = {
   reelReferenceIds?: number[]
   /** Tutorial CTA keyword. Defaults to KIT. */
   keyword?: "KIT" | "PROMPT" | "PRESET" | "SELFIE"
+  /** Sandra's own written carousel. When provided, her exact slides are used verbatim (the LLM is
+   *  NOT asked to write copy). One slide per blank-line-separated block; first line = headline. */
+  slidesText?: string
   /** Render style for a standard (shoot) carousel:
    *  "baked"    = gpt-image-2 designs each slide to match the photoshoot-carousel style anchors
    *               (the ChatGPT magazine look). Default.
@@ -185,6 +188,33 @@ function sanitizeSlides(slides: CarouselSlide[]): CarouselSlide[] {
     footer: clean(slide.footer),
     items: slide.items?.map(item => clean(item) || "").filter(Boolean),
   }))
+}
+
+// Sandra's own written carousel -> her exact slides, no LLM rewrite. One slide per blank-line block;
+// the first line is the headline, the rest is the body. A leading "1." / "2)" becomes a step number.
+function parseWrittenSlides(text: string): CarouselSlide[] {
+  const blocks = text
+    .split(/\n\s*\n/)
+    .map(block => block.trim())
+    .filter(Boolean)
+  return blocks.map((block, index) => {
+    const lines = block
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+    const firstLine = lines[0] || ""
+    const stepMatch = firstLine.match(/^(\d{1,2})[.)]\s+(.*)$/)
+    const title = stepMatch ? stepMatch[2] : firstLine
+    const body = lines.slice(1).join(" ") || undefined
+    const kind: CarouselSlideKind =
+      index === 0 ? "hook" : index === blocks.length - 1 ? "cta" : "step"
+    return {
+      kind,
+      title,
+      body,
+      ...(stepMatch ? { stepNumber: Number(stepMatch[1]) } : {}),
+    }
+  })
 }
 
 function ensureTutorialShape(slides: CarouselSlide[], keyword: string): CarouselSlide[] {
@@ -401,6 +431,56 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
   ).slice(0, 8)
   // Shoot-sourced runs describe one designed object, so default to one deck.
   const count = Math.min(Math.max(input.count ?? (imageUrls.length > 0 ? 1 : 2), 1), 4)
+
+  // Sandra's own written carousel: use her exact slides, skip the LLM copywriting entirely.
+  if (input.slidesText?.trim()) {
+    const written = sanitizeSlides(parseWrittenSlides(input.slidesText))
+    if (written.length >= 3) {
+      const adminSelfies = await listAdminSelfies().catch(() => [] as string[])
+      const referenceUrls = [...imageUrls, ...(imageUrls.length ? [] : adminSelfies)]
+      const slides =
+        input.renderStyle === "editable"
+          ? compositePhotoshootCarouselSlides({
+              slides: written,
+              referenceUrls,
+              originalSelfieUrl: adminSelfies[0],
+            })
+          : await redesignPhotoshootCarouselSlides({
+              slides: written,
+              topic: input.topic || written[0].title,
+              referenceUrls,
+            })
+      const title = (input.topic?.trim() || written[0].title || "Carousel").slice(0, 90)
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .slice(0, 60)
+      await sql`
+        ALTER TABLE content_carousels
+        ADD COLUMN IF NOT EXISTS source_shoot_id integer,
+        ADD COLUMN IF NOT EXISTS source_shoot_title text
+      `
+      const rows = (await sql`
+        INSERT INTO content_carousels (title, slug, caption, slides, source_period_start, source_shoot_id, source_shoot_title)
+        VALUES (${title}, ${slug}, ${""}, ${JSON.stringify(slides)}, ${null}, ${sourceShoot.id}, ${sourceShoot.title})
+        RETURNING id, created_at
+      `) as Array<{ id: number; created_at: string }>
+      return [
+        {
+          id: rows[0].id,
+          title,
+          slug,
+          caption: "",
+          slides,
+          status: "draft",
+          sourceShootId: sourceShoot.id,
+          sourceShootTitle: sourceShoot.title,
+          sourcePeriodStart: null,
+          createdAt: new Date(rows[0].created_at).toISOString(),
+        },
+      ]
+    }
+  }
 
   const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
   const brief = briefs[0]?.payload ?? null

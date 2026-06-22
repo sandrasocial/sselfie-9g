@@ -278,6 +278,7 @@ export function ContentKitClient({
   const [mode, setMode] = useState<"standard" | "tutorial">("standard")
   const [renderStyle, setRenderStyle] = useState<"baked" | "editable">("baked")
   const [topic, setTopic] = useState("")
+  const [slidesText, setSlidesText] = useState("")
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
   )
@@ -393,6 +394,7 @@ export function ContentKitClient({
           mode,
           renderStyle,
           topic: topic.trim() || undefined,
+          slidesText: slidesText.trim() || undefined,
           sourceShootId: selectedShootId,
           imageUrls: backgrounds.map(asset => asset.url),
           overlayUrls: overlays.map(asset => asset.url),
@@ -670,6 +672,32 @@ export function ContentKitClient({
           )}
         </div>
       </div>
+
+      {mode === "standard" && (
+        <div className="mt-4">
+          <label
+            className="text-xs uppercase tracking-wide text-stone-500"
+            htmlFor="carousel-slides-text"
+          >
+            Write your own slides (optional)
+          </label>
+          <textarea
+            id="carousel-slides-text"
+            value={slidesText}
+            onChange={event => setSlidesText(event.target.value)}
+            rows={6}
+            placeholder={
+              "Leave blank to let AI write it. Or write your slides here, one per blank line:\n\n1. You're standing too close to the mirror\nStep back 3 feet. Your proportions will look natural, not distorted.\n\n2. Your lighting is directly overhead\nFace a window. Natural side light is the difference between harsh shadows and editorial glow."
+            }
+            className="mt-2 w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
+          />
+          {slidesText.trim() && (
+            <p className="mt-1 text-xs text-stone-500">
+              Using your exact slides. AI will not rewrite the copy.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <input

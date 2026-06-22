@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       count: typeof body.count === "number" ? body.count : hasVisualSource ? 1 : 2,
       mode,
       renderStyle: body.renderStyle === "editable" ? "editable" : "baked",
+      slidesText: typeof body.slidesText === "string" ? body.slidesText : undefined,
       topic: typeof body.topic === "string" && body.topic.trim() ? body.topic.trim() : undefined,
       imageUrls,
       overlayUrls,

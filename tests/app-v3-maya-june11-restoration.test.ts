@@ -39,8 +39,10 @@ describe("Maya June 11 restoration guardrails", () => {
       },
     })
 
-    expect(prompt).toContain("Premium SSELFIE editorial slide")
-    expect(prompt).toContain("neutral palette")
+    // Carousel/tutorial redesigns now match the style anchor directly (restored from 5345bcab).
+    expect(prompt).toContain("Match the SECOND reference image's style as closely as possible")
+    expect(prompt).toContain("elegant high-contrast serif headlines")
+    expect(prompt).toContain("cool monochrome palette")
     expectNoRetiredAccentTerms(prompt)
   })
 

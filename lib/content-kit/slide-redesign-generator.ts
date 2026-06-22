@@ -5,10 +5,7 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
-import {
-  SSELFIE_GRAPHIC_STYLE_PROMPT,
-  SSELFIE_INSPIRATION_SET_VARIATION,
-} from "@/lib/app-v3/maya/visual-rules"
+import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
@@ -130,7 +127,7 @@ Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
 
-${category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's approved SSELFIE style while following this shared style contract:"} ${SSELFIE_GRAPHIC_STYLE_PROMPT}
+${category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's style as closely as possible: premium editorial quiet-luxury magazine design, elegant high-contrast serif headlines with tasteful italics for emphasis, clean sans-serif supporting text, a restrained cool monochrome palette (charcoal, smoke gray, cream white, near-black), generous negative space, calm Scandinavian spacing, and the same kind of subtle hand-drawn accents, highlight boxes behind key phrases, and small handwritten notes shown in that reference. Integrate the text into the scene, never pasted on a card. Never a white lesson card, never a flat Canva template, no emojis, no gradients, no neon, no bright red or green callouts."}
 
 ${inspirationGrounding}
 
