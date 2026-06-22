@@ -90,6 +90,7 @@ function SequenceCard({
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [version, setVersion] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const swapOptions = uniqueAssets([
     ...sequence.slides
@@ -107,6 +108,29 @@ function SequenceCard({
     if (ok) {
       setVersion(v => v + 1)
       setEditingIndex(null)
+    }
+  }
+
+  async function downloadAll() {
+    setDownloading(true)
+    try {
+      for (let i = 0; i < sequence.slides.length; i++) {
+        const res = await fetch(`/api/admin/content-kit/story/${sequence.id}/${i}?v=${version}`)
+        if (!res.ok) continue
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `story-${sequence.id}-${String(i + 1).padStart(2, "0")}.png`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+        // Small gap so the browser queues each download instead of dropping them.
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -142,36 +166,57 @@ function SequenceCard({
           <div className="flex gap-3 overflow-x-auto pb-2">
             {sequence.slides.map((slide, index) => (
               <div key={index} className="shrink-0">
-                <a
-                  href={`/api/admin/content-kit/story/${sequence.id}/${index}?v=${version}`}
-                  download={`story-${sequence.id}-${String(index + 1).padStart(2, "0")}.png`}
-                  title={`${slide.role} slide: click to download`}
+                <button
+                  type="button"
+                  onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                  title={`Edit slide ${index + 1}`}
                   className="block"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`/api/admin/content-kit/story/${sequence.id}/${index}?v=${version}`}
                     alt={`Story slide ${index + 1} (${slide.role})`}
-                    className={`h-72 w-auto rounded-lg border transition hover:border-stone-950 ${
-                      editingIndex === index ? "border-stone-950" : "border-stone-200"
+                    className={`h-72 w-auto cursor-pointer rounded-lg border transition hover:border-stone-950 ${
+                      editingIndex === index
+                        ? "border-stone-950 ring-2 ring-stone-950"
+                        : "border-stone-200"
                     }`}
                     loading="lazy"
                   />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setEditingIndex(editingIndex === index ? null : index)}
-                  className="mt-1 w-full text-center text-[11px] uppercase tracking-wide text-stone-600 underline underline-offset-4 hover:text-stone-950"
-                >
-                  {editingIndex === index ? "Close editor" : "Edit"}
                 </button>
+                <div className="mt-1 flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                    className="text-[11px] uppercase tracking-wide text-stone-700 underline underline-offset-4 hover:text-stone-950"
+                  >
+                    {editingIndex === index ? "Close" : "Edit"}
+                  </button>
+                  <a
+                    href={`/api/admin/content-kit/story/${sequence.id}/${index}?v=${version}`}
+                    download={`story-${sequence.id}-${String(index + 1).padStart(2, "0")}.png`}
+                    className="text-[11px] uppercase tracking-wide text-stone-400 underline underline-offset-4 hover:text-stone-950"
+                  >
+                    Download
+                  </a>
+                </div>
               </div>
             ))}
           </div>
-          <p className="mt-1 text-xs text-stone-400">
-            Click a slide to download it as PNG (1080x1920), or Edit to move/resize the text. Post in
-            order.
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={downloadAll}
+              disabled={downloading}
+              className="rounded-full border border-stone-300 px-4 py-1.5 text-xs uppercase tracking-wide text-stone-700 hover:border-stone-950 disabled:opacity-50"
+            >
+              {downloading ? "Saving slides..." : "Save all to device"}
+            </button>
+            <p className="text-xs text-stone-400">
+              Click a slide to edit it (move, resize, swap photo). Save all downloads the whole
+              sequence as PNGs (1080x1920) in order.
+            </p>
+          </div>
 
           {editingIndex !== null && sequence.slides[editingIndex] && (
             <StorySlideEditor
