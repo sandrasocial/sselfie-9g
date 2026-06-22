@@ -372,6 +372,65 @@ export async function getStorySequence(id: number): Promise<StorySequence | null
   }
 }
 
+// STORY-OVERLAY-03: persist hand-edited slides from the admin editor. Cleans the text but PRESERVES
+// every placement field (zone/align/crop/scrim/scale/offset/image/overlays) so Sandra's manual
+// edits survive. Always "composited" — the editor never bakes.
+function clampNum(value: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(min, Math.min(max, n))
+}
+
+function sanitizeEditedSlides(slides: unknown): StorySlide[] {
+  if (!Array.isArray(slides)) throw new Error("slides must be an array")
+  const clean = (value?: unknown) =>
+    typeof value === "string" && value.trim() ? sanitizeGroundedText(value).trim() : undefined
+  return slides.slice(0, 12).map((raw: any) => {
+    const lines = (Array.isArray(raw?.lines) ? raw.lines : [])
+      .map((line: any) => ({
+        text: clean(line?.text) || "",
+        size:
+          line?.size === "keyword" || line?.size === "support" ? line.size : ("lead" as const),
+        emphasis: Boolean(line?.emphasis),
+      }))
+      .filter((line: { text: string }) => line.text.length > 0)
+    if (raw?.role !== "cta" && lines.length > 0 && !lines.some((l: any) => l.size === "lead")) {
+      lines[0] = { ...lines[0], size: "lead" }
+    }
+    const imageUrl = typeof raw?.imageUrl === "string" && isAllowedImageUrl(raw.imageUrl) ? raw.imageUrl : undefined
+    const overlayAssets = Array.isArray(raw?.overlayAssets)
+      ? raw.overlayAssets
+          .filter((a: any) => typeof a?.url === "string" && isAllowedImageUrl(a.url))
+          .map((a: any) => ({ url: a.url, placement: a.placement, label: a.label, fit: a.fit }))
+      : undefined
+    return {
+      role: raw?.role,
+      lines,
+      note: clean(raw?.note),
+      imageUrl,
+      headlineRender: "composited" as const,
+      textZone: raw?.textZone === "top" ? ("top" as const) : ("bottom" as const),
+      textAlign:
+        raw?.textAlign === "center" ? "center" : raw?.textAlign === "right" ? "right" : "left",
+      objectPosition: typeof raw?.objectPosition === "string" ? raw.objectPosition : "50% 50%",
+      scrimStrength:
+        raw?.scrimStrength === "light" || raw?.scrimStrength === "strong"
+          ? raw.scrimStrength
+          : "medium",
+      textScale: clampNum(raw?.textScale, 0.6, 1.6, 1),
+      textOffsetX: Math.round(clampNum(raw?.textOffsetX, -480, 480, 0)),
+      textOffsetY: Math.round(clampNum(raw?.textOffsetY, -900, 900, 0)),
+      overlayAssets,
+    }
+  })
+}
+
+export async function updateStorySlides(id: number, slides: unknown): Promise<StorySequence | null> {
+  const safe = sanitizeEditedSlides(slides)
+  await sql`UPDATE content_story_sequences SET slides = ${JSON.stringify(safe)} WHERE id = ${id}`
+  return getStorySequence(id)
+}
+
 export async function setStoryStatus(id: number, status: "draft" | "approved" | "posted") {
   await sql`UPDATE content_story_sequences SET status = ${status} WHERE id = ${id}`
 }

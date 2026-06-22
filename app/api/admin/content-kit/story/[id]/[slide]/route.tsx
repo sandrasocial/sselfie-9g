@@ -98,7 +98,7 @@ function OverlayAssets({ assets }: { assets?: ContentOverlayAsset[] }) {
   )
 }
 
-function Line({ line, light }: { line: StoryLine; light: boolean }) {
+function Line({ line, light, scale = 1 }: { line: StoryLine; light: boolean; scale?: number }) {
   const leadColor = light ? PORCELAIN : OBSIDIAN
   const supportColor = light ? "rgba(255,255,255,0.88)" : SMOKE
 
@@ -106,7 +106,7 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
     // Auto-fit so PROMPT / KIT / VAULT / PRESETS / START all stay inside the side margins and the
     // circle wraps them. The circle box is sized to the padded text so it never clips.
     const len = Math.max(line.text.length, 1)
-    const fontSize = Math.max(96, Math.min(160, Math.floor((808 / len - 8) / 0.55)))
+    const fontSize = Math.round(Math.max(96, Math.min(160, Math.floor((808 / len - 8) / 0.55))) * scale)
     const circleW = Math.round(len * (0.55 * fontSize + 8) + 112)
     const circleH = fontSize + 36
     return (
@@ -142,7 +142,7 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
       <div
         style={{
           display: "flex",
-          fontSize: 48,
+          fontSize: Math.round(48 * scale),
           lineHeight: 1.42,
           color: supportColor,
           marginTop: 20,
@@ -161,7 +161,7 @@ function Line({ line, light }: { line: StoryLine; light: boolean }) {
           display: "flex",
           fontFamily: "Cormorant Garamond",
           fontWeight: 600,
-          fontSize: 100,
+          fontSize: Math.round(100 * scale),
           lineHeight: 1.06,
           color: leadColor,
           maxWidth: 920,
@@ -194,6 +194,10 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
   }
 
   const zone: "top" | "bottom" = slide.textZone === "top" ? "top" : "bottom"
+  // STORY-OVERLAY-03 (editor): manual resize + fine nudge.
+  const scale = Math.max(0.6, Math.min(1.6, typeof slide.textScale === "number" ? slide.textScale : 1))
+  const offsetX = Math.round(Math.max(-480, Math.min(480, slide.textOffsetX || 0)))
+  const offsetY = Math.round(Math.max(-900, Math.min(900, slide.textOffsetY || 0)))
   // Horizontal placement from the vision pass (default left); CTA stays centered.
   const align = isCta
     ? "center"
@@ -305,6 +309,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           left: SIDE,
           width: WIDTH - SIDE * 2,
           ...(zone === "bottom" ? { bottom: TEXT_BOTTOM } : { top: TEXT_TOP }),
+          transform: `translate(${offsetX}px, ${offsetY}px)`,
           display: "flex",
           flexDirection: "column",
           alignItems: align,
@@ -322,7 +327,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
           />
         )}
         {slide.lines.map((line, lineIndex) => (
-          <Line key={lineIndex} line={line} light={light} />
+          <Line key={lineIndex} line={line} light={light} scale={scale} />
         ))}
         {isCta && (
           <div style={{ display: "flex", marginTop: 4 }}>
@@ -334,7 +339,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
             style={{
               display: "flex",
               fontFamily: "Caveat",
-              fontSize: 58,
+              fontSize: Math.round(58 * scale),
               color: noteColor,
               marginTop: 26,
               transform: "rotate(-3deg)",

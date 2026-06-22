@@ -103,6 +103,11 @@ export type StorySlide = {
   objectPosition?: string
   /** STORY-OVERLAY-02: how much scrim the text needs to stay readable on this photo. */
   scrimStrength?: "light" | "medium" | "strong"
+  /** STORY-OVERLAY-03 (editor): overall text scale multiplier (1 = default), for manual resize. */
+  textScale?: number
+  /** STORY-OVERLAY-03 (editor): fine manual nudge of the text block, in 1080x1920 px. */
+  textOffsetX?: number
+  textOffsetY?: number
   /** Legacy/fallback screenshots or proof images for pre-CAROUSEL-03 story decks. */
   overlayAssets?: ContentOverlayAsset[]
 }

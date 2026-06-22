@@ -5,6 +5,7 @@ import {
   generateStorySequence,
   listStorySequences,
   setStoryStatus,
+  updateStorySlides,
 } from "@/lib/content-kit/story-generator"
 
 export const dynamic = "force-dynamic"
@@ -70,6 +71,28 @@ export async function PATCH(request: NextRequest) {
   }
   await setStoryStatus(id, status)
   return NextResponse.json({ success: true })
+}
+
+export async function PUT(request: NextRequest) {
+  if (!(await requireAdmin(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  try {
+    const body = await request.json().catch(() => ({}))
+    const id = Number(body.id)
+    if (!id || !Array.isArray(body.slides)) {
+      return NextResponse.json({ error: "id and slides[] required" }, { status: 400 })
+    }
+    const sequence = await updateStorySlides(id, body.slides)
+    if (!sequence) return NextResponse.json({ error: "Sequence not found" }, { status: 404 })
+    return NextResponse.json({ success: true, sequence })
+  } catch (error: any) {
+    console.error("[content-kit stories] slide update failed:", error)
+    return NextResponse.json(
+      { success: false, error: error?.message || "Update failed" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function DELETE(request: NextRequest) {

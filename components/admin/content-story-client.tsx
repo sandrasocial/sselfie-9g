@@ -1,7 +1,8 @@
 "use client"
 
 import { type DragEvent, useEffect, useState } from "react"
-import type { StorySequence } from "@/lib/content-kit/types"
+import type { StorySequence, StorySlide } from "@/lib/content-kit/types"
+import { StorySlideEditor } from "@/components/admin/story-slide-editor"
 
 type ShootOption = {
   id: number
@@ -76,12 +77,38 @@ function SequenceCard({
   sequence,
   onStatus,
   onDelete,
+  onSaveSlides,
+  galleryUrls,
 }: {
   sequence: StorySequence
   onStatus: (id: number, status: StorySequence["status"]) => void
   onDelete: (id: number) => void
+  onSaveSlides: (id: number, slides: StorySlide[]) => Promise<boolean>
+  galleryUrls: string[]
 }) {
   const [open, setOpen] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [version, setVersion] = useState(0)
+  const [saving, setSaving] = useState(false)
+
+  const swapOptions = uniqueAssets([
+    ...sequence.slides
+      .map(slide => slide.imageUrl)
+      .filter((url): url is string => Boolean(url))
+      .map(url => ({ url, label: "slide" })),
+    ...galleryUrls.map(url => ({ url, label: "gallery" })),
+  ]).map(asset => asset.url)
+
+  async function handleSave(slideIndex: number, updated: StorySlide) {
+    setSaving(true)
+    const next = sequence.slides.map((slide, i) => (i === slideIndex ? updated : slide))
+    const ok = await onSaveSlides(sequence.id, next)
+    setSaving(false)
+    if (ok) {
+      setVersion(v => v + 1)
+      setEditingIndex(null)
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -114,26 +141,51 @@ function SequenceCard({
         <div className="mt-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {sequence.slides.map((slide, index) => (
-              <a
-                key={index}
-                href={`/api/admin/content-kit/story/${sequence.id}/${index}`}
-                download={`story-${sequence.id}-${String(index + 1).padStart(2, "0")}.png`}
-                title={`${slide.role} slide: click to download`}
-                className="block shrink-0"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/admin/content-kit/story/${sequence.id}/${index}`}
-                  alt={`Story slide ${index + 1} (${slide.role})`}
-                  className="h-72 w-auto rounded-lg border border-stone-200 transition hover:border-stone-950"
-                  loading="lazy"
-                />
-              </a>
+              <div key={index} className="shrink-0">
+                <a
+                  href={`/api/admin/content-kit/story/${sequence.id}/${index}?v=${version}`}
+                  download={`story-${sequence.id}-${String(index + 1).padStart(2, "0")}.png`}
+                  title={`${slide.role} slide: click to download`}
+                  className="block"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/admin/content-kit/story/${sequence.id}/${index}?v=${version}`}
+                    alt={`Story slide ${index + 1} (${slide.role})`}
+                    className={`h-72 w-auto rounded-lg border transition hover:border-stone-950 ${
+                      editingIndex === index ? "border-stone-950" : "border-stone-200"
+                    }`}
+                    loading="lazy"
+                  />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                  className="mt-1 w-full text-center text-[11px] uppercase tracking-wide text-stone-600 underline underline-offset-4 hover:text-stone-950"
+                >
+                  {editingIndex === index ? "Close editor" : "Edit"}
+                </button>
+              </div>
             ))}
           </div>
           <p className="mt-1 text-xs text-stone-400">
-            Click a slide to download it as PNG (1080x1920). Post in order.
+            Click a slide to download it as PNG (1080x1920), or Edit to move/resize the text. Post in
+            order.
           </p>
+
+          {editingIndex !== null && sequence.slides[editingIndex] && (
+            <StorySlideEditor
+              slide={sequence.slides[editingIndex]}
+              index={editingIndex}
+              total={sequence.slides.length}
+              swapOptions={swapOptions}
+              saving={saving}
+              onSave={updated => {
+                if (editingIndex !== null) void handleSave(editingIndex, updated)
+              }}
+              onCancel={() => setEditingIndex(null)}
+            />
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             {sequence.status === "draft" && (
@@ -341,6 +393,27 @@ export function ContentStoryClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     })
+  }
+
+  async function saveSlides(id: number, slides: StorySlide[]): Promise<boolean> {
+    setError(null)
+    try {
+      const response = await fetch("/api/admin/content-kit/stories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, slides }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success || !data.sequence) {
+        setError(data.error || "Could not save slide")
+        return false
+      }
+      setSequences(current => current.map(item => (item.id === id ? data.sequence : item)))
+      return true
+    } catch {
+      setError("Could not save slide")
+      return false
+    }
   }
 
   return (
@@ -619,6 +692,8 @@ export function ContentStoryClient({
             sequence={sequence}
             onStatus={updateStatus}
             onDelete={remove}
+            onSaveSlides={saveSlides}
+            galleryUrls={galleryAssets.slice(0, 60).map(asset => asset.url)}
           />
         ))}
       </div>

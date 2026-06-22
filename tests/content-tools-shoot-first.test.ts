@@ -72,6 +72,16 @@ describe("Content tools shoot-first workflow", () => {
     expect(renderer).toContain("slide.objectPosition")
     expect(renderer).toContain("slide.textAlign")
     expect(types).toContain("objectPosition?: string")
+
+    // STORY-OVERLAY-03: the slide editor (move/resize/edit/swap) persists via updateStorySlides.
+    const storiesRoute = read("app/api/admin/content-kit/stories/route.ts")
+    const editor = read("components/admin/story-slide-editor.tsx")
+    expect(storyGenerator).toContain("export async function updateStorySlides")
+    expect(storiesRoute).toContain("updateStorySlides")
+    expect(read("components/admin/content-story-client.tsx")).toContain("StorySlideEditor")
+    expect(editor).toContain("onPointerMove")
+    expect(renderer).toContain("textScale")
+    expect(types).toContain("textOffsetX?: number")
   })
 
   it("keeps member Maya carousels photoshoot-first by default", () => {
