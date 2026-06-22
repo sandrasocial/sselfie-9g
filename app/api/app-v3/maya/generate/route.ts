@@ -74,14 +74,15 @@ const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
 
 // Image quality (low | medium | high). MEASURED 2026-06-10 on real prompts: medium ~82s/$0.06,
 // high ~191s/$0.22 per image. Members buy "premium presence", so single images default HIGH
-// (the streamed preview keeps the longer wait alive). Carousels run up to 6 parallel jobs, so
-// they stay MEDIUM for cost + time sanity. APP_V3_IMAGE_QUALITY overrides both.
+// (the streamed preview keeps the longer wait alive). Multi-image batches (carousel AND photoshoot)
+// stay MEDIUM: a photoshoot renders the hero sequentially then 5+ more, and at high that ~380s run
+// blew past the 300s route limit and returned a 504. APP_V3_IMAGE_QUALITY overrides both.
 type ImgQuality = "low" | "medium" | "high"
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
 function qualityForFormat(format: OutputFormat): ImgQuality {
   if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high")
     return QUALITY_OVERRIDE
-  return format === "carousel" ? "medium" : "high"
+  return format === "carousel" || format === "photoshoot" ? "medium" : "high"
 }
 
 type AppGraphicRedesignJob = {
