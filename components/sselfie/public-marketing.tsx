@@ -1284,6 +1284,24 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         dark
       />
 
+      {/* PROOF — cream (real customer words, before the price) */}
+      <Section eyebrow="Real customer words" title={<>Still you. And they feel it.</>} dark={false}>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { quote: "Best one so far. I love that it looks real, and me.", who: "A SSELFIE member · 50 & fabulous" },
+            { quote: "I asked Maya to make adjustments and WOW. It's so good.", who: "A SSELFIE member" },
+            { quote: "I'm so picky it's not even funny. But this, my God, I'm blown away.", who: "A SSELFIE member" },
+          ].map(t => (
+            <article key={t.quote} className="mf" style={cardSx(false)}>
+              <p style={{ ...ty("body", false), fontSize: "16px", marginBottom: "14px" }}>
+                &ldquo;{t.quote}&rdquo;
+              </p>
+              <span style={ty("eyebrow", false)}>{t.who}</span>
+            </article>
+          ))}
+        </div>
+      </Section>
+
       {/* PRICING — cream */}
       <Section eyebrow="Pricing" title={<>€97 a month. Everything included.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
