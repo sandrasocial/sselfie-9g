@@ -25,6 +25,7 @@ const PAD = 96
 let fontCache: Promise<{
   serif: Buffer
   serifSemi: Buffer
+  serifItalic: Buffer
   sans: Buffer
   sansSemi: Buffer
 }> | null = null
@@ -35,9 +36,16 @@ function loadFonts() {
     fontCache = Promise.all([
       readFile(join(dir, "cormorant-garamond-500.ttf")),
       readFile(join(dir, "cormorant-garamond-600.ttf")),
+      readFile(join(dir, "cormorant-garamond-italic.ttf")),
       readFile(join(dir, "inter-400.ttf")),
       readFile(join(dir, "inter-600.ttf")),
-    ]).then(([serif, serifSemi, sans, sansSemi]) => ({ serif, serifSemi, sans, sansSemi }))
+    ]).then(([serif, serifSemi, serifItalic, sans, sansSemi]) => ({
+      serif,
+      serifSemi,
+      serifItalic,
+      sans,
+      sansSemi,
+    }))
   }
   return fontCache
 }
@@ -113,6 +121,92 @@ function SlideAccents({
 
 function isScreenshotReferenceUrl(value?: string): boolean {
   return Boolean(value && value.includes("/content-kit/reel-references/"))
+}
+
+// Editorial headline like the ChatGPT carousels: *word* renders italic, [word] gets a cream
+// highlight box. Words wrap individually so a long headline flows across lines.
+type HeadlineSeg = { text: string; italic?: boolean; highlight?: boolean }
+function parseHeadline(title: string): HeadlineSeg[] {
+  const segs: HeadlineSeg[] = []
+  const re = /\*([^*]+)\*|\[([^\]]+)\]|([^*[]+)/g
+  let match: RegExpExecArray | null
+  while ((match = re.exec(title)) !== null) {
+    if (match[1] != null) segs.push({ text: match[1], italic: true })
+    else if (match[2] != null) segs.push({ text: match[2], highlight: true })
+    else if (match[3] != null) segs.push({ text: match[3] })
+  }
+  return segs.length ? segs : [{ text: title }]
+}
+
+function HeadlineText({
+  title,
+  size,
+  color,
+  center,
+}: {
+  title: string
+  size: number
+  color: string
+  center?: boolean
+}) {
+  const segs = parseHeadline(title)
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: center ? "center" : "flex-start",
+        maxWidth: 920,
+      }}
+    >
+      {segs.flatMap((seg, si) => {
+        if (seg.highlight) {
+          return [
+            <div
+              key={`h-${si}`}
+              style={{
+                display: "flex",
+                fontFamily: "Cormorant Garamond",
+                fontWeight: 600,
+                fontSize: size,
+                lineHeight: 1.02,
+                color: OBSIDIAN,
+                backgroundColor: "rgba(245,245,240,0.95)",
+                padding: "0 16px",
+                marginRight: 16,
+                marginBottom: 8,
+              }}
+            >
+              {seg.text.trim()}
+            </div>,
+          ]
+        }
+        return seg.text
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((word, wi) => (
+            <div
+              key={`w-${si}-${wi}`}
+              style={{
+                display: "flex",
+                fontFamily: "Cormorant Garamond",
+                fontWeight: 600,
+                fontStyle: seg.italic ? "italic" : "normal",
+                fontSize: size,
+                lineHeight: 1.08,
+                color,
+                marginRight: 20,
+                marginBottom: 8,
+              }}
+            >
+              {word}
+            </div>
+          ))
+      })}
+    </div>
+  )
 }
 
 function Frame({
@@ -543,19 +637,12 @@ function PhotoFrame({
                 marginBottom: 40,
               }}
             />
-            <div
-              style={{
-                display: "flex",
-                fontFamily: "Cormorant Garamond",
-                fontWeight: 600,
-                fontSize: isHook ? 96 : 80,
-                lineHeight: 1.06,
-                color: PORCELAIN,
-                textAlign: isCta ? "center" : "left",
-              }}
-            >
-              {slide.title}
-            </div>
+            <HeadlineText
+              title={slide.title}
+              size={isHook ? 112 : 96}
+              color={PORCELAIN}
+              center={isCta}
+            />
             {slide.body ? (
               <div
                 style={{
@@ -607,52 +694,20 @@ function PhotoFrame({
                 ))}
               </div>
             ) : null}
-            {slide.kind === "step" && slide.stepNumber ? (
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: 22,
-                  fontSize: 25,
-                  letterSpacing: 5,
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.72)",
-                }}
-              >
-                Step {slide.stepNumber}
-              </div>
-            ) : null}
           </div>
         )}
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: width - 144,
+            marginTop: 6,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: 5,
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.7)",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 24,
-              fontWeight: 600,
-              letterSpacing: 6,
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.92)",
-            }}
-          >
-            @sandra.social
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 24,
-              color: "rgba(255,255,255,0.8)",
-              letterSpacing: 4,
-            }}
-          >
-            sselfie.ai
-          </div>
+          @sandra.social
         </div>
       </div>
     </div>
@@ -1118,6 +1173,7 @@ export async function GET(
       fonts: [
         { name: "Cormorant Garamond", data: fonts.serif, weight: 500, style: "normal" },
         { name: "Cormorant Garamond", data: fonts.serifSemi, weight: 600, style: "normal" },
+        { name: "Cormorant Garamond", data: fonts.serifItalic, weight: 600, style: "italic" },
         { name: "Inter", data: fonts.sans, weight: 400, style: "normal" },
         { name: "Inter", data: fonts.sansSemi, weight: 600, style: "normal" },
       ],

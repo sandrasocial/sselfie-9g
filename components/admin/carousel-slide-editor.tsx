@@ -104,6 +104,9 @@ export function CarouselSlideEditor({
             rows={2}
             className="mt-1 w-full resize-none rounded border border-stone-200 p-2 text-sm focus:border-stone-950 focus:outline-none"
           />
+          <span className="mt-1 block text-[11px] text-stone-400">
+            Wrap a word in *stars* for italic, or [brackets] for a highlight box. (Editable mode)
+          </span>
         </label>
 
         <label className="block">
