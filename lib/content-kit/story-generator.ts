@@ -22,28 +22,31 @@ STORY DOCTRINE (Sandra's own framework, non-negotiable):
 - Audience: women who secretly want to become visible online but fear being judged
   "while they're still becoming her". Visibility is the method, income the outcome,
   confidence the bridge. Core belief: a woman with a phone and a story is unstoppable.
-- Sequences SELL THROUGH STORYTELLING, not constant teaching. 5-8 slides, each with a
-  different emotional job, in this arc:
+- Sequences SELL THROUGH STORYTELLING, not constant teaching. 5 to 12 slides (roughly one
+  per selected photo), each with a different emotional job, ALWAYS ending in the CTA, in this arc:
   hook (make her feel seen, bold + minimal) ->
   tension (name the hidden fear, intimate + honest) ->
   shift (new way of seeing it, a realization) ->
   proof OR teaching (credible / one tiny lesson) ->
   desire (paint the future identity, aspirational) ->
   bridge (the product as the natural next step, never salesy) ->
-  cta (one clear action).
+  cta (one clear action to a PAID offer).
 - Slide text: SHORT lines, one idea per slide, readable in 2 seconds on a phone.
   Mark 1-2 lines per slide with "emphasis": true: the identity phrases ("visible
   online", "still becoming her", "You stop hiding"). Never more than 3 emphasized
   phrases per slide.
-- Each slide may carry ONE tiny handwritten note (field "note") that deepens the
-  emotion: "this is the part nobody says", "I get it", "this is the shift",
-  "main character, but real", "I'll send it". Use on 3-5 slides, not all.
-- CTA architecture (last slide, exactly this structure):
-  line 1 (size "lead"): short desire question, e.g. "Want the exact prompts I used?"
+- The handwritten "note" is OPTIONAL and goes on only 2-4 slides, never all. When you use one
+  it MUST be in Sandra's real voice (texting a close friend: lowercase, warm, short, human, never
+  corporate, never a slogan) AND it must speak to THAT exact slide's moment. A generic or
+  mismatched note is worse than none, so leave "note" out unless it genuinely deepens that slide.
+  Do NOT reuse stock phrases; write a fresh line that sounds like her for that specific slide.
+- CTA architecture (the FINAL slide, ALWAYS present, exactly this structure):
+  line 1 (size "lead"): short desire question, e.g. "Want the full collection I used?"
   line 2 (size "support"): "DM me:"
-  line 3 (size "keyword"): ONE keyword: PROMPT, KIT or START
-  line 4 (size "support"): short reassurance, e.g. "and I'll send them over."
-  note: "I'll send it"
+  line 3 (size "keyword"): ONE keyword for a PAID offer only: VAULT (the Prompt Vault), PRESETS,
+    or SUITE. Never a free keyword (no PROMPT, no KIT, no START).
+  line 4 (size "support"): short warm reassurance, e.g. "and I'll send you the link."
+  Every sequence MUST end with this CTA pointing to a paid offer.
 - Never the word "reinvention". No em-dashes anywhere. No emoji unless one truly
   earns its place in a CTA.
 `.trim()
@@ -113,6 +116,44 @@ function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
       lines,
     }
   })
+}
+
+// Every sequence must end with a CTA to a PAID offer (Sandra's rule). Guarantee exactly one CTA at
+// the end, with a paid keyword, appending a default if the writer forgot one.
+const PAID_CTA_KEYWORDS = new Set(["VAULT", "PRESETS", "SUITE"])
+
+const DEFAULT_CTA_SLIDE: StorySlide = {
+  role: "cta",
+  lines: [
+    { text: "Want the full collection I used?", size: "lead", emphasis: false },
+    { text: "DM me:", size: "support", emphasis: false },
+    { text: "VAULT", size: "keyword", emphasis: false },
+    { text: "and I'll send you the link.", size: "support", emphasis: false },
+  ],
+}
+
+function normalizeCta(cta: StorySlide): StorySlide {
+  const lines = (cta.lines || []).map(line =>
+    line.size === "keyword"
+      ? {
+          ...line,
+          // Force the keyword onto a paid offer; the doctrine forbids free keywords here.
+          text: PAID_CTA_KEYWORDS.has(line.text.trim().toUpperCase())
+            ? line.text.trim().toUpperCase()
+            : "VAULT",
+        }
+      : line
+  )
+  if (!lines.some(line => line.size === "keyword" && line.text.trim())) return DEFAULT_CTA_SLIDE
+  return { ...cta, role: "cta", lines }
+}
+
+// Returns the story body (no CTA, capped to leave room) plus exactly one paid CTA as the last slide.
+function assembleWithCta(slides: StorySlide[], targetTotal: number): StorySlide[] {
+  const body = slides.filter(slide => slide.role !== "cta").slice(0, Math.max(targetTotal - 1, 1))
+  const writerCta = slides.find(slide => slide.role === "cta")
+  const cta = writerCta ? normalizeCta(writerCta) : DEFAULT_CTA_SLIDE
+  return [...body, cta]
 }
 
 // STORY-OVERLAY-02: a vision pass reads each background and decides where the text should sit so it
@@ -252,8 +293,10 @@ export async function generateStorySequence(input: {
   const selectedImageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl)
   const imageUrls = (
     selectedImageUrls.length > 0 ? selectedImageUrls : sourceShoot.imageUrls
-  ).slice(0, 8)
-  const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 8)
+  ).slice(0, 12)
+  const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 12)
+  // One slide per selected photo (incl. the final CTA), clamped to a sane range.
+  const targetSlides = Math.max(5, Math.min(12, imageUrls.length || 6))
 
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
 
@@ -278,12 +321,12 @@ Identity content must never imply she becomes someone else. The promise is "Look
 PROOF REMINDER:
 Stories support the funnel. Use them to warm desire, handle the fake fear, and point to the right keyword or Vault step when the sequence earns it.
 
-Write ONE story sequence (5-8 slides) following the doctrine arc. Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (CTA slide has 4).
+Write the story across exactly ${targetSlides} slides following the doctrine arc. The FINAL slide MUST be the CTA slide (role "cta") with a keyword for a PAID offer (VAULT, PRESETS, or SUITE). Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (CTA slide has 4).
 
 Return ONLY a JSON array of slides, no commentary:
 [
   { "role": "hook", "lines": [ { "text": "...", "size": "lead", "emphasis": true }, { "text": "...", "size": "support" } ], "note": "..." },
-  { "role": "cta", "lines": [ { "text": "Want ...?", "size": "lead" }, { "text": "DM me:", "size": "support" }, { "text": "PROMPT", "size": "keyword" }, { "text": "and I'll send them over.", "size": "support" } ], "note": "I'll send it" }
+  { "role": "cta", "lines": [ { "text": "Want the full collection I used?", "size": "lead" }, { "text": "DM me:", "size": "support" }, { "text": "VAULT", "size": "keyword" }, { "text": "and I'll send you the link.", "size": "support" } ] }
 ]`
 
   const text = await callContentKitLlm(prompt)
@@ -294,7 +337,7 @@ Return ONLY a JSON array of slides, no commentary:
     ? []
     : await listAdminSelfies().catch(() => [] as string[])
   const slides = await compositeStorySlides({
-    slides: sanitizeSlides(raw.slice(0, 8)),
+    slides: assembleWithCta(sanitizeSlides(raw.slice(0, 12)), targetSlides),
     backgroundUrls: [...imageUrls, ...fallbackSelfies],
     overlayUrls,
   })

@@ -82,6 +82,12 @@ describe("Content tools shoot-first workflow", () => {
     expect(editor).toContain("onPointerMove")
     expect(renderer).toContain("textScale")
     expect(types).toContain("textOffsetX?: number")
+
+    // Every sequence must end in a paid CTA and is no longer capped at 8 slides.
+    expect(storyGenerator).toContain("assembleWithCta")
+    expect(storyGenerator).toContain("PAID_CTA_KEYWORDS")
+    expect(storyGenerator).toContain("targetSlides")
+    expect(storyGenerator).not.toContain("raw.slice(0, 8)")
   })
 
   it("keeps member Maya carousels photoshoot-first by default", () => {
