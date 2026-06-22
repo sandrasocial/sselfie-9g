@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { type DragEvent, useEffect, useState } from "react"
 import type { CarouselDeck } from "@/lib/content-kit/types"
 
 type ShootOption = {
@@ -12,6 +12,60 @@ type ShootOption = {
 }
 
 type UploadedAsset = { url: string; label: string }
+type PickedAsset = {
+  url: string
+  label: string
+  source?: "shoot" | "gallery" | "upload" | "overlay"
+}
+type GalleryAsset = {
+  id: string
+  kind: "image" | "video"
+  contentType: string
+  url: string
+  thumbnailUrl?: string | null
+  isFavorite?: boolean
+}
+type GalleryFilter = "favorites" | "photos" | "photoshoots" | "all"
+
+const GALLERY_FILTERS: Array<{ id: GalleryFilter; label: string }> = [
+  { id: "favorites", label: "Favorites" },
+  { id: "photos", label: "Photos" },
+  { id: "photoshoots", label: "Shoots" },
+  { id: "all", label: "All" },
+]
+
+function uniqueAssets(assets: PickedAsset[]): PickedAsset[] {
+  const seen = new Set<string>()
+  return assets.filter(asset => {
+    if (!asset.url || seen.has(asset.url)) return false
+    seen.add(asset.url)
+    return true
+  })
+}
+
+function reorderAssets<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return items
+  }
+  const next = [...items]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
+}
+
+function assetMatchesFilter(asset: GalleryAsset, filter: GalleryFilter) {
+  if (asset.kind !== "image") return false
+  if (filter === "favorites") return Boolean(asset.isFavorite)
+  if (filter === "photos") return asset.contentType === "photo"
+  if (filter === "photoshoots") return asset.contentType === "photoshoot"
+  return true
+}
 
 function CopyChip({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
@@ -163,13 +217,72 @@ export function ContentKitClient({
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
   )
-  const [backgrounds, setBackgrounds] = useState<UploadedAsset[]>([])
+  const [backgrounds, setBackgrounds] = useState<PickedAsset[]>([])
   const [overlays, setOverlays] = useState<UploadedAsset[]>([])
+  const [galleryAssets, setGalleryAssets] = useState<GalleryAsset[]>([])
+  const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("favorites")
+  const [galleryError, setGalleryError] = useState<string | null>(null)
+  const [draggingBackgroundIndex, setDraggingBackgroundIndex] = useState<number | null>(null)
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState<"background" | "overlay" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const selectedShoot = shoots.find(shoot => shoot.id === selectedShootId) ?? null
+  const visibleGalleryAssets = galleryAssets.filter(asset =>
+    assetMatchesFilter(asset, galleryFilter)
+  )
+
+  useEffect(() => {
+    if (!selectedShoot) return
+    setBackgrounds(
+      selectedShoot.shots.map(shot => ({
+        url: shot.url,
+        label: shot.title,
+        source: "shoot" as const,
+      }))
+    )
+  }, [selectedShoot])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/app-v3/gallery")
+      .then(response =>
+        response.ok ? response.json() : Promise.reject(new Error("Gallery unavailable"))
+      )
+      .then(data => {
+        if (cancelled) return
+        const assets = Array.isArray(data.assets)
+          ? data.assets.filter((asset: GalleryAsset) => asset.kind === "image" && asset.url)
+          : []
+        setGalleryAssets(assets)
+      })
+      .catch(() => {
+        if (!cancelled) setGalleryError("Could not load gallery photos.")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function addBackgrounds(assets: PickedAsset[]) {
+    setBackgrounds(current => uniqueAssets([...current, ...assets]).slice(0, 12))
+  }
+  function removeBackground(url: string) {
+    setBackgrounds(current => current.filter(asset => asset.url !== url))
+  }
+  function moveBackground(fromIndex: number, toIndex: number) {
+    setBackgrounds(current => reorderAssets(current, fromIndex, toIndex))
+  }
+  function dropBackground(event: DragEvent<HTMLDivElement>, toIndex: number) {
+    event.preventDefault()
+    const transferredUrl = event.dataTransfer.getData("text/plain")
+    setBackgrounds(current => {
+      const fromIndex =
+        draggingBackgroundIndex ?? current.findIndex(asset => asset.url === transferredUrl)
+      return reorderAssets(current, fromIndex, toIndex)
+    })
+    setDraggingBackgroundIndex(null)
+  }
 
   async function upload(kind: "background" | "overlay", files: FileList | null) {
     if (!files?.length) return
@@ -185,7 +298,14 @@ export function ContentKitClient({
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      if (kind === "background") setBackgrounds(current => [...current, ...data.assets])
+      if (kind === "background")
+        addBackgrounds(
+          (Array.isArray(data.assets) ? data.assets : []).map((asset: PickedAsset) => ({
+            url: asset.url,
+            label: asset.label || "Uploaded image",
+            source: "upload" as const,
+          }))
+        )
       else setOverlays(current => [...current, ...data.assets])
     } catch (err: any) {
       setError(err?.message || "Upload failed")
@@ -195,8 +315,8 @@ export function ContentKitClient({
   }
 
   async function generate() {
-    if (mode === "standard" && !selectedShootId && backgrounds.length < 2) {
-      setError("Pick an approved shoot, or upload at least 2 background images.")
+    if (mode === "standard" && backgrounds.length < 2) {
+      setError("Add at least 2 photos from a shoot, favorites, gallery, or upload.")
       return
     }
     setGenerating(true)
@@ -241,8 +361,8 @@ export function ContentKitClient({
             Carousel kit
           </h2>
           <p className="mt-1 text-sm text-stone-600">
-            Pick an approved shoot first. The carousel uses those photos or real reel frames as
-            grounded references, then returns finished slides with the copy baked in.
+            Choose your photos from a shoot, favorites, gallery, or upload. The carousel composites
+            clean editorial text over your real photos, kept exactly as they are.
           </p>
         </div>
       </div>
@@ -282,30 +402,160 @@ export function ContentKitClient({
             </option>
           ))}
         </select>
-        {selectedShoot ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {selectedShoot.shots.map(shot => (
-              <div
-                key={shot.id}
-                className="shrink-0 overflow-hidden rounded-lg border border-stone-200"
+        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-wide text-stone-500">
+              Selected carousel photos · {backgrounds.length}
+            </p>
+            {selectedShoot && (
+              <button
+                type="button"
+                onClick={() =>
+                  addBackgrounds(
+                    selectedShoot.shots.map(shot => ({
+                      url: shot.url,
+                      label: shot.title,
+                      source: "shoot",
+                    }))
+                  )
+                }
+                className="text-xs uppercase tracking-wide text-stone-600 underline underline-offset-4 hover:text-stone-950"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={shot.url}
-                  alt={shot.title}
-                  className="h-24 w-[4.5rem] object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
+                Add all shoot photos
+              </button>
+            )}
           </div>
-        ) : (
-          <p className="mt-2 text-sm text-amber-700">
-            {mode === "tutorial"
-              ? "Tutorial mode can use the reel-reference library, or you can add one result image and screenshots below."
-              : "Approve at least 2 rendered shots in Shoot Studio before generating a shoot-based carousel."}
-          </p>
-        )}
+          {backgrounds.length > 0 ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {backgrounds.map((asset, index) => (
+                <div
+                  key={asset.url}
+                  draggable
+                  onDragStart={event => {
+                    setDraggingBackgroundIndex(index)
+                    event.dataTransfer.effectAllowed = "move"
+                    event.dataTransfer.setData("text/plain", asset.url)
+                  }}
+                  onDragOver={event => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = "move"
+                  }}
+                  onDrop={event => dropBackground(event, index)}
+                  onDragEnd={() => setDraggingBackgroundIndex(null)}
+                  className={`group relative shrink-0 cursor-grab overflow-hidden rounded-lg border bg-white active:cursor-grabbing ${
+                    draggingBackgroundIndex === index
+                      ? "border-stone-950 opacity-60"
+                      : "border-stone-200"
+                  }`}
+                  title="Drag to reorder"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={asset.url}
+                    alt={asset.label}
+                    className="h-24 w-[4.5rem] object-cover"
+                    loading="lazy"
+                  />
+                  <span className="absolute left-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/90 px-1 text-[10px] font-medium text-stone-700 shadow-sm">
+                    {index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${asset.label}`}
+                    onClick={() => removeBackground(asset.url)}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs leading-none text-stone-700 shadow-sm hover:text-red-700"
+                  >
+                    x
+                  </button>
+                  <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      aria-label={`Move ${asset.label} left`}
+                      disabled={index === 0}
+                      onClick={() => moveBackground(index, index - 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-stone-700 shadow-sm hover:text-stone-950 disabled:opacity-30"
+                    >
+                      {"<"}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move ${asset.label} right`}
+                      disabled={index === backgrounds.length - 1}
+                      onClick={() => moveBackground(index, index + 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-stone-700 shadow-sm hover:text-stone-950 disabled:opacity-30"
+                    >
+                      {">"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-amber-700">
+              Add at least 2 photos from a shoot, favorites, gallery, or upload.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-stone-200 bg-white p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs uppercase tracking-wide text-stone-500">Add from gallery</p>
+            <div className="flex flex-wrap gap-1">
+              {GALLERY_FILTERS.map(filter => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setGalleryFilter(filter.id)}
+                  className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-wide ${
+                    galleryFilter === filter.id
+                      ? "border-stone-950 bg-stone-950 text-white"
+                      : "border-stone-200 text-stone-500 hover:border-stone-400"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {galleryError ? (
+            <p className="mt-2 text-sm text-amber-700">{galleryError}</p>
+          ) : visibleGalleryAssets.length > 0 ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {visibleGalleryAssets.slice(0, 36).map(asset => {
+                const selected = backgrounds.some(item => item.url === asset.url)
+                return (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    onClick={() =>
+                      addBackgrounds([
+                        {
+                          url: asset.url,
+                          label: `${asset.contentType || "Gallery"} photo`,
+                          source: "gallery",
+                        },
+                      ])
+                    }
+                    className={`relative shrink-0 overflow-hidden rounded-lg border-2 ${
+                      selected ? "border-stone-950" : "border-transparent hover:border-stone-300"
+                    }`}
+                    title={selected ? "Already selected" : "Add to carousel photos"}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={asset.thumbnailUrl || asset.url}
+                      alt={asset.contentType || "Gallery image"}
+                      className="h-20 w-16 object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-stone-400">No images in this gallery filter yet.</p>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -320,7 +570,7 @@ export function ContentKitClient({
           type="button"
           onClick={generate}
           disabled={
-            generating || (mode === "standard" && !selectedShootId && backgrounds.length < 2)
+            generating || (mode === "standard" && backgrounds.length < 2)
           }
           className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
         >
@@ -337,9 +587,9 @@ export function ContentKitClient({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600">
           <span className="block text-xs uppercase tracking-wide text-stone-500">
-            Extra references
+            Upload background images
           </span>
-          <span className="mt-1 block">Only use these when the deck needs one more source.</span>
+          <span className="mt-1 block">Add photos from your device to the carousel pool.</span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

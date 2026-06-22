@@ -354,10 +354,11 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
   if (input.mode === "tutorial") return generateTutorialCarousels(input)
 
   const sourceShoot = await resolveShootImages(input.sourceShootId)
-  const imageUrls = [
-    ...sourceShoot.imageUrls,
-    ...(input.imageUrls ?? []).filter(isAllowedImageUrl),
-  ].slice(0, 8)
+  // Respect the admin's curated selection + order when provided; fall back to the shoot otherwise.
+  const selectedImageUrls = (input.imageUrls ?? []).filter(isAllowedImageUrl)
+  const imageUrls = (
+    selectedImageUrls.length > 0 ? selectedImageUrls : sourceShoot.imageUrls
+  ).slice(0, 8)
   // Shoot-sourced runs describe one designed object, so default to one deck.
   const count = Math.min(Math.max(input.count ?? (imageUrls.length > 0 ? 1 : 2), 1), 4)
 
