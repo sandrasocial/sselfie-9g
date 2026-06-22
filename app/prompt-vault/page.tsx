@@ -83,23 +83,40 @@ const vaultFaq = [
   },
 ]
 
+// Real customer words (from the testimonials Sandra owns). Text only on purpose: the original
+// screenshots show older looks, so we use the voice, not the dated images. Ordered to answer the
+// real objections in sequence: will it look fake -> is it actually good -> I'm skeptical ->
+// I never have a good photo of myself -> it's easy -> how it feels.
 const vaultProof = [
   {
-    quote:
-      "I have been playing with this for a few days... and I am blown away. I am so picky its not even funny.. but this... my GOD!",
-    name: "SSELFIE customer",
-    context: "AI Photoshoot",
+    quote: "Best one so far. I love that it looks real, and me.",
+    name: "A SSELFIE member",
+    context: "50 & fabulous",
   },
   {
-    quote:
-      "This is incredible... I started just having fun with the photos but then I started tweaking the way I looked and asking Maya to make adjustments and WOW!!!",
-    name: "SSELFIE customer",
-    context: "AI Photoshoot + Maya",
+    quote: "I just took the best photo of myself in years.",
+    name: "A SSELFIE member",
+    context: "One selfie",
   },
   {
-    quote: "BEST APP EVER !!!!",
-    name: "Hafdis",
-    context: "SSELFIE Studio",
+    quote: "I'm so picky it's not even funny. But this... my God. I'm blown away.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
+  },
+  {
+    quote: "I don't often have a good photo of myself. This solves that.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
+  },
+  {
+    quote: "I made the most beautiful selfie since I got my iPhone. Even in my pajamas.",
+    name: "Medina C.",
+    context: "One selfie",
+  },
+  {
+    quote: "I used to hate taking photos. Now I feel like a queen.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
   },
 ]
 
