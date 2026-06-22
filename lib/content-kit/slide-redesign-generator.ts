@@ -159,6 +159,7 @@ export async function redesignContentSlide({
   slide,
   referenceMode,
   inspirationReferenceUrl,
+  quality,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -168,11 +169,13 @@ export async function redesignContentSlide({
   topic: string
   slide: CarouselSlide
   referenceMode?: RedesignReferenceMode
+  quality?: "low" | "medium" | "high"
 }): Promise<string> {
   const { buffer } = await redesignContentSlideToBuffer({
     referenceUrl,
     styleReferenceUrl,
     inspirationReferenceUrl,
+    quality,
     styleLabel,
     category,
     topic,
@@ -200,6 +203,7 @@ export async function redesignContentSlideToBuffer({
   slide,
   referenceMode,
   inspirationReferenceUrl,
+  quality = "high",
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -209,6 +213,8 @@ export async function redesignContentSlideToBuffer({
   topic: string
   slide: CarouselSlide
   referenceMode?: RedesignReferenceMode
+  // Suite passes "medium" for cost control; admin content defaults to "high".
+  quality?: "low" | "medium" | "high"
 }): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -238,7 +244,7 @@ export async function redesignContentSlideToBuffer({
     }),
     n: 1,
     size: category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE,
-    quality: "high",
+    quality,
     output_format: "png",
   }
   if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"

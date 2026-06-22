@@ -73,16 +73,15 @@ const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
 ])
 
 // Image quality (low | medium | high). MEASURED 2026-06-10 on real prompts: medium ~82s/$0.06,
-// high ~191s/$0.22 per image. Members buy "premium presence", so single images default HIGH
-// (the streamed preview keeps the longer wait alive). Multi-image batches (carousel AND photoshoot)
-// stay MEDIUM: a photoshoot renders the hero sequentially then 5+ more, and at high that ~380s run
-// blew past the 300s route limit and returned a 504. APP_V3_IMAGE_QUALITY overrides both.
+// high ~191s/$0.22 per image. Sandra's call (2026-06-22): the SUITE renders every format at MEDIUM
+// for cost control (trials grant 20 images; high would ~4x the cost). High quality is reserved for
+// admin content only. APP_V3_IMAGE_QUALITY can still override per environment.
 type ImgQuality = "low" | "medium" | "high"
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
-function qualityForFormat(format: OutputFormat): ImgQuality {
+function qualityForFormat(_format: OutputFormat): ImgQuality {
   if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high")
     return QUALITY_OVERRIDE
-  return format === "carousel" || format === "photoshoot" ? "medium" : "high"
+  return "medium"
 }
 
 type AppGraphicRedesignJob = {
@@ -939,6 +938,8 @@ export async function POST(request: NextRequest) {
               slide: job.slide,
               referenceMode: "identity-scene",
               inspirationReferenceUrl: job.inspirationReferenceUrl,
+              // Suite renders everything at medium (cost control); admin keeps high.
+              quality: IMAGE_QUALITY,
             })
             actualPromptRecords[index] = [
               `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
