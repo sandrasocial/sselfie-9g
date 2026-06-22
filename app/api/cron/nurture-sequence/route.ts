@@ -61,6 +61,7 @@ const STARTER_KIT_FALLBACK_URL = `${SITE_URL}/starter-kit`
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const AI_PROMPTS_NURTURE_SAFE_DEFAULT_START_DATE = "2026-05-18"
+const SQL_VALID_EMAIL_PATTERN = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"
 
 interface SelfieGuideActivationCandidate {
   email: string
@@ -184,6 +185,7 @@ async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivati
       AND s.created_at > NOW() - INTERVAL '3 days'
       AND u.email IS NOT NULL
       AND u.email <> ''
+      AND BTRIM(u.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
@@ -214,6 +216,7 @@ async function getSelfieGuideTouchCandidates(
       AND s.created_at <= NOW() - (${`${days} days`}::interval)
       AND u.email IS NOT NULL
       AND u.email <> ''
+      AND BTRIM(u.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
@@ -240,6 +243,7 @@ async function getFreebieGuideTouchCandidates(
     WHERE fs.created_at <= NOW() - (${`${days} days`}::interval)
       AND fs.email IS NOT NULL
       AND fs.email <> ''
+      AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
@@ -271,6 +275,7 @@ async function getAiPromptsTouchCandidates(
       AND fs.created_at >= ${startDate}::date
       AND fs.email IS NOT NULL
       AND fs.email <> ''
+      AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND (
         fs.source = 'ai-prompts'
         OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -318,6 +323,7 @@ async function getPromptVaultTouchCandidates(
     WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${days} days`}::interval)
       AND fs.email IS NOT NULL
       AND fs.email <> ''
+      AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND (
         fs.source = 'prompt-vault-paid'
         OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -349,6 +355,7 @@ async function getSelfieToBrandShootTouchCandidates(
     WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${days} days`}::interval)
       AND fs.email IS NOT NULL
       AND fs.email <> ''
+      AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND (
         fs.source = 'selfie-to-brand-shoot-paid'
         OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -384,6 +391,7 @@ async function getStarterKitCandidates(
       AND s.created_at <= NOW() - (${`${days} days`}::interval)
       AND u.email IS NOT NULL
       AND u.email <> ''
+      AND BTRIM(u.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
@@ -412,6 +420,7 @@ async function getMasterclassCandidates(
       AND s.created_at <= NOW() - (${`${days} days`}::interval)
       AND u.email IS NOT NULL
       AND u.email <> ''
+      AND BTRIM(u.email) ~* ${SQL_VALID_EMAIL_PATTERN}
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el

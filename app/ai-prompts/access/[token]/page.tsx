@@ -251,11 +251,6 @@ export default async function AiPromptsAccessPage({
     promptId: "vault_preview",
     accessToken: token,
   })
-  const bottomBridgeCheckoutHref = buildPromptVaultFreebieCheckoutHref({
-    promptId: "bottom_bridge",
-    accessToken: token,
-  })
-
   return (
     <main className={`ap-page ${inter.className}`}>
       {/* 1. Hero */}
@@ -500,31 +495,6 @@ export default async function AiPromptsAccessPage({
             }}
           >
             Get the Free Selfie Guide
-          </TrackedLink>
-        </div>
-      </section>
-
-      {/* 10. Optional separate next step — not the primary Prompt Vault upgrade */}
-      <section className="ap-section ap-kit-bridge">
-        <div className="ap-section-inner">
-          <p className="ap-kit-question">Want the whole shoot, not just the sample?</p>
-          <p className="ap-kit-body">
-            The free prompts are the taste. The Vault gives you the full shoot sequences, newest
-            drops, and future SSELFIE photoshoots with complete image directions.
-          </p>
-          <TrackedLink
-            href={bottomBridgeCheckoutHref}
-            className="ap-bridge-cta ap-bridge-cta-secondary"
-            trackEvent="ai_prompts_prompt_vault_click"
-            trackProperties={{
-              source: "ai-prompts",
-              destination: "checkout-prompt-vault",
-              utm_campaign: "ai_prompts_to_prompt_vault",
-              utm_content: "bottom_bridge",
-              checkout_source: "free_prompts_bridge",
-            }}
-          >
-            Enter the Full Vault · $27
           </TrackedLink>
         </div>
       </section>
