@@ -25,8 +25,11 @@ describe("Content tools shoot-first workflow", () => {
     expect(carouselClient).toContain("Add from gallery")
     expect(carouselClient).toContain("CarouselSlideEditor")
     expect(carouselGenerator).toContain("export async function updateCarouselSlides")
+    // Both render styles exist (A = baked magazine look, B = editable local composite), toggled.
     expect(carouselGenerator).toContain("compositePhotoshootCarouselSlides")
-    expect(carouselGenerator).not.toContain("redesignPhotoshootCarouselSlides")
+    expect(carouselGenerator).toContain("redesignPhotoshootCarouselSlides")
+    expect(carouselGenerator).toContain('input.renderStyle === "editable"')
+    expect(carouselClient).toContain("AI design (magazine)")
     expect(storyClient).toContain("sourceShootId")
     expect(storyClient).toContain("overlayUrls")
     expect(storyClient).toContain('fetch("/api/app-v3/gallery")')

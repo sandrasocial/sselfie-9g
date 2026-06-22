@@ -59,6 +59,11 @@ type GeneratorInput = {
   reelReferenceIds?: number[]
   /** Tutorial CTA keyword. Defaults to KIT. */
   keyword?: "KIT" | "PROMPT" | "PRESET" | "SELFIE"
+  /** Render style for a standard (shoot) carousel:
+   *  "baked"    = gpt-image-2 designs each slide to match the photoshoot-carousel style anchors
+   *               (the ChatGPT magazine look). Default.
+   *  "editable" = local renderer composites editorial text over the real photos (fully editable). */
+  renderStyle?: "baked" | "editable"
 }
 
 function isAllowedImageUrl(value: string): boolean {
@@ -342,10 +347,47 @@ function compositePhotoshootCarouselSlides({
           : slide.overlayAssets,
       }
     }
-    const photoBacked = slide.kind === "hook" || slide.kind === "photo" || slide.kind === "cta"
-    if (!photoBacked) return slide // clean editorial text frame (step/list/quote)
+    // Every slide is editorial text over a real photo (no plain lesson-card frames).
     return { ...slide, imageUrl: pick(cursor++), headlineRender: "composited" as const }
   })
+}
+
+// Render style A (default): gpt-image-2 designs each slide to match Sandra's approved
+// photoshoot-carousel style anchors (her ChatGPT magazine look). This is what produced the
+// reference slides; the local renderer just passes the finished PNG through.
+async function redesignPhotoshootCarouselSlides({
+  slides,
+  topic,
+  referenceUrls,
+}: {
+  slides: CarouselSlide[]
+  topic: string
+  referenceUrls: string[]
+}): Promise<CarouselSlide[]> {
+  const style = await pickContentStyleReference("photoshoot-carousel")
+  if (!style) throw new Error("No photoshoot-carousel style references found")
+  const pool = referenceUrls.filter(isAllowedImageUrl)
+  if (pool.length === 0) throw new Error("No carousel reference image available")
+  return Promise.all(
+    slides.map(async (slide, index) => {
+      const imageUrl = await redesignContentSlide({
+        referenceUrl: pool[index % pool.length],
+        styleReferenceUrl: style.imageUrl,
+        styleLabel: style.label,
+        category: "photoshoot-carousel",
+        topic,
+        slide,
+      })
+      return {
+        ...slide,
+        imageUrl,
+        headlineRender: "baked" as const,
+        overlayAssets: undefined,
+        accents: undefined,
+        gridUrls: undefined,
+      }
+    })
+  )
 }
 
 export async function generateCarousels(input: GeneratorInput = {}): Promise<CarouselDeck[]> {
@@ -459,12 +501,21 @@ Return ONLY a JSON array, no commentary:
     const sanitized = sanitizeSlides(carousel.slides)
     const adminSelfies = await listAdminSelfies().catch(() => [] as string[])
     const fallbackSelfies = imageUrls.length ? [] : adminSelfies
-    const slides = compositePhotoshootCarouselSlides({
-      slides: sanitized,
-      referenceUrls: [...imageUrls, ...fallbackSelfies],
-      // Most recent first (listAdminSelfies orders by uploaded_at DESC).
-      originalSelfieUrl: adminSelfies[0],
-    })
+    const referenceUrls = [...imageUrls, ...fallbackSelfies]
+    // A = baked magazine look (default); B = editable local render over the real photos.
+    const slides =
+      input.renderStyle === "editable"
+        ? compositePhotoshootCarouselSlides({
+            slides: sanitized,
+            referenceUrls,
+            // Most recent first (listAdminSelfies orders by uploaded_at DESC).
+            originalSelfieUrl: adminSelfies[0],
+          })
+        : await redesignPhotoshootCarouselSlides({
+            slides: sanitized,
+            topic: input.topic || carousel.title,
+            referenceUrls,
+          })
     const slug = (carousel.slug || carousel.title)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")

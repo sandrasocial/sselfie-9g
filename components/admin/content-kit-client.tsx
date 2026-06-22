@@ -276,6 +276,7 @@ export function ContentKitClient({
 }) {
   const [decks, setDecks] = useState<CarouselDeck[]>(initialCarousels)
   const [mode, setMode] = useState<"standard" | "tutorial">("standard")
+  const [renderStyle, setRenderStyle] = useState<"baked" | "editable">("baked")
   const [topic, setTopic] = useState("")
   const [selectedShootId, setSelectedShootId] = useState<number | null>(
     shoots.find(shoot => shoot.shots.length >= 2)?.id ?? null
@@ -390,6 +391,7 @@ export function ContentKitClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode,
+          renderStyle,
           topic: topic.trim() || undefined,
           sourceShootId: selectedShootId,
           imageUrls: backgrounds.map(asset => asset.url),
@@ -465,6 +467,33 @@ export function ContentKitClient({
           </button>
         ))}
       </div>
+
+      {mode === "standard" && (
+        <div className="mt-3">
+          <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">Slide design</p>
+          <div className="inline-flex rounded-full border border-stone-300 bg-white p-1">
+            {(["baked", "editable"] as const).map(option => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setRenderStyle(option)}
+                className={`rounded-full px-4 py-1.5 text-xs uppercase tracking-wide transition ${
+                  renderStyle === option
+                    ? "bg-stone-950 text-white"
+                    : "text-stone-600 hover:text-stone-950"
+                }`}
+              >
+                {option === "baked" ? "AI design (magazine)" : "Editable (text + photo)"}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-stone-400">
+            {renderStyle === "baked"
+              ? "AI designs each slide to match your ChatGPT carousel style. Polished, not editable per slide."
+              : "Clean editorial text composited over your real photos. Fully editable per slide."}
+          </p>
+        </div>
+      )}
 
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
         <label className="text-xs uppercase tracking-wide text-stone-500" htmlFor="carousel-shoot">
