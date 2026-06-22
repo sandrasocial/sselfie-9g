@@ -29,7 +29,7 @@ export function generateAiPromptsDay11PromptVaultWhyNowEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've had the free shots for almost two weeks now.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you used them. Maybe they're still sitting there, waiting for the "right" moment.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the thing about showing up. The right moment doesn't come. You just start.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is $27. One time. Ten full worlds, 92 shots, and every new drop I add is yours too. No subscription. No catch.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is $27. One time. Every editorial world I&apos;ve shot, every shot in the sequence, and every new drop I add is yours too. No subscription. No catch.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The women who get the most out of this aren't the ones with the best selfies. They're the ones who stopped waiting to feel ready.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your face is your brand. You've already got the camera.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $27", promptVaultUrl)}</div>
@@ -51,7 +51,7 @@ Maybe you used them. Maybe they're still sitting there, waiting for the "right" 
 
 Here's the thing about showing up. The right moment doesn't come. You just start.
 
-The Vault is $27. One time. Ten full worlds, 92 shots, and every new drop I add is yours too. No subscription. No catch.
+The Vault is $27. One time. Every editorial world I've shot, every shot in the sequence, and every new drop I add is yours too. No subscription. No catch.
 
 The women who get the most out of this aren't the ones with the best selfies. They're the ones who stopped waiting to feel ready.
 

@@ -811,7 +811,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             { title: "Free AI Prompts", price: "Free", body: "Editorial photoshoot prompts that turn one selfie into photos you'd actually post. Start here.", href: "/ai-prompts" },
-            { title: "Prompt Vault", price: "$27", body: "Ten editorial collections, 88 prompts. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
+            { title: "Prompt Vault", price: "$27", body: "Every editorial collection, plus each new drop. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
             { title: "SSELFIE SUITE", price: "€97/mo", body: "Maya builds your visual brand: photoshoots, carousels, reel covers, captions. Everything included.", href: "/join/studio" },
           ].map((p) => (
