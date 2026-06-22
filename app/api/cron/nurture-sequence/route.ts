@@ -568,7 +568,11 @@ async function sendAiPromptsTouchEmail(
       email = generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
       break
     case "ai-prompts-day5-edit-makes-postable":
-      email = generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
+      email = generateAiPromptsDay5EditMakesPostableEmail({
+        firstName,
+        accessUrl,
+        recipientEmail: candidate.email,
+      })
       break
     case "ai-prompts-day7-prompt-vault-offer":
       email = generateAiPromptsDay7PromptVaultOfferEmail({

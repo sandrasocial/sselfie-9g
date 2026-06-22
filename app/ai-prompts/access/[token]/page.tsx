@@ -105,10 +105,10 @@ function PreviewCardEl({
             promptTitle={card.title}
             promptNumber={card.number}
             afterCopyHref={upgradeHref}
-            afterCopyTitle="That was just the opening shot."
-            afterCopyLabel="Get the full Vault · $27"
-            afterCopyNote="Every look in the Vault is a full shoot: matching shots that belong together, like a real shoot day, with you recognizable in every frame. You get every collection, plus each new drop I add."
-            afterCopyFootnote="One payment. Yours for good."
+            afterCopyTitle="You're not unphotogenic. You just needed direction."
+            afterCopyLabel="See the full Vault · $27"
+            afterCopyNote="Every look in the Vault is a full shoot. Matching shots that belong together like a real shoot day, with you recognizable in every frame. Every collection, plus each new drop I add."
+            afterCopyFootnote="One payment. Yours for good. Reply anytime, a real person answers."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{

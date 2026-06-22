@@ -21,21 +21,24 @@ export function generateAiPromptsDay1VaultBridgeEmail({
     checkoutEmail: recipientEmail,
   })
 
-  const subject = "babe did your first shot actually look like you?"
+  const subject = "you're not unphotogenic, babe"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Did your selfie come out the way you hoped? When it works, that first image is a little bit magic.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here&apos;s the honest thing: the free prompt was one look. The Vault is the full shoot. Every collection, every prompt, the example images so you&apos;re never guessing. Coastal, dark feminine, editorial, street. The ones people keep asking me for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One selfie. As many shoots as you want. It&apos;s a one-time $27, and you keep every new collection I add.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Get the full Vault", promptVaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">If you loved the free one, you&apos;re going to lose it over the rest.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Can I tell you something most women never hear?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You&apos;re not unphotogenic. You never were.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The reason your photos never looked like the woman you feel like inside is simple. You had a phone and no direction. Nobody telling you the light, the angle, the world to step into.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That free prompt you copied was direction. One clear selfie, one look, and suddenly it&apos;s you. Still your face, still recognizable. Just finally framed right.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is the rest of the directions. Coastal mornings, dark feminine, quiet luxury, editorial street. Every look is a full shoot, not one lucky photo. One selfie, as many shoots as you want.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It&apos;s $27, one time, and every new collection I add lands in your vault for free.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("See the full Vault", promptVaultUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">You were always this woman. Now you&apos;ve got the direction to show her. 🤍</p>
   `
 
   const html = renderStoneShell({
-    title: "Did your photo come out?",
+    title: "You're not unphotogenic.",
     eyebrow: "AI Photoshoot Prompts",
-    subtitle: "If you loved the free one, this is the rest of the shoot.",
+    subtitle: "The problem was never you. It was the direction.",
     bodyHtml,
     footerLead: "One selfie. As many shoots as you want.",
     footerSignoff: "Sandra",
@@ -43,16 +46,22 @@ export function generateAiPromptsDay1VaultBridgeEmail({
 
   const text = `Hi ${firstName},
 
-Did your selfie come out the way you hoped? When it works, that first image is a little bit magic.
+Can I tell you something most women never hear?
 
-Here's the honest thing: the free prompt was one look. The Vault is the full shoot. Every collection, every prompt, the example images so you're never guessing. Coastal, dark feminine, editorial, street. The ones people keep asking me for.
+You're not unphotogenic. You never were.
 
-One selfie. As many shoots as you want. It's a one-time $27, and you keep every new collection I add.
+The reason your photos never looked like the woman you feel like inside is simple. You had a phone and no direction. Nobody telling you the light, the angle, the world to step into.
 
-Get the full Vault:
+That free prompt you copied was direction. One clear selfie, one look, and suddenly it's you. Still your face, still recognizable. Just finally framed right.
+
+The Vault is the rest of the directions. Coastal mornings, dark feminine, quiet luxury, editorial street. Every look is a full shoot, not one lucky photo. One selfie, as many shoots as you want.
+
+It's $27, one time, and every new collection I add lands in your vault for free.
+
+See the full Vault:
 ${promptVaultUrl}
 
-If you loved the free one, you're going to lose it over the rest.
+You were always this woman. Now you've got the direction to show her.
 
 Sandra`
 

@@ -240,7 +240,11 @@ function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiProm
     case "ai-prompts-day2-try-first-prompt":
       return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":
-      return generateAiPromptsDay5EditMakesPostableEmail({ firstName, accessUrl })
+      return generateAiPromptsDay5EditMakesPostableEmail({
+        firstName,
+        accessUrl,
+        recipientEmail: candidate.email,
+      })
     case "ai-prompts-day7-prompt-vault-offer":
       return generateAiPromptsDay7PromptVaultOfferEmail({
         firstName,
