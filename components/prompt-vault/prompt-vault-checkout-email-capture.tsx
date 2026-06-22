@@ -45,6 +45,8 @@ export function PromptVaultCheckoutEmailCapture({
   eyebrow = "AI PHOTO PROMPT VAULT",
   title = "Where should I send your Vault access?",
   copy = "Add your email before checkout so your access link and receipt go to the right place. If anything pauses, I can also help you find your purchase faster.",
+  proofQuote = "Best one so far. I love that it looks real, and me.",
+  proofAuthor = "A SSELFIE member, 50 & fabulous",
   inputId = "prompt-vault-checkout-email",
   buttonLabel = "Continue to checkout",
   skipLabel = "Continue without email",
@@ -64,6 +66,8 @@ export function PromptVaultCheckoutEmailCapture({
   eyebrow?: string
   title?: string
   copy?: string
+  proofQuote?: string
+  proofAuthor?: string
   inputId?: string
   buttonLabel?: string
   skipLabel?: string
@@ -127,6 +131,24 @@ export function PromptVaultCheckoutEmailCapture({
             <p className="pv-eyebrow">{eyebrow}</p>
             <h1 className={`${cormorant.className} pv-title`}>{title}</h1>
             <p className="pv-copy">{copy}</p>
+            {proofQuote && (
+              <p
+                className="pv-copy"
+                style={{ fontStyle: "italic", color: "#4F5052", margin: "10px 0 0" }}
+              >
+                &ldquo;{proofQuote}&rdquo;{" "}
+                <span
+                  style={{
+                    fontStyle: "normal",
+                    fontSize: "12px",
+                    letterSpacing: "0.04em",
+                    color: "#818283",
+                  }}
+                >
+                  {proofAuthor}
+                </span>
+              </p>
+            )}
 
             <form action={actionPath} method="get" className="pv-form">
               {hiddenParams.map((item) => (
