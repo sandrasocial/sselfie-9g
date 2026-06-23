@@ -107,7 +107,11 @@ const creativePlanOutputSchema = z.object({
 })
 
 const creativePlanSchema = z.object({
-  mode: z.enum(["carousel", "video"]).describe("Shared planning contract for carousel and video."),
+  mode: z
+    .enum(["carousel", "story_sequence", "video"])
+    .describe(
+      "Shared planning contract. Use 'carousel' for carousels AND story sequences (a story sequence is a vertical multi-slide story), or 'story_sequence' for a story sequence; 'video' for video."
+    ),
   userIntent: z.string().describe("The exact user carousel request/topic."),
   useCase: creativeUseCaseSchema,
   audienceEmotion: z.string().describe("What the viewer should feel or realize."),
@@ -165,7 +169,7 @@ const graphicSpec = z
     creativePlan: creativePlanSchema
       .optional()
       .describe(
-        "The shared Maya Creative Plan. Required for customer-facing carousel AND story-sequence concepts (a story sequence is a multi-slide vertical 9:16 story: plan 3-7 quick emotional beats with mode 'carousel'), and encouraged for video."
+        "The shared Maya Creative Plan. Required for customer-facing carousel AND story-sequence concepts (a story sequence is a multi-slide vertical 9:16 story: plan EXACTLY 3, 5, or 7 quick emotional beats with mode 'story_sequence', and outputCount must equal that slide count), and encouraged for video."
       ),
     carouselTitle: z
       .string()

@@ -84,6 +84,7 @@ const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "reel-cover", label: "Reel cover" },
   { id: "carousel", label: "Carousel" },
   { id: "story-slide", label: "Story slide" },
+  { id: "story-sequence", label: "Story sequence" },
   { id: "video", label: "Video" },
 ]
 
