@@ -31,6 +31,7 @@ const VALID_FORMATS: OutputFormat[] = [
   "reel-cover",
   "carousel",
   "story-slide",
+  "story-sequence",
   "video",
 ]
 const SHOOT_SHOT_ROLES = [
@@ -164,7 +165,7 @@ const graphicSpec = z
     creativePlan: creativePlanSchema
       .optional()
       .describe(
-        "The shared Maya Creative Plan. Required for customer-facing carousel concepts and encouraged for video."
+        "The shared Maya Creative Plan. Required for customer-facing carousel AND story-sequence concepts (a story sequence is a multi-slide vertical 9:16 story: plan 3-7 quick emotional beats with mode 'carousel'), and encouraged for video."
       ),
     carouselTitle: z
       .string()
@@ -297,7 +298,15 @@ const emitConcepts = tool({
     "Always include the output format for this concept batch so the app creates the clicked card with the correct pipeline.",
   inputSchema: z.object({
     format: z
-      .enum(["photo", "photoshoot", "reel-cover", "carousel", "story-slide", "video"])
+      .enum([
+        "photo",
+        "photoshoot",
+        "reel-cover",
+        "carousel",
+        "story-slide",
+        "story-sequence",
+        "video",
+      ])
       .describe("The output format these concepts are for."),
     concepts: z
       .array(conceptSchema)
@@ -318,13 +327,22 @@ const emitConcepts = tool({
 const setFormat = tool({
   description:
     "Switch the studio to a different output format when she asks for one in conversation " +
-    "(e.g. 'make me a carousel about this', 'turn that into a story slide', 'actually just a photo'). " +
+    "(e.g. 'make me a carousel about this', 'turn that into a story slide', 'make a full story sequence', 'actually just a photo'). " +
+    "story-slide = ONE story frame; story-sequence = a full multi-slide vertical story (plan it like a carousel). " +
     "Call this INSTEAD of emit_concepts when her request is for a format other than the current one. " +
     "The studio switches and asks you for fresh directions automatically, so keep any text to one " +
     "short line and do not present concepts in the same turn.",
   inputSchema: z.object({
     format: z
-      .enum(["photo", "photoshoot", "reel-cover", "carousel", "story-slide", "video"])
+      .enum([
+        "photo",
+        "photoshoot",
+        "reel-cover",
+        "carousel",
+        "story-slide",
+        "story-sequence",
+        "video",
+      ])
       .describe("The format she asked for."),
   }),
   execute: async input => input,

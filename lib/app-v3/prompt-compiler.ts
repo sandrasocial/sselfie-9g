@@ -595,7 +595,7 @@ export function buildGraphicRedesignSlides(
 ): CarouselSlide[] {
   const g = brief.graphic
 
-  if (format === "carousel") {
+  if (format === "carousel" || format === "story-sequence") {
     const rawSlides = effectiveCarouselSlides(brief, conceptTitle).slice(0, MAX_CAROUSEL_SLIDES)
     const slides =
       rawSlides.length > 0
@@ -834,6 +834,7 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
       return { prompts: [prompt], size: "1024x1792" }
     }
 
+    case "story-sequence":
     case "carousel": {
       const slides = (graphicText?.slides ?? []).slice(0, MAX_CAROUSEL_SLIDES)
       const safeSlides = slides.length > 0 ? slides : [{ heading: clean(extra) || "Slide 1" }]
@@ -851,8 +852,9 @@ export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
           " Render all text spelled exactly as written."
         )
       })
-      // Square keeps text safe from cropping (per product decision); covers stay vertical-friendly via layout.
-      return { prompts, size: "1024x1024" }
+      // Square keeps text safe from cropping (per product decision); covers stay vertical-friendly
+      // via layout. A story sequence renders vertical 9:16 instead.
+      return { prompts, size: outputFormat === "story-sequence" ? "1024x1792" : "1024x1024" }
     }
   }
 }

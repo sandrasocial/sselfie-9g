@@ -38,6 +38,11 @@ const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] =
     label: "Story",
     line: "A quick story frame for a poll, offer, or reminder.",
   },
+  {
+    format: "story-sequence",
+    label: "Story sequence",
+    line: "A full multi-slide story in one cohesive world.",
+  },
   { format: "video", label: "Video", line: "Add subtle motion to a photo you already made." },
 ]
 

@@ -61,6 +61,7 @@ const VALID_FORMATS: OutputFormat[] = [
   "reel-cover",
   "carousel",
   "story-slide",
+  "story-sequence",
 ]
 const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
   "establishing-full-body",
@@ -101,11 +102,22 @@ type PhotoshootJob = {
 }
 
 function isRedesignGraphicFormat(format: OutputFormat): boolean {
-  return format === "carousel" || format === "reel-cover" || format === "story-slide"
+  return (
+    format === "carousel" ||
+    format === "reel-cover" ||
+    format === "story-slide" ||
+    format === "story-sequence"
+  )
+}
+
+// A multi-slide set Maya plans like a carousel (story-sequence reuses the carousel pipeline, 9:16).
+function isMultiSlideGraphicFormat(format: OutputFormat): boolean {
+  return format === "carousel" || format === "story-sequence"
 }
 
 function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
-  if (format === "carousel") return "photoshoot-carousel"
+  // story-sequence reuses the carousel style anchors (NOT the overlay-only "story-sequence" grounding).
+  if (format === "carousel" || format === "story-sequence") return "photoshoot-carousel"
   if (format === "reel-cover") return "reel-cover"
   return "story-sequence"
 }
@@ -399,13 +411,15 @@ export async function POST(request: NextRequest) {
       if (!brief) {
         return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
       }
-      if (format === "carousel") {
+      if (isMultiSlideGraphicFormat(format)) {
         const validationErrors = validateCustomerCarouselBrief(brief, body.conceptTitle)
         if (validationErrors.length > 0) {
           return NextResponse.json(
             {
               error:
-                "That carousel plan was too thin. Ask Maya for a fuller carousel with slide-specific visuals.",
+                format === "story-sequence"
+                  ? "That story sequence was too thin. Ask Maya for a fuller multi-slide story."
+                  : "That carousel plan was too thin. Ask Maya for a fuller carousel with slide-specific visuals.",
               code: "carousel_plan_invalid",
               details: validationErrors,
             },
@@ -946,6 +960,11 @@ export async function POST(request: NextRequest) {
             slide: job.slide,
             referenceMode: "identity-scene",
             inspirationReferenceUrl,
+            // A story sequence reuses the carousel pipeline but renders 9:16 instead of 4:5.
+            size:
+              format === "story-sequence"
+                ? process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+                : undefined,
             // Suite renders everything at medium (cost control); admin keeps high.
             quality: IMAGE_QUALITY,
           })

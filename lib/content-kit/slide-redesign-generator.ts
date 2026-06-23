@@ -203,6 +203,7 @@ export async function redesignContentSlideToBuffer({
   referenceMode,
   inspirationReferenceUrl,
   quality = "high",
+  size,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -214,6 +215,8 @@ export async function redesignContentSlideToBuffer({
   referenceMode?: RedesignReferenceMode
   // Suite passes "medium" for cost control; admin content defaults to "high".
   quality?: "low" | "medium" | "high"
+  // Override the output size (e.g. a 9:16 story sequence reusing the carousel pipeline).
+  size?: string
 }): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -242,7 +245,7 @@ export async function redesignContentSlideToBuffer({
       hasInspirationReference: Boolean(inspirationReferenceUrl),
     }),
     n: 1,
-    size: category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE,
+    size: size ?? (category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE),
     quality,
     output_format: "png",
   }

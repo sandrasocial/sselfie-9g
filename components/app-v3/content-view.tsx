@@ -27,6 +27,7 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   "reel-cover": "Reel cover",
   carousel: "Carousel",
   "story-slide": "Story slide",
+  "story-sequence": "Story sequence",
   video: "Video",
 }
 

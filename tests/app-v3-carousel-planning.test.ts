@@ -38,6 +38,21 @@ describe("app-v3 customer carousel planning", () => {
     expect(jobs.every(job => job.passes[0]?.input === "selfie")).toBe(true)
   })
 
+  it("builds a story sequence as a multi-slide set (STORY-SEQUENCE-01), like a carousel", () => {
+    const slides = Array.from({ length: 5 }, (_, index) => ({
+      heading: `Beat ${index + 1}`,
+      purpose: `emotional beat ${index + 1}`,
+      visualConcept: `unique vertical story scene ${index + 1}`,
+      imagePrompt: `same woman, vertical editorial story moment ${index + 1}`,
+      visualReason: `reason ${index + 1}`,
+    }))
+    const storySlides = buildGraphicRedesignSlides(baseBrief(slides), "story-sequence", "My story")
+    const carouselSlides = buildGraphicRedesignSlides(baseBrief(slides), "carousel", "My story")
+    // Story sequence is multi-slide (not a single graphic) and matches the carousel slide count.
+    expect(storySlides.length).toBe(5)
+    expect(storySlides.length).toBe(carouselSlides.length)
+  })
+
   it("feeds slide-specific visual plans into customer image prompts", () => {
     const jobs = compileConceptJobs(
       baseBrief([

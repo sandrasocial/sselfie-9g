@@ -6,6 +6,7 @@ export type ServerOutputFormat =
   | "reel-cover"
   | "carousel"
   | "story-slide"
+  | "story-sequence"
   | "video"
 
 export type ServerAestheticSnapshot = {

@@ -94,6 +94,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   "reel-cover": "Let's make a Reel cover.",
   carousel: "Let's make a carousel.",
   "story-slide": "Let's make a Story slide.",
+  "story-sequence": "Let's make a full story sequence.",
   video: "Let's add motion to a photo.",
 }
 
@@ -107,6 +108,7 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   "reel-cover": "Tell me what your reel's about and I'll design the cover.",
   carousel: "Give me the topic and I'll build slides that feel like you.",
   "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
+  "story-sequence": "Give me the story angle and I'll build a full sequence that feels like you.",
   video: "Add or choose the image you want to move, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
@@ -118,6 +120,8 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
     "Your selfie's in, and it's still you. Hit create, then tell me what the reel's about.",
   carousel: "Your selfie's in, and it's still you. Hit create, then give me the topic.",
   "story-slide": "Your selfie's in, and it's still you. Hit create, then tell me the goal.",
+  "story-sequence":
+    "Your selfie's in, and it's still you. Hit create, then give me the story angle.",
   video: "Your image is in. Hit create and pick the motion that feels most natural.",
 }
 
@@ -129,6 +133,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
   "reel-cover": "Create my cover directions",
   carousel: "Create my carousel directions",
   "story-slide": "Create my story directions",
+  "story-sequence": "Create my story sequence directions",
   video: "Create my video directions",
 }
 

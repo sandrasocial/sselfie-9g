@@ -9,6 +9,7 @@ export type OutputFormat =
   | "reel-cover"
   | "carousel"
   | "story-slide"
+  | "story-sequence"
   | "video"
 
 /** A single aesthetic the user can pick from the Visual Front Door. Derived from the
