@@ -37,13 +37,13 @@ export function generateVaultFlashAnnounceEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick, honest one.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When I opened the Prompt Vault, it was a handful of photoshoot worlds. As of today it&apos;s 145 prompts across 18 full collections, and I add a new shoot most weeks.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So the price is finally catching up to what&apos;s inside. ${deadline}, the Vault goes from $27 to $37.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Join before then and you lock in $27, forever, with every future drop included. Buy nothing twice.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">And if you&apos;re wondering whether the results actually look like you, not some filtered stranger: one member, 50 and fabulous, told me &ldquo;best one so far, I love that it looks real, and me.&rdquo; That&apos;s the whole point. AI should not erase you. It should frame you.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One selfie. Every editorial world I&apos;ve shot. Yours for good.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton(`Lock in $27 before ${deadlineDay}`, url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">When I opened the Prompt Vault it was a handful of photoshoot worlds. It&apos;s 145 prompts across 18 full collections now, and I add a new shoot most weeks. So the price is finally catching up.</p>
+    <div style="margin:0 0 22px;border:1px solid #C5C6C8;border-radius:8px;padding:22px 18px;text-align:center;">
+      <p style="margin:0 0 8px;font-size:34px;font-weight:600;line-height:1;color:#0D0E10;letter-spacing:0.01em;">$27 <span style="font-size:17px;font-weight:400;color:#818283;letter-spacing:0;">then <span style="text-decoration:line-through;">$37</span></span></p>
+      <p style="margin:0;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#818283;">${deadlineDay} it goes up · every future drop included</p>
+    </div>
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">And it still looks like you, not a filtered stranger. One member, 50 and fabulous: &ldquo;best one so far, I love that it looks real, and me.&rdquo; AI should not erase you. It should frame you.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton(`Lock in $27 before ${deadlineDay}`, url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">You were always this woman. Now you&apos;ve got the direction to show her. 🤍</p>
   `
 
@@ -58,17 +58,12 @@ export function generateVaultFlashAnnounceEmail({
 
   const text = `Hey ${firstName},
 
-Quick, honest one.
+When I opened the Prompt Vault it was a handful of photoshoot worlds. It's 145 prompts across 18 full collections now, and I add a new shoot most weeks. So the price is finally catching up.
 
-When I opened the Prompt Vault, it was a handful of photoshoot worlds. As of today it's 145 prompts across 18 full collections, and I add a new shoot most weeks.
+  $27 now, then $37.
+  ${deadline} it goes up. Every future drop included.
 
-So the price is finally catching up to what's inside. ${deadline}, the Vault goes from $27 to $37.
-
-Join before then and you lock in $27, forever, with every future drop included. Buy nothing twice.
-
-And if you're wondering whether the results actually look like you, not some filtered stranger: one member, 50 and fabulous, told me "best one so far, I love that it looks real, and me." That's the whole point. AI should not erase you. It should frame you.
-
-One selfie. Every editorial world I've shot. Yours for good.
+And it still looks like you, not a filtered stranger. One member, 50 and fabulous: "best one so far, I love that it looks real, and me." AI should not erase you. It should frame you.
 
 Lock in $27 before ${deadlineDay}:
 ${url}
