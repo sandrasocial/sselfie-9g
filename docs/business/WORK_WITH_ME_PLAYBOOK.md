@@ -18,12 +18,16 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 
 ---
 
-## 1. The reply (send after application, with the payment link)
+**LIVE LINKS (created 2026-06-23):**
+- €2,000 payment link: **https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03**
+- Scheduling link (45-min session): **https://calendly.com/sandrasocial/work-with-me-session-45-min**
+
+## 1. The reply (send after application — ready to copy/paste)
 > Hi Harmony,
 >
 > Yes. Let's do this. I'd love to work with you.
 >
-> Here's how we start: [€2,000 link]. As soon as you're in, I'll send your welcome: a short questionnaire so I really get your business, access to start the Masterclass right away while we get going, and a link to book our first call. That's where we map your four weeks together.
+> Here's how we start: https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03. As soon as you're in, I'll send your welcome: a few questions so I really get your business, access to start the Masterclass right away while we get going, and a link to book our first call. That's where we map your four weeks together.
 >
 > So glad you're here.
 > Sandra x
@@ -36,16 +40,18 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 >
 > You're in, and I'm so glad. Before our first call, four quick things so we hit the ground running:
 >
-> **1. The plan.** Read the one-page plan attached. It's exactly what these four weeks are, so we're on the same page from day one. If anything feels off, tell me.
+> **1. The plan.** Read the one-page plan below. It's exactly what these four weeks are, so we're on the same page from day one. If anything feels off, tell me.
 >
-> **2. Tell me about you.** Fill this out: [intake link]. Ten minutes. It means our first call is all about you, not catching up.
+> **2. Tell me about you.** Just hit reply and answer the questions at the bottom. Ten minutes. It means our first call is all about you, not catching up.
 >
-> **3. Start now.** Your Masterclass access is here: [Masterclass link]. Watch the first lessons whenever you have a pocket of time. And start your photos here: [app link], so you arrive with a few already in progress.
+> **3. Start now.** I'm setting up your Masterclass access and I'll send the link within a day, dive in whenever you have a pocket of time. And start your photos here: https://sselfie.ai/app, so you arrive with a few already in progress.
 >
-> **4. Book our first call.** Pick a time here: [scheduling link]. That's our kickoff, where we map your four weeks.
+> **4. Book our first call.** Pick a time here: https://calendly.com/sandrasocial/work-with-me-session-45-min. That's our kickoff, where we map your four weeks.
 >
 > Once you've booked, we're off. Can't wait to build this with you.
 > Sandra x
+>
+> *(Paste the one-page plan from §3 and the intake questions from §4 below this email, so it's all in one place.)*
 
 ---
 
@@ -93,17 +99,20 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 
 ---
 
-## 5. Setup Sandra does once (the two external pieces)
+## 5. Setup — DONE (created 2026-06-23)
 
-### A. The €2,000 payment link (Stripe — 60 seconds)
-Stripe Dashboard → **Payment Links** → **New** → one-time → amount **€2,000 EUR** → name "Work With Me · Private 4-Week Sprint" → (optional) after-payment confirmation message "You're in. Check your inbox for your welcome from Sandra." → **Create** → copy the link. Paste it into the reply (§1) and reuse it for every applicant.
-*(Or ask Codex to create it via the Stripe API for a permanent, tracked link. Either works.)*
+### A. The €2,000 payment link (Stripe — LIVE)
+- Link: **https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03**
+- Price `price_1TlWM0EVJvME7vkw6xDQEgfp` · €2,000 EUR · one-time · product "Work With Me · Private 4-Week Sprint" (`prod_Ul2Q2XcO4zt70N`) · metadata `product=work_with_me`. Shows a "You're in, check your inbox" confirmation after payment. Reuse for every applicant.
 
-### B. The scheduling link (Calendly or Cal.com — free)
-Create one event type: **"Work With Me Session" · 45 min.** Set availability to **specific windows only** (e.g. Tue + Thu afternoons). The limited windows ARE the boundary that protects your week — don't open your whole calendar. Copy the booking link into the welcome packet (§2, step 4). Cal.com (free, generous) or Calendly (free tier) both work.
+### B. The scheduling link (Calendly — LIVE)
+- Link: **https://calendly.com/sandrasocial/work-with-me-session-45-min**
+- "Work With Me Session · 45 min", Google Meet, active.
+- **One thing for you to do in Calendly (30 sec, important):** open this event's availability and set **specific windows only** (e.g. Tue + Thu afternoons). It currently uses your default availability. The limited windows ARE the boundary that protects your week.
 
 ---
 
-## What we have vs. what to build
-- HAVE: Masterclass access (start-now resource), Brand Strategy tool (intake + value), the app/AI photos, the application mini-intake.
-- BUILD: payment link (Stripe, Sandra), scheduling link (Calendly/Cal.com, Sandra), welcome packet (drafted above — Codex can wire it to auto-send on payment later, manual is fine for now), agreement + intake (drafted above).
+## What we have vs. what's left
+- DONE: €2,000 payment link, 45-min scheduling link, the reply, welcome packet, agreement, intake (all above).
+- SANDRA, per client: grant Masterclass access (academy entitlement) + tighten the Calendly availability windows once.
+- OPTIONAL (Codex, later): auto-send the welcome packet + auto-grant Masterclass when a `work_with_me` payment lands, so future clients are fully hands-off. Manual is fine for now.
