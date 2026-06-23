@@ -24,6 +24,19 @@ function foundingUrl(campaign: string, content: string, recipientEmail?: string 
   })
 }
 
+/** Scannable monochrome founding price block. `upLabel` = scarcity, e.g. "First 25 spots". */
+function foundingBlock(upLabel: string): string {
+  return `
+    <div style="margin:0 0 22px;border:1px solid #C5C6C8;border-radius:8px;padding:22px 18px;text-align:center;">
+      <p style="margin:0 0 8px;font-size:32px;font-weight:600;line-height:1;color:#0D0E10;letter-spacing:0.01em;">&euro;697<span style="font-size:16px;font-weight:400;color:#818283;">/year</span> <span style="font-size:17px;font-weight:400;color:#818283;">then <span style="text-decoration:line-through;">&euro;970</span></span></p>
+      <p style="margin:0;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#818283;">${upLabel} · locked for life · everything included</p>
+    </div>`
+}
+
+function foundingBlockText(upLabel: string): string {
+  return `  €697/year, then €970.\n  ${upLabel}. Locked for life. Everything included.`
+}
+
 export function generateFoundingAnnualOpenEmail({
   firstName,
   recipientEmail,
@@ -32,11 +45,11 @@ export function generateFoundingAnnualOpenEmail({
   const subject = "I'm opening 25 founding spots"
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I&apos;m doing something I&apos;ve only done once before. I&apos;m opening a founding rate for the SUITE, and then I&apos;m closing it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here&apos;s the honest why. The SUITE is the whole thing: Maya pulls your looks, keeps every photo looking like you, writes the captions, and 200 photos a month are yours. Every product I&apos;ve made is included. Every new drop too.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">For the first 25 women who join for the year, it&apos;s &euro;697 instead of &euro;970, locked at that rate for as long as you stay. After 25, or after Sunday, it goes back to &euro;970.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One member, 50 and fabulous, put it best: &ldquo;best one so far, I love that it looks real, and me.&rdquo; That&apos;s the whole SUITE in one line. Still you, just framed well.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Claim a founding spot · €697/year", url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">I&apos;m doing something I&apos;ve only done once before. I&apos;m opening a founding rate for the SUITE, and then I&apos;m closing it.</p>
+    ${foundingBlock("First 25 spots")}
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The SUITE is the whole thing. Maya pulls your looks, keeps every photo looking like you, writes your captions, 200 a month. Every product I&apos;ve made, every future drop, included.</p>
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">One member, 50 and fabulous: &ldquo;best one so far, I love that it looks real, and me.&rdquo; Still you, just framed well.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton("Claim a founding spot · €697/year", url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">🤍 Sandra</p>
   `
   const html = renderStoneShell({
@@ -51,11 +64,11 @@ export function generateFoundingAnnualOpenEmail({
 
 I'm doing something I've only done once before. I'm opening a founding rate for the SUITE, and then I'm closing it.
 
-Here's the honest why. The SUITE is the whole thing: Maya pulls your looks, keeps every photo looking like you, writes the captions, and 200 photos a month are yours. Every product I've made is included. Every new drop too.
+${foundingBlockText("First 25 spots")}
 
-For the first 25 women who join for the year, it's €697 instead of €970, locked at that rate for as long as you stay. After 25, or after Sunday, it goes back to €970.
+The SUITE is the whole thing. Maya pulls your looks, keeps every photo looking like you, writes your captions, 200 a month. Every product I've made, every future drop, included.
 
-One member, 50 and fabulous, put it best: "best one so far, I love that it looks real, and me." That's the whole SUITE in one line. Still you, just framed well.
+One member, 50 and fabulous: "best one so far, I love that it looks real, and me." Still you, just framed well.
 
 Claim a founding spot (€697/year):
 ${url}
@@ -72,10 +85,10 @@ export function generateFoundingAnnualProofEmail({
   const subject = "“I used to hate taking photos”"
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">A member told me: &ldquo;I used to hate taking photos. Now I feel like a queen.&rdquo; Another: &ldquo;I just took the best photo of myself in years.&rdquo;</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Neither booked a studio. They opened Maya, gave her one selfie, and she did the rest. That&apos;s what the SUITE is. Not an app you have to learn. A creative director who already knows your brand.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Founding annual is &euro;697, locked for life, for the first 25. Everything included, cancel anytime.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Join founding · €697/year", url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">A member told me: &ldquo;I used to hate taking photos. Now I feel like a queen.&rdquo; Another: &ldquo;I just took the best photo of myself in years.&rdquo;</p>
+    ${foundingBlock("First 25 spots")}
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">Neither booked a studio. They opened Maya, gave her one selfie, and she did the rest. That&apos;s the SUITE. A creative director who already knows your brand.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton("Join founding · €697/year", url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
   const html = renderStoneShell({
@@ -90,9 +103,9 @@ export function generateFoundingAnnualProofEmail({
 
 A member told me: "I used to hate taking photos. Now I feel like a queen." Another: "I just took the best photo of myself in years."
 
-Neither booked a studio. They opened Maya, gave her one selfie, and she did the rest. That's what the SUITE is. Not an app you have to learn. A creative director who already knows your brand.
+${foundingBlockText("First 25 spots")}
 
-Founding annual is €697, locked for life, for the first 25. Everything included, cancel anytime.
+Neither booked a studio. They opened Maya, gave her one selfie, and she did the rest. That's the SUITE. A creative director who already knows your brand.
 
 Join founding (€697/year):
 ${url}
@@ -109,10 +122,10 @@ export function generateFoundingAnnualValueEmail({
   const subject = "everything that's inside (and what it would cost separately)"
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick map of what &euro;697 a year gets you, all in one place:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maya and 200 photos a month. The Prompt Vault. The Starter Kit. The Masterclass. The Selfie to Brand Shoot System. And every new collection I drop, free, forever.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Bought separately that&apos;s well over a thousand dollars, and none of it has Maya. Founding annual is &euro;697, locked, for the first 25 women. Buy nothing twice.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Lock in founding · €697/year", url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">A quick map of what you get, all in one place: Maya and 200 photos a month. The Prompt Vault. The Starter Kit. The Masterclass. The Selfie to Brand Shoot System. And every new collection I drop, free, forever.</p>
+    ${foundingBlock("First 25 spots")}
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">Bought separately that&apos;s well over a thousand dollars, and none of it has Maya. Buy nothing twice.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton("Lock in founding · €697/year", url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra</p>
   `
   const html = renderStoneShell({
@@ -125,11 +138,11 @@ export function generateFoundingAnnualValueEmail({
   })
   const text = `Hey ${firstName},
 
-Quick map of what €697 a year gets you, all in one place:
+A quick map of what you get, all in one place: Maya and 200 photos a month. The Prompt Vault. The Starter Kit. The Masterclass. The Selfie to Brand Shoot System. And every new collection I drop, free, forever.
 
-Maya and 200 photos a month. The Prompt Vault. The Starter Kit. The Masterclass. The Selfie to Brand Shoot System. And every new collection I drop, free, forever.
+${foundingBlockText("First 25 spots")}
 
-Bought separately that's well over a thousand dollars, and none of it has Maya. Founding annual is €697, locked, for the first 25 women. Buy nothing twice.
+Bought separately that's well over a thousand dollars, and none of it has Maya. Buy nothing twice.
 
 Lock in founding (€697/year):
 ${url}
@@ -147,9 +160,10 @@ export function generateFoundingAnnualObjectionEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The question I get most: will the photos look like me, or like a filtered stranger?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Like you. Maya works from your real selfies and keeps what makes you recognizable. AI should not erase you. It should frame you. That&apos;s the rule the whole SUITE is built on.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">And yes, you can cancel anytime. Your photos stay yours either way. The only thing the founding rate asks is that you decide before the spots are gone.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Claim your founding spot", url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">Like you. Maya works from your real selfies and keeps what makes you recognizable. AI should not erase you. It should frame you. That&apos;s the rule the whole SUITE is built on.</p>
+    ${foundingBlock("First 25 spots")}
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">And yes, you can cancel anytime. Your photos stay yours either way. The founding rate just asks that you decide before the spots are gone.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton("Claim your founding spot", url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
   const html = renderStoneShell({
@@ -166,7 +180,9 @@ The question I get most: will the photos look like me, or like a filtered strang
 
 Like you. Maya works from your real selfies and keeps what makes you recognizable. AI should not erase you. It should frame you. That's the rule the whole SUITE is built on.
 
-And yes, you can cancel anytime. Your photos stay yours either way. The only thing the founding rate asks is that you decide before the spots are gone.
+${foundingBlockText("First 25 spots")}
+
+And yes, you can cancel anytime. Your photos stay yours either way. The founding rate just asks that you decide before the spots are gone.
 
 Claim your founding spot:
 ${url}
@@ -183,9 +199,10 @@ export function generateFoundingAnnualLastCallEmail({
   const subject = "founding closes tonight"
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Tonight the founding rate closes. After this it&apos;s &euro;970.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you&apos;ve been waiting for the sign: the whole SUITE, Maya, 200 photos a month, every product, every future drop, &euro;697 a year locked for life.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Join founding before it closes", url)}</div>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.75;">Last note. The founding rate closes tonight.</p>
+    ${foundingBlock("Closes tonight")}
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">The whole SUITE, Maya, 200 photos a month, every product, every future drop. Locked for life if you join before tonight.</p>
+    <div style="margin:0 0 20px;">${renderStoneButton("Join founding before it closes", url)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">If anything snags at checkout, just reply. A real person answers, usually me.</p>
     <p style="margin:16px 0 0;font-size:16px;line-height:1.75;">Sandra</p>
   `
@@ -199,9 +216,11 @@ export function generateFoundingAnnualLastCallEmail({
   })
   const text = `Hey ${firstName},
 
-Tonight the founding rate closes. After this it's €970.
+Last note. The founding rate closes tonight.
 
-If you've been waiting for the sign: the whole SUITE, Maya, 200 photos a month, every product, every future drop, €697 a year locked for life.
+${foundingBlockText("Closes tonight")}
+
+The whole SUITE, Maya, 200 photos a month, every product, every future drop. Locked for life if you join before tonight.
 
 Join founding before it closes:
 ${url}
