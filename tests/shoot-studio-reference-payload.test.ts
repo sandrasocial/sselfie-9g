@@ -161,6 +161,23 @@ describe("Shoot Studio reference payload", () => {
     expect(variationPrompt).not.toContain("TASK TYPE: IMAGE RECONSTRUCTION")
   })
 
+  it("close-recreates EVERY shot when closeRecreate is set (story collection)", async () => {
+    const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
+    await generateShotImage({
+      selfieUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/selfie-front.png"],
+      inspirationUrls: ["https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/inspo.png"],
+      prompt: "Create image 3 of the same editorial photoshoot. Pose: profile variation.",
+      shotRole: "profile",
+      quality: "medium",
+      closeRecreate: true,
+    })
+    const prompt = mocks.edit.mock.calls[0][0].prompt
+    // A non-first shot still recreates its own inspiration, not a set variation.
+    expect(prompt).toContain("TASK TYPE: IMAGE RECONSTRUCTION.")
+    expect(prompt).toContain("Shot role: close recreation of the inspiration image.")
+    expect(prompt).not.toContain("TASK TYPE: STYLE-WORLD VARIATION.")
+  })
+
   it("attaches generated shot one after selfies and original inspiration for anchored later shots", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 

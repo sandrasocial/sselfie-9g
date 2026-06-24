@@ -109,6 +109,8 @@ function buildShotRenderPrompt(input: {
   prompt: string
   shotRole?: ShootShotRole
   safetyRetry?: boolean
+  /** Story collections: EVERY shot recreates its own inspiration image (not just shot 1). */
+  closeRecreate?: boolean
 }): string {
   const identityRange =
     input.selfieCount <= 1 ? "input image 1" : `input images 1-${input.selfieCount}`
@@ -125,32 +127,35 @@ function buildShotRenderPrompt(input: {
       ? `input image ${firstContinuityIndex}`
       : `input images ${firstContinuityIndex}-${lastStyleIndex + continuityCount}`
   const shotNumber = shotNumberFromPrompt(input.prompt)
-  const isFirstShot = shotNumber === null || shotNumber <= 1
-  const inspirationContract = isFirstShot
+  // Story collections recreate EVERY shot from its own inspiration; cohesive shoots only do so for
+  // shot 1 (the rest vary within one world).
+  const useCloseRecreate = Boolean(input.closeRecreate) || shotNumber === null || shotNumber <= 1
+  const inspirationContract = useCloseRecreate
     ? SSELFIE_INSPIRATION_CLOSE_RECREATE
     : SSELFIE_INSPIRATION_SET_VARIATION
-  const roleInstruction = isFirstShot
+  const roleInstruction = useCloseRecreate
     ? "Shot role: close recreation of the inspiration image. Do not convert a close-up inspiration into a full-body, seated, walking, or wider brand shot. Match the inspiration image crop, framing, subject scale, pose geometry, expression energy, camera distance, and lens perspective."
     : shotRoleRenderInstruction(input.shotRole)
-  // Forward the planner's written styling brief (suite Maya parity). Shot 1 omits the framing
-  // sections so its crop/pose stay locked to the inspiration image; later shots get the full brief
-  // so the set can vary. The inspiration contract above keeps the image authoritative whenever the
-  // written brief conflicts with what is visible in the inspiration.
-  const briefLabels = isFirstShot
+  // Forward the planner's written styling brief (suite Maya parity). A close-recreate shot omits the
+  // framing sections so its crop/pose stay locked to the inspiration image; varied shots get the
+  // full brief. The inspiration contract above keeps the image authoritative on any conflict.
+  const briefLabels = useCloseRecreate
     ? RENDER_BRIEF_LABELS.filter(label => !SHOT_ONE_FRAMING_LABELS.has(label))
     : RENDER_BRIEF_LABELS
   const shotBrief = extractShotRenderBrief(input.prompt, briefLabels)
   const shotBriefInstruction = shotBrief
-    ? isFirstShot
+    ? useCloseRecreate
       ? `Written styling brief to follow for wardrobe, location, hair, makeup, mood and color grade, while keeping the inspiration image's exact crop, framing, pose, subject scale and camera. If anything here conflicts with what is visible in the inspiration image, the inspiration image wins:\n${shotBrief}`
       : `Written shot brief to follow for this set variation. Stay in the same visual world as the inspiration image. If anything here conflicts with what is visible in the inspiration image, the inspiration image wins:\n${shotBrief}`
     : ""
 
   return [
-    `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
-      "image  of",
-      "one image of"
-    ),
+    input.closeRecreate
+      ? "Create one image that recreates the attached inspiration image."
+      : `Create image ${shotNumber ?? ""} of a cohesive editorial photoshoot.`.replace(
+          "image  of",
+          "one image of"
+        ),
     `Use ${identityRange} as IDENTITY REFERENCES ONLY. Take from them only the person's facial structure, face shape, skin tone, natural skin texture, age, hair color, body proportions, and recognizable likeness. Do NOT copy the selfies' lighting, white balance, exposure, background, framing, head angle, pose, or expression. The identity references define the person; the scene, lighting, pose, and mood are defined below.`,
     `Use ${styleRange} as ORIGINAL INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
     continuityCount > 0
@@ -367,7 +372,8 @@ Series consistency: ONE shoot means same outfit, hair, makeup, location and grad
 The prompts must work for ANY woman pasting them into ChatGPT with her own selfie. Never reference a specific person. No em-dashes anywhere. No-fake doctrine: realistic, recognizable, true-to-you; never "perfect face", "flawless skin", "look rich", "no one will know".`
 }
 
-const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
+function buildJsonContract(count = DEFAULT_SHOTS_PER_SHOOT): string {
+  return `Respond with ONLY a JSON object, no commentary:
 {
   "title": "Collection name, 2-4 words, editorial (e.g. 'Quiet Luxury London')",
   "shots": [
@@ -380,16 +386,48 @@ const SHOOT_JSON_CONTRACT = `Respond with ONLY a JSON object, no commentary:
     }
   ]
 }
-Exactly ${DEFAULT_SHOTS_PER_SHOOT} shots.`
+Exactly ${count} shots.`
+}
 
-function buildCreatePrompt(notes?: string): string {
-  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for style, outfit family, lighting direction, camera distance, makeup finish, accessories, location materials, color grade and mood. Use any later inspiration images only as secondary references when they support that first image. Then write a ${DEFAULT_SHOTS_PER_SHOOT}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
+function buildCreatePrompt(
+  notes?: string,
+  opts?: { story?: boolean; vibe?: string; shotCount?: number }
+): string {
+  const shotCount = opts?.shotCount ?? DEFAULT_SHOTS_PER_SHOOT
+  if (opts?.story) {
+    // Story collection: one prompt per inspiration image, each its OWN world. Overrides the
+    // cohesive "one shoot" rules. Vibe (e.g. iPhone mirror selfie) adapts every prompt's style.
+    return `You are SSELFIE's vault prompt writer. There are ${shotCount} attached inspiration images. Write a varied STORY COLLECTION of ${shotCount} copy-paste ChatGPT prompts, one per inspiration image IN ORDER, as a photodump-style sequence.
+
+STORY COLLECTION RULES (these override any "cohesive photoshoot" or "same outfit across shots" wording in the anatomy below):
+- Prompt N is a CLOSE RECONSTRUCTION of inspiration image N. Preserve its crop, composition, framing, subject scale, pose geometry, expression energy, camera distance, lens perspective, lighting, shadow pattern, visible wardrobe silhouette, visible props, background tone, color grade and mood.
+- Each prompt is its OWN world: its own scene, outfit, location, pose, crop, lighting and mood from its own inspiration image. Do NOT make the prompts match each other. This is a varied storytelling collection, not one shoot.
+- Describe only what is visible or structurally implied by that inspiration image. Do not invent props, outfits, or framing the image does not show.
+${opts.vibe ? `\nCOLLECTION VIBE for every prompt: ${opts.vibe}\nAdapt every section to this vibe. If the vibe is a casual iPhone / mirror selfie / photodump style, the "Camera + lens" line must describe an iPhone phone camera (NOT a Canon or editorial camera), "Image quality" must read as real phone-camera quality (natural, slightly imperfect, NOT studio editorial sharpness), and "Mood" must match the vibe (everyday camera-roll energy, not a posed studio shoot).\n` : ""}
+${notes ? `Sandra's direction for this collection: ${notes}\n\n` : ""}${buildVaultAnatomy(shotCount)}
+
+${voiceBlock()}
+
+${noFakeBlock()}
+
+AUDIENCE CONTEXT FOR whenToUse ONLY:
+${audienceBlock()}
+
+PROOF CONTEXT FOR SHOT UTILITY ONLY:
+${proofBlock()}
+
+Assign shotRole on every shot (pick the closest role to what the inspiration shows). Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
+
+${buildJsonContract(shotCount)}`
+  }
+
+  return `You are SSELFIE's vault prompt writer. Study the attached inspiration images. Treat the FIRST attached inspiration image as the primary guide for style, outfit family, lighting direction, camera distance, makeup finish, accessories, location materials, color grade and mood. Use any later inspiration images only as secondary references when they support that first image. Then write a ${shotCount}-shot editorial photoshoot that recreates EXACTLY that world, as copy-paste ChatGPT prompts.
 
 SHOT 1 NON-NEGOTIABLE: shot 1 must be a close visual reconstruction of the FIRST inspiration image. Preserve its crop, composition, framing, subject scale, pose geometry, expression energy, camera distance, lens perspective, lighting direction, shadow pattern, visible wardrobe silhouette, visible props/accessories, background tone, color grade and mood. If the inspiration image is a tight face crop, shot 1 must stay a tight face crop. Do not turn it into full-body, seated, walking, arrival, lifestyle, wider studio, or outfit-establishing content.
 
-PLANNING RULE: describe only what is visible or structurally implied by the inspiration image. Do not invent jeans, shoes, bags, chairs, locations, full outfits, or body framing when the inspiration image does not show them. For shots 2-${DEFAULT_SHOTS_PER_SHOOT}, create believable variations from the same photoshoot world, but keep the visible garment/fabric family, lens feel, crop family, light, shadow language and color grade anchored to the first inspiration image.
+PLANNING RULE: describe only what is visible or structurally implied by the inspiration image. Do not invent jeans, shoes, bags, chairs, locations, full outfits, or body framing when the inspiration image does not show them. For shots 2-${shotCount}, create believable variations from the same photoshoot world, but keep the visible garment/fabric family, lens feel, crop family, light, shadow language and color grade anchored to the first inspiration image.
 
-${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(DEFAULT_SHOTS_PER_SHOOT)}
+${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(shotCount)}
 
 ${voiceBlock()}
 
@@ -405,7 +443,7 @@ After shot 1, make the shot mix useful for the proven formats only when that for
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
-${SHOOT_JSON_CONTRACT}`
+${buildJsonContract(shotCount)}`
 }
 
 function extractJsonObject(text: string): any {
@@ -419,7 +457,8 @@ function extractJsonObject(text: string): any {
 
 function sanitizeShots(
   raw: any[],
-  limit = DEFAULT_SHOTS_PER_SHOOT
+  limit = DEFAULT_SHOTS_PER_SHOOT,
+  opts?: { story?: boolean }
 ): Omit<ShootShot, "id" | "status">[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("LLM returned no shots")
   if (raw.length < limit) throw new Error(`LLM returned ${raw.length} shots, expected ${limit}`)
@@ -435,19 +474,26 @@ function sanitizeShots(
       prompt: stripEmDashes(shot.prompt).trim(),
     }
   })
-  validateShotSet(shots)
+  validateShotSet(shots, opts)
   return shots
 }
 
-function validateShotSet(shots: Array<Pick<ShootShot, "shotRole" | "prompt" | "title">>) {
+function validateShotSet(
+  shots: Array<Pick<ShootShot, "shotRole" | "prompt" | "title">>,
+  opts?: { story?: boolean }
+) {
   const roles = shots.map(shot => shot.shotRole)
-  const uniqueRoles = new Set(roles)
-  if (shots.length >= DEFAULT_SHOTS_PER_SHOOT && uniqueRoles.size < 4) {
-    throw new Error("Shoot plan is too repetitive: expected at least 4 distinct shot roles")
-  }
-  const detailCount = roles.filter(role => role === "true-detail").length
-  if (detailCount > 1) {
-    throw new Error(`Shoot plan has too many true-detail shots, got ${detailCount}`)
+  // Story collections are deliberately varied per-shot and may repeat a role (e.g. all mirror
+  // selfies), so the cohesive-shoot role-diversity + detail-cap checks don't apply.
+  if (!opts?.story) {
+    const uniqueRoles = new Set(roles)
+    if (shots.length >= DEFAULT_SHOTS_PER_SHOOT && uniqueRoles.size < 4) {
+      throw new Error("Shoot plan is too repetitive: expected at least 4 distinct shot roles")
+    }
+    const detailCount = roles.filter(role => role === "true-detail").length
+    if (detailCount > 1) {
+      throw new Error(`Shoot plan has too many true-detail shots, got ${detailCount}`)
+    }
   }
   const normalizedPrompts = shots.map(shot =>
     stripEmDashes(shot.prompt)
@@ -477,6 +523,8 @@ export async function generateShotImage(input: {
   prompt: string
   shotRole?: ShootShotRole
   quality: ImgQuality
+  /** Story collections: this shot recreates its own inspiration image. */
+  closeRecreate?: boolean
 }): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -503,6 +551,7 @@ export async function generateShotImage(input: {
     continuityCount: continuityUrls.length,
     prompt: input.prompt,
     shotRole: input.shotRole,
+    closeRecreate: input.closeRecreate,
   })
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
@@ -527,6 +576,7 @@ export async function generateShotImage(input: {
       prompt: sanitizePromptForImageSafety(input.prompt),
       shotRole: input.shotRole,
       safetyRetry: true,
+      closeRecreate: input.closeRecreate,
     })
     response = await openai.images.edit({ ...editInput, prompt: retryPrompt } as any)
   }
@@ -542,6 +592,39 @@ export async function generateShotImage(input: {
     }
   )
   return blob.url
+}
+
+// Story collections: render every shot in parallel, each from its OWN inspiration image, with no
+// continuity anchor and full close-recreation, so each shot keeps its own world.
+async function renderStoryShots(input: {
+  shots: ShootShot[]
+  selfieUrls: string[]
+  inspirationUrls: string[]
+  quality: ImgQuality
+}): Promise<{ shots: ShootShot[]; failures: Array<{ index: number; reason: unknown }> }> {
+  const shots = [...input.shots]
+  const failures: Array<{ index: number; reason: unknown }> = []
+  const results = await Promise.allSettled(
+    shots.map((shot, index) =>
+      generateShotImage({
+        selfieUrls: input.selfieUrls,
+        inspirationUrls: [input.inspirationUrls[index] ?? input.inspirationUrls[0]],
+        continuityUrls: [],
+        prompt: shot.prompt,
+        shotRole: normalizeShotRole(shot.shotRole, index),
+        quality: input.quality,
+        closeRecreate: true,
+      })
+    )
+  )
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      shots[index] = { ...shots[index], imageUrl: result.value }
+    } else {
+      failures.push({ index, reason: result.reason })
+    }
+  })
+  return { shots, failures }
 }
 
 async function renderShotIndicesWithContinuity(input: {
@@ -644,6 +727,8 @@ function mapRow(row: any): Shoot {
       ? new Date(row.vault_published_at).toISOString()
       : null,
     emailDropStatus: row.email_drop_status ?? null,
+    collectionType: row.collection_type === "story" ? "story" : "cohesive",
+    vibe: row.vibe ?? null,
     inspirationUrls: parseStringArray(row.inspiration_urls),
     selfieUrl: row.selfie_url,
     // Older shoots predate selfie_urls; fall back to the single selfie_url.
@@ -724,6 +809,8 @@ export async function getShoot(id: number): Promise<Shoot | null> {
 async function ensureSelfieUrlsColumn(): Promise<void> {
   try {
     await sql`ALTER TABLE content_shoots ADD COLUMN IF NOT EXISTS selfie_urls jsonb`
+    await sql`ALTER TABLE content_shoots ADD COLUMN IF NOT EXISTS collection_type text`
+    await sql`ALTER TABLE content_shoots ADD COLUMN IF NOT EXISTS vibe text`
   } catch (error) {
     console.error("[shoot-studio] ensure selfie_urls column skipped:", error)
   }
@@ -734,9 +821,17 @@ export async function createShoot(input: {
   /** One or more identity references (front, side profiles, full body). */
   selfieUrls: string[]
   notes?: string
+  /** "story" = a varied collection, one inspiration per shot, no continuity. Default "cohesive". */
+  collectionType?: "cohesive" | "story"
+  /** Free-form or preset vibe/style for a story collection, e.g. "iPhone mirror selfie". */
+  vibe?: string
 }): Promise<Shoot> {
-  const inspirationUrls = input.inspirationUrls.filter(isAllowedUrl).slice(0, 3)
+  const story = input.collectionType === "story"
+  const vibe = input.vibe?.trim() || undefined
+  // Story collections allow one inspiration per shot (up to 9); cohesive shoots stay at 3.
+  const inspirationUrls = input.inspirationUrls.filter(isAllowedUrl).slice(0, story ? 9 : 3)
   if (inspirationUrls.length === 0) throw new Error("Add at least one inspiration image")
+  const shotCount = story ? inspirationUrls.length : DEFAULT_SHOTS_PER_SHOOT
   const requestedSelfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
   const selfieUrls = requestedSelfieUrls.filter(isAllowedUrl)
   if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
@@ -759,10 +854,13 @@ export async function createShoot(input: {
           ]
             .filter(Boolean)
             .join("\n")
-    const raw = await callContentKitVision(buildCreatePrompt(retryNote), inspirationUrls)
+    const raw = await callContentKitVision(
+      buildCreatePrompt(retryNote, { story, vibe, shotCount }),
+      inspirationUrls
+    )
     parsed = extractJsonObject(raw)
     try {
-      drafts = sanitizeShots(parsed.shots)
+      drafts = sanitizeShots(parsed.shots, shotCount, { story })
       lastPlanError = null
       break
     } catch (error) {
@@ -791,17 +889,25 @@ export async function createShoot(input: {
 
   await ensureSelfieUrlsColumn()
   const rows = (await sql`
-    INSERT INTO content_shoots (title, slug, inspiration_urls, selfie_url, selfie_urls, shots, messages)
+    INSERT INTO content_shoots (title, slug, inspiration_urls, selfie_url, selfie_urls, shots, messages, collection_type, vibe)
     VALUES (${title}, ${toSlug(title)}, ${JSON.stringify(inspirationUrls)}::jsonb, ${selfieUrls[0]},
             ${JSON.stringify(selfieUrls)}::jsonb,
-            ${JSON.stringify(shots)}::jsonb, ${JSON.stringify(messages)}::jsonb)
+            ${JSON.stringify(shots)}::jsonb, ${JSON.stringify(messages)}::jsonb,
+            ${story ? "story" : "cohesive"}, ${vibe ?? null})
     RETURNING *
   `) as any[]
   const shoot = { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
 
-  // Draft pass renders shot 1 first as the inspiration recreation. The remaining
-  // shots receive selfies + original inspiration + generated shot 1 for cohesion.
-  const rendered = await renderShotIndicesWithContinuity({
+  // Story collections: each shot recreates ITS OWN inspiration image (inspo i -> shot i), with no
+  // cross-shot continuity, so the set stays varied. Cohesive shoots anchor shots 2+ to shot 1.
+  const rendered = story
+    ? await renderStoryShots({
+        shots: shoot.shots,
+        selfieUrls: shoot.selfieUrls,
+        inspirationUrls,
+        quality: "medium",
+      })
+    : await renderShotIndicesWithContinuity({
     shots: shoot.shots,
     indices: shoot.shots.map((_, index) => index),
     selfieUrls: shoot.selfieUrls,
@@ -919,16 +1025,22 @@ export async function regenerateShot(
   if (idx === -1) throw new Error("Shot not found")
 
   const shotRole = normalizeShotRole(shoot.shots[idx].shotRole, idx)
+  const isStory = shoot.collectionType === "story"
   const imageUrl = await generateShotImage({
     selfieUrls: shoot.selfieUrls,
-    inspirationUrls: shoot.inspirationUrls,
+    // Story shots recreate their OWN inspiration (inspo idx); cohesive shots use all inspiration.
+    inspirationUrls: isStory
+      ? [shoot.inspirationUrls[idx] ?? shoot.inspirationUrls[0]]
+      : shoot.inspirationUrls,
+    // Story shots have no continuity anchor; cohesive shots anchor 2+ to shot 1.
     continuityUrls:
-      idx > 0 && shoot.shots[0]?.imageUrl && isAllowedUrl(shoot.shots[0].imageUrl)
+      !isStory && idx > 0 && shoot.shots[0]?.imageUrl && isAllowedUrl(shoot.shots[0].imageUrl)
         ? [shoot.shots[0].imageUrl]
         : [],
     prompt: shoot.shots[idx].prompt,
     shotRole,
     quality,
+    closeRecreate: isStory,
   })
   shoot.shots[idx] = {
     ...shoot.shots[idx],

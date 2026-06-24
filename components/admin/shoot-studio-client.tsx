@@ -7,6 +7,22 @@ import { getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
 // SHOOT-STUDIO-01: Maya-style chat container + tap-first cards. The agent leads with
 // cards (prompt, shots, actions); typing is refinement only. Nothing auto-posts.
 
+// Story-collection vibe presets. The value is the style directive sent to the planner; it stays
+// generic (the woman from the uploaded reference photos), never names a person. Editable per use.
+const VIBE_PRESETS: { label: string; value: string }[] = [
+  { label: "Editorial photoshoot", value: "" },
+  {
+    label: "iPhone mirror selfie",
+    value:
+      "iPhone mirror selfie collection: ultra-realistic casual mirror selfies taken on a phone, real mirror reflection and correct mirror physics, natural phone-camera quality with realistic skin texture and soft everyday imperfections, not a studio shoot and not AI-smooth. Vary the mirror and room per shot (bathroom, bedroom, floor mirror, elevator, car).",
+  },
+  {
+    label: "Photodump / camera-roll",
+    value:
+      "Photodump collection: everyday candid camera-roll moments, natural light, relaxed and unposed, real phone-camera quality, not editorial or studio. Vary the everyday scene per shot.",
+  },
+]
+
 function CopyChip({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
   return (
@@ -470,6 +486,10 @@ export function ShootStudioClient({
   const [selfieOptions, setSelfieOptions] = useState<string[]>(selfies)
   const [selfieUrls, setSelfieUrls] = useState<string[]>(selfies[0] ? [selfies[0]] : [])
   const [notes, setNotes] = useState("")
+  const [collectionType, setCollectionType] = useState<"cohesive" | "story">("cohesive")
+  const [vibe, setVibe] = useState("")
+  const story = collectionType === "story"
+  const maxInspiration = story ? 9 : 3
   const [uploading, setUploading] = useState(false)
   const [uploadingSelfie, setUploadingSelfie] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -484,12 +504,12 @@ export function ShootStudioClient({
     try {
       const form = new FormData()
       Array.from(files)
-        .slice(0, 3)
+        .slice(0, maxInspiration)
         .forEach((file) => form.append("files", file))
       const response = await fetch("/api/admin/content-kit/shoots/upload", { method: "POST", body: form })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      setInspiration((current) => [...current, ...data.urls].slice(0, 3))
+      setInspiration((current) => [...current, ...data.urls].slice(0, maxInspiration))
     } catch (err: any) {
       setError(err?.message || "Upload failed")
     } finally {
@@ -555,6 +575,8 @@ export function ShootStudioClient({
           inspirationUrls: inspiration,
           selfieUrls,
           notes: notes.trim() || undefined,
+          collectionType,
+          vibe: story && vibe.trim() ? vibe.trim() : undefined,
         }),
       })
       const data = await response.json()
@@ -594,11 +616,64 @@ export function ShootStudioClient({
 
       {/* Composer */}
       <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-5">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-full border border-stone-300 bg-white p-1">
+            {(["cohesive", "story"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setCollectionType(option)}
+                className={`rounded-full px-4 py-1.5 text-xs uppercase tracking-wide transition ${
+                  collectionType === option
+                    ? "bg-stone-950 text-white"
+                    : "text-stone-600 hover:text-stone-950"
+                }`}
+              >
+                {option === "cohesive" ? "Cohesive shoot" : "Story collection"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-stone-400">
+            {story
+              ? "One inspiration per shot. Each shot keeps its own world (varied, photodump-style)."
+              : "One cohesive photoshoot: 6 shots in one world."}
+          </p>
+        </div>
+
+        {story && (
+          <div className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-stone-500">Vibe</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {VIBE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setVibe(preset.value)}
+                  className="rounded-full border border-stone-200 px-3 py-1 text-[11px] uppercase tracking-wide text-stone-600 hover:border-stone-950 hover:text-stone-950"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={vibe}
+              onChange={(event) => setVibe(event.target.value)}
+              rows={2}
+              placeholder="Pick a preset above, or describe the vibe/style for this collection. Leave blank for editorial."
+              className="mt-2 w-full rounded-lg border border-stone-300 bg-white p-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
+            />
+          </div>
+        )}
+
         <div className="flex flex-wrap items-start gap-6">
           <div>
-            <p className="text-xs uppercase tracking-wide text-stone-500">1 · Inspiration (1-3 images)</p>
-            <div className="mt-2 flex items-center gap-2">
-              {inspiration.map((url) => (
+            <p className="text-xs uppercase tracking-wide text-stone-500">
+              {story
+                ? `1 · Inspiration (one per shot, up to ${maxInspiration})`
+                : "1 · Inspiration (1-3 images)"}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {inspiration.map((url, idx) => (
                 <button
                   key={url}
                   type="button"
@@ -608,9 +683,14 @@ export function ShootStudioClient({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={url} alt="Inspiration" className="h-24 w-[4.5rem] object-cover" />
+                  {story && (
+                    <span className="absolute left-1 top-1 rounded-full bg-stone-950 px-1.5 text-[10px] font-medium text-white">
+                      Shot {idx + 1}
+                    </span>
+                  )}
                 </button>
               ))}
-              {inspiration.length < 3 && (
+              {inspiration.length < maxInspiration && (
                 <button
                   type="button"
                   onClick={() => fileInput.current?.click()}
@@ -705,7 +785,11 @@ export function ShootStudioClient({
             disabled={creating || inspiration.length === 0 || selfieUrls.length === 0}
             className="rounded-full bg-stone-950 px-5 py-2 text-xs uppercase tracking-wide text-white disabled:opacity-50"
           >
-            {creating ? "Creating your 6-shot shoot (3-4 minutes)" : "Create the shoot"}
+            {creating
+              ? `Creating your ${story ? `${inspiration.length}-shot collection` : "6-shot shoot"} (3-4 minutes)`
+              : story
+                ? "Create the collection"
+                : "Create the shoot"}
           </button>
         </div>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}

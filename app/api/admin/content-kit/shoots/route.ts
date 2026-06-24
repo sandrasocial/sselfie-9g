@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
         inspirationUrls: Array.isArray(body.inspirationUrls) ? body.inspirationUrls : [],
         selfieUrls,
         notes: typeof body.notes === "string" ? body.notes : undefined,
+        collectionType: body.collectionType === "story" ? "story" : "cohesive",
+        vibe: typeof body.vibe === "string" ? body.vibe : undefined,
       })
       return NextResponse.json({ success: true, shoot })
     }

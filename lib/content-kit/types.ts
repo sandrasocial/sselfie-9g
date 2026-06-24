@@ -168,6 +168,10 @@ export type Shoot = {
   publishedVaultSlug?: string | null
   vaultPublishedAt?: string | null
   emailDropStatus?: "queued" | "included" | "skipped" | null
+  /** "story" = varied collection (one inspiration per shot, no continuity). Default "cohesive". */
+  collectionType?: "cohesive" | "story"
+  /** Story-collection vibe/style, e.g. "iPhone mirror selfie". */
+  vibe?: string | null
   inspirationUrls: string[]
   /** First selfie, kept for the thumbnail + back-compat with older single-selfie shoots. */
   selfieUrl: string
