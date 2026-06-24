@@ -46,6 +46,8 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+/.playwright-manychat-profile/
+/.playwright-mcp/
 
 # Agent backup folders — deleted Apr 2026, prevent re-creation
 /.backups/
@@ -61,3 +63,12 @@ reel-references/
 prototype-*.png
 verify-*.png
 verify-cust-*.png
+
+# Local QA / typecheck scratch outputs
+/tmp/*.log
+/tmp/*-qa/
+/tmp/*-previews/
+/tmp/video-model-comparison-*/
+
+# One-off local screenshots
+/studio-flagship-faq.png
