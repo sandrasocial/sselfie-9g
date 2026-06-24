@@ -3,11 +3,19 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
-import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
 import { CopyPromptButton } from "./copy-prompt-button"
 import { MayaPromptConcierge } from "./maya-prompt-concierge"
 import { TrackedCourseLink } from "./tracked-course-link"
 import { VisualConsistencyCodeBuilder } from "./visual-consistency-code-builder"
+import {
+  Block,
+  CourseExperienceProvider,
+  CoursePathMap,
+  ModulePanel,
+  ResumeHero,
+  SignatureWorldRecap,
+  type CourseModuleMeta,
+} from "./course-experience"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] })
@@ -1096,15 +1104,6 @@ const module5FinalChecklist = [
   "My first week repeats the same visual world.",
 ]
 
-const featuredCollections = VAULT_COLLECTION_META.slice(0, 4).map((collection, index) => ({
-  name: collection.name
-    .replace(" Editorial", "")
-    .replace(" Coffee-Run Editorial", "")
-    .replace(" Luxury City Editorial", ""),
-  image: collection.thumbnails[index === 0 ? 2 : 0] ?? collection.thumbnails[0],
-  shotCount: collection.shotCount,
-}))
-
 const modules = [
   {
     number: "01",
@@ -1177,20 +1176,6 @@ function resolveHref(href: string, vaultHref: string) {
   return href === "vault" ? vaultHref : href
 }
 
-function CourseProgressBar() {
-  return (
-    <div className="sbs-course-progress" aria-label="Course progress">
-      <div className="sbs-progress-copy">
-        <span>Progress</span>
-        <strong>5 of 5 modules ready</strong>
-      </div>
-      <div className="sbs-progress-track" aria-hidden="true">
-        <span />
-      </div>
-    </div>
-  )
-}
-
 function ResourceQuickLinks({ vaultHref }: { vaultHref: string }) {
   return (
     <div className="sbs-quick-links" aria-label="Course quick links">
@@ -1216,50 +1201,6 @@ function ResourceQuickLinks({ vaultHref }: { vaultHref: string }) {
   )
 }
 
-function ModuleCard({
-  module,
-  vaultHref,
-}: {
-  module: (typeof modules)[number]
-  vaultHref: string
-}) {
-  return (
-    <article className={`sbs-module-card ${module.available ? "is-active" : "is-locked"}`}>
-      <div className="sbs-module-card-image">
-        {module.image ? (
-          <Image
-            src={module.image}
-            alt={`${module.title} preview`}
-            fill
-            sizes="(max-width: 768px) 100vw, 22vw"
-            style={{ objectFit: "cover", objectPosition: module.imagePosition }}
-          />
-        ) : null}
-      </div>
-      <div className="sbs-module-card-copy">
-        <p className="sbs-module-meta">
-          <span>{module.number}</span>
-          {module.status}
-        </p>
-        <h3 className={cormorant.className}>{module.title}</h3>
-        <p>{module.outcome}</p>
-        <TrackedCourseLink
-          href={resolveHref(module.href, vaultHref)}
-          className="sbs-text-link"
-          event="selfie_to_brand_shoot_module_started"
-          properties={{
-            module: Number(module.number),
-            module_title: module.title,
-            location: "module_card",
-          }}
-        >
-          {module.available ? "Start Module" : "Preview Step"}
-        </TrackedCourseLink>
-      </div>
-    </article>
-  )
-}
-
 function LessonSection({
   id,
   eyebrow,
@@ -1273,14 +1214,17 @@ function LessonSection({
   children: ReactNode
   open?: boolean
 }) {
+  // Inline editorial block (the old accordion is gone — modules now collapse at the
+  // module level, so each lesson reads like a calm magazine section, not a control panel).
+  void open
   return (
-    <details id={id} className="sbs-lesson-section" open={open}>
-      <summary>
-        <span>{eyebrow}</span>
-        <strong className={cormorant.className}>{title}</strong>
-      </summary>
-      <div className="sbs-lesson-body">{children}</div>
-    </details>
+    <section id={id} className="sbs2-block">
+      <div className="sbs2-block-head">
+        <p className="sbs2-eyebrow">{eyebrow}</p>
+        <h3 className={`sbs2-block-title ${cormorant.className}`}>{title}</h3>
+      </div>
+      <div className="sbs2-block-body sbs-lesson-body">{children}</div>
+    </section>
   )
 }
 
@@ -2070,38 +2014,6 @@ function Module5FinalChecklistBlock() {
   )
 }
 
-function CourseSidebar({ vaultHref }: { vaultHref: string }) {
-  return (
-    <aside className="sbs-course-sidebar" aria-label="Course modules">
-      <div className="sbs-sidebar-card">
-        <p className="sbs-kicker">COURSE PLAYER</p>
-        <h2 className={cormorant.className}>Your path</h2>
-        <CourseProgressBar />
-      </div>
-      <nav className="sbs-sidebar-modules">
-        {modules.map(module => (
-          <TrackedCourseLink
-            key={module.number}
-            href={resolveHref(module.href, vaultHref)}
-            className={module.available ? "is-active" : ""}
-            event="selfie_to_brand_shoot_module_started"
-            properties={{
-              module: Number(module.number),
-              module_title: module.title,
-              location: "course_sidebar",
-            }}
-          >
-            <span>{module.number}</span>
-            <strong>{module.title}</strong>
-            <small>{module.status}</small>
-          </TrackedCourseLink>
-        ))}
-      </nav>
-      <ResourceQuickLinks vaultHref={vaultHref} />
-    </aside>
-  )
-}
-
 export function SelfieToBrandShootCourseShell({
   firstName,
   vaultHref,
@@ -2109,114 +2021,82 @@ export function SelfieToBrandShootCourseShell({
   hasStudioAccess = false,
   hasPromptVaultAccess = true,
 }: SelfieToBrandShootCourseShellProps) {
-  const titlePrefix = firstName ? `${firstName}'s` : "The"
+  const courseModules: CourseModuleMeta[] = modules.map(module => ({
+    number: Number(module.number),
+    title: module.title,
+    outcome: module.outcome,
+  }))
+  const moduleNext = (index: number) => {
+    const target = courseModules[index + 1]
+    return target ? { number: target.number, title: target.title } : null
+  }
 
   return (
-    <main className={`sbs-course-page ${inter.className}`}>
-      <nav className="sbs-top-nav" aria-label="Selfie to Brand Shoot navigation">
-        <Link href="/" className={`sbs-logo ${cormorant.className}`}>
+    <main className={`sbs2-page ${inter.className}`}>
+      <header className="sbs2-header">
+        <Link href="/" className={`sbs2-logo ${cormorant.className}`}>
           SSELFIE
         </Link>
-        <div className="sbs-top-links">
-          <a href="#buyer-home">Home</a>
-          <a href="#course-player">Course</a>
-          <Link href={vaultHref}>Vault</Link>
-        </div>
-      </nav>
+        <span className="sbs2-header-label">SELFIE TO BRAND SHOOT</span>
+        <Link href={vaultHref} className="sbs2-header-link">
+          Open the Vault
+        </Link>
+      </header>
 
-      <section id="buyer-home" className="sbs-buyer-home">
-        <div className="sbs-home-copy">
-          <p className="sbs-kicker">SELFIE TO BRAND SHOOT</p>
-          <h1 className={cormorant.className}>{titlePrefix} course home.</h1>
-          <p>
-            A guided visual workflow for turning one clear selfie into an elevated AI brand shoot
-            you can use to start showing up, posting clearly, and building your personal brand
-            online.
-          </p>
-          <CourseProgressBar />
-          <div className="sbs-home-actions">
-            <a href="#course-player" className="sbs-primary">
-              Continue Where You Left Off
-            </a>
-            <Link href={vaultHref} className="sbs-secondary">
-              Open The Vault
-            </Link>
+      <CourseExperienceProvider firstName={firstName ?? null} modules={courseModules}>
+        <section className="sbs2-hero" aria-label="Your course">
+          <div className="sbs2-hero-copy">
+            <ResumeHero serifClass={cormorant.className} />
           </div>
-        </div>
-        <div className="sbs-home-board" aria-label="Course visual preview">
-          {featuredCollections.slice(0, 3).map((collection, index) => (
-            <figure key={collection.name} className={`sbs-home-image sbs-home-image-${index}`}>
-              <Image
-                src={collection.image}
-                alt={`${collection.name} photoshoot preview`}
-                fill
-                priority={index === 0}
-                sizes="(max-width: 768px) 72vw, 24vw"
-                style={{ objectFit: "cover", objectPosition: "center top" }}
-              />
-              <figcaption>{collection.name}</figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
+          <figure className="sbs2-hero-figure">
+            <Image
+              src="/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-01-hero-identity.jpeg"
+              alt="Signature brand shoot identity image"
+              fill
+              priority
+              sizes="(max-width: 900px) 100vw, 46vw"
+              style={{ objectFit: "cover", objectPosition: "center 20%" }}
+            />
+          </figure>
+        </section>
 
-      <section className="sbs-home-modules" aria-label="Course module overview">
-        <div className="sbs-section-heading">
-          <p className="sbs-kicker">YOUR SELFIE TO BRAND SHOOT PATH</p>
-          <h2 className={cormorant.className}>Five steps. One first result.</h2>
-          <p>
-            This is not a prompt folder. You will choose the right source photo, pick one visual
-            direction, create your first images, decide what still looks like you, and turn the
-            shoot into a first week of content with a clear next step.
-          </p>
-        </div>
-        <div className="sbs-module-card-grid">
-          {modules.map(module => (
-            <ModuleCard key={module.number} module={module} vaultHref={vaultHref} />
-          ))}
-        </div>
-        <ResourceQuickLinks vaultHref={vaultHref} />
-      </section>
-
-      <section id="course-player" className="sbs-course-player">
-        <CourseSidebar vaultHref={vaultHref} />
-        <article className="sbs-lesson-panel" aria-label="Selfie to Brand Shoot course lessons">
-          <div className="sbs-mobile-player-progress">
-            <CourseProgressBar />
+        <section className="sbs2-pathwrap" aria-label="Course path">
+          <div className="sbs2-section-head">
+            <p className="sbs2-eyebrow">YOUR PATH</p>
+            <h2 className={`sbs2-section-title ${cormorant.className}`}>
+              Five steps. One first result.
+            </h2>
+            <p className="sbs2-section-sub">
+              Not a prompt folder. You will choose the right source photo, pick one visual
+              direction, create your first images, decide what still looks like you, and turn the
+              shoot into a first week of content.
+            </p>
           </div>
-          <header className="sbs-lesson-hero">
-            <div>
-              <p className="sbs-kicker">MODULE 01</p>
-              <h2 className={cormorant.className}>Start With One Selfie.</h2>
-              <p>
-                Choose the photo that gives AI the best chance to create a believable, elevated
-                brand shoot that still looks like you.
-              </p>
-            </div>
-            <div className="sbs-lesson-hero-image">
-              <Image
-                src={sourceSelfies[0].image}
-                alt="Clear front-facing source selfie example"
-                fill
-                sizes="(max-width: 768px) 100vw, 28vw"
-                style={{ objectFit: "cover", objectPosition: "center 38%" }}
-              />
-            </div>
-          </header>
+          <CoursePathMap />
+          <ResourceQuickLinks vaultHref={vaultHref} />
+        </section>
 
-          <div className="sbs-mobile-module-list">
-            <details>
-              <summary>Course modules</summary>
-              <nav>
-                {modules.map(module => (
-                  <Link key={module.number} href={resolveHref(module.href, vaultHref)}>
-                    <span>{module.number}</span>
-                    {module.title}
-                  </Link>
-                ))}
-              </nav>
-            </details>
-          </div>
+        <div className="sbs2-modules">
+          <ModulePanel
+            number={1}
+            eyebrow="MODULE 01"
+            title="Start With One Selfie"
+            outcome="Choose the photo that gives AI enough truth to keep you looking like you."
+            time="12 min"
+            serifClass={cormorant.className}
+            next={moduleNext(0)}
+            image={
+              <figure className="sbs2-cover-figure">
+                <Image
+                  src={sourceSelfies[0].image}
+                  alt="Clear front-facing source selfie example"
+                  fill
+                  sizes="(max-width: 900px) 100vw, 760px"
+                  style={{ objectFit: "cover", objectPosition: "center 38%" }}
+                />
+              </figure>
+            }
+          >
 
           <LessonSection eyebrow="OUTCOME" title="What this module helps you do" open>
             <p>
@@ -2275,48 +2155,28 @@ export function SelfieToBrandShootCourseShell({
             <TroubleshootingBlock />
           </LessonSection>
 
-          <div className="sbs-module-next">
-            <div>
-              <p className="sbs-kicker">NEXT CTA</p>
-              <h3 className={cormorant.className}>
-                Continue to Choose Your Signature Visual World.
-              </h3>
-              <p>
-                The next step is choosing the visual identity your audience can start recognizing
-                you for.
-              </p>
-            </div>
-            <TrackedCourseLink
-              href="#module-2"
-              className="sbs-primary"
-              event="selfie_to_brand_shoot_module_started"
-              properties={{ module: 2, action: "continue_to_module_2" }}
-            >
-              Continue To Module 2
-            </TrackedCourseLink>
-          </div>
+          </ModulePanel>
 
-          <section
-            id="module-2"
-            className="sbs-module-two"
-            aria-label="Module 2: Choose Your Signature Visual World"
-          >
-            <header className="sbs-lesson-hero sbs-module-two-hero">
-              <div>
-                <p className="sbs-kicker">MODULE 02</p>
-                <h2 className={cormorant.className}>Choose Your Signature Visual World.</h2>
-                <p>Choose the visual world you want your audience to start recognizing you for.</p>
-              </div>
-              <div className="sbs-lesson-hero-image">
+          <ModulePanel
+            number={2}
+            eyebrow="MODULE 02"
+            title="Choose Your Signature Visual World"
+            outcome="Choose the repeatable visual identity your audience can start recognizing you for."
+            time="15 min"
+            serifClass={cormorant.className}
+            next={moduleNext(1)}
+            image={
+              <figure className="sbs2-cover-figure">
                 <Image
                   src="/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-01-hero-identity.jpeg"
                   alt="Approved Signature Visual World identity image"
                   fill
-                  sizes="(max-width: 768px) 100vw, 28vw"
+                  sizes="(max-width: 900px) 100vw, 760px"
                   style={{ objectFit: "cover", objectPosition: "center 26%" }}
                 />
-              </div>
-            </header>
+              </figure>
+            }
+          >
 
             <LessonSection
               eyebrow="SANDRA'S RULE"
@@ -2401,43 +2261,26 @@ export function SelfieToBrandShootCourseShell({
               <VisualConsistencyCodeBlock />
             </LessonSection>
 
-            <div className="sbs-module-next">
-              <div>
-                <p className="sbs-kicker">ACTION STEP</p>
-                <h3 className={cormorant.className}>My Signature Visual World is:</h3>
-                <div className="sbs-signature-line" aria-hidden="true" />
-                <p>
-                  Use this world for your first 7-image brand shoot before you try another
-                  direction.
-                </p>
-              </div>
-              <TrackedCourseLink
-                href="#module-3"
-                className="sbs-primary"
-                event="selfie_to_brand_shoot_module_completed"
-                properties={{ module: 2, action: "visual_world_chosen" }}
-              >
-                I Chose My Visual World
-              </TrackedCourseLink>
-            </div>
-          </section>
+            <LessonSection eyebrow="ACTION STEP" title="My Signature Visual World is:">
+              <div className="sbs-signature-line" aria-hidden="true" />
+              <p>
+                Use this world for your first 7-image brand shoot before you try another direction.
+              </p>
+            </LessonSection>
+          </ModulePanel>
 
-          <section
-            id="module-3"
-            className="sbs-module-three"
-            aria-label="Module 3: Create Your First AI Brand Shoot"
+          <ModulePanel
+            number={3}
+            eyebrow="MODULE 03"
+            title="Create Your First AI Brand Shoot"
+            outcome="Create your first three brand image anchors with starter prompts and fix prompts."
+            time="20 min"
+            serifClass={cormorant.className}
+            next={moduleNext(2)}
+            image={<Module3HeroSequence />}
           >
-            <header className="sbs-lesson-hero sbs-module-three-hero">
-              <div>
-                <p className="sbs-kicker">MODULE 03</p>
-                <h2 className={cormorant.className}>Create Your First AI Brand Shoot.</h2>
-                <p>
-                  Use your source selfie and your Signature Visual World to create your first three
-                  brand images.
-                </p>
-              </div>
-              <Module3HeroSequence />
-            </header>
+
+            <SignatureWorldRecap serifClass={cormorant.className} />
 
             <LessonSection eyebrow="OUTCOME" title="What this module helps you do" open>
               <div className="sbs-module3-outcome">
@@ -2514,7 +2357,7 @@ export function SelfieToBrandShootCourseShell({
                   </p>
                 </div>
                 {hasStudioAccess ? (
-                  <Link href="/studio?tab=maya" className="sbs-primary">
+                  <Link href="/app" className="sbs-primary">
                     Open Studio
                   </Link>
                 ) : (
@@ -2523,43 +2366,26 @@ export function SelfieToBrandShootCourseShell({
               </div>
             </LessonSection>
 
-            <div className="sbs-module-next">
-              <div>
-                <p className="sbs-kicker">ACTION STEP</p>
-                <h3 className={cormorant.className}>Create your first 3-image starter shoot.</h3>
-                <p>
-                  Make one Signature Profile Portrait, one Editorial Reel Cover, and one Lifestyle
-                  Brand Image. Then choose your best result from each category.
-                </p>
-              </div>
-              <TrackedCourseLink
-                href="#module-4"
-                className="sbs-primary"
-                event="selfie_to_brand_shoot_module_completed"
-                properties={{ module: 3, action: "starter_shoot_created" }}
-              >
-                I Created My Starter Shoot
-              </TrackedCourseLink>
-            </div>
-          </section>
+            <LessonSection eyebrow="ACTION STEP" title="Create your first 3-image starter shoot">
+              <p>
+                Make one Signature Profile Portrait, one Editorial Reel Cover, and one Lifestyle
+                Brand Image. Then choose your best result from each category.
+              </p>
+            </LessonSection>
+          </ModulePanel>
 
-          <section
-            id="module-4"
-            className="sbs-module-four"
-            aria-label="Module 4: Pick The Images That Still Look Like You"
+          <ModulePanel
+            number={4}
+            eyebrow="MODULE 04"
+            title="Pick The Images That Still Look Like You"
+            outcome="Keep the results that feel realistic, premium, and aligned with your identity."
+            time="16 min"
+            serifClass={cormorant.className}
+            next={moduleNext(3)}
+            image={<Module4HeroSequence />}
           >
-            <header className="sbs-lesson-hero sbs-module-four-hero">
-              <div>
-                <p className="sbs-kicker">MODULE 04</p>
-                <h2 className={cormorant.className}>Pick The Images That Still Look Like You.</h2>
-                <p>
-                  Not every beautiful AI image belongs in your personal brand. In this module,
-                  you&apos;ll learn how to choose the images that still feel like you, match your
-                  Signature Visual World, and are usable for your content.
-                </p>
-              </div>
-              <Module4HeroSequence />
-            </header>
+
+            <SignatureWorldRecap serifClass={cormorant.className} />
 
             <LessonSection eyebrow="SANDRA'S RULE" title="Recognizable beats perfect" open>
               <div className="sbs-taste-note">
@@ -2629,43 +2455,24 @@ export function SelfieToBrandShootCourseShell({
               <FinalBrandShootSelectsBlock />
             </LessonSection>
 
-            <div className="sbs-module-next">
-              <div>
-                <p className="sbs-kicker">ACTION STEP</p>
-                <h3 className={cormorant.className}>Choose your final 3-7 images.</h3>
-                <p>
-                  Pick one profile image, one reel-cover image, one lifestyle image, and up to four
-                  supporting brand images.
-                </p>
-              </div>
-              <TrackedCourseLink
-                href="#module-5"
-                className="sbs-primary"
-                event="selfie_to_brand_shoot_final_selects_completed"
-                properties={{ module: 4, action: "final_selects_picked" }}
-              >
-                I Picked My Best Images
-              </TrackedCourseLink>
-            </div>
-          </section>
+            <LessonSection eyebrow="ACTION STEP" title="Choose your final 3-7 images">
+              <p>
+                Pick one profile image, one reel-cover image, one lifestyle image, and up to four
+                supporting brand images.
+              </p>
+            </LessonSection>
+          </ModulePanel>
 
-          <section
-            id="module-5"
-            className="sbs-module-five"
-            aria-label="Module 5: Turn The Shoot Into Content"
+          <ModulePanel
+            number={5}
+            eyebrow="MODULE 05"
+            title="Turn The Shoot Into Content"
+            outcome="Turn one shoot into profile images, reel covers, stories, carousels, and offer visuals."
+            time="18 min"
+            serifClass={cormorant.className}
+            next={moduleNext(4)}
+            image={<Module5HeroBoard />}
           >
-            <header className="sbs-lesson-hero sbs-module-five-hero">
-              <div>
-                <p className="sbs-kicker">MODULE 05</p>
-                <h2 className={cormorant.className}>Turn The Shoot Into Content.</h2>
-                <p>
-                  Your images are not meant to sit in your camera roll. In this module, you&apos;ll
-                  turn your selected brand shoot images into profile visuals, covers, stories,
-                  carousels, offer posts, and a simple first week of content.
-                </p>
-              </div>
-              <Module5HeroBoard />
-            </header>
 
             <LessonSection eyebrow="SANDRA'S RULE" title="Use the image while the feeling is fresh" open>
               <div className="sbs-taste-note">
@@ -2774,32 +2581,16 @@ export function SelfieToBrandShootCourseShell({
               </div>
             </LessonSection>
 
-            <div className="sbs-module-next">
-              <div>
-                <p className="sbs-kicker">FINAL ACTION</p>
-                <h3 className={cormorant.className}>Plan your first seven pieces of content.</h3>
-                <p>
-                  Choose one profile image, one cover, one story sequence, one carousel, one offer
-                  visual, one about-me post, and one quiet supporting image.
-                </p>
-              </div>
-              <TrackedCourseLink
-                href="#mini-feed-planner"
-                className="sbs-primary"
-                event="selfie_to_brand_shoot_content_plan_completed"
-                properties={{ module: 5, action: "build_3x3_plan" }}
-              >
-                Build My 3x3 Plan
-              </TrackedCourseLink>
-              <a href={vaultHref} className="sbs-secondary">
-                Open The Vault
-              </a>
-            </div>
-          </section>
-        </article>
-      </section>
+            <LessonSection eyebrow="FINAL ACTION" title="Plan your first seven pieces of content">
+              <p>
+                Choose one profile image, one cover, one story sequence, one carousel, one offer
+                visual, one about-me post, and one quiet supporting image.
+              </p>
+            </LessonSection>
+          </ModulePanel>
+        </div>
 
-      <section className="sbs-final-resources">
+      <section className="sbs2-final-resources">
         <div>
           <p className="sbs-kicker">RESOURCES</p>
           <h2 className={cormorant.className}>Open what you need, when you need it.</h2>
@@ -2827,7 +2618,7 @@ export function SelfieToBrandShootCourseShell({
             Download 7-Day Plan
           </TrackedCourseLink>
           {hasStudioAccess && (
-            <Link href="/studio?tab=maya" className="sbs-secondary">
+            <Link href="/app" className="sbs-secondary">
               Open Studio
             </Link>
           )}
@@ -2841,6 +2632,7 @@ export function SelfieToBrandShootCourseShell({
           </a>
         </div>
       </section>
+      </CourseExperienceProvider>
 
       <style>{`
         .sbs-course-page {
@@ -5045,6 +4837,607 @@ export function SelfieToBrandShootCourseShell({
           }
           .sbs-mini-grid {
             width: 100%;
+          }
+        }
+      `}</style>
+
+      <style>{`
+        /* ====================================================================
+           Editorial redesign (sbs2-*) — calm light-luxury course experience.
+           Layered on top of the legacy block CSS above, which still styles the
+           interactive lesson blocks (prompt cards, grids, checklists, etc).
+        ==================================================================== */
+        .sbs2-page {
+          --ink: #0D0E10;
+          --ink-soft: #282728;
+          --body: #4F5052;
+          --muted: #818283;
+          --line: rgba(40, 39, 40, 0.12);
+          --line-soft: rgba(40, 39, 40, 0.07);
+          --surface: #FFFFFF;
+          --field: #F8FAFA;
+          min-height: 100vh;
+          background: #F8FAFA;
+          color: var(--ink);
+          -webkit-font-smoothing: antialiased;
+        }
+        .sbs2-page *:focus-visible {
+          outline: 2px solid var(--ink);
+          outline-offset: 3px;
+          border-radius: 2px;
+        }
+
+        .sbs2-eyebrow {
+          margin: 0 0 14px;
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.34em;
+          line-height: 1.6;
+          text-transform: uppercase;
+        }
+
+        /* ----- Header ----- */
+        .sbs2-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: 16px;
+          padding: 16px clamp(18px, 4vw, 48px);
+          background: rgba(248, 250, 250, 0.82);
+          backdrop-filter: blur(16px);
+          border-bottom: 1px solid var(--line-soft);
+        }
+        .sbs2-logo {
+          justify-self: start;
+          color: var(--ink);
+          font-size: 16px;
+          font-weight: 300;
+          letter-spacing: 0.36em;
+          text-decoration: none;
+          text-transform: uppercase;
+        }
+        .sbs2-header-label {
+          justify-self: center;
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.42em;
+          text-transform: uppercase;
+        }
+        .sbs2-header-link {
+          justify-self: end;
+          color: var(--ink-soft);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          text-decoration: none;
+          border-bottom: 1px solid var(--line);
+          padding-bottom: 3px;
+          transition: border-color 0.18s ease;
+        }
+        .sbs2-header-link:hover {
+          border-color: var(--ink);
+        }
+
+        /* ----- Hero ----- */
+        .sbs2-hero {
+          display: grid;
+          grid-template-columns: 1.04fr 0.96fr;
+          gap: clamp(28px, 5vw, 72px);
+          align-items: center;
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: clamp(48px, 7vw, 104px) clamp(20px, 5vw, 64px) clamp(36px, 5vw, 72px);
+        }
+        .sbs2-hero-figure {
+          position: relative;
+          margin: 0;
+          width: 100%;
+          aspect-ratio: 4 / 5;
+          max-height: 560px;
+          border-radius: 18px;
+          overflow: hidden;
+          background: #ECEEEE;
+        }
+        .sbs2-resume-title {
+          margin: 0 0 14px;
+          color: var(--ink);
+          font-size: clamp(2.6rem, 5.4vw, 4.6rem);
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 0.98;
+        }
+        .sbs2-resume-sub {
+          margin: 0 0 30px;
+          max-width: 460px;
+          color: var(--body);
+          font-size: 16px;
+          line-height: 1.8;
+        }
+
+        /* ----- Progress bar ----- */
+        .sbs2-progress {
+          margin: 0 0 30px;
+          max-width: 440px;
+        }
+        .sbs2-progress-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .sbs2-progress-head span {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          color: var(--muted);
+        }
+        .sbs2-progress-head strong {
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: var(--ink);
+        }
+        .sbs2-progress-track {
+          height: 4px;
+          border-radius: 999px;
+          background: #E3E6E6;
+          overflow: hidden;
+        }
+        .sbs2-progress-track span {
+          display: block;
+          height: 100%;
+          border-radius: 999px;
+          background: var(--ink);
+          transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ----- Buttons ----- */
+        .sbs2-btn {
+          appearance: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          padding: 0 36px;
+          border: 1px solid transparent;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          text-decoration: none;
+          cursor: pointer;
+          transition: opacity 0.18s ease, background 0.18s ease, transform 0.18s ease;
+        }
+        .sbs2-btn-primary {
+          background: var(--ink);
+          color: #FFFFFF;
+        }
+        .sbs2-btn-primary:hover {
+          opacity: 0.88;
+        }
+        .sbs2-btn-primary:active {
+          transform: translateY(1px);
+        }
+
+        /* ----- Path / table of contents ----- */
+        .sbs2-pathwrap {
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: clamp(40px, 5vw, 72px) clamp(20px, 5vw, 64px);
+        }
+        .sbs2-section-head {
+          margin-bottom: 8px;
+        }
+        .sbs2-section-title {
+          margin: 0 0 16px;
+          color: var(--ink);
+          font-size: clamp(2rem, 3.6vw, 3.1rem);
+          font-weight: 300;
+          letter-spacing: -0.015em;
+          line-height: 1;
+        }
+        .sbs2-section-sub {
+          margin: 0;
+          max-width: 640px;
+          color: var(--body);
+          font-size: 16px;
+          line-height: 1.8;
+        }
+        .sbs2-path {
+          list-style: none;
+          margin: 28px 0 0;
+          padding: 0;
+          border-top: 1px solid var(--line);
+        }
+        .sbs2-path li {
+          margin: 0;
+        }
+        .sbs2-path-card {
+          width: 100%;
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: center;
+          gap: clamp(16px, 3vw, 30px);
+          padding: clamp(18px, 2.4vw, 24px) clamp(6px, 1.4vw, 14px);
+          border: none;
+          border-bottom: 1px solid var(--line);
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+          transition: background 0.18s ease, padding-left 0.18s ease;
+        }
+        .sbs2-path-card:hover {
+          background: #FFFFFF;
+          padding-left: clamp(12px, 2vw, 22px);
+        }
+        .sbs2-path-num {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 46px;
+          border: 1px solid var(--line);
+          border-radius: 50%;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          color: var(--muted);
+          transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+        .sbs2-path-card.is-current .sbs2-path-num {
+          border-color: var(--ink);
+          color: var(--ink);
+        }
+        .sbs2-path-card.is-done .sbs2-path-num {
+          background: var(--ink);
+          border-color: var(--ink);
+          color: #FFFFFF;
+        }
+        .sbs2-path-copy strong {
+          display: block;
+          color: var(--ink);
+          font-size: clamp(15px, 1.6vw, 17px);
+          font-weight: 500;
+          letter-spacing: -0.005em;
+        }
+        .sbs2-path-copy small {
+          display: block;
+          margin-top: 4px;
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .sbs2-path-status {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+        .sbs2-path-card.is-current .sbs2-path-status {
+          color: var(--ink);
+        }
+
+        /* ----- Module panels ----- */
+        .sbs2-modules {
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: 0 clamp(20px, 5vw, 64px) clamp(56px, 8vw, 104px);
+        }
+        .sbs2-module {
+          border-top: 1px solid var(--line);
+        }
+        .sbs2-module-head {
+          width: 100%;
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: start;
+          gap: clamp(16px, 3vw, 32px);
+          padding: clamp(26px, 3.4vw, 40px) 0;
+          border: none;
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+        }
+        .sbs2-module-num {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 50px;
+          height: 50px;
+          border: 1px solid var(--line);
+          border-radius: 50%;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: var(--muted);
+          transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+        .sbs2-module.is-open .sbs2-module-num {
+          border-color: var(--ink);
+          color: var(--ink);
+        }
+        .sbs2-module.is-done .sbs2-module-num {
+          background: var(--ink);
+          border-color: var(--ink);
+          color: #FFFFFF;
+        }
+        .sbs2-module-headcopy {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 0;
+        }
+        .sbs2-module-headcopy .sbs2-eyebrow {
+          margin: 0;
+        }
+        .sbs2-module-title {
+          color: var(--ink);
+          font-size: clamp(1.7rem, 3vw, 2.6rem);
+          font-weight: 300;
+          letter-spacing: -0.01em;
+          line-height: 1.03;
+        }
+        .sbs2-module-outcome {
+          max-width: 580px;
+          color: var(--body);
+          font-size: 15px;
+          line-height: 1.65;
+        }
+        .sbs2-module-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 14px;
+          padding-top: 6px;
+        }
+        .sbs2-module-time {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+        .sbs2-module-caret {
+          width: 11px;
+          height: 11px;
+          border-right: 1.5px solid var(--muted);
+          border-bottom: 1.5px solid var(--muted);
+          transform: rotate(45deg);
+          transition: transform 0.25s ease, border-color 0.2s ease;
+          margin-bottom: 4px;
+        }
+        .sbs2-module.is-open .sbs2-module-caret {
+          transform: rotate(225deg);
+          border-color: var(--ink);
+        }
+        .sbs2-module-collapsed {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 0 0 clamp(24px, 3vw, 34px) 66px;
+          color: var(--muted);
+          font-size: 14px;
+        }
+        .sbs2-module-open-hint {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--ink);
+          white-space: nowrap;
+        }
+        .sbs2-module-body {
+          padding: 4px 0 clamp(36px, 5vw, 64px);
+        }
+        .sbs2-module-cover {
+          margin: 0 0 clamp(28px, 4vw, 44px);
+        }
+        .sbs2-cover-figure {
+          position: relative;
+          margin: 0;
+          width: 100%;
+          aspect-ratio: 16 / 10;
+          max-height: 460px;
+          border-radius: 16px;
+          overflow: hidden;
+          background: #ECEEEE;
+        }
+        .sbs2-module-content {
+          /* interactive lesson blocks keep their own widths; text is constrained below */
+        }
+        .sbs2-module-foot {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 18px 24px;
+          margin-top: clamp(28px, 4vw, 48px);
+          padding-top: clamp(24px, 3vw, 32px);
+          border-top: 1px solid var(--line);
+        }
+        .sbs2-foot-next {
+          color: var(--muted);
+          font-size: 14px;
+        }
+        .sbs2-foot-next strong {
+          color: var(--ink);
+          font-weight: 500;
+        }
+
+        /* ----- Inline lesson block (replaces the old accordion) ----- */
+        .sbs2-block {
+          margin: clamp(26px, 4vw, 44px) 0;
+        }
+        .sbs2-block:first-child {
+          margin-top: 0;
+        }
+        .sbs2-block-head {
+          margin-bottom: 16px;
+        }
+        .sbs2-block-head .sbs2-eyebrow {
+          margin: 0 0 10px;
+        }
+        .sbs2-block-title {
+          margin: 0;
+          color: var(--ink);
+          font-size: clamp(1.4rem, 2.3vw, 1.95rem);
+          font-weight: 400;
+          letter-spacing: -0.005em;
+          line-height: 1.12;
+        }
+        .sbs2-block-body {
+          color: var(--body);
+          font-size: 15.5px;
+          line-height: 1.8;
+        }
+        .sbs2-block-body > p {
+          margin: 0 0 14px;
+          max-width: 68ch;
+        }
+        .sbs2-block-body > p:last-child {
+          margin-bottom: 0;
+        }
+
+        /* ----- Saved visual world recap ----- */
+        .sbs2-recap {
+          margin: 4px 0 8px;
+          padding: clamp(20px, 3vw, 30px);
+          background: #FFFFFF;
+          border: 1px solid var(--line);
+          border-radius: 16px;
+        }
+        .sbs2-recap .sbs2-eyebrow {
+          margin: 0 0 12px;
+        }
+        .sbs2-recap-empty {
+          background: transparent;
+          border-style: dashed;
+        }
+        .sbs2-recap-empty p {
+          margin: 0 0 12px;
+          color: var(--body);
+          font-size: 15px;
+          line-height: 1.7;
+          max-width: 60ch;
+        }
+        .sbs2-recap-world {
+          margin: 0;
+          color: var(--ink);
+          font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+          font-weight: 300;
+          line-height: 1.15;
+        }
+        .sbs2-recap-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 18px;
+          margin: 22px 0 0;
+        }
+        .sbs2-recap-grid div {
+          border-top: 1px solid var(--line-soft);
+          padding-top: 10px;
+        }
+        .sbs2-recap-grid dt {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-bottom: 6px;
+        }
+        .sbs2-recap-grid dd {
+          margin: 0;
+          color: var(--ink);
+          font-size: 15px;
+          line-height: 1.5;
+        }
+        .sbs2-recap-note {
+          margin: 18px 0 0;
+          color: var(--muted);
+          font-size: 13.5px;
+        }
+        .sbs2-text-link {
+          display: inline-flex;
+          align-items: center;
+          color: var(--ink);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          text-decoration: none;
+          border-bottom: 1px solid var(--ink);
+          padding-bottom: 2px;
+        }
+        .sbs2-text-link:hover {
+          opacity: 0.7;
+        }
+
+        /* ----- Final resources ----- */
+        .sbs2-final-resources {
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: clamp(48px, 6vw, 80px) clamp(20px, 5vw, 64px) clamp(64px, 8vw, 104px);
+          border-top: 1px solid var(--line);
+        }
+        .sbs2-final-resources h2 {
+          margin: 0 0 28px;
+          color: var(--ink);
+          font-size: clamp(2rem, 4vw, 3.2rem);
+          font-weight: 300;
+          letter-spacing: -0.015em;
+          line-height: 1;
+        }
+
+        @media (max-width: 900px) {
+          .sbs2-header {
+            grid-template-columns: 1fr auto;
+          }
+          .sbs2-header-label {
+            display: none;
+          }
+          .sbs2-hero {
+            grid-template-columns: 1fr;
+          }
+          .sbs2-hero-figure {
+            order: -1;
+            aspect-ratio: 16 / 11;
+            max-height: 340px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .sbs2-module-head {
+            grid-template-columns: auto 1fr;
+            gap: 14px 18px;
+          }
+          .sbs2-module-meta {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 4px;
+            padding-left: 64px;
+          }
+          .sbs2-module-collapsed {
+            padding-left: 0;
+          }
+          .sbs2-path-card {
+            grid-template-columns: auto 1fr;
+            row-gap: 6px;
+          }
+          .sbs2-path-status {
+            grid-column: 2;
           }
         }
       `}</style>
