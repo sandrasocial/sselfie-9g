@@ -53,18 +53,16 @@ function normalizePillars(value: unknown): CourseBrandStrategyPillar[] {
 
 export async function getCourseBrandStrategy(
   email: string | null | undefined,
-  userId: string | number | null | undefined
+  _userId: string | number | null | undefined
 ): Promise<CourseBrandStrategy | null> {
-  if (!email && !userId) return null
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : ""
+  if (!normalizedEmail) return null
 
   const rows = await sql`
     SELECT name, business_type, target_audience, brand_vibe, strategy_json
     FROM freebie_brand_strategies
     WHERE strategy_json IS NOT NULL
-      AND (
-        (${email}::text IS NOT NULL AND LOWER(email) = LOWER(${email ?? ""}))
-        OR (${userId ? String(userId) : null}::text IS NOT NULL AND user_id = ${userId ? String(userId) : null})
-      )
+      AND LOWER(email) = ${normalizedEmail}
     ORDER BY created_at DESC
     LIMIT 1
   `.catch(() => [] as Array<Record<string, unknown>>)

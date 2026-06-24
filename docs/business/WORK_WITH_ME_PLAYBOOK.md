@@ -12,7 +12,7 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 
 1. Application (already a mini-intake) → Sandra replies (below) with the payment link.
 2. She pays (standing €2,000 Stripe Payment Link).
-3. **Welcome packet** email lands automatically (below) → 4 steps: okay the plan · fill the intake · start now (Masterclass + photos) · book the first call.
+3. **Welcome packet** email lands automatically (below) → 4 steps: okay the plan · fill the intake · start now (Masterclass + Selfie to Brand Shoot + Prompt Vault + photos) · book the first call.
 4. Kickoff call → set the ONE goal + scope from her intake → map the 4 weeks.
 5. 4 weekly 45-min calls + bounded async support.
 6. Handoff → she leaves with her system → continues on SUITE (€97/mo).
@@ -30,7 +30,7 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 >
 > Yes. Let's do this. I'd love to work with you.
 >
-> Here's how we start: https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03. As soon as you're in, I'll send your welcome: a few questions so I really get your business, access to start the Masterclass right away while we get going, and a link to book our first call. That's where we map your four weeks together.
+> Here's how we start: https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03. As soon as you're in, I'll send your welcome: a few questions so I really get your business, access to the Masterclass, Selfie to Brand Shoot, and Prompt Vault while we get going, and a link to book our first call. That's where we map your four weeks together.
 >
 > So glad you're here.
 > Sandra x
@@ -49,9 +49,9 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 >
 > **2. Tell me about you.** Just hit reply and answer the questions at the bottom. Ten minutes. It means our first call is all about you, not catching up.
 >
-> **3. Start now.** Your Masterclass access is ready. Dive in whenever you have a pocket of time. And start your photos here: https://sselfie.ai/app, so you arrive with a few already in progress.
+> **3. Start now.** Your Masterclass, Selfie to Brand Shoot System, and Prompt Vault access are ready. Start with the System, then open SSELFIE here: https://sselfie.ai/app, so you arrive with a few photos already in progress.
 >
-> **4. Book our first call.** Pick a time here: https://calendly.com/sandrasocial/work-with-me-session-45-min. That's our kickoff, where we map your four weeks.
+> **4. Book our first call.** Pick a time here: https://calendly.com/sandrasocial/work-with-me-session-45-min. That's our kickoff, where we map your four weeks. You can use this same Calendly link for the weekly 45-minute sessions too.
 >
 > Once you've booked, we're off. Can't wait to build this with you.
 > Sandra x
@@ -115,7 +115,7 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 
 - Link: **https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03**
 - Price `price_1TlWM0EVJvME7vkw6xDQEgfp` · €2,000 EUR · one-time · product "Work With Me · Private 4-Week Sprint" (`prod_Ul2Q2XcO4zt70N`) · metadata `product=work_with_me`, `product_type=work_with_me`, `source=work_with_me_paid`. Shows a "You're in, check your inbox" confirmation after payment. Reuse for every applicant.
-- Webhook fulfillment: `work_with_me` payments create/link the customer account, grant Masterclass + Brand Strategy access, tag the contact, and send the branded Work With Me welcome packet.
+- Webhook fulfillment: `work_with_me` payments create/link the customer account, grant Masterclass + Brand Strategy + Selfie to Brand Shoot + Prompt Vault access, tag the contact, and send the branded Work With Me welcome packet with Calendly.
 
 ### B. The scheduling link (Calendly — LIVE)
 
@@ -127,6 +127,6 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 
 ## What we have vs. what's left
 
-- DONE: €2,000 payment link, 45-min scheduling link, the reply, welcome packet, agreement, intake, automatic welcome send, and automatic Masterclass + Brand Strategy access after payment.
+- DONE: €2,000 payment link, 45-min scheduling link, the reply, welcome packet, agreement, intake, automatic welcome send, and automatic Masterclass + Brand Strategy + Selfie to Brand Shoot + Prompt Vault access after payment.
 - SANDRA, once: tighten the Calendly availability windows.
 - SANDRA, per client: review the application and only send the private payment link when it is a fit.
