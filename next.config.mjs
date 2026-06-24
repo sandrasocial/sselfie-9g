@@ -25,6 +25,8 @@ const nextConfig = {
       { source: "/paid-blueprint", destination: "/why-studio", permanent: true },
       { source: "/ai-photo-refresh", destination: "/starter-kit", permanent: true },
       { source: "/private-shoot", destination: "/work-with-me", permanent: true },
+      { source: "/brand-strategy", destination: "/masterclass", permanent: true },
+      { source: "/checkout/brand-strategy-pack", destination: "/checkout/masterclass", permanent: true },
       { source: "/checkout/transform", destination: "/checkout/membership", permanent: true },
       { source: "/checkout/visibility-suite", destination: "/checkout/masterclass", permanent: true },
     ]

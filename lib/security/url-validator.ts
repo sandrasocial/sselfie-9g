@@ -5,6 +5,7 @@
 
 const ALLOWED_PROTOCOLS = ["http:", "https:"]
 const ALLOWED_REDIRECT_PATHS = [
+  "/app",
   "/studio",
   "/auth",
   "/admin",
