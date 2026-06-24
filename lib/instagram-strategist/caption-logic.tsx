@@ -64,7 +64,7 @@ export async function generateCaptionsForFeed({
       success: false,
       captionsGenerated: 0,
       totalPosts: 0,
-      errors: [error.message],
+      errors: [error instanceof Error ? error.message : "Unknown error"],
     }
   }
 }

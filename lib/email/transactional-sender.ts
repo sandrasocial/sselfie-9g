@@ -44,7 +44,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
         subject: input.subject,
         html: input.html,
         text: input.text,
-        reply_to: input.replyTo || EMAIL_CONFIG.transactional.replyTo,
+        replyTo: input.replyTo || EMAIL_CONFIG.transactional.replyTo,
         tags: [{ name: "type", value: input.emailType }],
       })
 

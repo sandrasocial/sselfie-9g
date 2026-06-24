@@ -125,7 +125,10 @@ export async function POST(req: NextRequest) {
     // Check for product generation (mini-product AI delivery)
     let productGenerationPrompt = ""
     if (product && firstTimeProductUser && isFirstMessage) {
-      productGenerationPrompt = getProductGenerationPrompt(product, { brand_profile: userContext })
+      productGenerationPrompt = `${getProductGenerationPrompt(product, {})}
+
+## User Brand Context
+${userContext}`
       console.log(`[PRODUCT] Activated ${product} generation prompt for first-time user`)
     }
 

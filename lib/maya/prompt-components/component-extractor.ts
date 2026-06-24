@@ -10,6 +10,8 @@
 
 import type { PromptComponent, RawPrompt } from './types'
 
+type PromptComponentMetadata = NonNullable<PromptComponent['metadata']>
+
 export interface ExtractedComponents {
   pose?: PromptComponent
   outfit?: PromptComponent
@@ -179,7 +181,7 @@ export class ComponentExtractor {
           const outfitText = match[0].trim()
           if (outfitText.length > 15) {
             const tags: string[] = []
-            let style: PromptComponent['metadata']['outfitStyle'] = 'casual'
+            let style: PromptComponentMetadata['outfitStyle'] = 'casual'
 
             if (lower.includes('athletic') || lower.includes('sport') || lower.includes('athleisure') || lower.includes('workout')) {
               tags.push('athletic', 'sport', 'fitness')
@@ -240,7 +242,7 @@ export class ComponentExtractor {
           const locationText = match[0].trim()
           if (locationText.length > 10) {
             const tags: string[] = []
-            let locationType: PromptComponent['metadata']['locationType'] = 'indoor'
+            let locationType: PromptComponentMetadata['locationType'] = 'indoor'
 
             if (lower.includes('outdoor') || lower.includes('beach') || lower.includes('terrace') || lower.includes('park') || lower.includes('street')) {
               tags.push('outdoor')
@@ -301,7 +303,7 @@ export class ComponentExtractor {
           const lightingText = match[0].trim()
           if (lightingText.length > 10) {
             const tags: string[] = []
-            let lightingType: PromptComponent['metadata']['lightingType'] = 'natural'
+            let lightingType: PromptComponentMetadata['lightingType'] = 'natural'
 
             if (lower.includes('golden hour') || lower.includes('golden-hour')) {
               tags.push('golden-hour', 'natural', 'warm')
@@ -367,7 +369,7 @@ export class ComponentExtractor {
           const cameraText = match[0].trim()
           if (cameraText.length > 10) {
             const tags: string[] = []
-            let framing: PromptComponent['metadata']['framing'] = 'medium'
+            let framing: PromptComponentMetadata['framing'] = 'medium'
 
             if (lower.includes('close-up') || lower.includes('bust') || lower.includes('face only')) {
               tags.push('close-up', 'portrait')

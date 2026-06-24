@@ -14,6 +14,7 @@ import {
   ensureTriggerWordPrefix,
   ensureGenderInPrompt,
   buildClassicModeReplicateInput,
+  type QualitySettings,
 } from "@/lib/replicate-helpers"
 import { logger } from "@/lib/logger"
 
@@ -117,32 +118,33 @@ function buildQualitySettings(
   customSettings: Record<string, any> | undefined,
   userLoraScale: number | null,
   lora: LoraDecision,
-) {
+): QualitySettings {
+  const baseSettings = presetSettings as QualitySettings
   const { shouldDisableExtraLora, hasUserSetRealism, manualExtraLoraScale } = lora
 
   // Priority: manual styleStrength → DB lora_scale → preset default
   const loraScale =
     customSettings?.styleStrength === undefined
-      ? (userLoraScale ?? presetSettings.lora_scale)
+      ? (userLoraScale ?? baseSettings.lora_scale)
       : customSettings.styleStrength
 
   // Priority: explicit realism → preset default (then disabled if toggle is on)
-  const baseExtraLoraScale = hasUserSetRealism ? manualExtraLoraScale : presetSettings.extra_lora_scale
+  const baseExtraLoraScale = hasUserSetRealism ? manualExtraLoraScale : baseSettings.extra_lora_scale
   const extraLoraScale = shouldDisableExtraLora ? 0 : baseExtraLoraScale
 
   return {
-    ...presetSettings,
-    aspect_ratio: customSettings?.aspectRatio ?? presetSettings.aspect_ratio,
+    ...baseSettings,
+    aspect_ratio: customSettings?.aspectRatio ?? baseSettings.aspect_ratio,
     lora_scale: loraScale,
-    guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
-    extra_lora: customSettings?.extraLora ?? presetSettings.extra_lora,
+    guidance_scale: customSettings?.promptAccuracy ?? baseSettings.guidance_scale,
+    extra_lora: customSettings?.extraLora ?? baseSettings.extra_lora,
     extra_lora_scale: extraLoraScale,
-    num_inference_steps: presetSettings.num_inference_steps,
+    num_inference_steps: baseSettings.num_inference_steps,
   }
 }
 
 /** Load the most-recent completed model for a user. Returns null if none found. */
-async function loadUserModel(neonUserId: number): Promise<UserModelData | null> {
+async function loadUserModel(neonUserId: string | number): Promise<UserModelData | null> {
   const rows = await sql`
     SELECT
       u.gender,
@@ -270,6 +272,13 @@ export async function POST(request: NextRequest) {
       console.error("[v0] ❌ CRITICAL: replicate_version_id is missing!")
       return NextResponse.json(
         { error: "Model version not found. Please retrain your model." },
+        { status: 400 },
+      )
+    }
+    if (!model.loraWeightsUrl) {
+      console.error("[v0] ❌ CRITICAL: lora_weights_url is missing!")
+      return NextResponse.json(
+        { error: "Model weights not found. Please retrain your model." },
         { status: 400 },
       )
     }

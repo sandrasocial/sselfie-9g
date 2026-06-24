@@ -12,17 +12,22 @@ interface CalendarPostCardProps {
   onScheduleClick?: () => void
 }
 
+type CalendarPostStatus = "draft" | "scheduled" | "posted"
+
 export function CalendarPostCard({ post, onRefresh, onScheduleClick }: CalendarPostCardProps) {
-  const statusColors = {
+  const statusColors: Record<CalendarPostStatus, string> = {
     draft: "bg-[rgba(175,170,162,0.15)] text-[#8a8780]",
     scheduled: "bg-[rgba(168,164,156,0.20)] text-[#a8a49c]",
     posted: "bg-[rgba(168,164,156,0.15)] text-[#c8c4bb]",
   }
+  const postStatus: CalendarPostStatus =
+    post.post_status === "scheduled" || post.post_status === "posted" ? post.post_status : "draft"
 
   const mockConcept = {
     title: post.caption?.slice(0, 50) || "Untitled",
     description: post.caption || "",
     category: post.content_pillar || "education",
+    prompt: post.prompt || post.caption || "",
   }
 
   const handleMarkAsPosted = async () => {
@@ -51,8 +56,8 @@ export function CalendarPostCard({ post, onRefresh, onScheduleClick }: CalendarP
             <span className="text-[#a8a49c]">{post.scheduled_time}</span>
           </div>
         )}
-        <div className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[post.post_status || "draft"]}`}>
-          {(post.post_status || "draft").charAt(0).toUpperCase() + (post.post_status || "draft").slice(1)}
+        <div className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[postStatus]}`}>
+          {postStatus.charAt(0).toUpperCase() + postStatus.slice(1)}
         </div>
       </div>
 

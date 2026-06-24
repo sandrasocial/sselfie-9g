@@ -536,7 +536,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         
         if (mayaPromptResponse.ok && mayaPromptData.response) {
           mayaGeneratedPrompt = mayaPromptData.response.trim()
-          console.log("[ProPhotoshoot] ✅ Maya generated prompt for Grid 1:", mayaGeneratedPrompt.substring(0, 100) + "...")
+          console.log("[ProPhotoshoot] ✅ Maya generated prompt for Grid 1:", mayaGeneratedPrompt?.substring(0, 100) + "...")
         } else {
           console.warn("[ProPhotoshoot] ⚠️ Maya prompt generation failed, will use fallback:", mayaPromptData.error)
         }
@@ -1361,7 +1361,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <p
               style={{
-                color: Colors.error || '#dc2626',
+                color: '#dc2626',
                 fontSize: Typography.body.sizes.sm,
                 textAlign: 'center',
               }}
@@ -1430,7 +1430,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 // Pass empty string so the user writes their own caption below the image.
                 description: '',
                 category: concept.category || '',
-                prompt: concept.fullPrompt || concept.prompt || '',
+                prompt: concept.fullPrompt || concept.template || '',
               }}
               imageUrl={generatedImageUrl}
               imageId={generationId || ''}

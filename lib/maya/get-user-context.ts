@@ -105,7 +105,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           return null
         }),
       sql`SELECT course_id FROM academy_course_purchases WHERE user_id = ${neonUser.id} AND status = 'active'`
-        .then((rows: Array<{ course_id: string }>) => rows ?? [])
+        .then(rows => (rows ?? []) as Array<{ course_id: string }>)
         .catch((err: any) => {
           console.error("[v0] Error fetching academy purchases:", err)
           return []

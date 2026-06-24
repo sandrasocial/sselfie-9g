@@ -1,9 +1,9 @@
 import * as React from "react"
-import { Button, type ButtonProps } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import LoadingSpinner from "./loading-spinner"
 import { cn } from "@/lib/utils"
 
-interface LoadingButtonProps extends ButtonProps {
+interface LoadingButtonProps extends React.ComponentProps<typeof Button> {
   isLoading?: boolean
   loadingText?: string
 }
@@ -39,4 +39,3 @@ export default function LoadingButton({
     </Button>
   )
 }
-

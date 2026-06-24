@@ -167,11 +167,11 @@ export async function completeSessionShot(shotId: number, imageId?: number): Pro
     if (shots.length > 0) {
       const sessionId = shots[0].session_id
 
-      const allShots = await sql`
+      const allShots = (await sql`
         SELECT * FROM session_shots WHERE session_id = ${sessionId}
-      `
+      `) as SessionShot[]
 
-      const completedCount = allShots.filter((s: SessionShot) => s.status === "completed").length
+      const completedCount = allShots.filter((s) => s.status === "completed").length
 
       await updateSessionProgress(sessionId, completedCount, allShots.length)
     }

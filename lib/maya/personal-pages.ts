@@ -3,6 +3,7 @@ import type {
   MayaGeneratedAssetPreviewData,
   MayaGeneratedAssetType,
 } from "@/lib/maya/generated-asset-types"
+import type { MayaLandingPageBlueprint } from "@/lib/maya/page-generation/types"
 
 type PersonalPageType = "landing" | "calendar" | "workbook"
 
@@ -28,7 +29,7 @@ export interface MayaAssetForPersistence {
   previewText: string
   previewHtml: string
   previewData?: MayaGeneratedAssetPreviewData
-  blueprint?: Record<string, unknown>
+  blueprint?: MayaLandingPageBlueprint
 }
 
 export interface RecordPersonalPageLeadInput {

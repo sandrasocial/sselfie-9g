@@ -76,8 +76,19 @@ interface FeedStyleVariationOption {
   sort_order: number
 }
 
+type UnifiedStep = {
+  id: string
+  title: string
+  subtitle: string
+  stepIndex: number
+  isOptional?: boolean
+  isSelfieUpload?: boolean
+  isVisualSelector?: boolean
+  isAudienceBuilder?: boolean
+  field?: string
+}
 
-const UNIFIED_STEPS = [
+const UNIFIED_STEPS: UnifiedStep[] = [
   {
     id: "goal",
     title: "What's your goal?",

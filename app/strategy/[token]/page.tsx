@@ -13,9 +13,9 @@ const inter = Inter({
 })
 
 interface StrategyPillar {
-  name?: string
-  description?: string
-  postIdeas?: string[]
+  name: string
+  description: string
+  postIdeas: string[]
 }
 
 interface StrategyVoice {
@@ -26,9 +26,9 @@ interface StrategyVoice {
 }
 
 interface StrategyExamplePost {
-  hook?: string
-  body?: string
-  cta?: string
+  hook: string
+  body: string
+  cta: string
 }
 
 interface StrategyPack {

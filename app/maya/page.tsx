@@ -80,7 +80,7 @@ export default async function MayaPage() {
   return (
     <SselfieApp
       userId={neonUser.id}
-      userName={neonUser.display_name}
+      userName={neonUser.display_name ?? null}
       userEmail={neonUser.email}
       isWelcome={false}
       shouldShowCheckout={false}

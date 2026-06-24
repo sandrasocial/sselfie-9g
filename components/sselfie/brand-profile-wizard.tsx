@@ -425,7 +425,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                       }`}
                     >
                       <div className="flex gap-2 mb-4">
-                        {theme.isCustom && formData.colorTheme === "custom"
+                        {theme.id === "custom" && formData.colorTheme === "custom"
                           ? customColors.map((color, idx) => (
                               <div
                                 key={idx}

@@ -1506,8 +1506,8 @@ export default function SselfieApp({
             <MayaChatScreen
               onImageGenerated={refreshCredits}
               user={user}
-              setActiveTab={handleTabChange}
-              userId={userId}
+              setActiveTab={(tab) => handleTabChange(tab as StudioTab)}
+              userId={String(userId)}
               hasTrainedModel={hasTrainedModel}
               isMembership={access.hasFullAccess}
               academyPurchaseProduct={academyPurchaseProduct}
@@ -1636,7 +1636,7 @@ export default function SselfieApp({
 
       {/* Hide feedback button when on maya chat screen or feed planner */}
       {activeTab !== "maya" && activeTab !== "feed-planner" && (
-        <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
+        <FeedbackButton userId={String(userId)} userEmail={userEmail} userName={userName} />
       )}
 
       {/* Blueprint Welcome Wizard */}

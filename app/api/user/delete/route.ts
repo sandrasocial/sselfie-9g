@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getUserSubscription } from "@/lib/subscription"
 import { getStripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
 import { NextResponse } from "next/server"
@@ -33,15 +34,17 @@ export async function DELETE() {
     }
 
     const userId = neonUser.id
+    const subscription = await getUserSubscription(userId)
+    const stripeSubscriptionId = subscription?.stripe_subscription_id ?? null
 
     // 2. Cancel Stripe subscription if active
-    if (neonUser.stripe_subscription_id) {
+    if (stripeSubscriptionId) {
       try {
         const stripe = getStripe()
-        const sub = await stripe.subscriptions.retrieve(neonUser.stripe_subscription_id)
+        const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId)
         if (sub.status !== "canceled") {
-          await stripe.subscriptions.cancel(neonUser.stripe_subscription_id)
-          console.log(`[delete-account] Cancelled Stripe subscription ${neonUser.stripe_subscription_id}`)
+          await stripe.subscriptions.cancel(stripeSubscriptionId)
+          console.log(`[delete-account] Cancelled Stripe subscription ${stripeSubscriptionId}`)
         }
       } catch (stripeErr) {
         // Log but don't block deletion — subscription may already be gone

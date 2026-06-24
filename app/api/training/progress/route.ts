@@ -5,6 +5,15 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { sql } from "@/lib/db/client"
 import { trySyncReplicateVersionToUserModel } from "@/lib/replicate-sync"
 
+type ReplicateTrainingOutput =
+  | string
+  | {
+      weights?: string | null
+      version?: string | null
+      model?: string | null
+    }
+  | null
+  | undefined
 
 function extractProgressFromLogs(logs: string): number | null {
   if (!logs) return null
@@ -244,23 +253,24 @@ export async function GET(request: NextRequest) {
         if (training.status === "succeeded") {
           let loraWeightsUrl = null
           let extractionMethod = "none"
+          const trainingOutput = training.output as ReplicateTrainingOutput
 
-          if (training.output) {
-            if (training.output.weights) {
-              loraWeightsUrl = training.output.weights
+          if (trainingOutput) {
+            if (typeof trainingOutput === "object" && trainingOutput.weights) {
+              loraWeightsUrl = trainingOutput.weights
               extractionMethod = "direct_weights"
               console.log("[v0] ✅ LoRA URL extracted via Method 1: direct weights")
-            } else if (training.output.version) {
-              const versionHash = training.output.version.includes(':')
-                ? training.output.version.split(':')[1]
-                : training.output.version
+            } else if (typeof trainingOutput === "object" && trainingOutput.version) {
+              const versionHash = trainingOutput.version.includes(':')
+                ? trainingOutput.version.split(':')[1]
+                : trainingOutput.version
 
               loraWeightsUrl = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
               extractionMethod = "version_constructed"
               console.log("[v0] ✅ LoRA URL extracted via Method 2: constructed from version hash")
               console.log("[v0]   Version hash:", versionHash)
-            } else if (typeof training.output === "string" && training.output.startsWith("http")) {
-              loraWeightsUrl = training.output
+            } else if (typeof trainingOutput === "string" && trainingOutput.startsWith("http")) {
+              loraWeightsUrl = trainingOutput
               extractionMethod = "string_url"
               console.log("[v0] ✅ LoRA URL extracted via Method 3: string URL")
             }
@@ -268,11 +278,11 @@ export async function GET(request: NextRequest) {
 
           if (!loraWeightsUrl) {
             console.error("[v0] ❌ CRITICAL: Failed to extract LoRA weights URL!")
-            console.error("[v0] Training output:", JSON.stringify(training.output, null, 2))
-            if (training.output?.model && training.output?.version) {
-              const versionHash = training.output.version.includes(':')
-                ? training.output.version.split(':')[1]
-                : training.output.version
+            console.error("[v0] Training output:", JSON.stringify(trainingOutput, null, 2))
+            if (typeof trainingOutput === "object" && trainingOutput?.model && trainingOutput?.version) {
+              const versionHash = trainingOutput.version.includes(':')
+                ? trainingOutput.version.split(':')[1]
+                : trainingOutput.version
               loraWeightsUrl = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
               extractionMethod = "fallback_constructed"
               console.log("[v0] ⚠️  Using fallback LoRA URL construction")
@@ -281,8 +291,14 @@ export async function GET(request: NextRequest) {
 
           console.log("[v0] Training completed - LoRA weights URL:", loraWeightsUrl)
           console.log("[v0] Extraction method:", extractionMethod)
-          console.log("[v0] Replicate model ID:", training.output?.model)
-          console.log("[v0] Replicate version ID (raw):", training.output?.version)
+          console.log(
+            "[v0] Replicate model ID:",
+            typeof trainingOutput === "object" ? trainingOutput?.model : null,
+          )
+          console.log(
+            "[v0] Replicate version ID (raw):",
+            typeof trainingOutput === "object" ? trainingOutput?.version : null,
+          )
 
           if (!loraWeightsUrl) {
             console.error("[v0] ❌ CRITICAL ERROR: LoRA weights URL is NULL after all extraction methods!")
@@ -310,17 +326,18 @@ export async function GET(request: NextRequest) {
           }
 
           let versionHash = null
-          if (training.output?.version) {
-            versionHash = training.output.version.includes(':')
-              ? training.output.version.split(':')[1]
-              : training.output.version
+          if (typeof trainingOutput === "object" && trainingOutput?.version) {
+            versionHash = trainingOutput.version.includes(':')
+              ? trainingOutput.version.split(':')[1]
+              : trainingOutput.version
             console.log("[v0] ✅ Extracted version hash:", versionHash)
           } else {
             console.warn("[v0] ⚠️ No version in training.output, keeping existing version")
             versionHash = model.replicate_version_id
           }
 
-          const replicateModelId = training.output?.model || model.replicate_model_id
+          const replicateModelId =
+            (typeof trainingOutput === "object" ? trainingOutput?.model : null) || model.replicate_model_id
           if (replicateModelId && versionHash) {
             try {
               const modelResponse = await fetch(`https://api.replicate.com/v1/models/${replicateModelId}/versions`, {

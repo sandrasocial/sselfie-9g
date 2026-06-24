@@ -547,6 +547,13 @@ export default function FeedPublishingHub({
       {/* Schedule Modal */}
       {showScheduleModal && postToSchedule && (
         <SchedulePostModal
+          open={showScheduleModal}
+          onOpenChange={(open) => {
+            setShowScheduleModal(open)
+            if (!open) {
+              setPostToSchedule(null)
+            }
+          }}
           post={{
             id: postToSchedule.id,
             feedId: Number.parseInt(feedId),
@@ -560,14 +567,9 @@ export default function FeedPublishingHub({
             position: postToSchedule.position,
             prompt: postToSchedule.prompt,
           }}
-          onClose={() => {
+          onSchedule={async () => {
             setShowScheduleModal(false)
             setPostToSchedule(null)
-          }}
-          onScheduled={() => {
-            setShowScheduleModal(false)
-            setPostToSchedule(null)
-            // Optionally show a success message or refresh data
           }}
         />
       )}

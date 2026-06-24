@@ -1333,7 +1333,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         
         if (mayaPromptResponse.ok && mayaPromptData.response) {
           mayaGeneratedPrompt = mayaPromptData.response.trim()
-          console.log("[ProPhotoshoot] ✅ Maya generated prompt for Grid 1:", mayaGeneratedPrompt.substring(0, 100) + "...")
+          console.log("[ProPhotoshoot] ✅ Maya generated prompt for Grid 1:", mayaGeneratedPrompt?.substring(0, 100) + "...")
         } else {
           console.warn("[ProPhotoshoot] ⚠️ Maya prompt generation failed, will use fallback:", mayaPromptData.error)
         }

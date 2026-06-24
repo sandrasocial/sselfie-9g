@@ -20,7 +20,11 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
     try {
       setIsValidatingPromo(true)
       setPromoError("")
-      return await startCreditCheckoutSession(selectedPackage!, promoCode || undefined)
+      const clientSecret = await startCreditCheckoutSession(selectedPackage!, promoCode || undefined)
+      if (!clientSecret) {
+        throw new Error("Failed to start checkout")
+      }
+      return clientSecret
     } catch (error: any) {
       setPromoError(error.message || "Failed to start checkout")
       throw error

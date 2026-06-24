@@ -304,7 +304,7 @@ export default function FeedStyleModal({
                                     <div
                                       key={idx}
                                       className={`aspect-square rounded ${
-                                        feedStyle === "minimal" ? "border border-white/35" : ""
+                                        feedStyle === "Light & Minimalistic" ? "border border-white/35" : ""
                                       }`}
                                       style={{
                                         backgroundColor:
@@ -325,7 +325,7 @@ export default function FeedStyleModal({
                                     <div
                                       key={idx}
                                       className={`w-6 h-6 rounded-full ${
-                                        feedStyle === "minimal"
+                                        feedStyle === "Light & Minimalistic"
                                           ? "border border-white/35"
                                           : "border border-white/15"
                                       }`}

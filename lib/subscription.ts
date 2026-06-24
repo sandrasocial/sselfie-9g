@@ -14,6 +14,7 @@ type SubscriptionRow = {
   product_type: ProductType | string
   status: SubscriptionStatus | null
   stripe_subscription_id?: string | null
+  stripe_customer_id?: string | null
   current_period_start?: Date | string | null
   current_period_end?: Date | string | null
   created_at?: Date | string | null
@@ -110,6 +111,7 @@ export async function getUserSubscription(userId: string) {
         product_type,
         status,
         stripe_subscription_id,
+        stripe_customer_id,
         current_period_start,
         current_period_end,
         created_at,

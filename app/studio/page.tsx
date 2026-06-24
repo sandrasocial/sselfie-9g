@@ -213,7 +213,7 @@ export default async function StudioPage({
       )}
       <SselfieApp
         userId={neonUser.id}
-        userName={neonUser.display_name}
+        userName={neonUser.display_name ?? null}
         userEmail={neonUser.email}
         isWelcome={isWelcome}
         shouldShowCheckout={shouldShowCheckout}

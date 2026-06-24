@@ -14,7 +14,7 @@ interface UseGalleryFeedImagesReturn {
   isLoadingMore: boolean
   mutate: () => void
   loadMore: () => void
-  loadMoreRef: React.RefObject<HTMLDivElement>
+  loadMoreRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function useGalleryFeedImages(): UseGalleryFeedImagesReturn {
@@ -106,7 +106,6 @@ export function useGalleryFeedImages(): UseGalleryFeedImagesReturn {
     loadMoreRef,
   }
 }
-
 
 
 

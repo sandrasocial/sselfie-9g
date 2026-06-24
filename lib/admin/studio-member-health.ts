@@ -7,6 +7,8 @@ import {
   type StudioMemberHealthRow,
 } from "@/lib/admin/studio-member-health-summary"
 
+export type { StudioMemberHealthReport }
+
 const MEMBERSHIP_PRODUCT_TYPE = "sselfie_studio_membership"
 const ACTIVE_MEMBER_STATUSES = ["active", "trialing"]
 const COMPLETED_STATUS = "completed"

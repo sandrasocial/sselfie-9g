@@ -84,7 +84,7 @@ interface Model {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   let claimedPostId: number | null = null
-  let claimedUserId: number | null = null
+  let claimedUserId: string | number | null = null
   try {
     console.log("[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ====================")
     

@@ -43,6 +43,19 @@ interface BlueprintOnboardingWizardProps {
   userEmail?: string | null
 }
 
+type BlueprintOnboardingFormData = {
+  business: string
+  dreamClient: string
+  vibe: string
+  lightingKnowledge: string
+  angleAwareness: string
+  editingStyle: string
+  consistencyLevel: string
+  currentSelfieHabits: string
+  feedStyle: string
+  selfieImages: string[]
+}
+
 // Feed style examples (from old blueprint form)
 const feedExamples = FEED_STARTER_STYLE_MAP
 
@@ -150,7 +163,7 @@ export default function BlueprintOnboardingWizard({
   const savedState = loadSavedState()
   const [currentStep, setCurrentStep] = useState(savedState.currentStep)
   // Initialize formData without selfieImages (they come from API)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BlueprintOnboardingFormData>({
     ...savedState.formData,
     selfieImages: [], // Will be populated from API
   })

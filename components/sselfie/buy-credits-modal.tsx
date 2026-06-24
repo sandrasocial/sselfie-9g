@@ -21,13 +21,19 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
   const [isLoading, setIsLoading] = useState(false)
 
   const startCheckout = useCallback(async () => {
-    if (!selectedPackage) return null
+    if (!selectedPackage) {
+      throw new Error("Select a credit package before checkout")
+    }
 
     try {
-      return await startCreditCheckoutSession(selectedPackage)
+      const clientSecret = await startCreditCheckoutSession(selectedPackage)
+      if (!clientSecret) {
+        throw new Error("Failed to start checkout")
+      }
+      return clientSecret
     } catch (error) {
       console.error("[v0] Error starting checkout:", error)
-      return null
+      throw error
     }
   }, [selectedPackage])
 

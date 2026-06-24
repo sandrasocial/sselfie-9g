@@ -35,6 +35,7 @@ function isFeatureEnabled(value?: string | null): boolean {
 }
 
 type GenerationSource = "selfies" | "custom_model" | "base_model"
+type GenerationSourceSelection = GenerationSource | "choose_source"
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -84,7 +85,7 @@ interface MayaChatInterfaceProps {
   enhancedAuthenticity?: boolean
   userHasTrainedModel?: boolean
   linkedSelfieCount?: number
-  onToolSelectGenerationSource?: (messageId: string, source: GenerationSource) => void
+  onToolSelectGenerationSource?: (messageId: string, source: GenerationSourceSelection) => void
   onToolConfirmGenerationSource?: (messageId: string, source: GenerationSource) => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
@@ -159,7 +160,7 @@ interface ToolCtx {
   enhancedAuthenticity?: boolean // NOSONAR
   userHasTrainedModel: boolean // NOSONAR
   linkedSelfieCount: number // NOSONAR
-  onToolSelectGenerationSource?: (messageId: string, source: GenerationSource) => void // NOSONAR
+  onToolSelectGenerationSource?: (messageId: string, source: GenerationSourceSelection) => void // NOSONAR
   onToolConfirmGenerationSource?: (messageId: string, source: GenerationSource) => void // NOSONAR
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void // NOSONAR
   onToolPromptSelect?: (prompt: string) => void // NOSONAR
@@ -746,7 +747,7 @@ function renderGenerateConceptsTool(part: any, partIndex: number, ctx: ToolCtx):
       chatId={ctx.chatId}
       uploadedImages={ctx.uploadedImages}
       onCreditsUpdate={ctx.setCreditBalance}
-      onTrainingRequired={() => ctx.onToolSelectGenerationSource?.("custom_model")}
+      onTrainingRequired={() => ctx.onToolSelectGenerationSource?.(ctx.msg.id, "custom_model")}
       generationSettings={ctx.generationSettings}
       enhancedAuthenticity={ctx.enhancedAuthenticity}
       messages={ctx.messages}
@@ -1092,7 +1093,7 @@ function renderSaveToGalleryTool(part: any, partIndex: number, ctx: ToolCtx): Re
 
 function renderGenerateImageTool(part: any, partIndex: number, ctx: ToolCtx): React.ReactNode {
   const output = part.output || {}
-  const selectedSource = output.source || "choose_source"
+  const selectedSource = (output.source || "choose_source") as GenerationSourceSelection
   const messageId = String(ctx.msg.id)
   const hasLinkedSelfies = ctx.linkedSelfieCount > 0
   const selfiePlural = ctx.linkedSelfieCount === 1 ? "" : "s"
@@ -1532,7 +1533,7 @@ function renderGenerateFeedTool(part: any, partIndex: number, ctx: ToolCtx): Rea
       messageId={ctx.msg.id}
       onPromptUpdate={(messageId, postId, newPrompt) => {
         ctx.setMessages((prevMessages) =>
-          applyFeedPromptUpdate(prevMessages, messageId, postId, newPrompt, ctx.chatId),
+          applyFeedPromptUpdate(prevMessages, messageId, String(postId), newPrompt, ctx.chatId),
         )
       }}
       onViewFullFeed={() => {
@@ -1825,9 +1826,10 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
     )
   }
 
-  const textParts = msg.parts.filter((p) => p?.type === "text")
-  const imageParts = msg.parts.filter((p) => p?.type === "image")
-  const otherParts = msg.parts.filter((p) => p?.type !== "text" && p?.type !== "image")
+  const looseParts = msg.parts as any[]
+  const textParts = looseParts.filter((p) => p?.type === "text")
+  const imageParts = looseParts.filter((p) => p?.type === "image")
+  const otherParts = looseParts.filter((p) => p?.type !== "text" && p?.type !== "image")
   const fullMessageText = textParts.map((part: any) => part?.text || "").join("")
   const messageHasFeedArtifacts = hasFeedStrategyArtifacts(fullMessageText)
   const hasFeedCard = msg.parts.some((p: any) => p.type === "tool-generateFeed")

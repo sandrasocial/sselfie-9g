@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
+import type { ComponentProps } from "react"
 import { sql } from "@/lib/db/client"
 import FeedPublishingHub from "@/components/sselfie/feed-publishing-hub"
 
+type FeedPublishingHubProps = ComponentProps<typeof FeedPublishingHub>
 
 interface PageProps {
   params: {
@@ -74,9 +76,9 @@ export default async function FeedPage({ params }: PageProps) {
       <FeedPublishingHub
         feedId={feedId}
         feedLayout={feedLayout}
-        posts={feedPosts}
-        bio={bios[0] || null}
-        highlights={highlights || []}
+        posts={feedPosts as FeedPublishingHubProps["posts"]}
+        bio={(bios[0] as FeedPublishingHubProps["bio"]) || null}
+        highlights={highlights as FeedPublishingHubProps["highlights"]}
         username={instagramHandle}
         brandName={brandName}
       />

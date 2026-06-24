@@ -77,7 +77,7 @@ export default function MayaTabSwitcher({
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
-        const isDisabled = tab.id === "feed" && disableFeedTab
+        const isDisabled = false
         return (
           <button
             key={tab.id}

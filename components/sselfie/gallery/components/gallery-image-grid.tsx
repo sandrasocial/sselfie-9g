@@ -24,7 +24,7 @@ interface GalleryImageGridProps {
   onVideoClick: (video: GeneratedVideo) => void
   hasMore: boolean
   isLoadingMore: boolean
-  loadMoreRef: React.RefObject<HTMLDivElement>
+  loadMoreRef: React.RefObject<HTMLDivElement | null>
   onLoadMore: () => void
   wasLongPress: React.MutableRefObject<boolean>
   longPressTimer: React.MutableRefObject<NodeJS.Timeout | null>

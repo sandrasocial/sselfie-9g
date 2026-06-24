@@ -512,9 +512,12 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
         <ProfileImageSelector
           images={allImages.map((img) => ({
             id: img.id.toString(),
+            user_id: user.id || "",
             image_url: img.image_url, // Changed from selected_url to image_url
             prompt: img.category || "",
             is_favorite: img.is_favorite || false,
+            created_at: img.created_at || new Date().toISOString(),
+            source: "ai_images" as const,
           }))}
           currentAvatar={displayAvatar}
           onSelect={handleProfileImageUpdate}

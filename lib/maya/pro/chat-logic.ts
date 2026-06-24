@@ -20,9 +20,9 @@ export interface ProModeResponse {
   type: ProModeResponseType
   mayaResponse?: string
   trigger?: string
-  category?: CategoryInfo
+  category?: CategoryInfo | null
   action?: LibraryAction
-  newCategory?: CategoryInfo
+  newCategory?: CategoryInfo | null
 }
 
 export interface LibraryAction {
@@ -294,7 +294,7 @@ export function isPivotRequest(
 export function detectNewCategory(
   message: string,
   library: ImageLibrary
-): CategoryInfo {
+): CategoryInfo | null {
   // Use the same category detection as concept requests
   // This will detect the new category from the message
   return detectCategory(message, library)
@@ -307,11 +307,15 @@ export function detectNewCategory(
  */
 export function buildMayaResponse(
   message: string,
-  category: CategoryInfo,
+  category: CategoryInfo | null,
   linkedImages?: string[],
   templateName?: string,
   stylingDetails?: string
 ): string {
+  if (!category) {
+    return `Perfect! Creating content for you now...\n\nI'll use your image library, brand context, and full fashion intelligence to build a direction that fits this request.`
+  }
+
   const categoryName = category.name
   const brandList = category.brands.length > 0
     ? category.brands.slice(0, 2).join(', ')
@@ -489,7 +493,6 @@ export function buildConceptGenerationDisplay(
 
   return display
 }
-
 
 
 

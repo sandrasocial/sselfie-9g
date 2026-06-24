@@ -440,13 +440,13 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
-  const currentTier =
+  const currentTier: "one_time_session" | "sselfie_studio_membership" =
     userInfo?.product_type === "sselfie_studio_membership" || userInfo?.product_type === "brand_studio_membership"
-      ? userInfo.product_type
+      ? "sselfie_studio_membership"
       : "one_time_session"
   // Only show upgrade for users without Creator Studio membership
   const upgradeTargetTier =
-    currentTier === "sselfie_studio_membership" || currentTier === "brand_studio_membership"
+    currentTier === "sselfie_studio_membership"
       ? null // Already on Creator Studio (or legacy Brand Studio)
       : "sselfie_studio_membership"
   const isPastDue = subscriptionInfo?.status === "past_due"
@@ -1066,9 +1066,12 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
         <ProfileImageSelector
           images={allImages.map((img) => ({
             id: img.id.toString(),
+            user_id: user.id || "",
             image_url: img.image_url,
             prompt: img.category || "",
             is_favorite: img.is_favorite || false,
+            created_at: img.created_at || new Date().toISOString(),
+            source: "ai_images" as const,
           }))}
           currentAvatar={displayAvatar}
           onSelect={handleProfileImageUpdate}

@@ -8,6 +8,8 @@ interface FeedCaptionTemplatesProps {
   businessType?: string
 }
 
+type CaptionTemplateEntry = [keyof CaptionTemplates, CaptionTemplates[keyof CaptionTemplates]]
+
 /**
  * Caption Templates Component for Free Feed Planner Users
  * 
@@ -57,7 +59,7 @@ export default function FeedCaptionTemplates({ businessType }: FeedCaptionTempla
 
         {/* Caption Categories */}
         <div className="space-y-8 sm:space-y-12">
-          {Object.entries(captionTemplates).map(([category, templates]) => (
+          {(Object.entries(captionTemplates) as CaptionTemplateEntry[]).map(([category, templates]) => (
             <div key={category}>
               <h3 className="text-base sm:text-xl font-medium tracking-wider uppercase text-white mb-4 sm:mb-6 border-b border-white/15 pb-2 sm:pb-3">
                 {category === "cta" ? "Call to Action" : category.charAt(0).toUpperCase() + category.slice(1)} Captions

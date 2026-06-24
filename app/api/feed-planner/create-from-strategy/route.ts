@@ -26,7 +26,7 @@ import { isSupportedFeedPlanPostCount } from "@/lib/maya/feed-strategy"
 
 export const maxDuration = 300
 
-function buildFeedCreateIdempotencyPrefix(userId: number, key: string): string {
+function buildFeedCreateIdempotencyPrefix(userId: string | number, key: string): string {
   return `feed-create:${userId}:${key}`
 }
 

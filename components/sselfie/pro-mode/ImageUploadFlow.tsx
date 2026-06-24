@@ -1350,8 +1350,12 @@ export default function ImageUploadFlow({
     }
 
     // If editing a specific category, only show that one
-    const categoriesToShow = editCategory && ['products', 'people', 'vibes'].includes(editCategory)
-      ? [categoryMap[editCategory]]
+    const editAssetCategory =
+      editCategory === "products" || editCategory === "people" || editCategory === "vibes"
+        ? editCategory
+        : null
+    const categoriesToShow = editAssetCategory
+      ? [categoryMap[editAssetCategory]]
       : [categoryMap.products, categoryMap.people, categoryMap.vibes]
 
     return (

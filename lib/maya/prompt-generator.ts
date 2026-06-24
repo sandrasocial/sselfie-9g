@@ -454,8 +454,8 @@ export class PromptGenerator {
     }
     
     // Check image types
-    const availableTypes = images.map(img => img.type)
-    const hasRequiredTypes = required.types.some(type => availableTypes.includes(type))
+    const availableTypes = images.map(img => img.type) as Array<'product' | 'user_lora' | 'gallery' | 'inspiration'>
+    const hasRequiredTypes = required.types.some((type: 'product' | 'user_lora' | 'gallery' | 'inspiration') => availableTypes.includes(type))
     
     return hasRequiredTypes
   }
@@ -610,7 +610,7 @@ export class PromptGenerator {
     }
     
     // Check if use cases match
-    const useCaseMatch = template.useCases.some(useCase => 
+    const useCaseMatch = template.useCases.some((useCase: string) => 
       intent.includes(useCase.toLowerCase())
     )
     if (useCaseMatch) confidence += 0.1
@@ -619,8 +619,6 @@ export class PromptGenerator {
     return Math.min(1, Math.max(0, confidence))
   }
 }
-
-
 
 
 

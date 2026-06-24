@@ -13,7 +13,9 @@ interface FeedPostCardProps {
     content_pillar: string
     post_type?: string
     image_url: string | null
+    preview_image_url?: string | null
     generation_status: string
+    prediction_id?: string | null
   }
   feedId: number
   onUpdate?: () => void
@@ -311,7 +313,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
       <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-stone-100">
         {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
         {(() => {
-          const imageUrl = post.image_url || (post as any).preview_image_url
+          const imageUrl = post.image_url || post.preview_image_url
           return imageUrl ? (
             <Image
               src={imageUrl || "/placeholder.svg"}

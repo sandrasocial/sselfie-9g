@@ -20,7 +20,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [showStickyFooter, setShowStickyFooter] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const scenesRef = useRef<(HTMLDivElement | null)[]>([])
+  const scenesRef = useRef<(HTMLElement | null)[]>([])
   const selfieGuideProduct = getProductById("selfie_guide")
   const membershipProduct = getProductById("sselfie_studio_membership")
   const selfieGuidePrice = selfieGuideProduct
@@ -186,7 +186,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
       >
         {/* SCENE 1: HERO */}
         <section
-          ref={(el) => (scenesRef.current[0] = el)}
+          ref={(el) => { scenesRef.current[0] = el }}
           className="scene"
           style={{
             minHeight: "100dvh",
@@ -293,7 +293,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 2: HOW IT WORKS */}
         <section
-          ref={(el) => (scenesRef.current[1] = el)}
+          ref={(el) => { scenesRef.current[1] = el }}
           className="scene"
           style={{
             minHeight: "100dvh",
@@ -451,7 +451,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 3: MEET MAYA */}
         <section
-          ref={(el) => (scenesRef.current[2] = el)}
+          ref={(el) => { scenesRef.current[2] = el }}
           className="scene"
           style={{
             minHeight: "100dvh",
@@ -571,7 +571,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 4: WHO IT'S FOR */}
         <section
-          ref={(el) => (scenesRef.current[3] = el)}
+          ref={(el) => { scenesRef.current[3] = el }}
           className="scene"
           style={{
             minHeight: "100dvh",
@@ -656,7 +656,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 5: TESTIMONIALS */}
         <section
-          ref={(el) => (scenesRef.current[4] = el)}
+          ref={(el) => { scenesRef.current[4] = el }}
           className="scene"
           style={{
             minHeight: "100dvh",
@@ -695,7 +695,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         {/* SCENE 6: PRICING */}
         <section
           id="membership"
-          ref={(el) => (scenesRef.current[5] = el)}
+          ref={(el) => { scenesRef.current[5] = el }}
           className="scene"
           style={{ minHeight: "100dvh", position: "relative" }}
         >
@@ -831,7 +831,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 7: FOUNDER */}
         <section
-          ref={(el) => (scenesRef.current[6] = el)}
+          ref={(el) => { scenesRef.current[6] = el }}
           className="scene"
           style={{ minHeight: "100dvh", backgroundColor: "var(--stone-dark)" }}
         >
@@ -880,7 +880,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
 
         {/* SCENE 8: FOOTER */}
         <section
-          ref={(el) => (scenesRef.current[7] = el)}
+          ref={(el) => { scenesRef.current[7] = el }}
           className="scene relative h-auto min-h-[50dvh] py-16"
           style={{ backgroundColor: "var(--color-obsidian)", color: "var(--stone)" }}
         >

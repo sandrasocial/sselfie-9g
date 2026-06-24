@@ -12,6 +12,7 @@ export interface TrainedModel {
   replicate_version_id: string | null
   trigger_word: string | null
   lora_weights_url: string | null
+  lora_scale: string | number | null
   training_id: string | null
   started_at: Date | null
   completed_at: Date | null
@@ -122,7 +123,7 @@ export async function getOrCreateTrainingModel(
     // CRITICAL: Preserve LoRA scale if it was customized (not default 1.0)
     // Only reset to 1.0 if it was never set or is null
     const preservedLoraScale =
-      existingModel.lora_scale && parseFloat(existingModel.lora_scale) !== 1.0
+      existingModel.lora_scale && Number(existingModel.lora_scale) !== 1.0
         ? existingModel.lora_scale
         : null // Will default to 1.0 in progress route
 

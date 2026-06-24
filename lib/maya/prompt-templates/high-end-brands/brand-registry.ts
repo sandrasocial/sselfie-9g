@@ -63,7 +63,16 @@ export interface BrandProfile {
   visuals: VisualStyleGuide
 }
 
-export type BrandKey = "ALO" | "LULULEMON" | "GLOSSIER" | "CHANEL" | "DIOR" | "FREE_PEOPLE"
+export type BrandKey =
+  | "ALO"
+  | "LULULEMON"
+  | "GLOSSIER"
+  | "CHANEL"
+  | "DIOR"
+  | "FREE_PEOPLE"
+  | "REFORMATION"
+  | "EVERLANE"
+  | "ARITZIA"
 
 export const BRAND_CATEGORIES: Record<BrandCategoryKey, BrandCategory> = {
   wellness: {
@@ -383,6 +392,75 @@ export const BRAND_PROFILES: Record<BrandKey, BrandProfile> = {
         "overly polished corporate styling",
         "cold color palettes that break the bohemian mood",
       ],
+    },
+  },
+
+  REFORMATION: {
+    id: "REFORMATION",
+    name: "Reformation",
+    slug: "reformation",
+    categories: ["fashion", "lifestyle"],
+    aesthetic: {
+      colorPalette: ["sage", "cream", "soft red", "navy", "sun-faded neutrals"],
+      typography: "Feminine, modern serif and clean editorial spacing",
+      mood: ["sustainable", "feminine", "vintage-inspired", "effortless"],
+      composition:
+        "Natural outfit storytelling with soft movement, flattering silhouettes and lived-in city or vacation context.",
+      lighting: "Warm natural daylight or golden-hour softness with flattering directional highlights.",
+    },
+    visuals: {
+      photoStyle: "Feminine lifestyle fashion with sustainable, vintage-inspired polish.",
+      settings: "Tree-lined streets, balconies, cafes, sunlit stairwells and vacation corners.",
+      cameraType: "Lifestyle camera or high-end phone feel with natural subject focus.",
+      postProcessing: "Soft warm contrast, natural skin, gentle grain and true-to-fabric color.",
+      commonElements: ["flattering dresses", "simple jewelry", "small shoulder bags", "warm architecture"],
+      avoid: ["heavy studio staging", "overly synthetic skin", "cold corporate backdrops"],
+    },
+  },
+
+  EVERLANE: {
+    id: "EVERLANE",
+    name: "Everlane",
+    slug: "everlane",
+    categories: ["fashion", "lifestyle"],
+    aesthetic: {
+      colorPalette: ["black", "white", "camel", "navy", "gray"],
+      typography: "Minimal, transparent, utilitarian sans-serif",
+      mood: ["minimal", "honest", "grounded", "quietly confident"],
+      composition:
+        "Clean everyday frames with strong negative space, crisp basics and emphasis on fabric quality.",
+      lighting: "Clean natural light with true-to-life color and gentle contrast.",
+    },
+    visuals: {
+      photoStyle: "Minimal everyday outfit photography with refined basics and quiet confidence.",
+      settings: "Neutral sidewalks, simple tables, clean walls, work-from-anywhere scenes.",
+      cameraType: "Crisp lifestyle camera with understated polish.",
+      postProcessing: "Low-saturation neutrals, controlled contrast and honest texture.",
+      commonElements: ["quality basics", "denim", "tailored trousers", "simple leather accessories"],
+      avoid: ["loud logos", "busy backgrounds", "over-styled glamour"],
+    },
+  },
+
+  ARITZIA: {
+    id: "ARITZIA",
+    name: "Aritzia",
+    slug: "aritzia",
+    categories: ["fashion", "lifestyle"],
+    aesthetic: {
+      colorPalette: ["black", "cream", "taupe", "charcoal", "muted seasonal tones"],
+      typography: "Elevated contemporary fashion typography with polished restraint",
+      mood: ["elevated everyday", "cool", "confident", "city-polished"],
+      composition:
+        "Editorial street-style framing with tailored layers, confident posture and premium everyday styling.",
+      lighting: "Soft city daylight or clean indoor light with polished contrast.",
+    },
+    visuals: {
+      photoStyle: "Elevated everyday fashion with modern tailoring and aspirational city ease.",
+      settings: "City streets, hotel lobbies, modern apartments, clean retail-adjacent spaces.",
+      cameraType: "Polished street-style camera feel with natural but premium finish.",
+      postProcessing: "Refined neutrals, clean shadows and subtle editorial contrast.",
+      commonElements: ["tailored coats", "trousers", "knit sets", "structured bags", "sleek hair"],
+      avoid: ["messy casual styling", "overly bohemian textures", "harsh artificial lighting"],
     },
   },
 }

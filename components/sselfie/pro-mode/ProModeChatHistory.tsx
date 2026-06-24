@@ -253,7 +253,7 @@ export default function ProModeChatHistory({
                   style={{
                     fontFamily: Typography.body.fontFamily,
                     fontSize: Typography.body.sizes.md,
-                    color: Colors.error || '#dc2626',
+                    color: '#dc2626',
                   }}
                 >
                   Failed to load project history

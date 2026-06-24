@@ -4,7 +4,7 @@
  */
 
 import { buildPrompt, type PromptConstructorParams } from "@/lib/maya/prompt-constructor"
-import { buildNanoBananaPrompt, type StudioProMode } from "@/lib/maya/nano-banana-prompt-builder"
+import { buildNanoBananaPrompt, type BrandKit, type StudioProMode } from "@/lib/maya/nano-banana-prompt-builder"
 import { ensureTriggerWordPrefix, ensureGenderInPrompt } from "@/lib/replicate-helpers"
 import { createHash } from 'crypto'
 import { PromptGenerator, type WorkbenchContext, type PromptSuggestion } from "@/lib/maya/prompt-generator"
@@ -16,7 +16,15 @@ export type { WorkbenchContext, PromptSuggestion } from "@/lib/maya/prompt-gener
 // TYPES
 // ============================================================================
 
-export type PromptMode = 'classic' | 'pro' | 'blueprint-preview' | 'video' | 'profile-image' | 'academy'
+export type PromptMode =
+  | 'classic'
+  | 'pro'
+  | 'studio-pro'
+  | 'feed-planner'
+  | 'blueprint-preview'
+  | 'video'
+  | 'profile-image'
+  | 'academy'
 export type PromptFeature = 
   | 'concept-card'
   | 'feed-prompt'
@@ -24,7 +32,13 @@ export type PromptFeature =
   | 'video-generation'
   | 'profile-image'
   | 'blueprint-preview'
+  | 'blueprint-concepts'
   | 'feed-planner-batch'
+  | 'strategy-generation'
+  | 'studio-pro-prompts'
+  | 'pro-mode-prompt'
+  | 'classic-mode-prompt'
+  | 'pro-mode-image-generation'
   | 'prompt-suggestions'
   | 'visibility-plan'
 
@@ -109,6 +123,7 @@ export interface BatchPromptResult {
       mode: PromptMode
       feature: PromptFeature
       executionTimeMs: number
+      validated: boolean
       inputHash: string
       outputHash: string
       pathUsed: 'authority' | 'legacy'
@@ -223,25 +238,29 @@ function logAudit(log: AuditLog): void {
   
   // Phase 5A: Persist to database (non-blocking)
   if (log.routeId && log.outputHash) {
+    const auditRouteId = log.routeId
+    const auditOutputHash = log.outputHash
+    const auditEvent = {
+      routeId: auditRouteId,
+      fingerprint: auditOutputHash,
+      status: log.success ? 'ok' as const : 'error' as const,
+      mode: log.mode,
+      feature: log.feature,
+      builder: log.builder,
+      executionTimeMs: Math.round(log.executionTimeMs),
+      ...(log.routePath ? { routePath: log.routePath } : {}),
+      ...(log.promptType ? { promptType: log.promptType } : {}),
+      ...(log.error ? { errorCode: log.error } : {}),
+      ...(log.userId ? { userId: log.userId } : {}),
+      ...(log.promptLength !== undefined ? { promptLength: log.promptLength } : {}),
+      ...(log.inputHash ? { inputHash: log.inputHash } : {}),
+      outputHash: auditOutputHash,
+      ...(log.pathUsed ? { pathUsed: log.pathUsed } : {}),
+    }
+
     // Import dynamically to avoid circular dependencies
     import('@/lib/maya/prompt-audit-storage').then(({ persistPromptAuditEvent }) => {
-      persistPromptAuditEvent({
-        routeId: log.routeId,
-        routePath: log.routePath,
-        promptType: log.promptType,
-        fingerprint: log.outputHash,
-        status: log.success ? 'ok' : 'error',
-        errorCode: log.error,
-        userId: log.userId,
-        mode: log.mode,
-        feature: log.feature,
-        builder: log.builder,
-        executionTimeMs: Math.round(log.executionTimeMs),
-        promptLength: log.promptLength,
-        inputHash: log.inputHash,
-        outputHash: log.outputHash,
-        pathUsed: log.pathUsed,
-      }).catch((err) => {
+      persistPromptAuditEvent(auditEvent).catch((err) => {
         // Already handled in persistPromptAuditEvent (fails silently)
         console.warn('[PROMPT-AUTHORITY] Failed to persist audit event:', err)
       })
@@ -282,8 +301,8 @@ export function createAuthorityAudit(
 ): void {
   logAudit({
     timestamp: new Date().toISOString(),
-    mode: metadata.mode,
-    feature: metadata.feature,
+    mode: metadata.mode as PromptMode,
+    feature: metadata.feature as PromptFeature,
     userId: metadata.userId?.toString(),
     builder: metadata.builder,
     executionTimeMs: metadata.executionTimeMs,
@@ -1609,6 +1628,36 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
   }
 }
 
+type SupportedAuthorityAspectRatio = '1:1' | '4:5' | '9:16' | '16:9'
+
+function normalizeAuthorityAspectRatio(value?: string): SupportedAuthorityAspectRatio {
+  if (value === '1:1' || value === '4:5' || value === '9:16' || value === '16:9') {
+    return value
+  }
+
+  return '4:5'
+}
+
+function normalizeAuthorityBrandKit(brandKit?: {
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  fontStyle?: string | null
+  brandTone?: string | null
+}): BrandKit | undefined {
+  if (!brandKit) {
+    return undefined
+  }
+
+  return {
+    ...(brandKit.primaryColor ? { primary_color: brandKit.primaryColor } : {}),
+    ...(brandKit.secondaryColor ? { secondary_color: brandKit.secondaryColor } : {}),
+    ...(brandKit.accentColor ? { accent_color: brandKit.accentColor } : {}),
+    ...(brandKit.fontStyle ? { font_style: brandKit.fontStyle } : {}),
+    ...(brandKit.brandTone ? { brand_tone: brandKit.brandTone } : {}),
+  }
+}
+
 /**
  * Generate Feed Planner Pro Mode prompt via Authority Layer.
  * 
@@ -1648,7 +1697,7 @@ export async function generateFeedPlannerProModePromptViaAuthority(context: {
   // Import and call the existing builder (preserves exact behavior)
   const { buildNanoBananaPrompt } = await import('@/lib/maya/nano-banana-prompt-builder')
   const { optimizedPrompt } = await buildNanoBananaPrompt({
-    userId: context.userId,
+    userId: String(context.userId),
     mode: context.mode as any,
     userRequest: context.userRequest,
     inputImages: {
@@ -1657,9 +1706,9 @@ export async function generateFeedPlannerProModePromptViaAuthority(context: {
       textElements: context.textElements,
     },
     workflowMeta: {
-      platformFormat: context.platformFormat || '4:5',
+      platformFormat: normalizeAuthorityAspectRatio(context.platformFormat),
     },
-    brandKit: context.brandKit,
+    brandKit: normalizeAuthorityBrandKit(context.brandKit),
   })
   
   // Compute fingerprint hash (privacy-safe, no full prompt logged)
@@ -2094,7 +2143,7 @@ export async function generateBatch(
   const startTime = Date.now()
   const timestamp = new Date().toISOString()
   
-  const prompts: PromptResult[] = []
+  const prompts: BatchPromptResult["prompts"] = []
   let successCount = 0
   let failureCount = 0
   
@@ -2152,6 +2201,7 @@ export async function generateBatch(
             mode,
             feature,
             executionTimeMs,
+            validated: true,
             inputHash: `${inputHash}-${context.postIndex}`,
             outputHash,
             pathUsed: 'authority',

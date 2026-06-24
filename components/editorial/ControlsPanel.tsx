@@ -1,6 +1,7 @@
 "use client"
 
 import { type RefObject } from "react"
+import type Konva from "konva"
 import { Textarea } from "@/components/ui/textarea"
 import { ExportButton } from "./ExportButton"
 import { FormatToggle, formatDimensionsLabel } from "./FormatToggle"
@@ -10,7 +11,7 @@ import { EDITORIAL_PRESETS } from "./types"
 
 type Props = {
   state: EditorState
-  stageRef: RefObject<import("konva").Stage | null>
+  stageRef: RefObject<Konva.Stage | null>
   onFile: (file: File) => void
   onChange: (patch: Partial<EditorState>) => void
   onApplyPreset: (id: EditorialPresetId) => void

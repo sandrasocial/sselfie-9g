@@ -53,6 +53,24 @@ const getFriendlyTierName = (tier: string): string => {
   return tierMap[base] ?? tierMap[tier.toLowerCase().trim()] ?? "Member"
 }
 
+type AcademyTier = "starter" | "pro" | "elite"
+
+function normalizeAcademyTier(value: unknown): AcademyTier {
+  if (value === "starter" || value === "pro" || value === "elite") {
+    return value
+  }
+
+  if (
+    value === "sselfie_studio_membership" ||
+    value === "brand_studio_membership" ||
+    value === "one_time_session"
+  ) {
+    return "elite"
+  }
+
+  return "starter"
+}
+
 const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }> = {
   what_to_say: {
     subText: "Your caption framework and messaging workbook.",
@@ -331,8 +349,9 @@ export default function AcademyScreen() {
   const templatesHasAccess = templatesData?.hasAccess ?? false
   const monthlyDropsHasAccess = monthlyDropsData?.hasAccess ?? false
   const flatlayImagesHasAccess = flatlayImagesData?.hasAccess ?? false
-  const userTier = (coursesData?.userTier ||
-    (hasStudioMembership ? "sselfie_studio_membership" : userInfoData?.plan || "starter")) as string
+  const userTier = normalizeAcademyTier(
+    coursesData?.userTier || (hasStudioMembership ? "sselfie_studio_membership" : userInfoData?.plan || "starter"),
+  )
   const allCourses = coursesData?.courses || []
   const templates = templatesData?.templates || []
   const monthlyDrops = monthlyDropsData?.monthlyDrops || []

@@ -18,7 +18,7 @@ async function handleGetFeedList({
     
     // Check user's access level to determine if preview feeds should be shown
     const { getFeedPlannerAccess } = await import("@/lib/feed-planner/access-control")
-    const access = await getFeedPlannerAccess(user.id)
+    const access = await getFeedPlannerAccess(String(user.id))
     
     // Use user.id directly (same as other working feed APIs)
     // Get all feeds for user with post counts using a simpler approach

@@ -5,7 +5,7 @@ import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
-import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
+import { buildNanoBananaPrompt, type BrandKit } from "@/lib/maya/nano-banana-prompt-builder"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 
 
@@ -18,6 +18,15 @@ interface ImageLibrary {
   people: string[]
   vibes: string[]
   intent: string
+}
+
+type AvatarImageRow = { image_url: string }
+type SupportedAspectRatio = '1:1' | '4:5' | '9:16' | '16:9'
+
+function normalizeAspectRatio(value: string | undefined): SupportedAspectRatio {
+  return value === '1:1' || value === '4:5' || value === '9:16' || value === '16:9'
+    ? value
+    : '4:5'
 }
 
 /**
@@ -115,22 +124,22 @@ export async function queueAllImagesForFeed(
   // Generate all predictions directly
   const results: Array<{ success: boolean; postId: number; position: number; predictionId?: string; error?: string }> = []
   const hasProModePosts = proModePosts.length > 0
-  let sharedAvatarImages: Array<{ image_url: string }> | null = null
-  let sharedBrandKit: any | null = null
+  let sharedAvatarImages: AvatarImageRow[] | null = null
+  let sharedBrandKit: BrandKit | null = null
 
   if (hasProModePosts) {
     try {
       if (imageLibrary && imageLibrary.selfies && imageLibrary.selfies.length > 0) {
         sharedAvatarImages = imageLibrary.selfies.map((url: string) => ({ image_url: url }))
       } else {
-        sharedAvatarImages = await sql`
+        sharedAvatarImages = (await sql`
           SELECT image_url
           FROM user_avatar_images
           WHERE user_id = ${neonUser.id}
           AND is_active = true
           ORDER BY display_order ASC, uploaded_at ASC
           LIMIT 5
-        `
+        `) as AvatarImageRow[]
       }
 
       const [brandKit] = await sql`
@@ -139,7 +148,7 @@ export async function queueAllImagesForFeed(
         WHERE user_id = ${neonUser.id} AND is_default = true
         LIMIT 1
       `
-      sharedBrandKit = brandKit || null
+      sharedBrandKit = (brandKit as BrandKit | undefined) || null
     } catch (prefetchError: any) {
       console.error("[v0] Failed to prefetch Pro Mode assets:", prefetchError)
       sharedAvatarImages = null
@@ -172,14 +181,14 @@ export async function queueAllImagesForFeed(
           } else {
             // Auto-fetch avatar images from database (same as generate-single route)
             console.log(`[v0] 📚 Auto-fetching avatar images from database`)
-            avatarImages = await sql`
+            avatarImages = (await sql`
               SELECT image_url
               FROM user_avatar_images
               WHERE user_id = ${neonUser.id}
               AND is_active = true
               ORDER BY display_order ASC, uploaded_at ASC
               LIMIT 5
-            `
+            `) as AvatarImageRow[]
           }
 
           if (avatarImages.length < 3) {
@@ -226,15 +235,9 @@ export async function queueAllImagesForFeed(
                 }] : undefined,
               },
               workflowMeta: {
-                platformFormat: customSettings?.aspectRatio || '4:5',
+                platformFormat: normalizeAspectRatio(customSettings?.aspectRatio),
               },
-              brandKit: brandKit ? {
-                primaryColor: brandKit.primary_color,
-                secondaryColor: brandKit.secondary_color,
-                accentColor: brandKit.accent_color,
-                fontStyle: brandKit.font_style,
-                brandTone: brandKit.brand_tone,
-              } : undefined,
+              brandKit: brandKit || undefined,
             })
             
             finalPrompt = optimizedPrompt
@@ -254,7 +257,7 @@ export async function queueAllImagesForFeed(
           
           // Generate with Nano Banana Pro (credits deducted at end for successful generations only)
           // Note: Instagram portrait posts use 4:5 (1080×1350px) - preserve this aspect ratio
-          const aspectRatio = customSettings?.aspectRatio || '4:5'
+          const aspectRatio = normalizeAspectRatio(customSettings?.aspectRatio)
           const generation = await generateWithNanoBanana({
             prompt: finalPrompt, // Use the proper prompt (pre-generated or regenerated)
             image_input: baseImages.map(img => img.url),
@@ -338,7 +341,7 @@ export async function queueAllImagesForFeed(
         }
         
         // Remove first part if it's not the trigger word
-        const parts = cleanedPrompt.split(',').map(p => p.trim()).filter(p => p.length > 0)
+        const parts = cleanedPrompt.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0)
         if (parts.length > 0 && !parts[0].toLowerCase().startsWith(triggerLower)) {
           parts.shift()
           cleanedPrompt = parts.join(', ').trim()
@@ -527,5 +530,3 @@ export async function queueAllImagesForFeed(
     message: `Queued ${successful} of ${posts.length} images for generation`,
   }
 }
-
-

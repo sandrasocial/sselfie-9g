@@ -28,9 +28,9 @@ function normalizeUrl(value: unknown): string {
   return trimmed
 }
 
-function uniqueByUrl(values: ImageCandidate[]): ImageCandidate[] {
+function uniqueByUrl<T extends { url: string }>(values: T[]): T[] {
   const seen = new Set<string>()
-  const deduped: ImageCandidate[] = []
+  const deduped: T[] = []
 
   for (const candidate of values) {
     if (!candidate.url || seen.has(candidate.url)) continue

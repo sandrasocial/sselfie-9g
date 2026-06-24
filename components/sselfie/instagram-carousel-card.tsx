@@ -250,7 +250,7 @@ export default function InstagramCarouselCard({
       {/* Fullscreen Image Modal */}
       <FullscreenImageModal
         imageUrl={images[currentIndex]?.url || ""}
-        imageId={images[currentIndex]?.id || 0}
+        imageId={String(images[currentIndex]?.id || 0)}
         title={`${title} - ${images[currentIndex]?.action}`}
         isOpen={isViewerOpen}
         onClose={() => setIsViewerOpen(false)}

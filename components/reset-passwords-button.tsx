@@ -20,7 +20,7 @@ export function ResetPasswordsButton() {
 
       if (result.success) {
         setStatus("success")
-        setMessage(result.message)
+        setMessage(result.message || "Password reset completed")
         setDetails(result.details || [])
       } else {
         setStatus("error")

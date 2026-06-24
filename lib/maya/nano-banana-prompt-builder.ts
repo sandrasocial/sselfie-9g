@@ -552,14 +552,8 @@ export async function buildNanoBananaPrompt(params: {
       // Maya uses her intelligence to detect brands from user request - no template system needed
       let brandContext: { name?: string; aesthetic?: any; visuals?: any } | null = null
 
-      // Brand context is now handled by Maya's intelligence in the system prompt
-      // No need for template-based detection
-      if (false) {
-        console.log('[PROMPT-BUILDER] Brand detection removed - Maya handles this intelligently:', {
-          brandId: detectedBrand.id,
-          brandName: detectedBrand.name,
-        })
-      }
+      // Brand context is now handled by Maya's intelligence in the system prompt.
+      // No template-based detection is needed here.
 
       // ============================================
       // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
@@ -575,7 +569,7 @@ export async function buildNanoBananaPrompt(params: {
         brandContext, // Pass brand context as guidance, not replacement
         platformFormat: workflowMeta?.platformFormat ?? '4:5',
       })
-      sceneDescription = brandContext ? `${brandContext.name} brand scene` : `Brand scene`
+      sceneDescription = `Brand scene`
       break
     }
 
