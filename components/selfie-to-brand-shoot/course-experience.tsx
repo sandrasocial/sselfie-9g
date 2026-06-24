@@ -25,6 +25,8 @@ import {
   type ReactNode,
 } from "react"
 
+import type { CourseBrandStrategy } from "@/lib/selfie-to-brand-shoot/brand-strategy"
+
 const STORAGE_KEY = "sbs:progress:v1"
 
 export type CourseModuleMeta = {
@@ -53,6 +55,10 @@ type CourseContextValue = {
   goToModule: (n: number) => void
   markComplete: (n: number, next?: number) => void
   reopen: (n: number) => void
+  // Step 0 gate
+  locked: boolean
+  hasBrandStrategy: boolean
+  brandStrategyHref: string
 }
 
 const CourseContext = createContext<CourseContextValue | null>(null)
@@ -91,13 +97,18 @@ function scrollToModule(n: number) {
 export function CourseExperienceProvider({
   firstName = null,
   modules,
+  hasBrandStrategy = true,
+  brandStrategyHref = "/academy/access/brand-strategy",
   children,
 }: {
   firstName?: string | null
   modules: CourseModuleMeta[]
+  hasBrandStrategy?: boolean
+  brandStrategyHref?: string
   children: ReactNode
 }) {
   const total = modules.length
+  const locked = !hasBrandStrategy
   const [hydrated, setHydrated] = useState(false)
   const [completed, setCompleted] = useState<Set<number>>(new Set())
   // Module 1 is open on first paint (matches SSR) so content is visible without JS.
@@ -215,6 +226,9 @@ export function CourseExperienceProvider({
     goToModule,
     markComplete,
     reopen,
+    locked,
+    hasBrandStrategy,
+    brandStrategyHref,
   }
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
@@ -223,10 +237,47 @@ export function CourseExperienceProvider({
 /* ---------------------------------- Hero --------------------------------- */
 
 export function ResumeHero({ serifClass }: { serifClass: string }) {
-  const { hydrated, firstName, percent, completedCount, total, nextModule, goToModule } = useCourse()
+  const {
+    hydrated,
+    firstName,
+    percent,
+    completedCount,
+    total,
+    nextModule,
+    goToModule,
+    locked,
+    brandStrategyHref,
+  } = useCourse()
 
   const allDone = hydrated && completedCount >= total
   const started = hydrated && completedCount > 0
+
+  // Locked: the only next step is finishing the Brand Strategy (Step 0).
+  if (locked) {
+    const hi = firstName ? `First, ${firstName}.` : "First things first."
+    return (
+      <div className="sbs2-resume">
+        <p className="sbs2-eyebrow">STEP 0 · YOUR BRAND STRATEGY</p>
+        <h2 className={`sbs2-resume-title ${serifClass}`}>{hi}</h2>
+        <p className="sbs2-resume-sub">
+          Build your brand strategy before the course. It tells Maya who you help, what you
+          stand for, and how you sound, so every look, prompt, and post is built around you.
+        </p>
+        <div className="sbs2-progress" aria-label="Course progress">
+          <div className="sbs2-progress-head">
+            <span>Progress</span>
+            <strong>Step 0 of {total + 1}</strong>
+          </div>
+          <div className="sbs2-progress-track" aria-hidden="true">
+            <span style={{ width: "0%" }} />
+          </div>
+        </div>
+        <a href={brandStrategyHref} className="sbs2-btn sbs2-btn-primary">
+          Build my brand strategy
+        </a>
+      </div>
+    )
+  }
 
   let eyebrow = "YOUR COURSE"
   let actionLabel = "Start Module 1"
@@ -288,28 +339,44 @@ export function ResumeHero({ serifClass }: { serifClass: string }) {
 /* ------------------------------- Path map -------------------------------- */
 
 export function CoursePathMap() {
-  const { modules, isComplete, nextModule, goToModule, hydrated } = useCourse()
+  const { modules, isComplete, nextModule, goToModule, hydrated, locked, hasBrandStrategy, brandStrategyHref } =
+    useCourse()
   return (
     <ol className="sbs2-path">
+      {/* Step 0 — Brand Strategy (server truth, not localStorage) */}
+      <li>
+        <a
+          href={hasBrandStrategy ? "#step-0" : brandStrategyHref}
+          className={`sbs2-path-card${hasBrandStrategy ? " is-done" : " is-current"}`}
+        >
+          <span className="sbs2-path-num">{hasBrandStrategy ? <Check /> : "0"}</span>
+          <span className="sbs2-path-copy">
+            <strong>Your Brand Strategy</strong>
+            <small>The foundation that personalizes everything. Included in your course.</small>
+          </span>
+          <span className="sbs2-path-status">{hasBrandStrategy ? "Done" : "Start here"}</span>
+        </a>
+      </li>
       {modules.map(module => {
-        const done = hydrated && isComplete(module.number)
-        const current = hydrated && !done && nextModule?.number === module.number
+        const done = !locked && hydrated && isComplete(module.number)
+        const current = !locked && hydrated && !done && nextModule?.number === module.number
         return (
           <li key={module.number}>
             <button
               type="button"
-              className={`sbs2-path-card${done ? " is-done" : ""}${current ? " is-current" : ""}`}
-              onClick={() => goToModule(module.number)}
+              className={`sbs2-path-card${done ? " is-done" : ""}${current ? " is-current" : ""}${locked ? " is-locked" : ""}`}
+              onClick={() => (locked ? undefined : goToModule(module.number))}
+              aria-disabled={locked}
             >
               <span className="sbs2-path-num">
-                {done ? <Check /> : pad(module.number)}
+                {done ? <Check /> : locked ? <Lock /> : pad(module.number)}
               </span>
               <span className="sbs2-path-copy">
                 <strong>{module.title}</strong>
                 <small>{module.outcome}</small>
               </span>
               <span className="sbs2-path-status">
-                {done ? "Done" : current ? "Start here" : "Open"}
+                {locked ? "Locked" : done ? "Done" : current ? "Start here" : "Open"}
               </span>
             </button>
           </li>
@@ -346,9 +413,45 @@ export function ModulePanel({
   nextLabel?: string
   serifClass: string
 }) {
-  const { openModule, setOpenModule, isComplete, markComplete, hydrated } = useCourse()
-  const open = openModule === number
-  const done = hydrated && isComplete(number)
+  const {
+    openModule,
+    setOpenModule,
+    isComplete,
+    markComplete,
+    hydrated,
+    locked,
+    brandStrategyHref,
+  } = useCourse()
+  const open = !locked && openModule === number
+  const done = !locked && hydrated && isComplete(number)
+
+  if (locked) {
+    return (
+      <section
+        id={`module-${number}`}
+        className="sbs2-module is-locked"
+        data-module-panel=""
+        data-module-number={number}
+        aria-label={`Module ${pad(number)}: ${title} (locked)`}
+      >
+        <div className="sbs2-module-head is-locked">
+          <span className="sbs2-module-num">
+            <Lock />
+          </span>
+          <span className="sbs2-module-headcopy">
+            <span className="sbs2-eyebrow">{eyebrow}</span>
+            <span className={`sbs2-module-title ${serifClass}`}>{title}</span>
+            <span className="sbs2-module-outcome">{outcome}</span>
+          </span>
+          <span className="sbs2-module-meta">
+            <a href={brandStrategyHref} className="sbs2-module-unlock">
+              Unlock
+            </a>
+          </span>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section
@@ -710,10 +813,268 @@ const emptyLookCode: LookCode = {
   firstShootDirection: "",
 }
 
+/* ------------------------------- Step 0 gate ----------------------------- */
+
+export function Step0Panel({
+  brandStrategy,
+  serifClass,
+}: {
+  brandStrategy: CourseBrandStrategy | null
+  serifClass: string
+}) {
+  const { hasBrandStrategy, brandStrategyHref } = useCourse()
+
+  if (!hasBrandStrategy || !brandStrategy) {
+    return (
+      <section id="step-0" className="sbs2-step0" data-module-panel="" data-module-number="0">
+        <div className="sbs2-step0-head">
+          <span className="sbs2-step0-num">0</span>
+          <div>
+            <p className="sbs2-eyebrow">STEP 0 · INCLUDED IN YOUR COURSE</p>
+            <h2 className={`sbs2-step0-title ${serifClass}`}>Start with your brand strategy</h2>
+          </div>
+        </div>
+        <p className="sbs2-step0-copy">
+          This is the foundation. Your brand strategy tells the course who you help, what you want
+          to be known for, and how you sound, so your look, your prompts, and your first week of
+          content are all built around you, not a template. Finish it once and the whole course
+          unlocks, personalized.
+        </p>
+        <ul className="sbs2-step0-list">
+          <li>Who you help and what you want to be known for</li>
+          <li>Your content pillars and positioning</li>
+          <li>Your voice, so captions sound like you</li>
+        </ul>
+        <a href={brandStrategyHref} className="sbs2-btn sbs2-btn-primary">
+          Build my brand strategy
+        </a>
+        <p className="sbs2-step0-note">It takes a few minutes. Then Modules 1 to 5 open up.</p>
+      </section>
+    )
+  }
+
+  const pillarNames = brandStrategy.pillars.map(p => p.name).filter(Boolean).slice(0, 4)
+  const facts = [
+    brandStrategy.targetAudience ? { label: "Who you help", value: brandStrategy.targetAudience } : null,
+    brandStrategy.positioning[0] ? { label: "Your positioning", value: brandStrategy.positioning[0] } : null,
+    brandStrategy.voice.tone ? { label: "Your voice", value: brandStrategy.voice.tone } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>
+
+  return (
+    <section id="step-0" className="sbs2-step0 is-done" data-module-panel="" data-module-number="0">
+      <div className="sbs2-step0-head">
+        <span className="sbs2-step0-num is-done">
+          <Check />
+        </span>
+        <div>
+          <p className="sbs2-eyebrow">STEP 0 · COMPLETE</p>
+          <h2 className={`sbs2-step0-title ${serifClass}`}>Your brand strategy is set</h2>
+        </div>
+      </div>
+      <p className="sbs2-step0-copy">
+        The course is now built around this. Every look, prompt, and post below is tied to your
+        strategy.
+      </p>
+      {facts.length > 0 ? (
+        <dl className="sbs2-recap-grid">
+          {facts.map(f => (
+            <div key={f.label}>
+              <dt>{f.label}</dt>
+              <dd>{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {pillarNames.length > 0 ? (
+        <div className="sbs2-step0-pillars">
+          <span className="sbs2-eyebrow">YOUR CONTENT PILLARS</span>
+          <div className="sbs2-pillar-chips">
+            {pillarNames.map(name => (
+              <span key={name}>{name}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <a href={brandStrategyHref} className="sbs2-text-link">
+        View full strategy
+      </a>
+    </section>
+  )
+}
+
+/* --------------------- Personalized content plan (Mod 5) ----------------- */
+
+export function PersonalizedContentPlan({
+  brandStrategy,
+  serifClass,
+}: {
+  brandStrategy: CourseBrandStrategy | null
+  serifClass: string
+}) {
+  const [lookName, setLookName] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () =>
+      fetch("/api/selfie-to-brand-shoot/visual-code")
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+          if (cancelled) return
+          const name = data?.visualCode?.signatureVisualWorld?.trim()
+          setLookName(name || null)
+        })
+        .catch(() => {})
+    load()
+    const onSaved = () => load()
+    window.addEventListener("sbs:look-saved", onSaved)
+    return () => {
+      cancelled = true
+      window.removeEventListener("sbs:look-saved", onSaved)
+    }
+  }, [])
+
+  const lookAdj = lookName || "signature"
+  const audience = brandStrategy?.targetAudience?.trim()
+  const positioning = brandStrategy?.positioning?.[0]?.trim()
+  const phrases = brandStrategy?.voice.phrases ?? []
+  const starters = brandStrategy?.captionStarters ?? []
+  const pillars = brandStrategy?.pillars ?? []
+
+  // Build 7 days from the learner's real pillars when we have them, so the plan is
+  // genuinely theirs — not a generic template.
+  const days = buildSevenDays({ lookAdj, audience, positioning, pillars, starters, phrases })
+
+  return (
+    <div className="sbs2-plan">
+      {brandStrategy ? (
+        <p className="sbs2-plan-intro">
+          Built from your brand strategy and your <strong>{lookAdj}</strong> look. Post these in
+          order. Each one already knows who you help and how you sound.
+        </p>
+      ) : (
+        <p className="sbs2-plan-intro">
+          A 7-day plan for your <strong>{lookAdj}</strong> look. Finish your brand strategy to make
+          every caption sound like you.
+        </p>
+      )}
+
+      <ol className="sbs2-plan-days">
+        {days.map((d, i) => (
+          <li key={i} className="sbs2-plan-day">
+            <div className="sbs2-plan-daytop">
+              <span className="sbs2-plan-daynum">Day {i + 1}</span>
+              <span className={`sbs2-plan-daytitle ${serifClass}`}>{d.title}</span>
+              <span className="sbs2-plan-use">{d.use}</span>
+            </div>
+            <div className="sbs2-plan-caption">
+              <span className="sbs2-eyebrow">Caption starter</span>
+              <p>{d.caption}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
+type PlanInput = {
+  lookAdj: string
+  audience?: string
+  positioning?: string
+  pillars: CourseBrandStrategy["pillars"]
+  starters: string[]
+  phrases: string[]
+}
+
+function buildSevenDays(input: PlanInput) {
+  const { lookAdj, audience, positioning, pillars, starters, phrases } = input
+  const who = audience ? `the ${audience.toLowerCase()}` : "the people you help"
+  const voiceLine = phrases[0] || positioning || ""
+
+  // Fixed spine (profile / story) plus pillar-driven days for the middle of the week.
+  const spine = [
+    {
+      title: "Reintroduce yourself",
+      use: `Lead with your clearest ${lookAdj} identity image.`,
+      caption: positioning
+        ? `New season, same mission. ${positioning} If we haven't met, here's what I do and who it's for.`
+        : `New visual chapter. Here's who I am and who I help: ${who}.`,
+    },
+    {
+      title: "The before/after story",
+      use: `Share your source selfie and the ${lookAdj} result.`,
+      caption: `I started with one normal selfie and built my ${lookAdj} look from it. ${
+        voiceLine ? voiceLine : "The goal wasn't perfect. It was recognizable."
+      }`,
+    },
+  ]
+
+  const pillarDays = (pillars.length > 0 ? pillars : []).slice(0, 3).map((pillar, idx) => ({
+    title: pillar.name,
+    use: `A ${lookAdj} image that fits "${pillar.name}".${idx === 0 ? " Make it your strongest." : ""}`,
+    caption:
+      pillar.postIdeas[0]
+        ? `${pillar.postIdeas[0]}${starters[idx] ? ` ${starters[idx]}` : ""}`
+        : pillar.description ||
+          `Teach one thing ${who} needs to hear about ${pillar.name.toLowerCase()}.`,
+  }))
+
+  // If no pillars, fall back to three solid, specific content days.
+  const fallbackMiddle = [
+    {
+      title: "Teach one thing",
+      use: `Use a ${lookAdj} image with room for a headline.`,
+      caption:
+        starters[0] ||
+        `One thing I wish ${who} knew: you don't need a studio. You need one clear look you can repeat.`,
+    },
+    {
+      title: "Show the work",
+      use: `A lifestyle ${lookAdj} image (laptop, coffee, real life).`,
+      caption: starters[1] || `Behind the scenes of how I actually do this, not the highlight reel.`,
+    },
+    {
+      title: "Make the offer",
+      use: `Your most confident ${lookAdj} image, one clear CTA.`,
+      caption:
+        starters[2] ||
+        `If your photos feel random, start with one look you can repeat. When you're ready, here's your next step.`,
+    },
+  ]
+
+  const middle = pillarDays.length >= 3 ? pillarDays : [...pillarDays, ...fallbackMiddle].slice(0, 3)
+
+  const close = [
+    {
+      title: "The about-me post",
+      use: `A softer, closer ${lookAdj} image.`,
+      caption: positioning
+        ? `The story behind why I do this. ${positioning} It took me longer than I'd admit to get here.`
+        : `The story behind the woman these photos are starting to show. Here's what changed.`,
+    },
+    {
+      title: "Feed refresh",
+      use: `Place your top 3 ${lookAdj} images so the profile feels like one person.`,
+      caption: `Your feed doesn't need to be perfect. It should feel like the same woman lives there. Mine finally does.`,
+    },
+  ]
+
+  return [...spine, ...middle, ...close].slice(0, 7)
+}
+
 /* -------------------------------- helpers -------------------------------- */
 
 function pad(n: number) {
   return String(n).padStart(2, "0")
+}
+
+function Lock() {
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none">
+      <rect x="3.2" y="7" width="9.6" height="6.4" rx="1.4" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5.2 7V5.3a2.8 2.8 0 0 1 5.6 0V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
 }
 
 function Check() {
