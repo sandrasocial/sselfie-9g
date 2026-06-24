@@ -6,14 +6,17 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { CopyPromptButton } from "./copy-prompt-button"
 import { MayaPromptConcierge } from "./maya-prompt-concierge"
 import { TrackedCourseLink } from "./tracked-course-link"
+import type { CourseBrandStrategy } from "@/lib/selfie-to-brand-shoot/brand-strategy"
 import {
   Block,
   CourseExperienceProvider,
   CoursePathMap,
   LookPicker,
   ModulePanel,
+  PersonalizedContentPlan,
   ResumeHero,
   SignatureWorldRecap,
+  Step0Panel,
   type CourseModuleMeta,
   type LookOption,
 } from "./course-experience"
@@ -33,6 +36,8 @@ type SelfieToBrandShootCourseShellProps = {
   accessMode: ShellAccessMode
   hasStudioAccess?: boolean
   hasPromptVaultAccess?: boolean
+  brandStrategy?: CourseBrandStrategy | null
+  brandStrategyHref?: string
 }
 
 const sourceSelfies = [
@@ -963,86 +968,12 @@ const module5GridImages = [
   { role: "Breath", image: `${module5AssetBase}/quiet-product-detail.jpg`, objectPosition: "center center" },
 ]
 
-const module5SevenDayPlan = [
-  {
-    day: "Day 1",
-    title: "Update profile image",
-    use: "Use the clearest identity image first.",
-    caption:
-      "New visual chapter. I wanted my profile to feel more like the woman I am becoming, so I started with one clear image.",
-    action: "Upload the image, check the crop, and make sure your face is recognizable in the small circle.",
-  },
-  {
-    day: "Day 2",
-    title: "Story intro",
-    use: "Share the source selfie, the result, and why this look feels like you.",
-    caption:
-      "I started with a normal selfie and built this look from it. The goal was not perfect. The goal was recognizable.",
-    action: "Post 3-5 story frames: selfie, result, what changed, why it fits, and one reply keyword or link.",
-  },
-  {
-    day: "Day 3",
-    title: "Reel cover",
-    use: "Post a simple transformation reel with one strong cover line.",
-    caption:
-      "One selfie can carry more brand direction than you think when the style, light, and mood are clear.",
-    action: "Use the editorial cover image and keep the overlay to one short line.",
-  },
-  {
-    day: "Day 4",
-    title: "Carousel",
-    use: "Teach the before, look, prompt, result, and what you kept.",
-    caption:
-      "The difference was not just the prompt. It was choosing one look before creating the image.",
-    action: "Build 5 slides: before, look, prompt direction, result, and what you would repeat.",
-  },
-  {
-    day: "Day 5",
-    title: "Offer image",
-    use: "Use one confident visual to point to your guide, Vault, offer, or service.",
-    caption:
-      "If your visuals are starting to feel random, start with one world you can repeat. That is what makes the brand feel clear.",
-    action: "Pair the strongest authority image with one CTA. Do not explain everything.",
-  },
-  {
-    day: "Day 6",
-    title: "About-me post",
-    use: "Tell the story behind the woman your visuals are starting to show.",
-    caption:
-      "For a long time I thought I needed a studio, a photographer, and perfect timing. I actually needed a clearer visual direction.",
-    action: "Use a softer identity image and write 5-7 lines about what this new visual chapter represents.",
-  },
-  {
-    day: "Day 7",
-    title: "Feed refresh",
-    use: "Pin or place the strongest images so the profile starts to feel cohesive.",
-    caption:
-      "Your feed does not need to be perfect. But it should feel like the same woman lives there.",
-    action: "Choose your top 3 images and decide which one becomes profile, which one becomes cover, and which one becomes story proof.",
-  },
-]
-
 const module5StoryFrames = [
   { title: "Start here", copy: "Show the normal selfie or starting point." },
   { title: "Reveal", copy: "Show the strongest brand shoot result." },
   { title: "Why it works", copy: "Point out face, colors, mood, and look." },
   { title: "Use it", copy: "Show where it becomes a profile photo, cover, or post." },
   { title: "Invite", copy: "Give one clear next step, link, or reply keyword." },
-]
-
-const module5CaptionHooks = [
-  {
-    title: "Transformation hook",
-    text: "I started with one normal selfie and turned it into a small brand shoot I can actually use.",
-  },
-  {
-    title: "Visual identity hook",
-    text: "Your content starts to feel different when your photos finally match the woman you are becoming.",
-  },
-  {
-    title: "Soft offer hook",
-    text: "If you want your own selfie to brand shoot, start with the guide and choose one look first.",
-  },
 ]
 
 const module5FinalChecklist = [
@@ -1745,34 +1676,6 @@ function Module5MiniFeedPlannerBlock() {
   )
 }
 
-function Module5SevenDayPlanBlock() {
-  return (
-    <div className="sbs-module5-plan">
-      {module5SevenDayPlan.map(item => (
-        <article key={item.day}>
-          <span>{item.day}</span>
-          <h4>{item.title}</h4>
-          <p>{item.use}</p>
-          <div className="sbs-module5-plan-detail">
-            <strong>Caption starter</strong>
-            <p>{item.caption}</p>
-            <CopyPromptButton
-              text={item.caption}
-              label="Copy caption"
-              analyticsLabel={item.day}
-              analyticsContext={{ module: 5, prompt_type: "caption", day: item.day }}
-            />
-          </div>
-          <div className="sbs-module5-plan-detail">
-            <strong>Action</strong>
-            <p>{item.action}</p>
-          </div>
-        </article>
-      ))}
-    </div>
-  )
-}
-
 function Module5StorySequenceBlock() {
   return (
     <div className="sbs-module5-story-sequence">
@@ -1781,25 +1684,6 @@ function Module5StorySequenceBlock() {
           <span>{String(index + 1).padStart(2, "0")}</span>
           <h4>{frame.title}</h4>
           <p>{frame.copy}</p>
-        </article>
-      ))}
-    </div>
-  )
-}
-
-function Module5CaptionHooksBlock() {
-  return (
-    <div className="sbs-module5-hook-grid">
-      {module5CaptionHooks.map(hook => (
-        <article key={hook.title}>
-          <h4>{hook.title}</h4>
-          <p>{hook.text}</p>
-          <CopyPromptButton
-            text={hook.text}
-            label="Copy hook"
-            analyticsLabel={hook.title}
-            analyticsContext={{ module: 5, prompt_type: "hook", hook_title: hook.title }}
-          />
         </article>
       ))}
     </div>
@@ -1825,7 +1709,10 @@ export function SelfieToBrandShootCourseShell({
   accessMode,
   hasStudioAccess = false,
   hasPromptVaultAccess = true,
+  brandStrategy = null,
+  brandStrategyHref = "/academy/access/brand-strategy",
 }: SelfieToBrandShootCourseShellProps) {
+  const hasBrandStrategy = Boolean(brandStrategy)
   const courseModules: CourseModuleMeta[] = modules.map(module => ({
     number: Number(module.number),
     title: module.title,
@@ -1867,7 +1754,12 @@ export function SelfieToBrandShootCourseShell({
         </Link>
       </header>
 
-      <CourseExperienceProvider firstName={firstName ?? null} modules={courseModules}>
+      <CourseExperienceProvider
+        firstName={firstName ?? null}
+        modules={courseModules}
+        hasBrandStrategy={hasBrandStrategy}
+        brandStrategyHref={brandStrategyHref}
+      >
         <section className="sbs2-hero" aria-label="Your course">
           <div className="sbs2-hero-copy">
             <ResumeHero serifClass={cormorant.className} />
@@ -1901,6 +1793,8 @@ export function SelfieToBrandShootCourseShell({
         </section>
 
         <div className="sbs2-modules">
+          <Step0Panel brandStrategy={brandStrategy} serifClass={cormorant.className} />
+
           <ModulePanel
             number={1}
             eyebrow="MODULE 01"
@@ -2313,11 +2207,12 @@ export function SelfieToBrandShootCourseShell({
               <Module5MiniFeedPlannerBlock />
             </LessonSection>
 
-            <LessonSection eyebrow="7-DAY PLAN" title="One brand shoot can give you a week of content" open>
+            <LessonSection eyebrow="YOUR 7-DAY PLAN" title="Your first week of content, already written" open>
               <div className="sbs-worksheet-intro">
                 <p>
-                  Do this before you make more images. Give each image one job, then use the
-                  caption starter to post the result while the visual direction is still fresh.
+                  This plan is built from your brand strategy and your chosen look. Each day has one
+                  image job and a caption starter that already sounds like you. Post in order while
+                  the look is still fresh.
                 </p>
                 <TrackedCourseLink
                   href="/downloads/selfie-to-brand-shoot-7-day-plan.txt"
@@ -2326,10 +2221,10 @@ export function SelfieToBrandShootCourseShell({
                   event="selfie_to_brand_shoot_content_plan_completed"
                   properties={{ module: 5, resource: "7_day_plan_download" }}
                 >
-                  Download the 7-day plan
+                  Download the blank 7-day template
                 </TrackedCourseLink>
               </div>
-              <Module5SevenDayPlanBlock />
+              <PersonalizedContentPlan brandStrategy={brandStrategy} serifClass={cormorant.className} />
             </LessonSection>
 
             <LessonSection eyebrow="STORY FLOW" title="Turn the shoot into a story sequence" open>
@@ -2340,16 +2235,6 @@ export function SelfieToBrandShootCourseShell({
                 </p>
               </div>
               <Module5StorySequenceBlock />
-            </LessonSection>
-
-            <LessonSection eyebrow="COPY STARTERS" title="Caption and hook starters" open>
-              <div className="sbs-worksheet-intro">
-                <p>
-                  Start with the visual. Then use one clear sentence to tell people what they are
-                  looking at.
-                </p>
-              </div>
-              <Module5CaptionHooksBlock />
             </LessonSection>
 
             <LessonSection eyebrow="FINAL CHECK" title="Before you call the shoot finished" open>
@@ -5386,6 +5271,217 @@ export function SelfieToBrandShootCourseShell({
         }
         .sbs2-look-tune-foot {
           grid-column: 1 / -1;
+        }
+
+        /* ----- Step 0 (brand strategy gate) ----- */
+        .sbs2-path-card {
+          text-decoration: none;
+          color: inherit;
+        }
+        .sbs2-path-card.is-locked {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+        .sbs2-path-card.is-locked:hover {
+          background: transparent;
+          padding-left: clamp(6px, 1.4vw, 14px);
+        }
+        .sbs2-step0 {
+          margin: 0 0 8px;
+          padding: clamp(26px, 4vw, 44px);
+          background: #FFFFFF;
+          border: 1px solid var(--ink);
+          border-radius: 18px;
+        }
+        .sbs2-step0.is-done {
+          border-color: var(--line);
+          background: #FBFCFC;
+        }
+        .sbs2-step0-head {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 18px;
+        }
+        .sbs2-step0-num {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: var(--ink);
+          color: #FFFFFF;
+          font-size: 16px;
+          font-weight: 600;
+        }
+        .sbs2-step0-num.is-done {
+          background: var(--ink);
+        }
+        .sbs2-step0-head .sbs2-eyebrow {
+          margin: 0 0 6px;
+        }
+        .sbs2-step0-title {
+          margin: 0;
+          color: var(--ink);
+          font-size: clamp(1.7rem, 3vw, 2.5rem);
+          font-weight: 300;
+          line-height: 1.04;
+        }
+        .sbs2-step0-copy {
+          margin: 0 0 18px;
+          color: var(--body);
+          font-size: 15.5px;
+          line-height: 1.75;
+          max-width: 64ch;
+        }
+        .sbs2-step0-list {
+          list-style: none;
+          margin: 0 0 24px;
+          padding: 0;
+          display: grid;
+          gap: 10px;
+        }
+        .sbs2-step0-list li {
+          position: relative;
+          padding-left: 22px;
+          color: var(--ink);
+          font-size: 14.5px;
+          line-height: 1.5;
+        }
+        .sbs2-step0-list li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 8px;
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--ink);
+        }
+        .sbs2-step0-note {
+          margin: 16px 0 0;
+          color: var(--muted);
+          font-size: 13px;
+        }
+        .sbs2-step0-pillars {
+          margin-top: 22px;
+        }
+        .sbs2-step0-pillars .sbs2-eyebrow {
+          margin-bottom: 10px;
+        }
+        .sbs2-pillar-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 18px;
+        }
+        .sbs2-pillar-chips span {
+          padding: 7px 14px;
+          border: 1px solid var(--line);
+          border-radius: 999px;
+          font-size: 13px;
+          color: var(--ink);
+          background: #FFFFFF;
+        }
+        .sbs2-step0.is-done .sbs2-recap-grid {
+          margin: 8px 0 4px;
+        }
+
+        /* ----- Locked module rows ----- */
+        .sbs2-module.is-locked {
+          opacity: 0.72;
+        }
+        .sbs2-module-head.is-locked {
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: start;
+          gap: clamp(16px, 3vw, 32px);
+          padding: clamp(26px, 3.4vw, 40px) 0;
+          cursor: default;
+        }
+        .sbs2-module.is-locked .sbs2-module-num {
+          border-color: var(--line);
+          color: var(--muted);
+        }
+        .sbs2-module-unlock {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--ink);
+          text-decoration: none;
+          border: 1px solid var(--ink);
+          border-radius: 999px;
+          padding: 8px 16px;
+          white-space: nowrap;
+          transition: background 0.18s ease, color 0.18s ease;
+        }
+        .sbs2-module-unlock:hover {
+          background: var(--ink);
+          color: #FFFFFF;
+        }
+
+        /* ----- Personalized 7-day content plan ----- */
+        .sbs2-plan-intro {
+          margin: 0 0 22px;
+          color: var(--body);
+          font-size: 15px;
+          line-height: 1.7;
+          max-width: 66ch;
+        }
+        .sbs2-plan-days {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 12px;
+        }
+        .sbs2-plan-day {
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          padding: 20px 22px;
+          background: #FFFFFF;
+        }
+        .sbs2-plan-daytop {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 6px 14px;
+          margin-bottom: 12px;
+        }
+        .sbs2-plan-daynum {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--muted);
+        }
+        .sbs2-plan-daytitle {
+          color: var(--ink);
+          font-size: clamp(1.25rem, 2vw, 1.55rem);
+          font-weight: 400;
+          line-height: 1.1;
+        }
+        .sbs2-plan-use {
+          flex-basis: 100%;
+          color: var(--muted);
+          font-size: 13.5px;
+          line-height: 1.5;
+        }
+        .sbs2-plan-caption {
+          border-top: 1px solid var(--line-soft);
+          padding-top: 12px;
+        }
+        .sbs2-plan-caption .sbs2-eyebrow {
+          margin: 0 0 6px;
+        }
+        .sbs2-plan-caption p {
+          margin: 0;
+          color: var(--ink);
+          font-size: 15px;
+          line-height: 1.65;
         }
 
         @media (max-width: 640px) {

@@ -5,6 +5,7 @@ import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
+import { getCourseBrandStrategy } from "@/lib/selfie-to-brand-shoot/brand-strategy"
 import { SelfieToBrandShootCourseShell } from "@/components/selfie-to-brand-shoot/course-shell-v1"
 
 export const metadata: Metadata = {
@@ -50,9 +51,10 @@ async function getPromptVaultSubscriber(email: string | null | undefined) {
 
 export default async function AcademySelfieToBrandShootAccessPage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/selfie-to-brand-shoot")
-  const [entitlementState, vaultSubscriber] = await Promise.all([
+  const [entitlementState, vaultSubscriber, brandStrategy] = await Promise.all([
     getAcademyEntitlementState(neonUser.id),
     getPromptVaultSubscriber(neonUser.email),
+    getCourseBrandStrategy(neonUser.email, neonUser.id),
   ])
 
   const hasSupportingAccess =
@@ -98,11 +100,13 @@ export default async function AcademySelfieToBrandShootAccessPage() {
 
   return (
     <SelfieToBrandShootCourseShell
-      firstName={getSafeFirstName(vaultSubscriber?.name)}
+      firstName={getSafeFirstName(brandStrategy?.name) ?? getSafeFirstName(vaultSubscriber?.name)}
       vaultHref={vaultHref}
       accessMode="academy"
       hasStudioAccess={entitlementState.membershipActive}
       hasPromptVaultAccess={hasPromptVaultAccess}
+      brandStrategy={brandStrategy}
+      brandStrategyHref="/academy/access/brand-strategy"
     />
   )
 }

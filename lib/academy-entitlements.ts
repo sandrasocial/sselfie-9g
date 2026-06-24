@@ -123,6 +123,9 @@ type FallbackMetadata = {
 
 const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
   selfie_guide_bundle: ["selfie_guide", "brand_strategy_pack"],
+  // Selfie to Brand Shoot includes the Brand Strategy tool in its price — it is the
+  // personalized Step 0 of that course (gate before Modules 1-5).
+  selfie_to_brand_shoot_system: ["brand_strategy_pack"],
   masterclass: ["brand_strategy_pack", "branded_by_sselfie", "editing_masterclass"],
   visibility_suite: [
     "what_to_say",
