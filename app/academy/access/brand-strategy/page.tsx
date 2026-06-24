@@ -4,6 +4,7 @@ import BrandStrategySetupForm from "@/components/brand-strategy/brand-strategy-s
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
+import { hasPaidSelfieToBrandShootAccess } from "@/lib/freebie/selfie-to-brand-shoot-access"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
@@ -23,7 +24,12 @@ export default async function AcademyBrandStrategyAccessPage() {
   }
 
   const entitlementState = await getAcademyEntitlementState(String(neonUser.id))
-  if (!entitlementState.accessibleProductIds.includes("brand_strategy_pack")) {
+  // Brand Strategy is bundled into Selfie to Brand Shoot (Step 0). Allow paid SBS access
+  // even without a userId-linked entitlement row (e.g. checkout before account creation).
+  const hasAccess =
+    entitlementState.accessibleProductIds.includes("brand_strategy_pack") ||
+    (await hasPaidSelfieToBrandShootAccess(authUser.email))
+  if (!hasAccess) {
     redirect("/brand-strategy")
   }
 
