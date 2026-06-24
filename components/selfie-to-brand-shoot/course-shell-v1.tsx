@@ -6,18 +6,23 @@ import { Cormorant_Garamond, Inter } from "next/font/google"
 import { CopyPromptButton } from "./copy-prompt-button"
 import { MayaPromptConcierge } from "./maya-prompt-concierge"
 import { TrackedCourseLink } from "./tracked-course-link"
-import { VisualConsistencyCodeBuilder } from "./visual-consistency-code-builder"
 import {
   Block,
   CourseExperienceProvider,
   CoursePathMap,
+  LookPicker,
   ModulePanel,
   ResumeHero,
   SignatureWorldRecap,
   type CourseModuleMeta,
+  type LookOption,
 } from "./course-experience"
 
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-cormorant",
+})
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] })
 
 type ShellAccessMode = "token" | "academy"
@@ -28,16 +33,6 @@ type SelfieToBrandShootCourseShellProps = {
   accessMode: ShellAccessMode
   hasStudioAccess?: boolean
   hasPromptVaultAccess?: boolean
-}
-
-type VisualCode = {
-  colors: string
-  lighting: string
-  wardrobe: string
-  background: string
-  signal: string
-  repeat: string
-  avoid: string
 }
 
 const sourceSelfies = [
@@ -177,7 +172,7 @@ const fakeResultChecks = [
   },
   {
     problem: "Result looks too AI",
-    fix: "Choose a calmer visual world before changing everything.",
+    fix: "Choose a calmer look before changing everything.",
   },
 ]
 
@@ -279,7 +274,8 @@ const cohesiveGridImages = [
 
 const brandWorldCards = [
   {
-    name: "NOIR FEMME",
+    name: "Dark Editorial",
+    swatches: ["#0A0A0A", "#3A3A3A", "#7D7E80", "#C5C6C8"],
     signal: "Power, mystery, editorial confidence.",
     feeling: "The woman who has entered her next era and does not need to explain herself.",
     colorMood: "Black, charcoal, silver-gray, cool shadows, high contrast.",
@@ -308,7 +304,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Clean Girl Founder Morning",
+    name: "Clean & Bright",
+    swatches: ["#FFFFFF", "#EDE9E3", "#D6D3CC", "#E4D9CC"],
     signal: "Fresh, clean, modern founder energy.",
     feeling: "The woman who builds her next chapter from calm routines and soft discipline.",
     colorMood: "White, ivory in imagery, oat, pale gray, gentle natural skin tones.",
@@ -336,7 +333,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Dark Feminine Café",
+    name: "Polished City",
+    swatches: ["#1C1A17", "#4A3E33", "#9A958E", "#E2DFDA"],
     signal: "Polished, cinematic, city authority.",
     feeling: "The woman who is feminine, strategic, and seen in the room before she says a word.",
     colorMood: "Black, espresso, muted stone, city neutrals, soft cafe reflections.",
@@ -365,7 +363,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Dark Balcony",
+    name: "City Nights",
+    swatches: ["#0D0E10", "#2B2E34", "#565A62", "#9AA0A8"],
     signal: "Quiet luxury, private-life intrigue.",
     feeling:
       "The woman with a high-end private life and a brand that feels like a secret people want access to.",
@@ -395,7 +394,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Coastal White",
+    name: "Soft Coastal",
+    swatches: ["#FFFFFF", "#E7E3DB", "#A7B4BB", "#CAD5DB"],
     signal: "Soft, fresh, spacious, aspirational.",
     feeling: "The woman who feels calm, free, visible, and expensive without trying too hard.",
     colorMood: "White, soft stone, sea blue-gray, pale sky, clean highlights.",
@@ -423,7 +423,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Marble Café",
+    name: "Refined Evenings",
+    swatches: ["#EDE7DF", "#1A1414", "#6E2A38", "#B0875A"],
     signal: "Expensive, refined, social, elegant.",
     feeling: "The woman whose everyday content feels like a polished lifestyle editorial.",
     colorMood: "Marble white, black, wine red, candlelight, elegant neutrals.",
@@ -451,7 +452,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Denim Street",
+    name: "Casual Street",
+    swatches: ["#9DB0C2", "#6E8197", "#B6B8BB", "#D7D1C6"],
     signal: "Casual confidence, cool-girl relatability.",
     feeling: "The woman who is stylish, approachable, modern, and confident in real life.",
     colorMood: "Light denim, blazer neutrals, city gray, soft blue, clean street tones.",
@@ -480,7 +482,8 @@ const brandWorldCards = [
     },
   },
   {
-    name: "Cozy Leather",
+    name: "Cozy & Textured",
+    swatches: ["#1C1A18", "#79695A", "#A89A88", "#8A8780"],
     signal: "Warm confidence, lifestyle polish.",
     feeling: "The woman who feels grounded, tactile, and elevated - like her life has texture.",
     colorMood: "Black leather, soft knit, muted browns, mirror light, texture-forward contrast.",
@@ -506,59 +509,6 @@ const brandWorldCards = [
       repeat: "Leather/knit texture, mirror moments, soft indoor scenes, relaxed posture.",
       avoid: "Beach scenes, hard corporate styling, neon color, glossy tech feeling.",
     },
-  },
-]
-
-const visualCodeExamples: Array<{ world: string; note: string; code: VisualCode }> = [
-  {
-    world: "NOIR FEMME",
-    note: "For a personal brand that should feel powerful, editorial, and unmistakably high-end.",
-    code: brandWorldCards[0].visualCode,
-  },
-  {
-    world: "Coastal White",
-    note: "For a personal brand that should feel soft, calm, spacious, and aspirational.",
-    code: brandWorldCards[4].visualCode,
-  },
-  {
-    world: "Clean Girl Founder",
-    note: "For a personal brand that should feel fresh, trustworthy, modern, and easy to approach.",
-    code: brandWorldCards[1].visualCode,
-  },
-]
-
-const worldDecisionRows = [
-  {
-    desire: "I want to feel powerful, mysterious, editorial",
-    world: "NOIR FEMME",
-  },
-  {
-    desire: "I want to feel clean, fresh, trustworthy",
-    world: "Clean Girl Founder",
-  },
-  {
-    desire: "I want to feel soft, calm, aspirational",
-    world: "Coastal White",
-  },
-  {
-    desire: "I want to feel cinematic, moody, polished",
-    world: "Dark Feminine Café",
-  },
-  {
-    desire: "I want to feel expensive, elevated, lifestyle",
-    world: "Marble Café",
-  },
-  {
-    desire: "I want to feel confident, night-time, new era",
-    world: "Dark Balcony",
-  },
-  {
-    desire: "I want to feel cool, relatable, casual",
-    world: "Denim Street",
-  },
-  {
-    desire: "I want to feel cozy, grounded, elevated",
-    world: "Cozy Leather",
   },
 ]
 
@@ -655,7 +605,7 @@ const module3Outcomes = [
 
 const brandShootLabSteps = [
   "Upload your source selfie to ChatGPT.",
-  "Copy your Visual Consistency Code from Module 2.",
+  "Copy your Look from Module 2.",
   "Choose your starter shoot path: profile portrait, reel cover, or lifestyle image.",
   "Copy the starter prompt.",
   "Generate the image.",
@@ -672,12 +622,12 @@ const starterPromptCards = [
     note: "Your face is clear, skin looks real, and the image feels polished without becoming fake.",
     image:
       "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-08-profile-candidate.jpeg",
-    prompt: `Use my uploaded source selfie as the identity reference. Create a realistic editorial personal brand portrait in my chosen Signature Visual World.
+    prompt: `Use my uploaded source selfie as the identity reference. Create a realistic editorial personal brand portrait in my chosen Look.
 
 Keep my facial identity, natural skin texture, real hairline, face shape, skin tone, hair color, and expression believable. Do not over-smooth or change my features.
 
-Apply my Visual Consistency Code:
-- Signature Visual World: [paste your chosen world]
+Apply my Look:
+- Look: [paste your chosen look]
 - Colors: [paste your main colors]
 - Lighting: [paste your lighting]
 - Wardrobe: [paste your wardrobe direction]
@@ -693,9 +643,9 @@ Create a close-up or half-body portrait with clean face visibility, premium edit
     note: "The composition is stronger, the crop is vertical-safe, and the world still matches Module 2.",
     image:
       "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-04-movement-transition.jpeg",
-    prompt: `Use my uploaded source selfie as the identity reference. Create a stronger editorial brand image in the same Signature Visual World.
+    prompt: `Use my uploaded source selfie as the identity reference. Create a stronger editorial brand image in the same Look.
 
-Preserve my face, hair, skin tone, natural proportions, and recognizable expression. Keep the same colors, lighting, wardrobe direction, background world, and emotional signal from my Visual Consistency Code.
+Preserve my face, hair, skin tone, natural proportions, and recognizable expression. Keep the same colors, lighting, wardrobe direction, background world, and emotional signal from my Look.
 
 Compose it as a premium vertical Reel cover with strong negative space for text overlay, clean silhouette, confident pose, cinematic depth, and polished personal brand feeling. Vertical 9:16 or 4:5-safe crop. No text, no logo, no extra people.`,
   },
@@ -703,12 +653,12 @@ Compose it as a premium vertical Reel cover with strong negative space for text 
     title: "Lifestyle Brand Image",
     purpose: "A less posed image for Stories, lifestyle posts, behind the scenes, or soft selling.",
     when: "Use this when your brand needs to feel lived-in, human, and still cohesive.",
-    note: "It feels like a real moment inside your visual world, not a random lifestyle photo.",
+    note: "It feels like a real moment inside your look, not a random lifestyle photo.",
     image:
       "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-07-work-creator.jpeg",
-    prompt: `Use my uploaded source selfie as the identity reference. Create a realistic lifestyle personal brand image inside my Signature Visual World.
+    prompt: `Use my uploaded source selfie as the identity reference. Create a realistic lifestyle personal brand image inside my Look.
 
-Preserve my facial identity and keep the image believable. Use the same color mood, lighting, wardrobe direction, background world, and emotional signal from my Visual Consistency Code.
+Preserve my facial identity and keep the image believable. Use the same color mood, lighting, wardrobe direction, background world, and emotional signal from my Look.
 
 Show a natural movement or real-life brand moment, such as coffee, laptop, walking, mirror, getting ready, or quiet lifestyle detail. Make it feel candid, elevated, cohesive, and usable for Stories or soft-sell content. Vertical 4:5. No text, no logo, no extra people.`,
   },
@@ -730,27 +680,27 @@ const fixPromptCards = [
   {
     title: "Make it look more like me",
     prompt:
-      "Make the face look more like my source selfie while keeping the same visual world, outfit, lighting, background, mood, and composition. Match my face shape, eyes, nose, mouth, jawline, skin tone, hairline, and natural expression. Keep it realistic and do not over-smooth.",
+      "Make the face look more like my source selfie while keeping the same look, outfit, lighting, background, mood, and composition. Match my face shape, eyes, nose, mouth, jawline, skin tone, hairline, and natural expression. Keep it realistic and do not over-smooth.",
   },
   {
     title: "Make it less AI",
     prompt:
-      "Make the image feel more realistic and less AI-generated. Keep the same visual world, styling, light, and setting, but make the photo more human, natural, and believable. Avoid glossy skin, impossible fabric, warped hands, and overly dramatic retouching.",
+      "Make the image feel more realistic and less AI-generated. Keep the same look, styling, light, and setting, but make the photo more human, natural, and believable. Avoid glossy skin, impossible fabric, warped hands, and overly dramatic retouching.",
   },
   {
     title: "Improve the pose",
     prompt:
-      "Keep the same lighting, colors, wardrobe, background, and emotional mood, but make the pose more natural. Improve the body language, crop, and posture without changing the visual world.",
+      "Keep the same lighting, colors, wardrobe, background, and emotional mood, but make the pose more natural. Improve the body language, crop, and posture without changing the look.",
   },
   {
     title: "Make it softer",
     prompt:
-      "Keep the same visual world, colors, wardrobe, and background, but make it softer and more lifestyle. Soften the light, expression, pose, and contrast while keeping the identity cohesive.",
+      "Keep the same look, colors, wardrobe, and background, but make it softer and more lifestyle. Soften the light, expression, pose, and contrast while keeping the identity cohesive.",
   },
   {
     title: "Make it more editorial",
     prompt:
-      "Keep the same visual world, colors, wardrobe, and background, but make it stronger and more editorial. Add cleaner negative space, stronger posture, sharper framing, and a premium magazine-style feeling.",
+      "Keep the same look, colors, wardrobe, and background, but make it stronger and more editorial. Add cleaner negative space, stronger posture, sharper framing, and a premium magazine-style feeling.",
   },
   {
     title: "Create another version",
@@ -788,7 +738,7 @@ const keepFixDeleteColumns = [
       "Your skin and hair feel believable.",
       "Your expression feels natural.",
       "Your age feels accurate.",
-      "The image matches your Signature Visual World.",
+      "The image matches your Look.",
       "The image has a clear content use.",
       "You would actually post it.",
     ],
@@ -814,7 +764,7 @@ const keepFixDeleteColumns = [
       "Age, skin tone, or hair changed.",
       "The image belongs to a random aesthetic.",
       "It looks like another woman.",
-      "It breaks your Signature Visual World.",
+      "It breaks your Look.",
     ],
   },
 ]
@@ -836,7 +786,7 @@ const module4VisualExamples = [
     image:
       "/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-04-movement-transition.jpeg",
     objectPosition: "center 30%",
-    works: "The mood, movement, and visual world are strong enough to keep exploring.",
+    works: "The mood, movement, and look are strong enough to keep exploring.",
     off: "If the face feels slightly off, do not change the whole aesthetic. Fix the likeness, crop, or pose first.",
     next: "Use a fix prompt and ask for the same world with a more recognizable face.",
   },
@@ -866,7 +816,7 @@ const faceConsistencyChecks = [
 ]
 
 const brandConsistencyChecks = [
-  "My Signature Visual World",
+  "My Look",
   "My main colors",
   "My lighting direction",
   "My wardrobe direction",
@@ -876,12 +826,12 @@ const brandConsistencyChecks = [
   "My profile / offer / content style",
 ]
 
-const mayaReviewBrief = `Review this AI brand shoot image using my Visual Consistency Code.
+const mayaReviewBrief = `Review this AI brand shoot image using my Look.
 
 Image intended use: [profile photo / reel cover / lifestyle image / offer image / story image]
 
-My Visual Consistency Code:
-- Signature Visual World:
+My Look:
+- Look:
 - Main colors:
 - Lighting:
 - Wardrobe direction:
@@ -896,7 +846,7 @@ Tell me:
 1. Why you chose Keep, Fix, or Delete.
 2. What still looks like me.
 3. What looks off or too AI.
-4. Whether it still matches my Signature Visual World.
+4. Whether it still matches my Look.
 5. The best use case for this image.
 6. One fix prompt I can copy if the image is close but not there yet.
 
@@ -994,7 +944,7 @@ const module5OverlayExamples = [
   },
   {
     label: "Story CTA",
-    headline: "This is your visual world",
+    headline: "This is your look",
     subline: "Reply SHOOT for the next step",
     image: `${module5AssetBase}/story-intro-lipstick.jpg`,
     objectPosition: "center 28%",
@@ -1027,7 +977,7 @@ const module5SevenDayPlan = [
     title: "Story intro",
     use: "Share the source selfie, the result, and why this look feels like you.",
     caption:
-      "I started with a normal selfie and built this visual world from it. The goal was not perfect. The goal was recognizable.",
+      "I started with a normal selfie and built this look from it. The goal was not perfect. The goal was recognizable.",
     action: "Post 3-5 story frames: selfie, result, what changed, why it fits, and one reply keyword or link.",
   },
   {
@@ -1041,10 +991,10 @@ const module5SevenDayPlan = [
   {
     day: "Day 4",
     title: "Carousel",
-    use: "Teach the before, visual world, prompt, result, and what you kept.",
+    use: "Teach the before, look, prompt, result, and what you kept.",
     caption:
-      "The difference was not just the prompt. It was choosing one visual world before creating the image.",
-    action: "Build 5 slides: before, visual world, prompt direction, result, and what you would repeat.",
+      "The difference was not just the prompt. It was choosing one look before creating the image.",
+    action: "Build 5 slides: before, look, prompt direction, result, and what you would repeat.",
   },
   {
     day: "Day 5",
@@ -1075,7 +1025,7 @@ const module5SevenDayPlan = [
 const module5StoryFrames = [
   { title: "Start here", copy: "Show the normal selfie or starting point." },
   { title: "Reveal", copy: "Show the strongest brand shoot result." },
-  { title: "Why it works", copy: "Point out face, colors, mood, and visual world." },
+  { title: "Why it works", copy: "Point out face, colors, mood, and look." },
   { title: "Use it", copy: "Show where it becomes a profile photo, cover, or post." },
   { title: "Invite", copy: "Give one clear next step, link, or reply keyword." },
 ]
@@ -1091,7 +1041,7 @@ const module5CaptionHooks = [
   },
   {
     title: "Soft offer hook",
-    text: "If you want your own selfie to brand shoot, start with the guide and choose one visual world first.",
+    text: "If you want your own selfie to brand shoot, start with the guide and choose one look first.",
   },
 ]
 
@@ -1101,7 +1051,7 @@ const module5FinalChecklist = [
   "I chose one lifestyle or story image.",
   "I know which image points to my offer, guide, or next step.",
   "I have one 7-day posting plan instead of a folder of random images.",
-  "My first week repeats the same visual world.",
+  "My first week repeats the same look.",
 ]
 
 const modules = [
@@ -1118,7 +1068,7 @@ const modules = [
   },
   {
     number: "02",
-    title: "Choose Your Signature Visual World",
+    title: "Choose Your Look",
     outcome: "Choose the repeatable visual identity your audience can start recognizing you for.",
     image: "/images/ai-prompts/clean-girl-morning-shot-10.jpg",
     imagePosition: "center top",
@@ -1371,156 +1321,11 @@ function VisualWorldComparisonBlock() {
         variant="scattered"
       />
       <InstagramGridMockup
-        label="After: Signature Visual World"
-        copy="A signature visual world turns face, fashion, coffee, work, and quiet details into one recognizable personal brand."
+        label="After: Your Look"
+        copy="One repeatable look turns face, fashion, coffee, work, and quiet details into one recognizable personal brand."
         images={cohesiveGridImages}
         variant="signature"
       />
-    </div>
-  )
-}
-
-function BrandWorldSelectorBlock() {
-  return (
-    <div className="sbs-brand-world-grid">
-      {brandWorldCards.map(world => (
-        <article key={world.name} className="sbs-brand-world-card">
-          <div className="sbs-brand-world-images">
-            <figure className="sbs-brand-world-hero">
-              <Image
-                src={world.hero}
-                alt={`${world.name} hero image`}
-                fill
-                sizes="(max-width: 768px) 100vw, 34vw"
-                style={{ objectFit: "cover", objectPosition: "center top" }}
-              />
-            </figure>
-            <div className="sbs-brand-world-thumbs">
-              {world.supporting.map((image, index) => (
-                <figure key={image}>
-                  <Image
-                    src={image}
-                    alt={`${world.name} supporting image ${index + 1}`}
-                    fill
-                    sizes="(max-width: 768px) 45vw, 12vw"
-                    style={{ objectFit: "cover", objectPosition: "center top" }}
-                  />
-                </figure>
-              ))}
-            </div>
-          </div>
-          <div className="sbs-brand-world-copy">
-            <p className="sbs-kicker">{world.signal}</p>
-            <h4 className={cormorant.className}>{world.name}</h4>
-            <p>{world.feeling}</p>
-            <div className="sbs-brand-world-specs">
-              <span>
-                <strong>Color</strong>
-                {world.colorMood}
-              </span>
-              <span>
-                <strong>Light</strong>
-                {world.lighting}
-              </span>
-              <span>
-                <strong>Wardrobe</strong>
-                {world.wardrobe}
-              </span>
-              <span>
-                <strong>Background</strong>
-                {world.background}
-              </span>
-              <span>
-                <strong>Signal</strong>
-                {world.emotionalSignal}
-              </span>
-            </div>
-            <div className="sbs-choose-note">
-              <span>Choose this if</span>
-              <p>{world.chooseIf}</p>
-            </div>
-            <div className="sbs-starting-code">
-              <span>Starting Visual Consistency Code</span>
-              <VisualCodeSummary code={world.visualCode} compact />
-            </div>
-            <div className="sbs-best-use-row">
-              {[
-                ["Profile", world.profile],
-                ["Reel cover", world.reel],
-                ["Detail", world.detail],
-              ].map(([label, image]) => (
-                <figure key={`${world.name}-${label}`}>
-                  <Image
-                    src={image}
-                    alt={`${world.name} best ${label} image`}
-                    fill
-                    sizes="(max-width: 768px) 30vw, 8vw"
-                    style={{ objectFit: "cover", objectPosition: "center top" }}
-                  />
-                  <figcaption>{label}</figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
-  )
-}
-
-function VisualCodeSummary({ code, compact = false }: { code: VisualCode; compact?: boolean }) {
-  const rows = [
-    ["Colors", code.colors],
-    ["Lighting", code.lighting],
-    ["Wardrobe", code.wardrobe],
-    ["Background", code.background],
-    ["Signal", code.signal],
-    ["Repeat", code.repeat],
-    ["Avoid", code.avoid],
-  ]
-
-  return (
-    <div className={compact ? "sbs-visual-code-summary is-compact" : "sbs-visual-code-summary"}>
-      {rows.map(([label, value]) => (
-        <span key={label}>
-          <strong>{label}</strong>
-          {value}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function VisualCodeExamplesBlock() {
-  return (
-    <div className="sbs-visual-code-examples">
-      {visualCodeExamples.map(example => (
-        <article key={example.world}>
-          <div>
-            <p className="sbs-kicker">COMPLETED EXAMPLE</p>
-            <h4 className={cormorant.className}>{example.world}</h4>
-            <p>{example.note}</p>
-          </div>
-          <VisualCodeSummary code={example.code} />
-        </article>
-      ))}
-    </div>
-  )
-}
-
-function VisualConsistencyCodeBlock() {
-  return <VisualConsistencyCodeBuilder />
-}
-
-function WorldDecisionSelectorBlock() {
-  return (
-    <div className="sbs-world-decision-selector">
-      {worldDecisionRows.map(row => (
-        <article key={row.world}>
-          <p>{row.desire}</p>
-          <span>{row.world}</span>
-        </article>
-      ))}
     </div>
   )
 }
@@ -1532,7 +1337,7 @@ function OneWorldUsesBlock() {
         <figure key={item.label}>
           <Image
             src={item.image}
-            alt={`Clean Girl Founder Morning as ${item.label}`}
+            alt={`One look used as ${item.label}`}
             fill
             sizes="(max-width: 768px) 45vw, 11vw"
             style={{ objectFit: "cover", objectPosition: "center top" }}
@@ -1793,7 +1598,7 @@ function MayaReviewLayerBlock() {
         <h4 className={cormorant.className}>Ask Maya to review the image.</h4>
         <p>
           Upload your image in Maya or paste it into your AI workspace, then use this review brief
-          with your Visual Consistency Code. The goal is a clear Keep, Fix, or Delete decision.
+          with your Look. The goal is a clear Keep, Fix, or Delete decision.
         </p>
       </div>
       <div className="sbs-maya-review-steps">
@@ -2030,9 +1835,28 @@ export function SelfieToBrandShootCourseShell({
     const target = courseModules[index + 1]
     return target ? { number: target.number, title: target.title } : null
   }
+  const lookOptions: LookOption[] = brandWorldCards.map(world => ({
+    name: world.name,
+    swatches: world.swatches,
+    feeling: world.feeling,
+    chooseIf: world.chooseIf,
+    hero: world.hero,
+    code: {
+      signatureVisualWorld: world.name,
+      mainColors: world.visualCode.colors,
+      lighting: world.visualCode.lighting,
+      wardrobeDirection: world.visualCode.wardrobe,
+      backgroundWorld: world.visualCode.background,
+      emotionalSignal: world.visualCode.signal,
+      desiredFeeling: world.feeling,
+      repeatRules: world.visualCode.repeat,
+      avoidRules: world.visualCode.avoid,
+      firstShootDirection: "",
+    },
+  }))
 
   return (
-    <main className={`sbs2-page ${inter.className}`}>
+    <main className={`sbs2-page ${inter.className} ${cormorant.variable}`}>
       <header className="sbs2-header">
         <Link href="/" className={`sbs2-logo ${cormorant.className}`}>
           SSELFIE
@@ -2160,7 +1984,7 @@ export function SelfieToBrandShootCourseShell({
           <ModulePanel
             number={2}
             eyebrow="MODULE 02"
-            title="Choose Your Signature Visual World"
+            title="Choose Your Look"
             outcome="Choose the repeatable visual identity your audience can start recognizing you for."
             time="15 min"
             serifClass={cormorant.className}
@@ -2169,7 +1993,7 @@ export function SelfieToBrandShootCourseShell({
               <figure className="sbs2-cover-figure">
                 <Image
                   src="/images/selfie-to-brand-shoot/module-2-signature-world/signature-grid-01-hero-identity.jpeg"
-                  alt="Approved Signature Visual World identity image"
+                  alt="Approved Look identity image"
                   fill
                   sizes="(max-width: 900px) 100vw, 760px"
                   style={{ objectFit: "cover", objectPosition: "center 26%" }}
@@ -2180,22 +2004,22 @@ export function SelfieToBrandShootCourseShell({
 
             <LessonSection
               eyebrow="SANDRA'S RULE"
-              title="Choose a visual world you can repeat"
+              title="Choose a look you can repeat"
               open
             >
               <div className="sbs-taste-note sbs-taste-note-light">
                 <p>
-                  Do not choose a different aesthetic every time. Choose a visual world you can
+                  Do not choose a different aesthetic every time. Choose a look you can
                   repeat.
                 </p>
               </div>
             </LessonSection>
 
-            <LessonSection eyebrow="WHY IT MATTERS" title="Why your visual world matters" open>
+            <LessonSection eyebrow="WHY IT MATTERS" title="Why your look matters" open>
               <div className="sbs-world-lesson">
                 <div>
                   <p>
-                    A beautiful image can get attention. A repeatable visual world builds
+                    A beautiful image can get attention. A repeatable look builds
                     recognition.
                   </p>
                   <p>
@@ -2207,65 +2031,40 @@ export function SelfieToBrandShootCourseShell({
               </div>
             </LessonSection>
 
-            <LessonSection eyebrow="CORE CONCEPT" title="One world. Many uses." open>
+            <LessonSection eyebrow="CORE CONCEPT" title="One look. Many uses." open>
               <div className="sbs-worksheet-intro">
                 <p>
                   Your personal brand becomes easier to recognize when your profile photos, reel
-                  covers, stories, offers, and lifestyle content all repeat the same visual world.
+                  covers, stories, offers, and lifestyle content all repeat the same look.
                 </p>
               </div>
               <OneWorldUsesBlock />
             </LessonSection>
 
-            <LessonSection eyebrow="DECIDE" title="Choose this world if..." open>
+            <LessonSection eyebrow="CHOOSE YOUR LOOK" title="Tap the look you want to be known for" open>
               <div className="sbs-worksheet-intro">
                 <p>
-                  Start with the world that matches how you want your audience to feel when they
-                  land on your profile. This is a decision helper, not a quiz.
+                  Pick the one that matches how you want people to feel when they land on your
+                  profile. Tap it and it becomes your look. Maya uses it to build your shoot in
+                  Module 3. You can fine-tune it after.
                 </p>
               </div>
-              <WorldDecisionSelectorBlock />
+              <LookPicker options={lookOptions} serifClass={cormorant.className} />
             </LessonSection>
 
-            <LessonSection eyebrow="SELECTOR" title="Signature Visual World Selector" open>
-              <BrandWorldSelectorBlock />
-            </LessonSection>
-
-            <LessonSection eyebrow="EXAMPLES" title="Completed Visual Consistency Codes" open>
+            <LessonSection eyebrow="IF IT FEELS OFF" title="Stay in your look, adjust the volume">
               <div className="sbs-worksheet-intro">
                 <p>
-                  Read these first so the blank builder feels easy. Your answer can be simple. It
-                  just needs to be repeatable.
-                </p>
-              </div>
-              <VisualCodeExamplesBlock />
-            </LessonSection>
-
-            <LessonSection eyebrow="TASTE FIX" title="Stay in your world, adjust the volume">
-              <div className="sbs-worksheet-intro">
-                <p>
-                  If the first version does not feel right, do not abandon the whole identity.
-                  Adjust the intensity.
+                  If the first result does not feel right, do not switch looks. Just turn the
+                  intensity up or down.
                 </p>
               </div>
               <VolumeAdjustmentsBlock />
             </LessonSection>
 
-            <LessonSection eyebrow="FINAL OUTPUT" title="Signature Visual World Builder" open>
-              <div className="sbs-worksheet-intro">
-                <p>
-                  Use the world you chose above to fill in your visual code. You do not need a
-                  perfect answer. You need a clear starting direction you can repeat.
-                </p>
-              </div>
-              <VisualConsistencyCodeBlock />
-            </LessonSection>
-
-            <LessonSection eyebrow="ACTION STEP" title="My Signature Visual World is:">
+            <LessonSection eyebrow="ACTION STEP" title="My look is:">
               <div className="sbs-signature-line" aria-hidden="true" />
-              <p>
-                Use this world for your first 7-image brand shoot before you try another direction.
-              </p>
+              <p>Use this look for your first 7-image brand shoot before you try another one.</p>
             </LessonSection>
           </ModulePanel>
 
@@ -2324,7 +2123,7 @@ export function SelfieToBrandShootCourseShell({
               <div className="sbs-worksheet-intro">
                 <p>
                   Do not change the whole aesthetic every time a result is not perfect. Stay in the
-                  same visual world and adjust the face, light, pose, crop, or intensity.
+                  same look and adjust the face, light, pose, crop, or intensity.
                 </p>
               </div>
               <FixPromptCardsBlock />
@@ -2334,21 +2133,21 @@ export function SelfieToBrandShootCourseShell({
               <div className="sbs-taste-note">
                 <p>
                   Your first result does not need to be perfect. It needs to be close enough to
-                  teach you what works. Do not abandon your visual world because one image feels
+                  teach you what works. Do not abandon your look because one image feels
                   off. Fix the face, lighting, pose, or crop before you change the whole direction.
                 </p>
               </div>
             </LessonSection>
 
             <LessonSection
-              eyebrow="POWER LAYER"
+              eyebrow="WITH MAYA"
               title="Let Maya Build Your Brand Shoot Prompts"
               open
             >
               <MayaPromptConcierge headingClassName={cormorant.className} />
             </LessonSection>
 
-            <LessonSection eyebrow="SOFT UPGRADE" title="Want to generate these inside SSELFIE?">
+            <LessonSection eyebrow="OPTIONAL" title="Want to generate these inside SSELFIE?">
               <div className="sbs-upgrade-bridge">
                 <div>
                   <p>
@@ -2405,7 +2204,7 @@ export function SelfieToBrandShootCourseShell({
               <div className="sbs-worksheet-intro">
                 <p>
                   A good AI image is not only pretty. It still has to look believable, belong to
-                  your chosen visual world, and have a clear use in your content.
+                  your chosen look, and have a clear use in your content.
                 </p>
               </div>
               <Module4VisualExamplesBlock />
@@ -2424,7 +2223,7 @@ export function SelfieToBrandShootCourseShell({
               />
             </LessonSection>
 
-            <LessonSection eyebrow="BRAND CHECK" title="Does this still match my visual world?" open>
+            <LessonSection eyebrow="BRAND CHECK" title="Does this still match my look?" open>
               <div className="sbs-worksheet-intro">
                 <p>
                   Likeness matters first. Then check whether the image still fits the visual code
@@ -2432,20 +2231,20 @@ export function SelfieToBrandShootCourseShell({
                 </p>
               </div>
               <Module4ChecklistBlock
-                title="Does this still match my visual world?"
+                title="Does this still match my look?"
                 items={brandConsistencyChecks}
               />
             </LessonSection>
 
             <LessonSection
               eyebrow="MAYA REVIEW"
-              title="Ask Maya to review this image using your Visual Consistency Code"
+              title="Ask Maya to review this image using your Look"
               open
             >
               <MayaReviewLayerBlock />
             </LessonSection>
 
-            <LessonSection eyebrow="FINAL OUTPUT" title="My Final Brand Shoot Selects" open>
+            <LessonSection eyebrow="YOUR SELECTS" title="My final brand shoot picks" open>
               <div className="sbs-worksheet-intro">
                 <p>
                   Choose your best 3-7 images. Each selected image should have a reason, a use, and
@@ -2487,7 +2286,7 @@ export function SelfieToBrandShootCourseShell({
             <LessonSection eyebrow="CONTENT SYSTEM" title="One shoot, many uses" open>
               <div className="sbs-worksheet-intro">
                 <p>
-                  You do not need seven different aesthetics. You need one visual world that can
+                  You do not need seven different aesthetics. You need one look that can
                   become different kinds of content.
                 </p>
               </div>
@@ -2507,7 +2306,7 @@ export function SelfieToBrandShootCourseShell({
             <LessonSection eyebrow="FEED PREVIEW" title="3x3 Mini Feed Planner" open>
               <div className="sbs-worksheet-intro">
                 <p>
-                  Plan variety inside one visual world: face, movement, detail, work, lifestyle,
+                  Plan variety inside one look: face, movement, detail, work, lifestyle,
                   offer, and quiet breathing space.
                 </p>
               </div>
@@ -3186,17 +2985,23 @@ export function SelfieToBrandShootCourseShell({
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .sbs-taste-note {
-          padding: clamp(20px, 3vw, 30px);
-          background: #282728;
+          padding: clamp(24px, 3.5vw, 40px) clamp(22px, 3vw, 38px);
+          background: #0D0E10;
+          border-radius: 14px;
         }
         .sbs-taste-note p {
+          margin: 0;
           color: #F8FAFA;
-          font-size: clamp(1.3rem, 2.2vw, 1.8rem);
-          line-height: 1.55;
+          font-family: var(--font-cormorant), Georgia, "Times New Roman", serif;
+          font-size: clamp(1.6rem, 3vw, 2.4rem);
+          font-weight: 300;
+          font-style: italic;
+          line-height: 1.3;
+          letter-spacing: -0.01em;
         }
         .sbs-taste-note-light {
-          background: #F8FAFA;
-          border: 1px solid rgba(197,198,200,0.35);
+          background: #FFFFFF;
+          border: 1px solid rgba(40, 39, 40, 0.12);
         }
         .sbs-taste-note-light p {
           color: #0D0E10;
@@ -5309,7 +5114,7 @@ export function SelfieToBrandShootCourseShell({
           margin-bottom: 0;
         }
 
-        /* ----- Saved visual world recap ----- */
+        /* ----- Saved look recap ----- */
         .sbs2-recap {
           margin: 4px 0 8px;
           padding: clamp(20px, 3vw, 30px);
@@ -5397,6 +5202,196 @@ export function SelfieToBrandShootCourseShell({
           font-weight: 300;
           letter-spacing: -0.015em;
           line-height: 1;
+        }
+
+        /* ----- Look picker (tap to choose your look) ----- */
+        .sbs2-lookpicker {
+          margin-top: 4px;
+        }
+        .sbs2-look-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+          gap: 16px;
+        }
+        .sbs2-look-card {
+          display: flex;
+          flex-direction: column;
+          padding: 0;
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          background: #FFFFFF;
+          text-align: left;
+          cursor: pointer;
+          overflow: hidden;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+        .sbs2-look-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 18px 40px -28px rgba(13, 14, 16, 0.5);
+          border-color: var(--stone, #8A8780);
+        }
+        .sbs2-look-card.is-selected {
+          border-color: var(--ink);
+          box-shadow: inset 0 0 0 1px var(--ink);
+        }
+        .sbs2-look-img {
+          position: relative;
+          display: block;
+          aspect-ratio: 4 / 5;
+          background: #ECEEEE;
+          overflow: hidden;
+        }
+        .sbs2-look-img img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center top;
+        }
+        .sbs2-look-check {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: var(--ink);
+          color: #FFFFFF;
+          opacity: 0;
+          transform: scale(0.7);
+          transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .sbs2-look-card.is-selected .sbs2-look-check {
+          opacity: 1;
+          transform: scale(1);
+        }
+        .sbs2-look-body {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          padding: 18px 18px 20px;
+          flex: 1;
+        }
+        .sbs2-look-swatches {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 2px;
+        }
+        .sbs2-look-swatches span {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          border: 1px solid rgba(40, 39, 40, 0.14);
+        }
+        .sbs2-look-name {
+          color: var(--ink);
+          font-size: clamp(1.35rem, 2vw, 1.7rem);
+          font-weight: 400;
+          line-height: 1.05;
+        }
+        .sbs2-look-feeling {
+          color: var(--body);
+          font-size: 13.5px;
+          line-height: 1.55;
+        }
+        .sbs2-look-choose {
+          color: var(--muted);
+          font-size: 12.5px;
+          line-height: 1.5;
+        }
+        .sbs2-look-choose em {
+          display: inline;
+          font-style: normal;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          font-size: 9.5px;
+          color: var(--ink);
+        }
+        .sbs2-look-cta {
+          margin-top: auto;
+          padding-top: 6px;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--muted);
+        }
+        .sbs2-look-card.is-selected .sbs2-look-cta {
+          color: var(--ink);
+        }
+        .sbs2-look-hint {
+          margin: 16px 0 0;
+          color: var(--muted);
+          font-size: 13.5px;
+        }
+        .sbs2-look-saved {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px 20px;
+          margin-top: 18px;
+          padding: 18px 22px;
+          background: #FFFFFF;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+        }
+        .sbs2-look-saved p {
+          margin: 0;
+          color: var(--body);
+          font-size: 14.5px;
+        }
+        .sbs2-look-saved strong {
+          color: var(--ink);
+          font-weight: 600;
+        }
+        .sbs2-look-tune {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-top: 16px;
+          padding-top: 22px;
+          border-top: 1px solid var(--line);
+        }
+        .sbs2-look-tune label {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+        .sbs2-look-tune label span {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--muted);
+        }
+        .sbs2-look-tune textarea {
+          width: 100%;
+          padding: 12px 14px;
+          border: 1px solid var(--line);
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: var(--ink);
+          font: inherit;
+          font-size: 14px;
+          line-height: 1.5;
+          resize: vertical;
+        }
+        .sbs2-look-tune textarea:focus {
+          outline: none;
+          border-color: var(--ink);
+        }
+        .sbs2-look-tune-foot {
+          grid-column: 1 / -1;
+        }
+
+        @media (max-width: 640px) {
+          .sbs2-look-tune {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 900px) {
