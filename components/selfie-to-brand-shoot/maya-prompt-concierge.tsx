@@ -24,7 +24,7 @@ const emptyVisualCode: SelfieToBrandShootVisualCode = {
 }
 
 const codeFields: Array<{ key: keyof SelfieToBrandShootVisualCode; label: string }> = [
-  { key: "signatureVisualWorld", label: "Signature Visual World" },
+  { key: "signatureVisualWorld", label: "Your look" },
   { key: "mainColors", label: "Main colors" },
   { key: "lighting", label: "Lighting" },
   { key: "wardrobeDirection", label: "Wardrobe direction" },
@@ -99,7 +99,7 @@ export function MayaPromptConcierge({ headingClassName = "" }: { headingClassNam
   async function buildPromptPack() {
     if (!hasVisualCode) {
       setStatus("error")
-      setMessage("Paste your Visual Consistency Code first.")
+      setMessage("Choose your look in Module 2 first.")
       return
     }
 
@@ -157,16 +157,16 @@ export function MayaPromptConcierge({ headingClassName = "" }: { headingClassNam
           <p className="sbs-kicker">MAYA BRAND SHOOT CONCIERGE</p>
           <h4 className={headingClassName}>Let Maya Build Your Brand Shoot Prompts</h4>
           <p>
-            Maya takes the visual world you chose in Module 2 and turns it into prompts you can copy
-            into ChatGPT with your source selfie.
+            Maya takes the look you chose in Module 2 and turns it into prompts you can copy into
+            ChatGPT with your source selfie.
           </p>
         </div>
         <div className="sbs-concierge-step">
           <span>Step 01</span>
-          <h5 className={headingClassName}>Paste your Visual Consistency Code</h5>
+          <h5 className={headingClassName}>Your saved look</h5>
           <p>
-            Paste your Visual Consistency Code from Module 2. Maya will turn it into a custom prompt
-            set for your first brand shoot.
+            This is the look you saved in Module 2. Maya turns it into a custom prompt set for your
+            first brand shoot. Edit anything you want to adjust.
           </p>
           <div className="sbs-concierge-input-grid">
             {codeFields.map(field => (
@@ -236,7 +236,7 @@ export function MayaPromptConcierge({ headingClassName = "" }: { headingClassNam
           <h5 className={headingClassName}>Your Prompt Pack</h5>
           <p>
             Copy these into ChatGPT with your source selfie. Start with the first three, then use
-            the extras when you need more content from the same visual world.
+            the extras when you need more content from the same look.
           </p>
         </div>
         <ConciergeOutputGroup

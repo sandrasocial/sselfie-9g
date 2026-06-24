@@ -482,13 +482,13 @@ export function SignatureWorldRecap({ serifClass }: { serifClass: string }) {
   if (!world) {
     return (
       <div className="sbs2-recap sbs2-recap-empty">
-        <p className="sbs2-eyebrow">YOUR VISUAL WORLD</p>
+        <p className="sbs2-eyebrow">YOUR LOOK</p>
         <p>
-          You haven&apos;t saved your Signature Visual World yet. Fill it in inside Module 2 and it
-          will appear here so every shoot stays in the same world.
+          You haven&apos;t chosen your look yet. Pick one in Module 2 and it will appear here, so
+          every shoot stays in the same look.
         </p>
         <a href="#module-2" className="sbs2-text-link">
-          Go to the builder
+          Choose your look
         </a>
       </div>
     )
@@ -502,7 +502,7 @@ export function SignatureWorldRecap({ serifClass }: { serifClass: string }) {
 
   return (
     <div className="sbs2-recap">
-      <p className="sbs2-eyebrow">YOUR SAVED VISUAL WORLD</p>
+      <p className="sbs2-eyebrow">YOUR SAVED LOOK</p>
       <p className={`sbs2-recap-world ${serifClass}`}>{world}</p>
       {details.length > 0 ? (
         <dl className="sbs2-recap-grid">
@@ -514,9 +514,200 @@ export function SignatureWorldRecap({ serifClass }: { serifClass: string }) {
           ))}
         </dl>
       ) : null}
-      <p className="sbs2-recap-note">Keep every image in this world before you try another direction.</p>
+      <p className="sbs2-recap-note">Keep every image in this look before you try another one.</p>
     </div>
   )
+}
+
+/* ------------------------------- Look picker ----------------------------- */
+
+export type LookCode = {
+  signatureVisualWorld: string
+  mainColors: string
+  lighting: string
+  wardrobeDirection: string
+  backgroundWorld: string
+  emotionalSignal: string
+  desiredFeeling: string
+  repeatRules: string
+  avoidRules: string
+  firstShootDirection: string
+}
+
+export type LookOption = {
+  name: string
+  swatches: string[]
+  feeling: string
+  chooseIf: string
+  hero: string
+  code: LookCode
+}
+
+const FINE_TUNE_FIELDS: Array<{ key: keyof LookCode; label: string }> = [
+  { key: "signatureVisualWorld", label: "Look name" },
+  { key: "mainColors", label: "Colors" },
+  { key: "lighting", label: "Lighting" },
+  { key: "wardrobeDirection", label: "Wardrobe" },
+  { key: "backgroundWorld", label: "Backgrounds" },
+  { key: "emotionalSignal", label: "Signal" },
+  { key: "desiredFeeling", label: "What people feel" },
+  { key: "repeatRules", label: "What I repeat" },
+  { key: "avoidRules", label: "What I avoid" },
+  { key: "firstShootDirection", label: "First shoot idea" },
+]
+
+export function LookPicker({
+  options,
+  serifClass,
+}: {
+  options: LookOption[]
+  serifClass: string
+}) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const [code, setCode] = useState<LookCode | null>(null)
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [tuning, setTuning] = useState(false)
+
+  // Preselect from a previously saved look.
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/selfie-to-brand-shoot/visual-code")
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (cancelled || !data?.visualCode) return
+        const saved = data.visualCode as Partial<LookCode>
+        const name = saved.signatureVisualWorld?.trim()
+        if (name) {
+          setSelected(name)
+          setCode({ ...emptyLookCode, ...saved } as LookCode)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function save(next: LookCode, pickedName: string) {
+    setSelected(pickedName)
+    setCode(next)
+    setStatus("saving")
+    try {
+      const res = await fetch("/api/selfie-to-brand-shoot/visual-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visualCode: next }),
+      })
+      if (!res.ok) throw new Error()
+      setStatus("saved")
+      window.dispatchEvent(new CustomEvent("sbs:look-saved"))
+    } catch {
+      setStatus("error")
+    }
+  }
+
+  function pick(option: LookOption) {
+    save(option.code, option.name)
+  }
+
+  return (
+    <div className="sbs2-lookpicker">
+      <div className="sbs2-look-grid">
+        {options.map(option => {
+          const isOn = selected === option.name
+          return (
+            <button
+              key={option.name}
+              type="button"
+              className={`sbs2-look-card${isOn ? " is-selected" : ""}`}
+              aria-pressed={isOn}
+              onClick={() => pick(option)}
+            >
+              <span className="sbs2-look-img">
+                <img src={option.hero} alt={`${option.name} look`} loading="lazy" />
+                <span className="sbs2-look-check" aria-hidden="true">
+                  <Check />
+                </span>
+              </span>
+              <span className="sbs2-look-body">
+                <span className="sbs2-look-swatches" aria-hidden="true">
+                  {option.swatches.map((hex, i) => (
+                    <span key={`${option.name}-${i}`} style={{ background: hex }} />
+                  ))}
+                </span>
+                <span className={`sbs2-look-name ${serifClass}`}>{option.name}</span>
+                <span className="sbs2-look-feeling">{option.feeling}</span>
+                <span className="sbs2-look-choose">
+                  <em>Choose this if</em> {option.chooseIf}
+                </span>
+                <span className="sbs2-look-cta">{isOn ? "Your look ✓" : "Choose this look"}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {selected ? (
+        <div className="sbs2-look-saved" aria-live="polite">
+          <p>
+            <strong>{selected}</strong> is your look.{" "}
+            {status === "saving"
+              ? "Saving…"
+              : status === "error"
+                ? "Could not save — try again."
+                : "Saved. Maya uses this in Module 3."}
+          </p>
+          <button type="button" className="sbs2-text-link" onClick={() => setTuning(t => !t)}>
+            {tuning ? "Hide fine-tune" : "Fine-tune your look"}
+          </button>
+        </div>
+      ) : (
+        <p className="sbs2-look-hint">Tap a look to make it yours. You can fine-tune it after.</p>
+      )}
+
+      {tuning && code ? (
+        <div className="sbs2-look-tune">
+          {FINE_TUNE_FIELDS.map(field => (
+            <label key={field.key}>
+              <span>{field.label}</span>
+              <textarea
+                rows={2}
+                value={code[field.key] || ""}
+                onChange={event =>
+                  setCode(current =>
+                    current ? { ...current, [field.key]: event.target.value } : current
+                  )
+                }
+              />
+            </label>
+          ))}
+          <div className="sbs2-look-tune-foot">
+            <button
+              type="button"
+              className="sbs2-btn sbs2-btn-primary"
+              onClick={() => code && save(code, code.signatureVisualWorld || selected || "")}
+              disabled={status === "saving"}
+            >
+              {status === "saving" ? "Saving" : "Save changes"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+const emptyLookCode: LookCode = {
+  signatureVisualWorld: "",
+  mainColors: "",
+  lighting: "",
+  wardrobeDirection: "",
+  backgroundWorld: "",
+  emotionalSignal: "",
+  desiredFeeling: "",
+  repeatRules: "",
+  avoidRules: "",
+  firstShootDirection: "",
 }
 
 /* -------------------------------- helpers -------------------------------- */
