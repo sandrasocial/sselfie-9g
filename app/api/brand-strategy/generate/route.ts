@@ -6,6 +6,7 @@ import { sql } from "@/lib/db/client"
 import { generateBrandStrategyPaidDeliveryEmail } from "@/lib/email/templates/brand-strategy-paid-delivery"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateFreebieStrategy } from "@/lib/freebie/generate-brand-strategy"
+import { hasPaidSelfieToBrandShootAccess } from "@/lib/freebie/selfie-to-brand-shoot-access"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 
@@ -26,7 +27,12 @@ interface GenerateRequestBody {
 async function resolveAuthenticatedBrandStrategyContext() {
   const { authUser, neonUser } = await requireAcademyUser()
   const entitlementState = await getAcademyEntitlementState(neonUser.id)
-  const hasAccess = entitlementState.accessibleProductIds.includes("brand_strategy_pack")
+  // Brand Strategy is bundled into Selfie to Brand Shoot (Step 0). Accept either the
+  // entitlement OR paid SBS access, so buyers without a userId-linked entitlement row
+  // (e.g. checkout before account creation) can still complete it.
+  const hasAccess =
+    entitlementState.accessibleProductIds.includes("brand_strategy_pack") ||
+    (await hasPaidSelfieToBrandShootAccess(authUser.email || neonUser.email))
 
   if (!hasAccess) {
     return NextResponse.json(
