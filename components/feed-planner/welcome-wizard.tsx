@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -8,12 +8,9 @@ import { motion, AnimatePresence } from "framer-motion"
 import { DesignClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 import Image from "next/image"
-import { FEED_STARTER_STYLE_MAP, type FeedStarterStyleId } from "@/lib/style-presets"
+import type { FeedStarterStyleId } from "@/lib/style-presets"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
-// Feed style examples (matching unified wizard)
-const feedExamples = FEED_STARTER_STYLE_MAP
 
 export type FeedStyle = FeedStarterStyleId
 
@@ -23,9 +20,6 @@ interface WelcomeWizardProps {
   onDismiss?: () => void
   onUsePreviewStyle?: () => void // Callback when user chooses to use preview style
   onChooseNewStyle?: () => void // Callback when user chooses to select new style
-  onFeedStyleSelected?: (feedStyle: FeedStyle) => void // Callback when user selects a feed style
-  defaultFeedStyle?: FeedStyle | null // User's last selected feed style
-  userChosePreviewStyle?: boolean | null // Track if user chose to use preview style (skip style selection step)
 }
 
 /**
@@ -44,12 +38,8 @@ export default function WelcomeWizard({
   onDismiss,
   onUsePreviewStyle,
   onChooseNewStyle,
-  onFeedStyleSelected,
-  defaultFeedStyle,
-  userChosePreviewStyle,
 }: WelcomeWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [selectedFeedStyle, setSelectedFeedStyle] = useState<FeedStyle>(defaultFeedStyle || "minimal")
   
   // Fetch preview feed data (only for paid users who upgraded from free)
   const { data: previewFeedData, isLoading: isLoadingPreview } = useSWR(
@@ -64,9 +54,9 @@ export default function WelcomeWizard({
   const hasPreviewFeed = previewFeedData?.hasPreviewFeed === true
   const previewImageUrl = previewFeedData?.previewImageUrl || null
 
-  const handleComplete = () => {
+  const handleComplete = useCallback(() => {
     onComplete()
-  }
+  }, [onComplete])
 
   const handleDismiss = () => {
     if (onDismiss) {
@@ -75,13 +65,6 @@ export default function WelcomeWizard({
       handleComplete()
     }
   }
-
-  // Update selected style when default changes
-  useEffect(() => {
-    if (defaultFeedStyle) {
-      setSelectedFeedStyle(defaultFeedStyle)
-    }
-  }, [defaultFeedStyle])
 
   // Dynamic first step content based on whether user has preview feed
   // Use useMemo to prevent recreation on every render
@@ -174,7 +157,6 @@ export default function WelcomeWizard({
   }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle, handleComplete])
 
   // Max 3 steps (A-02 / §1.4): Welcome → How it works → You're ready
-  const totalSteps = 3
   const steps = useMemo(() => {
     const stepList = []
 
@@ -240,7 +222,7 @@ export default function WelcomeWizard({
     })
 
     return stepList
-  }, [hasPreviewFeed, previewImageUrl, firstStepContent])
+  }, [handleComplete, hasPreviewFeed, previewImageUrl, firstStepContent])
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {

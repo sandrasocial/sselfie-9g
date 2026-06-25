@@ -318,9 +318,7 @@ export default function InstagramFeedView({
         sessionStorage.setItem(`warned-no-prediction-${feedId}`, 'true')
       }
     }
-  }, [feedData?.posts?.length, feedId]) // Only re-run when post count changes, not on every render
-
-  const generatingPosts = postStatuses.filter((p: any) => p.isGenerating)
+  }, [feedData.feed?.created_at, feedData.posts, feedId])
 
   // Handle error responses
   if (feedData?.error) {
@@ -468,7 +466,6 @@ export default function InstagramFeedView({
   
   // For manual feeds, show grid even if not complete (allow adding images)
   // For Maya feeds, show loading overlay while actively generating (bulk generation only)
-  const hasGeneratingPosts = postStatuses.some((p: any) => p.isGenerating)
   const isMayaProcessing = feedData?.feed?.status === 'processing' || 
                           feedData?.feed?.status === 'queueing' ||
                           feedData?.feed?.status === 'generating'
@@ -480,10 +477,7 @@ export default function InstagramFeedView({
   // - Manual feeds (they always show grid)
   // - Free users (single placeholder)
   // - Single image generation (show grid with inline loading instead)
-  const generatingPostsCount = postStatuses.filter((p: any) => p.isGenerating).length
   const isBulkGeneration = isMayaProcessing // Feed is in bulk setup phase
-  const isSingleImageGeneration = hasGeneratingPosts && !isMayaProcessing && generatingPostsCount <= 3 // Few posts generating, not bulk
-  
   const shouldShowLoadingOverlay = !isManualFeed && 
                                    access?.placeholderType !== "single" && // Never show for free users (single placeholder)
                                    feedData?.feed && // Must have feed data
@@ -588,7 +582,7 @@ export default function InstagramFeedView({
                   access={access} // Phase 5.1: Pass access control for image generation
                   onPostClick={setSelectedPost}
                   onAddImage={setShowGallery}
-                  onGenerateImage={async (postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
+                  onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
                   onRequireFeedStyle={onRequireFeedStyle}
                   onRequireOnboarding={onOpenWizard}
                   onDragStart={dragDrop.handleDragStart}

@@ -51,7 +51,6 @@ export async function createLandingCheckoutSession(
     throw new Error(`Product with id "${productId}" not found`)
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
   const checkoutProductType =
     product.type === "sselfie_studio_membership_annual"
@@ -434,7 +433,7 @@ export async function getUserByStripeSession(sessionId: string) {
     emailCache.set(sessionId, { email, timestamp: Date.now() })
 
     return getUserByEmail(email)
-  } catch (error: any) {
+  } catch {
     return null
   }
 }

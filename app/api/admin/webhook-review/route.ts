@@ -12,7 +12,7 @@ import { sql } from "@/lib/db/client"
 export const dynamic = "force-dynamic"
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-async function requireAdmin(req: NextRequest): Promise<NextResponse | null> {
+async function requireAdmin(): Promise<NextResponse | null> {
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -24,7 +24,7 @@ async function requireAdmin(req: NextRequest): Promise<NextResponse | null> {
 }
 
 export async function GET(req: NextRequest) {
-  const authError = await requireAdmin(req)
+  const authError = await requireAdmin()
   if (authError) return authError
 
   const showResolved = req.nextUrl.searchParams.get("resolved") === "true"
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const authError = await requireAdmin(req)
+  const authError = await requireAdmin()
   if (authError) return authError
 
   const supabase = await createServerClient()

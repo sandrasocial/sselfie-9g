@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
           console.warn("[Auth Auto-Confirm] ⚠️ Email mismatch - authenticated user:", authUser.email, "requested:", email)
         }
       }
-    } catch (authError) {
+    } catch {
       // No session exists - will check secret key below
       console.log("[Auth Auto-Confirm] No authenticated session, checking secret key...")
     }
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     // 1. Authenticated session (authUser.id)
     // 2. Secret-based auth with userId provided (userId)
     // 3. Secret-based auth without userId (found via email lookup)
-    let userToConfirm = verifiedUserId
+    const userToConfirm = verifiedUserId
 
     // Only need to find user if verifiedUserId is still null (shouldn't happen, but safety check)
     if (!userToConfirm) {

@@ -34,7 +34,7 @@ async function checkAdminAccess() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })

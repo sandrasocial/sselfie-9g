@@ -27,7 +27,7 @@ interface FeedPlannerClientProps {
  * - Paid first-time users: Show wizard (skip free example)
  * - Paid returning users: Skip wizard
  */
-export default function FeedPlannerClient({ access: accessProp, userId, userName }: FeedPlannerClientProps) {
+export default function FeedPlannerClient({ access: accessProp, userName }: FeedPlannerClientProps) {
   const router = useRouter()
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
@@ -35,8 +35,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const [wizardMode, setWizardMode] = useState<"selfie_first" | "none">("none")
   // State to track if we should open wizard at step 4 (visual style selection)
   const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined)
-  // State to track user's choice from preview feed step (must be before conditional returns)
-  const [userChosePreviewStyle, setUserChosePreviewStyle] = useState<boolean | null>(null)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
   const { mutate } = useSWRConfig()
   
@@ -98,7 +96,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
   // Fetch existing personal brand data (always fetch, SWR handles caching)
   // This is the single source of truth - no localStorage needed
-  const { data: personalBrandData, mutate: mutatePersonalBrand, isLoading: isLoadingPersonalBrand } = useSWR(
+  const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
     "/api/profile/personal-brand",
     fetcher,
     {
@@ -113,16 +111,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Fetch welcome wizard status (for paid blueprint users)
   const { data: welcomeStatus, isLoading: isLoadingWelcome } = useSWR(
     "/api/feed-planner/welcome-status",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
-    }
-  )
-
-  // Fetch academy products for contextual hint
-  const { data: myProductsData } = useSWR(
-    access?.isPaidBlueprint ? "/api/academy/my-products" : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -157,12 +145,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     return posts.some((post: any) => Boolean(post?.image_url))
   }, [latestFeedData])
 
-  const hasFeed = useMemo(() => {
-    const feedId = latestFeedData?.feed?.id
-    const posts = Array.isArray(latestFeedData?.posts) ? latestFeedData.posts : []
-    return Boolean(feedId || posts.length > 0)
-  }, [latestFeedData])
-
   const activationChecklist = useMemo(
     () =>
       getActivationChecklist({
@@ -173,12 +155,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       }),
     [access?.isFree, hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
   )
-
-  const productHint = useMemo(() => {
-    const purchases = Array.isArray(myProductsData?.purchases) ? myProductsData.purchases : []
-    const hasWhatToSay = purchases.some((product: any) => product.id === "what_to_say")
-    return hasWhatToSay ? "Caption help" : null
-  }, [myProductsData?.purchases])
 
   // Determine if wizard is needed
   // React to access and onboardingStatus changes, but respect manual close
@@ -566,7 +542,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Handle "Use Preview Style" - create feed with existing data
   const handleUsePreviewStyle = async () => {
     console.log("[Welcome Wizard] User chose to use preview style")
-    setUserChosePreviewStyle(true)
     // The existing onboarding data will be used when creating the feed
     // Continue with tutorial (skip style selection step)
   }
@@ -574,7 +549,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Handle "Choose New Style" - open feed style picker modal (not full wizard)
   const handleChooseNewStyle = () => {
     console.log("[Welcome Wizard] User chose to select new style - opening feed style picker modal")
-    setUserChosePreviewStyle(false)
     // Close welcome wizard and open feed style modal
     setShowWelcomeWizard(false)
     setShowFeedStyleModal(true)
@@ -679,7 +653,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
           onDismiss={handleWelcomeWizardComplete}
           onUsePreviewStyle={handleUsePreviewStyle}
           onChooseNewStyle={handleChooseNewStyle}
-          userChosePreviewStyle={userChosePreviewStyle}
         />
       )}
     </>

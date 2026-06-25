@@ -34,8 +34,6 @@ export async function startCreditCheckoutSession(packageId: string, promoCode?: 
     throw new Error("User not found")
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-
   let validatedCoupon = null
   if (promoCode) {
     try {
@@ -43,7 +41,7 @@ export async function startCreditCheckoutSession(packageId: string, promoCode?: 
       if (coupon.valid) {
         validatedCoupon = coupon.id
       }
-    } catch (error) {
+    } catch {
       // Invalid coupon code - will be handled by showing error to user
       throw new Error("Invalid promo code")
     }

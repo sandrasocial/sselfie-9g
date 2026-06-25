@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
@@ -47,7 +47,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // Use controlled state if provided, otherwise use local state
   const showFeedStyleModal = controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
   
-  const setShowFeedStyleModal = (open: boolean) => {
+  const setShowFeedStyleModal = useCallback((open: boolean) => {
     if (controlledFeedStyleModal !== undefined) {
       // Parent controls the modal - notify parent
       onFeedStyleModalChange?.(open)
@@ -55,7 +55,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       // Local state - update directly
       setLocalFeedStyleModal(open)
     }
-  }
+  }, [controlledFeedStyleModal, onFeedStyleModalChange])
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -97,7 +97,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       didOpenFeedStyleFromQuery.current = true
       setShowFeedStyleModal(true)
     }
-  }, [searchParams])
+  }, [searchParams, setShowFeedStyleModal])
 
   useEffect(() => {
     if (!didOpenWizardFromQuery.current && searchParams.get("openWizard") === "1") {
@@ -112,7 +112,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       didOpenCreateFirstFeedFromQuery.current = true
       setShowFeedStyleModal(true)
     }
-  }, [createFirstFeedParam])
+  }, [createFirstFeedParam, setShowFeedStyleModal])
 
   // Phase 4.1: Use standard feed endpoints (removed blueprint endpoint)
   // Use specific feedId or latest feed
@@ -150,7 +150,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const feedExists = feedData?.exists !== false && (feedData?.feed || feedData?.posts)
 
   // Fetch feed list for selector (only if we have a feed)
-  const { data: feedListData, mutate: mutateFeedList } = useSWR(
+  const { mutate: mutateFeedList } = useSWR(
     feedExists ? '/api/feed/list' : null,
     fetcher,
     {
@@ -225,10 +225,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     if (access && feedData && !isLoading) {
       expandFeedIfNeeded()
     }
-  }, [access?.isPaidBlueprint, feedData?.posts, feedData?.feed, isLoading, isExpandingFeed, mutateFeedList])
-
-  const feeds = feedListData?.feeds || []
-  const hasMultipleFeeds = feeds.length > 1
+  }, [access, feedData, isLoading, isExpandingFeed, mutateFeedList, router])
 
   // Phase 5.3.2: Auto-create feed for free users when no feed exists
   useEffect(() => {
@@ -472,12 +469,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       </div>
     )
   }
-
-  const handleFeedChange = (newFeedId: number) => {
-    router.push(`/feed-planner?feedId=${newFeedId}`)
-  }
-
-  const currentFeedTitle = feedData?.feed?.brand_name || `Feed ${effectiveFeedId}`
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
