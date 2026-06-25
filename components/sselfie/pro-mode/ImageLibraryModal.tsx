@@ -77,10 +77,10 @@ export default function ImageLibraryModal({
       intent: library.intent,
     }
   }, [
-    library.selfies.sort().join('|'),
-    library.products.sort().join('|'),
-    library.people.sort().join('|'),
-    library.vibes.sort().join('|'),
+    library.selfies,
+    library.products,
+    library.people,
+    library.vibes,
     library.intent,
   ])
 

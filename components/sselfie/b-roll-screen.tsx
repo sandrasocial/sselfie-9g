@@ -105,11 +105,10 @@ export default function BRollScreen({ user }: BRollScreenProps) {
     },
   })
 
-  const allVideos: GeneratedVideo[] = videosData?.videos || []
-
   // Create a map of videos by image_id for efficient lookup
   // This ensures React properly detects changes and re-renders when videos update
   const videosByImageId = useMemo(() => {
+    const allVideos: GeneratedVideo[] = videosData?.videos || []
     const map = new Map<string, GeneratedVideo>()
     allVideos.forEach((video) => {
       if (video.image_id != null && video.status === "completed" && video.video_url) {
@@ -124,7 +123,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
       imageIds: Array.from(map.keys()),
     })
     return map
-  }, [allVideos])
+  }, [videosData?.videos])
 
   const handleNavigation = (tab: string) => {
     window.location.hash = tab
@@ -401,12 +400,13 @@ export default function BRollScreen({ user }: BRollScreenProps) {
     })
 
     // Cleanup function - only clear on unmount
+    const activePollIntervals = pollIntervalsRef.current
     return () => {
       // Only clear if component is unmounting (videoPredictions is empty)
       // Otherwise, let intervals persist
       if (videoPredictions.size === 0) {
-        pollIntervalsRef.current.forEach((interval) => clearInterval(interval))
-        pollIntervalsRef.current.clear()
+        activePollIntervals.forEach((interval) => clearInterval(interval))
+        activePollIntervals.clear()
       }
     }
   }, [videoPredictions, mutateVideos])

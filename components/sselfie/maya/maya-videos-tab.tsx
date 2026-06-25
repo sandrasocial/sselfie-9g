@@ -111,10 +111,9 @@ export default function MayaVideosTab({
     revalidateOnFocus: false,
   })
 
-  const apiImages: BRollImage[] = imagePages ? imagePages.flatMap((page) => page.images || []) : []
-  
   // Merge shared images with API images, deduplicate by image_url
   const allImages: Array<BRollImage | { id: string; image_url: string; prompt: string; description: string | null; category: string | null; subcategory: string | null; created_at: string; isShared?: boolean }> = useMemo(() => {
+    const apiImages: BRollImage[] = imagePages ? imagePages.flatMap((page) => page.images || []) : []
     const imageUrlSet = new Set<string>()
     const merged: Array<any> = []
     
@@ -144,7 +143,7 @@ export default function MayaVideosTab({
     })
     
     return merged
-  }, [sharedImages, apiImages])
+  }, [sharedImages, imagePages])
   
   const hasMore = imagePages?.[imagePages.length - 1]?.hasMore ?? false
   const isLoadingMore = isValidating && imagePages && imagePages.length > 0
@@ -156,10 +155,9 @@ export default function MayaVideosTab({
     dedupingInterval: 2000,
   })
 
-  const allVideos: GeneratedVideo[] = videosData?.videos || []
-
   // Create a map of videos by image_id for efficient lookup
   const videosByImageId = useMemo(() => {
+    const allVideos: GeneratedVideo[] = videosData?.videos || []
     const map = new Map<string, GeneratedVideo>()
     allVideos.forEach((video) => {
       if (video.image_id != null && video.status === "completed" && video.video_url) {
@@ -168,7 +166,7 @@ export default function MayaVideosTab({
       }
     })
     return map
-  }, [allVideos])
+  }, [videosData?.videos])
 
   const handleAnimate = async (
     imageId: string,
@@ -404,10 +402,11 @@ export default function MayaVideosTab({
     })
 
     // Cleanup function - only clear on unmount
+    const activePollIntervals = pollIntervalsRef.current
     return () => {
       if (videoPredictions.size === 0) {
-        pollIntervalsRef.current.forEach((interval) => clearInterval(interval))
-        pollIntervalsRef.current.clear()
+        activePollIntervals.forEach((interval) => clearInterval(interval))
+        activePollIntervals.clear()
       }
     }
   }, [videoPredictions, mutateVideos])
