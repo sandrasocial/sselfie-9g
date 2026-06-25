@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { type ReactNode, useEffect, useMemo, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import ReactMarkdown, { type Components } from "react-markdown"
 import {
@@ -18,7 +18,6 @@ import {
 import ChapterProgressBar from "@/components/selfie-guide/chapter-progress-bar"
 import BeforeAfterSlider from "@/components/selfie-guide/before-after-slider"
 import ChallengeTracker from "@/components/selfie-guide/challenge-tracker"
-import MayaMoment from "@/components/selfie-guide/maya-moment"
 import OnboardingQuiz from "@/components/selfie-guide/onboarding-quiz"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
@@ -72,12 +71,6 @@ type VisualSpec = {
   caption: string
   src?: string
   alt?: string
-}
-
-type ChallengeDay = {
-  day: string
-  title: string
-  description: string
 }
 
 type ComparisonImage = GuideImage & {
@@ -611,44 +604,6 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   },
 }
 
-const SEVEN_DAY_CHALLENGE_DAYS: ChallengeDay[] = [
-  {
-    day: "Day 1",
-    title: "Window Light Selfie",
-    description: "Take one selfie using natural window light. No ring light. Just you and a window.",
-  },
-  {
-    day: "Day 2",
-    title: "Rule of Thirds",
-    description: "Turn on your grid. Frame your eyes on the top third line. Take 5 shots.",
-  },
-  {
-    day: "Day 3",
-    title: "High Angle Test",
-    description: "Hold your phone 15 degrees above eye level. Slightly tilt your chin down. Take 3 shots.",
-  },
-  {
-    day: "Day 4",
-    title: "Editing Pass",
-    description: "Take your best selfie from days 1–3. Apply only light and warmth adjustments. No filters.",
-  },
-  {
-    day: "Day 5",
-    title: "Confidence Shot",
-    description: "Take a selfie while doing something you love. No posing. Just do the thing.",
-  },
-  {
-    day: "Day 6",
-    title: "Caption Writing",
-    description: "Write 3 different captions for your day 5 photo. Short, medium, and story format.",
-  },
-  {
-    day: "Day 7",
-    title: "Post It",
-    description: "Choose your best selfie from this week. Write a caption. Post it. You're done.",
-  },
-]
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getPlainText(node: unknown): string {
@@ -919,7 +874,7 @@ export default function SelfieGuideExperience({
     saveGuideProgress(nextChapterIndex, nextChallengeDays, personalization)
   }
 
-  function trackGuideUpsellClick(destination: string, product: string) {
+  const trackGuideUpsellClick = useCallback((destination: string, product: string) => {
     trackAnalyticsEvent({
       event: "selfie_guide_upsell_click",
       properties: {
@@ -943,7 +898,7 @@ export default function SelfieGuideExperience({
         }),
       }).catch(() => {})
     }
-  }
+  }, [activeChapterIndex, brandStrategyBumpSelected, challengeDays, hasBrandStrategyAccess, token])
 
   useEffect(() => {
     const target = chapters[activeChapterIndex]
@@ -1081,12 +1036,9 @@ export default function SelfieGuideExperience({
       ),
     }),
     [
-      activeChapterIndex,
-      challengeDays,
       checkedChecklistItems,
       currentChapterComparable,
-      hasBrandStrategyAccess,
-      brandStrategyBumpSelected,
+      trackGuideUpsellClick,
       token,
     ],
   )

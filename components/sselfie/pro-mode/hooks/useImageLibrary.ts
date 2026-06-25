@@ -8,7 +8,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import type { ImageLibrary } from '@/lib/maya/pro/category-system'
 
 const LOCAL_STORAGE_KEY = 'maya_pro_image_library'
@@ -40,41 +39,6 @@ function getTotalImageCount(library: ImageLibrary): number {
     library.people.length +
     library.vibes.length
   )
-}
-
-/**
- * Get current user ID from Supabase auth
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const supabase = createClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-
-    if (error || !user) {
-      console.error('[useImageLibrary] Auth error:', error)
-      return null
-    }
-
-    // Get Neon user ID by calling user info API
-    try {
-      const response = await fetch('/api/user/info')
-      if (response.ok) {
-        const data = await response.json()
-        return data.user?.id || null
-      }
-    } catch (apiError) {
-      console.error('[useImageLibrary] Error fetching user info:', apiError)
-    }
-
-    // Fallback: return Supabase auth user ID (may need mapping)
-    return user.id
-  } catch (error) {
-    console.error('[useImageLibrary] Error getting user ID:', error)
-    return null
-  }
 }
 
 /**
@@ -275,7 +239,7 @@ export function useImageLibrary(): UseImageLibraryReturn {
         }
       }
     },
-    [library, loadLibrary]
+    [library]
   )
 
   /**

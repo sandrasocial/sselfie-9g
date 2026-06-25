@@ -1,8 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { generateText } from "ai"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 // photoshoot-session removed - using unified system instead
 // import { PhotoshootSessionBuilder } from "@/lib/maya/photoshoot-session"
@@ -11,7 +10,7 @@ const PhotoshootSessionBuilder = null as any
 
 export const maxDuration = 60
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     console.log("[v0] Auto-generating feed concepts after brand profile completion")
 

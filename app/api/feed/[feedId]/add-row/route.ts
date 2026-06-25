@@ -96,7 +96,7 @@ Be creative and ensure these posts feel like a natural extension of the existing
     console.log("[v0] [ADD-ROW] AI generated 3 new post concepts")
 
     // Convert AI concepts to post prompts
-    const postPrompts = newPosts.posts.map((post, index) => {
+    const postPrompts = newPosts.posts.map((post) => {
       if (post.type === "Object") {
         return {
           prompt: `${feed.color_palette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${post.styleDirection}, elegant arrangement, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${feed.brand_vibe} aesthetic, carefully curated brand-aligned objects, subtle film grain texture, high-end commercial photography, sophisticated composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story`,

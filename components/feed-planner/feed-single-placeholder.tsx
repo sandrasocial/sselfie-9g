@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -31,7 +31,6 @@ interface FeedSinglePlaceholderProps {
 export default function FeedSinglePlaceholder({ 
   feedId, 
   post, 
-  onAddImage, 
   onGenerateImage,
   onRequireFeedStyle,
   onRequireOnboarding,
@@ -61,12 +60,12 @@ export default function FeedSinglePlaceholder({
   // This polls the existing /api/feed/[feedId]/check-post endpoint
   // CRITICAL: Only poll if we have predictionId AND no image_url yet
   // If post already has image_url, don't poll (enabled = false)
-  const { status: pollingStatus, imageUrl: pollingImageUrl, error: pollingError } = useFeedPostPolling({
+  const { status: pollingStatus, imageUrl: pollingImageUrl } = useFeedPostPolling({
     feedId,
     postId: post?.id || 0,
     predictionId,
     enabled: !!predictionId && !post?.image_url, // Only poll if we have predictionId and no image in DB yet
-    onComplete: (imageUrl) => {
+    onComplete: (_imageUrl) => {
       // Clear predictionId to stop polling
       setPredictionId(null)
       // Reset generation timer
@@ -140,7 +139,7 @@ export default function FeedSinglePlaceholder({
   }, [post?.prediction_id, post?.image_url, predictionId])
 
   // Phase 5.3.3: Handle image generation for free users
-  const handleGenerateImage = async () => {
+  const handleGenerateImage = useCallback(async () => {
     if (!post?.id) {
       toast({
         title: "Error",
@@ -249,7 +248,7 @@ export default function FeedSinglePlaceholder({
         variant: "destructive",
       })
     }
-  }
+  }, [feedId, generationMode, onGenerateImage, onRequireFeedStyle, onRequireOnboarding, post?.id])
 
   // Use image URL from polling if available, otherwise use post data
   // CRITICAL: Define this FIRST before using it in isPostGenerating
@@ -283,7 +282,7 @@ export default function FeedSinglePlaceholder({
 
     autoGenerateTriggeredRef.current = true
     void handleGenerateImage()
-  }, [autoGenerateOnce, hasImage, isPostGenerating, post?.id])
+  }, [autoGenerateOnce, handleGenerateImage, hasImage, isPostGenerating, post?.id])
 
   const handleStopGeneration = async () => {
     if (!post?.id || !canStop || isStopping) return
@@ -341,7 +340,7 @@ export default function FeedSinglePlaceholder({
   const hasShownFirstModalRef = useRef(false)
   
   // Function to check conditions and show modal
-  const checkAndShowModal = async (isFirstTime: boolean) => {
+  const checkAndShowModal = useCallback(async (isFirstTime: boolean) => {
     try {
       // Check current credit balance
       const creditsResponse = await fetch("/api/user/credits")
@@ -386,7 +385,7 @@ export default function FeedSinglePlaceholder({
       console.error("[Feed Single Placeholder] Error checking for automatic modal:", err)
       return false
     }
-  }
+  }, [showUpsellModal])
   
   // First time modal trigger (10 seconds after generation completes)
   // Also triggers when credits reach 0 after generation
@@ -436,7 +435,7 @@ export default function FeedSinglePlaceholder({
         modalTimerRef.current = null
       }
     }
-  }, [displayImageUrl, isPostGenerating, showUpsellModal, hasImage])
+  }, [checkAndShowModal, displayImageUrl, isPostGenerating, showUpsellModal, hasImage])
   
   // Clean up recurring timer when component unmounts or modal is manually closed
   useEffect(() => {

@@ -93,7 +93,7 @@ async function checkCache(): Promise<HealthCheckResult> {
     let redis
     try {
       redis = getRedisClient()
-    } catch (clientError) {
+    } catch {
       return {
         status: "degraded",
         responseTime: Date.now() - startTime,
@@ -260,4 +260,3 @@ export async function GET() {
     )
   }
 }
-

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { deductCredits, checkCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { deductCredits, checkCredits, getUserCredits } from "@/lib/credits"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { detectProModeType } from "@/lib/feed-planner/mode-detection"
 import {
@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
     // Get Maya's strategy from request
     const {
       strategy,
-      customSettings,
       userModePreference,
       imageLibrary,
       saveToPlanner = false,
@@ -280,8 +279,6 @@ export async function POST(request: NextRequest) {
 
       // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
       // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
-      const generationMode: 'classic' | 'pro' = 'pro'
-      
       // All Feed Planner posts go to Pro Mode
       proPosts.push(post)
     }
@@ -408,19 +405,6 @@ export async function POST(request: NextRequest) {
         color_palette
       FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
-      LIMIT 1
-    `
-
-    // Get research data if available (from content_research table)
-    const [researchData] = await sql`
-      SELECT 
-        research_summary,
-        best_hooks,
-        trending_hashtags,
-        competitive_insights
-      FROM content_research
-      WHERE user_id = ${neonUser.id.toString()}
-      ORDER BY created_at DESC
       LIMIT 1
     `
 

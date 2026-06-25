@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { sql } from "@/lib/db/client"
 
 
 // Sync Instagram insights for all active connections
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('[v0] Starting Instagram insights sync')
 

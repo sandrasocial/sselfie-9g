@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/auth/with-auth"
 
 async function handleGenerateAllImages({
   request,
-  user,
+  user: _user,
 }: {
   request: Request | NextRequest
   user: { id: string | number }

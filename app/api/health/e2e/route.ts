@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { logger } from "@/lib/logger"
 import { getDb } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
-import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { createCronLogger } from "@/lib/cron-logger"
 
 /**
@@ -131,7 +130,7 @@ async function getOrCreateTestUser(): Promise<string | null> {
  * Flow 1: Auth & Routing
  * Tests: Auth config, user mapping, page accessibility
  */
-async function checkAuthFlow(e2eRunId: string): Promise<FlowResult> {
+async function checkAuthFlow(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -190,7 +189,7 @@ async function checkAuthFlow(e2eRunId: string): Promise<FlowResult> {
  * Flow 2: Credits & Mode Toggle
  * Tests: Credits system is queryable, mode toggle accessible
  */
-async function checkCreditsFlow(e2eRunId: string): Promise<FlowResult> {
+async function checkCreditsFlow(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -242,7 +241,7 @@ async function checkCreditsFlow(e2eRunId: string): Promise<FlowResult> {
  * Tests: Replicate config present, endpoint reachable
  * NOTE: Does NOT actually generate images to avoid credit consumption
  */
-async function checkClassicGenerationFlow(e2eRunId: string): Promise<FlowResult> {
+async function checkClassicGenerationFlow(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -284,7 +283,7 @@ async function checkClassicGenerationFlow(e2eRunId: string): Promise<FlowResult>
  * Tests: Pro mode config, reference image handling
  * NOTE: Does NOT actually generate images to avoid credit consumption
  */
-async function checkProGenerationFlow(e2eRunId: string): Promise<FlowResult> {
+async function checkProGenerationFlow(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -327,7 +326,7 @@ async function checkProGenerationFlow(e2eRunId: string): Promise<FlowResult> {
  * Tests: Feed API endpoints are reachable
  * NOTE: Does NOT actually create feeds to avoid credit consumption
  */
-async function checkFeedFlow(e2eRunId: string): Promise<FlowResult> {
+async function checkFeedFlow(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -357,7 +356,7 @@ async function checkFeedFlow(e2eRunId: string): Promise<FlowResult> {
  * Flow 6: Cron Sanity
  * Tests: At least one cron job has executed recently without error
  */
-async function checkCronSanity(e2eRunId: string): Promise<FlowResult> {
+async function checkCronSanity(_e2eRunId: string): Promise<FlowResult> {
   const startTime = Date.now()
 
   try {
@@ -524,4 +523,3 @@ export async function GET(request: Request) {
     )
   }
 }
-
