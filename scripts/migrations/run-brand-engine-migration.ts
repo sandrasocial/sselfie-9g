@@ -17,7 +17,7 @@ dotenv.config()
 
 function splitSQLStatements(sql: string): string[] {
   // Remove comments
-  let cleaned = sql.replace(/--.*$/gm, "")
+  const cleaned = sql.replace(/--.*$/gm, "")
   
   // Split by semicolons, but be careful with function definitions
   const statements: string[] = []

@@ -35,9 +35,7 @@ function findOrphanedObjectLiterals(filePath: string): Issue[] {
         if (!prevLine.match(/[=({]$/) && !prevLine.match(/console\.(log|warn|error|info)\s*\($/)) {
           // Check if this is part of an object literal that's not assigned
           // Look ahead to find the closing brace
-          let braceCount = 0
           let foundOpening = false
-          let j = i
           
           // Look backwards for opening brace or assignment
           for (let k = i - 1; k >= 0 && k >= i - 10; k--) {
@@ -165,4 +163,3 @@ async function main() {
 }
 
 main().catch(console.error)
-

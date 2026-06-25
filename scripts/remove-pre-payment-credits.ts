@@ -309,7 +309,6 @@ async function main() {
     let processed = 0
     let creditsRemoved = 0
     let usersAffected = 0
-    let skipped = 0
     let errors = 0
 
     for (const sub of subscriptions) {
@@ -369,7 +368,6 @@ main()
     console.error("\n❌ Script failed:", error)
     process.exit(1)
   })
-
 
 
 

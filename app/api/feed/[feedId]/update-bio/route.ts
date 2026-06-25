@@ -62,7 +62,7 @@ export async function POST(
         LIMIT 1
       `
       existingBio = result[0] || null
-    } catch (error: any) {
+    } catch {
       // If feed_layout_id doesn't exist, try querying by user_id only
       try {
         const result = await sql`
@@ -72,7 +72,7 @@ export async function POST(
           LIMIT 1
         `
         existingBio = result[0] || null
-      } catch (err) {
+      } catch {
         // No existing bio
       }
     }
@@ -113,4 +113,3 @@ export async function POST(
     return NextResponse.json({ error: "Failed to update bio" }, { status: 500 })
   }
 }
-

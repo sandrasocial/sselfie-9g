@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/auth/with-auth"
 export const maxDuration = 60
 
 async function handleAddMore(
-  { user }: { user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>> },
+  { user: _user }: { user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>> },
 ) {
   try {
     console.log("[v0] Adding more concept cards to feed")

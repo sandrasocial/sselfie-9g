@@ -9,7 +9,6 @@
 
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
-import { PRICING_PRODUCTS } from "@/lib/products"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { getValidationStatus } from "@/lib/stripe/validate-pricing-config"
 

@@ -93,7 +93,7 @@ async function handleCreateFreeExample({
       } else {
         console.log(`[v0] Preview feed: feedStyleVariationId not provided in request body`)
       }
-    } catch (e) {
+    } catch {
       // No body or invalid JSON
       console.log(`[v0] No body in request, feedStyle will be required`)
     }

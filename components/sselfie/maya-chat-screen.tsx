@@ -3426,7 +3426,7 @@ export default function MayaChatScreen({
   // Helper function to parse and render markdown-style text
   const renderMarkdownText = (text: string): React.ReactNode => {
     // Keep emojis - Maya's responses should include emojis
-    let cleanedText = text
+    const cleanedText = text
     
     // Split by lines to handle lists and paragraphs
     const lines = cleanedText.split('\n')

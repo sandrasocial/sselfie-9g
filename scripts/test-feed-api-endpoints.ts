@@ -43,7 +43,7 @@ function validateStrategy(strategyJson: string): { valid: boolean; error?: strin
     const parsed = JSON.parse(strategyJson)
     
     // Unwrap if nested
-    let strategy = parsed.feedStrategy || parsed
+    const strategy = parsed.feedStrategy || parsed
     
     // Validate required fields
     if (!strategy.posts || !Array.isArray(strategy.posts)) {
@@ -385,4 +385,3 @@ async function runAllTests() {
 }
 
 runAllTests()
-

@@ -155,7 +155,7 @@ export function createVariationFromGuidePrompt(
   
   // Extract outfit description - PRESERVE ALL FABRIC/MATERIAL DETAILS
   let outfitText = ""
-  let outfitChunks: string[] = []
+  const outfitChunks: string[] = []
   let foundPose = false
   
   // CRITICAL: First, extract COMPLETE outfit description including all components and fabrics
@@ -325,7 +325,7 @@ export function createVariationFromGuidePrompt(
   
   // Extract location/scene description
   let locationText = ""
-  let locationChunks: string[] = []
+  const locationChunks: string[] = []
   foundPose = false
   
   for (let i = 0; i < sentences.length; i++) {
@@ -515,7 +515,6 @@ export function createVariationFromGuidePrompt(
   
   return variationPrompt
 }
-
 
 
 

@@ -12,7 +12,7 @@ import { getUserCredits } from "@/lib/credits"
  * Get blueprint state for authenticated user
  * Uses user_id from auth session (no email/token required)
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Authenticate user
     const supabase = await createServerClient()

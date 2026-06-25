@@ -550,7 +550,7 @@ export async function buildNanoBananaPrompt(params: {
     case 'brand-scene': {
       // Detect brand for context (guidance only, not replacement)
       // Maya uses her intelligence to detect brands from user request - no template system needed
-      let brandContext: { name?: string; aesthetic?: any; visuals?: any } | null = null
+      const brandContext: { name?: string; aesthetic?: any; visuals?: any } | null = null
 
       // Brand context is now handled by Maya's intelligence in the system prompt.
       // No template-based detection is needed here.

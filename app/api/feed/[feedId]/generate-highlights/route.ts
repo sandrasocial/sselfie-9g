@@ -168,7 +168,7 @@ Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's
       } else {
         highlights = JSON.parse(highlightsText)
       }
-    } catch (error) {
+    } catch {
       // Fallback to default highlights
       highlights = ["About", "Products", "Travel", "Tips"]
     }

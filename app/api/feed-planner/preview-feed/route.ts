@@ -1,4 +1,3 @@
-import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db/client"
@@ -10,7 +9,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
  * Returns preview feed information for paid blueprint users who upgraded from free.
  * Used to show preview image in welcome wizard.
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 

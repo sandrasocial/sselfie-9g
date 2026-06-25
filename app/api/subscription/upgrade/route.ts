@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // For existing subscriptions, try to upgrade via subscription update first
     // But use the same price lookup as landing checkout for consistency
-    let targetPriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+    const targetPriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
     
     if (!targetPriceId) {
       // If env var not set, fall back to checkout session (same as landing page)

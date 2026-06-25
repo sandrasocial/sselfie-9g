@@ -90,7 +90,7 @@ export async function trySyncReplicateVersionToUserModel(
       )
     }
 
-    let candidate = files.find(isLikelyLora) || files.find((f: any) => (f.url || f.download_url)) || null
+    const candidate = files.find(isLikelyLora) || files.find((f: any) => (f.url || f.download_url)) || null
     let loraUrl: string | null = null
 
     if (candidate) {
@@ -104,7 +104,7 @@ export async function trySyncReplicateVersionToUserModel(
       try {
         const resp = await fetch(url, { method: "HEAD" })
         return resp.ok
-      } catch (e) {
+      } catch {
         return false
       }
     }

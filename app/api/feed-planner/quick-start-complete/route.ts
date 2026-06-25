@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
@@ -16,7 +16,7 @@ async function ensureColumn(sql: ReturnType<typeof getDb>) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
     if (authError || !authUser) {
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
     if (authError || !authUser) {

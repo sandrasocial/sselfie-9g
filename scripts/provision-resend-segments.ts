@@ -49,7 +49,7 @@ async function main() {
   console.log(`\nUsing audience: ${AUDIENCE_ID}\n`)
 
   // Fetch existing segments
-  let existing: Record<string, string> = {}
+  const existing: Record<string, string> = {}
   try {
     // Resend doesn't yet expose a list-segments endpoint in the SDK;
     // use the contacts API as a proxy and fall through gracefully.

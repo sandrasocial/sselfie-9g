@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
@@ -8,7 +8,7 @@ import { getDb } from "@/lib/db/client"
  * Returns user's credit balance, total_used, and total_purchased
  * Used by free mode upsell modal to check credits
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()

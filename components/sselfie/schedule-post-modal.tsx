@@ -92,7 +92,8 @@ export default function SchedulePostModal({ open, onOpenChange, post, onSchedule
 
   const convertTo24Hour = (time12h: string) => {
     const [time, modifier] = time12h.split(" ")
-    let [hours, minutes] = time.split(":")
+    const [rawHours, minutes] = time.split(":")
+    let hours = rawHours
     if (hours === "12") {
       hours = modifier === "AM" ? "00" : "12"
     } else if (modifier === "PM") {

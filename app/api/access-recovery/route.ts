@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
 async function logRecoveryAttempt(
   email: string | null,
   outcome: string,
-  metadata: Record<string, unknown>,
+  _metadata: Record<string, unknown>,
 ) {
   try {
     await sql`

@@ -76,7 +76,7 @@ export async function POST(
     }
 
     // Get research data if available (optional) - skip if column doesn't exist
-    let researchData = null
+    const researchData = null
     // Research data is optional, so we'll just skip it if there's any issue
 
     console.log("[v0] [GENERATE-BIO] Generating bio with params:", {
@@ -135,7 +135,7 @@ export async function POST(
         LIMIT 1
       `
       existingBio = result[0] || null
-    } catch (error: any) {
+    } catch {
       // If feed_layout_id doesn't exist, try querying by user_id only
       console.log("[v0] [GENERATE-BIO] feed_layout_id column may not exist, trying user_id query")
       try {
@@ -146,7 +146,7 @@ export async function POST(
           LIMIT 1
         `
         existingBio = result[0] || null
-      } catch (err) {
+      } catch {
         console.log("[v0] [GENERATE-BIO] Could not find existing bio, will create new one")
       }
     }

@@ -42,7 +42,7 @@ async function handleCreateManualFeed({
       if (text) {
         body = JSON.parse(text)
       }
-    } catch (e) {
+    } catch {
       // Body is empty or invalid JSON, use defaults
       console.log("[v0] No body or invalid JSON, using defaults")
     }

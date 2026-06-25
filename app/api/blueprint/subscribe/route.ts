@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[v0] Request body:", body)
 
-    const { email, name, formData, selectedFeedStyle, step, source, utm_source, utm_medium, utm_campaign, referrer, user_agent } = body
+    const { email, name, formData, selectedFeedStyle, source, utm_source, utm_medium, utm_campaign, referrer, user_agent } = body
 
     if (!email || !name) {
       console.log("[v0] Missing email or name")

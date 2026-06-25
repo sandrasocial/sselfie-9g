@@ -1,6 +1,4 @@
-import type { NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db/client"
 
@@ -13,12 +11,10 @@ import { getDb } from "@/lib/db/client"
  * @deprecated In the future, frontend should use /api/feed/latest directly as a parameter to [feedId]
  * For now, this route delegates to the [feedId] route for consistency.
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Forward to the [feedId] route with feedId="latest"
   // We'll call the logic directly to avoid an extra HTTP request
   try {
-    const supabase = await createServerClient()
-
     const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
 
     if (authError || !authUser) {

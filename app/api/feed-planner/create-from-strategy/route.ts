@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
 
       // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
       // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
-      let generationMode: 'classic' | 'pro' = 'pro'
+      const generationMode: 'classic' | 'pro' = 'pro'
       
       // All Feed Planner posts go to Pro Mode
       proPosts.push(post)
@@ -589,7 +589,7 @@ export async function POST(request: NextRequest) {
         const existingGalleryImageUrl = getExistingGalleryImageUrl(post)
         // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
         // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
-        let generationMode: 'classic' | 'pro' = 'pro'
+        const generationMode: 'classic' | 'pro' = 'pro'
 
         const proModeType = generationMode === 'pro' 
           ? detectProModeType({

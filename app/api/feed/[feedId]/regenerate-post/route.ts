@@ -16,7 +16,7 @@ async function handleRegeneratePost(
     request: Request
     user: { id: string | number }
   },
-  { params }: { params: Promise<{ feedId: string }> },
+  { params: _params }: { params: Promise<{ feedId: string }> },
 ) {
   try {
     const useFeedPlannerV2 = await getFeedPlannerV2Flag(neonUser.id)
@@ -100,14 +100,6 @@ async function handleRegeneratePost(
         url: img.image_url,
         type: 'user-photo' as const,
       }))
-      
-      // Get brand kit if available
-      const [brandKit] = await sql`
-        SELECT primary_color, secondary_color, accent_color, font_style, brand_tone
-        FROM brand_kits
-        WHERE user_id = ${neonUser.id} AND is_default = true
-        LIMIT 1
-      `
       
       // Use stored prompt if present, otherwise resolve from V2 prompts
       let finalPrompt = post.prompt

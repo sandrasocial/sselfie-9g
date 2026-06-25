@@ -798,7 +798,7 @@ Keep it conversational and specific. I need to recreate this EXACT vibe.`
     }
     
     // ✅ Use provided templates if available (from admin prompt builder) - these are optional examples for inspiration
-    let templateExamples: string[] = Array.isArray(providedTemplateExamples) ? providedTemplateExamples : []
+    const templateExamples: string[] = Array.isArray(providedTemplateExamples) ? providedTemplateExamples : []
     
     if (templateExamples.length > 0) {
       console.log("[v0] Using", templateExamples.length, "pre-loaded template examples from admin prompt builder (optional inspiration only)")
@@ -2795,4 +2795,3 @@ Same quality/luxury/styling as professional concepts, but with:
     )
   }
 }
-

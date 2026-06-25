@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/auth/with-auth"
 export const maxDuration = 60
 
 async function handleRefreshConcepts({
-  user,
+  user: _user,
 }: {
   user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>>
 }) {

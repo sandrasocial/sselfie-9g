@@ -115,7 +115,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
     // All users can create and access preview feeds to test different styles
 
     // Get feed posts
-    let feedPosts = await sql`
+    const feedPosts = await sql`
       SELECT * FROM feed_posts
       WHERE feed_layout_id = ${feedIdInt}
       ORDER BY position ASC

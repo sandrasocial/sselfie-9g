@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
               }
               // FIX: Check selfies from user_avatar_images table (not blueprint_subscribers.selfie_image_urls)
               let hasSelfies = false
-              let userId: string | null = data.user_id || neonUser.id || null
+              const userId: string | null = data.user_id || neonUser.id || null
               
               if (userId) {
                 const avatarImages = await sql`

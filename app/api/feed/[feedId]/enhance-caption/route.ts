@@ -105,7 +105,7 @@ export async function POST(
             const pillarNames = pillars.map((p: any) => typeof p === "object" ? p.name || p : p).join(", ")
             brandContext += `- Content Pillars: ${pillarNames}\n`
           }
-        } catch (e) {
+        } catch {
           if (typeof brandProfile.content_pillars === "string") {
             brandContext += `- Content Pillars: ${brandProfile.content_pillars}\n`
           }

@@ -12,7 +12,7 @@ async function handleSaveHighlightImage(
     request: Request | NextRequest
     user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>>
   },
-  { params }: { params: { feedId: string } },
+  { params: _params }: { params: { feedId: string } },
 ) {
   try {
     const body = await request.json()

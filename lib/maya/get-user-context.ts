@@ -778,7 +778,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
 
       // Build truncated context with priority sections first
       let truncatedContext = prioritySections.join("\n")
-      let remainingSpace = MAX_CONTEXT_LENGTH - truncatedContext.length
+      const remainingSpace = MAX_CONTEXT_LENGTH - truncatedContext.length
 
       // Add other sections until we hit the limit
       for (const section of otherSections) {

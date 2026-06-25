@@ -1,15 +1,12 @@
 import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     if (authError || !authUser) {
