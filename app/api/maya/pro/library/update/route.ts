@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { sql } from "@/lib/db/client"
-import type { ImageLibrary } from "@/lib/maya/pro/category-system"
 
 export const maxDuration = 60
 

@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabase = await createServerClient()
     const {

@@ -223,7 +223,6 @@ export async function POST(request: NextRequest) {
       conceptDescription,
       conceptPrompt,
       category,
-      chatId,
       referenceImageUrl,
       addTextOverlay,
       textOverlayConfig,

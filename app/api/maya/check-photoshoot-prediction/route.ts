@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const predictionId = searchParams.get("id")
-    const heroPrompt = searchParams.get("heroPrompt")
     const userId = searchParams.get("userId") // Get user_id from query params
     const conceptDescription = searchParams.get("conceptDescription") // Add conceptDescription from query params
 

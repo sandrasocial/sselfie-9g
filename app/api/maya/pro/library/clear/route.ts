@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { sql } from "@/lib/db/client"
@@ -13,7 +12,7 @@ export const maxDuration = 60
  * Clears all images and intent from user's library.
  * Resets library to empty state.
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   console.log("[v0] [PRO MODE] Library clear API called")
 
   try {

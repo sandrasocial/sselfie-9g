@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { sql } from "@/lib/db/client"
@@ -52,7 +51,7 @@ function emptyLibraryPayload() {
  * Retrieves user's image library from database.
  * Returns selfies, products, people, vibes, and current intent.
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   console.log("[v0] [PRO MODE] Library get API called")
 
   try {

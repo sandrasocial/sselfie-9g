@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log("[v0] ========== FETCHING USER VIDEOS ==========")
 

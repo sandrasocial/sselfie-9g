@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"

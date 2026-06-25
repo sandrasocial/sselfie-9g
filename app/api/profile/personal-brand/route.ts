@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient()
     const {
@@ -123,7 +122,7 @@ export async function GET(request: NextRequest) {
                 return Object.keys(doubleParsed)
               }
               return doubleParsed
-            } catch (e2) {
+            } catch {
               // If second parse fails, might be malformed like '{"luxury"}'
               // Try to extract key from string
               const keyMatch = parsed.match(/"([^"]+)"/)
@@ -138,7 +137,7 @@ export async function GET(request: NextRequest) {
             return Object.keys(parsed)
           }
           return parsed
-        } catch (e) {
+        } catch {
           // If parsing fails, try to extract key from malformed string like '{"luxury"}'
           if (convertObjectToArray) {
             const keyMatch = value.match(/"([^"]+)"/)

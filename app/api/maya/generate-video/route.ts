@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generatePrompt } from "@/lib/generation/prompt"
@@ -9,7 +8,7 @@ import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 
 
 // Phase 2C-3: Keep original function as fallback
-function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: string): string {
+function enhanceMotionPrompt(userPrompt: string | undefined, _imageDescription?: string): string {
   // If Maya (the AI agent) provided a prompt, trust it completely
   if (userPrompt && userPrompt.trim().length > 0) {
     console.log("[v0] ✅ Using AI-generated motion prompt from Claude vision analysis:", userPrompt)

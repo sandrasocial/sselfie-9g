@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
@@ -9,7 +9,7 @@ import { sql } from "@/lib/db/client"
  * Sets: onboarding_completed = true, blueprint_welcome_shown_at = NOW()
  * This allows Decision 2 testing by preventing the training onboarding wizard from showing
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Authenticate user
     const supabase = await createServerClient()

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 

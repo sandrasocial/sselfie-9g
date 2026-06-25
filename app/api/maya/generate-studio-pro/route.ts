@@ -6,9 +6,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { getUserCredits, deductCredits, addCredits } from "@/lib/credits"
-import { put } from "@vercel/blob"
-import { guardProModeRoute } from "@/lib/maya/type-guards"
+import { getUserCredits, deductCredits } from "@/lib/credits"
 
 
 export async function POST(req: NextRequest) {

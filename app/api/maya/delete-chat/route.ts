@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { deleteChat } from "@/lib/data/maya"
-import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -49,4 +48,3 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-

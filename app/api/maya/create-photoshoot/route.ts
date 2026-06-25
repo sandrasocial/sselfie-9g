@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
@@ -45,8 +44,6 @@ async function generatePhotoshootPoseVariations({
     
     // Check for specific intents BEFORE removing instruction phrases
     const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPreferences)
-    const hasDontChangeFace = /\b(?:dont\s+change\s+the\s+face|don't\s+change\s+the\s+face|do\s+not\s+change\s+the\s+face)\b/gi.test(cleanedPreferences)
-    
     // Remove instruction phrases - these are for Maya, not FLUX prompts
     const instructionPhrases = [
       /\bAlways keep my\b/gi,
@@ -287,7 +284,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, conceptDescription, category, chatId, customSettings } =
+    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, category, customSettings } =
       body
 
     if (!heroImageUrl || !heroPrompt) {
@@ -568,7 +565,7 @@ export async function POST(request: NextRequest) {
       triggerReferralEmailIfNeeded(neonUser.id).catch((error) => {
         console.error(`[v0] Error triggering referral email (non-critical):`, error)
       })
-    } catch (error) {
+    } catch {
       // Ignore errors - referral trigger is non-critical
     }
 

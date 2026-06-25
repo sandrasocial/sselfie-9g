@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       // Create new subscriber
       accessToken = crypto.randomUUID()
 
-      const insertResult = await sql`
+      await sql`
         INSERT INTO freebie_subscribers (
           email, name, source, access_token, utm_source, utm_medium,
           utm_campaign, referrer, user_agent, email_tags, created_at, updated_at

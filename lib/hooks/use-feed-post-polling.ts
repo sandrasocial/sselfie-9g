@@ -257,7 +257,7 @@ export function useFeedPostPolling({
         onError(errorMessage)
       }
     }
-  }, [feedId, postId, predictionId, onComplete, onError])
+  }, [feedId, postId, predictionId, onComplete, onError, toast])
 
   // Start polling when predictionId is available and enabled
   useEffect(() => {
