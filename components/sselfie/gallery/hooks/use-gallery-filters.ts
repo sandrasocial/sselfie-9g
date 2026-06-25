@@ -28,7 +28,7 @@ export function useGalleryFilters(
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
   // Ensure allImages is always an array
-  const safeAllImages = Array.isArray(allImages) ? allImages : []
+  const safeAllImages = useMemo(() => (Array.isArray(allImages) ? allImages : []), [allImages])
 
   const favoritedImages = useMemo(
     () => safeAllImages.filter((img) => img.is_favorite || favorites.has(img.id)),
@@ -109,4 +109,3 @@ export function useGalleryFilters(
     displayVideos: displayVideos ?? [],
   }
 }
-

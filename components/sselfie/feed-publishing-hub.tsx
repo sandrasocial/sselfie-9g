@@ -144,7 +144,7 @@ export default function FeedPublishingHub({
     if (selectedPost && !dynamicTips[selectedPost.id]) {
       fetchInstagramTips(selectedPost)
     }
-  }, [selectedPost])
+  }, [dynamicTips, selectedPost])
 
   const fetchInstagramTips = async (post: FeedPost) => {
     setLoadingTips(true)

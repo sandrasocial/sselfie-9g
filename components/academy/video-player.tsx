@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -166,7 +166,7 @@ export default function VideoPlayer({
             setVideoError("Video cannot be played. Please check if embedding is enabled on this Vimeo video.")
             break
         }
-      } catch (e) {
+      } catch {
         // Ignore parsing errors for non-JSON messages
       }
     }
@@ -268,19 +268,7 @@ export default function VideoPlayer({
     return () => clearInterval(interval)
   }, [isPlaying, lessonId, currentTime])
 
-  // Check for 90% completion
-  useEffect(() => {
-    if (duration > 0 && currentTime > 0 && !hasMarkedComplete) {
-      const percentWatched = (currentTime / duration) * 100
-
-      if (percentWatched >= 90) {
-        setHasMarkedComplete(true)
-        markLessonComplete()
-      }
-    }
-  }, [currentTime, duration, hasMarkedComplete])
-
-  const markLessonComplete = async () => {
+  const markLessonComplete = useCallback(async () => {
     try {
       await fetch("/api/academy/progress", {
         method: "PATCH",
@@ -292,7 +280,19 @@ export default function VideoPlayer({
     } catch (error) {
       console.error("[v0] Error marking lesson complete:", error)
     }
-  }
+  }, [lessonId, onComplete])
+
+  // Check for 90% completion
+  useEffect(() => {
+    if (duration > 0 && currentTime > 0 && !hasMarkedComplete) {
+      const percentWatched = (currentTime / duration) * 100
+
+      if (percentWatched >= 90) {
+        setHasMarkedComplete(true)
+        markLessonComplete()
+      }
+    }
+  }, [currentTime, duration, hasMarkedComplete, markLessonComplete])
 
   const handlePlayPause = () => {
     if (isVimeo && iframeRef.current) {

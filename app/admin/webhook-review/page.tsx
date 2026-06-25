@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { AdminNav } from "@/components/admin/admin-nav"
 
 interface ReviewEvent {
@@ -56,7 +56,7 @@ export default function WebhookReviewPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [resolveNotes, setResolveNotes] = useState("")
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/webhook-review?resolved=${showResolved}`)
@@ -65,11 +65,11 @@ export default function WebhookReviewPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showResolved])
 
   useEffect(() => {
     load()
-  }, [showResolved])
+  }, [load])
 
   const resolve = async (id: number) => {
     setResolvingId(id)

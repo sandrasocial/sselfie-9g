@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import VideoPlayer from "./video-player"
 
@@ -31,7 +31,7 @@ interface LessonModalProps {
 
 export default function LessonModal({
   lessonId,
-  courseId,
+  courseId: _courseId,
   onClose,
   onLessonComplete,
   onNextLesson,
@@ -43,11 +43,7 @@ export default function LessonModal({
   const [error, setError] = useState<string | null>(null)
   const [isMarkingComplete, setIsMarkingComplete] = useState(false)
 
-  useEffect(() => {
-    fetchLessonData()
-  }, [lessonId])
-
-  const fetchLessonData = async () => {
+  const fetchLessonData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -67,7 +63,11 @@ export default function LessonModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [lessonId])
+
+  useEffect(() => {
+    fetchLessonData()
+  }, [fetchLessonData])
 
   const handleLessonComplete = () => {
     setProgress((prev) => (prev ? { ...prev, status: "completed" } : null))

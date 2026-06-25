@@ -219,7 +219,7 @@ export function SinglePromptGate({
           <div className="sp-reveal">
             <p className="sp-reveal-title">Here it is.</p>
             <p>
-              Paste this into ChatGPT with one of your own selfies attached. It's still you.
+              Paste this into ChatGPT with one of your own selfies attached. It&apos;s still you.
               Same features, same you, just your best light.
             </p>
             <pre>{promptText}</pre>

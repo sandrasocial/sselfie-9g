@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import VideoPlayer from "./video-player"
 
 interface Lesson {
@@ -30,7 +30,7 @@ interface LessonViewerProps {
 
 export default function LessonViewer({
   lessonId,
-  courseId,
+  courseId: _courseId,
   onLessonComplete,
   onNextLesson,
   hasNextLesson = false,
@@ -40,11 +40,7 @@ export default function LessonViewer({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchLessonData()
-  }, [lessonId])
-
-  const fetchLessonData = async () => {
+  const fetchLessonData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -64,7 +60,11 @@ export default function LessonViewer({
     } finally {
       setLoading(false)
     }
-  }
+  }, [lessonId])
+
+  useEffect(() => {
+    fetchLessonData()
+  }, [fetchLessonData])
 
   const handleLessonComplete = () => {
     setProgress((prev) => (prev ? { ...prev, status: "completed" } : null))

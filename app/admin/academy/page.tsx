@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -175,15 +175,7 @@ export default function AdminAcademyPage() {
   const [flatlayThumbnailPosition, setFlatlayThumbnailPosition] = useState({ x: 50, y: 50 })
   const [courseThumbnailPosition, setCourseThumbnailPosition] = useState({ x: 50, y: 50 })
 
-  useEffect(() => {
-    fetchCourses()
-    fetchProducts()
-    fetchTemplates()
-    fetchMonthlyDrops()
-    fetchFlatlayImages()
-  }, [])
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/academy/courses", {
         credentials: "include",
@@ -203,7 +195,7 @@ export default function AdminAcademyPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
 
   const fetchLessons = async (courseId: string) => {
     try {
@@ -220,7 +212,7 @@ export default function AdminAcademyPage() {
     }
   }
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/academy/products", {
         credentials: "include",
@@ -238,7 +230,7 @@ export default function AdminAcademyPage() {
     } catch (error) {
       console.error("[academy admin] Error fetching products:", error)
     }
-  }
+  }, [router])
 
   const updateProduct = (productId: string, patch: Partial<AcademyProductAdmin>) => {
     setProducts(current =>
@@ -353,7 +345,7 @@ export default function AdminAcademyPage() {
     }
   }
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/academy/templates", {
         credentials: "include",
@@ -371,7 +363,7 @@ export default function AdminAcademyPage() {
     } catch (error) {
       console.error("[v0] Error fetching templates:", error)
     }
-  }
+  }, [router])
 
   const handleCreateTemplate = () => {
     setEditingTemplate(null)
@@ -455,7 +447,7 @@ export default function AdminAcademyPage() {
     }
   }
 
-  const fetchMonthlyDrops = async () => {
+  const fetchMonthlyDrops = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/academy/monthly-drops", {
         credentials: "include",
@@ -473,9 +465,9 @@ export default function AdminAcademyPage() {
     } catch (error) {
       console.error("[v0] Error fetching monthly drops:", error)
     }
-  }
+  }, [router])
 
-  const fetchFlatlayImages = async () => {
+  const fetchFlatlayImages = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/academy/flatlay-images", {
         credentials: "include",
@@ -493,7 +485,15 @@ export default function AdminAcademyPage() {
     } catch (error) {
       console.error("[v0] Error fetching flatlay images:", error)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchCourses()
+    fetchProducts()
+    fetchTemplates()
+    fetchMonthlyDrops()
+    fetchFlatlayImages()
+  }, [fetchCourses, fetchFlatlayImages, fetchMonthlyDrops, fetchProducts, fetchTemplates])
 
   const handleCreateDrop = () => {
     setEditingDrop(null)

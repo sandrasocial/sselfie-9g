@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import InAppLessonViewer from "./in-app-lesson-viewer"
 
 interface Lesson {
@@ -43,11 +43,7 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
   const [error, setError] = useState<string | null>(null)
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchCourseData()
-  }, [courseId])
-
-  const fetchCourseData = async () => {
+  const fetchCourseData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -67,19 +63,17 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [courseId])
+
+  useEffect(() => {
+    fetchCourseData()
+  }, [fetchCourseData])
 
   const handleLessonClick = (lesson: Lesson) => {
     if (!lesson.is_locked) {
       setSelectedLessonId(lesson.id)
     }
   }
-
-  const handleLessonComplete = () => {
-    // Refresh course data to update progress
-    fetchCourseData()
-  }
-
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

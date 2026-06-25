@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Loader2, CheckCircle, Clock, Star, ImageIcon, ThumbsUp, ThumbsDown, Eye, Plus, Upload, X, Edit2 } from 'lucide-react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -61,11 +61,7 @@ export default function AdminTestimonialsPage() {
   const [uploadingImage, setUploadingImage] = useState<number | null>(null)
   const [uploadingEditImage, setUploadingEditImage] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchTestimonials()
-  }, [filterStatus])
-
-  const fetchTestimonials = async () => {
+  const fetchTestimonials = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -82,7 +78,11 @@ export default function AdminTestimonialsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterStatus])
+
+  useEffect(() => {
+    fetchTestimonials()
+  }, [fetchTestimonials])
 
   const updateTestimonial = async (id: number, updates: Partial<Testimonial>) => {
     try {
@@ -555,7 +555,7 @@ export default function AdminTestimonialsPage() {
                 Customer Images (Up to 4)
               </Label>
               <div className="grid grid-cols-2 gap-4">
-                {(['screenshot_url', 'image_url_2', 'image_url_3', 'image_url_4'] as const).map((key, index) => {
+                {(['screenshot_url', 'image_url_2', 'image_url_3', 'image_url_4'] as const).map((key) => {
                   const imageUrl = manualForm[key]
                   const imageIndex = key === 'screenshot_url' ? 1 : parseInt(key.replace('image_url_', ''))
                   
@@ -681,7 +681,7 @@ export default function AdminTestimonialsPage() {
               <div>
                 <Label className="text-xs uppercase tracking-wider text-stone-600 font-light mb-3 block">Customer Images</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  {(['screenshot_url', 'image_url_2', 'image_url_3', 'image_url_4'] as const).map((key, index) => {
+                  {(['screenshot_url', 'image_url_2', 'image_url_3', 'image_url_4'] as const).map((key) => {
                     const imageUrl = editForm[key]
                     const imageIndex = key === 'screenshot_url' ? 1 : parseInt(key.replace('image_url_', ''))
                     

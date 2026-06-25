@@ -499,19 +499,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       // They're not stored in user_personal_brand, so we don't include them here
       // The wizard component will fetch them via SWR
     }
-    // Create a stable key from the actual data values, not the object reference
-    // This prevents recalculation when the object reference changes but data is the same
-  }, [
-    personalBrandData?.exists,
-    personalBrandData?.data?.businessType,
-    personalBrandData?.data?.idealAudience,
-    personalBrandData?.data?.transformationStory,
-    // Use JSON.stringify for arrays/objects to create stable keys
-    personalBrandData?.data?.visualAesthetic ? JSON.stringify(personalBrandData.data.visualAesthetic) : null,
-    personalBrandData?.data?.settingsPreference ? JSON.stringify(personalBrandData.data.settingsPreference) : null,
-    personalBrandData?.data?.fashionStyle ? JSON.stringify(personalBrandData.data.fashionStyle) : null,
-    personalBrandData?.data?.contentPillars ? JSON.stringify(personalBrandData.data.contentPillars) : null,
-  ])
+  }, [personalBrandData?.exists, personalBrandData?.data])
 
   // Show loading while checking wizard status
   if (isCheckingWizard) {

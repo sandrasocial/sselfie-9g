@@ -118,7 +118,7 @@ export default function BaseWizard({
         businessType: existingBlueprintData.business || prev.businessType,
       }))
     }
-  }, [existingBlueprintData])
+  }, [existingBlueprintData, formData.businessType])
 
   const step = BASE_STEPS[currentStep]
   const progress = ((currentStep + 1) / BASE_STEPS.length) * 100
