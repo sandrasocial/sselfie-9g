@@ -32,14 +32,14 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
 }
 
 const CONTENT_TYPES: { format: OutputFormat; label: string; line: string }[] = [
-  { format: "photo", label: "A photo", line: "An editorial brand shot." },
-  { format: "photoshoot", label: "A photoshoot", line: "A cohesive set from one look." },
-  { format: "reel-cover", label: "A Reel cover", line: "A scroll-stopping cover with your words." },
-  { format: "carousel", label: "A carousel", line: "A few cohesive slides that teach or tell." },
+  { format: "photo", label: "A photo", line: "A brand image you can actually post." },
+  { format: "photoshoot", label: "A photoshoot", line: "A small set from one look." },
+  { format: "reel-cover", label: "A Reel cover", line: "A clear cover with your words." },
+  { format: "carousel", label: "A carousel", line: "A few connected slides that teach or tell." },
   {
     format: "story-slide",
     label: "A Story slide",
-    line: "A vertical slide for polls, sales, or moments.",
+    line: "A vertical slide for polls, sales, or everyday moments.",
   },
   { format: "video", label: "A video", line: "A short motion clip from one image." },
 ]
@@ -119,7 +119,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
           </h1>
         )}
         {recs === null && (
-          <p className="mt-2 text-[14px] text-[#818283]">Maya is thinking about your week…</p>
+          <p className="mt-2 text-[14px] text-[#818283]">Maya is looking at your week...</p>
         )}
       </header>
 
@@ -199,7 +199,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
           onClick={onBrowse}
           className="mt-4 inline-flex min-h-11 items-center text-[12px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
         >
-          Or reuse a photo from your library
+          Or use a photo from your library
         </button>
       </section>
     </div>

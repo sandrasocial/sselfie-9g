@@ -117,7 +117,7 @@ export default async function MembershipCheckoutPage({
           actionPath="/checkout/membership"
           eyebrow="SSELFIE SUITE"
           title="Where should I send your access?"
-          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. This is where Maya helps you turn your face, story, and ideas into content you can actually use."
+          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts you can actually use."
           inputId="membership-checkout-email"
           buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"

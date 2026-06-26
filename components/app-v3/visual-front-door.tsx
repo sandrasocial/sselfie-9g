@@ -25,14 +25,14 @@ const MAYA_BLANK: Aesthetic = {
 }
 
 const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] = [
-  { format: "photo", label: "Photo", line: "One AI-ready selfie into a shot you can post." },
-  { format: "photoshoot", label: "Photoshoot", line: "A cohesive set in one world." },
+  { format: "photo", label: "Photo", line: "One clear selfie into a photo you can post." },
+  { format: "photoshoot", label: "Photoshoot", line: "A small shoot in one visual world." },
   {
     format: "reel-cover",
     label: "Reel cover",
     line: "A clear cover for the idea you are sharing.",
   },
-  { format: "carousel", label: "Carousel", line: "Teach something useful in a simple slide flow." },
+  { format: "carousel", label: "Carousel", line: "Teach one useful idea in a simple slide flow." },
   {
     format: "story-slide",
     label: "Story",
@@ -41,7 +41,7 @@ const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] =
   {
     format: "story-sequence",
     label: "Story sequence",
-    line: "A full multi-slide story in one cohesive world.",
+    line: "A full multi-slide story in one clear world.",
   },
   { format: "video", label: "Video", line: "Add subtle motion to a photo you already made." },
 ]
@@ -140,9 +140,9 @@ export function VisualFrontDoor({
   // MAYA-ADMIN-01: header copy is overridable so the admin mount doesn't show member
   // marketing lines. Defaults keep /app exactly as it was.
   eyebrow = "SSELFIE Studio",
-  title = "Start with Maya.",
-  subtitle = "Begin blank, choose what you want to make, or start from a look. Maya will guide the next step.",
-  note = "Included in SSELFIE SUITE: monthly credits · AI brand shoots · Maya guidance · your gallery",
+  title = "Start with one clear next step.",
+  subtitle = "Choose what you want to make, add your selfie, or start from a look. Maya will guide the next step.",
+  note = "Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery",
   compact = false,
   showTrialFirstRunStep = false,
   cohort = "member",
@@ -296,7 +296,7 @@ export function VisualFrontDoor({
             image={selfieImage}
             eyebrow="SSELFIE SUITE"
             title="Hi, I'm Maya. Let's make your first photo."
-            body="Add one clear selfie and you're still you, then I'll build the rest around you."
+            body="Add one clear selfie. I will keep it feeling like you and build the rest around it."
             action={frontDoorUploading ? "Uploading..." : "Add my selfie"}
             tall
             onClick={() => {
@@ -339,7 +339,7 @@ export function VisualFrontDoor({
               image={selfieImage}
               eyebrow="Fastest path"
               title="Start with one selfie."
-              body="Best when you want Maya to help you make the first photo, cover, or content direction."
+              body="Best when you want the first photo, cover, or content direction without overthinking it."
               action="Add one selfie"
               onClick={openSelfieStart}
             />
@@ -348,7 +348,7 @@ export function VisualFrontDoor({
                 image={formatImage}
                 eyebrow="Saved model"
                 title="Use your trained model."
-                body="Create with the model you already trained, inside the new Maya flow."
+                body="Create with the model you already trained, inside Maya."
                 action="Use my model"
                 onClick={openTrainedModel}
               />
@@ -357,7 +357,7 @@ export function VisualFrontDoor({
                 image={formatImage}
                 eyebrow="Not sure yet"
                 title="Choose the format first."
-                body="Pick photo, photoshoot, cover, carousel, story, or video. Maya will ask only what she needs."
+                body="Pick photo, photoshoot, cover, carousel, story, or video. Maya will only ask what she needs."
                 action="Pick a format"
                 onClick={openFormatPicker}
               />
@@ -397,7 +397,7 @@ export function VisualFrontDoor({
             Or start from a Vault look
           </p>
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-[#6D6E70]">
-            Use these when you want the visual world chosen before Maya starts.
+            Use these when you want the look chosen before Maya starts.
           </p>
         </div>
       )}

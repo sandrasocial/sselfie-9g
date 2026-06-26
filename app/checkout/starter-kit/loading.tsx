@@ -7,7 +7,7 @@ export default function StarterKitCheckoutLoading() {
           Preparing your Starter Kit checkout
         </h1>
         <p className="mt-5 text-sm font-light leading-relaxed text-[#4F5052]">
-          Your secure payment form is opening. Keep this page open for a moment.
+          Opening your secure payment form. Keep this page open for a moment.
         </p>
       </div>
     </main>

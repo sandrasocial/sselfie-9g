@@ -26,11 +26,11 @@ export function generateSelfieToBrandShootDeliveryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with one clear selfie, choose one visual world, create the first AI brand shoot result, then decide where that image belongs in your content.</p>
     <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your access:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
-      <li>The lean Selfie to Brand Shoot workflow</li>
+      <li>The guided Selfie to Brand Shoot path</li>
       <li>Source selfie guidance</li>
-      <li>The Vault included for visual-world prompts</li>
-      <li>Image selection and taste-filter checkpoints</li>
-      <li>Content use guidance for your first result</li>
+      <li>The Vault included for visual worlds and prompts</li>
+      <li>Keep / Fix / Delete checkpoints</li>
+      <li>Posting guidance for your first shoot</li>
     </ul>
     ${systemButtons}
     <div style="margin:12px 0 0;">${renderStoneButton("Open The Vault", fallbackVaultUrl, "outline")}</div>
@@ -45,11 +45,11 @@ export function generateSelfieToBrandShootDeliveryEmail({
     html: renderStoneShell({
       eyebrow: "Selfie to Brand Shoot",
       title: "Your system is ready.",
-      subtitle: "One selfie can become the first visual world of your brand.",
+      subtitle: "One clear selfie can become the first shoot for your brand.",
       bodyHtml,
       footerLead: "Start with one photo. Build the visual identity from there.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Selfie to Brand Shoot System is ready.\n\nStart with one clear selfie, choose one visual world, create the first AI brand shoot result, then decide where that image belongs in your content.\n\nInside your access:\n- The lean Selfie to Brand Shoot workflow\n- Source selfie guidance\n- The Vault included for visual-world prompts\n- Image selection and taste-filter checkpoints\n- Content use guidance for your first result\n\n${passwordLine}Open The System: ${accessUrl}\nOpen The Vault: ${fallbackVaultUrl}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hi ${firstName},\n\nYour Selfie to Brand Shoot System is ready.\n\nStart with one clear selfie, choose one visual world, create the first AI brand shoot result, then decide where that image belongs in your content.\n\nInside your access:\n- The guided Selfie to Brand Shoot path\n- Source selfie guidance\n- The Vault included for visual worlds and prompts\n- Keep / Fix / Delete checkpoints\n- Posting guidance for your first shoot\n\n${passwordLine}Open The System: ${accessUrl}\nOpen The Vault: ${fallbackVaultUrl}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }

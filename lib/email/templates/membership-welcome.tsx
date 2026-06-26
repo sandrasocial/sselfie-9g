@@ -34,9 +34,9 @@ export function generateMembershipWelcomeEmail(params: MembershipWelcomeParams):
     const bodyHtml = `
       <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
       <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Welcome to the SUITE. I'm so glad you're here.</p>
-      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the one thing to do today: meet Maya. She's your creative director. She already has looks pulled for you. You pick one, she shows you three concepts, and your first photos are done in minutes. No prompts to write. Nothing to figure out.</p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the one thing to do today: meet Maya. She already has looks pulled for you. You pick one, she shows you three directions, and you can make your first photos in minutes. No prompts to write. Nothing to figure out.</p>
       ${renderStonePanel(
-        `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">200 photos a month<br />Every product I've ever made, included<br />Cancel anytime</p>`,
+        `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">200 photos a month<br />Maya, the Vault, the Starter Kit, and the course library included<br />Cancel anytime</p>`,
         "Your Membership",
       )}
       <div style="margin:26px 0 12px;">${renderStoneButton(ctaLabel, ctaUrl)}</div>
@@ -60,11 +60,11 @@ Hey ${name},
 
 Welcome to the SUITE. I'm so glad you're here.
 
-Here's the one thing to do today: meet Maya. She's your creative director. She already has looks pulled for you. You pick one, she shows you three concepts, and your first photos are done in minutes. No prompts to write. Nothing to figure out.
+Here's the one thing to do today: meet Maya. She already has looks pulled for you. You pick one, she shows you three directions, and you can make your first photos in minutes. No prompts to write. Nothing to figure out.
 
 Your membership:
 200 photos a month
-Every product I've ever made, included
+Maya, the Vault, the Starter Kit, and the course library included
 Cancel anytime
 
 ${passwordSetupUrl ? `Set your password: ${ctaUrl}\n\nThen you land straight in your Studio.` : `Open your Studio: ${ctaUrl}`}
@@ -80,10 +80,10 @@ Sandra`
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You're a member now. That changes what you have access to, so here's the short version:</p>
     ${renderStonePanel(
-      `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Maya, your creative director, in the Studio app<br />200 photos a month<br />The Prompt Vault, the Starter Kit, and the Masterclass, all open<br />Everything new I make</p>`,
+      `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Maya inside the Studio app<br />200 photos a month<br />The Prompt Vault, the Starter Kit, and the course library<br />New SSELFIE drops as they are released</p>`,
       "Now Included With Your Membership",
     )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The thing I'd do first: open the app and pick a look. Maya shows you three concepts and your first photos are done in minutes.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The thing I'd do first: open the app and pick a look. Maya shows you three directions and helps you make the first photo.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Open your Studio", appUrl)}</div>
   `
 
@@ -100,12 +100,12 @@ Hey ${name},
 You're a member now. That changes what you have access to, so here's the short version:
 
 Now included with your membership:
-Maya, your creative director, in the Studio app
+Maya inside the Studio app
 200 photos a month
-The Prompt Vault, the Starter Kit, and the Masterclass, all open
-Everything new I make
+The Prompt Vault, the Starter Kit, and the course library
+New SSELFIE drops as they are released
 
-The thing I'd do first: open the app and pick a look. Maya shows you three concepts and your first photos are done in minutes.
+The thing I'd do first: open the app and pick a look. Maya shows you three directions and helps you make the first photo.
 
 Open your Studio: ${appUrl}
 

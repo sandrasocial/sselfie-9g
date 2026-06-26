@@ -9,7 +9,7 @@ export default function PromptVaultCheckoutLoading() {
           Preparing your Vault checkout.
         </h1>
         <p className="mx-auto mt-5 max-w-sm text-sm font-light leading-relaxed text-[#4F5052]">
-          We are opening your secure Stripe payment page. This usually takes just a moment.
+          Opening your secure payment page. This usually takes just a moment.
         </p>
       </div>
     </main>

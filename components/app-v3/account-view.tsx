@@ -151,7 +151,7 @@ export function AccountView({
                 </span>
               </div>
               <p className="mt-1 text-[13px] text-[#818283]">
-                When it ends, your photos stay yours. Members keep Maya and everything included.
+                When it ends, your photos stay yours. Members keep Maya and the SSELFIE library.
               </p>
               <div className="mt-4">
                 <a
@@ -221,8 +221,8 @@ export function AccountView({
         {onOpenLibrary && (
           <div className={card}>
             <p className={cardTitle}>Your SSELFIE</p>
-            <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-              Every product you own, your courses, and the weekly drops live in your Library.
+          <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
+              Every product you own, your courses, and your weekly drops live in your Library.
             </p>
             <div className="mt-4">
               <button type="button" onClick={onOpenLibrary} className={primaryBtn}>
@@ -236,7 +236,7 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Brand &amp; memory</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-            What Maya remembers about you and your brand, and the name you gave her.
+            What Maya remembers about you, your brand, and the name you gave her.
           </p>
           <div className="mt-4">
             <button type="button" onClick={() => setMemoryOpen(true)} className={primaryBtn}>
@@ -249,8 +249,7 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Your selfies</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-            The selfies Maya can use to keep you recognizable in every shoot. Your newest one is used
-            automatically.
+            The selfies Maya can use to keep you recognizable. Your newest one is used automatically.
           </p>
           {selfies && selfies.length > 0 && (
             <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
@@ -299,7 +298,7 @@ export function AccountView({
               Use my trained model
             </p>
             <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
-              Create with your saved model inside Maya, without opening the old Studio.
+              Create with your saved model inside Maya.
             </p>
             <div className="mt-4">
               <button type="button" onClick={onUseTrainedModel} className={primaryBtn}>

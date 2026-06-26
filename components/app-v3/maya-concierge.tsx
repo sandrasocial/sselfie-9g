@@ -1909,7 +1909,7 @@ export function MayaConcierge({
                         Full photoshoot
                       </p>
                       <p className="mt-1 text-[15px] leading-relaxed text-[#282728]">
-                        One cohesive set · {conceptPart.length} shots · one look, varied angles.
+                        One connected set · {conceptPart.length} shots · one look, varied angles.
                       </p>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">

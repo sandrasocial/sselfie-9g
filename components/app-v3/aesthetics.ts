@@ -53,7 +53,7 @@ export const AESTHETICS: Aesthetic[] = VAULT_COLLECTION_META.map((c): Aesthetic 
     shotCount: c.shotCount,
     intent:
       INTENTS[id] ??
-      `${toDisplayName(c.name)} editorial look: cohesive styling, refined light, brand-shoot quality.`,
+      `${toDisplayName(c.name)} editorial look: connected styling, refined light, brand-shoot quality.`,
   }
 }).filter((a) => a.coverImage.length > 0)
 

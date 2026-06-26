@@ -35,13 +35,13 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
   const bridge =
     variant === "legacy"
       ? `What you bought still works. But my Studio has grown since then. Maya is the creative director inside it now. She pulls the looks for you, keeps it looking like you in every photo, and gets smarter the more you use her.`
-      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows them by heart. She's a creative director who pulls the looks for you, keeps it looking like you in every photo, and gets smarter the more you use her.`
+      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows the SSELFIE worlds. She pulls the looks for you, keeps it looking like you in every photo, and gets sharper the more you use her.`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${intro}</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${bridge}</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So here's your gift: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So here's your trial: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing turns into a charge. It just ends.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Whatever you make is yours to keep, trial or not.</p>
   `
@@ -60,7 +60,7 @@ ${intro}
 
 ${bridge}
 
-So here's your gift: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.
+So here's your trial: 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing turns into a charge. It just ends.
 
 Claim your 7 days: ${claimUrl}
 

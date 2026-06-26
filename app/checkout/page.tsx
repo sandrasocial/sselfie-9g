@@ -69,30 +69,30 @@ const CHECKOUT_COPY: Record<
 > = {
   selfie_guide: {
     heroTitle: "Complete your Selfie Guide order",
-    heroBody: "Secure your guide and 7-day challenge.",
+    heroBody: "Start with one clearer photo of yourself.",
     heading: "Secure checkout",
-    blurb: "You are buying the Selfie Guide with encrypted Stripe checkout.",
-    footer: "Digital purchase. Your guide access is delivered right after payment.",
+    blurb: "You are getting the guide and 7-day challenge for taking a better source photo.",
+    footer: "Your guide access is delivered right after payment.",
   },
   starter_kit: {
     heroTitle: "Complete your Starter Kit order",
-    heroBody: "Get the presets, quick-start, and guide support in one place.",
+    heroBody: "Make one source photo cleaner, stronger, and easier to use.",
     heading: "Secure checkout",
-    blurb: "You are buying the Selfie Starter Kit with encrypted Stripe checkout.",
-    footer: "Digital purchase. Your Starter Kit access is delivered right after payment.",
+    blurb: "You are getting the presets, posing help, captions, and 7-day starter for better phone photos.",
+    footer: "Your Starter Kit access is delivered right after payment.",
   },
   masterclass: {
     heroTitle: "Complete your Masterclass order",
-    heroBody: "Unlock Sandra's full selfie method right after payment.",
+    heroBody: "Get Sandra's full selfie method right after payment.",
     heading: "Secure checkout",
     blurb: "You are buying the Selfie Masterclass with encrypted Stripe checkout.",
     footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
   },
   prompt_vault: {
-    heroTitle: "Get the full shoot + future drops",
-    heroBody: "You tried the opening shot. Now unlock the remaining shots, newest drops, and future SSELFIE photoshoots.",
+    heroTitle: "Get the full shoot and future drops",
+    heroBody: "You tried the opening shot. Now get the full visual worlds, newest drops, and future SSELFIE photoshoots.",
     heading: "The AI Photo Prompt Vault",
-    blurb: "One $27 payment unlocks the full shoot sequences, example images, copy-paste ChatGPT prompts, newest drops, and future photoshoot collections.",
+    blurb: "One $27 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
     footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
   presets_single: {
@@ -113,21 +113,21 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Start your first AI brand shoot",
     heroBody: "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
     heading: "Selfie to Brand Shoot System",
-    blurb: "You are buying the guided $197 system for turning one selfie into a cohesive personal brand shoot, with the full Prompt Vault included.",
-    footer: "One-time digital purchase. Your System access link is delivered right after payment.",
+    blurb: "You are getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
+    footer: "Your System access link is delivered right after payment.",
   },
   sselfie_studio_membership: {
-    heroTitle: "Complete your SSELFIE SUITE order",
-    heroBody: "Your membership starts the moment payment goes through.",
+    heroTitle: "Join SSELFIE SUITE",
+    heroBody: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts.",
     heading: "Secure checkout",
-    blurb: "You are joining SSELFIE SUITE with encrypted Stripe checkout. Monthly membership, cancel anytime.",
+    blurb: "You are joining SSELFIE SUITE. Monthly membership, cancel anytime.",
     footer: "Your access is delivered right after payment. Cancel anytime from your account.",
   },
   sselfie_studio_membership_annual: {
-    heroTitle: "Complete your SSELFIE SUITE order",
-    heroBody: "Your membership starts the moment payment goes through.",
+    heroTitle: "Join SSELFIE SUITE",
+    heroBody: "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction.",
     heading: "Secure checkout",
-    blurb: "You are joining SSELFIE SUITE with encrypted Stripe checkout.",
+    blurb: "You are joining SSELFIE SUITE for the year.",
     footer: "Your access is delivered right after payment.",
   },
 }
@@ -137,13 +137,13 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "Instant access after payment",
     "One-time $37 purchase",
     "No subscription or credit plan",
-    "Email delivery plus Academy access",
+    "Presets, posing, captions, and source-photo help",
   ],
   prompt_vault: [
     "Instant Vault access after payment",
     "One-time $27 purchase",
     "No subscription or credit plan",
-    "Use the prompts in ChatGPT with your own selfie",
+    "Full visual worlds for your own selfie",
   ],
   presets_single: [
     "Instant access after payment",
@@ -161,7 +161,7 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "Instant course access after payment",
     "One-time $197 purchase",
     "Full Prompt Vault included",
-    "Use ChatGPT with your own selfie",
+    "One clear selfie into your first brand shoot",
   ],
 }
 
@@ -400,12 +400,12 @@ function CheckoutContent() {
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
                 <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#818283]">
-                  You are unlocking
+                  You are getting
                 </p>
                 <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#0D0E10] sm:text-3xl">
                   {isSelfieToBrandShoot
-                    ? "The guided system + full Vault access for your first AI brand shoot."
-                    : "The full shoot + all newest and future photoshoot drops."}
+                    ? "The guided path plus full Vault access for your first AI brand shoot."
+                    : "The full shoot plus newest and future photoshoot drops."}
                 </h2>
               </div>
               <div className="text-left sm:text-right">
@@ -419,7 +419,7 @@ function CheckoutContent() {
             </div>
             <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]">
               {isSelfieToBrandShoot
-                ? "Guided workflow · source selfie method · Vault included · content-use path"
+                ? "Guided path · source selfie help · Vault included · posting plan"
                 : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
             </p>
           </div>

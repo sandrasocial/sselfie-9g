@@ -173,7 +173,7 @@ function ShellInner({
                   Maya&apos;s ready when you are.
                 </h2>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
-                  Members get Maya, 200 photos a month, and every product included. Cancel anytime.
+                  Members get Maya, 200 photos a month, and the SSELFIE library included. Cancel anytime.
                 </p>
                 <a
                   href="/checkout/membership?interval=month&source=app_limited_create"

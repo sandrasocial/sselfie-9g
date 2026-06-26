@@ -9,7 +9,7 @@ export default function SelfieToBrandShootCheckoutLoading() {
           Preparing your System checkout.
         </h1>
         <p className="mt-4 text-sm font-light leading-relaxed text-[#4F5052]">
-          We are opening your secure payment form and checking for any Vault buyer credit.
+          Opening your secure payment form and checking for any Vault buyer credit.
         </p>
       </section>
     </main>

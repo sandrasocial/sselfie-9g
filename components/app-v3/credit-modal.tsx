@@ -21,14 +21,14 @@ export function CreditModal({ open, balance, onClose }: CreditModalProps) {
         </h3>
         <p className="mt-3 text-[14px] leading-relaxed text-[#4F5052]">
           Each image is one credit.
-          {typeof balance === "number" ? ` You have ${balance} left.` : ""} Top up to keep creating.
+          {typeof balance === "number" ? ` You have ${balance} left.` : ""} Add more when you want to keep creating.
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <a
             href="/checkout/credits"
             className="inline-flex min-h-12 items-center justify-center rounded-[4px] bg-[#0D0E10] px-5 py-3 text-center text-[11px] uppercase tracking-[0.2em] text-white"
           >
-            Top up credits
+            Add credits
           </a>
           <button
             type="button"
