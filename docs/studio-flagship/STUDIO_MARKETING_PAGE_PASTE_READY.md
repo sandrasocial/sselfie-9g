@@ -1,4 +1,4 @@
-# SSELFIE Studio — paste-ready copy
+# SSELFIE Studio: paste-ready copy
 
 Final copy only. Each block is labeled with where it goes in Studio. Headline locked to your recommended hero (swap to the "You're not behind" line if you prefer).
 
