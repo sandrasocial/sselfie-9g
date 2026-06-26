@@ -22,6 +22,14 @@ import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 const RESEARCH_MODEL = "claude-sonnet-4-5"
 const BRIEF_MODEL = "claude-sonnet-4-5"
 
+const MARKET_PATTERN_CONTEXT = `
+Recent SSELFIE market-pattern notes, verified in June 2026:
+- @aivideoskool: working mechanics are numbered prompt keywords, named aesthetic drops, a clear cover system, and showing one prompt across multiple recognizable examples. Adapt the mechanic, not his AI-bro money/career positioning and not celebrity likenesses.
+- @imanoubou: working mechanics are named numbered frameworks, meta-reveal hooks ("I gave AI X and it built Y"), and comment-to-DM CTAs. Her synthetic-avatar direction is Sandra's foil. Sandra's angle is real woman + AI-assisted + still you.
+- IG Growth OS watchlist: @aicontentuniversity for "don't just type X, tell AI: specifics" teaching format; @nordic_scott for disciplined tutorial-to-keyword funnel; @prompts.ig for prompt-drop cadence and credibility captions; @marcelaferreiraoficial for female-audience ChatGPT photo-edit formats that travel.
+- The usable lesson is not "repeat Sandra's exact visual." It is: keep the proven topic or hook mechanic, then create a fresh scene, object, proof format, framework, or creator-context visual around it.
+`
+
 type VaultBriefContext = {
   staticCollectionCount: number
   staticPromptCount: number
@@ -292,12 +300,16 @@ ${ownWinners || "- (no data this run)"}
 What her audience copies most (real demand data):
 ${topPrompts || "- (no data this run)"}
 
-Research what hook formats and reel/carousel structures are working on Instagram RIGHT NOW in this niche (AI photos, ChatGPT photo prompts, personal branding for women). Look for current, evidenced patterns, not recycled 2023 advice.
+Research what hook formats, reel/carousel structures, and visual presentation mechanics are working on Instagram RIGHT NOW in this niche (AI photos, ChatGPT photo prompts, personal branding for women). Look for current, evidenced patterns, not recycled 2023 advice.
+
+Use this internal market-pattern context as a starting point, then refine it with web search:
+${MARKET_PATTERN_CONTEXT}
 
 Return a concise research memo:
-1. 5-8 hook patterns currently working, each with why it works and a one-line example adapted to her niche
-2. Format notes (reel length, carousel structure, cover text patterns)
-3. Anything in her own winners that matches or contradicts current trends
+1. 5-8 hook/content mechanics currently working, each with why it works and a one-line example adapted to her niche
+2. Format notes (reel length, carousel structure, cover text patterns, keyword CTA mechanics)
+3. Visual treatment notes: fresh ways to express the same proven pillar without repeating her exact mirror/cafe/window/selfie visuals
+4. Anything in her own winners that matches or contradicts current trends
 
 Plain text. No fluff.`,
       },
@@ -461,6 +473,7 @@ export async function generateContentBrief(): Promise<ContentBrief> {
     audience: signals,
     vault,
     suite,
+    marketPatternContext: MARKET_PATTERN_CONTEXT,
     researchMemo: researchNotes,
   }
 
@@ -484,7 +497,10 @@ CONTENT PLAN RULES:
 - At least 2 reels, at least 1 carousel.
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
 - Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM. Anchor at least 2 content pieces to a specific pain point found in the DMs.
-- Her own viral DNA and top posts win over the research memo when they conflict. Treat researchMemo as a tiebreaker only.
+- Her own viral DNA and top posts win over the research memo for TOPIC, PILLAR, HOOK MECHANIC, and CTA. They do NOT win for repeating the exact same visual scene. If a top post worked, keep the demand signal and create a new execution.
+- Do not recommend simply reposting Sandra's existing top visual. Do not keep serving the same mirror selfie, dark cafe arrival, window half-light, or car selfie treatment unless the data includes a new specific reason.
+- Every contentPlan piece must include a fresh creative treatment: vary setting, perspective, object/prop, camera distance, proof format, story structure, and content role. Same pillar is fine; same visual execution is not.
+- Use dataPacket.marketPatternContext and researchMemo for creator mechanics from similar creators. Adapt mechanics such as numbered keywords, named frameworks, side-by-side proof, one concept across multiple examples, meta-reveal, and proof-stacked covers. Do not copy another creator's positioning, exact visual, or audience promise.
 - Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
 - Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
 - Vault count is LIVE in dataPacket.vault. Never hardcode "92", "150", "10 collections", or any fixed count. If you need a number, use dataPacket.vault.totalPromptCount and dataPacket.vault.totalCollectionCount only. Prefer "every shoot world I've built" or "new drops added all the time" unless the exact live number improves clarity.
@@ -494,9 +510,10 @@ CONTENT PLAN RULES:
 - Do not give away the full copy-paste Vault prompt in any free reel/feed caption. Tease the result and the method. The full prompt is the Vault payoff. The photoshootPrompt field is for Sandra's internal planning only.
 - reelCoverText: 3-6 words, works as on-image text.
 - carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. For non-carousels return an empty array.
-- photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies).
+- photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies), but make the visual treatment net-new for this brief. State the new scene/composition clearly.
 - hashtags: 8-12, mix of niche and reach, no banned or spammy tags.
 - storySequence: one sequence, 4-6 frames, at least one interaction (poll, question box, or link) per sequence, designed to lead into one of the 5 pieces.
+- Never invent specific earnings, revenue amounts, client counts, follower gains, or conversion numbers. You may only use money numbers that appear in dataPacket with a clear source. Product prices are allowed.
 - No banned words and no m-dashes anywhere in the structured output.`,
     messages: [
       {
