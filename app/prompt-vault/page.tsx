@@ -269,7 +269,7 @@ export default async function PromptVaultPage({
           </p>
           <p className="pvf-reassurance">
             Still you. Still recognizable. Just clearer. AI should not erase you. It should frame
-            the woman people are trying to understand and remember.
+            you.
           </p>
           <div className="pvf-hero-stats" aria-label="Vault library size">
             <span>{vaultCollectionCount} collections</span>
@@ -333,7 +333,7 @@ export default async function PromptVaultPage({
               color: "#0D0E10",
             }}
           >
-            Your profile does not need more random inspiration.
+            Your profile doesn&apos;t need more random inspiration.
             <br />
             It needs a direction.
           </h2>
@@ -345,7 +345,7 @@ export default async function PromptVaultPage({
               color: "#4F5052",
             }}
           >
-            You can have one good AI image and still feel stuck. Because one image is not a brand.
+            You can have one good AI image and still feel stuck. Because one image isn&apos;t a brand.
             A brand starts to form when the colors, light, mood, and story begin to repeat.
           </p>
           <p
@@ -357,7 +357,7 @@ export default async function PromptVaultPage({
             }}
           >
             That is what the Vault is for. Not more noise. A set of visual worlds you can come back
-            to when you want your content to look like the same woman lives there.
+            to when you want your content to look like it belongs to the same person.
           </p>
           <p
             style={{
@@ -451,7 +451,7 @@ export default async function PromptVaultPage({
           </h2>
           <p className="pvf-section-note">
             Browse the opening image from each visual world. The full sequence gives you the next
-            angles, details, and content moments so the look does not stop at one image.
+            angles, details, and content moments so the look doesn&apos;t stop at one image.
           </p>
 
           <div className="pvf-preview-grid">

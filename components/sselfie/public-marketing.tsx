@@ -1229,7 +1229,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <div id="how-it-works">
         <Split
           eyebrow="How it works"
-          title={<>Here is your new Monday.</>}
+          title={<>Here&apos;s your new Monday.</>}
           body={
             <div className="space-y-4">
               <p>You open the app with your coffee. Maya already has three concepts pulled in your style: the photos, the reel cover, the caption.</p>
@@ -1322,7 +1322,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* CTA — dark */}
       <CtaClose
         title="Stop trying to build your brand from a blank screen."
-        body={<p>Maya is ready. Start with one selfie, one direction, and one next post.</p>}
+        body={<p>Maya&apos;s ready. Start with one selfie, one direction, and one next post.</p>}
         primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join SSELFIE SUITE · €97/mo" }}
         dark
       />

@@ -71,22 +71,22 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Complete your Selfie Guide order",
     heroBody: "Start with one clearer photo of yourself.",
     heading: "Secure checkout",
-    blurb: "You are getting the guide and 7-day challenge for taking a better source photo.",
+    blurb: "You're getting the guide and 7-day challenge for taking a better source photo.",
     footer: "Your guide access is delivered right after payment.",
   },
   starter_kit: {
     heroTitle: "Complete your Starter Kit order",
     heroBody: "Make one source photo cleaner, stronger, and easier to use.",
     heading: "Secure checkout",
-    blurb: "You are getting the presets, posing help, captions, and 7-day starter for better phone photos.",
+    blurb: "You're getting the presets, posing help, captions, and 7-day starter for better phone photos.",
     footer: "Your Starter Kit access is delivered right after payment.",
   },
   masterclass: {
     heroTitle: "Complete your Masterclass order",
     heroBody: "Get Sandra's full selfie method right after payment.",
     heading: "Secure checkout",
-    blurb: "You are buying the Selfie Masterclass with encrypted Stripe checkout.",
-    footer: "Digital purchase. Your Masterclass access is delivered right after payment.",
+    blurb: "You're getting Sandra's full selfie method, step by step.",
+    footer: "Your Masterclass access is delivered right after payment.",
   },
   prompt_vault: {
     heroTitle: "Get the full shoot and future drops",
@@ -99,35 +99,35 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Complete your presets order",
     heroBody: "Your selected SSELFIE preset collection is delivered right after payment.",
     heading: "SSELFIE Presets · Single Collection",
-    blurb: "One $19 payment unlocks one Lightroom preset collection for phone and desktop.",
+    blurb: "One $19 payment gives you one Lightroom preset collection for phone and desktop.",
     footer: "One-time digital purchase. Your preset access link is delivered right after payment.",
   },
   presets_bundle: {
     heroTitle: "Complete your presets order",
     heroBody: "Get every current SSELFIE preset collection, plus new collections added over time.",
     heading: "SSELFIE Presets · Full Collection",
-    blurb: "One $39 payment unlocks the full presets library for phone and desktop.",
+    blurb: "One $39 payment gives you the full presets library for phone and desktop.",
     footer: "One-time digital purchase. Your preset access link is delivered right after payment.",
   },
   selfie_to_brand_shoot_system: {
     heroTitle: "Start your first AI brand shoot",
     heroBody: "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
     heading: "Selfie to Brand Shoot System",
-    blurb: "You are getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
+    blurb: "You're getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
     footer: "Your System access link is delivered right after payment.",
   },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts.",
     heading: "Secure checkout",
-    blurb: "You are joining SSELFIE SUITE. Monthly membership, cancel anytime.",
+    blurb: "You're joining SSELFIE SUITE. Monthly membership, cancel anytime.",
     footer: "Your access is delivered right after payment. Cancel anytime from your account.",
   },
   sselfie_studio_membership_annual: {
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction.",
     heading: "Secure checkout",
-    blurb: "You are joining SSELFIE SUITE for the year.",
+    blurb: "You're joining SSELFIE SUITE for the year.",
     footer: "Your access is delivered right after payment.",
   },
 }
@@ -400,7 +400,7 @@ function CheckoutContent() {
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
                 <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#818283]">
-                  You are getting
+                  You&apos;re getting
                 </p>
                 <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#0D0E10] sm:text-3xl">
                   {isSelfieToBrandShoot

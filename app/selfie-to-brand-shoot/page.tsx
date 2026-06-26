@@ -225,8 +225,8 @@ export default async function SelfieToBrandShootLandingPage({
             content you can actually post.
           </p>
           <p>
-            This is for the moment when you do not need more random images. You need one clear
-            direction that helps people understand who you are becoming online.
+            This is for the moment when you don&apos;t need more random images. You need one clear
+            direction that helps people understand who you&apos;re becoming online.
           </p>
           <p className="sbs-price-line">
             The full System. $197 one-time. Prompt Vault included.
@@ -296,7 +296,7 @@ export default async function SelfieToBrandShootLandingPage({
           <h2 className={cormorant.className}>This is for women who are ready to look clearer online.</h2>
           <p>
             The result is not only a prettier image. It is clarity around how your face, story, and
-            visuals can start working together so people understand what you are building.
+            visuals can start working together so people understand what you&apos;re building.
           </p>
         </div>
         <article className="sbs-customer-quote">

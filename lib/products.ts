@@ -161,7 +161,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "sselfie_studio_membership_annual",
-    name: "SSELFIE Studio Membership — Annual",
+    name: "SSELFIE Studio Membership · Annual",
     displayName: "SSELFIE Studio Membership (Annual)",
     description: "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction. Pay annually and save 2 months.",
     priceInCents: 97000, // €970/year (~€80.83/month — save €194 vs monthly)
