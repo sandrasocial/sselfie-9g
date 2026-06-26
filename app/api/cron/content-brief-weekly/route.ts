@@ -39,6 +39,23 @@ export async function GET(request: NextRequest) {
       .map((h) => `• ${h.hook}`)
       .join("\n")
 
+    const demandText = brief.demandMap
+      ? `\n\nDemand map:\n${[
+          `Signal: ${brief.demandMap.strongestDemandSignal}`,
+          `Before: ${brief.demandMap.painfulBefore}`,
+          `After: ${brief.demandMap.desiredAfter}`,
+          `Bridge: ${brief.demandMap.primaryOfferBridge}`,
+        ].join("\n")}`
+      : ""
+    const demandHtml = brief.demandMap
+      ? `<p><strong>Demand map</strong><br/>${[
+          `Signal: ${escapeHtml(brief.demandMap.strongestDemandSignal)}`,
+          `Before: ${escapeHtml(brief.demandMap.painfulBefore)}`,
+          `After: ${escapeHtml(brief.demandMap.desiredAfter)}`,
+          `Bridge: ${escapeHtml(brief.demandMap.primaryOfferBridge)}`,
+        ].join("<br/>")}</p>`
+      : ""
+
     // SUITE-UX-02: Member pulse — what members did with Maya this week (source:
     // analytics_events behavior + app_v3_memory). Best-effort; never blocks the brief.
     let pulseText = ""
@@ -77,8 +94,8 @@ export async function GET(request: NextRequest) {
       to: ADMIN_EMAIL,
       from: "SSELFIE Intelligence <hello@sselfie.ai>",
       subject: "Your weekly content brief is ready",
-      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence, built from your own post data and what your audience copied most.\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
-      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence, built from your own post data and what your audience copied most.</p><p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
+      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence. It now starts from demand first: what your audience is trying to stop experiencing, what they want instead, and which offer naturally answers it.${demandText}\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
+      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence. It now starts from demand first: what your audience is trying to stop experiencing, what they want instead, and which offer naturally answers it.</p>${demandHtml}<p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
         .slice(0, 3)
         .map((h) => `• ${escapeHtml(h.hook)}`)
         .join("<br/>")}</p>${pulseHtml}<p><a href="https://www.sselfie.ai/admin/content-brief">Open the brief</a></p><p>Everything is a draft. Nothing posts without you.</p>`,

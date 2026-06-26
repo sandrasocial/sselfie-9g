@@ -548,14 +548,22 @@ async function getAdminBriefContext(): Promise<string> {
             const title = typeof piece?.title === "string" ? piece.title : "Untitled"
             const format = typeof piece?.format === "string" ? piece.format : "content"
             const hook = typeof piece?.hook === "string" ? piece.hook : ""
-            return `- ${format}: ${title}${hook ? ` | hook: ${hook}` : ""}`
+            const demand = typeof piece?.demandSignal === "string" ? piece.demandSignal : ""
+            const before = typeof piece?.painfulBefore === "string" ? piece.painfulBefore : ""
+            const after = typeof piece?.desiredAfter === "string" ? piece.desiredAfter : ""
+            return `- ${format}: ${title}${hook ? ` | hook: ${hook}` : ""}${demand ? ` | demand: ${demand}` : ""}${before ? ` | before: ${before}` : ""}${after ? ` | after: ${after}` : ""}`
           })
           .join("\n")
       : ""
+    const demandMap =
+      payload.demandMap && typeof payload.demandMap === "object"
+        ? summarizeBriefValue(payload.demandMap as Record<string, unknown>).slice(0, 700)
+        : ""
     return [
       "---",
       "## CURRENT WEEKLY BRIEF CONTEXT",
       `Period: ${period}. Use this as live context for Sandra's admin content ideas.`,
+      demandMap ? `Demand map:\n${demandMap}` : "",
       contentPlan ? `Content plan:\n${contentPlan}` : "",
       `Other brief signals: ${summarizeBriefValue(payload).slice(0, 1400)}`,
       "Write in Sandra's simple everyday voice: warm, friendly, clear, no corporate phrasing.",

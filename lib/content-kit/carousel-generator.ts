@@ -517,9 +517,19 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
         .filter((piece: any) => piece.format === "carousel")
         .map(
           (piece: any) =>
-            `- "${piece.title}" · hook: "${piece.hook}" · outline: ${(piece.carouselOutline || []).join(" / ")}`
+            `- "${piece.title}" · hook: "${piece.hook}" · demand: "${piece.demandSignal || "not provided"}" · before: "${piece.painfulBefore || "not provided"}" · after: "${piece.desiredAfter || "not provided"}" · outline: ${(piece.carouselOutline || []).join(" / ")}`
         )
         .join("\n")
+    : ""
+  const demandMap = brief?.demandMap
+    ? [
+        `Strongest demand signal: ${brief.demandMap.strongestDemandSignal}`,
+        `Painful before: ${brief.demandMap.painfulBefore}`,
+        `Desired after: ${brief.demandMap.desiredAfter}`,
+        `Belief shift: ${brief.demandMap.beliefShift}`,
+        `Primary offer bridge: ${brief.demandMap.primaryOfferBridge}`,
+        `Do not repeat: ${brief.demandMap.contentWarning}`,
+      ].join("\n")
     : ""
 
   const prompt = `You are Sandra's carousel writer for @sandra.social (Instagram, AI-assisted brand imagery from one selfie, personal branding for women building from their phone).
@@ -543,6 +553,9 @@ ${winners || "- (no snapshot data available)"}
 
 THIS WEEK'S BRIEF CAROUSEL IDEAS (expand these first${input.topic ? ", unless the requested topic overrides" : ""}):
 ${carouselPieces || "- (no weekly brief found: invent carousels from her winners and niche)"}
+
+THIS WEEK'S DEMAND MAP:
+${demandMap || "- (no demand map found: start from the buyer's painful before and desired after before writing slide ideas)"}
 ${input.topic ? `\nREQUESTED TOPIC (priority): ${input.topic}` : ""}
 ${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceShoot.title}". Write this carousel as an extension of that exact shoot. The approved shoot photos will be the grounded reference frames for the model-designed slides, so keep the copy short enough to bake into a finished shoot-based content piece.` : ""}
 

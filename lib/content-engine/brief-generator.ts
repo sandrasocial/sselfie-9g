@@ -30,6 +30,22 @@ Recent SSELFIE market-pattern notes, verified in June 2026:
 - The usable lesson is not "repeat Sandra's exact visual." It is: keep the proven topic or hook mechanic, then create a fresh scene, object, proof format, framework, or creator-context visual around it.
 `
 
+const DEMAND_CREATION_CONTEXT = `
+SSELFIE demand doctrine, locked 2026-06-26:
+- Attention is not enough. The brief must create demand, not just suggest content.
+- People do not buy prompts, selfies, AI photos, Maya, courses, or visuals. Those are the tools.
+- The buyer cares about the life/business outcome: she can start building online with her phone, face, story, and one clear visual direction.
+- Start from the painful before: she feels visually behind, unclear, random, not ready, hard to trust, or unsure what to post/sell.
+- Show the desired after: she looks recognizable, believable, easier to remember, easier to trust, and more ready to show up online.
+- Product features only matter after the viewer understands why she should care.
+- Every idea must show what painful situation SSELFIE helps remove and what becomes possible after.
+- The strongest current ladder is Free AI Prompts -> Prompt Vault -> SSELFIE Studio Membership.
+- Prompt Vault demand: stop guessing and choose repeatable visual worlds that make her profile feel intentional.
+- Studio demand: a monthly personal-brand creation system that turns her face, story, and ideas into images, covers, captions, and content she can post.
+- Starter Kit demand: fix the source-photo problem when she hates every selfie.
+- Selfie to Brand Shoot demand is weaker as a public standalone offer right now; treat it as guided first-shoot support, buyer upsell, onboarding path, or membership bonus unless live data says otherwise.
+`
+
 type VaultBriefContext = {
   staticCollectionCount: number
   staticPromptCount: number
@@ -53,11 +69,27 @@ type SuiteBriefContext = {
   }>
 }
 
+export type DemandMap = {
+  strongestDemandSignal: string
+  painfulBefore: string
+  desiredAfter: string
+  beliefShift: string
+  primaryOfferBridge: string
+  contentWarning: string
+}
+
 export type ContentBriefPiece = {
   day: string
   format: "reel" | "carousel" | "feed"
   title: string
   hook: string
+  demandSignal?: string
+  painfulBefore?: string
+  desiredAfter?: string
+  beliefShift?: string
+  visualProof?: string
+  offerBridge?: string
+  whyThisCreatesDemand?: string
   caption: string
   carouselOutline: string[]
   reelCoverText: string
@@ -93,6 +125,7 @@ export type ContentBrief = {
     source: "your-data" | "research"
     evidence: string
   }>
+  demandMap?: DemandMap
   contentPlan: ContentBriefPiece[]
   storySequence: {
     theme: string
@@ -220,6 +253,13 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
       day: sanitizeBriefText(piece.day, vault),
       title: sanitizeBriefText(piece.title, vault),
       hook: sanitizeBriefText(piece.hook, vault),
+      demandSignal: sanitizeBriefText(piece.demandSignal || "", vault),
+      painfulBefore: sanitizeBriefText(piece.painfulBefore || "", vault),
+      desiredAfter: sanitizeBriefText(piece.desiredAfter || "", vault),
+      beliefShift: sanitizeBriefText(piece.beliefShift || "", vault),
+      visualProof: sanitizeBriefText(piece.visualProof || "", vault),
+      offerBridge: sanitizeBriefText(piece.offerBridge || "", vault),
+      whyThisCreatesDemand: sanitizeBriefText(piece.whyThisCreatesDemand || "", vault),
       caption: captionLooksLikePromptLeak(caption)
         ? sanitizeBriefText(safeTeaserCaption(piece), vault)
         : caption,
@@ -248,6 +288,14 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
         evidence: sanitizeBriefText(theme.evidence, vault),
       })),
     },
+    demandMap: brief.demandMap ? {
+      strongestDemandSignal: sanitizeBriefText(brief.demandMap.strongestDemandSignal, vault),
+      painfulBefore: sanitizeBriefText(brief.demandMap.painfulBefore, vault),
+      desiredAfter: sanitizeBriefText(brief.demandMap.desiredAfter, vault),
+      beliefShift: sanitizeBriefText(brief.demandMap.beliefShift, vault),
+      primaryOfferBridge: sanitizeBriefText(brief.demandMap.primaryOfferBridge, vault),
+      contentWarning: sanitizeBriefText(brief.demandMap.contentWarning, vault),
+    } : undefined,
     hookIntelligence: brief.hookIntelligence.map(hook => ({
       ...hook,
       hook: sanitizeBriefText(hook.hook, vault),
@@ -304,6 +352,9 @@ Research what hook formats, reel/carousel structures, and visual presentation me
 
 Use this internal market-pattern context as a starting point, then refine it with web search:
 ${MARKET_PATTERN_CONTEXT}
+
+Use this demand context as the filter. Do not research only "what content gets attention." Research what content mechanics make the viewer care enough to want the outcome:
+${DEMAND_CREATION_CONTEXT}
 
 Return a concise research memo:
 1. 5-8 hook/content mechanics currently working, each with why it works and a one-line example adapted to her niche
@@ -377,6 +428,25 @@ const BRIEF_SCHEMA = {
         required: ["hook", "pattern", "source", "evidence"],
       },
     },
+    demandMap: {
+      type: "object",
+      properties: {
+        strongestDemandSignal: { type: "string" },
+        painfulBefore: { type: "string" },
+        desiredAfter: { type: "string" },
+        beliefShift: { type: "string" },
+        primaryOfferBridge: { type: "string" },
+        contentWarning: { type: "string" },
+      },
+      required: [
+        "strongestDemandSignal",
+        "painfulBefore",
+        "desiredAfter",
+        "beliefShift",
+        "primaryOfferBridge",
+        "contentWarning",
+      ],
+    },
     contentPlan: {
       type: "array",
       items: {
@@ -386,6 +456,13 @@ const BRIEF_SCHEMA = {
           format: { type: "string", enum: ["reel", "carousel", "feed"] },
           title: { type: "string" },
           hook: { type: "string" },
+          demandSignal: { type: "string" },
+          painfulBefore: { type: "string" },
+          desiredAfter: { type: "string" },
+          beliefShift: { type: "string" },
+          visualProof: { type: "string" },
+          offerBridge: { type: "string" },
+          whyThisCreatesDemand: { type: "string" },
           caption: { type: "string" },
           carouselOutline: { type: "array", items: { type: "string" } },
           reelCoverText: { type: "string" },
@@ -398,6 +475,13 @@ const BRIEF_SCHEMA = {
           "format",
           "title",
           "hook",
+          "demandSignal",
+          "painfulBefore",
+          "desiredAfter",
+          "beliefShift",
+          "visualProof",
+          "offerBridge",
+          "whyThisCreatesDemand",
           "caption",
           "carouselOutline",
           "reelCoverText",
@@ -431,6 +515,7 @@ const BRIEF_SCHEMA = {
     "performanceRecap",
     "audienceDemand",
     "hookIntelligence",
+    "demandMap",
     "contentPlan",
     "storySequence",
   ],
@@ -474,6 +559,7 @@ export async function generateContentBrief(): Promise<ContentBrief> {
     vault,
     suite,
     marketPatternContext: MARKET_PATTERN_CONTEXT,
+    demandCreationContext: DEMAND_CREATION_CONTEXT,
     researchMemo: researchNotes,
   }
 
@@ -492,7 +578,15 @@ ${proofBlock()}
 
 ${funnelBlock()}
 
+${DEMAND_CREATION_CONTEXT}
+
 CONTENT PLAN RULES:
+- Build the brief as a demand-generation plan first, not a photoshoot prompt list.
+- Create demandMap before contentPlan. demandMap must summarize the strongest audience behavior, the painful before, the desired after, the belief shift, the primary offer bridge, and what Sandra should not repeat this week.
+- Do not start from "what should Sandra post?" Start from "what is her buyer trying to stop experiencing?"
+- Every contentPlan piece must include demandSignal, painfulBefore, desiredAfter, beliefShift, visualProof, offerBridge, and whyThisCreatesDemand.
+- whyThisCreatesDemand must explain the life/business situation this idea changes. Do not restate why the hook may perform.
+- visualProof must describe what Sandra should show to prove the shift. It must not default to repeating her previous exact visual scene.
 - Exactly 5 pieces, spread across the week (e.g. Mon/Tue/Thu/Fri/Sun).
 - At least 2 reels, at least 1 carousel.
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.

@@ -37,6 +37,71 @@ function CopyChip({ label, text }: { label: string; text: string }) {
   )
 }
 
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">{label}</p>
+      <p className="mt-1 text-sm leading-relaxed text-stone-800">{value}</p>
+    </div>
+  )
+}
+
+function DemandMapSection({ brief }: { brief: ContentBrief }) {
+  const map = brief.demandMap
+  if (!map) {
+    return (
+      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+        <h2 className="font-serif text-xl text-stone-950">Demand map</h2>
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          This saved brief was generated before the demand-map rebuild. Generate a fresh brief to
+          see the painful before, desired after, belief shift, and offer bridge.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="rounded-2xl border border-stone-950 bg-stone-950 p-5 text-white">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Demand map</p>
+          <h2 className="mt-2 font-serif text-2xl font-light text-white">
+            What demand should this week create?
+          </h2>
+        </div>
+        <CopyChip
+          label="Copy demand map"
+          text={[
+            `Strongest demand signal: ${map.strongestDemandSignal}`,
+            `Painful before: ${map.painfulBefore}`,
+            `Desired after: ${map.desiredAfter}`,
+            `Belief shift: ${map.beliefShift}`,
+            `Primary offer bridge: ${map.primaryOfferBridge}`,
+            `Content warning: ${map.contentWarning}`,
+          ].join("\n")}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {[
+          ["Strongest demand signal", map.strongestDemandSignal],
+          ["Painful before", map.painfulBefore],
+          ["Desired after", map.desiredAfter],
+          ["Belief shift", map.beliefShift],
+          ["Primary offer bridge", map.primaryOfferBridge],
+          ["Do not repeat", map.contentWarning],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">{label}</p>
+            <p className="mt-2 text-sm leading-relaxed text-stone-100">{value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   const fullCopy = [
     piece.caption,
@@ -57,6 +122,40 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </div>
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
+
+      {(piece.demandSignal || piece.painfulBefore || piece.desiredAfter || piece.beliefShift) && (
+        <div className="mt-4 rounded-xl border border-stone-950 bg-stone-950 p-4">
+          <p className="text-xs uppercase tracking-[0.22em] text-stone-400">
+            Demand logic
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                Demand signal
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.demandSignal}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                Painful before
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.painfulBefore}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                Desired after
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.desiredAfter}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                Belief shift
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.beliefShift}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-stone-50 p-4 font-sans text-sm leading-relaxed text-stone-800">
         {piece.caption}
@@ -84,6 +183,14 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         <p className="text-xs uppercase tracking-wide text-stone-500">Photoshoot prompt</p>
         <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.photoshootPrompt}</p>
       </div>
+
+      {(piece.visualProof || piece.offerBridge || piece.whyThisCreatesDemand) && (
+        <div className="mt-3 grid gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 md:grid-cols-3">
+          <DetailRow label="Visual proof" value={piece.visualProof} />
+          <DetailRow label="Offer bridge" value={piece.offerBridge} />
+          <DetailRow label="Why this creates demand" value={piece.whyThisCreatesDemand} />
+        </div>
+      )}
 
       <p className="mt-3 text-sm text-stone-600">
         <span className="text-xs uppercase tracking-wide text-stone-500">Why this works: </span>
@@ -180,6 +287,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
                 : " · full metrics"}
             </p>
           </section>
+
+          <DemandMapSection brief={brief} />
 
           <section>
             <h2 className="mb-3 font-serif text-xl text-stone-950">What worked last week</h2>

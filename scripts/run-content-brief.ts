@@ -14,6 +14,10 @@ async function main() {
   console.log("Account:", brief.accountSnapshot)
   console.log("Recap posts:", brief.performanceRecap.length)
   console.log("Hooks:", brief.hookIntelligence.length)
+  if (brief.demandMap) {
+    console.log("Demand signal:", brief.demandMap.strongestDemandSignal)
+    console.log("Demand bridge:", brief.demandMap.primaryOfferBridge)
+  }
   console.log("Pieces:", brief.contentPlan.map((p) => `${p.day} ${p.format}: ${p.title}`))
   console.log("Story:", brief.storySequence.theme, `(${brief.storySequence.frames.length} frames)`)
 
@@ -28,8 +32,12 @@ async function main() {
   const sampleHook = brief.contentPlan[0]
   console.log("\n--- SAMPLE PIECE ---")
   console.log("HOOK:", sampleHook?.hook)
+  console.log("DEMAND:", sampleHook?.demandSignal)
+  console.log("BEFORE:", sampleHook?.painfulBefore)
+  console.log("AFTER:", sampleHook?.desiredAfter)
   console.log("CAPTION:\n" + sampleHook?.caption)
-  console.log("WHY:", sampleHook?.whyThisWorks)
+  console.log("WHY DEMAND:", sampleHook?.whyThisCreatesDemand)
+  console.log("WHY POST:", sampleHook?.whyThisWorks)
 }
 
 main().then(
