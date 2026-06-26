@@ -117,12 +117,12 @@ export default async function MembershipCheckoutPage({
           actionPath="/checkout/membership"
           eyebrow="SSELFIE SUITE"
           title="Where should I send your access?"
-          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. No account setup here."
+          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. This is where Maya helps you turn your face, story, and ideas into content you can actually use."
           inputId="membership-checkout-email"
           buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"
           productName="SSELFIE SUITE"
-          productMeta="Maya, weekly execution, and your content workspace"
+          productMeta="Maya, weekly content, and your personal brand workspace"
           productPrice={foundingAvailable ? "697 EUR / year · founding" : isAnnual ? "970 EUR / year" : "97 EUR / month"}
           reassurance="Used only for your login, receipt, and access link."
           visuals={[
@@ -213,8 +213,8 @@ export default async function MembershipCheckoutPage({
             color: "rgba(229,229,229,0.78)",
           }}
         >
-          The SSELFIE SUITE is the weekly execution layer with Maya. Join monthly when you&apos;re ready
-          for the recurring system, or start smaller if you still need the method first.
+          The SSELFIE SUITE is the weekly creation layer with Maya. Join monthly when you want help
+          turning your face, story, and ideas into photos, covers, captions, and posts.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>
           <Link

@@ -3,7 +3,7 @@ import { StarterKitPageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
   title: "Starter Kit | SSELFIE",
-  description: "AI-ready selfie presets, posing, editing, captions, and a 7-day content starter for $37.",
+  description: "Make your source photo cleaner, stronger, and easier to use before you post or create AI brand images.",
 }
 
 export default async function StarterKitPage({

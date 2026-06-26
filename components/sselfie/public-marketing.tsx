@@ -685,7 +685,7 @@ const FAQS = {
     { question: "Will this work on my iPhone?",
       answer: "Yes. The kit is built for phone photos. No camera, no desktop software, no complicated setup." },
     { question: "Will this help my AI photos look less fake?",
-      answer: "Yes. Better AI results start with a better original selfie. The kit helps you get cleaner light, stronger angles, better edits, and a more usable photo before you ask any AI tool to transform it." },
+      answer: "Yes. Better AI results start with a better original selfie. The kit helps you get cleaner light, stronger angles, better edits, and a more usable photo before you ask any AI tool to restyle it." },
     { question: "What apps do I need?",
       answer: "Lightroom Mobile, Hypic, and CapCut. All free. The walkthrough shows you exactly how to use each one." },
     { question: "Is this just presets?",
@@ -921,26 +921,26 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       {/* HERO — dark */}
       <Hero
         eyebrow="Starter Kit · $37"
-        title={<>AI-ready selfies, clean edits, captions, and your first week of content.</>}
-        body={<p>Before you ask ChatGPT, Gemini, or any AI tool to restyle your photo, you need a strong original image. This is where the Starter Kit helps.</p>}
+        title={<>Stop fighting with every photo of yourself.</>}
+        body={<p>If the source photo feels off, everything after it feels harder too. The Starter Kit helps you take, edit, and use one clear selfie so your content has a better place to start.</p>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.skHero}
       />
 
       {/* THE SYSTEM — cream */}
-      <Section eyebrow="Why it works" title={<>Your AI photo is only as good as the selfie you start with.</>} dark={false} narrow>
+      <Section eyebrow="Why it works" title={<>The problem is not your face. It is the photo you are starting from.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually looks random too.</p>
-          <p>The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your visuals stop looking fake, flat, or disconnected from you.</p>
-          <p>One better photo. One cleaner edit. One week of content. No starting from zero.</p>
+          <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually feels random too.</p>
+          <p>The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your visuals stop feeling fake, flat, or disconnected from you.</p>
+          <p>One clearer photo. One cleaner edit. One week of content. No starting from zero.</p>
         </div>
       </Section>
 
       {/* WHAT IS INSIDE — dark, split with mockup */}
       <Split
         eyebrow="What is inside"
-        title={<>The first step into cinematic personal branding.</>}
+        title={<>The first step before the AI brand shoot.</>}
         body={
           <div>
             {[
@@ -984,7 +984,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       </Section>
 
       {/* EDITING WALKTHROUGHS — dark */}
-      <Section eyebrow="The editing walkthrough" title={<>Make the original photo stronger first.</>} dark>
+      <Section eyebrow="The editing walkthrough" title={<>Make the original photo easier to use.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
             { num: "01", title: "Lightroom with presets",   body: "Import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
@@ -1006,11 +1006,11 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       {/* PRESET COLLECTION — cream, split */}
       <Split
         eyebrow="The preset collection"
-        title={<>Sixteen presets for cleaner phone photos and better AI inputs.</>}
+        title={<>Cleaner phone photos. Better starting points.</>}
         body={
           <div className="space-y-4">
             <p>Presets do not replace a good photo. They help you make the photo cleaner, more consistent, and easier to use as personal brand content.</p>
-            <p>Use them before posting, before building a carousel, or before sending the image into an AI tool for a transformation.</p>
+            <p>Use them before posting, before building a carousel, or before sending the image into an AI tool.</p>
             <div className="grid gap-2 mt-2">
               {[
                 { name: "Scandinavian Light and Dreamy", desc: "Bright, airy, soft tones. Timeless natural light." },
@@ -1049,9 +1049,9 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
 
       {/* CTA — dark */}
       <CtaClose
-        title={<>Everything you need to turn one AI-ready selfie into your first brand-ready week.</>}
+        title={<>Start with one photo you can actually use.</>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
-        secondary={{ href: "/masterclass",          label: "See the Masterclass" }}
+        secondary={{ href: "/ai-prompts",          label: "Try the free AI prompts" }}
         dark
       />
 
@@ -1204,8 +1204,8 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* HERO — dark */}
       <Hero
         eyebrow="SSELFIE SUITE · €97/mo"
-        title={<>Your visual brand, built for you.</>}
-        body={<p>Maya is the creative director in your pocket. She turns one selfie into full photoshoots, carousels, reel covers, and captions that sound like you. You show up every week. She does the heavy lifting.</p>}
+        title={<>Your monthly system for showing up online.</>}
+        body={<p>Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts you can actually use. So your brand starts looking clear, recognizable, and easier to trust.</p>}
         primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join SSELFIE SUITE" }}
         secondary={{ href: "#how-it-works", label: "See how it works" }}
         imageSrc={IMG.feed}
@@ -1219,9 +1219,9 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>The problem is everything behind one post. You need a photo that doesn&apos;t look like a phone selfie. Words that don&apos;t sound like everyone else. A feed that looks like a brand and not a camera roll.</p>
-          <p>A photographer every month isn&apos;t realistic. And the AI tools you&apos;ve tried made you look like someone else, which is worse than not posting at all.</p>
-          <p>Showing up shouldn&apos;t cost you a whole evening. Or your face.</p>
+          <p>The problem is everything behind one post. You need a photo that feels like you. Words that do not sound like everyone else. A feed that looks like a brand and not a camera roll.</p>
+          <p>A photographer every month is not realistic. And the AI tools you&apos;ve tried made you look like someone else, which is worse than not posting at all.</p>
+          <p>Showing up should not cost you a whole evening. Or your face.</p>
         </div>
       </Section>
 
@@ -1229,12 +1229,12 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <div id="how-it-works">
         <Split
           eyebrow="How it works"
-          title={<>Here&apos;s your new Monday.</>}
+          title={<>Here is your new Monday.</>}
           body={
             <div className="space-y-4">
               <p>You open the app with your coffee. Maya already has three concepts pulled in your style: the photos, the reel cover, the caption.</p>
-              <p>You tap the one that feels most like you. By the time your coffee&apos;s done, this week&apos;s content is too.</p>
-              <p>You, looking like the brand you actually are. Every week.</p>
+              <p>You tap the one that feels most like you. By the time your coffee is done, this week&apos;s content has a direction.</p>
+              <p>You, showing up like the brand you are already building. Every week.</p>
             </div>
           }
           imgSrc={SUITE_IMG.monday}
@@ -1245,27 +1245,27 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       </div>
 
       {/* WHAT MAYA MAKES — cream */}
-      <Section eyebrow="What Maya makes" title={<>One selfie in. A visual brand out.</>} dark={false}>
+      <Section eyebrow="What Maya makes" title={<>One selfie in. A clearer brand out.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <ImgCard src={SUITE_IMG.photoshoots} title="Photoshoots" body="Editorial photos from one selfie. Recognizably you, in every shot." />
-          <ImgCard src={SUITE_IMG.carousels} title="Carousels" body="Designed to be saved. Your words, your colors, ready to post." />
-          <ImgCard src={SUITE_IMG.reelCovers} title="Reel covers" body="Scroll-stopping covers with your hook line on them." />
-          <ImgCard src={SUITE_IMG.captions} title="Captions" body="Sounds like you wrote it on a good day." />
-          <ImgCard src={SUITE_IMG.plan} title="A plan" body="No more staring at a blank feed. She suggests, you tap." />
+          <ImgCard src={SUITE_IMG.photoshoots} title="Photoshoots" body="Brand images from one selfie. Recognizably you, in every shot." />
+          <ImgCard src={SUITE_IMG.carousels} title="Carousels" body="Your ideas turned into posts people can save and understand." />
+          <ImgCard src={SUITE_IMG.reelCovers} title="Reel covers" body="Clean covers with your hook line, so your grid feels more intentional." />
+          <ImgCard src={SUITE_IMG.captions} title="Captions" body="Words that sound like you on a clear day." />
+          <ImgCard src={SUITE_IMG.plan} title="A plan" body="No more staring at a blank feed. Maya suggests, you choose." />
         </div>
       </Section>
 
       {/* EVERYTHING INCLUDED — dark */}
-      <Section eyebrow="Everything included" title={<>The SUITE includes every product I&apos;ve ever made.</>}>
+      <Section eyebrow="Everything included" title={<>Everything you need to keep creating.</>}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <FCard title="Maya" body="Your creative director, plus 200 photos a month." />
-          <FCard title="The Prompt Vault" eyebrow="$27 value" body="Every prompt collection, included." />
-          <FCard title="The Starter Kit" eyebrow="$37 value" body="Presets, posing, captions. Included." />
-          <FCard title="The Masterclass" eyebrow="$147 value" body="The full brand education. Included." />
-          <FCard title="Every new drop" body="New collections and products land in your library every week." />
+          <FCard title="The Prompt Vault" eyebrow="$27 value" body="Visual worlds and prompt collections included." />
+          <FCard title="The Starter Kit" eyebrow="$37 value" body="Presets, posing, captions, and source-photo help included." />
+          <FCard title="The Masterclass" eyebrow="$147 value" body="The deeper brand and content method included." />
+          <FCard title="Every new drop" body="New collections and products land in your library as they are released." />
         </div>
         <p className="mf" style={{ ...ty("body", true), fontSize: "16px", marginTop: "32px" }}>
-          Buy nothing twice. Members get all of it.
+          Buy nothing twice. Members get the full SSELFIE library.
         </p>
       </Section>
 
@@ -1303,9 +1303,9 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       </Section>
 
       {/* PRICING — cream */}
-      <Section eyebrow="Pricing" title={<>€97 a month. Everything included.</>} dark={false} narrow>
+      <Section eyebrow="Pricing" title={<>€97 a month. Your brand creation system.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>200 photos a month. Every product I&apos;ve made. Cancel anytime, no forms.</p>
+          <p>200 photos a month. Maya. The Vault. The Starter Kit. The course library. Cancel anytime, no forms.</p>
         </div>
         <div className="mf" style={{ marginTop: "32px" }}>
           <Btn href={`/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`} surface="cream">
@@ -1321,8 +1321,8 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
       {/* CTA — dark */}
       <CtaClose
-        title="Stop producing your brand alone."
-        body={<p>Maya&apos;s ready. Your first photoshoot is minutes away.</p>}
+        title="Stop trying to build your brand from a blank screen."
+        body={<p>Maya is ready. Start with one selfie, one direction, and one next post.</p>}
         primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join SSELFIE SUITE · €97/mo" }}
         dark
       />

@@ -18,11 +18,11 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "The AI Photo Prompt Vault · SSELFIE",
   description:
-    "Unlock the full AI photoshoot library: complete editorial shot sequences, example images, tested prompts, and new visual worlds.",
+    "Choose a visual world, stop guessing, and turn one clear selfie into AI brand images that still feel like you.",
   openGraph: {
     title: "The AI Photo Prompt Vault · SSELFIE",
     description:
-      "Unlock the full AI photoshoot library: complete editorial shot sequences, example images, tested prompts, and new visual worlds.",
+      "Choose a visual world, stop guessing, and turn one clear selfie into AI brand images that still feel like you.",
     images: ["/academy/visibility-suite/sandra-hero.png"],
   },
 }
@@ -234,7 +234,7 @@ export default async function PromptVaultPage({
           </p>
           <h1
             className={cormorant.className}
-            aria-label="Unlock the full AI photoshoot library"
+            aria-label="Get the full AI photoshoot library"
             style={{
               margin: "0 0 24px",
               fontSize: "clamp(42px, 6.2vw, 82px)",
@@ -244,13 +244,15 @@ export default async function PromptVaultPage({
               color: "#0D0E10",
             }}
           >
-            Unlock the
+            Stop making
             <br />
-            full AI
+            random AI
             <br />
-            photoshoot
+            photos.
             <br />
-            library.
+            Start with
+            <br />
+            one world.
           </h1>
           <p
             style={{
@@ -261,13 +263,13 @@ export default async function PromptVaultPage({
               maxWidth: "400px",
             }}
           >
-            The free preview gives you a taste. The Vault gives you the complete shoot
-            library: every current collection, every shot direction, every example image, and every
-            new drop I add.
+            The free prompt shows you what one selfie can become. The Vault helps you keep going
+            without guessing: choose a visual world, copy the shot directions, and create images
+            that feel like they belong to the same woman.
           </p>
           <p className="pvf-reassurance">
-            Still you. Still recognizable. Just elevated. AI should not erase you. It should
-            frame you.
+            Still you. Still recognizable. Just clearer. AI should not erase you. It should frame
+            the woman people are trying to understand and remember.
           </p>
           <div className="pvf-hero-stats" aria-label="Vault library size">
             <span>{vaultCollectionCount} collections</span>
@@ -284,7 +286,7 @@ export default async function PromptVaultPage({
               textDecoration: "none",
             }}
           >
-            Preview the full library ↓
+            Preview the visual worlds ↓
           </a>
         </div>
 
@@ -331,9 +333,9 @@ export default async function PromptVaultPage({
               color: "#0D0E10",
             }}
           >
-            You&apos;ve been saving those photos
+            Your profile does not need more random inspiration.
             <br />
-            for a reason.
+            It needs a direction.
           </h2>
           <p
             style={{
@@ -343,8 +345,8 @@ export default async function PromptVaultPage({
               color: "#4F5052",
             }}
           >
-            The cinematic ones. That editorial aesthetic. The kind of content that makes someone
-            stop mid-scroll and think: how does her feed always look like that?
+            You can have one good AI image and still feel stuck. Because one image is not a brand.
+            A brand starts to form when the colors, light, mood, and story begin to repeat.
           </p>
           <p
             style={{
@@ -354,7 +356,8 @@ export default async function PromptVaultPage({
               color: "#4F5052",
             }}
           >
-            You&apos;ve been quietly building a picture of who you want to be online.
+            That is what the Vault is for. Not more noise. A set of visual worlds you can come back
+            to when you want your content to look like the same woman lives there.
           </p>
           <p
             style={{
@@ -365,7 +368,7 @@ export default async function PromptVaultPage({
               fontStyle: "italic",
             }}
           >
-            This is that version of you.
+            One selfie. One world. A clearer way to show up.
           </p>
         </div>
       </section>
@@ -379,9 +382,9 @@ export default async function PromptVaultPage({
               The Vault is the complete shoot library.
             </h2>
             <p className="pvf-section-note">
-              The free preview helps you test the idea. The Vault unlocks the rest of the
-              shoot: matching angles, poses, moods, and prompts so one look becomes a full content
-              set.
+              The free preview helps you test the idea. The Vault gives you the rest of the shoot:
+              matching angles, poses, moods, and prompts so one look becomes a set of images you can
+              actually use.
             </p>
           </div>
           <div className="pvf-ladder-grid">
@@ -389,17 +392,17 @@ export default async function PromptVaultPage({
               {
                 n: "01",
                 title: "Free preview",
-                body: "Five newest shoot previews so you can test the result with your own selfie.",
+                body: "Test what one clear selfie can become.",
               },
               {
                 n: "02",
                 title: "Vault",
-                body: "Full shoot sequences, newest drops, and future photoshoot collections.",
+                body: "Choose a repeatable world instead of starting from scratch every time.",
               },
               {
                 n: "03",
                 title: "SUITE",
-                body: "Maya uses the same visual world, creates the content for you, and keeps your face consistent every time.",
+                body: "Let Maya turn the same visual direction into photos, covers, captions, and posts.",
               },
             ].map(step => (
               <article key={step.n} className="pvf-ladder-card">
@@ -416,7 +419,7 @@ export default async function PromptVaultPage({
         <div className="pvf-proof-copy">
           <p className="pvf-eyebrow">REAL CUSTOMER WORDS</p>
           <h2 className={`pvf-section-title ${cormorant.className}`}>
-            Women are not just making images. They are seeing what is possible.
+            Women are not just making images. They are seeing themselves differently.
           </h2>
           <p className="pvf-section-note">
             The Vault is the starting point: one selfie, one visual direction, and prompts that help
@@ -444,11 +447,11 @@ export default async function PromptVaultPage({
         <div className="pvf-section-inner">
           <p className="pvf-eyebrow">THE FULL LIBRARY PREVIEW</p>
           <h2 className={`pvf-section-title ${cormorant.className}`}>
-            Every world has a full sequence behind it.
+            Every world gives your content a clearer direction.
           </h2>
           <p className="pvf-section-note">
-            Browse the opening image from each visual world. The complete prompt sequence unlocks
-            inside the Vault.
+            Browse the opening image from each visual world. The full sequence gives you the next
+            angles, details, and content moments so the look does not stop at one image.
           </p>
 
           <div className="pvf-preview-grid">
@@ -476,10 +479,10 @@ export default async function PromptVaultPage({
                     {meta && (
                       <p className="pvf-vault-note">
                         This is the opening image. The full {meta.shotCount}-shot collection and
-                        copy-paste prompts unlock inside the Vault.
+                        copy-paste prompts are inside the Vault.
                       </p>
                     )}
-                    <BuyButton label={`Unlock full sequence · ${promptVaultPrice.label}`} />
+                    <BuyButton label={`Get full sequence · ${promptVaultPrice.label}`} />
                     <RiskLine />
                   </div>
                 </article>
@@ -502,24 +505,24 @@ export default async function PromptVaultPage({
             className={`pvf-section-title ${cormorant.className}`}
             style={{ marginBottom: "52px" }}
           >
-            What changes when you unlock it.
+            What changes when you stop guessing.
           </h2>
           <div className="pvf-steps-grid">
             {[
               {
                 n: "01",
-                title: "You stop guessing from one prompt.",
-                body: "Each collection gives you a complete shoot path, not a single random image idea.",
+                title: "You know what to make next.",
+                body: "Each collection gives you a simple shoot path, not a single random image idea.",
               },
               {
                 n: "02",
                 title: "Your images start to belong together.",
-                body: "The angles, light, styling, and mood are designed as one visual world.",
+                body: "The angles, light, styling, and mood come from one visual world.",
               },
               {
                 n: "03",
-                title: "You get a library you can keep returning to.",
-                body: "Use one collection today, then come back for the next campaign, profile update, or content week.",
+                title: "Your brand starts looking easier to understand.",
+                body: "Use one collection for a profile update, a reel cover, a soft sales post, or a content week.",
               },
             ].map(step => (
               <div key={step.n}>
@@ -567,7 +570,7 @@ export default async function PromptVaultPage({
               lineHeight: 1.7,
             }}
           >
-            You bring the selfie. The Vault gives you the shot direction.
+            You bring the selfie. The Vault gives it a direction.
           </p>
         </div>
       </section>
@@ -605,7 +608,7 @@ export default async function PromptVaultPage({
           <div style={{ maxWidth: "640px" }}>
             <p className="pvf-eyebrow">THE SELFIE TO BRAND SHOOT VAULT</p>
             <h2 className={`pvf-section-title ${cormorant.className}`}>
-              Unlock the rest of every shoot.
+              Build a visual world you can repeat.
             </h2>
             <p
               style={{
@@ -615,13 +618,13 @@ export default async function PromptVaultPage({
                 color: "#4F5052",
               }}
             >
-              The free preview is the taste. The Vault is the whole library: all current
-              collections, all matching shots, all prompts, and every new SSELFIE drop I add.
+              The free preview is the first image. The Vault is the full direction: all current
+              collections, matching shots, copy-paste prompts, and every new SSELFIE drop I add.
             </p>
             <ul className="pvf-upsell-list">
               {[
-                "A growing archive of complete editorial collections",
-                "Full shot sequence for every mood",
+                "A growing archive of complete visual worlds",
+                "Full shot sequence for each mood",
                 "Example photo for every prompt",
                 "Newest drops + future SSELFIE photoshoots included",
                 `${promptVaultPrice.label} one-time payment · Instant access`,

@@ -215,7 +215,7 @@ export default async function SelfieToBrandShootCheckoutPage({
         actionPath="/checkout/selfie-to-brand-shoot"
         eyebrow="SELFIE TO BRAND SHOOT"
         title="Where should I send your System access?"
-        copy="Add your email before checkout so your course access, Prompt Vault, and receipt go to the right place. If you already bought the Vault or Starter Kit, this also lets me check your credit."
+        copy="Add your email before checkout so your course access, Prompt Vault, and receipt go to the right place. This is the guided path for turning one clear selfie into brand images you can actually use."
         inputId="selfie-to-brand-shoot-checkout-email"
       />
     )

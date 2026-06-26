@@ -116,7 +116,7 @@ export default async function StarterKitCheckoutPage({
         actionPath="/checkout/starter-kit"
         eyebrow="SELFIE STARTER KIT"
         title="Where should I send your Starter Kit?"
-        copy="Add your email before checkout so your Starter Kit, receipt, and access link go to the right place. If anything pauses, I can help you find your order faster."
+        copy="Add your email before checkout so your Starter Kit, receipt, and access link go to the right place. This is the kit for making your source photo cleaner, stronger, and easier to use."
         inputId="starter-kit-checkout-email"
       />
     )
