@@ -27,7 +27,7 @@ SSELFIE shows you where to start and what to do next, so you can finally build y
 
 **Why it works (say it plainly):** people don't follow, remember, or buy from someone they can't make sense of. When your profile is clear, your content feels like you, and you keep showing up, you become easy to trust. Trust is what turns a follower into a client.
 
-**Short public version:** Start with one selfie. Build the online brand people remember and buy from.
+**Short public version:** Start with one selfie. Build the online brand people remember.
 
 ## Page title / SEO
 Recommended: **SSELFIE Studio | Start with one selfie and build the online brand people remember**
@@ -38,7 +38,7 @@ Optional: SSELFIE Studio | Where to start building your brand online
 ## Hero
 **Headline:** Don't know where to start building your brand? Start with one selfie.
 
-**Subheadline:** SSELFIE turns one selfie into content you actually post, a clear profile, and a plan that makes people want to follow you, trust you, and buy from you. Built around your story, your phone, and the time you have.
+**Subheadline:** SSELFIE turns one selfie into content you can actually post, a clearer profile, and a simple plan for what to do next, so people can follow you, trust you, and buy from you.
 
 **Bullets:**
 - Always know what to post next
@@ -88,9 +88,9 @@ Founder of SSELFIE. I help women start with one selfie and build it into content
 
 **Heading:** Being seen is a skill. SSELFIE makes it simple.
 
-**Body:** Most women don't have a talent problem. They have a "where do I start" problem. They don't know what to say, so they say nothing. They don't like their photos, so they hide. They post when they feel brave, then go quiet for weeks.
+**Body:** Most women don't have a talent problem. They have a "where do I start?" problem. So they wait, they hide, and they post only when they feel brave.
 
-SSELFIE breaks that. It gives you a clear starting point, turns one selfie into real content, and hands you one doable move at a time, so you finally show up consistently. And consistency is the whole game. The woman people trust and buy from isn't the most talented one. She's the one who kept showing up, clearly, as herself.
+SSELFIE breaks that. It gives you a starting point and one doable move at a time, so you finally show up consistently. And consistency is the whole game. The woman people trust and hire isn't the most talented one. She's the one who kept showing up, as herself.
 
 ---
 
@@ -99,7 +99,7 @@ SSELFIE breaks that. It gives you a clear starting point, turns one selfie into 
 
 **Heading:** Know what to post, what to say, and where to point people next.
 
-**Body:** SSELFIE is your content engine. It starts with one selfie and turns it into a month of posts, captions, and stories, plus a clear profile and a path to your offer. It builds the plan around your niche, your goal, and the time you have today, so you always know your next move instead of staring at a blank screen.
+**Body:** SSELFIE is your content engine. It takes one photo you already have and turns it into a month of posts, captions, and stories, plus a clear profile and a path to your offer. It builds the plan around your niche, your goal, and the time you have today, so you always know your next move instead of staring at a blank screen.
 
 **CTA:** Start with one selfie
 
@@ -139,11 +139,11 @@ Now SSELFIE is everything I've learned about building online, in one place: your
 ---
 
 ## The SSELFIE method checklist
-**Heading:** Use the SSELFIE method to build a brand people understand, and want to buy from.
+**Heading:** Use the SSELFIE method to build a brand people understand, remember, and want to work with.
 
 - Decide what you want to be known for
 - Make your Instagram profile clear in five seconds
-- Turn one selfie into a week of content
+- Turn one photo into a week of content
 - Plan your next 9 posts
 - Write captions and stories from your real life
 - Turn one photo into posts, stories, covers, and offers
