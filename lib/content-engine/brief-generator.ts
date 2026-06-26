@@ -242,73 +242,100 @@ function safeTeaserCaption(piece: Pick<ContentBriefPiece, "hook" | "title">): st
   ].join("\n")
 }
 
+function asArray<T = unknown>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+function asObject<T>(value: unknown): Partial<T> {
+  return value && typeof value === "object" ? (value as Partial<T>) : {}
+}
+
+function safeBriefText(value: unknown, vault: VaultBriefContext): string {
+  if (typeof value === "string") {
+    return sanitizeBriefText(value, vault)
+  }
+  if (value == null) {
+    return ""
+  }
+  return sanitizeBriefText(String(value), vault)
+}
+
 function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" | "periodEnd" | "accountSnapshot" | "researchNotes">>(
   brief: T,
   vault: VaultBriefContext
 ): T {
   const sanitizePiece = (piece: ContentBriefPiece): ContentBriefPiece => {
-    const caption = sanitizeBriefText(piece.caption, vault)
+    const normalizedPiece = asObject<ContentBriefPiece>(piece)
+    const caption = safeBriefText(normalizedPiece.caption, vault)
     return {
       ...piece,
-      day: sanitizeBriefText(piece.day, vault),
-      title: sanitizeBriefText(piece.title, vault),
-      hook: sanitizeBriefText(piece.hook, vault),
-      demandSignal: sanitizeBriefText(piece.demandSignal || "", vault),
-      painfulBefore: sanitizeBriefText(piece.painfulBefore || "", vault),
-      desiredAfter: sanitizeBriefText(piece.desiredAfter || "", vault),
-      beliefShift: sanitizeBriefText(piece.beliefShift || "", vault),
-      visualProof: sanitizeBriefText(piece.visualProof || "", vault),
-      offerBridge: sanitizeBriefText(piece.offerBridge || "", vault),
-      whyThisCreatesDemand: sanitizeBriefText(piece.whyThisCreatesDemand || "", vault),
+      day: safeBriefText(normalizedPiece.day, vault),
+      format: normalizedPiece.format === "carousel" || normalizedPiece.format === "feed" ? normalizedPiece.format : "reel",
+      title: safeBriefText(normalizedPiece.title, vault),
+      hook: safeBriefText(normalizedPiece.hook, vault),
+      demandSignal: safeBriefText(normalizedPiece.demandSignal, vault),
+      painfulBefore: safeBriefText(normalizedPiece.painfulBefore, vault),
+      desiredAfter: safeBriefText(normalizedPiece.desiredAfter, vault),
+      beliefShift: safeBriefText(normalizedPiece.beliefShift, vault),
+      visualProof: safeBriefText(normalizedPiece.visualProof, vault),
+      offerBridge: safeBriefText(normalizedPiece.offerBridge, vault),
+      whyThisCreatesDemand: safeBriefText(normalizedPiece.whyThisCreatesDemand, vault),
       caption: captionLooksLikePromptLeak(caption)
-        ? sanitizeBriefText(safeTeaserCaption(piece), vault)
+        ? safeBriefText(safeTeaserCaption({
+          hook: normalizedPiece.hook || "",
+          title: normalizedPiece.title || "",
+        }), vault)
         : caption,
-      carouselOutline: piece.carouselOutline.map(line => sanitizeBriefText(line, vault)),
-      reelCoverText: sanitizeBriefText(piece.reelCoverText, vault),
-      photoshootPrompt: sanitizeBriefText(piece.photoshootPrompt, vault),
-      hashtags: piece.hashtags.map(tag => sanitizeBriefText(tag, vault)),
-      whyThisWorks: sanitizeBriefText(piece.whyThisWorks, vault),
+      carouselOutline: asArray(normalizedPiece.carouselOutline).map(line => safeBriefText(line, vault)),
+      reelCoverText: safeBriefText(normalizedPiece.reelCoverText, vault),
+      photoshootPrompt: safeBriefText(normalizedPiece.photoshootPrompt, vault),
+      hashtags: asArray(normalizedPiece.hashtags).map(tag => safeBriefText(tag, vault)),
+      whyThisWorks: safeBriefText(normalizedPiece.whyThisWorks, vault),
     }
   }
+  const normalizedBrief = asObject<ContentBrief>(brief)
+  const audienceDemand = asObject<ContentBrief["audienceDemand"]>(normalizedBrief.audienceDemand)
+  const demandMap = asObject<DemandMap>(normalizedBrief.demandMap)
+  const storySequence = asObject<ContentBrief["storySequence"]>(normalizedBrief.storySequence)
 
   return {
     ...brief,
-    performanceRecap: brief.performanceRecap.map(item => ({
+    performanceRecap: asArray<ContentBrief["performanceRecap"][number]>(normalizedBrief.performanceRecap).map(item => ({
       ...item,
-      hookLine: sanitizeBriefText(item.hookLine, vault),
-      whyItWorked: sanitizeBriefText(item.whyItWorked, vault),
+      hookLine: safeBriefText(item.hookLine, vault),
+      whyItWorked: safeBriefText(item.whyItWorked, vault),
     })),
     audienceDemand: {
-      topPrompts: brief.audienceDemand.topPrompts.map(prompt => ({
+      topPrompts: asArray<ContentBrief["audienceDemand"]["topPrompts"][number]>(audienceDemand.topPrompts).map(prompt => ({
         ...prompt,
-        title: sanitizeBriefText(prompt.title, vault),
+        title: safeBriefText(prompt.title, vault),
       })),
-      dmThemes: brief.audienceDemand.dmThemes.map(theme => ({
-        theme: sanitizeBriefText(theme.theme, vault),
-        evidence: sanitizeBriefText(theme.evidence, vault),
+      dmThemes: asArray<ContentBrief["audienceDemand"]["dmThemes"][number]>(audienceDemand.dmThemes).map(theme => ({
+        theme: safeBriefText(theme.theme, vault),
+        evidence: safeBriefText(theme.evidence, vault),
       })),
     },
-    demandMap: brief.demandMap ? {
-      strongestDemandSignal: sanitizeBriefText(brief.demandMap.strongestDemandSignal, vault),
-      painfulBefore: sanitizeBriefText(brief.demandMap.painfulBefore, vault),
-      desiredAfter: sanitizeBriefText(brief.demandMap.desiredAfter, vault),
-      beliefShift: sanitizeBriefText(brief.demandMap.beliefShift, vault),
-      primaryOfferBridge: sanitizeBriefText(brief.demandMap.primaryOfferBridge, vault),
-      contentWarning: sanitizeBriefText(brief.demandMap.contentWarning, vault),
+    demandMap: normalizedBrief.demandMap ? {
+      strongestDemandSignal: safeBriefText(demandMap.strongestDemandSignal, vault),
+      painfulBefore: safeBriefText(demandMap.painfulBefore, vault),
+      desiredAfter: safeBriefText(demandMap.desiredAfter, vault),
+      beliefShift: safeBriefText(demandMap.beliefShift, vault),
+      primaryOfferBridge: safeBriefText(demandMap.primaryOfferBridge, vault),
+      contentWarning: safeBriefText(demandMap.contentWarning, vault),
     } : undefined,
-    hookIntelligence: brief.hookIntelligence.map(hook => ({
+    hookIntelligence: asArray<ContentBrief["hookIntelligence"][number]>(normalizedBrief.hookIntelligence).map(hook => ({
       ...hook,
-      hook: sanitizeBriefText(hook.hook, vault),
-      pattern: sanitizeBriefText(hook.pattern, vault),
-      evidence: sanitizeBriefText(hook.evidence, vault),
+      hook: safeBriefText(hook.hook, vault),
+      pattern: safeBriefText(hook.pattern, vault),
+      evidence: safeBriefText(hook.evidence, vault),
     })),
-    contentPlan: brief.contentPlan.map(sanitizePiece),
+    contentPlan: asArray<ContentBriefPiece>(normalizedBrief.contentPlan).map(sanitizePiece),
     storySequence: {
-      theme: sanitizeBriefText(brief.storySequence.theme, vault),
-      frames: brief.storySequence.frames.map(frame => ({
+      theme: safeBriefText(storySequence.theme, vault),
+      frames: asArray<ContentBrief["storySequence"]["frames"][number]>(storySequence.frames).map(frame => ({
         ...frame,
-        content: sanitizeBriefText(frame.content, vault),
-        interaction: sanitizeBriefText(frame.interaction, vault),
+        content: safeBriefText(frame.content, vault),
+        interaction: safeBriefText(frame.interaction, vault),
       })),
     },
   }

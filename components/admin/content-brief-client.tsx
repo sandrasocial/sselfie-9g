@@ -47,6 +47,10 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   )
 }
 
+function safeArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : []
+}
+
 function DemandMapSection({ brief }: { brief: ContentBrief }) {
   const map = brief.demandMap
   if (!map) {
@@ -103,10 +107,12 @@ function DemandMapSection({ brief }: { brief: ContentBrief }) {
 }
 
 function PieceCard({ piece }: { piece: ContentBriefPiece }) {
+  const carouselOutline = safeArray(piece.carouselOutline)
+  const hashtags = safeArray(piece.hashtags)
   const fullCopy = [
     piece.caption,
     "",
-    piece.hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
+    hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
   ].join("\n")
 
   return (
@@ -161,11 +167,11 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         {piece.caption}
       </pre>
 
-      {piece.carouselOutline.length > 0 && (
+      {carouselOutline.length > 0 && (
         <div className="mt-3 rounded-xl border border-stone-200 p-4">
           <p className="text-xs uppercase tracking-wide text-stone-500">Carousel slides</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-stone-800">
-            {piece.carouselOutline.map((slide, index) => (
+            {carouselOutline.map((slide, index) => (
               <li key={index}>{slide}</li>
             ))}
           </ol>
@@ -201,8 +207,8 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         <CopyChip label="Copy caption + tags" text={fullCopy} />
         <CopyChip label="Copy hook" text={piece.hook} />
         <CopyChip label="Copy photoshoot prompt" text={piece.photoshootPrompt} />
-        {piece.carouselOutline.length > 0 && (
-          <CopyChip label="Copy slides" text={piece.carouselOutline.join("\n")} />
+        {carouselOutline.length > 0 && (
+          <CopyChip label="Copy slides" text={carouselOutline.join("\n")} />
         )}
       </div>
     </div>
@@ -217,6 +223,12 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
 
   const selected = reports[selectedIndex]
   const brief = selected?.payload
+  const performanceRecap = safeArray(brief?.performanceRecap)
+  const topPrompts = safeArray(brief?.audienceDemand?.topPrompts)
+  const dmThemes = safeArray(brief?.audienceDemand?.dmThemes)
+  const hookIntelligence = safeArray(brief?.hookIntelligence)
+  const contentPlan = safeArray(brief?.contentPlan)
+  const storyFrames = safeArray(brief?.storySequence?.frames)
 
   async function generateNow() {
     setGenerating(true)
@@ -293,7 +305,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
           <section>
             <h2 className="mb-3 font-serif text-xl text-stone-950">What worked last week</h2>
             <div className="space-y-2">
-              {brief.performanceRecap.map((post, index) => (
+              {performanceRecap.map((post, index) => (
                 <div key={index} className="rounded-xl border border-stone-200 bg-white p-4">
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
@@ -326,7 +338,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
               <div className="rounded-xl border border-stone-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-wide text-stone-500">Most copied prompts (30d)</p>
                 <ul className="mt-2 space-y-1 text-sm text-stone-800">
-                  {brief.audienceDemand.topPrompts.map((prompt, index) => (
+                  {topPrompts.map((prompt, index) => (
                     <li key={index} className="flex justify-between gap-3">
                       <span>{prompt.title}</span>
                       <span className="text-stone-500">{prompt.copies}x</span>
@@ -337,7 +349,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
               <div className="rounded-xl border border-stone-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-wide text-stone-500">DM themes</p>
                 <ul className="mt-2 space-y-2 text-sm text-stone-800">
-                  {brief.audienceDemand.dmThemes.map((theme, index) => (
+                  {dmThemes.map((theme, index) => (
                     <li key={index}>
                       <span className="font-medium">{theme.theme}</span>
                       <span className="block text-stone-600">{theme.evidence}</span>
@@ -351,7 +363,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
           <section>
             <h2 className="mb-3 font-serif text-xl text-stone-950">Hooks with receipts</h2>
             <div className="space-y-2">
-              {brief.hookIntelligence.map((hook, index) => (
+              {hookIntelligence.map((hook, index) => (
                 <div key={index} className="rounded-xl border border-stone-200 bg-white p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
@@ -375,16 +387,16 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
           <section>
             <h2 className="mb-3 font-serif text-xl text-stone-950">Your week, ready to post</h2>
             <div className="space-y-4">
-              {brief.contentPlan.map((piece, index) => (
+              {contentPlan.map((piece, index) => (
                 <PieceCard key={index} piece={piece} />
               ))}
             </div>
           </section>
 
           <section className="rounded-2xl border border-stone-200 bg-white p-5">
-            <h2 className="font-serif text-xl text-stone-950">Story sequence: {brief.storySequence.theme}</h2>
+            <h2 className="font-serif text-xl text-stone-950">Story sequence: {brief.storySequence?.theme || "Untitled"}</h2>
             <ol className="mt-3 space-y-3">
-              {brief.storySequence.frames.map((frame) => (
+              {storyFrames.map((frame) => (
                 <li key={frame.frame} className="rounded-xl bg-stone-50 p-4">
                   <p className="text-xs uppercase tracking-wide text-stone-500">Frame {frame.frame}</p>
                   <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
