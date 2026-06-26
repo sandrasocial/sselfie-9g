@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
@@ -9,7 +9,7 @@ import { sql } from "@/lib/db/client"
  * 
  * Returns referral statistics for the authenticated user
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
 

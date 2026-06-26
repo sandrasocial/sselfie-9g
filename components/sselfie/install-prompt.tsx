@@ -8,22 +8,25 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
 }
 
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean
+}
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [showIOSInstructions, setShowIOSInstructions] = useState(false)
-  const [isWaitingForPrompt, setIsWaitingForPrompt] = useState(true)
 
   useEffect(() => {
     const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as NavigatorWithStandalone).standalone === true
     console.log("[v0] Install prompt - Is standalone:", isStandalone)
 
     if (isStandalone) {
       setIsInstalled(true)
-      setIsWaitingForPrompt(false)
       return
     }
 
@@ -38,13 +41,11 @@ export function InstallPrompt() {
       console.log("[v0] Install prompt - Days since dismissed:", daysSinceDismissed)
       if (daysSinceDismissed < 7) {
         console.log("[v0] Install prompt - Dismissed recently, not showing")
-        setIsWaitingForPrompt(false)
         return
       }
     }
 
     if (iOS) {
-      setIsWaitingForPrompt(false)
       const timer = setTimeout(() => {
         console.log("[v0] Install prompt - Showing iOS prompt after delay")
         setShowPrompt(true)
@@ -52,32 +53,28 @@ export function InstallPrompt() {
       return () => clearTimeout(timer)
     }
 
+    const timeout = setTimeout(() => {
+      console.log("[v0] Install prompt - No beforeinstallprompt event after 3s, likely already installed or not supported")
+      setShowPrompt(false)
+    }, 3000)
+
     const handler = (e: Event) => {
       console.log("[v0] Install prompt - beforeinstallprompt event fired!")
       e.preventDefault()
+      clearTimeout(timeout)
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowPrompt(true)
-      setIsWaitingForPrompt(false)
     }
 
-    window.addEventListener("beforeinstallprompt", handler)
-
-    window.addEventListener("appinstalled", () => {
+    const installedHandler = () => {
       console.log("[v0] Install prompt - App installed successfully")
       setIsInstalled(true)
       setShowPrompt(false)
       setDeferredPrompt(null)
-    })
+    }
 
-    const timeout = setTimeout(() => {
-      if (!deferredPrompt) {
-        console.log(
-          "[v0] Install prompt - No beforeinstallprompt event after 3s, likely already installed or not supported",
-        )
-        setIsWaitingForPrompt(false)
-        setShowPrompt(false)
-      }
-    }, 3000)
+    window.addEventListener("beforeinstallprompt", handler)
+    window.addEventListener("appinstalled", installedHandler)
 
     console.log("[v0] Install prompt - Waiting for beforeinstallprompt event...")
     console.log("[v0] Install prompt - HTTPS:", window.location.protocol === "https:")
@@ -85,6 +82,7 @@ export function InstallPrompt() {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
+      window.removeEventListener("appinstalled", installedHandler)
       clearTimeout(timeout)
     }
   }, [])

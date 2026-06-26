@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserSubscription } from "@/lib/subscription"
 import { sql } from "@/lib/db/client"
+
+interface DatabaseErrorWithCode {
+  code?: string
+}
 
 export async function GET() {
   try {
@@ -82,9 +85,9 @@ export async function GET() {
         LIMIT 1
       `
       physicalPreferences = brandData.length > 0 ? brandData[0].physical_preferences : null
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Column doesn't exist yet - gracefully handle by returning null
-      if (error?.code === "42703") {
+      if ((error as DatabaseErrorWithCode)?.code === "42703") {
         console.log("[v0] Physical preferences column doesn't exist yet - needs migration")
       } else {
         // Re-throw other errors

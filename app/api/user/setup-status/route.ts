@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 
+interface AvatarImageRow {
+  image_url: string
+}
 
 /**
  * GET /api/user/setup-status
@@ -13,7 +16,7 @@ import { sql } from "@/lib/db/client"
  * - avatarImages: Array of avatar image URLs
  * - avatarCount: Number of avatar images
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient()
     const {
@@ -50,11 +53,12 @@ export async function GET(req: NextRequest) {
       ORDER BY display_order ASC, uploaded_at ASC
     `
     const hasReferenceImages = avatarImages.length >= 3
+    const avatarImageRows = avatarImages as AvatarImageRow[]
 
     return NextResponse.json({
       hasTrainedModel,
       hasReferenceImages,
-      avatarImages: avatarImages.map((row: any) => row.image_url),
+      avatarImages: avatarImageRows.map((row) => row.image_url),
       avatarCount: avatarImages.length,
       modelId: model?.id || null,
       trainingStatus: model?.training_status || null,
@@ -67,4 +71,3 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-

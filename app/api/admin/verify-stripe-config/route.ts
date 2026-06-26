@@ -12,6 +12,43 @@ import { stripe } from "@/lib/stripe"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { getValidationStatus } from "@/lib/stripe/validate-pricing-config"
 
+interface StripeDiagnosticResults {
+  timestamp: string
+  validationCacheStatus: ReturnType<typeof getValidationStatus>
+  environmentVariables: Record<string, { isSet: boolean; value: string | null }>
+  priceVerifications: PriceVerification[]
+  expectedConfiguration: Record<string, ExpectedPriceConfiguration>
+  validationIssues: string[]
+  isValid: boolean
+}
+
+interface PriceVerification {
+  envVar: string
+  priceId: string
+  exists: boolean
+  active?: boolean
+  amount?: number | null
+  amountFormatted?: string | null
+  currency?: string
+  recurring?: {
+    interval: string
+    intervalCount: number
+  } | null
+  product?: string
+  error?: string
+}
+
+interface ExpectedPriceConfiguration {
+  envVar: string
+  expectedAmount: number
+  expectedAmountFormatted: string
+  expectedRecurring: boolean
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error"
+}
+
 function unauthorized(error?: string) {
   return NextResponse.json(
     { error: error || "Admin access required" },
@@ -26,11 +63,14 @@ export async function GET() {
   }
 
   try {
-    const results: any = {
+    const results: StripeDiagnosticResults = {
       timestamp: new Date().toISOString(),
       validationCacheStatus: getValidationStatus(),
       environmentVariables: {},
       priceVerifications: [],
+      expectedConfiguration: {},
+      validationIssues: [],
+      isValid: false,
     }
     
     // Check environment variables
@@ -78,12 +118,12 @@ export async function GET() {
               ? price.product
               : ("deleted" in price.product ? price.product.id : price.product.name) || price.product.id,
           })
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.priceVerifications.push({
             envVar,
             priceId: value,
             exists: false,
-            error: error.message,
+            error: getErrorMessage(error),
           })
         }
       }
@@ -175,9 +215,7 @@ export async function GET() {
     const validationIssues: string[] = []
     
     for (const verification of results.priceVerifications) {
-      const expected = Object.values(results.expectedConfiguration).find(
-        (e: any) => e.envVar === verification.envVar
-      ) as any
+      const expected = Object.values(results.expectedConfiguration).find((e) => e.envVar === verification.envVar)
       
       if (!expected) continue
       
@@ -202,9 +240,9 @@ export async function GET() {
     return NextResponse.json(results, {
       status: results.isValid ? 200 : 500,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
-      error: error.message,
+      error: getErrorMessage(error),
       timestamp: new Date().toISOString(),
     }, {
       status: 500,

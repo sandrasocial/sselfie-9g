@@ -1,6 +1,25 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
+interface ProductDiagnostic {
+  name: string
+  product_id: string
+  prices: {
+    price_id: string
+    amount: string
+    currency: string
+    interval: string
+  }[]
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error"
+}
+
+function getStripeErrorCode(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error ? String(error.code) : null
+}
+
 export async function GET() {
   if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
@@ -12,7 +31,7 @@ export async function GET() {
       keys_configured: false,
       webhook_configured: false,
       products_found: 0,
-      products: [] as any[],
+      products: [] as ProductDiagnostic[],
       errors: [] as string[],
     }
 
@@ -90,7 +109,7 @@ export async function GET() {
       } else if (priceId.startsWith("price_")) {
         try {
           await stripe.prices.retrieve(priceId)
-        } catch (error) {
+        } catch {
           results.errors.push(`Price ID ${priceId} for ${key} not found in Stripe`)
         }
       }
@@ -113,13 +132,15 @@ export async function GET() {
       },
       { status: 200 },
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorCode = getStripeErrorCode(error)
+
     return NextResponse.json(
       {
         error: "Failed to verify Stripe setup",
-        message: error.message,
+        message: getErrorMessage(error),
         hint:
-          error.code === "api_key_invalid"
+          errorCode === "api_key_invalid"
             ? "Your Stripe keys might be incorrect. Check the Vars section."
             : "Unknown error - check your Stripe Dashboard for issues",
       },

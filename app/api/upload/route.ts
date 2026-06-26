@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"
+
+interface NamedBlob extends Blob {
+  name?: string
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -105,7 +108,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           return NextResponse.json({ error: "No file provided in request" }, { status: 400 })
         }
         
-        const fileName = typeof (file as any).name === "string" ? (file as any).name : `upload-${Date.now()}.png`
+        const fileName = typeof (file as NamedBlob).name === "string" ? (file as NamedBlob).name : `upload-${Date.now()}.png`
         console.log("[v0] Uploading file:", fileName, "Size:", file.size, "bytes")
         
         // Upload to Blob storage

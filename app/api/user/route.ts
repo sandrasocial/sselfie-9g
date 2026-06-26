@@ -1,5 +1,4 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserCredits } from "@/lib/credits"
 import { NextResponse } from "next/server"
 
