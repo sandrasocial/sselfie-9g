@@ -108,6 +108,7 @@ function DemandMapSection({ brief }: { brief: ContentBrief }) {
 
 function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   const carouselOutline = safeArray(piece.carouselOutline)
+  const onScreenText = safeArray(piece.onScreenText)
   const hashtags = safeArray(piece.hashtags)
   const fullCopy = [
     piece.caption,
@@ -128,6 +129,36 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </div>
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
+
+      {piece.visualHook && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-amber-700">
+            Visual hook · first 2 seconds
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-stone-800">{piece.visualHook}</p>
+        </div>
+      )}
+
+      {onScreenText.length > 0 && (
+        <div className="mt-3 rounded-xl border border-stone-950 bg-stone-950 p-4 text-white">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+              Text on screen {piece.format === "carousel" ? "· one line per slide" : "· beat by beat"}
+            </p>
+            <CopyChip label="Copy on-screen text" text={onScreenText.join("\n")} />
+          </div>
+          <ol className="mt-3 space-y-1.5">
+            {onScreenText.map((line, index) => (
+              <li key={index} className="flex gap-3 text-sm leading-relaxed">
+                <span className="select-none text-stone-500">
+                  {piece.format === "carousel" ? `S${index + 1}` : `${index + 1}.`}
+                </span>
+                <span className="font-medium text-stone-50">{line}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {(piece.demandSignal || piece.painfulBefore || piece.desiredAfter || piece.beliefShift) && (
         <div className="mt-4 rounded-xl border border-stone-950 bg-stone-950 p-4">
@@ -182,6 +213,13 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         <p className="mt-3 text-sm text-stone-700">
           <span className="text-xs uppercase tracking-wide text-stone-500">Reel cover: </span>
           {piece.reelCoverText}
+        </p>
+      )}
+
+      {piece.audioSuggestion && (
+        <p className="mt-3 text-sm text-stone-700">
+          <span className="text-xs uppercase tracking-wide text-stone-500">Audio: </span>
+          {piece.audioSuggestion}
         </p>
       )}
 

@@ -1,13 +1,19 @@
-// Machine-readable source for docs/brand/SSELFIE_CONTENT_GROUNDING.md.
-// Keep this module aligned with that approved doc; generators import this instead of hand-copying rules.
+// Machine-readable source for docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md.
+// Keep this module aligned with the current source; generators import this instead of hand-copying rules.
 
 export const BANNED_WORDS = [
   "leverage",
   "synergy",
   "transform",
+  "curated",
+  "amplified",
+  "empower",
+  "disruptive",
+  "optimize",
+  "utilize",
+  "revolutionary",
   "game-changer",
   "skyrocket",
-  "unlock",
   "unlock your potential",
   "elevate",
   "elevated",
@@ -17,6 +23,11 @@ export const BANNED_WORDS = [
   "strategic visibility",
   "build your dream life",
   "create your dream life",
+  "new face",
+  "AI headshot",
+  "headshot app",
+  "AI photo app",
+  "prompt marketplace",
   "this is your sign",
   "as a busy entrepreneur",
   "in today's digital world",
@@ -33,32 +44,34 @@ export const BANNED_WORDS = [
 ] as const
 
 export const APPROVED_LANGUAGE = [
-  "phone-first",
-  "AI-ready selfie",
-  "cinematic personal brand content",
-  "high-end visuals",
-  "make your content look expensive",
-  "one photo can become a week of content",
+  "your phone is enough to begin",
+  "start with one photo",
+  "know what to post next",
   "photos you actually want to post",
   "a personal brand that looks like you",
+  "AI tools",
+  "AI-assisted visuals",
+  "AI photos that still look like her",
   "still looks like you",
   "still you",
   "realistic",
-  "editorial",
   "recognizable",
   "tasteful",
-  "polished",
+  "polished but still real",
   "true-to-you",
   "creative direction",
   "brand world",
-  "premium presence",
+  "real face",
   "real features",
   "natural texture",
+  "your story",
+  "your everyday life",
+  "one clear next step",
 ] as const
 
 export const SANDRA_VOICE = {
   northStar:
-    "I say the things women feel but don't say out loud, while I'm still living through it myself.",
+    "Simple, warm, direct, human. Like a real woman texting another woman and showing her the next step.",
   signaturePromise: "Look like yourself, at your best.",
   always: [
     "Short sentences. Break lines often. One idea per line.",
@@ -66,8 +79,9 @@ export const SANDRA_VOICE = {
     "Start with a specific moment, belief shift, or real problem.",
     "Talk to one woman, never an audience.",
     "Give one concrete action she can do today.",
-    "Use Sandra's real stakes: single mom, two boys, ADHD, phone, photos, money, starting over, building from a bathroom, home by 3pm.",
+    "Use Sandra's real bridge: phone, face, story, selfies, AI tools, content, offers, and building from what she already has.",
     "Keep CTAs simple and human.",
+    "Use observation before authority: I've noticed, And honestly, The funny thing is, I didn't expect this.",
   ],
   never: [
     "Do not sound like a social media manager, coach, speech, lesson, or performance.",
@@ -84,18 +98,19 @@ export const SANDRA_VOICE = {
     "Open loop: she's still in it.",
   ],
   phrases: [
-    "I had 0 in savings, two boys, and a bathroom. That was my business plan.",
-    "I make money from my phone while my kids are at school. Here's the honest version nobody posts.",
-    "It's not you. It's your camera settings.",
-    "Your phone is enough. The photo is just the beginning.",
-    "Waiting for perfect photos was fear wearing a really convincing costume.",
-    "The selfie you took this morning is closer to your brand than anything a photoshoot could give you.",
-    "No babe, not that prompt. That one gives catfish energy. Use this instead.",
+    "The selfie is where we start. Visibility is where it leads.",
+    "Your phone is enough to begin.",
+    "Start with one photo.",
+    "AI is the tool. You are the brand.",
+    "Your face makes you recognizable. Your voice makes you memorable.",
+    "You do not become ready by waiting. You become ready by starting.",
+    "The photo gets attention. The story builds connection. The message builds trust. The offer creates income.",
+    "A woman with a phone, a story, and the right tools can build something real.",
   ],
 } as const
 
 export const AUDIENCE = {
-  who: "A woman building, or wanting to build, a personal brand or business mostly from her phone. Often a mother, time-poor, starting over, and almost ready.",
+  who: "A woman, often 35-64, who wants to build online but feels stuck at the first step. She has ideas, taste, skills, lived experience, and a story. She has not learned how to turn those things into content, trust, and income yet.",
   desiresRanked: [
     "Money / income: 45%. She asks how to start and how Sandra actually made income online.",
     "Confidence / mindset: 23%.",
@@ -105,11 +120,12 @@ export const AUDIENCE = {
   strategicTruth:
     "Selfie and AI tutorials are the reach engine. Income and story are the desire/conversion engine. Teach the skill and connect it to the income, identity, or relief she wants.",
   painPoints: [
-    "Fake fear: she wants to be seen as the woman she's becoming, but worries people will think she's fake.",
+    "Start block: she does not know where to start, what to post, what to say, or what her feed should look like.",
+    "Photo block: she hates photos of herself and deletes everything before she can post.",
+    "Fake fear: she wants to use AI but worries people will think she looks or sounds fake.",
     "Income uncertainty: she doesn't know how online money actually happens without hype.",
     "Invisibility / not-ready: she waits for better photos, a better plan, or more confidence first.",
     "Time and overwhelm: rigid advice doesn't fit kids, limited hours, or mental load.",
-    "Hating photos / her face on camera: she deletes everything and blames herself instead of light and angle.",
   ],
   fears: [
     ["Identity", "That doesn't even look like her.", "The goal is to finally look like yourself."],
@@ -135,7 +151,7 @@ export const AUDIENCE = {
     ],
   ],
   buying:
-    "Permission, protection, identity, control, status, and relief. She is buying the feeling that she can finally show up without waiting for a photoshoot or camera confidence.",
+    "Confidence, visibility, becoming recognizable, creative freedom, self-expression, opportunity, and a way to build something of her own.",
 } as const
 
 export const PROOF = {
@@ -167,12 +183,12 @@ export const PROOF = {
 
 export const FUNNEL = {
   ladder:
-    "Free AI Prompts (/ai-prompts) -> Prompt Vault $27 (/prompt-vault) -> SSELFIE SUITE EUR 97/month. Supporting: free Selfie Guide, Starter Kit $37, Masterclass $147.",
+    "Free Selfie Guide, free AI Prompts, Selfie Starter Kit, Lightroom Presets, Selfie Branding Masterclass, What To Say, Show Up, Get Paid, Visibility To Paid, The Vault, and SSELFIE Studio.",
   keywords: "SELFIE -> selfie guide. PROMPT -> /ai-prompts. ANDROID -> Android guide.",
   conversionInstruction:
-    "When copies are high but purchases are weak, push the Vault bridge harder and make the next step clearer.",
+    "Do not reduce the business to prompts or AI photos. Show the bridge from one photo to visibility, content, trust, offers, and income.",
   retired:
-    "Do not reference Brand Strategy Pack $19, old Studio naming, or Masterclass as the funnel center.",
+    "Do not make one old product, one prompt pack, or one photo output the center of the whole business.",
 } as const
 
 export const NO_FAKE = {
@@ -194,13 +210,44 @@ export const NO_FAKE = {
   ],
 } as const
 
+export const EXPERTISE = {
+  whoSheIs:
+    "Sandra Sigurjonsdottir Aamodt, founder of SSELFIE. A former model and hairdresser of 15 years, a digital marketer, a single mum of three who rebuilt her life and business from scratch with her phone, her story, and AI. She grew @sandra.social to 110K in about a year.",
+  authorityLine:
+    "She does not teach this from theory. She lived it: started in a small apartment with a phone and a bathroom studio, posted before she felt ready, and built a recognizable brand from her own face and story.",
+  teaches: [
+    "How to take better photos of herself: selfies, mirror selfies, car selfies, iPhone settings, poses, light, angles, editing. The real block is not skill, it is hating how she looks. Better photos make her brave enough to post.",
+    "How to use her photos as content: one selfie becomes a Reel cover, story opener, profile photo, sales post, AI reference. Photos in her camera roll are personal brand assets, not random pictures.",
+    "Personal branding that feels human: what she wants to be known for, her story, her message, her values. The brand starts in the woman, not a logo.",
+    "What to say: her message, her I-help sentence, content pillars, captions, soft CTA, offer bridge. Most women freeze not because they cannot write but because they do not know what they are trying to say.",
+    "How to show up: a simple posting rhythm a real, busy life can keep. Confidence comes from showing up, not before it.",
+    "How to use AI without losing herself: create faster, stay consistent, keep her real face and features. AI is the tool, the woman is the point.",
+    "How to start making money online: connect visibility, message, and content to a clear first offer. She does not need a perfect niche or a big following, she needs a clear first step.",
+  ],
+  bridge:
+    "The selfie gets attention. The story builds connection. The message builds trust. The offer creates income. AI helps her create and grow faster without losing herself.",
+  positioning:
+    "She is building a category: AI-enhanced personal branding for women. Not an AI brand, not a photo-tool brand. Visibility, confidence, storytelling, identity, and creativity, with AI as one of the tools.",
+} as const
+
 export function listBlock(title: string, items: readonly string[]): string {
   return `${title}\n${items.map(item => `- ${item}`).join("\n")}`
 }
 
+export function expertiseBlock(): string {
+  return [
+    "EXPERTISE SOURCE: docs/brand/source/2026-06-27/SANDRA_EXPERTISE.md",
+    `Who she is: ${EXPERTISE.whoSheIs}`,
+    `Why she has authority: ${EXPERTISE.authorityLine}`,
+    listBlock("What she actually teaches:", EXPERTISE.teaches),
+    `The bridge she teaches: ${EXPERTISE.bridge}`,
+    `Category positioning: ${EXPERTISE.positioning}`,
+  ].join("\n")
+}
+
 export function voiceBlock(): string {
   return [
-    "VOICE SOURCE: docs/brand/SSELFIE_CONTENT_GROUNDING.md",
+    "VOICE SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
     `North star: ${SANDRA_VOICE.northStar}`,
     `Signature promise: "${SANDRA_VOICE.signaturePromise}"`,
     listBlock("Always:", SANDRA_VOICE.always),
@@ -214,7 +261,7 @@ export function voiceBlock(): string {
 
 export function audienceBlock(): string {
   return [
-    "AUDIENCE SOURCE: docs/brand/SSELFIE_CONTENT_GROUNDING.md",
+    "AUDIENCE SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
     `Who she serves: ${AUDIENCE.who}`,
     listBlock("Desires, ranked by audience poll:", AUDIENCE.desiresRanked),
     `Reach vs desire truth: ${AUDIENCE.strategicTruth}`,
@@ -227,7 +274,7 @@ export function audienceBlock(): string {
 
 export function proofBlock(): string {
   return [
-    "PROOF SOURCE: docs/brand/SSELFIE_CONTENT_GROUNDING.md",
+    "PROOF SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md plus current performance data where available",
     "156 reels analyzed. Winners are 40x to 180x baseline. It is a format problem, not a consistency problem.",
     listBlock("Viral DNA, all 5 required for reel ideas:", PROOF.viralDna),
     listBlock("Known flop formats:", PROOF.flops),
@@ -240,7 +287,7 @@ export function proofBlock(): string {
 
 export function funnelBlock(): string {
   return [
-    "FUNNEL SOURCE: docs/brand/SSELFIE_CONTENT_GROUNDING.md",
+    "FUNNEL SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
     `Current ladder: ${FUNNEL.ladder}`,
     `Keyword map: ${FUNNEL.keywords}`,
     FUNNEL.conversionInstruction,
@@ -250,7 +297,7 @@ export function funnelBlock(): string {
 
 export function noFakeBlock(): string {
   return [
-    "NO-FAKE SOURCE: docs/brand/SSELFIE_CONTENT_GROUNDING.md",
+    "NO-FAKE SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
     `Reframe: ${NO_FAKE.reframe}`,
     `Green flag AI: ${NO_FAKE.greenFlags}`,
     `Red flag AI: ${NO_FAKE.redFlags}`,

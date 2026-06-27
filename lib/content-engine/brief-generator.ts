@@ -9,6 +9,7 @@ import { collectAudienceSignals, type AudienceSignals } from "@/lib/content-engi
 import {
   BANNED_WORDS,
   audienceBlock,
+  expertiseBlock,
   funnelBlock,
   noFakeBlock,
   proofBlock,
@@ -90,6 +91,9 @@ export type ContentBriefPiece = {
   visualProof?: string
   offerBridge?: string
   whyThisCreatesDemand?: string
+  visualHook: string
+  onScreenText: string[]
+  audioSuggestion: string
   caption: string
   carouselOutline: string[]
   reelCoverText: string
@@ -280,6 +284,9 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
       visualProof: safeBriefText(normalizedPiece.visualProof, vault),
       offerBridge: safeBriefText(normalizedPiece.offerBridge, vault),
       whyThisCreatesDemand: safeBriefText(normalizedPiece.whyThisCreatesDemand, vault),
+      visualHook: safeBriefText(normalizedPiece.visualHook, vault),
+      onScreenText: asArray(normalizedPiece.onScreenText).map(line => safeBriefText(line, vault)),
+      audioSuggestion: safeBriefText(normalizedPiece.audioSuggestion, vault),
       caption: captionLooksLikePromptLeak(caption)
         ? safeBriefText(safeTeaserCaption({
           hook: normalizedPiece.hook || "",
@@ -385,7 +392,7 @@ ${DEMAND_CREATION_CONTEXT}
 
 Return a concise research memo:
 1. 5-8 hook/content mechanics currently working, each with why it works and a one-line example adapted to her niche
-2. Format notes (reel length, carousel structure, cover text patterns, keyword CTA mechanics)
+2. Format notes (reel length, carousel structure, cover text patterns, keyword CTA mechanics, and any current trending audio or sound trends working in this niche right now, with the caveat that specific sound names go stale fast)
 3. Visual treatment notes: fresh ways to express the same proven pillar without repeating her exact mirror/cafe/window/selfie visuals
 4. Anything in her own winners that matches or contradicts current trends
 
@@ -490,6 +497,9 @@ const BRIEF_SCHEMA = {
           visualProof: { type: "string" },
           offerBridge: { type: "string" },
           whyThisCreatesDemand: { type: "string" },
+          visualHook: { type: "string" },
+          onScreenText: { type: "array", items: { type: "string" } },
+          audioSuggestion: { type: "string" },
           caption: { type: "string" },
           carouselOutline: { type: "array", items: { type: "string" } },
           reelCoverText: { type: "string" },
@@ -509,6 +519,9 @@ const BRIEF_SCHEMA = {
           "visualProof",
           "offerBridge",
           "whyThisCreatesDemand",
+          "visualHook",
+          "onScreenText",
+          "audioSuggestion",
           "caption",
           "carouselOutline",
           "reelCoverText",
@@ -592,7 +605,7 @@ export async function generateContentBrief(): Promise<ContentBrief> {
 
   const response = await client.messages.create({
     model: BRIEF_MODEL,
-    max_tokens: 8000,
+    max_tokens: 16000,
     system: `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
 ${voiceBlock()}
@@ -600,6 +613,8 @@ ${voiceBlock()}
 ${noFakeBlock()}
 
 ${audienceBlock()}
+
+${expertiseBlock()}
 
 ${proofBlock()}
 
@@ -629,8 +644,11 @@ CONTENT PLAN RULES:
 - SUITE claims may only use dataPacket.suite.includedProducts. Do not invent "Real You Method training", "monthly brand shoot themes", "live editing sessions", or any feature not listed in the product catalog.
 - Captions are complete and ready to paste: hook line, body in short lines, one clear CTA. CTA options: comment keyword PROMPT, link in bio to the free prompts page, or the $27 Prompt Vault. Never more than one CTA per piece.
 - Do not give away the full copy-paste Vault prompt in any free reel/feed caption. Tease the result and the method. The full prompt is the Vault payoff. The photoshootPrompt field is for Sandra's internal planning only.
-- reelCoverText: 3-6 words, works as on-image text.
-- carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. For non-carousels return an empty array.
+- visualHook: describe what is literally on screen in the first 2 seconds that stops the scroll. Concrete and filmable: camera position, what the viewer sees, what moves or changes. Sandra's real face/body in an everyday place, plus a visible change, reveal, or intriguing object. This is what she SEES, not why it works and not the caption. One or two short sentences. Do not repeat her overused scenes (mirror selfie, dark cafe arrival, window half-light, car selfie) unless the data gives a new reason.
+- onScreenText: the exact words that appear ON the video or image, in order. These are the words Sandra types onto the screen, not a description of them. Rules: 2 to 6 words per line, punchy, readable in under 2 seconds. Line 1 is the scroll-stopping hook overlay and can match reelCoverText. For reels: one line per beat, in order (hook overlay, then each numbered step or moment, then the result, then the keyword CTA, e.g. "Comment PROMPT"). For carousels: one line per slide, aligned to carouselOutline in the same order (these are the literal words on each slide). For plain feed posts return a short array with at least the hook overlay. Serif editorial wording for covers. No banned words, no m-dashes.
+- audioSuggestion: for reels, suggest the sound direction that fits this specific piece. Name the TYPE and why it fits (trending upbeat for a fast tutorial, original voiceover over soft background for a story/teaching piece, calm acoustic for a slow reveal, satisfying transition sound for a before/after). If the research memo names a specific current trending sound or audio trend that fits, name it and say to verify it is still trending in the Instagram audio panel before posting, since sound names go stale fast. For carousels and feed posts, either suggest a subtle background track if it is a video carousel or say audio is optional. One or two short sentences. No banned words, no m-dashes.
+- reelCoverText: 3-6 words, works as on-image text. This is the single cover frame; onScreenText line 1 should agree with it.
+- carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. Each line describes the slide's job and visual. The literal words for that slide go in the matching onScreenText line. For non-carousels return an empty array.
 - photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies), but make the visual treatment net-new for this brief. State the new scene/composition clearly.
 - hashtags: 8-12, mix of niche and reach, no banned or spammy tags.
 - storySequence: one sequence, 4-6 frames, at least one interaction (poll, question box, or link) per sequence, designed to lead into one of the 5 pieces.
