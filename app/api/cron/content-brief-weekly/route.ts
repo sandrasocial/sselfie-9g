@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
       to: ADMIN_EMAIL,
       from: "SSELFIE Intelligence <hello@sselfie.ai>",
       subject: "Your weekly content brief is ready",
-      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence. It now starts from demand first: what your audience is trying to stop experiencing, what they want instead, and which offer naturally answers it.${demandText}\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
-      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} posts and 1 story sequence. It now starts from demand first: what your audience is trying to stop experiencing, what they want instead, and which offer naturally answers it.</p>${demandHtml}<p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
+      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.${demandText}\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
+      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.</p>${demandHtml}<p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
         .slice(0, 3)
         .map((h) => `• ${escapeHtml(h.hook)}`)
         .join("<br/>")}</p>${pulseHtml}<p><a href="https://www.sselfie.ai/admin/content-brief">Open the brief</a></p><p>Everything is a draft. Nothing posts without you.</p>`,

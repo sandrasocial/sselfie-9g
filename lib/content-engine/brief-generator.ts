@@ -93,12 +93,18 @@ export type ContentBriefPiece = {
   whyThisCreatesDemand?: string
   visualHook: string
   onScreenText: string[]
-  audioSuggestion: string
-  caption: string
-  carouselOutline: string[]
-  reelCoverText: string
-  photoshootPrompt: string
-  hashtags: string[]
+  trendMechanic?: string
+  competitorPattern?: string
+  shortSuggestion?: string
+  executionNotes?: string
+  whatToAvoid?: string
+  chatgptContextPrompt?: string
+  audioSuggestion?: string
+  caption?: string
+  carouselOutline?: string[]
+  reelCoverText?: string
+  photoshootPrompt?: string
+  hashtags?: string[]
   whyThisWorks: string
 }
 
@@ -286,6 +292,12 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
       whyThisCreatesDemand: safeBriefText(normalizedPiece.whyThisCreatesDemand, vault),
       visualHook: safeBriefText(normalizedPiece.visualHook, vault),
       onScreenText: asArray(normalizedPiece.onScreenText).map(line => safeBriefText(line, vault)),
+      trendMechanic: safeBriefText(normalizedPiece.trendMechanic, vault),
+      competitorPattern: safeBriefText(normalizedPiece.competitorPattern, vault),
+      shortSuggestion: safeBriefText(normalizedPiece.shortSuggestion, vault),
+      executionNotes: safeBriefText(normalizedPiece.executionNotes, vault),
+      whatToAvoid: safeBriefText(normalizedPiece.whatToAvoid, vault),
+      chatgptContextPrompt: safeBriefText(normalizedPiece.chatgptContextPrompt, vault),
       audioSuggestion: safeBriefText(normalizedPiece.audioSuggestion, vault),
       caption: captionLooksLikePromptLeak(caption)
         ? safeBriefText(safeTeaserCaption({
@@ -499,6 +511,12 @@ const BRIEF_SCHEMA = {
           whyThisCreatesDemand: { type: "string" },
           visualHook: { type: "string" },
           onScreenText: { type: "array", items: { type: "string" } },
+          trendMechanic: { type: "string" },
+          competitorPattern: { type: "string" },
+          shortSuggestion: { type: "string" },
+          executionNotes: { type: "string" },
+          whatToAvoid: { type: "string" },
+          chatgptContextPrompt: { type: "string" },
           audioSuggestion: { type: "string" },
           caption: { type: "string" },
           carouselOutline: { type: "array", items: { type: "string" } },
@@ -521,12 +539,12 @@ const BRIEF_SCHEMA = {
           "whyThisCreatesDemand",
           "visualHook",
           "onScreenText",
-          "audioSuggestion",
-          "caption",
-          "carouselOutline",
-          "reelCoverText",
-          "photoshootPrompt",
-          "hashtags",
+          "trendMechanic",
+          "competitorPattern",
+          "shortSuggestion",
+          "executionNotes",
+          "whatToAvoid",
+          "chatgptContextPrompt",
           "whyThisWorks",
         ],
       },
@@ -605,7 +623,7 @@ export async function generateContentBrief(): Promise<ContentBrief> {
 
   const response = await client.messages.create({
     model: BRIEF_MODEL,
-    max_tokens: 16000,
+    max_tokens: 8000,
     system: `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
 ${voiceBlock()}
@@ -623,13 +641,14 @@ ${funnelBlock()}
 ${DEMAND_CREATION_CONTEXT}
 
 CONTENT PLAN RULES:
-- Build the brief as a demand-generation plan first, not a photoshoot prompt list.
+- Build the brief as a short strategy memo first, not a finished content pack.
+- Do NOT write full posts, full captions, final carousel slides, hashtags, or copy-paste photoshoot prompts. Sandra will take the brief into ChatGPT if she wants finished content. Your job is to give her the strongest direction, context, hooks, visual mechanics, and what to avoid.
 - Create demandMap before contentPlan. demandMap must summarize the strongest audience behavior, the painful before, the desired after, the belief shift, the primary offer bridge, and what Sandra should not repeat this week.
 - Do not start from "what should Sandra post?" Start from "what is her buyer trying to stop experiencing?"
 - Every contentPlan piece must include demandSignal, painfulBefore, desiredAfter, beliefShift, visualProof, offerBridge, and whyThisCreatesDemand.
 - whyThisCreatesDemand must explain the life/business situation this idea changes. Do not restate why the hook may perform.
 - visualProof must describe what Sandra should show to prove the shift. It must not default to repeating her previous exact visual scene.
-- Exactly 5 pieces, spread across the week (e.g. Mon/Tue/Thu/Fri/Sun).
+- Exactly 5 short suggestions, spread across the week (e.g. Mon/Tue/Thu/Fri/Sun).
 - At least 2 reels, at least 1 carousel.
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
 - Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM. Anchor at least 2 content pieces to a specific pain point found in the DMs.
@@ -642,16 +661,17 @@ CONTENT PLAN RULES:
 - Vault count is LIVE in dataPacket.vault. Never hardcode "92", "150", "10 collections", or any fixed count. If you need a number, use dataPacket.vault.totalPromptCount and dataPacket.vault.totalCollectionCount only. Prefer "every shoot world I've built" or "new drops added all the time" unless the exact live number improves clarity.
 - Newly published Shoot Studio drops in dataPacket.vault.newestPublishedDrops are fresh content inputs. Feature the newest relevant drop as a content angle when it fits the week's demand.
 - SUITE claims may only use dataPacket.suite.includedProducts. Do not invent "Real You Method training", "monthly brand shoot themes", "live editing sessions", or any feature not listed in the product catalog.
-- Captions are complete and ready to paste: hook line, body in short lines, one clear CTA. CTA options: comment keyword PROMPT, link in bio to the free prompts page, or the $27 Prompt Vault. Never more than one CTA per piece.
-- Do not give away the full copy-paste Vault prompt in any free reel/feed caption. Tease the result and the method. The full prompt is the Vault payoff. The photoshootPrompt field is for Sandra's internal planning only.
+- shortSuggestion: one tight paragraph explaining the idea Sandra should consider and why it is worth testing. No full caption.
+- trendMechanic: name the trend, competitor mechanic, or market pattern this borrows from. Be specific: numbered keyword, side-by-side proof, meta-reveal, comment-to-DM, proof-stacked cover, one concept shown three ways, etc.
+- competitorPattern: name the closest observed creator/account pattern from marketPatternContext or researchMemo and explain the mechanic to adapt. Do not copy their exact content, visuals, or promise.
 - visualHook: describe what is literally on screen in the first 2 seconds that stops the scroll. Concrete and filmable: camera position, what the viewer sees, what moves or changes. Sandra's real face/body in an everyday place, plus a visible change, reveal, or intriguing object. This is what she SEES, not why it works and not the caption. One or two short sentences. Do not repeat her overused scenes (mirror selfie, dark cafe arrival, window half-light, car selfie) unless the data gives a new reason.
-- onScreenText: the exact words that appear ON the video or image, in order. These are the words Sandra types onto the screen, not a description of them. Rules: 2 to 6 words per line, punchy, readable in under 2 seconds. Line 1 is the scroll-stopping hook overlay and can match reelCoverText. For reels: one line per beat, in order (hook overlay, then each numbered step or moment, then the result, then the keyword CTA, e.g. "Comment PROMPT"). For carousels: one line per slide, aligned to carouselOutline in the same order (these are the literal words on each slide). For plain feed posts return a short array with at least the hook overlay. Serif editorial wording for covers. No banned words, no m-dashes.
+- onScreenText: 2 to 5 possible on-screen text lines only. These are hooks and beat labels, not a full script.
+- executionNotes: practical filming/build notes. Include what analytics, trend, or audience signal this direction came from.
+- whatToAvoid: what would make this feel stale, repetitive, off-brand, or too similar to Sandra's old top post.
+- chatgptContextPrompt: a compact prompt Sandra can paste into ChatGPT. It should summarize the analytics signal, trend/competitor mechanic, visual hook, target emotion, CTA, and what not to repeat. It must ask ChatGPT to help develop the idea, not to generate an AI photoshoot image.
 - audioSuggestion: for reels, suggest the sound direction that fits this specific piece. Name the TYPE and why it fits (trending upbeat for a fast tutorial, original voiceover over soft background for a story/teaching piece, calm acoustic for a slow reveal, satisfying transition sound for a before/after). If the research memo names a specific current trending sound or audio trend that fits, name it and say to verify it is still trending in the Instagram audio panel before posting, since sound names go stale fast. For carousels and feed posts, either suggest a subtle background track if it is a video carousel or say audio is optional. One or two short sentences. No banned words, no m-dashes.
-- reelCoverText: 3-6 words, works as on-image text. This is the single cover frame; onScreenText line 1 should agree with it.
-- carouselOutline: only for carousels, one line per slide, 6-8 slides, slide 1 is the hook. Each line describes the slide's job and visual. The literal words for that slide go in the matching onScreenText line. For non-carousels return an empty array.
-- photoshootPrompt: ChatGPT-ready in the Prompt Vault style. Lean on the top-copied prompt aesthetics (her audience already voted with their copies), but make the visual treatment net-new for this brief. State the new scene/composition clearly.
-- hashtags: 8-12, mix of niche and reach, no banned or spammy tags.
-- storySequence: one sequence, 4-6 frames, at least one interaction (poll, question box, or link) per sequence, designed to lead into one of the 5 pieces.
+- reelCoverText, carouselOutline, caption, photoshootPrompt, and hashtags are optional legacy fields. Leave them empty unless absolutely necessary for interpreting an old format. Do not spend tokens filling them.
+- storySequence: one short strategic story sequence, 3-5 frames, not a full script. Include the point of each frame and the interaction to test.
 - Never invent specific earnings, revenue amounts, client counts, follower gains, or conversion numbers. You may only use money numbers that appear in dataPacket with a clear source. Product prices are allowed.
 - No banned words and no m-dashes anywhere in the structured output.`,
     messages: [

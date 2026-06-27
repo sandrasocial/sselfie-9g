@@ -111,10 +111,10 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   const onScreenText = safeArray(piece.onScreenText)
   const hashtags = safeArray(piece.hashtags)
   const fullCopy = [
-    piece.caption,
+    piece.caption || "",
     "",
     hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
-  ].join("\n")
+  ].filter(Boolean).join("\n")
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -129,6 +129,22 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </div>
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
+
+      {piece.shortSuggestion && (
+        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+            Short suggestion
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-stone-800">{piece.shortSuggestion}</p>
+        </div>
+      )}
+
+      {(piece.trendMechanic || piece.competitorPattern) && (
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <DetailRow label="Trend mechanic" value={piece.trendMechanic} />
+          <DetailRow label="Creator pattern to adapt" value={piece.competitorPattern} />
+        </div>
+      )}
 
       {piece.visualHook && (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -160,7 +176,7 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         </div>
       )}
 
-      {(piece.demandSignal || piece.painfulBefore || piece.desiredAfter || piece.beliefShift) && (
+      {(piece.demandSignal || piece.painfulBefore || piece.desiredAfter || piece.beliefShift || piece.whatToAvoid) && (
         <div className="mt-4 rounded-xl border border-stone-950 bg-stone-950 p-4">
           <p className="text-xs uppercase tracking-[0.22em] text-stone-400">
             Demand logic
@@ -190,13 +206,38 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
               </p>
               <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.beliefShift}</p>
             </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                Avoid
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.whatToAvoid}</p>
+            </div>
           </div>
         </div>
       )}
 
-      <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-stone-50 p-4 font-sans text-sm leading-relaxed text-stone-800">
-        {piece.caption}
-      </pre>
+      {piece.executionNotes && (
+        <div className="mt-3 rounded-xl border border-stone-200 p-4">
+          <p className="text-xs uppercase tracking-wide text-stone-500">Execution notes</p>
+          <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.executionNotes}</p>
+        </div>
+      )}
+
+      {piece.chatgptContextPrompt && (
+        <div className="mt-3 rounded-xl border border-stone-950 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-wide text-stone-500">Context for ChatGPT</p>
+            <CopyChip label="Copy context" text={piece.chatgptContextPrompt} />
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.chatgptContextPrompt}</p>
+        </div>
+      )}
+
+      {piece.caption && (
+        <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-stone-50 p-4 font-sans text-sm leading-relaxed text-stone-800">
+          {piece.caption}
+        </pre>
+      )}
 
       {carouselOutline.length > 0 && (
         <div className="mt-3 rounded-xl border border-stone-200 p-4">
@@ -223,10 +264,12 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         </p>
       )}
 
-      <div className="mt-3 rounded-xl border border-stone-200 p-4">
-        <p className="text-xs uppercase tracking-wide text-stone-500">Photoshoot prompt</p>
-        <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.photoshootPrompt}</p>
-      </div>
+      {piece.photoshootPrompt && (
+        <div className="mt-3 rounded-xl border border-stone-200 p-4">
+          <p className="text-xs uppercase tracking-wide text-stone-500">Legacy photoshoot prompt</p>
+          <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.photoshootPrompt}</p>
+        </div>
+      )}
 
       {(piece.visualProof || piece.offerBridge || piece.whyThisCreatesDemand) && (
         <div className="mt-3 grid gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 md:grid-cols-3">
@@ -242,9 +285,10 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <CopyChip label="Copy caption + tags" text={fullCopy} />
+        {piece.chatgptContextPrompt && <CopyChip label="Copy ChatGPT context" text={piece.chatgptContextPrompt} />}
+        {fullCopy && <CopyChip label="Copy caption + tags" text={fullCopy} />}
         <CopyChip label="Copy hook" text={piece.hook} />
-        <CopyChip label="Copy photoshoot prompt" text={piece.photoshootPrompt} />
+        {piece.photoshootPrompt && <CopyChip label="Copy photoshoot prompt" text={piece.photoshootPrompt} />}
         {carouselOutline.length > 0 && (
           <CopyChip label="Copy slides" text={carouselOutline.join("\n")} />
         )}
@@ -320,7 +364,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
       {!brief && !generating && (
         <p className="rounded-2xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-600">
           No brief yet. Hit the button above and the engine will pull your post data, audience signals,
-          and live hook research, then write your week.
+          competitor patterns, and live hook research, then give you short directions to develop.
         </p>
       )}
 
@@ -423,7 +467,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl text-stone-950">Your week, ready to post</h2>
+            <h2 className="mb-3 font-serif text-xl text-stone-950">Suggested directions to develop</h2>
             <div className="space-y-4">
               {contentPlan.map((piece, index) => (
                 <PieceCard key={index} piece={piece} />
