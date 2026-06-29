@@ -18,6 +18,26 @@ type SinglePromptGateProps = {
   vaultCount: number
 }
 
+const PROMPT_INTENT_OPTIONS = [
+  {
+    value: "brand_photos",
+    label: "Brand photos",
+    copy: "I want photos that look like my personal brand, not random AI.",
+  },
+  {
+    value: "reel_cover",
+    label: "Reel cover",
+    copy: "I need one image strong enough to stop the scroll.",
+  },
+  {
+    value: "content_week",
+    label: "Content week",
+    copy: "I want a small set I can turn into posts, stories, and captions.",
+  },
+] as const
+
+type PromptIntent = (typeof PROMPT_INTENT_OPTIONS)[number]["value"]
+
 function readAttributionParams(promptNumber: string): Record<string, string> {
   if (typeof window === "undefined") return {}
   const p = new URLSearchParams(window.location.search)
@@ -29,11 +49,33 @@ function readAttributionParams(promptNumber: string): Record<string, string> {
     checkout_source: p.get("checkout_source") || "single_prompt_page",
     cta_keyword: p.get("cta_keyword") || promptNumber,
   }
+  const quizResult = p.get("quiz_result")
+  if (quizResult) result.quiz_result = quizResult
   const entryPostSlug = p.get("entry_post_slug")
   if (entryPostSlug) result.entry_post_slug = entryPostSlug
   result.landing_path = `${window.location.pathname}${window.location.search}`
   if (document.referrer) result.referrer = document.referrer
   return result
+}
+
+function appendIntentToHref(href: string, promptIntent: PromptIntent): string {
+  const url = new URL(href, "https://www.sselfie.ai")
+  url.searchParams.set("quiz_result", promptIntent)
+  url.searchParams.set("buyer_stage", "lead")
+  return `${url.pathname}?${url.searchParams.toString()}`
+}
+
+function promptReturnUrl(promptPageUrl: string, promptIntent: PromptIntent): string {
+  if (typeof window === "undefined") return promptPageUrl
+  const url = new URL(promptPageUrl, window.location.origin)
+  const current = new URLSearchParams(window.location.search)
+  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "checkout_source", "cta_keyword"]) {
+    const value = current.get(key)
+    if (value) url.searchParams.set(key, value)
+  }
+  url.searchParams.set("quiz_result", promptIntent)
+  url.searchParams.set("prompt_access", "email")
+  return url.toString()
 }
 
 export function SinglePromptGate({
@@ -51,10 +93,13 @@ export function SinglePromptGate({
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "revealed" | "error">("idle")
   const [copied, setCopied] = useState(false)
+  const [promptIntent, setPromptIntent] = useState<PromptIntent>("brand_photos")
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (window.sessionStorage.getItem(`sselfie_prompt_${promptNumber}_revealed`) === "1") {
+    const params = new URLSearchParams(window.location.search)
+    const returnAccess = params.get("prompt_access") === "email"
+    if (returnAccess || window.sessionStorage.getItem(`sselfie_prompt_${promptNumber}_revealed`) === "1") {
       setStatus("revealed")
     }
   }, [promptNumber])
@@ -93,8 +138,11 @@ export function SinglePromptGate({
           delivery_context: "single_prompt",
           prompt_number: promptNumber,
           prompt_title: promptTitle,
-          prompt_page_url: promptPageUrl,
           ...readAttributionParams(promptNumber),
+          prompt_page_url: promptReturnUrl(promptPageUrl, promptIntent),
+          prompt_checkout_url: appendIntentToHref(checkoutHref, promptIntent),
+          prompt_intent: promptIntent,
+          quiz_result: promptIntent,
         }),
       })
 
@@ -168,6 +216,7 @@ export function SinglePromptGate({
   }
 
   const revealed = status === "revealed"
+  const checkoutHrefWithIntent = appendIntentToHref(checkoutHref, promptIntent)
 
   return (
     <section className="sp-shell">
@@ -194,6 +243,27 @@ export function SinglePromptGate({
         {!revealed ? (
           <form className="sp-form" onSubmit={handleSubmit} noValidate>
             <p>Here&apos;s the exact prompt from the reel. Drop your email and it&apos;s yours (I&apos;ll send a copy too, so it doesn&apos;t get lost in your DMs).</p>
+            <div className="sp-proof" aria-label="What this prompt helps you do">
+              <span>1 selfie</span>
+              <span>1 exact shoot direction</span>
+              <span>1 image you can actually test today</span>
+            </div>
+            <fieldset className="sp-intent">
+              <legend>What do you want this prompt for?</legend>
+              {PROMPT_INTENT_OPTIONS.map(option => (
+                <label key={option.value} className={promptIntent === option.value ? "sp-intent-active" : ""}>
+                  <input
+                    type="radio"
+                    name="prompt_intent"
+                    value={option.value}
+                    checked={promptIntent === option.value}
+                    onChange={() => setPromptIntent(option.value)}
+                  />
+                  <span>{option.label}</span>
+                  <small>{option.copy}</small>
+                </label>
+              ))}
+            </fieldset>
             <label htmlFor="single-prompt-email">Your email</label>
             <div className="sp-form-row">
               <input
@@ -230,6 +300,10 @@ export function SinglePromptGate({
               Start with a clear, well-lit selfie. After you generate, nudge the exposure to match
               your light. You finish it.
             </p>
+            <p className="sp-tip">
+              If this one gets close, the Vault is the shortcut: full shoot worlds, not one-off
+              prompt hunting.
+            </p>
           </div>
         )}
 
@@ -246,7 +320,7 @@ export function SinglePromptGate({
             {` ${vaultCount}`} prompts, $27, one time.
           </p>
           <Link
-            href={checkoutHref}
+            href={checkoutHrefWithIntent}
             onClick={() => {
               trackAnalyticsEvent({
                 event: "ai_prompts_prompt_vault_click",
@@ -255,6 +329,7 @@ export function SinglePromptGate({
                   prompt_id: promptId,
                   prompt_title: promptTitle,
                   prompt_number: promptNumber,
+                  quiz_result: promptIntent,
                   ...readAttributionParams(promptNumber),
                 },
               })

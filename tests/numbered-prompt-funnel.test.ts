@@ -131,6 +131,9 @@ describe("numbered prompt funnel", () => {
     expect(json.pageUrl).toBe("https://www.sselfie.ai/p/latest")
     expect(json.vaultCheckoutUrl).toContain("cta_keyword=PROMPT")
     expect(json.vaultCheckoutUrl).toContain("prompt_n=14")
+    expect(json.dm.proofLine).toContain("the Vault gives you the full shoot world")
+    expect(json.dm.followupHours).toEqual([24, 48])
+    expect(json.manychatTags).toEqual(expect.arrayContaining(["prompt-requester", "prompt-14"]))
   })
 
   it("renders the single prompt page through the shared prompt lookup", () => {
@@ -144,6 +147,10 @@ describe("numbered prompt funnel", () => {
       path.join(process.cwd(), "app/api/ai-prompts/subscribe/route.ts"),
       "utf8",
     )
+    const singlePromptEmail = fs.readFileSync(
+      path.join(process.cwd(), "lib/email/templates/ai-prompts-single-prompt-delivery.ts"),
+      "utf8",
+    )
     const adminPage = fs.readFileSync(path.join(process.cwd(), "app/admin/prompt-vault/page.tsx"), "utf8")
 
     expect(page).toContain("getPromptByNumber")
@@ -153,12 +160,22 @@ describe("numbered prompt funnel", () => {
     expect(latestPage).toContain("PROMPT")
     expect(gate).toContain("delivery_context: \"single_prompt\"")
     expect(gate).toContain("prompt_number: promptNumber")
+    expect(gate).toContain("PROMPT_INTENT_OPTIONS")
+    expect(gate).toContain("prompt_checkout_url")
+    expect(gate).toContain("quiz_result: promptIntent")
+    expect(gate).toContain("appendIntentToHref")
+    expect(gate).toContain("If this one gets close, the Vault is the shortcut")
     expect(gate).toContain("ai_prompts_prompt_copied")
     expect(gate).toContain("ai_prompts_after_copy_vault_cta_view")
     expect(gate).toContain("Get the full Vault")
     expect(gate).toContain("...readAttributionParams(promptNumber)")
     expect(subscribeRoute).toContain("cta_keyword: safeAttribution(cta_keyword")
     expect(subscribeRoute).toContain("entry_post_slug: safeAttribution(entry_post_slug")
+    expect(subscribeRoute).toContain("prompt-intent-")
+    expect(subscribeRoute).toContain("prompt_intent: promptIntent")
+    expect(singlePromptEmail).toContain("promptCheckoutUrl")
+    expect(singlePromptEmail).toContain("the Vault is the next step")
+    expect(singlePromptEmail).toContain("Get the full Vault")
     expect(adminPage).toContain("PROMPT DEMAND BY LINK")
     expect(adminPage).toContain("promptFunnelRows")
     expect(adminPage).toContain("NULLIF(prompt_number, '') AS prompt_number")

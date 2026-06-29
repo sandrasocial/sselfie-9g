@@ -60,6 +60,7 @@ export function buildPromptPageVaultCheckoutHref(input: {
     entry_post_slug?: string | null
     buyer_stage?: string | null
     landing_path?: string | null
+    quiz_result?: string | null
   }
 }) {
   const number = normalizePromptNumber(input.promptNumber) || String(input.promptNumber).trim()

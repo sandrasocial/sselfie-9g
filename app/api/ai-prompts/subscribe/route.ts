@@ -33,6 +33,26 @@ function aiPromptsAccessUrl(accessToken: string): string {
   return `${siteUrl()}/ai-prompts/access/${accessToken}`
 }
 
+function siteHref(value?: string | null): string | null {
+  const clean = value?.trim()
+  if (!clean) return null
+
+  if (clean.startsWith("/")) return `${siteUrl()}${clean}`
+
+  try {
+    const url = new URL(clean)
+    if (url.hostname === "sselfie.ai" || url.hostname === "www.sselfie.ai") {
+      url.protocol = "https:"
+      url.hostname = "www.sselfie.ai"
+      return url.toString()
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
 function firstNameFrom(stored: string | null | undefined, fallback: string): string {
   return (stored || fallback).trim().split(/\s+/)[0] || fallback.trim()
 }
@@ -41,6 +61,7 @@ function buildEmailTags(
   existingTags: string[] | null,
   utmSource: string | null | undefined,
   promptNumber?: string | null,
+  promptIntent?: string | null,
 ): string[] {
   const set = new Set<string>(buildAiPhotoshootEmailTags(existingTags, ["curious"]))
   set.add("ai-prompts-subscriber")
@@ -55,6 +76,10 @@ function buildEmailTags(
   if (cleanPromptNumber && /^\d+$/.test(cleanPromptNumber)) {
     set.add("prompt-requester")
     set.add(`prompt-${cleanPromptNumber}`)
+  }
+  const cleanPromptIntent = safeAttribution(promptIntent, 40)
+  if (cleanPromptIntent && /^[a-z0-9_-]+$/.test(cleanPromptIntent)) {
+    set.add(`prompt-intent-${cleanPromptIntent.toLowerCase()}`)
   }
   return Array.from(set)
 }
@@ -92,6 +117,8 @@ async function sendDeliveryEmail(input: {
   promptNumber?: string | null
   promptTitle?: string | null
   promptUrl?: string | null
+  promptCheckoutUrl?: string | null
+  promptIntent?: string | null
 }): Promise<{ emailSent: boolean; emailError: string | null }> {
   if (!hasResendApiKey()) {
     console.log("[ai-prompts/subscribe] RESEND_API_KEY not configured, skipping email")
@@ -108,7 +135,9 @@ async function sendDeliveryEmail(input: {
         firstName: input.firstName,
         promptNumber: input.promptNumber!.trim(),
         promptTitle: input.promptTitle!.trim(),
-        promptUrl: input.promptUrl!.trim(),
+        promptUrl: siteHref(input.promptUrl) || input.promptUrl!.trim(),
+        promptCheckoutUrl: siteHref(input.promptCheckoutUrl) || undefined,
+        promptIntent: input.promptIntent?.trim() || undefined,
       })
     : generateAiPromptsDay0DeliveryEmail({
         firstName: input.firstName,
@@ -153,12 +182,17 @@ export async function POST(request: NextRequest) {
       prompt_number,
       prompt_title,
       prompt_page_url,
+      prompt_checkout_url,
+      prompt_intent,
+      quiz_result,
       delivery_context,
     } = body
 
     const promptNumber = safeAttribution(prompt_number, 40)
     const promptTitle = safeAttribution(prompt_title, 160)
     const promptPageUrl = safeAttribution(prompt_page_url, 500)
+    const promptCheckoutUrl = safeAttribution(prompt_checkout_url, 500)
+    const promptIntent = safeAttribution(prompt_intent || quiz_result, 40)
     const deliveryContext =
       delivery_context === "single_prompt" && promptNumber && promptTitle && promptPageUrl
         ? "single_prompt"
@@ -193,7 +227,7 @@ export async function POST(request: NextRequest) {
       const subscriber = existing[0]
       const { accessToken, wasGenerated } = resolveAccessToken(subscriber.access_token)
       const existingTags = Array.isArray(subscriber.email_tags) ? (subscriber.email_tags as string[]) : null
-      const updatedTags = buildEmailTags(existingTags, utm_source, promptNumber)
+      const updatedTags = buildEmailTags(existingTags, utm_source, promptNumber, promptIntent)
 
       const tagsNeedUpdate =
         wasGenerated ||
@@ -239,6 +273,7 @@ export async function POST(request: NextRequest) {
           source: "ai-prompts",
           status: "lead",
           journey: "nurture",
+          prompt_intent: promptIntent || undefined,
           ...buildAiPhotoshootResendTags("curious"),
           signup_date: new Date().toISOString().split("T")[0],
         })
@@ -273,6 +308,8 @@ export async function POST(request: NextRequest) {
           promptNumber,
           promptTitle,
           promptUrl: promptPageUrl,
+          promptCheckoutUrl,
+          promptIntent,
         })
         emailSent = delivery.emailSent
         emailError = delivery.emailError
@@ -292,6 +329,8 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           prompt_number: promptNumber || null,
           prompt_title: promptTitle || null,
+          prompt_intent: promptIntent || null,
+          quiz_result: promptIntent || null,
           delivery_context: deliveryContext,
           cta_keyword: safeAttribution(cta_keyword, 80),
           entry_post_slug: safeAttribution(entry_post_slug, 160),
@@ -309,7 +348,7 @@ export async function POST(request: NextRequest) {
     // New subscriber path
     // -----------------------------------------------------------------------
     const accessToken = crypto.randomUUID()
-    const emailTags = buildEmailTags(null, utm_source, promptNumber)
+    const emailTags = buildEmailTags(null, utm_source, promptNumber, promptIntent)
 
     console.log("[ai-prompts/subscribe] inserting new subscriber")
     const result = await sql`
@@ -357,6 +396,7 @@ export async function POST(request: NextRequest) {
       source: "ai-prompts",
       status: "lead",
       journey: "nurture",
+      prompt_intent: promptIntent || undefined,
       ...buildAiPhotoshootResendTags("curious"),
       signup_date: new Date().toISOString().split("T")[0],
     })
@@ -385,6 +425,8 @@ export async function POST(request: NextRequest) {
         promptNumber,
         promptTitle,
         promptUrl: promptPageUrl,
+        promptCheckoutUrl,
+        promptIntent,
       })
       emailSent = delivery.emailSent
       emailError = delivery.emailError
@@ -415,6 +457,8 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         prompt_number: promptNumber || null,
         prompt_title: promptTitle || null,
+        prompt_intent: promptIntent || null,
+        quiz_result: promptIntent || null,
         delivery_context: deliveryContext,
         cta_keyword: safeAttribution(cta_keyword, 80),
         entry_post_slug: safeAttribution(entry_post_slug, 160),

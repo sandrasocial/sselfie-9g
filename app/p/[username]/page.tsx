@@ -222,6 +222,80 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
           font-size: 14px;
         }
 
+        .sp-proof {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin: 0 0 18px;
+        }
+
+        .sp-proof span {
+          min-height: 54px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #DAD7D1;
+          background: #FFFFFF;
+          padding: 10px;
+          color: #4B4843;
+          font-size: 11px;
+          line-height: 1.35;
+          text-align: center;
+        }
+
+        .sp-intent {
+          display: grid;
+          gap: 8px;
+          border: 0;
+          margin: 0 0 20px;
+          padding: 0;
+        }
+
+        .sp-intent legend {
+          margin: 0 0 8px;
+          color: #4B4843;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .sp-intent label {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 4px 10px;
+          border: 1px solid #DAD7D1;
+          background: rgba(255, 255, 255, 0.72);
+          padding: 12px;
+          cursor: pointer;
+          transition: border-color 160ms ease, background 160ms ease;
+        }
+
+        .sp-intent label.sp-intent-active {
+          border-color: #0D0E10;
+          background: #FFFFFF;
+        }
+
+        .sp-intent input {
+          grid-row: span 2;
+          width: 16px;
+          height: 16px;
+          margin: 2px 0 0;
+          accent-color: #0D0E10;
+        }
+
+        .sp-intent span {
+          color: #0D0E10;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.25;
+        }
+
+        .sp-intent small {
+          min-width: 0;
+          color: #77736D;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
         .sp-form label {
           display: block;
           margin: 0 0 8px;
@@ -229,6 +303,13 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
           letter-spacing: 0.24em;
           color: #77736D;
           text-transform: uppercase;
+        }
+
+        .sp-form .sp-intent label {
+          display: grid;
+          margin: 0;
+          letter-spacing: 0;
+          text-transform: none;
         }
 
         .sp-form-row {
@@ -349,6 +430,10 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
             grid-template-columns: minmax(0, 1fr);
           }
 
+          .sp-proof {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
           .sp-form button {
             width: 100%;
           }
@@ -375,5 +460,6 @@ function readPromptPageAttribution(params: Record<string, string | string[] | un
     entry_post_slug: firstParam(params.entry_post_slug),
     buyer_stage: firstParam(params.buyer_stage),
     landing_path: firstParam(params.landing_path),
+    quiz_result: firstParam(params.quiz_result),
   }
 }

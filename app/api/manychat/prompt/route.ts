@@ -53,6 +53,13 @@ export async function GET(request: NextRequest) {
       number,
       title: "That prompt is coming",
       pageUrl: `${url.origin.replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")}/prompt-vault?source=manychat_prompt_lookup&utm_source=instagram&utm_medium=manychat&utm_campaign=numbered_prompt_fallback&cta_keyword=${encodeURIComponent(number || "UNKNOWN")}`,
+      dm: {
+        opener: "That exact prompt is not published yet, but the Vault is ready.",
+        pageButtonText: "See the Vault",
+        proofLine: "One selfie can become a full editorial shoot world when the prompt gives it direction.",
+        followupHours: [24, 48],
+      },
+      manychatTags: ["prompt-requester", "prompt-fallback"],
       fallbackMessage: "That one is not published yet, but the Vault is ready.",
     })
   }
@@ -83,6 +90,18 @@ export async function GET(request: NextRequest) {
       promptTitle: prompt.card.title,
       attribution: pageAttribution,
     }),
+    dm: {
+      opener: `Here is prompt #${prompt.number}: ${prompt.card.title}.`,
+      pageButtonText: "Open my prompt",
+      vaultButtonText: "Get the full Vault",
+      proofLine: "Start with one selfie. Use this prompt to test one image today. If it gets close, the Vault gives you the full shoot world around it.",
+      followupHours: [24, 48],
+    },
+    manychatTags: [
+      "prompt-requester",
+      `prompt-${prompt.number}`,
+      fallback ? "prompt-latest-fallback" : "prompt-numbered",
+    ],
     fallbackMessage: fallback
       ? "Here is today’s free prompt. For older reels, use a post-specific URL when you know the exact prompt."
       : null,
