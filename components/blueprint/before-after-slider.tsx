@@ -61,12 +61,12 @@ export function BeforeAfterSlider({
     >
       {/* Before Image (Left) */}
       <div className="absolute inset-0">
-        <img src={beforeImage || "/placeholder.svg"} alt="Before" className="w-full h-full object-cover" />
+        <img src={beforeImage || "/placeholder.svg"} alt={beforeLabel} className="w-full h-full object-cover" />
       </div>
 
       {/* After Image (Right) - Clipped */}
       <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}>
-        <img src={afterImage || "/placeholder.svg"} alt="After" className="w-full h-full object-cover" />
+        <img src={afterImage || "/placeholder.svg"} alt={afterLabel} className="w-full h-full object-cover" />
       </div>
 
       {/* Slider Line */}

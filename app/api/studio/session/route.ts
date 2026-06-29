@@ -3,7 +3,7 @@ import { getUserActiveSession } from "@/lib/data/sessions"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createServerClient()
     const {

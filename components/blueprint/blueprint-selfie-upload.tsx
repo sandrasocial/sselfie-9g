@@ -11,7 +11,7 @@ interface BlueprintSelfieUploadProps {
 
 // Compress image for mobile optimization
 const compressImage = (file: File, maxWidth = 1600, quality = 0.85): Promise<File> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // Skip compression for small files (< 2MB) or non-image types
     if (file.size < 2 * 1024 * 1024 || !file.type.startsWith("image/")) {
       resolve(file)

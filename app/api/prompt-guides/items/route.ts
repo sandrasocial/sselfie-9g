@@ -20,7 +20,7 @@ export async function GET(request: Request) {
           isAdmin = true
         }
       }
-    } catch (error) {
+    } catch {
       // Not authenticated or error - continue as non-admin
       console.log("[PromptGuides] Could not verify admin status, showing only published guides")
     }
@@ -144,4 +144,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

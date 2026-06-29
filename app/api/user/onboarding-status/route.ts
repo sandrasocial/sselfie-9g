@@ -9,7 +9,7 @@ import { sql } from "@/lib/db/client"
  * API endpoint to fetch user onboarding status
  * Returns: onboarding_completed, blueprint_welcome_shown_at
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Authenticate user
     const supabase = await createServerClient()

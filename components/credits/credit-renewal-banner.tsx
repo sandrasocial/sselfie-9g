@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import useSWR from "swr"
 import { X, Gift } from "lucide-react"
-import { DesignClasses } from "@/lib/design-tokens"
 import { useRouter } from "next/navigation"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())

@@ -13,7 +13,7 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
   const [promoCode, setPromoCode] = useState("")
   const [promoError, setPromoError] = useState("")
-  const [isValidatingPromo, setIsValidatingPromo] = useState(false)
+  const [, setIsValidatingPromo] = useState(false)
   const router = useRouter()
 
   const startCheckout = useCallback(async () => {
@@ -25,8 +25,8 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
         throw new Error("Failed to start checkout")
       }
       return clientSecret
-    } catch (error: any) {
-      setPromoError(error.message || "Failed to start checkout")
+    } catch (error: unknown) {
+      setPromoError(error instanceof Error ? error.message : "Failed to start checkout")
       throw error
     } finally {
       setIsValidatingPromo(false)

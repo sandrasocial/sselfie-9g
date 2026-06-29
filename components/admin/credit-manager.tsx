@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Search, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { formatCurrency } from "@/lib/admin/format-utils"
 
 interface User {
   id: string

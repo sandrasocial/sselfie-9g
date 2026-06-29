@@ -38,14 +38,17 @@ export async function POST(request: Request): Promise<NextResponse> {
           }),
         }
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
+      onUploadCompleted: async ({ blob }) => {
         console.log("[v0] Blob upload completed:", blob.url)
       },
     })
 
     return NextResponse.json(jsonResponse)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[v0] Error generating upload token:", error)
-    return NextResponse.json({ error: error.message || "Failed to generate upload token" }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to generate upload token" },
+      { status: 500 }
+    )
   }
 }

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { DesignClasses } from "@/lib/design-tokens"
 import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
-import useSWR, { mutate } from "swr"
+import useSWR from "swr"
 import { CURATED_FEED_STYLE_MAP, type CuratedFeedStyleName } from "@/lib/style-presets"
 
 // Feed style examples (V2 - 7 curated styles)
