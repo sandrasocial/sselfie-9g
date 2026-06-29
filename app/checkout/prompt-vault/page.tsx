@@ -9,6 +9,7 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import { shouldShowPromptVaultCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { getPromptVaultPriceDisplay } from "@/lib/launch/cash-launch-pricing"
@@ -63,15 +64,6 @@ function getErrorInfo(error: unknown): { message: string; code: string | null; t
     code: null,
     type: null,
   }
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  // Never trust raw URL input: cap length (RFC 5321 max is 254 chars) before the
-  // shape check so an oversized param can never reach Stripe as customer_email.
-  if (email.length > 254) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 function promptVaultCheckoutProperties(
