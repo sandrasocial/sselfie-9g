@@ -65,7 +65,11 @@ describe("SUITE trial first-image activation", () => {
     expect(shell).toContain(
       'accessLevel === "trial" && !trialHasGeneratedImages && !trialHasSavedSelfie'
     )
+    expect(shell).toContain("trialHasSavedSelfie={trialHasSavedSelfie}")
+    expect(shell).toContain("analyticsCohort={analyticsCohort}")
+    expect(shell).toContain("analyticsCohort={cohort}")
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
+    expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
     expect(frontDoor).toContain("Add my selfie")
     expect(concierge).toContain("For best results")
     expect(concierge).toContain("one full-body shot and one side profile")

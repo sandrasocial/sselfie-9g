@@ -250,8 +250,10 @@ function ShellInner({
 export function AppV3Shell({
   firstName,
   accessLevel,
+  analyticsCohort,
   trialDaysLeft,
   trialHasGeneratedImages,
+  trialHasSavedSelfie,
   initialSection,
   hasTrainedModel,
 }: AppV3ShellProps) {
@@ -260,8 +262,10 @@ export function AppV3Shell({
       <ShellInner
         firstName={firstName}
         accessLevel={accessLevel}
+        analyticsCohort={analyticsCohort}
         trialDaysLeft={trialDaysLeft}
         trialHasGeneratedImages={trialHasGeneratedImages}
+        trialHasSavedSelfie={trialHasSavedSelfie}
         initialSection={initialSection}
         hasTrainedModel={hasTrainedModel}
       />

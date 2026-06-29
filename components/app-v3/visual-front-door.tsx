@@ -296,7 +296,7 @@ export function VisualFrontDoor({
             image={selfieImage}
             eyebrow="SSELFIE SUITE"
             title="Hi, I'm Maya. Let's make your first photo."
-            body="Add one clear selfie. I will keep it feeling like you and build the rest around it."
+            body="Add one clear selfie and I'll keep your real face, then build the rest around you."
             action={frontDoorUploading ? "Uploading..." : "Add my selfie"}
             tall
             onClick={() => {
