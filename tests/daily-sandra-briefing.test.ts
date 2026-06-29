@@ -11,6 +11,11 @@ const baseReport = {
     freeToVaultClicks: 40,
     vaultVisits: 201,
     checkoutStarts: 44,
+    checkoutCompleted: 6,
+    checkoutRecoverableStarts: 30,
+    checkoutUnrecoverableStarts: 14,
+    manychatCheckoutStarts: 12,
+    manychatUnrecoverableStarts: 7,
     recoverySends: 8,
     vaultAccessOpens: 5,
     vaultAccessOpeners: 5,
@@ -34,6 +39,64 @@ const baseReport = {
   freePromptSignals: [{ prompt_title: "Coastal White", prompt_number: "01", copies: 7 }],
   attributionRows: [{ source: "instagram_manychat", utm_campaign: "prompt_my_selfie", checkout_starts: 12, purchases: 3 }],
 }
+
+const truthSnapshot = {
+  generatedAt: "2026-06-29T16:00:00.000Z",
+  windowDays: 90,
+  sources: {
+    instagramProfile: "Instagram Graph API",
+    instagramPerformance: "ig_media_snapshots",
+    money: "stripe_payments",
+    members: "subscriptions",
+    email: "Resend Main Audience",
+    manychat: "freebie_subscribers + stripe_payments",
+  },
+  instagram: {
+    username: "sandra.social",
+    followers: 110830,
+    following: 816,
+    mediaCount: 497,
+    biography: "Selfie to Brand Shoot for women",
+    website: "https://sselfie.ai/bio",
+  },
+  recentInstagram: {
+    mediaCount: 31,
+    latestCapturedOn: "2026-06-29",
+    latestPostedAt: "2026-06-28T20:39:18.000Z",
+    sumLatestPostReach: 941180,
+    sumLatestPostViews: 1179224,
+    sumLatestPostSaves: 42324,
+    sumLatestPostShares: 10902,
+    maxSinglePostReach: 488214,
+    maxSinglePostViews: 604458,
+    reachNote: "Sum of latest per-post reach snapshots, not unique account reach.",
+  },
+  email: { subscribedContacts: 6839 },
+  suite: {
+    activePaidMembers: 8,
+    canceledMembers: 35,
+    activeTrials: 14,
+    expiredTrials: 24,
+  },
+  promptVault: {
+    payments: 43,
+    revenueCents: 118100,
+    manychatAttributedPayments: 4,
+    manychatAttributedRevenueCents: 10800,
+  },
+  manychat: {
+    captures: 2960,
+    captureToPromptVaultPurchaseRate: 1,
+  },
+  revenueByProduct: [],
+  leaks: [
+    "2960 ManyChat/email captures but only 43 Prompt Vault purchases in 90 days. Fix the DM/email to Vault offer before asking for more reach.",
+  ],
+  positioning: {
+    currentPublicLane: "Turn one selfie into AI-assisted brand photos that still look like you.",
+    avoid: ["Do not use stale follower, subscriber, member, MRR, or reach numbers from docs."],
+  },
+} as const
 
 describe("daily Sandra briefing", () => {
   it("builds the four-section morning brief", () => {
@@ -84,6 +147,21 @@ describe("daily Sandra briefing", () => {
     expect(email.html).toContain("What's working")
     expect(email.html).toContain("What to post today")
     expect(email.text).toContain("What Codex should fix next")
+  })
+
+  it("puts the truth snapshot and real leak ahead of generic advice", () => {
+    const briefing = buildDailySandraBriefing({
+      ...baseReport,
+      truthSnapshot,
+    })
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(briefing.working.join(" ")).toContain("110,830 followers")
+    expect(briefing.leaking[0]).toContain("2960 ManyChat/email captures")
+    expect(briefing.codexNext.join(" ")).toContain("ManyChat PROMPT path")
+    expect(email.html).toContain("Growth truth")
+    expect(email.text).toContain("Email: 6,839 subscribed")
+    expect(email.text).toContain("Sum of latest per-post reach snapshots")
   })
 
   it("turns problem tags into useful content instructions", () => {

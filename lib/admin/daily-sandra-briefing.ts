@@ -1,3 +1,5 @@
+import type { GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
+
 type ReportRow = {
   [key: string]: unknown
   tag?: string | null
@@ -64,6 +66,7 @@ type GrowthReportLike = {
   topPromptSignals: ReportRow[]
   freePromptSignals: ReportRow[]
   attributionRows: ReportRow[]
+  truthSnapshot?: GrowthTruthSnapshot | null
 }
 
 export type DailyBriefingExtras = {
@@ -82,6 +85,7 @@ export type DailySandraBriefing = {
   windowDays: number
   subject: string
   moneyHeader: string | null
+  truthSnapshot: GrowthTruthSnapshot | null
   inboxFlagged: Array<{ username: string; message: string }>
   inboxFlaggedCount: number
   working: string[]
@@ -117,6 +121,11 @@ function percent(numerator: number, denominator: number): number {
 
 function money(cents: number): string {
   return `$${(cents / 100).toFixed(0)}`
+}
+
+function compactNumber(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "n/a"
+  return value.toLocaleString("en-US")
 }
 
 function cleanLabel(value: unknown, fallback = "the strongest current visual angle"): string {
@@ -221,6 +230,12 @@ export function buildDailySandraBriefing(
     working.push(`${report.eventCounts.aiPromptOptins} women joined the AI prompt funnel in the last ${report.windowDays} days.`)
   }
 
+  if (report.truthSnapshot?.instagram.followers) {
+    working.push(
+      `Instagram truth: @${report.truthSnapshot.instagram.username} has ${compactNumber(report.truthSnapshot.instagram.followers)} followers and ${compactNumber(report.truthSnapshot.recentInstagram.sumLatestPostReach)} summed latest per-post reach in the ${report.truthSnapshot.windowDays}-day snapshot.`,
+    )
+  }
+
   if (report.eventCounts.checkoutStarts > 0) {
     working.push(`${report.eventCounts.checkoutStarts} people started Prompt Vault checkout from ${report.eventCounts.vaultVisits} Vault visits (${checkoutRate}%).`)
   }
@@ -273,6 +288,10 @@ export function buildDailySandraBriefing(
     leaking.push("No major leak is obvious in this window. Keep sending qualified traffic and watch the next 24 hours.")
   }
 
+  if (report.truthSnapshot?.leaks?.length) {
+    leaking.unshift(...report.truthSnapshot.leaks)
+  }
+
   postToday.push(`Post one Prompt My Selfie reel around ${topVisual}. Make the first second show the finished transformation, not the explanation.`)
 
   const tagInstruction = contentInstructionForTag(topGrowthTag?.tag)
@@ -290,6 +309,14 @@ export function buildDailySandraBriefing(
 
   if ((report.supportCounts?.new || 0) > 0 || (report.supportCounts?.reviewing || 0) > 0) {
     codexNext.push("Triage open customer support threads and fix any product bugs before optimizing more funnel copy.")
+  } else if (
+    report.truthSnapshot &&
+    report.truthSnapshot.manychat.captures >= 100 &&
+    report.truthSnapshot.manychat.captureToPromptVaultPurchaseRate < 3
+  ) {
+    codexNext.push("Audit and tighten the ManyChat PROMPT path: delivered promise, email capture, Vault offer, checkout URL, and follow-up sequence.")
+  } else if (report.truthSnapshot && report.truthSnapshot.suite.activeTrials > 0) {
+    codexNext.push("Fix Suite trial activation: make first selfie upload and first generated result the obvious next step for every active trial.")
   } else if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
     codexNext.push("Improve the free preview to Vault bridge after the first prompt copy.")
   } else if (report.eventCounts.manychatCheckoutStarts >= 3 && manychatUnrecoverableRate >= 25) {
@@ -315,6 +342,7 @@ export function buildDailySandraBriefing(
     windowDays: report.windowDays,
     subject: "today's SSELFIE briefing",
     moneyHeader,
+    truthSnapshot: report.truthSnapshot || null,
     inboxFlagged: (extras.inboxFlagged || []).slice(0, 5),
     inboxFlaggedCount: extras.inboxFlaggedCount ?? (extras.inboxFlagged || []).length,
     working: working.slice(0, 4),
@@ -370,6 +398,41 @@ function supportThreadsText(threads: DailySandraBriefing["supportThreads"]): str
     .join("\n")
 }
 
+function truthSnapshotHtml(snapshot: GrowthTruthSnapshot | null): string {
+  if (!snapshot) return ""
+
+  const rows = [
+    ["Instagram", `${compactNumber(snapshot.instagram.followers)} followers · ${compactNumber(snapshot.instagram.mediaCount)} posts`, snapshot.sources.instagramProfile],
+    ["Recent IG", `${compactNumber(snapshot.recentInstagram.sumLatestPostReach)} summed reach · ${compactNumber(snapshot.recentInstagram.sumLatestPostViews)} views`, snapshot.sources.instagramPerformance],
+    ["ManyChat", `${compactNumber(snapshot.manychat.captures)} captures · ${snapshot.manychat.captureToPromptVaultPurchaseRate}% to Prompt Vault purchase`, snapshot.sources.manychat],
+    ["Prompt Vault", `${compactNumber(snapshot.promptVault.payments)} purchases · ${money(snapshot.promptVault.revenueCents)}`, snapshot.sources.money],
+    ["Suite", `${compactNumber(snapshot.suite.activePaidMembers)} paid · ${compactNumber(snapshot.suite.activeTrials)} trials`, snapshot.sources.members],
+    [
+      "Email",
+      snapshot.email.subscribedContacts == null
+        ? "not fetched in fast snapshot"
+        : `${compactNumber(snapshot.email.subscribedContacts)} subscribed`,
+      snapshot.sources.email,
+    ],
+  ]
+
+  return `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Growth truth · real sources</h2>
+        ${rows.map(([label, value, source]) => `
+          <p style="margin:0 0 8px;font-size:14px;color:#4F5052;line-height:1.6;">
+            <strong style="color:#0D0E10;">${escapeHtml(label)}</strong> · ${escapeHtml(value)} <span style="color:#9A9A9A;">source: ${escapeHtml(source)}</span>
+          </p>
+        `).join("")}
+        <p style="margin:10px 0 0;font-size:12px;color:#818283;line-height:1.6;">${escapeHtml(snapshot.recentInstagram.reachNote)}</p>
+      </div>`
+}
+
+function truthSnapshotText(snapshot: GrowthTruthSnapshot | null): string {
+  if (!snapshot) return ""
+  return `\n\nGrowth truth\n- Instagram: ${compactNumber(snapshot.instagram.followers)} followers · ${compactNumber(snapshot.instagram.mediaCount)} posts (${snapshot.sources.instagramProfile})\n- Recent IG: ${compactNumber(snapshot.recentInstagram.sumLatestPostReach)} summed reach · ${compactNumber(snapshot.recentInstagram.sumLatestPostViews)} views (${snapshot.sources.instagramPerformance}; ${snapshot.recentInstagram.reachNote})\n- ManyChat: ${compactNumber(snapshot.manychat.captures)} captures · ${snapshot.manychat.captureToPromptVaultPurchaseRate}% to Prompt Vault purchase (${snapshot.sources.manychat})\n- Prompt Vault: ${compactNumber(snapshot.promptVault.payments)} purchases · ${money(snapshot.promptVault.revenueCents)} (${snapshot.sources.money})\n- Suite: ${compactNumber(snapshot.suite.activePaidMembers)} paid · ${compactNumber(snapshot.suite.activeTrials)} trials (${snapshot.sources.members})\n- Email: ${snapshot.email.subscribedContacts == null ? "not fetched in fast snapshot" : `${compactNumber(snapshot.email.subscribedContacts)} subscribed`} (${snapshot.sources.email})`
+}
+
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
   const html = `
 <!doctype html>
@@ -390,6 +453,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         ${briefing.inboxFlagged.map((item) => `<p style="margin:0 0 10px;font-size:14px;color:#4F5052;line-height:1.6;"><strong style="color:#0D0E10;">@${escapeHtml(item.username)}</strong> · ${escapeHtml(item.message)}</p>`).join("")}
         <a href="${briefing.links.inbox}" style="color:#0D0E10;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Open inbox</a>
       </div>` : ""}
+      ${truthSnapshotHtml(briefing.truthSnapshot)}
 
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's working</h2>
@@ -435,7 +499,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

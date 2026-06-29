@@ -51,6 +51,102 @@ function safeArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
 }
 
+function compactNumber(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "n/a"
+  return value.toLocaleString("en-US")
+}
+
+function money(cents: number | null | undefined): string {
+  return `$${((cents || 0) / 100).toFixed(0)}`
+}
+
+function GrowthTruthSection({ brief }: { brief: ContentBrief }) {
+  const truth = brief.growthTruth
+  if (!truth) return null
+
+  const metrics = [
+    {
+      label: "Instagram",
+      value: `${compactNumber(truth.instagram.followers)} followers`,
+      source: truth.sources.instagramProfile,
+    },
+    {
+      label: "Recent IG",
+      value: `${compactNumber(truth.recentInstagram.sumLatestPostReach)} summed reach`,
+      source: truth.sources.instagramPerformance,
+    },
+    {
+      label: "ManyChat",
+      value: `${compactNumber(truth.manychat.captures)} captures`,
+      source: truth.sources.manychat,
+    },
+    {
+      label: "Prompt Vault",
+      value: `${compactNumber(truth.promptVault.payments)} purchases · ${money(truth.promptVault.revenueCents)}`,
+      source: truth.sources.money,
+    },
+    {
+      label: "Suite",
+      value: `${compactNumber(truth.suite.activePaidMembers)} paid · ${compactNumber(truth.suite.activeTrials)} trials`,
+      source: truth.sources.members,
+    },
+    {
+      label: "Email",
+      value: truth.email.subscribedContacts == null
+        ? "not fetched in fast snapshot"
+        : `${compactNumber(truth.email.subscribedContacts)} subscribed`,
+      source: truth.sources.email,
+    },
+  ]
+
+  return (
+    <section className="rounded-2xl border border-stone-950 bg-stone-950 p-5 text-white">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Growth truth</p>
+          <h2 className="mt-2 font-serif text-2xl font-light text-white">
+            The audit numbers this brief is allowed to use
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-stone-300">
+            {truth.positioning.currentPublicLane}
+          </p>
+        </div>
+        <CopyChip
+          label="Copy truth"
+          text={[
+            `Instagram: ${compactNumber(truth.instagram.followers)} followers`,
+            `Recent IG: ${compactNumber(truth.recentInstagram.sumLatestPostReach)} summed latest per-post reach (${truth.recentInstagram.reachNote})`,
+            `ManyChat: ${compactNumber(truth.manychat.captures)} captures`,
+            `Prompt Vault: ${compactNumber(truth.promptVault.payments)} purchases, ${money(truth.promptVault.revenueCents)}`,
+            `Suite: ${compactNumber(truth.suite.activePaidMembers)} paid, ${compactNumber(truth.suite.activeTrials)} trials`,
+            `Email: ${truth.email.subscribedContacts == null ? "not fetched in fast snapshot" : `${compactNumber(truth.email.subscribedContacts)} subscribed`}`,
+            `Leaks: ${truth.leaks.join(" | ")}`,
+          ].join("\n")}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {metrics.map(metric => (
+          <div key={metric.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">{metric.label}</p>
+            <p className="mt-1 font-serif text-xl font-light text-white">{metric.value}</p>
+            <p className="mt-1 text-xs text-stone-500">Source: {metric.source}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-amber-200/25 bg-amber-200/10 p-4">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100">Leaks to address first</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-stone-100">
+          {truth.leaks.map((leak, index) => (
+            <li key={index}>{leak}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 function DemandMapSection({ brief }: { brief: ContentBrief }) {
   const map = brief.demandMap
   if (!map) {
@@ -381,6 +477,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
                 : " · full metrics"}
             </p>
           </section>
+
+          <GrowthTruthSection brief={brief} />
 
           <DemandMapSection brief={brief} />
 

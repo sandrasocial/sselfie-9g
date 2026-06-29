@@ -198,7 +198,7 @@ export default function RootLayout({
                 name: "Sandra",
                 jobTitle: "Founder & CEO",
                 description:
-                  "Single mother from Iceland who built a 180K+ personal brand using selfies — then built an AI to do it for everyone.",
+                  "Single mother from Iceland who built a 100K+ personal brand using selfies, story, and AI-assisted visuals.",
                 sameAs: ["https://instagram.com/sandra.social", "https://tiktok.com/@sandra.social"],
               },
               sameAs: ["https://instagram.com/sselfie.ai", "https://tiktok.com/@sselfie.ai"],

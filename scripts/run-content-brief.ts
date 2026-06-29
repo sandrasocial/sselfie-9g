@@ -12,6 +12,17 @@ async function main() {
   const brief = await generateContentBrief()
   console.log(`Generated in ${Math.round((Date.now() - started) / 1000)}s`)
   console.log("Account:", brief.accountSnapshot)
+  if (brief.growthTruth) {
+    console.log("Growth truth:", {
+      followers: brief.growthTruth.instagram.followers,
+      emailSubscribed: brief.growthTruth.email.subscribedContacts,
+      activePaidMembers: brief.growthTruth.suite.activePaidMembers,
+      activeTrials: brief.growthTruth.suite.activeTrials,
+      manychatCaptures: brief.growthTruth.manychat.captures,
+      promptVaultPurchases: brief.growthTruth.promptVault.payments,
+      leaks: brief.growthTruth.leaks,
+    })
+  }
   console.log("Recap posts:", brief.performanceRecap.length)
   console.log("Hooks:", brief.hookIntelligence.length)
   if (brief.demandMap) {

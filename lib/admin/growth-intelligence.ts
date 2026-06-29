@@ -2,6 +2,7 @@ import "server-only"
 
 import { sql } from "@/lib/db/client"
 import { evaluateGrowthPriorities } from "@/lib/admin/growth-intelligence-evaluator"
+import { getGrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 export { formatMoney, formatPercent, percent, type GrowthPriority } from "@/lib/admin/growth-intelligence-evaluator"
 
 function toInt(value: unknown): number {
@@ -13,7 +14,8 @@ export type GrowthIntelligenceReport = Awaited<ReturnType<typeof getGrowthIntell
 export async function getGrowthIntelligenceReport(windowDays: number) {
   const interval = `${windowDays} days`
 
-  const [eventCountsRow] = await sql`
+  const [eventCountsRows, truthSnapshot] = await Promise.all([
+    sql`
     WITH analytics AS (
       SELECT
         COUNT(*) FILTER (WHERE event_name = 'ai_prompts_subscribed')::int AS ai_prompt_optins,
@@ -57,7 +59,13 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
         AND source <> 'codex_smoke_test'
     )
     SELECT * FROM analytics, checkout
-  `
+  `,
+    getGrowthTruthSnapshot(Math.max(windowDays, 90)).catch((error) => {
+      console.error("[growth-intelligence] growth truth snapshot failed:", error)
+      return null
+    }),
+  ])
+  const eventCountsRow = (eventCountsRows as any[])[0] || {}
 
   const [paymentCountsRow] = await sql`
     SELECT
@@ -287,6 +295,7 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
   return {
     generatedAt: new Date().toISOString(),
     windowDays,
+    truthSnapshot,
     eventCounts,
     paymentCounts,
     buyerCounts,

@@ -22,9 +22,26 @@ describe("CONTENT-BRIEF-UPGRADE-01 guardrails", () => {
 
     expect(briefGenerator).toContain("getPublishedVaultCollections")
     expect(briefGenerator).toContain("getAcademyProductCatalog")
+    expect(briefGenerator).toContain("getGrowthTruthSnapshot")
+    expect(briefGenerator).toContain("dataPacket.growthTruth")
     expect(briefGenerator).toContain("newestPublishedDrops")
     expect(briefGenerator).toContain("dataPacket.suite.includedProducts")
-    expect(briefGenerator).toContain("Do not give away the full copy-paste Vault prompt")
+    expect(briefGenerator).toContain("Instagram reach in dataPacket.growthTruth.recentInstagram")
+    expect(briefGenerator).toContain("Do NOT write full posts, full captions, final carousel slides, hashtags, or copy-paste photoshoot prompts")
     expect(briefGenerator).toContain("sanitizeContentBriefOutput")
+  })
+
+  it("keeps active app surfaces away from stale 180K positioning", () => {
+    const activeFiles = [
+      "app/auth/sign-up/page.tsx",
+      "app/bio/page.tsx",
+      "app/layout.tsx",
+      "components/sselfie/public-marketing.tsx",
+      "components/sselfie/landing-page-new.tsx",
+    ]
+
+    for (const file of activeFiles) {
+      expect(read(file), file).not.toMatch(/180K\+|180,000\+|180,000 followers/)
+    }
   })
 })

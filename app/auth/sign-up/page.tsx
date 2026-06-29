@@ -330,7 +330,7 @@ export default function SignUpPage() {
           <div>
             <p className="font-['Inter'] text-[10px] uppercase tracking-[0.35em] text-[#8a8780] mb-4">Before you start</p>
             <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8] leading-tight mb-6">
-              You&apos;re joining the same system behind 180K+ followers.
+              You&apos;re joining the same system behind a 100K+ personal brand.
             </h2>
             <p className="font-['Inter'] text-sm text-[#8a8780] leading-relaxed">
               Sandra built this from scratch with a tiny setup and real consistency. You get that exact workflow in-app.

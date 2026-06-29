@@ -232,7 +232,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 className="text-[10px] uppercase tracking-[0.2em] text-brand-whisper"
                 style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
               >
-                180K+ creators following
+                100K+ followers
               </span>
             </div>
 

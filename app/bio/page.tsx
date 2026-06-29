@@ -45,7 +45,7 @@ export default function BioPage() {
         </div>
 
         <p className="bio-proof">
-          Join <strong>180,000+</strong> women showing up online
+          Join <strong>100,000+</strong> people learning to show up online
         </p>
 
         <div className="bio-identity">

@@ -5,6 +5,7 @@ import {
   collectInstagramPerformance,
   type InstagramPerformanceSnapshot,
 } from "@/lib/content-engine/instagram-performance"
+import { getGrowthTruthSnapshot, type GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 import { collectAudienceSignals, type AudienceSignals } from "@/lib/content-engine/audience-signals"
 import {
   BANNED_WORDS,
@@ -111,6 +112,7 @@ export type ContentBriefPiece = {
 export type ContentBrief = {
   periodStart: string
   periodEnd: string
+  growthTruth?: GrowthTruthSnapshot | null
   accountSnapshot: {
     username: string
     followers: number | null
@@ -584,11 +586,15 @@ export async function generateContentBrief(): Promise<ContentBrief> {
   const periodStart = new Date(periodEnd)
   periodStart.setDate(periodStart.getDate() - 7)
 
-  const [performance, signals, vault, suite] = await Promise.all([
+  const [performance, signals, vault, suite, growthTruth] = await Promise.all([
     collectInstagramPerformance(),
     collectAudienceSignals(30),
     getVaultBriefContext(),
     getSuiteBriefContext(),
+    getGrowthTruthSnapshot(90).catch((error) => {
+      console.error("[content-brief] growth truth snapshot failed:", error)
+      return null
+    }),
   ])
 
   const researchNotes = await researchCurrentHooks(performance, signals)
@@ -597,10 +603,11 @@ export async function generateContentBrief(): Promise<ContentBrief> {
 
   const dataPacket = {
     account: {
-      username: performance?.username || "sandra.social",
-      followers: performance?.followers ?? null,
+      username: growthTruth?.instagram.username || performance?.username || "sandra.social",
+      followers: growthTruth?.instagram.followers ?? performance?.followers ?? null,
       insightsLevel: performance?.insightsLevel || "basic",
     },
+    growthTruth,
     topPosts: (performance?.topPosts || []).map(post => ({
       permalink: post.permalink,
       format: post.format,
@@ -658,6 +665,10 @@ CONTENT PLAN RULES:
 - Use dataPacket.marketPatternContext and researchMemo for creator mechanics from similar creators. Adapt mechanics such as numbered keywords, named frameworks, side-by-side proof, one concept across multiple examples, meta-reveal, and proof-stacked covers. Do not copy another creator's positioning, exact visual, or audience promise.
 - Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
 - Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
+- dataPacket.growthTruth is the audit truth snapshot. Use it for followers, email list, Suite members/trials, ManyChat captures, Prompt Vault sales, and revenue-by-product. Do not use old figures from memory or prior docs.
+- If dataPacket.growthTruth.leaks is present, contentPlan and demandMap must address the top leak before generic reach advice. If ManyChat captures are high but Prompt Vault purchases are low, recommend conversion/proof/offer bridge content, not "get more reach."
+- If active Suite trials are higher than paid members, include at least one proof or onboarding content angle that helps a trial understand the first selfie upload and first generated result.
+- Instagram reach in dataPacket.growthTruth.recentInstagram is summed latest per-post reach, not unique account reach. Say that distinction if you mention it.
 - Vault count is LIVE in dataPacket.vault. Never hardcode "92", "150", "10 collections", or any fixed count. If you need a number, use dataPacket.vault.totalPromptCount and dataPacket.vault.totalCollectionCount only. Prefer "every shoot world I've built" or "new drops added all the time" unless the exact live number improves clarity.
 - Newly published Shoot Studio drops in dataPacket.vault.newestPublishedDrops are fresh content inputs. Feature the newest relevant drop as a content angle when it fits the week's demand.
 - SUITE claims may only use dataPacket.suite.includedProducts. Do not invent "Real You Method training", "monthly brand shoot themes", "live editing sessions", or any feature not listed in the product catalog.
@@ -704,11 +715,12 @@ CONTENT PLAN RULES:
     periodStart: periodStart.toISOString(),
     periodEnd: periodEnd.toISOString(),
     accountSnapshot: {
-      username: performance?.username || "sandra.social",
-      followers: performance?.followers ?? null,
+      username: growthTruth?.instagram.username || performance?.username || "sandra.social",
+      followers: growthTruth?.instagram.followers ?? performance?.followers ?? null,
       postsAnalyzed: performance?.postsAnalyzed ?? 0,
       insightsLevel: performance?.insightsLevel || "basic",
     },
+    growthTruth,
     ...brief,
     researchNotes: sanitizeBriefText(researchNotes, vault),
   }

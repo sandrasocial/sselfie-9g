@@ -1131,7 +1131,7 @@ export function MasterclassPageContent() {
 
       {/* FOUNDER SPLIT — dark */}
       <Split
-        title={<>I built 180K followers without a photographer, a studio, or a clue about what I was doing at the start.</>}
+        title={<>I built a 100K+ personal brand without a photographer, a studio, or a clue about what I was doing at the start.</>}
         body={
           <div className="space-y-4">
             <p>I figured it out over years. The positioning. The pillars. The content system that actually holds up when life gets messy.</p>
