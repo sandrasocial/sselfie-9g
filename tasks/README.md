@@ -23,6 +23,9 @@ The previous active board was stale. Code inspection and recent verification sho
 - Prompt Vault funnel emails are built and wired.
 - The free AI prompts page already shows "Shot 1 of N" locked Vault previews and has tests for
   locked-prompt safety.
+- ManyChat PROMPT is not a numbered-keyword system. The current live/default model is
+  `PROMPT` -> `/ai-prompts`, which shows the latest five SSELFIE shoot previews. The old
+  `MANYCHAT-FUNNEL-01-numbered-prompts.md` file is superseded history, not an active build spec.
 - IG inbox manual send policy is live. Native IG replies can send manually, automated sends remain
   gated, and ManyChat replies now have the production API key.
 

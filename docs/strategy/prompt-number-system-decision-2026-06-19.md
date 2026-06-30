@@ -2,7 +2,18 @@
 
 Date: 2026-06-19  
 Owner: Claude/Codex planning, Sandra approved implementation path  
-Status: app-side implementation shipped; live PROMPT automation updated 2026-06-19 to tap-first delivery with tracked `/p/latest`
+Status: superseded by the 2026-06-30 operating lock. Prompt numbers stay as product/internal IDs, but ManyChat no longer delivers `/p/latest` or numbered prompt pages by default.
+
+## 2026-06-30 correction
+
+Sandra confirmed that numbered prompt keywords were too complex and should not be treated as the operating model. The current/live ManyChat strategy is:
+
+- Keyword: `PROMPT`
+- Delivery page: `/ai-prompts`
+- Free page promise: the latest five SSELFIE shoot previews, refreshed by the newest published/freebie collection selection
+- Paid next step: Prompt Vault for the complete shoot worlds
+
+Do not use this document to revive numbered ManyChat keywords, `n={{last_text_input}}`, or `/p/latest` as the default PROMPT destination.
 
 ## Decision
 
@@ -40,13 +51,13 @@ The fix is not "delete numbers." The fix is:
 
 Numbers help the Vault feel big and organized. They should stay visible in the product. They should not become Sandra's weekly ManyChat burden.
 
-## Recommended funnel
+## Current funnel
 
 ### Public Instagram CTA
 
-Default CTA becomes:
+Default CTA is:
 
-`Comment PROMPT and I'll send you today's prompt.`
+`Comment PROMPT and I'll send you the latest free prompts.`
 
 Not:
 
@@ -60,30 +71,32 @@ One evergreen ManyChat automation:
 
 1. Trigger: comments or DMs containing `PROMPT`.
 2. First DM: button tap, Meta-safe.
-3. Delivery: link to the current single-prompt page.
-4. Optional: if the user typed a number and ManyChat can pass it reliably, use the resolver. If not, ignore the number and send the current prompt page.
+3. Delivery: link to `/ai-prompts`, or call `/api/manychat/prompt` and use the returned `/ai-prompts` URL.
+4. If an old flow passes a number, ignore it and send the latest-five free page.
 
 The flow should not require a new ManyChat keyword row for every new prompt.
 
 ### App
 
-Build a current-prompt layer:
+Current app behavior:
 
-- `/p/latest` resolves to the current free prompt.
-- `/api/manychat/prompt` with no valid `n` returns the current free prompt instead of a generic Vault fallback.
-- Admin/content tooling can set the current free prompt, or the app can default to newest published prompt.
+- `/ai-prompts` shows the latest five free shoot previews.
+- `FREEBIE_TOTAL_SHOOT_LIMIT = 5` caps the page.
+- `/api/manychat/prompt` returns `mode: "latest_five_free_prompts"` and a URL for `/ai-prompts`.
 - `/p/{number}` remains live forever for exact links and attribution.
 
-### Free prompt page
+### Historical free prompt page recommendation
 
-The page shows:
+This section described the 2026-06-19 interim direction and is no longer the live default. It is retained as history only.
+
+The old recommendation was:
 
 - one prompt
 - one example/result
 - email gate before copy
 - one clear Vault upsell
 
-No archive browsing. No "here are ten free prompts." No full pack framing.
+The current free page is `/ai-prompts` with the latest five shoot previews, not `/p/latest`.
 
 ### Vault
 
@@ -133,7 +146,7 @@ Update docs/specs so future agents do not continue the brittle path:
 
 ### Phase 2: Code cleanup
 
-Implemented app-side:
+Historical app-side implementation from 2026-06-19:
 
 - `/p/latest` resolves to the current free prompt.
 - Current-prompt resolver helper exists.
@@ -143,7 +156,7 @@ Implemented app-side:
   - invalid `n` returns current prompt plus `found: false`, not a dead end
 - Tests cover `/p/latest` and resolver fallback.
 
-Operational default: `CURRENT_FREE_PROMPT_NUMBER` can pin a specific prompt. Without it, the app uses newest published Vault drop, then newest static prompt.
+Current 2026-06-30 default: `/api/manychat/prompt` returns `/ai-prompts` with `mode: "latest_five_free_prompts"` even if an old flow passes an `n` value.
 
 ### Phase 3: Freebie/offer cleanup
 
@@ -161,17 +174,17 @@ One live flow:
 
 - Keyword: `PROMPT`
 - First DM: button
-- Delivery URL: `/p/latest` or resolver endpoint with fallback to latest
-- Optional advanced path: if a number is captured reliably, exact prompt lookup
+- Delivery URL: `/ai-prompts` or resolver endpoint returning `/ai-prompts`
+- No numbered keyword path by default
 
 Sandra should never need to create per-prompt automations.
 
-Live status 2026-06-19: `Prompt Pack Automation` follows this default. The first private reply button opens an attached delivery step, and the delivery message sends `/p/latest` with `cta_keyword=PROMPT`, `utm_content=prompt_pack_delivery`, and `checkout_source=manychat_prompt_delivery`.
+Live status 2026-06-30: `Prompt Pack Automation` should send `/ai-prompts` with `cta_keyword=PROMPT`, `utm_content=prompt_pack_delivery`, and `checkout_source=manychat_prompt_delivery`.
 
 ## Recommendation
 
 Approve this path:
 
-> Prompt numbers stay. Numbered comments stop being the default. PROMPT is the automation keyword. The app decides which single prompt to deliver.
+> Prompt numbers stay as product IDs. Numbered comments stop being the default. PROMPT is the automation keyword. The app delivers the latest five free shoot previews.
 
 This protects the $27 Vault conversion gap, keeps the numbered work useful, and removes the operational trap inside ManyChat.

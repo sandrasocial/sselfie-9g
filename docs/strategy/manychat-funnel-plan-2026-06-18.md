@@ -1,12 +1,20 @@
 # ManyChat funnel — strategy + setup plan (2026-06-18)
 
-Goal: stop the free-pack over-delivery leak, make each post deliver the EXACT prompt it showed (aivideoskool model), capture email every time, push the Vault, and set ManyChat up ONCE so Sandra never builds a new automation per reel.
+> **SUPERSEDED 2026-06-30.** This was the old numbered-prompt plan. Sandra
+> decided numbered ManyChat keywords were too complex. Current strategy:
+> `PROMPT` -> `/ai-prompts`, where the free page shows the latest five SSELFIE
+> shoot previews. Do not use this file to plan numbered keywords, `n={{last_text_input}}`,
+> or `/p/latest` as the default PROMPT destination.
 
-## The core strategic shift: free = the taste, Vault = the meal
+Current operating note: do not implement the historical numbered plan below. The current leak fix is `PROMPT` -> `/ai-prompts`, where the free page shows the latest five SSELFIE shoot previews and points to Prompt Vault.
+
+Historical goal, no longer current: stop the free-pack over-delivery leak by making each post deliver the exact prompt it showed.
+
+## Historical core strategic shift: free = the taste, Vault = the meal
 
 **Today (leaks):** the free `/ai-prompts` is a whole PACK of prompts. It over-delivers — people get enough free prompts that they have no reason to buy the Vault (confirmed in the funnel-conversion audit). The keyword delivery is also built per-post by hand.
 
-**New model (how aivideoskool does it):** every post gives away ONLY the single exact prompt shown in that post. The paid Vault becomes "all of them, organized, plus new drops." The free single prompt creates appetite ("if one prompt is this good…"), it does not satisfy it.
+**Old model considered on 2026-06-18 (how aivideoskool does it):** every post gives away ONLY the single exact prompt shown in that post. This was later retired for SSELFIE because numbered ManyChat keywords were too complex.
 
 | Tier | Old | New |
 |---|---|---|
@@ -16,16 +24,16 @@ Goal: stop the free-pack over-delivery leak, make each post deliver the EXACT pr
 
 **Recommendation: reposition, do NOT delete the free.** Keep a free entry (it grows the list ~2,600 opt-ins/mo), but the free thing is now a single prompt, not a library. Critically, KEEP email capture on it — that list is the only way to nurture to Vault/SUITE.
 
-## How aivideoskool avoids building an automation per post
+## Historical research: how aivideoskool avoids building an automation per post
 
 He does NOT make a new automation per reel. The trick: **one evergreen comment trigger set to "any post / all future posts,"** keyed to a keyword. Sandra has been using the per-post version ("this specific post + this keyword"), which is why she rebuilds it every time. The fix is to switch to the all-posts evergreen trigger and let the keyword (a number) do the routing.
 
-He uses **numbered keywords** ("Comment 220") instead of words. Why numbers win:
+He uses **numbered keywords** ("Comment 220") instead of words. SSELFIE should not copy that operating model. Historical rationale was:
 - Unique per prompt → he can see exactly which prompt drives demand.
 - Implies a huge library ("there are 220+ of these") → makes the Vault feel inevitable.
 - Collectible / series feel.
 
-## The system (target architecture)
+## The retired system (do not implement)
 
 **ONE evergreen flow, content lives in Sandra's app, ManyChat touched once.**
 
@@ -42,17 +50,17 @@ Two ways to map number → prompt:
 - **Interim (no code, this week):** one flow with a small keyword list — add the new number as a keyword row when she posts. One place, ~20 seconds, NOT a new automation. Stops the per-post-build pain immediately.
 - **Target (Codex build):** a ManyChat External Request to a tiny endpoint (`/api/manychat/prompt?n=14`) that returns the prompt + Vault CTA, OR the flow just routes to `sselfie.ai/p/{number}` dynamically. Then she truly never touches ManyChat — she only publishes the prompt in her app. This is the aivideoskool model, done better (email + No-Fake + her own platform).
 
-## What to build (Codex queue)
+## Retired build queue
 1. **Single-prompt pages** `sselfie.ai/p/{number}` — email-gated, shows one prompt, Vault upsell. Numbered to match the post.
 2. **Number the Vault prompts** (give every prompt/collection a stable number) so posts and pages line up.
 3. **ManyChat external-request endpoint** (optional, the zero-touch upgrade) so the number in the comment resolves to the right prompt automatically.
 4. **Reposition `/ai-prompts`**: from "pack" to "single rotating taste + Vault pitch" (aligns with the existing `codex/freebie-curation` cap work).
 
-## Keyword scheme (going forward)
-- **A number per prompt post** → that exact prompt + Vault upsell. (the new default for prompt reels)
+## Current keyword scheme
+- **PROMPT** -> `/ai-prompts` latest five free previews + Vault upsell.
 - **SELFIE** → free selfie guide (keep — it's her biggest DM driver).
 - **ANDROID** → Android variant (keep).
-- Retire the generic "PROMPT → whole pack" as the satisfy-the-desire path.
+- Do not use a number per prompt post as the default ManyChat path.
 
 ## What this fixes (the leaks, by name)
 - Over-delivery → free is now one prompt, not a library.
@@ -61,7 +69,7 @@ Two ways to map number → prompt:
 - Typed-text-gets-nothing → trigger catches DMs + comments, opening is a tappable button.
 - No per-post tracking → numbers tell her which prompt sells.
 
-## Decisions — LOCKED by Sandra 2026-06-18
+## Historical decisions — superseded by Sandra 2026-06-30
 1. ✅ Free = single exact prompt per post (taste); Vault = full library + drops.
 2. ✅ Light email gate on the free prompt (protect list growth + nurture).
 3. ✅ Numbered keywords per prompt post (SELFIE + ANDROID stay as words).

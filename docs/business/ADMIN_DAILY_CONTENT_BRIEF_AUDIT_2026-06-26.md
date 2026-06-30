@@ -66,7 +66,7 @@ There are competitor/market docs in the repo:
 
 Useful patterns from those docs:
 
-- numbered prompt keywords
+- named aesthetic drops, not numbered ManyChat prompt keywords
 - named aesthetic drops
 - named/numbered frameworks
 - one concept across multiple real examples
@@ -74,6 +74,10 @@ Useful patterns from those docs:
 - meta-reveal hooks
 - comment-to-DM mechanics
 - using synthetic-avatar creators as Sandra's "still you" foil
+
+2026-06-30 correction: numbered ManyChat prompt keywords are retired for
+SSELFIE. Briefs should recommend `PROMPT` -> `/ai-prompts`, where the free page
+shows the latest five SSELFIE shoot previews.
 
 But these docs were not wired into the admin content brief.
 

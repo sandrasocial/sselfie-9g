@@ -1,6 +1,32 @@
-# ManyChat funnel — page + DM copy (draft for Sandra's approval, 2026-06-18)
+# ManyChat funnel - page + DM copy (historical draft, 2026-06-18)
 
-For MANYCHAT-FUNNEL-01. Sandra's voice, No-Fake, no em-dashes, contractions. Nothing goes live until she approves. `{number}`, `{prompt_title}`, `{vault_count}` are dynamic (filled per prompt by the app). Examples shown with prompt #14 "Café Window".
+> SUPERSEDED 2026-06-30.
+>
+> Sandra confirmed that numbered ManyChat prompt keywords were too complex and
+> are not the operating model. The current flow is: keyword `PROMPT` -> `/ai-prompts`
+> -> latest five free SSELFIE shoot previews -> Prompt Vault upsell.
+>
+> Do not use this file to revive `Comment 14`, `n={{last_text_input}}`,
+> per-number keywords, or `/p/latest` as the default PROMPT destination.
+
+For MANYCHAT-FUNNEL-01. Sandra's voice, No-Fake, no em-dashes, contractions. Nothing goes live until she approves. The numbered/single-prompt copy below is preserved as historical context only.
+
+---
+
+## Current PROMPT copy - `/ai-prompts` latest five free previews
+
+### Opening DM
+> Hey! I've got the latest free SSELFIE shoot previews for you. Tap below and start with one selfie.
+
+**Button:** Open the free prompts -> `{ai_prompts_url}`
+
+### Delivery follow-up
+> Those are the five newest free previews. They update as new collections drop, so PROMPT always sends people to the freshest starter set.
+
+### Vault nudge
+> When you want the full shoot worlds in one place, the Prompt Vault has the complete collection. One selfie, more ways to show up.
+
+**Button:** Get the full Vault -> `{vault_checkout_url}`
 
 ---
 
@@ -30,7 +56,7 @@ For MANYCHAT-FUNNEL-01. Sandra's voice, No-Fake, no em-dashes, contractions. Not
 
 ---
 
-## B. The ManyChat DM flow (numbered, target version)
+## B. The ManyChat DM flow (numbered, historical draft only)
 
 ### 1. Opening DM (sent after they comment the number — Meta needs a tap first)
 > Hey! 🤍 You commented on my reel, so I've got prompt #{number} ready for you. Tap below and it's yours.
@@ -52,10 +78,10 @@ For MANYCHAT-FUNNEL-01. Sandra's voice, No-Fake, no em-dashes, contractions. Not
 
 ---
 
-## C. Interim DM (before the numbered pages ship — keyword "PROMPT" → current /ai-prompts)
+## C. Old interim DM (historical)
 > Hey! 🤍 Tap below and I'll send you the prompts.
 **Button:** Send me the prompts → {ai_prompts_url}
 >
 > (then) That's your starter set. When you want every shoot world in one place, the Vault has them all → {vault_url}
 
-Note: the interim still points at the current free page until the single-prompt pages exist. The strategic over-delivery fix lands when MANYCHAT-FUNNEL-01 ships.
+Note: this is now the permanent operating model, not an interim. PROMPT sends to `/ai-prompts`, where the app shows the latest five free previews.

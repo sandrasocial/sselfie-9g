@@ -71,6 +71,7 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 ### Prompt Vault Funnel (active front door — locked May 26-27, 2026)
 
 - Front-door demand is AI photo prompts: free `/ai-prompts` -> **Prompt Vault $27** (`/prompt-vault` -> `/checkout/prompt-vault`). Positioning: "turn one selfie into unlimited photoshoots", never "learn prompts".
+- **ManyChat PROMPT lock (updated 2026-06-30):** do not use numbered prompt keywords as the operating model. The live/default flow is `PROMPT` -> `/ai-prompts`, where the free page shows the latest five SSELFIE shoot previews. The old numbered prompt task is superseded history. Do not tell Sandra to wire `n={{last_text_input}}`, create per-number ManyChat keywords, or use `/p/latest` as the default PROMPT destination.
 - **Do not drift back to the Starter Kit-first funnel.** Starter Kit is secondary support only.
 - **Buyer psychology doctrine (LOCKED): `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` governs ALL copy, captions, UI text, emails, and Maya language.** Her fear: "people will think I'm fake" -> promise: "look elevated without feeling fake". Never imply viewers are fooled ("no one will know", "look rich", "fake photoshoot", "perfect face", "flawless skin"). Always: AI-assisted, realistic, recognizable, true-to-you, "still you". Signature: "AI should not erase you. It should frame you."
 - Demand signal for next reel = prompt view/copy frequency (see /admin/content-brief).

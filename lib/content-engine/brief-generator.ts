@@ -26,7 +26,7 @@ const BRIEF_MODEL = "claude-sonnet-4-5"
 
 const MARKET_PATTERN_CONTEXT = `
 Recent SSELFIE market-pattern notes, verified in June 2026:
-- @aivideoskool: working mechanics are numbered prompt keywords, named aesthetic drops, a clear cover system, and showing one prompt across multiple recognizable examples. Adapt the mechanic, not his AI-bro money/career positioning and not celebrity likenesses.
+- @aivideoskool: useful mechanics are named aesthetic drops, a clear cover system, and showing one concept across multiple recognizable examples. Do not adapt his numbered keyword operating model for SSELFIE; Sandra retired numbered ManyChat keywords because they are too complex.
 - @imanoubou: working mechanics are named numbered frameworks, meta-reveal hooks ("I gave AI X and it built Y"), and comment-to-DM CTAs. Her synthetic-avatar direction is Sandra's foil. Sandra's angle is real woman + AI-assisted + still you.
 - IG Growth OS watchlist: @aicontentuniversity for "don't just type X, tell AI: specifics" teaching format; @nordic_scott for disciplined tutorial-to-keyword funnel; @prompts.ig for prompt-drop cadence and credibility captions; @marcelaferreiraoficial for female-audience ChatGPT photo-edit formats that travel.
 - The usable lesson is not "repeat Sandra's exact visual." It is: keep the proven topic or hook mechanic, then create a fresh scene, object, proof format, framework, or creator-context visual around it.
@@ -662,7 +662,7 @@ CONTENT PLAN RULES:
 - Her own viral DNA and top posts win over the research memo for TOPIC, PILLAR, HOOK MECHANIC, and CTA. They do NOT win for repeating the exact same visual scene. If a top post worked, keep the demand signal and create a new execution.
 - Do not recommend simply reposting Sandra's existing top visual. Do not keep serving the same mirror selfie, dark cafe arrival, window half-light, or car selfie treatment unless the data includes a new specific reason.
 - Every contentPlan piece must include a fresh creative treatment: vary setting, perspective, object/prop, camera distance, proof format, story structure, and content role. Same pillar is fine; same visual execution is not.
-- Use dataPacket.marketPatternContext and researchMemo for creator mechanics from similar creators. Adapt mechanics such as numbered keywords, named frameworks, side-by-side proof, one concept across multiple examples, meta-reveal, and proof-stacked covers. Do not copy another creator's positioning, exact visual, or audience promise.
+- Use dataPacket.marketPatternContext and researchMemo for creator mechanics from similar creators. Adapt mechanics such as named frameworks, side-by-side proof, one concept across multiple examples, meta-reveal, and proof-stacked covers. Do not recommend numbered ManyChat keywords. Do not copy another creator's positioning, exact visual, or audience promise.
 - Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
 - Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
 - dataPacket.growthTruth is the audit truth snapshot. Use it for followers, email list, Suite members/trials, ManyChat captures, Prompt Vault sales, and revenue-by-product. Do not use old figures from memory or prior docs.

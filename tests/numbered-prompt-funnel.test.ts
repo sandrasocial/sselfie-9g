@@ -98,8 +98,8 @@ describe("numbered prompt funnel", () => {
 
     expect(route).toContain("MANYCHAT_BRIDGE_SECRET")
     expect(route).toContain("x-bridge-secret")
-    expect(route).toContain("getPromptByNumber")
-    expect(route).toContain("getCurrentFreePrompt")
+    expect(route).toContain("latest_five_free_prompts")
+    expect(route).toContain("/ai-prompts")
     expect(route).toContain("fallback: true")
   })
 
@@ -112,12 +112,12 @@ describe("numbered prompt funnel", () => {
     expect(prompt?.card.id).toBe("marble-wine-shot-2")
   })
 
-  it("lets ManyChat resolve PROMPT with no number to /p/latest", async () => {
+  it("lets ManyChat resolve PROMPT to the latest five free prompts page", async () => {
     vi.stubEnv("MANYCHAT_BRIDGE_SECRET", "test-secret")
     vi.stubEnv("CURRENT_FREE_PROMPT_NUMBER", "14")
 
     const response = await resolveManychatPrompt(
-      new Request("https://www.sselfie.ai/api/manychat/prompt", {
+      new Request("https://www.sselfie.ai/api/manychat/prompt?n=14", {
         headers: { "x-bridge-secret": "test-secret" },
       }) as any,
     )
@@ -127,13 +127,17 @@ describe("numbered prompt funnel", () => {
     expect(json.ok).toBe(true)
     expect(json.found).toBe(false)
     expect(json.fallback).toBe(true)
-    expect(json.number).toBe("14")
-    expect(json.pageUrl).toBe("https://www.sselfie.ai/p/latest")
+    expect(json.mode).toBe("latest_five_free_prompts")
+    expect(json.number).toBeNull()
+    expect(json.pageUrl).toContain("https://www.sselfie.ai/ai-prompts?")
+    expect(json.pageUrl).toContain("cta_keyword=PROMPT")
+    expect(json.pageUrl).toContain("utm_campaign=latest_five_free_prompts")
     expect(json.vaultCheckoutUrl).toContain("cta_keyword=PROMPT")
-    expect(json.vaultCheckoutUrl).toContain("prompt_n=14")
-    expect(json.dm.proofLine).toContain("the Vault gives you the full shoot world")
+    expect(json.vaultCheckoutUrl).not.toContain("prompt_n=14")
+    expect(json.dm.proofLine).toContain("newest free shoot previews")
     expect(json.dm.followupHours).toEqual([24, 48])
-    expect(json.manychatTags).toEqual(expect.arrayContaining(["prompt-requester", "prompt-14"]))
+    expect(json.manychatTags).toEqual(expect.arrayContaining(["prompt-requester", "prompt-latest-five"]))
+    expect(json.fallbackMessage).toContain("Numbered ManyChat keywords are intentionally retired")
   })
 
   it("renders the single prompt page through the shared prompt lookup", () => {

@@ -2,6 +2,12 @@
 
 Scanned live 2026-06-19 (logged in as @sandra.social). ~71.6k followers, 490 posts, verified. Verdict: the closest high-authority account to Sandra's lane that exists — female, personal-brand, AI — and she just made the one move that hands Sandra her whole moat: she went FULLY SYNTHETIC. Her own words: "Everything you see from me on Instagram is made with an AI Avatar. I do not film." She runs a fully synthetic AI influencer (@justamara.ai). At the exact moment the market is getting scared of fake AI, the biggest adjacent account is sprinting toward it. That is not a threat. It is Sandra's foil.
 
+> 2026-06-30 correction: do not use this research to recommend numbered
+> ManyChat prompt keywords. Sandra confirmed the current SSELFIE operating model
+> is `PROMPT` -> `/ai-prompts` -> latest five free shoot previews. Named and
+> numbered frameworks are still useful for carousels; per-number ManyChat prompt
+> keywords are retired.
+
 ## Who she is / the funnel
 - **Positioning:** "Iman Oubou | AI Creator & Marketer." Real authority: former Miss New York US 2015, founder of SWAAY Media, co-founder/CEO of Vocable.ai (AI content-marketing SaaS), best-selling author. Bio pushes a free 3-day AI-avatar challenge (`hub.imanoubou.ai/challenge`) and @vocable.ai.
 - **Ladder (from research):** Free Substack "Build & Monetize w/ AI" + free AI-avatar challenge (email gate) → $49 AI branding guide on Stan (`stan.store/imanoubou`) → Vocable.ai SaaS → a Delphi AI clone of herself. Also a self-hosted `muzeboard.ai`.
@@ -41,4 +47,4 @@ Scanned live 2026-06-19 (logged in as @sandra.social). ~71.6k followers, 490 pos
 The prior audits cover faceless prompt pages (@prompty.ai, @prompts.ig), off-niche discipline (@nordic_scott), and AI-career-for-men (@aivideoskool). @imanoubou is the first **female, personal-brand, high-authority** account adjacent to Sandra — and she went synthetic. She validates the No-Fake wedge from the opposite side, contests the Vault mechanic from the fake side, and proves named frameworks travel. Strategic line: Sandra does not out-tool her and does not attack her. She out-humans her. The wave @imanoubou rides becomes the trend Sandra rides from the real side.
 
 ## Campaign built from this audit
-"STILL HER" — a 2-cycle campaign (objection reel "She isn't real" · "The Real You Method" carousel · meta-reveal PROMPT MY SELFIE · named-aesthetic real-women Vault drop · "become that girl" identity story). Full slate + scripts in the content engine. Drops into the existing weekly engine inside locked pillars (40/30/20/10), passes the 5-DNA checklist, one wired keyword each (SELFIE → free guide, PROMPT → /ai-prompts, numbered → /p/{number}). Wire numbered keywords in ManyChat or they silently deliver nothing (known typed-keyword leak).
+"STILL HER" — a 2-cycle campaign (objection reel "She isn't real" · "The Real You Method" carousel · meta-reveal PROMPT MY SELFIE · named-aesthetic real-women Vault drop · "become that girl" identity story). Full slate + scripts in the content engine. Drops into the existing weekly engine inside locked pillars (40/30/20/10), passes the 5-DNA checklist, and uses the evergreen keywords only: SELFIE -> free guide, PROMPT -> `/ai-prompts`. Do not wire numbered prompt keywords in ManyChat.

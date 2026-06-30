@@ -1,14 +1,33 @@
 # MANYCHAT-FUNNEL-01 — Numbered single-prompt funnel
 
+> **SUPERSEDED / DO NOT IMPLEMENT AS CURRENT STRATEGY (2026-06-30).**
+>
+> This spec is retained only as history. Sandra explicitly moved away from numbered
+> ManyChat keywords because they were too complex operationally. The current live
+> strategy is:
+>
+> - Instagram/DM keyword: `PROMPT`
+> - ManyChat delivery: the free AI prompts page at `/ai-prompts`
+> - Free page content: the latest five SSELFIE shoot previews, always refreshed from
+>   the newest published/freebie collection selection
+> - Paid upgrade: Prompt Vault for the complete shoot worlds
+>
+> Do not tell Sandra to wire `n={{last_text_input}}`, create per-number ManyChat
+> keywords, or use numbered comments as the default. Prompt numbers may remain as
+> product/internal IDs and historical `/p/{number}` links, but they are not the
+> operating model for ManyChat.
+
 **Owner:** Codex (app build) · spec by Claude (Cowork)
-**Status:** Built and strategy-adjusted 2026-06-19. Prompt numbers stay in the product, but `PROMPT` is the default ManyChat keyword. `/p/latest` and `/api/manychat/prompt` now support current-prompt fallback so Sandra does not need per-prompt ManyChat wiring.
-**Decided by Sandra 2026-06-18:** free = ONE exact prompt per post (a taste, not a pack); light email gate on delivery (protect list growth + nurture); numbered keywords per prompt post.
+**Status:** Superseded 2026-06-30. The free prompt experience is now the latest five shoot previews, not one numbered prompt per post.
+**Decided by Sandra 2026-06-30:** free = latest five prompt/collection previews on `/ai-prompts`; ManyChat uses `PROMPT`; no numbered keyword system.
 **Strategy source:** `docs/strategy/manychat-funnel-plan-2026-06-18.md` + `docs/strategy/competitor-aivideoskool-2026-06-18.md`. Governed by [[no-fake-ai-psychology]]; money rules in CLAUDE.md.
 
 ## Why
-The free `/ai-prompts` pack over-delivers and satisfies the desire that should drive Vault sales (see `funnel-conversion-truth-2026-06`). Switch to the aivideoskool model: each reel gives away ONLY the single prompt it showed, the Vault becomes "all of them + new drops," and ManyChat is set up once (no per-post automations).
+Historical rationale only. Do not implement this as current strategy.
 
-## Scope
+The old theory was that the free `/ai-prompts` pack over-delivered and should switch to the aivideoskool model: each reel gives away only the single prompt it showed. Sandra later corrected this on 2026-06-30: the live strategy is `PROMPT` -> `/ai-prompts`, with the latest five free shoot previews.
+
+## Historical Scope (do not implement as current strategy)
 
 ### 1. Number every Vault prompt (stable id)
 - Give each prompt in `lib/ai-prompts/prompt-data.ts` (+ any DB-published drops) a stable, human-facing **prompt number** (e.g. 1..N), never reused. Numbers are the public keyword + the page slug. Store the mapping so a number always resolves to the same prompt even as the library grows.
@@ -20,14 +39,14 @@ The free `/ai-prompts` pack over-delivers and satisfies the desire that should d
 - **Vault upsell on the page:** below the prompt, "This is 1 of [LIVE COUNT]. Get every shoot world in one place → Vault $27" → `/checkout/prompt-vault` with `?source=prompt_page&utm_...&prompt_n={number}`. Use the LIVE Vault count (never a hardcoded number — the Vault grows).
 - No-Fake language throughout (keeps your face; never "no one will know"/"fake"/"flawless").
 
-### 3. ManyChat integration (set once)
-- NOTE (verified 2026-06-18): the evergreen all-posts comment trigger ALREADY EXISTS — "Prompt Pack Automation" fires on "User comments on any Post or Reel contains PROMPT" (7,674 runs, 44.6% CTR, live). It captured only 3 emails across 7,791 sends — the email-capture hole this task fixes. So Codex's job is NOT to create the trigger; it's to (a) build the pages/endpoint below and (b) re-point this automation's delivery at the single-prompt page + add the email-capture step. Sandra/Claude updates the ManyChat flow once those exist.
-- The flow: opening DM is a tappable button (Meta policy), then delivers a link to `sselfie.ai/p/{number}`.
-- **Zero-touch routing endpoint (build this):** `GET /api/manychat/prompt?n={number}` → returns `{ ok, number, title, pageUrl, found }` for a valid number, and a graceful fallback for an unknown/not-yet-published number ("that one's coming, here's the Vault"). This lets a single ManyChat flow resolve any number without a new keyword row per prompt. Secure it (shared token / allowlist) so it isn't a public scrape surface.
-- Tag requesters (e.g. `prompt-requester`) and stamp the number so we can attribute Vault sales to the originating prompt.
+### 3. ManyChat integration (retired)
+- Historical note (verified 2026-06-18): the evergreen all-posts comment trigger already existed as "Prompt Pack Automation" for PROMPT.
+- Current instruction: keep the evergreen PROMPT flow, but send it to `/ai-prompts`. Do not re-point it at `sselfie.ai/p/{number}`.
+- Current resolver behavior: `GET /api/manychat/prompt` returns `/ai-prompts` with `mode: "latest_five_free_prompts"`. If an old flow passes `n={number}`, the resolver ignores it and still returns `/ai-prompts`.
+- Tag requesters as prompt requesters; do not stamp a ManyChat prompt number as the operating model.
 
-### 4. Reposition `/ai-prompts`
-- From "a pack" to "a single rotating taste + Vault pitch." Coordinate with the existing `codex/freebie-curation` branch (free cap = a few evergreen + 1 rotating). The library/pack framing moves up to the Vault.
+### 4. `/ai-prompts`
+- Current behavior: `/ai-prompts` shows the latest five free shoot previews. This is the intended PROMPT destination.
 
 ### 5. Analytics / attribution
 - Record the prompt number on the email opt-in and on the checkout attribution so `/admin` can show which prompts drive opt-ins and Vault sales. Money still only from `stripe_payments`/Stripe API; the number is behavior/attribution, not money.
@@ -35,11 +54,11 @@ The free `/ai-prompts` pack over-delivers and satisfies the desire that should d
 ## Out of scope
 - SUITE flow unchanged. No new email store. No hardcoded Vault counts anywhere.
 
-## Acceptance
-- `sselfie.ai/p/1` (a real number) shows one prompt, gates copy behind email (stored in the existing freebie path), and shows a live Vault upsell with working checkout link carrying `prompt_n`.
-- `/api/manychat/prompt?n=` resolves valid numbers and degrades gracefully for unknown ones, behind a token.
-- A test comment with the number, through the evergreen ManyChat trigger, returns the right page link in DM with a tappable opening.
-- No per-post automation needed for a new prompt: publish the prompt + number in the app, post the reel with "comment {number}", done.
+## Current Acceptance
+- `/ai-prompts` shows the latest five free shoot previews.
+- `/api/manychat/prompt` returns `/ai-prompts` with `mode: "latest_five_free_prompts"`.
+- Old numbered query params do not change the PROMPT destination.
+- No per-post ManyChat keyword or automation is needed for a new prompt.
 
 ## Claude/Sandra (not Codex)
 - Sandra approves any customer-facing copy on the page + DM (no autonomous sends).

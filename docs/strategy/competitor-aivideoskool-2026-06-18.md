@@ -2,6 +2,13 @@
 
 Scanned live 2026-06-18. 102k followers, 230 posts. Verdict: a very well-run AI-prompt funnel with excellent visual discipline. Different audience from Sandra (he sells "start an AI career" to aspiring creators; she sells "show up as yourself" to women building a brand), but the MECHANICS and the VISUALS are highly stealable — with a No-Fake twist that's actually her advantage.
 
+> 2026-06-30 correction: the numbered keyword recommendation in this research is
+> historical only. Sandra confirmed that numbered ManyChat prompt keywords were
+> too complex for SSELFIE's operating model. Keep the useful visual mechanics
+> from this audit, but do not recommend `Comment 14`, per-number ManyChat
+> keywords, or `n={{last_text_input}}`. Current SSELFIE PROMPT flow is
+> `PROMPT` -> `/ai-prompts` -> latest five free shoot previews.
+
 ## Who he is / the funnel
 - **Positioning:** "Sergey Kabankov | AI Video Creator." Bio: "🏆 Skool games winner / Join the community and start your AI career / 5000+ creators inside / Try for free now 👇🏽" → link to a free Skool community (`skool.com/ai-video-creators`).
 - **Ladder (from research):** Free Skool community → paid courses/tools: AI Video Creation Course ($249), AI Campaign Lab ($199), AI Avatar Course ($199), Creative Breakdown ($99), 7-Day Instagram Launch Plan ($49), **100 Prompts Pack ($29)**, plus tools ReelEngine (scripts) + PromptEngine (prompts). Members reportedly earn $500–15k/project (income proof = his core hook).
@@ -26,7 +33,7 @@ Scanned live 2026-06-18. 102k followers, 230 posts. Verdict: a very well-run AI-
 
 ## The 5 things to steal (ranked)
 
-1. **Numbered prompt keywords.** He uses "Comment **220**" instead of a word. Why it's smarter than our SELFIE/PROMPT: it's unique per post (we can track exactly which prompt drove demand), it implies a huge library ("there are at least 220 of these"), and it feels collectible. **Move:** number our Vault prompts/drops and use the number as the ManyChat comment keyword (e.g. "Comment 14 for the Café Window prompt"). ⚠️ Wire each number in ManyChat or it silently delivers nothing (our known typed-keyword leak).
+1. **Named aesthetic drops, not numbered ManyChat keywords.** He uses "Comment **220**" instead of a word, but SSELFIE retired that mechanic because it creates too much ManyChat maintenance. **Move:** keep the collectible feeling through named Vault drops, numbered product labels, cover systems, and exact attribution inside the app. Do not use per-number ManyChat keywords as the operating model.
 
 2. **Demo one aesthetic across multiple faces — but use REAL WOMEN, not celebrities.** His proof is "it kept Julia Roberts' face." Ours is stronger for our buyer: show one prompt on Sandra + 2–3 real women (members, with permission; varied ages/skin tones). That proves "it keeps YOUR face" to a woman who sees herself, not a celebrity. This is the No-Fake doctrine made visible, and it's something he structurally can't do.
 
@@ -63,6 +70,6 @@ His best, most stealable aesthetic is the **"Photographic Prints Poster" / Polar
 >
 > Avoid: changing my facial features, a different person, waxy or airbrushed skin, extra fingers, distorted hands, text, logos, heavy filters, oversaturation.
 
-**Visual brief for the IG carousel that sells it:** cover "POLAROID STORY" white serif + watermark; slides = the same prompt on Sandra + 2 real women (with permission); last slide "Comment [number] and I'll send you the prompt." Keyword wired in ManyChat.
+**Visual brief for the IG carousel that sells it:** cover "POLAROID STORY" white serif + watermark; slides = the same prompt on Sandra + 2 real women (with permission); last slide "Comment PROMPT and I'll send you the latest free previews." PROMPT sends to `/ai-prompts`.
 
 (Other directly-portable aesthetics from his feed: cinematic editorial close-up, "high-end magazine cover," nostalgic 35mm. All map cleanly to keeps-your-face Vault collections.)

@@ -1,12 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-import {
-  buildLatestPromptPageUrl,
-  buildPromptPageUrl,
-  buildPromptPageVaultCheckoutHref,
-  getCurrentFreePrompt,
-  getPromptByNumber,
-} from "@/lib/ai-prompts/prompt-lookup"
+import { siteUrl } from "@/lib/ai-prompts/prompt-lookup"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -40,71 +34,47 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 401 })
   }
 
-  const url = new URL(request.url)
-  const number = url.searchParams.get("n")?.trim() || ""
-  const exactPrompt = number ? await getPromptByNumber(number) : null
-  const prompt = exactPrompt || await getCurrentFreePrompt()
-
-  if (!prompt) {
-    return NextResponse.json({
-      ok: true,
-      found: false,
-      fallback: true,
-      number,
-      title: "That prompt is coming",
-      pageUrl: `${url.origin.replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")}/prompt-vault?source=manychat_prompt_lookup&utm_source=instagram&utm_medium=manychat&utm_campaign=numbered_prompt_fallback&cta_keyword=${encodeURIComponent(number || "UNKNOWN")}`,
-      dm: {
-        opener: "That exact prompt is not published yet, but the Vault is ready.",
-        pageButtonText: "See the Vault",
-        proofLine: "One selfie can become a full editorial shoot world when the prompt gives it direction.",
-        followupHours: [24, 48],
-      },
-      manychatTags: ["prompt-requester", "prompt-fallback"],
-      fallbackMessage: "That one is not published yet, but the Vault is ready.",
-    })
-  }
-
-  const fallback = !exactPrompt
-  const pageAttribution = {
-    source: fallback ? "prompt_latest" : "instagram_manychat",
+  const baseUrl = siteUrl()
+  const pageParams = new URLSearchParams({
+    source: "manychat_prompt",
     utm_source: "instagram",
     utm_medium: "manychat",
-    utm_campaign: fallback ? "current_free_prompt" : "numbered_prompt",
-    utm_content: fallback ? "prompt_latest" : `prompt_${prompt.number}`,
-    checkout_source: "manychat_prompt_reply",
-    cta_keyword: fallback ? "PROMPT" : prompt.number,
+    utm_campaign: "latest_five_free_prompts",
+    utm_content: "prompt_pack_delivery",
+    checkout_source: "manychat_prompt_delivery",
+    cta_keyword: "PROMPT",
     buyer_stage: "lead",
-  }
+  })
+  const vaultParams = new URLSearchParams({
+    source: "ai_prompts_manychat",
+    utm_source: "instagram",
+    utm_medium: "manychat",
+    utm_campaign: "latest_five_free_prompts_to_vault",
+    utm_content: "prompt_pack_delivery",
+    checkout_source: "manychat_prompt_delivery",
+    cta_keyword: "PROMPT",
+    buyer_stage: "lead",
+  })
 
   return NextResponse.json({
     ok: true,
-    found: Boolean(exactPrompt),
-    fallback,
-    requestedNumber: number || null,
-    number: prompt.number,
-    title: prompt.card.title,
-    pageUrl: fallback ? buildLatestPromptPageUrl() : buildPromptPageUrl(prompt.number, pageAttribution),
-    vaultCheckoutUrl: buildPromptPageVaultCheckoutHref({
-      promptNumber: prompt.number,
-      promptId: prompt.card.id,
-      promptTitle: prompt.card.title,
-      attribution: pageAttribution,
-    }),
+    found: false,
+    fallback: true,
+    mode: "latest_five_free_prompts",
+    requestedNumber: null,
+    number: null,
+    title: "The latest five SSELFIE shoot previews",
+    pageUrl: `${baseUrl}/ai-prompts?${pageParams.toString()}`,
+    vaultCheckoutUrl: `${baseUrl}/checkout/prompt-vault?${vaultParams.toString()}`,
     dm: {
-      opener: `Here is prompt #${prompt.number}: ${prompt.card.title}.`,
-      pageButtonText: "Open my prompt",
+      opener: "Here are the latest five SSELFIE shoot previews.",
+      pageButtonText: "Open the free prompts",
       vaultButtonText: "Get the full Vault",
-      proofLine: "Start with one selfie. Use this prompt to test one image today. If it gets close, the Vault gives you the full shoot world around it.",
+      proofLine: "Start with one selfie. Test the newest free shoot previews, then use the Vault when you want the full shoot worlds.",
       followupHours: [24, 48],
     },
-    manychatTags: [
-      "prompt-requester",
-      `prompt-${prompt.number}`,
-      fallback ? "prompt-latest-fallback" : "prompt-numbered",
-    ],
-    fallbackMessage: fallback
-      ? "Here is today’s free prompt. For older reels, use a post-specific URL when you know the exact prompt."
-      : null,
-    sourceCollection: prompt.sourceCollection,
+    manychatTags: ["prompt-requester", "prompt-latest-five"],
+    fallbackMessage: "PROMPT uses the five latest free shoot previews. Numbered ManyChat keywords are intentionally retired.",
+    sourceCollection: "latest-five-free-prompts",
   })
 }

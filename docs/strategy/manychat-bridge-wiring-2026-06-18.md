@@ -1,41 +1,43 @@
-# ManyChat bridge wiring — PROMPT-first setup (updated 2026-06-19)
+# ManyChat bridge wiring — PROMPT -> latest five free prompts (updated 2026-06-30)
 
-The app-side code is ready for the PROMPT-first model. The default public CTA is still `PROMPT`; prompt numbers stay as internal/product IDs and optional exact links.
+The app-side code is locked to the PROMPT-first model. The public CTA is `PROMPT`. ManyChat should send people to the free AI prompts page, not to numbered prompt pages.
 
-Live update 2026-06-19: the existing `Prompt Pack Automation` delivery now sends one current prompt page, not the full `/ai-prompts` pack. The button keeps Sandra's approved copy and opens attached `Send Message #1`; that delivery message sends the tracked `/p/latest` URL inside the DM window.
+Live correction 2026-06-30: numbered keywords were retired because they created too much operational complexity. The free page is `/ai-prompts`, and it shows the latest five SSELFIE shoot previews. The page is capped by `FREEBIE_TOTAL_SHOOT_LIMIT = 5` and refreshed by the newest published/freebie collection selection.
 
 ## The resolver contract (verified in code)
 - **Default method/URL:** `GET https://www.sselfie.ai/api/manychat/prompt`
-- **Exact optional lookup:** `GET https://www.sselfie.ai/api/manychat/prompt?n={{number}}`
+- **Do not pass numbers by default.** If an old flow accidentally includes `n={{last_text_input}}`, the resolver still returns the five-latest free page. This is intentional guardrail behavior.
 - **Auth (pick one):** header `x-bridge-secret: <MANYCHAT_BRIDGE_SECRET>` (preferred), or header `x-manychat-secret:`, or `&secret=` in the URL. The value is the `MANYCHAT_BRIDGE_SECRET` set in Vercel env. No secret / wrong secret → 401.
-- **Response when a number exists:**
+- **Response:**
   ```json
-  { "ok": true, "found": true, "fallback": false, "number": "14", "title": "Marble Café · Outfit Shot",
-    "pageUrl": "https://www.sselfie.ai/p/14",
-    "vaultCheckoutUrl": "https://www.sselfie.ai/checkout/prompt-vault?...prompt_n=14",
-    "sourceCollection": "..." }
+  {
+    "ok": true,
+    "found": false,
+    "fallback": true,
+    "mode": "latest_five_free_prompts",
+    "title": "The latest five SSELFIE shoot previews",
+    "pageUrl": "https://www.sselfie.ai/ai-prompts?...cta_keyword=PROMPT",
+    "vaultCheckoutUrl": "https://www.sselfie.ai/checkout/prompt-vault?...cta_keyword=PROMPT"
+  }
   ```
-- **Response with no number or an unknown number:** returns the current free prompt with `found: false`, `fallback: true`, and `pageUrl: "https://www.sselfie.ai/p/latest"`. This keeps old comments and generic `PROMPT` comments frictionless.
 
 ## ManyChat setup (existing "Prompt Pack Automation")
 1. **Trigger:** keep the live evergreen "User comments on any Post or Reel" and DM triggers that contain `PROMPT`.
 2. **External Request action:**
    - GET `https://www.sselfie.ai/api/manychat/prompt`
    - Header `x-bridge-secret` = the secret (Sandra pastes this).
-   - Map response fields → custom fields: `pageUrl` → "Prompt Page URL", `title` → "Prompt Title", `vaultCheckoutUrl` → "Vault URL".
+   - Map response fields -> custom fields: `pageUrl` -> "Free Prompt Page URL", `title` -> "Free Prompt Title", `vaultCheckoutUrl` -> "Vault URL".
 3. **Opening DM (Meta needs a tap):** button "Send me the prompt".
-4. **Delivery DM:** `Here you go, {{Prompt Title}}. Tap here: {{Prompt Page URL}}` + optional "See the Vault" button → `{{Vault URL}}`.
+4. **Delivery DM:** `Here are the latest five SSELFIE shoot previews. Tap here: {{Free Prompt Page URL}}` + optional "See the Vault" button -> `{{Vault URL}}`.
 
-Current live setup: the high-volume PROMPT flow is now tap-first. The first private reply creates the user interaction, then the attached delivery message sends the tracked prompt link. Do not convert it back to a first-message website button.
+Current live setup should stay tap-first. The first private reply creates the user interaction, then the attached delivery message sends the tracked free prompt page link. Do not convert it back to a first-message website button.
 
-## Optional exact-prompt route for evergreen posts
-For high-performing old reels where the prompt must stay exact:
+## What not to do
 
-1. Add a post-specific ManyChat comment trigger for that reel only.
-2. Use the same master flow, but set/request `n=<prompt number>` before delivery.
-3. The resolver returns `/p/{number}`.
-
-Do not make numbered comments the default operating model. Numbers are for exact links, tracking, Vault labels, and the few evergreen posts worth mapping.
+- Do not create per-number ManyChat keywords.
+- Do not wire `n={{last_text_input}}`.
+- Do not tell Sandra to publish `Comment 14`, `Comment 104`, etc. as the default.
+- Do not send PROMPT traffic to `/p/latest`.
 
 ## Who does what
 - Sandra: approves any live ManyChat publish and enters the secret if the external request is used.

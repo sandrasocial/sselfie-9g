@@ -637,7 +637,7 @@ export default async function PromptVaultAdminPage({
               </div>
             ) : (
               <p className="text-sm text-stone-500 leading-relaxed">
-                No single-prompt funnel rows in this window yet. New rows appear when `/p/latest` or `/p/[number]` traffic carries ManyChat attribution.
+                No single-prompt funnel rows in this window yet. The default PROMPT flow now sends traffic to `/ai-prompts`; single-prompt rows only appear from historical `/p/[number]` links.
               </p>
             )}
           </section>
