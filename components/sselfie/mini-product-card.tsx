@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 
 /**
  * Mini product card for "Get More" 2-column grid.
@@ -36,7 +37,7 @@ export default function MiniProductCard({
       {/* Image */}
       <div className="relative h-[88px] w-full shrink-0 overflow-hidden bg-[color:var(--app-btn-secondary-bg)]">
         {imageUrl ? (
-          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+          <Image src={imageUrl} alt="" fill sizes="160px" className="object-cover" unoptimized />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(15,13,11,0.04))]">
             <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-[color:var(--app-text-muted)]">

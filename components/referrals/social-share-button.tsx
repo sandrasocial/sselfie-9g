@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Share2, Check, Copy } from "lucide-react"
+import { useState } from "react"
+import { Share2, Check } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 
@@ -18,7 +18,6 @@ export function SocialShareButton({ imageUrl, className = "" }: SocialShareButto
     fetcher,
   )
   const [copied, setCopied] = useState(false)
-  const [showShareMenu, setShowShareMenu] = useState(false)
 
   const referralLink = referralData?.referralLink || ""
   const referralCode = referralData?.referralCode || ""
@@ -73,8 +72,8 @@ export function SocialShareButton({ imageUrl, className = "" }: SocialShareButto
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
+    } catch (error: unknown) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
         // User cancelled - that's fine
         // Otherwise, fallback to copy
         await navigator.clipboard.writeText(captionTemplate)
@@ -82,12 +81,6 @@ export function SocialShareButton({ imageUrl, className = "" }: SocialShareButto
         setTimeout(() => setCopied(false), 2000)
       }
     }
-  }
-
-  const handleCopyCaption = async () => {
-    await navigator.clipboard.writeText(captionTemplate)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   if (!referralLink && !referralCode) {

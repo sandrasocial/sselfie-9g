@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import type { GalleryImage } from "@/lib/data/images"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { triggerHaptic, triggerSuccessHaptic } from "@/lib/utils/haptics"
@@ -64,6 +64,16 @@ export function InstagramPhotoPreview({
     touchEndX.current = 0
   }
 
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+    triggerHaptic("light")
+  }, [images.length])
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+    triggerHaptic("light")
+  }, [images.length])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
@@ -77,17 +87,7 @@ export function InstagramPhotoPreview({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentIndex])
-
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-    triggerHaptic("light")
-  }
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-    triggerHaptic("light")
-  }
+  }, [handleNext, handlePrevious, onClose])
 
   const handleDownload = () => {
     const a = document.createElement("a")

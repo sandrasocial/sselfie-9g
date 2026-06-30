@@ -17,9 +17,7 @@ interface OneTimeCheckoutClientProps {
 }
 
 export default function OneTimeCheckoutClient({
-  userEmail,
   userName,
-  redirectAfterSuccess = "studio",
 }: OneTimeCheckoutClientProps) {
   const router = useRouter()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
