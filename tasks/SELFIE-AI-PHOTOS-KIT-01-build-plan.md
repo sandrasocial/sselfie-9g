@@ -1,0 +1,188 @@
+# SELFIE-AI-PHOTOS-KIT-01 — Build The Top-Of-Funnel Paid Kit
+
+Status: Ready for planning/build approval  
+Priority: High  
+Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
+
+## Goal
+
+Create the low-ticket paid offer that matches what the cold Instagram and ManyChat audience is already asking for:
+
+> Turn one clear selfie into AI photos that still look like you.
+
+This is the offer that should monetize viral selfie tutorials, AI transformation reels, and free prompt traffic more directly.
+
+## Strategic Role
+
+This is not the whole business.
+
+It is the top-of-funnel buyer conversion product.
+
+Its job:
+
+- convert more of the 2 million monthly-view audience into buyers
+- solve the immediate selfie-to-AI-photo problem
+- create a cleaner bridge into Prompt Vault and SUITE
+- reduce confusion around the older Starter Kit
+
+## Required Decision Before Build
+
+Sandra must confirm:
+
+1. Final product name:
+   - recommended: Selfie To AI Photos Kit
+2. Price:
+   - recommended: $27 or $37
+3. Infrastructure:
+   - recommended: repackage the existing Starter Kit if safe
+   - alternative: create a new product route if repackaging would confuse existing buyers
+
+## Buyer
+
+She came from:
+
+- selfie tutorials
+- iPhone settings
+- AI transformation reels
+- car selfie / mirror selfie content
+- ManyChat keyword SELFIE or PROMPT
+
+She wants:
+
+- a better source selfie
+- AI photos that still look like her
+- simple prompts
+- clear examples
+- no fake-looking results
+- one small thing she can do today
+
+## Deliverables
+
+The Kit must include:
+
+1. Source selfie checklist.
+2. Good vs bad selfie examples.
+3. Phone setup guide for creating the source selfie.
+4. AI photo prompt starter pack.
+5. Still-you fix prompts.
+6. One simple 3-image AI shoot path:
+   - profile image
+   - reel cover
+   - lifestyle image
+7. Quick guide:
+   - what to upload
+   - what to write
+   - what to fix
+8. Bridge into Prompt Vault:
+   - more visual worlds
+9. Bridge into SUITE:
+   - monthly creation with Maya
+
+## Copy Direction
+
+Use simple Sandra voice.
+
+Core promise:
+
+> Start with one clear selfie. Use it to create AI photos that still look like you.
+
+Avoid:
+
+- generic AI creator language
+- "perfect"
+- "flawless"
+- "nobody will know"
+- luxury fantasy as the only promise
+- heavy course language
+
+Use:
+
+- still you
+- one clear selfie
+- AI photos that look like your best day
+- source photo
+- simple first shoot
+- what to fix when it looks fake
+
+## Pages / Surfaces To Audit
+
+Before building, inspect:
+
+- product definitions
+- Starter Kit landing page
+- Starter Kit checkout
+- Starter Kit access page
+- Starter Kit delivery emails
+- AI Prompts access page
+- ManyChat destination assumptions
+- Prompt Vault buyer bridge
+- SUITE trial bridge
+
+## Preferred Implementation Path
+
+### Option A: Repackage Existing Starter Kit
+
+Use this if existing buyer fulfillment can be preserved safely.
+
+Actions:
+
+- update public positioning
+- update deliverables list
+- keep existing access route working
+- preserve all existing buyers
+- update delivery email
+- add buyer bridge into Prompt Vault and SUITE
+
+### Option B: New Product Route
+
+Use this only if repackaging creates too much confusion.
+
+Actions:
+
+- create new product key
+- create checkout route
+- create access route
+- create delivery email
+- create tracking events
+- keep Starter Kit untouched
+
+## Tracking Requirements
+
+Track:
+
+- kit landing view
+- kit checkout start
+- kit checkout success
+- kit access opened
+- source checklist viewed/downloaded
+- prompt copied
+- fix prompt copied
+- Prompt Vault upgrade click
+- SUITE trial click
+
+## Safety Rules
+
+Do not:
+
+- break existing Starter Kit access
+- remove legacy fulfillment
+- change Stripe product IDs without approval
+- create new payment logic if the existing low-ticket path can be reused
+- make Prompt Vault feel obsolete
+- make SUITE feel like optional clutter
+
+## Definition Of Done
+
+This task is complete when Sandra has an approved implementation spec with:
+
+- final product name
+- price
+- route decision
+- deliverables
+- page copy direction
+- email copy direction
+- access path
+- tracking plan
+- bridge into Prompt Vault and SUITE
+
+Build only after Sandra approves the implementation direction.

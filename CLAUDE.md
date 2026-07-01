@@ -67,6 +67,22 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 ## Current Priorities (June 2026)
 
+### Forward Revenue Plan (locked 2026-07-01)
+
+Current operating plan: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`.
+
+Do not treat the whole audience as one buyer.
+
+- **Cold top-of-funnel audience:** wants a simple selfie/AI-photo result. Build and sell the planned **Selfie To AI Photos Kit** as the obvious paid next step from viral selfie tutorials, AI reels, and ManyChat traffic.
+- **Warm audience:** wants the deeper path. Build the immediate **Visibility To Paid Sprint** around women who already have skills, a story, a service, expertise, or an idea, but do not know what to post, what to say, or what they can sell first.
+- **Prompt Vault:** stays the proven low-ticket buyer bridge. Do not expect it to carry the whole business alone.
+- **SUITE / Studio:** stays the recurring core and monthly creation system.
+- **Selfie To Brand Shoot:** use as a bonus, onboarding path, or guided support asset until live sales/proof justify making it a primary public push again.
+
+Operating rule:
+
+> Cold attention gets the Kit. Warm trust gets Visibility To Paid. Paid activation gets SUITE.
+
 | Workstream | Status |
 |------------|--------|
 | BRIDGE-01 — one-time buyer -> SUITE member upgrade path | **✅ COMPLETE 2026-06-11** — all phases A-E live + backfill broadcast sent (20 delivered, 6 suppressed). Trial conversion shows on /admin home. Video tile on /join/studio waits for VIDEO-01. Spec: `tasks/BRIDGE-01-suite-bridge.md` |
@@ -290,11 +306,13 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
-| AI Photo Prompt Vault | $27 | ✅ Active low-ticket offer, launch next | Primary paid upgrade from AI Prompts. ChatGPT-ready editorial photoshoot prompts. |
+| AI Photo Prompt Vault | $27 | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
+| Selfie To AI Photos Kit | TBD, likely $27-$37 | 🔒 Planned next top-of-funnel paid offer | Planned product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Use existing low-ticket infrastructure if safe. |
 | Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
 | SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). **Includes ALL one-time products (D3, 2026-06-11)**: flags in `academy_products` DB table (DB wins) + `lib/academy-entitlements.ts` defaults. |
+| Visibility To Paid Sprint | TBD | 🔒 Planned warm-audience offer | For women with skills, a service, expertise, a story, or an idea who need help becoming visible, clear, and easy to buy from online. Use existing Work With Me infrastructure first. |
 | Brand Strategy Pack | $19 | ❌ Retired standalone (2026-06-11 verified) | `/brand-strategy` + its checkout redirect to Masterclass; tool bundled into Masterclass. Selfie Guide order-bump path still fulfills. |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |

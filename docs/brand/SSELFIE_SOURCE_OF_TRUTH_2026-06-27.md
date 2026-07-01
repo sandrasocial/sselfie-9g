@@ -177,6 +177,7 @@ Use the full SSELFIE ecosystem, not an AI-prompt-only ladder.
 
 - Free Selfie Guide: the simple first step for better selfies, settings, angles, and confidence.
 - Selfie Starter Kit: the beginner-friendly selfie system.
+- Selfie To AI Photos Kit: the planned top-of-funnel paid kit for women who want to turn one clear selfie into AI photos that still look like them.
 - Lightroom Presets: polished, consistent edits without overthinking.
 - Selfie Branding Masterclass: using selfies as brand content.
 - What To Say: message, story, content pillars, captions, and words that sound like her.
@@ -187,6 +188,28 @@ Use the full SSELFIE ecosystem, not an AI-prompt-only ladder.
 - SSELFIE Studio: the bigger workspace where women use selfies, AI tools, prompts, content ideas, and brand direction to create photos and content that feel like them.
 
 Do not reduce the business to AI prompts or AI photos.
+
+## Current Revenue Direction
+
+Current operating plan:
+
+`docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
+
+Use this distinction going forward:
+
+- Cold top-of-funnel audience: sell the simple first result. A better selfie, an AI photo that still looks like her, and a small kit that makes the first step easy.
+- Warm audience: sell the deeper path. Visibility, message clarity, content direction, a first offer, and a way to become easier to recognize, trust, and buy from.
+- Paid activation: move buyers into SUITE as the monthly creation system.
+
+Do not force every person into the same offer.
+
+The cold audience is saying:
+
+"Show me how to do this with my photo."
+
+The warm audience is saying:
+
+"Help me know what to post, what to say, and what I can sell."
 
 ## Sandra's Expertise
 
