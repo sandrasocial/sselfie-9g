@@ -160,6 +160,7 @@ export async function startProductCheckoutSession(
     selfie_guide_bundle: "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
     selfie_guide: "STRIPE_PRICE_SELFIE_GUIDE",
     starter_kit: "STRIPE_PRICE_STARTER_KIT",
+    selfie_ai_photos_kit: "STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT",
     masterclass: "STRIPE_PRICE_MASTERCLASS",
     prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
     selfie_to_brand_shoot_system: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
@@ -181,6 +182,8 @@ export async function startProductCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE
   } else if (product.type === "starter_kit") {
     stripePriceId = process.env.STRIPE_PRICE_STARTER_KIT
+  } else if (product.type === "selfie_ai_photos_kit") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT
   } else if (product.type === "masterclass") {
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   } else if (product.type === "prompt_vault") {

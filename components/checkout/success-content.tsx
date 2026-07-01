@@ -51,6 +51,8 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie Starter Kit"
     case "prompt_vault":
       return "The AI Photo Prompt Vault"
+    case "selfie_ai_photos_kit":
+      return "Selfie To AI Photos Kit"
     case "presets_single":
       return "SSELFIE Presets · Single Collection"
     case "presets_bundle":
@@ -105,6 +107,12 @@ const PROMPT_VAULT_INCLUDES = [
   "Soft Blazer + Light Denim Street Editorial",
   "Cozy Leather + Oversized Knit Mirror Editorial",
   "Copy-paste prompts with example photos",
+]
+const SELFIE_AI_PHOTOS_KIT_INCLUDES = [
+  "Source selfie checklist",
+  "AI photo starter prompts",
+  "Still-you fix prompts",
+  "3-image starter shoot path",
 ]
 const PRESETS_INCLUDES = [
   "Mobile Lightroom preset files",
@@ -161,6 +169,17 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
       helper:
         "Your Prompt Vault is ready. If this page does not open it automatically, use the access link in your inbox.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Prompt%20Vault%20access",
+      secondaryLabel: "Need help? Email support",
+    }
+  }
+
+  if (productType === "selfie_ai_photos_kit") {
+    return {
+      href: "/selfie-to-ai-photos-kit",
+      label: "Check your email for access",
+      helper:
+        "Your AI Photos Kit is ready. If this page does not open it automatically, use the access link in your inbox.",
+      secondaryHref: "mailto:support@sselfie.ai?subject=AI%20Photos%20Kit%20access",
       secondaryLabel: "Need help? Email support",
     }
   }
@@ -291,6 +310,7 @@ export function SuccessContent({
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
   const isPromptVaultPurchase = purchaseType === "prompt_vault"
+  const isSelfieAiPhotosKitPurchase = purchaseType === "selfie_ai_photos_kit"
   const isPresetsPurchase = purchaseType === "presets_single" || purchaseType === "presets_bundle"
   const isSelfieToBrandShootPurchase = purchaseType === "selfie_to_brand_shoot_system"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
@@ -379,6 +399,13 @@ export function SuccessContent({
   const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
     "Your payment went through. Your Prompt Vault access is still syncing.",
   )
+  const [isPollingSelfieAiPhotosKitAccess, setIsPollingSelfieAiPhotosKitAccess] = useState(Boolean(isSelfieAiPhotosKitPurchase && sessionId))
+  const [selfieAiPhotosKitPollAttempts, setSelfieAiPhotosKitPollAttempts] = useState(0)
+  const [selfieAiPhotosKitStatus, setSelfieAiPhotosKitStatus] = useState("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+  const [showSelfieAiPhotosKitTimeout, setShowSelfieAiPhotosKitTimeout] = useState(false)
+  const [selfieAiPhotosKitRecoveryMessage, setSelfieAiPhotosKitRecoveryMessage] = useState(
+    "Your payment went through. Your AI Photos Kit access is still syncing.",
+  )
   const [isPollingPresetsAccess, setIsPollingPresetsAccess] = useState(Boolean(isPresetsPurchase && sessionId))
   const [presetsPollAttempts, setPresetsPollAttempts] = useState(0)
   const [presetsStatus, setPresetsStatus] = useState("Preparing your SSELFIE Presets. This can take up to 2 minutes.")
@@ -397,6 +424,8 @@ export function SuccessContent({
   const selfieGuideFailureTrackedRef = useRef(false)
   const promptVaultResolutionTrackedRef = useRef(false)
   const promptVaultFailureTrackedRef = useRef(false)
+  const selfieAiPhotosKitResolutionTrackedRef = useRef(false)
+  const selfieAiPhotosKitFailureTrackedRef = useRef(false)
   const presetsResolutionTrackedRef = useRef(false)
   const presetsFailureTrackedRef = useRef(false)
   const selfieToBrandShootResolutionTrackedRef = useRef(false)
@@ -445,6 +474,13 @@ export function SuccessContent({
         return
       }
 
+      if (isSelfieAiPhotosKitPurchase && sessionId) {
+        setIsPollingSelfieAiPhotosKitAccess(true)
+        setSelfieAiPhotosKitPollAttempts(0)
+        setShowSelfieAiPhotosKitTimeout(false)
+        return
+      }
+
       if (isPresetsPurchase && sessionId) {
         setIsPollingPresetsAccess(true)
         setPresetsPollAttempts(0)
@@ -466,7 +502,7 @@ export function SuccessContent({
       }
     }
     checkAuth()
-  }, [isPresetsPurchase, isPromptVaultPurchase, isSelfieGuidePurchase, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
+  }, [isPresetsPurchase, isPromptVaultPurchase, isSelfieAiPhotosKitPurchase, isSelfieGuidePurchase, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
     if (!isPollingPromptVaultAccess || !isPromptVaultPurchase || !sessionId) {
@@ -571,6 +607,110 @@ export function SuccessContent({
 
     return () => clearInterval(interval)
   }, [isPollingPromptVaultAccess, isPromptVaultPurchase, purchaseType, router, sessionId])
+
+  useEffect(() => {
+    if (!isPollingSelfieAiPhotosKitAccess || !isSelfieAiPhotosKitPurchase || !sessionId) {
+      return
+    }
+
+    const pollSelfieAiPhotosKitAccess = async () => {
+      try {
+        const response = await fetch(
+          `/api/selfie-to-ai-photos-kit/access-token?session_id=${encodeURIComponent(sessionId)}`,
+          { cache: "no-store" },
+        )
+        const data = await response.json()
+
+        if (response.ok && data.accessToken) {
+          setIsPollingSelfieAiPhotosKitAccess(false)
+          setSelfieAiPhotosKitStatus("AI Photos Kit ready. Opening now...")
+
+          if (!selfieAiPhotosKitResolutionTrackedRef.current) {
+            selfieAiPhotosKitResolutionTrackedRef.current = true
+            trackClientEvent("selfie_ai_photos_kit_access_resolved", {
+              purchase_type: purchaseType || "selfie_ai_photos_kit",
+              session_id: sessionId,
+            })
+          }
+
+          setTimeout(() => {
+            router.push(`/access/selfie-to-ai-photos-kit/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+          }, 400)
+          return
+        }
+
+        if (response.status >= 400 && response.status < 500 && response.status !== 409) {
+          setIsPollingSelfieAiPhotosKitAccess(false)
+          setShowSelfieAiPhotosKitTimeout(true)
+          setSelfieAiPhotosKitRecoveryMessage(data.error || "We couldn't verify your AI Photos Kit access yet.")
+
+          if (!selfieAiPhotosKitFailureTrackedRef.current) {
+            selfieAiPhotosKitFailureTrackedRef.current = true
+            trackClientEvent("selfie_ai_photos_kit_access_failed", {
+              purchase_type: purchaseType || "selfie_ai_photos_kit",
+              session_id: sessionId,
+              reason: data.error || "client_error",
+            })
+          }
+          return
+        }
+
+        setSelfieAiPhotosKitPollAttempts((prev) => {
+          const next = prev + 1
+
+          if (next < 20) {
+            setSelfieAiPhotosKitStatus("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+          } else if (next < 40) {
+            setSelfieAiPhotosKitStatus("Payment confirmed. Finalizing your Kit access...")
+          } else {
+            setSelfieAiPhotosKitStatus("Almost there. Your Kit link is still syncing.")
+          }
+
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingSelfieAiPhotosKitAccess(false)
+            setShowSelfieAiPhotosKitTimeout(true)
+            setSelfieAiPhotosKitRecoveryMessage("Your payment is confirmed. Your AI Photos Kit access is taking longer than expected.")
+
+            if (!selfieAiPhotosKitFailureTrackedRef.current) {
+              selfieAiPhotosKitFailureTrackedRef.current = true
+              trackClientEvent("selfie_ai_photos_kit_access_failed", {
+                purchase_type: purchaseType || "selfie_ai_photos_kit",
+                session_id: sessionId,
+                reason: "timeout",
+              })
+            }
+          }
+
+          return next
+        })
+      } catch (error) {
+        console.error("[SUCCESS PAGE] AI Photos Kit polling error:", error)
+        setSelfieAiPhotosKitPollAttempts((prev) => {
+          const next = prev + 1
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingSelfieAiPhotosKitAccess(false)
+            setShowSelfieAiPhotosKitTimeout(true)
+            setSelfieAiPhotosKitRecoveryMessage("Your payment is confirmed. Your AI Photos Kit access is taking longer than expected.")
+
+            if (!selfieAiPhotosKitFailureTrackedRef.current) {
+              selfieAiPhotosKitFailureTrackedRef.current = true
+              trackClientEvent("selfie_ai_photos_kit_access_failed", {
+                purchase_type: purchaseType || "selfie_ai_photos_kit",
+                session_id: sessionId,
+                reason: "network_error",
+              })
+            }
+          }
+          return next
+        })
+      }
+    }
+
+    const interval = setInterval(pollSelfieAiPhotosKitAccess, 2000)
+    pollSelfieAiPhotosKitAccess()
+
+    return () => clearInterval(interval)
+  }, [isPollingSelfieAiPhotosKitAccess, isSelfieAiPhotosKitPurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
     if (!isPollingPresetsAccess || !isPresetsPurchase || !sessionId) {
@@ -915,6 +1055,7 @@ export function SuccessContent({
       selfie_guide_bundle: 27,
       starter_kit: 37,
       prompt_vault: 27,
+      selfie_ai_photos_kit: 37,
       selfie_to_brand_shoot_system: 197,
       masterclass: 147,
       visibility_suite: 97,
@@ -1140,6 +1281,61 @@ export function SuccessContent({
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
             <a href="mailto:support@sselfie.ai?subject=Prompt%20Vault%20access%20help">Email Support</a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isPollingSelfieAiPhotosKitAccess && isSelfieAiPhotosKitPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-brand-porcelain">{selfieAiPhotosKitStatus}</p>
+        <p className="text-sm text-brand-pearl">
+          Estimated time remaining: {Math.max(0, 120 - (selfieAiPhotosKitPollAttempts * 2))}s
+        </p>
+        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
+          <div
+            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(selfieAiPhotosKitPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (showSelfieAiPhotosKitTimeout && isSelfieAiPhotosKitPurchase) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
+            Your Kit is still syncing
+          </h2>
+          <p className="text-brand-pearl max-w-md">{selfieAiPhotosKitRecoveryMessage}</p>
+          <p className="text-sm text-brand-pearl">
+            Your access link is also sent by email after payment.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => {
+              setShowSelfieAiPhotosKitTimeout(false)
+              setSelfieAiPhotosKitPollAttempts(0)
+              setSelfieAiPhotosKitStatus("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+              setIsPollingSelfieAiPhotosKitAccess(true)
+            }}
+            variant="default"
+            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
+          >
+            Try Again
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
+          >
+            <a href="mailto:support@sselfie.ai?subject=AI%20Photos%20Kit%20access%20help">Email Support</a>
           </Button>
         </div>
       </div>
@@ -1781,6 +1977,16 @@ export function SuccessContent({
                     <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
                     <div className="text-right space-y-1">
                       {PROMPT_VAULT_INCLUDES.map(item => (
+                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {resolvedProductType === "selfie_ai_photos_kit" && (
+                  <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <div className="text-right space-y-1">
+                      {SELFIE_AI_PHOTOS_KIT_INCLUDES.map(item => (
                         <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
                       ))}
                     </div>

@@ -73,7 +73,7 @@ Current operating plan: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.m
 
 Do not treat the whole audience as one buyer.
 
-- **Cold top-of-funnel audience:** wants a simple selfie/AI-photo result. Build and sell the planned **Selfie To AI Photos Kit** as the obvious paid next step from viral selfie tutorials, AI reels, and ManyChat traffic.
+- **Cold top-of-funnel audience:** wants a simple selfie/AI-photo result. Sell the dedicated **Selfie To AI Photos Kit** as the obvious paid next step from viral selfie tutorials, AI reels, and ManyChat traffic. Code path exists; launch requires `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` in Vercel.
 - **Warm audience:** wants the deeper path. Build the immediate **Visibility To Paid Sprint** around women who already have skills, a story, a service, expertise, or an idea, but do not know what to post, what to say, or what they can sell first.
 - **Prompt Vault:** stays the proven low-ticket buyer bridge. Do not expect it to carry the whole business alone.
 - **SUITE / Studio:** stays the recurring core and monthly creation system.
@@ -307,7 +307,7 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
 | AI Photo Prompt Vault | $27 | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
-| Selfie To AI Photos Kit | TBD, likely $27-$37 | 🔒 Planned next top-of-funnel paid offer | Planned product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Use existing low-ticket infrastructure if safe. |
+| Selfie To AI Photos Kit | $37 target | 🔒 Built, pending Stripe/Vercel env + voice QA | Dedicated product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Uses its own product key, checkout, access page, delivery email, and webhook handler. |
 | Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |

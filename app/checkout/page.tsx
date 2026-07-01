@@ -95,6 +95,14 @@ const CHECKOUT_COPY: Record<
     blurb: "One $27 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
     footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
+  selfie_ai_photos_kit: {
+    heroTitle: "Complete your AI Photos Kit order",
+    heroBody: "Turn one clear selfie into realistic AI photos that still look like you.",
+    heading: "Selfie To AI Photos Kit",
+    blurb:
+      "You're getting the source selfie checklist, AI starter prompts, fix prompts, and your simple 3-image starter shoot path.",
+    footer: "Your AI Photos Kit access is delivered right after payment.",
+  },
   presets_single: {
     heroTitle: "Complete your presets order",
     heroBody: "Your selected SSELFIE preset collection is delivered right after payment.",
@@ -145,6 +153,12 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "No subscription or credit plan",
     "Full visual worlds for your own selfie",
   ],
+  selfie_ai_photos_kit: [
+    "Instant access after payment",
+    "One-time $37 purchase",
+    "No subscription or credit plan",
+    "AI prompts and still-you fix prompts",
+  ],
   presets_single: [
     "Instant access after payment",
     "One-time $19 purchase",
@@ -172,10 +186,11 @@ function CheckoutContent() {
   const [error, setError] = useState<string | null>(null)
   const productType = searchParams.get("product_type") || "unknown"
   const isPromptVault = productType === "prompt_vault"
+  const isSelfieAiPhotosKit = productType === "selfie_ai_photos_kit"
   const isPresets = productType === "presets_single" || productType === "presets_bundle"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
   const isStarterKit = productType === "starter_kit"
-  const isVisualIdentityOffer = isPromptVault || isSelfieToBrandShoot
+  const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot
   const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
@@ -259,6 +274,20 @@ function CheckoutContent() {
         .then(({ trackAnalyticsEvent }) =>
           trackAnalyticsEvent({
             event: "starter_kit_payment_form_rendered",
+            properties: {
+              product_type: productType,
+              checkout_session_id: secret.split("_secret_")[0] || null,
+              ...checkoutAttributionProperties(searchParams),
+            },
+          }),
+        )
+        .catch(() => {})
+    }
+    if (productType === "selfie_ai_photos_kit") {
+      import("@/lib/analytics/client")
+        .then(({ trackAnalyticsEvent }) =>
+          trackAnalyticsEvent({
+            event: "selfie_ai_photos_kit_payment_form_rendered",
             properties: {
               product_type: productType,
               checkout_session_id: secret.split("_secret_")[0] || null,
@@ -405,12 +434,14 @@ function CheckoutContent() {
                 <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#0D0E10] sm:text-3xl">
                   {isSelfieToBrandShoot
                     ? "The guided path plus full Vault access for your first AI brand shoot."
+                    : isSelfieAiPhotosKit
+                      ? "The small kit for turning one clear selfie into realistic AI photos."
                     : "The full shoot plus newest and future photoshoot drops."}
                 </h2>
               </div>
               <div className="text-left sm:text-right">
                 <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
-                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$170" : "$197") : "$27"}
+                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$170" : "$197") : isSelfieAiPhotosKit ? "$37" : "$27"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
                   {hasVaultCredit ? "$27 Vault credit applied" : "one-time access"}
@@ -420,6 +451,8 @@ function CheckoutContent() {
             <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]">
               {isSelfieToBrandShoot
                 ? "Guided path · source selfie help · Vault included · posting plan"
+                : isSelfieAiPhotosKit
+                  ? "Source selfie checklist · starter prompts · fix prompts · 3-image shoot path"
                 : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
             </p>
           </div>
@@ -450,6 +483,16 @@ function CheckoutContent() {
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
                 Your access link opens the full Vault right away so you can copy the complete shoot prompts and use them in ChatGPT with your own selfie.
+              </p>
+            </div>
+          )}
+          {isSelfieAiPhotosKit && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                What happens after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Your access link opens the Kit right away. Start with the source selfie checklist, then copy the first AI photo prompt.
               </p>
             </div>
           )}

@@ -1,6 +1,6 @@
 # SELFIE-AI-PHOTOS-KIT-01 — Build The Top-Of-Funnel Paid Kit
 
-Status: Ready for planning/build approval  
+Status: Implemented in code, pending Stripe price env + voice QA  
 Priority: High  
 Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
 
@@ -168,11 +168,11 @@ Do not:
 
 ## Definition Of Done
 
-This task is complete when Sandra has an approved implementation spec with:
+This task is complete when Sandra has:
 
 - final product name
 - price
-- route decision
+- dedicated product route
 - deliverables
 - page copy direction
 - email copy direction
@@ -180,4 +180,16 @@ This task is complete when Sandra has an approved implementation spec with:
 - tracking plan
 - bridge into Prompt Vault and SUITE
 
-Build only after Sandra approves the implementation direction.
+Implementation status:
+
+- product key: `selfie_ai_photos_kit`
+- public route: `/selfie-to-ai-photos-kit`
+- checkout route: `/checkout/selfie-to-ai-photos-kit`
+- buyer access route: `/access/selfie-to-ai-photos-kit/[token]`
+- access-token resolver: `/api/selfie-to-ai-photos-kit/access-token`
+- delivery email: `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
+- webhook handler: `lib/payments/handlers/selfie-ai-photos-kit.ts`
+
+Remaining launch step:
+
+- Add `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` to Vercel production after the Stripe $37 price is confirmed.

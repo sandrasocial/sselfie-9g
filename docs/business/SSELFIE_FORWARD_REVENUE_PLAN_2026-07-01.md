@@ -437,7 +437,7 @@ Document this plan as the operating source of truth.
 
 ### Second
 
-Build the Selfie To AI Photos Kit plan/spec as a separate Prompt/AI funnel product. Do not reuse the existing Starter Kit checkout.
+Build the Selfie To AI Photos Kit as a separate Prompt/AI funnel product. Do not reuse the existing Starter Kit checkout.
 
 ### Third
 
@@ -456,7 +456,7 @@ Update the admin brief so it separates:
 Run only focused campaigns:
 
 - iPhone/selfie cold reels -> Selfie Starter Kit
-- AI prompt/photo cold reels -> PROMPT / AI Prompts / planned AI Photos Kit path
+- AI prompt/photo cold reels -> PROMPT / AI Prompts / Selfie To AI Photos Kit path
 - AI prompt users -> Vault
 - Vault buyers -> SUITE
 - warm stories/emails -> Visibility To Paid application
@@ -489,7 +489,7 @@ Track:
 
 ### Selfie To AI Photos Kit
 
-Track after the dedicated product path exists:
+Track for the dedicated product path:
 
 - AI Prompts opt-ins
 - AI Photos Kit checkout starts

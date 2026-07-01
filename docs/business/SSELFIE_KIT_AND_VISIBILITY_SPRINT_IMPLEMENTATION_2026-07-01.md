@@ -23,8 +23,12 @@ Claude can now review the outward-facing voice and tighten the copy without need
 
 ### Selfie To AI Photos Kit
 
-- Added `/selfie-to-ai-photos-kit` as a safe placeholder route.
-- The route redirects into `/ai-prompts` with Prompt funnel attribution until a dedicated AI Photos Kit product/checkout path is approved.
+- Added `/selfie-to-ai-photos-kit` as a dedicated public product route.
+- Added `selfie_ai_photos_kit` as its own product key, separate from the existing `starter_kit`.
+- Added `/checkout/selfie-to-ai-photos-kit` as the dedicated checkout entry point.
+- Added `/access/selfie-to-ai-photos-kit/[token]` as the paid buyer access page.
+- Added the delivery email, webhook fulfillment handler, token resolver, access recovery support, and checkout/success-page support for the AI Photos Kit.
+- The dedicated checkout depends on `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` being present in Vercel production.
 - The existing Starter Kit is not the AI Photos Kit.
 - `/starter-kit`, `/checkout/starter-kit`, `/access/starter-kit/[token]`, and `starter_kit` remain the iPhone Selfie Starter Kit path.
 
@@ -67,6 +71,10 @@ Claude can now review the outward-facing voice and tighten the copy without need
 ## Files Changed
 
 - `app/selfie-to-ai-photos-kit/page.tsx`
+- `app/checkout/selfie-to-ai-photos-kit/page.tsx`
+- `app/access/selfie-to-ai-photos-kit/[token]/page.tsx`
+- `app/api/selfie-to-ai-photos-kit/access-token/route.ts`
+- `app/api/access-recovery/route.ts`
 - `app/visibility-to-paid/page.tsx`
 - `app/starter-kit/page.tsx`
 - `app/work-with-me/page.tsx`
@@ -76,9 +84,17 @@ Claude can now review the outward-facing voice and tighten the copy without need
 - `app/admin/content-brief/page.tsx`
 - `components/sselfie/public-marketing.tsx`
 - `components/checkout/success-content.tsx`
+- `components/ai-prompts/copy-button.tsx`
 - `components/admin/content-brief-client.tsx`
+- `components/selfie-ai-photos-kit/tracked-link.tsx`
+- `lib/freebie/selfie-ai-photos-kit-access.ts`
 - `lib/products.ts`
+- `lib/analytics/event-contract.ts`
 - `lib/content-engine/brief-generator.ts`
+- `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
+- `lib/email/templates/selfie-education-links.ts`
+- `lib/payments/handlers/selfie-ai-photos-kit.ts`
+- `lib/payments/lifecycle/checkout-session-completed.ts`
 - `lib/email/templates/starter-kit-day0-delivery.ts`
 - `lib/email/templates/starter-kit-day1-quick-win.ts`
 - `lib/email/templates/starter-kit-day3-story.ts`
@@ -89,17 +105,24 @@ Claude can now review the outward-facing voice and tighten the copy without need
 
 ## Payment, Access, And Product Logic
 
-No new Stripe product was created.
-
-No Stripe product id was changed.
-
-No entitlement logic was changed.
-
-No checkout fulfillment logic was changed.
+No existing Stripe product id was changed.
 
 The existing Selfie Starter Kit still uses the existing `starter_kit` infrastructure and price.
 
-Selfie To AI Photos Kit does not have a live checkout yet.
+Selfie To AI Photos Kit now has a dedicated code path:
+
+- product key: `selfie_ai_photos_kit`
+- public page: `/selfie-to-ai-photos-kit`
+- checkout: `/checkout/selfie-to-ai-photos-kit`
+- access: `/access/selfie-to-ai-photos-kit/[token]`
+- access-token resolver: `/api/selfie-to-ai-photos-kit/access-token`
+- webhook handler: `lib/payments/handlers/selfie-ai-photos-kit.ts`
+- delivery email: `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
+
+Manual production setup still required:
+
+- Create or confirm the Stripe price for the $37 Selfie To AI Photos Kit.
+- Add `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` to Vercel production before sending traffic to checkout.
 
 Visibility To Paid still uses the existing inquiry flow and does not create an automatic checkout/payment step.
 
@@ -112,9 +135,11 @@ Passed:
 - `pnpm exec eslint app/checkout/starter-kit/page.tsx lib/content-engine/brief-generator.ts components/admin/content-brief-client.tsx app/admin/content-brief/page.tsx --max-warnings=0`
 - `pnpm build`
 
-Build completed successfully and includes:
+Build completed successfully in the first pass and includes:
 
-- `/selfie-to-ai-photos-kit` redirects to `/ai-prompts` for now
+- `/selfie-to-ai-photos-kit`
+- `/checkout/selfie-to-ai-photos-kit`
+- `/access/selfie-to-ai-photos-kit/[token]`
 - `/visibility-to-paid`
 - `/starter-kit`
 - `/work-with-me`
@@ -139,11 +164,10 @@ Those were not expanded in this pass because the priority was revenue-path struc
 
 ## Needs Claude / Sandra Review
 
-- Dedicated Selfie To AI Photos Kit product decision:
-  - product key
-  - price
-  - checkout path
-  - access/delivery path
+- Dedicated Selfie To AI Photos Kit production setup:
+  - Stripe price confirmation
+  - Vercel env `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`
+  - final voice pass on the public page, access page, and delivery email
 - Final voice pass on the Selfie Starter Kit page copy.
 - Final voice pass on the Visibility To Paid page and application copy.
 - Do not redirect `/starter-kit` to `/selfie-to-ai-photos-kit`.

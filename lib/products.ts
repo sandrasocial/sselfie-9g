@@ -23,6 +23,7 @@ export type PricingProductId =
   | "selfie_guide_bundle"
   | "selfie_guide"
   | "starter_kit"
+  | "selfie_ai_photos_kit"
   | "masterclass"
   | "visibility_suite"
   | "academy_mini_product"
@@ -49,6 +50,7 @@ export interface PricingProduct {
     | "selfie_guide_bundle"
     | "selfie_guide"
     | "starter_kit"
+    | "selfie_ai_photos_kit"
     | "masterclass"
     | "visibility_suite"
     | "academy_mini_product"
@@ -186,6 +188,25 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "Caption and content library",
       "7-day content starter",
       "Camera settings cheat sheet",
+    ],
+  },
+  {
+    id: "selfie_ai_photos_kit",
+    name: "Selfie To AI Photos Kit",
+    displayName: "Selfie To AI Photos Kit",
+    description:
+      "The small AI-photo kit for turning one clear selfie into realistic images that still look like you.",
+    priceInCents: 3700, // $37 one-time
+    type: "selfie_ai_photos_kit",
+    tag: "bought_selfie_ai_photos_kit",
+    features: [
+      "Source selfie checklist",
+      "Good vs bad AI source photo examples",
+      "AI photo starter prompts",
+      "Still-you fix prompts",
+      "3-image starter shoot path",
+      "What to upload, write, and fix",
+      "Bridge into Prompt Vault and SUITE",
     ],
   },
   {
@@ -464,6 +485,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:prompt_vault",
     successNextAction: "/access/prompt-vault/[token]",
     lifecycleEmailEntryPoint: "prompt_vault_delivery",
+  },
+  selfie_ai_photos_kit: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/selfie-to-ai-photos-kit",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_ai_photos_kit",
+    successNextAction: "/access/selfie-to-ai-photos-kit/[token]",
+    lifecycleEmailEntryPoint: "selfie_ai_photos_kit_delivery",
   },
   presets_single: {
     lifecycleStatus: "live",

@@ -42,6 +42,14 @@ export function promptVaultCheckoutUrl() {
   return `${SITE_URL}/checkout/prompt-vault`
 }
 
+export function selfieAiPhotosKitLandingUrl() {
+  return `${SITE_URL}/selfie-to-ai-photos-kit`
+}
+
+export function selfieAiPhotosKitCheckoutUrl() {
+  return `${SITE_URL}/checkout/selfie-to-ai-photos-kit`
+}
+
 export function selfieToBrandShootLandingUrl() {
   return `${SITE_URL}/selfie-to-brand-shoot`
 }
