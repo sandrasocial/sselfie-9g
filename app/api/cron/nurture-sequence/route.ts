@@ -9,6 +9,7 @@ import { SELFIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/selfie-guide-email-seque
 import { FREEBIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/freebie-guide-email-sequence"
 import { AI_PROMPTS_EMAIL_TOUCHES } from "@/lib/email/ai-prompts-email-sequence"
 import { PROMPT_VAULT_EMAIL_TOUCHES } from "@/lib/email/prompt-vault-email-sequence"
+import { SELFIE_AI_PHOTOS_KIT_EMAIL_TOUCHES } from "@/lib/email/selfie-ai-photos-kit-email-sequence"
 import { SELFIE_TO_BRAND_SHOOT_EMAIL_TOUCHES } from "@/lib/email/selfie-to-brand-shoot-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
 import { MASTERCLASS_EMAIL_TOUCHES } from "@/lib/email/masterclass-email-sequence"
@@ -47,6 +48,11 @@ import {
   generatePromptVaultDay3SystemUpgradeEmail,
   generatePromptVaultDay5FixBadResultEmail,
 } from "@/lib/email/templates/prompt-vault-buyer-sequence"
+import {
+  generateSelfieAiPhotosKitDay2FirstPhotoEmail,
+  generateSelfieAiPhotosKitDay4VaultBridgeEmail,
+  generateSelfieAiPhotosKitDay8SuiteTrialEmail,
+} from "@/lib/email/templates/selfie-ai-photos-kit-buyer-sequence"
 import {
   generateSelfieToBrandShootDay1SourceAndWorldEmail,
   generateSelfieToBrandShootDay3FirstShootEmail,
@@ -107,6 +113,14 @@ interface SelfieToBrandShootTouchCandidate {
   created_at: string
 }
 
+interface SelfieAiPhotosKitTouchCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  converted_at: string | null
+  created_at: string
+}
+
 interface StarterKitCandidate {
   email: string
   name: string | null
@@ -150,6 +164,13 @@ function selfieToBrandShootAccessUrl(candidate: { access_token: string | null })
   return token.length > 0
     ? `${SITE_URL}/access/selfie-to-brand-shoot/${token}`
     : `${SITE_URL}/academy/access/selfie-to-brand-shoot`
+}
+
+function selfieAiPhotosKitAccessUrl(candidate: { access_token: string | null }): string {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0
+    ? `${SITE_URL}/access/selfie-to-ai-photos-kit/${token}`
+    : `${SITE_URL}/selfie-to-ai-photos-kit`
 }
 
 // BRIDGE-01: the 7-day SUITE trial claim link (one trial per person, ever - the claim
@@ -285,6 +306,8 @@ async function getAiPromptsTouchCandidates(
         OR 'bought_prompt_vault' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'bought_starter_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'selfie-ai-photos-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_selfie_ai_photos_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         OR 'bought_masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
       )
@@ -371,6 +394,69 @@ async function getSelfieToBrandShootTouchCandidates(
     ORDER BY LOWER(fs.email), COALESCE(fs.converted_at, fs.updated_at, fs.created_at) DESC
     LIMIT 200
   `) as SelfieToBrandShootTouchCandidate[]
+}
+
+async function getSelfieAiPhotosKitTouchCandidates(
+  days: number,
+  emailType: string,
+  options: { excludeVaultBuyers?: boolean; excludeSuiteMembers?: boolean } = {}
+): Promise<SelfieAiPhotosKitTouchCandidate[]> {
+  const excludeVaultBuyers = options.excludeVaultBuyers === true
+  const excludeSuiteMembers = options.excludeSuiteMembers === true
+
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(fs.email))
+      fs.email,
+      NULLIF(BTRIM(fs.name), '') AS name,
+      fs.access_token,
+      fs.converted_at,
+      fs.created_at
+    FROM freebie_subscribers fs
+    WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${days} days`}::interval)
+      AND fs.email IS NOT NULL
+      AND fs.email <> ''
+      AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
+      AND (
+        fs.source = 'selfie-ai-photos-kit-paid'
+        OR 'selfie-ai-photos-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+        OR 'bought_selfie_ai_photos_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+      )
+      AND (
+        ${excludeVaultBuyers}::boolean IS NOT TRUE
+        OR NOT (
+          'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+          OR 'bought_prompt_vault' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+          OR EXISTS (
+            SELECT 1
+            FROM users u
+            INNER JOIN subscriptions s ON s.user_id = u.id::varchar
+            WHERE LOWER(u.email) = LOWER(fs.email)
+              AND s.product_type = 'prompt_vault'
+              AND s.status = 'active'
+          )
+        )
+      )
+      AND (
+        ${excludeSuiteMembers}::boolean IS NOT TRUE
+        OR NOT EXISTS (
+          SELECT 1
+          FROM users u
+          INNER JOIN subscriptions s ON s.user_id = u.id::varchar
+          WHERE LOWER(u.email) = LOWER(fs.email)
+            AND s.product_type IN ('sselfie_studio_membership', 'sselfie_studio_membership_annual')
+            AND s.status IN ('active', 'trialing')
+        )
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(fs.email)
+          AND el.email_type = ${emailType}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+      )
+    ORDER BY LOWER(fs.email), COALESCE(fs.converted_at, fs.updated_at, fs.created_at) DESC
+    LIMIT 200
+  `) as SelfieAiPhotosKitTouchCandidate[]
 }
 
 async function getStarterKitCandidates(
@@ -708,6 +794,51 @@ async function sendSelfieToBrandShootTouchEmail(
   })
 }
 
+async function sendSelfieAiPhotosKitTouchEmail(
+  emailType: string,
+  candidate: SelfieAiPhotosKitTouchCandidate,
+  accessUrl: string
+) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+
+  let email: { html: string; text: string; subject: string }
+
+  switch (emailType) {
+    case "selfie-ai-photos-kit-day2-first-photo":
+      email = generateSelfieAiPhotosKitDay2FirstPhotoEmail({ firstName, accessUrl })
+      break
+    case "selfie-ai-photos-kit-day4-vault-bridge":
+      email = generateSelfieAiPhotosKitDay4VaultBridgeEmail({
+        firstName,
+        accessUrl,
+        recipientEmail: candidate.email,
+      })
+      break
+    case "selfie-ai-photos-kit-day8-suite-trial": {
+      const claimUrl = suiteTrialClaimUrl(candidate)
+      if (!claimUrl) {
+        throw new Error("Missing suite trial claim token")
+      }
+      email = generateSelfieAiPhotosKitDay8SuiteTrialEmail({ firstName, claimUrl })
+      break
+    }
+    default:
+      throw new Error(`Unknown Selfie To AI Photos Kit email type: ${emailType}`)
+  }
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType,
+    tags: ["selfie-ai-photos-kit", emailType],
+    marketing: true,
+  })
+}
+
 function starterKitAccessUrl(_candidate: StarterKitCandidate): string {
   const token = typeof _candidate.access_token === "string" ? _candidate.access_token.trim() : ""
   return token.length > 0 ? `${SITE_URL}/access/starter-kit/${token}` : STARTER_KIT_FALLBACK_URL
@@ -886,6 +1017,9 @@ export async function GET(request: Request) {
       promptVaultDay3: { found: 0, sent: 0, failed: 0 },
       promptVaultDay5: { found: 0, sent: 0, failed: 0 },
       promptVaultDay10: { found: 0, sent: 0, failed: 0 },
+      selfieAiPhotosKitDay2: { found: 0, sent: 0, failed: 0 },
+      selfieAiPhotosKitDay4: { found: 0, sent: 0, failed: 0 },
+      selfieAiPhotosKitDay8: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay1: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay3: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay5: { found: 0, sent: 0, failed: 0 },
@@ -1020,6 +1154,55 @@ export async function GET(request: Request) {
           const accessUrl = promptVaultAccessUrl(candidate)
           try {
             const result = await sendPromptVaultTouchEmail(touch.emailType, candidate, accessUrl)
+            if (result.success) {
+              results[resultKey].sent += 1
+            } else {
+              results[resultKey].failed += 1
+              results.errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: result.error || "unknown",
+              })
+            }
+          } catch (error: unknown) {
+            results[resultKey].failed += 1
+            results.errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: errorMessage(error),
+            })
+          }
+
+          await sleep(150)
+        }
+      }
+    }
+
+    const selfieAiPhotosKitNurtureEnabled =
+      process.env.SELFIE_AI_PHOTOS_KIT_NURTURE_ENABLED === "true"
+    const selfieAiPhotosKitTouchResultKeys = [
+      "selfieAiPhotosKitDay2",
+      "selfieAiPhotosKitDay4",
+      "selfieAiPhotosKitDay8",
+    ] as const
+
+    if (selfieAiPhotosKitNurtureEnabled) {
+      for (const [index, touch] of SELFIE_AI_PHOTOS_KIT_EMAIL_TOUCHES.entries()) {
+        const resultKey = selfieAiPhotosKitTouchResultKeys[index]
+        const candidates = await getSelfieAiPhotosKitTouchCandidates(touch.days, touch.emailType, {
+          excludeVaultBuyers: touch.excludeVaultBuyers,
+          excludeSuiteMembers: touch.excludeSuiteMembers,
+        })
+        results[resultKey].found = candidates.length
+
+        for (const candidate of candidates) {
+          const accessUrl = selfieAiPhotosKitAccessUrl(candidate)
+          try {
+            const result = await sendSelfieAiPhotosKitTouchEmail(
+              touch.emailType,
+              candidate,
+              accessUrl
+            )
             if (result.success) {
               results[resultKey].sent += 1
             } else {
@@ -1266,6 +1449,9 @@ export async function GET(request: Request) {
       results.promptVaultDay3.sent +
       results.promptVaultDay5.sent +
       results.promptVaultDay10.sent +
+      results.selfieAiPhotosKitDay2.sent +
+      results.selfieAiPhotosKitDay4.sent +
+      results.selfieAiPhotosKitDay8.sent +
       results.selfieToBrandShootDay1.sent +
       results.selfieToBrandShootDay3.sent +
       results.selfieToBrandShootDay5.sent +
@@ -1300,6 +1486,9 @@ export async function GET(request: Request) {
       results.promptVaultDay3.failed +
       results.promptVaultDay5.failed +
       results.promptVaultDay10.failed +
+      results.selfieAiPhotosKitDay2.failed +
+      results.selfieAiPhotosKitDay4.failed +
+      results.selfieAiPhotosKitDay8.failed +
       results.selfieToBrandShootDay1.failed +
       results.selfieToBrandShootDay3.failed +
       results.selfieToBrandShootDay5.failed +
@@ -1338,6 +1527,10 @@ export async function GET(request: Request) {
       promptVaultDay3: results.promptVaultDay3,
       promptVaultDay5: results.promptVaultDay5,
       promptVaultDay10: results.promptVaultDay10,
+      selfieAiPhotosKitNurtureEnabled,
+      selfieAiPhotosKitDay2: results.selfieAiPhotosKitDay2,
+      selfieAiPhotosKitDay4: results.selfieAiPhotosKitDay4,
+      selfieAiPhotosKitDay8: results.selfieAiPhotosKitDay8,
       selfieToBrandShootNurtureEnabled,
       selfieToBrandShootDay1: results.selfieToBrandShootDay1,
       selfieToBrandShootDay3: results.selfieToBrandShootDay3,

@@ -139,6 +139,8 @@ async function getAiPromptsCandidates(input: {
           OR 'bought_prompt_vault' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
           OR 'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
           OR 'bought_starter_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+          OR 'selfie-ai-photos-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+          OR 'bought_selfie_ai_photos_kit' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
           OR 'masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
           OR 'bought_masterclass' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
         )
