@@ -14,6 +14,21 @@ function money(value: number) {
   return "$" + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function currencyMoney(value: number, currency: string) {
+  const normalized = currency.toUpperCase()
+  const symbol = normalized === "EUR" ? "€" : normalized === "USD" ? "$" : `${normalized} `
+  return symbol + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function currencyBreakdown(values: Record<string, number>) {
+  const entries = Object.entries(values || {}).filter(([, value]) => Number(value) > 0)
+  if (entries.length === 0) return "$0.00"
+  return entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, value]) => currencyMoney(value, currency))
+    .join(" + ")
+}
+
 function percent(part: number, whole: number) {
   if (!whole) return "0%"
   return Math.round((part / whole) * 100) + "%"
@@ -135,6 +150,9 @@ export default async function AdminPage({
             <h2 className="text-xs uppercase tracking-wide text-stone-500">Money</h2>
             <SourceTag label="stripe_payments" />
           </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Historical revenue only. Payments are charge rows, not active members.
+          </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-stone-200 bg-white p-5">
               <p className="text-xs uppercase tracking-wide text-stone-500">This week</p>
@@ -175,8 +193,8 @@ export default async function AdminPage({
                 <p className="text-xs uppercase tracking-wide text-stone-500">active members</p>
               </div>
               <div>
-                <p className="font-serif text-3xl text-stone-950">{money(report.members.mrr)}</p>
-                <p className="text-xs uppercase tracking-wide text-stone-500">MRR · net of discounts</p>
+                <p className="font-serif text-3xl text-stone-950">{currencyBreakdown(report.members.mrrByCurrency)}</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">MRR · live Stripe · net of discounts</p>
               </div>
               <div className="text-sm text-stone-600">
                 +{report.members.new30d} new · {report.members.canceled30d} canceled (30d)
@@ -186,7 +204,7 @@ export default async function AdminPage({
               {report.members.discountedMembers > 0 && (
                 <>
                   {report.members.discountedMembers} of {report.members.active} on a lifetime beta
-                  discount (BETA 50% forever) · {money(report.members.grossMrr)} at list price
+                  discount (BETA 50% forever) · {currencyBreakdown(report.members.grossMrrByCurrency)} at list price
                 </>
               )}
             </div>
@@ -274,6 +292,75 @@ export default async function AdminPage({
             )}
           </div>
         </section>
+
+        {report.scorecard && (
+          <section className="mt-8">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-xs uppercase tracking-wide text-stone-500">Daily business scorecard</h2>
+              <SourceTag label="Revenue Truth" />
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-3">
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500">Trial activation</p>
+                <p className="mt-2 text-sm text-stone-700">
+                  {report.scorecard.trials.claimed30d} claimed · {report.scorecard.trials.firstGeneration30d} first generated ·{" "}
+                  {report.scorecard.trials.downloads30d} downloaded · {report.scorecard.trials.paymentFormRendered30d} payment forms
+                </p>
+                <p className="mt-2 text-xs text-stone-500">Source: subscriptions + analytics_events</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500">Work With Me pipeline</p>
+                <p className="mt-2 text-sm text-stone-700">
+                  {report.scorecard.workWithMe.applications30d} applications · {report.scorecard.workWithMe.qualifiedOpen} qualified ·{" "}
+                  {report.scorecard.workWithMe.bookedCalls} booked · {report.scorecard.workWithMe.won} won
+                </p>
+                <p className="mt-2 text-xs text-stone-500">Source: brand_engine_applications</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500">Best converting emails</p>
+                <ul className="mt-2 space-y-1 text-sm text-stone-700">
+                  {report.scorecard.demandSignals.topEmailConverters.slice(0, 3).map((row) => (
+                    <li key={row.emailType} className="flex justify-between gap-3">
+                      <span className="truncate">{row.emailType}</span>
+                      <span className="shrink-0 text-stone-500">
+                        {row.clicks} clicks · {row.conversions} conv.
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-stone-500">Source: email_logs</p>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500">Funnel truth (30d)</p>
+                <ul className="mt-2 space-y-1">
+                  {report.scorecard.funnels30d.slice(0, 5).map((row) => (
+                    <li key={row.productType} className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="text-stone-800">{row.productType}</span>
+                      <span className="text-right text-stone-500">
+                        {row.starts} starts · {row.purchases} buys · {money(row.revenue)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-stone-500">Source: checkout_attribution</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500">Demand signals</p>
+                <ul className="mt-2 space-y-1">
+                  {report.scorecard.demandSignals.topFreePromptCopies.slice(0, 5).map((row) => (
+                    <li key={row.title} className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="truncate text-stone-800">{row.title}</span>
+                      <span className="shrink-0 text-stone-500">{row.copies} copies</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-stone-500">Source: analytics_events</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 3. What needs me today? */}
         <section className="mt-8">

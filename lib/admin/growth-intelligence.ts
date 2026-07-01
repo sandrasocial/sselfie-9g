@@ -2,6 +2,7 @@ import "server-only"
 
 import { sql } from "@/lib/db/client"
 import { evaluateGrowthPriorities } from "@/lib/admin/growth-intelligence-evaluator"
+import { getRevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
 import { getGrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 export { formatMoney, formatPercent, percent, type GrowthPriority } from "@/lib/admin/growth-intelligence-evaluator"
 
@@ -14,7 +15,7 @@ export type GrowthIntelligenceReport = Awaited<ReturnType<typeof getGrowthIntell
 export async function getGrowthIntelligenceReport(windowDays: number) {
   const interval = `${windowDays} days`
 
-  const [eventCountsRows, truthSnapshot] = await Promise.all([
+  const [eventCountsRows, truthSnapshot, revenueScorecard] = await Promise.all([
     sql`
     WITH analytics AS (
       SELECT
@@ -62,6 +63,10 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
   `,
     getGrowthTruthSnapshot(Math.max(windowDays, 90)).catch((error) => {
       console.error("[growth-intelligence] growth truth snapshot failed:", error)
+      return null
+    }),
+    getRevenueTruthScorecard().catch((error) => {
+      console.error("[growth-intelligence] revenue truth scorecard failed:", error)
       return null
     }),
   ])
@@ -296,6 +301,7 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     generatedAt: new Date().toISOString(),
     windowDays,
     truthSnapshot,
+    revenueScorecard,
     eventCounts,
     paymentCounts,
     buyerCounts,

@@ -68,6 +68,30 @@ type CheckoutExperienceDecision = {
   reason: string
 }
 
+export type WorkWithMeLeadScoreInput = {
+  currentChallenge: string
+  desiredOutcome: string
+  currentOffer: string
+  helpFocus: string
+  investmentReadiness: string
+  instagramHandle: string
+}
+
+export type WorkWithMeLeadScore = {
+  ready: string
+  hasExistingBusiness: boolean
+  wantsLeadGen: boolean
+  timeConstrained: boolean
+  clearVisibilityGap: boolean
+  score: number
+  qualified: boolean
+  status: "qualified" | "needs_follow_up"
+  pipelineStage: BrandEnginePipelineStage
+  nextAction: BrandEngineNextAction
+  priorityTier: "high" | "medium" | "low"
+  notes: string
+}
+
 const REVENUE_SCORE: Record<string, number> = {
   "<50k": 10,
   "50-100k": 25,
@@ -138,6 +162,19 @@ function scoreTextIntent(...parts: string[]): number {
 
 function normalize(value: string | undefined | null) {
   return String(value || "").trim().toLowerCase()
+}
+
+function normalizeReadiness(value: string) {
+  const normalized = normalize(value)
+  if (normalized.includes("yes")) return "yes"
+  if (normalized.includes("maybe") || normalized.includes("question")) return "maybe"
+  if (normalized.includes("no")) return "no"
+  return normalized || "unknown"
+}
+
+function includesAny(text: string, signals: string[]) {
+  const haystack = text.toLowerCase()
+  return signals.some((signal) => haystack.includes(signal))
 }
 
 const SOURCE_CHANNEL_ALIASES: Record<string, string> = {
@@ -255,6 +292,107 @@ export function deriveCheckoutExperienceDecision(input: CheckoutExperienceInput)
   return {
     checkoutMode: "payment_link",
     reason: "assisted_or_offsite_source",
+  }
+}
+
+export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMeLeadScore {
+  const fullText = [
+    input.currentChallenge,
+    input.desiredOutcome,
+    input.currentOffer,
+    input.helpFocus,
+    input.investmentReadiness,
+    input.instagramHandle,
+  ].join(" ")
+  const ready = normalizeReadiness(input.investmentReadiness)
+  const hasExistingBusiness = includesAny(fullText, [
+    "business",
+    "clients",
+    "client",
+    "lead",
+    "leads",
+    "real estate",
+    "service",
+    "selling",
+    "offer",
+    "expertise",
+    "coaching",
+    "course",
+    "consult",
+    "shop",
+  ])
+  const wantsLeadGen = includesAny(fullText, [
+    "lead",
+    "leads",
+    "client",
+    "clients",
+    "sales",
+    "sell",
+    "selling",
+    "inquiries",
+    "book",
+    "booking",
+    "convert",
+    "conversion",
+  ])
+  const timeConstrained = includesAny(fullText, [
+    "no time",
+    "don't have time",
+    "dont have time",
+    "busy",
+    "overwhelmed",
+    "all of it",
+    "everything",
+  ])
+  const clearVisibilityGap = includesAny(fullText, [
+    "online presence",
+    "visibility",
+    "visible",
+    "instagram",
+    "content",
+    "post",
+    "posting",
+    "brand",
+    "personal brand",
+    "show up",
+  ])
+
+  const score =
+    (hasExistingBusiness ? 25 : 0) +
+    (wantsLeadGen ? 25 : 0) +
+    (timeConstrained ? 15 : 0) +
+    (clearVisibilityGap ? 20 : 0) +
+    (ready === "yes" ? 20 : ready === "maybe" ? 8 : 0) +
+    (input.instagramHandle ? 5 : 0)
+  const boundedScore = Math.max(0, Math.min(100, score))
+  const qualified = boundedScore >= 55 && ready !== "no"
+  const status = qualified ? "qualified" : "needs_follow_up"
+  const pipelineStage = qualified ? "qualified_queue" : "contacted"
+  const nextAction = qualified ? "book_call" : "follow_up"
+  const priorityTier = boundedScore >= 80 ? "high" : boundedScore >= 55 ? "medium" : "low"
+  const notes = [
+    `has_existing_business=${hasExistingBusiness}`,
+    `wants_lead_generation=${wantsLeadGen}`,
+    `time_constrained=${timeConstrained}`,
+    `clear_visibility_gap=${clearVisibilityGap}`,
+    `ready_to_invest=${ready}`,
+    `score=${boundedScore}`,
+    `next_action=${nextAction}`,
+  ].join("; ")
+
+  return {
+    ready,
+    hasExistingBusiness,
+    wantsLeadGen,
+    timeConstrained,
+    clearVisibilityGap,
+    score: boundedScore,
+    qualified,
+    status,
+    pipelineStage,
+    nextAction,
+    priorityTier,
+    notes,
   }
 }
 

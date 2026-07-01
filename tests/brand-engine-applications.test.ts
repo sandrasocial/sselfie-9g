@@ -6,6 +6,7 @@ import {
   enforceSourceAwareRouting,
   normalizeLeadSourceChannel,
   resolveLeadSource,
+  scoreWorkWithMeLead,
 } from "@/lib/brand-engine/applications"
 
 describe("brand-engine qualification scoring", () => {
@@ -41,6 +42,41 @@ describe("brand-engine qualification scoring", () => {
     expect(result.qualified).toBe(false)
     expect(result.pipelineStage).toBe("nurture")
     expect(result.priorityTier).toBe("low")
+  })
+})
+
+describe("Work With Me lead scoring", () => {
+  it("routes established visibility-to-leads applicants to a fit call", () => {
+    const result = scoreWorkWithMeLead({
+      currentChallenge: "I have a service business but my Instagram does not bring leads.",
+      desiredOutcome: "I want more client inquiries and a clearer online presence.",
+      currentOffer: "Consulting offer for business owners",
+      helpFocus: "All of it. I am busy and do not have time to figure out content alone.",
+      investmentReadiness: "Yes",
+      instagramHandle: "@sandra",
+    })
+
+    expect(result.qualified).toBe(true)
+    expect(result.score).toBeGreaterThanOrEqual(80)
+    expect(result.pipelineStage).toBe("qualified_queue")
+    expect(result.nextAction).toBe("book_call")
+    expect(result.priorityTier).toBe("high")
+  })
+
+  it("keeps low-readiness curiosity applications out of the payment-link path", () => {
+    const result = scoreWorkWithMeLead({
+      currentChallenge: "I am just curious.",
+      desiredOutcome: "Maybe make prettier photos one day.",
+      currentOffer: "",
+      helpFocus: "",
+      investmentReadiness: "No",
+      instagramHandle: "",
+    })
+
+    expect(result.qualified).toBe(false)
+    expect(result.status).toBe("needs_follow_up")
+    expect(result.pipelineStage).toBe("contacted")
+    expect(result.nextAction).toBe("follow_up")
   })
 })
 

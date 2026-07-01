@@ -1,4 +1,5 @@
 import type { GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
+import type { RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
 
 type ReportRow = {
   [key: string]: unknown
@@ -67,6 +68,7 @@ type GrowthReportLike = {
   freePromptSignals: ReportRow[]
   attributionRows: ReportRow[]
   truthSnapshot?: GrowthTruthSnapshot | null
+  revenueScorecard?: RevenueTruthScorecard | null
 }
 
 export type DailyBriefingExtras = {
@@ -86,6 +88,7 @@ export type DailySandraBriefing = {
   subject: string
   moneyHeader: string | null
   truthSnapshot: GrowthTruthSnapshot | null
+  revenueScorecard: RevenueTruthScorecard | null
   inboxFlagged: Array<{ username: string; message: string }>
   inboxFlaggedCount: number
   working: string[]
@@ -121,6 +124,21 @@ function percent(numerator: number, denominator: number): number {
 
 function money(cents: number): string {
   return `$${(cents / 100).toFixed(0)}`
+}
+
+function currencyMoney(value: number, currency: string): string {
+  const normalized = currency.toUpperCase()
+  const symbol = normalized === "EUR" ? "€" : normalized === "USD" ? "$" : `${normalized} `
+  return `${symbol}${value.toFixed(0)}`
+}
+
+function currencyBreakdown(values: Record<string, number> | null | undefined): string {
+  const entries = Object.entries(values || {}).filter(([, value]) => Number(value) > 0)
+  if (entries.length === 0) return "$0"
+  return entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, value]) => currencyMoney(value, currency))
+    .join(" + ")
 }
 
 function compactNumber(value: number | null | undefined): string {
@@ -236,6 +254,15 @@ export function buildDailySandraBriefing(
     )
   }
 
+  if (report.revenueScorecard) {
+    working.push(
+      `Revenue truth: ${report.revenueScorecard.members.active} active Suite members, ${currencyBreakdown(report.revenueScorecard.members.netMrrByCurrency)} net MRR, ${report.revenueScorecard.members.discountedMembers} discounted.`,
+    )
+    working.push(
+      `Trial activation: ${report.revenueScorecard.trials.claimed30d} claimed in 30 days, ${report.revenueScorecard.trials.firstGeneration30d} reached first generation, ${report.revenueScorecard.trials.paymentFormRendered30d} reached payment form.`,
+    )
+  }
+
   if (report.eventCounts.checkoutStarts > 0) {
     working.push(`${report.eventCounts.checkoutStarts} people started Prompt Vault checkout from ${report.eventCounts.vaultVisits} Vault visits (${checkoutRate}%).`)
   }
@@ -254,6 +281,26 @@ export function buildDailySandraBriefing(
 
   if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
     leaking.push(`Only ${freeBridgeRate}% of free prompt access opens clicked into the Vault. The preview-to-paid bridge needs the most attention.`)
+  }
+
+  if (report.revenueScorecard && report.revenueScorecard.trials.claimed30d > 0) {
+    const firstGenerationRate = percent(
+      report.revenueScorecard.trials.firstGeneration30d,
+      report.revenueScorecard.trials.claimed30d,
+    )
+    if (firstGenerationRate < 60) {
+      leaking.push(
+        `Suite trial activation is weak: ${firstGenerationRate}% reached first generation. Fix this before pushing more membership traffic.`,
+      )
+    }
+  }
+
+  if (report.revenueScorecard && report.revenueScorecard.workWithMe.applications30d > 0) {
+    if (report.revenueScorecard.workWithMe.bookedCalls === 0 && report.revenueScorecard.workWithMe.won === 0) {
+      leaking.push(
+        `${report.revenueScorecard.workWithMe.applications30d} Work With Me application(s) came in, but none are marked booked or won. Follow-up process is the leak.`,
+      )
+    }
   }
 
   if (report.eventCounts.vaultVisits >= 50 && checkoutRate < 8) {
@@ -310,6 +357,18 @@ export function buildDailySandraBriefing(
   if ((report.supportCounts?.new || 0) > 0 || (report.supportCounts?.reviewing || 0) > 0) {
     codexNext.push("Triage open customer support threads and fix any product bugs before optimizing more funnel copy.")
   } else if (
+    report.revenueScorecard &&
+    report.revenueScorecard.trials.claimed30d > 0 &&
+    percent(report.revenueScorecard.trials.firstGeneration30d, report.revenueScorecard.trials.claimed30d) < 60
+  ) {
+    codexNext.push("Fix Suite trial activation: first selfie upload, first generation, and download must be the obvious path.")
+  } else if (
+    report.revenueScorecard &&
+    report.revenueScorecard.workWithMe.applications30d > 0 &&
+    report.revenueScorecard.workWithMe.bookedCalls === 0
+  ) {
+    codexNext.push("Move Work With Me from passive payment-link follow-up to tracked fit-call pipeline.")
+  } else if (
     report.truthSnapshot &&
     report.truthSnapshot.manychat.captures >= 100 &&
     report.truthSnapshot.manychat.captureToPromptVaultPurchaseRate < 3
@@ -343,6 +402,7 @@ export function buildDailySandraBriefing(
     subject: "today's SSELFIE briefing",
     moneyHeader,
     truthSnapshot: report.truthSnapshot || null,
+    revenueScorecard: report.revenueScorecard || null,
     inboxFlagged: (extras.inboxFlagged || []).slice(0, 5),
     inboxFlaggedCount: extras.inboxFlaggedCount ?? (extras.inboxFlagged || []).length,
     working: working.slice(0, 4),
@@ -433,6 +493,48 @@ function truthSnapshotText(snapshot: GrowthTruthSnapshot | null): string {
   return `\n\nGrowth truth\n- Instagram: ${compactNumber(snapshot.instagram.followers)} followers · ${compactNumber(snapshot.instagram.mediaCount)} posts (${snapshot.sources.instagramProfile})\n- Recent IG: ${compactNumber(snapshot.recentInstagram.sumLatestPostReach)} summed reach · ${compactNumber(snapshot.recentInstagram.sumLatestPostViews)} views (${snapshot.sources.instagramPerformance}; ${snapshot.recentInstagram.reachNote})\n- ManyChat: ${compactNumber(snapshot.manychat.captures)} captures · ${snapshot.manychat.captureToPromptVaultPurchaseRate}% to Prompt Vault purchase (${snapshot.sources.manychat})\n- Prompt Vault: ${compactNumber(snapshot.promptVault.payments)} purchases · ${money(snapshot.promptVault.revenueCents)} (${snapshot.sources.money})\n- Suite: ${compactNumber(snapshot.suite.activePaidMembers)} paid · ${compactNumber(snapshot.suite.activeTrials)} trials (${snapshot.sources.members})\n- Email: ${snapshot.email.subscribedContacts == null ? "not fetched in fast snapshot" : `${compactNumber(snapshot.email.subscribedContacts)} subscribed`} (${snapshot.sources.email})`
 }
 
+function revenueScorecardHtml(scorecard: RevenueTruthScorecard | null): string {
+  if (!scorecard) return ""
+
+  const topEmail = scorecard.demandSignals.topEmailConverters[0]
+  const topPrompt = scorecard.demandSignals.topFreePromptCopies[0]
+  const rows = [
+    ["Members", `${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted`, scorecard.sources.activeMembersAndMrr],
+    ["Trials", `${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads`, scorecard.sources.audienceBehavior],
+    ["Work With Me", `${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won`, scorecard.sources.workWithMePipeline],
+    [
+      "Best email",
+      topEmail
+        ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions`
+        : "no converting email signal yet",
+      "email_logs",
+    ],
+    [
+      "Best free prompt",
+      topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet",
+      scorecard.sources.audienceBehavior,
+    ],
+  ]
+
+  return `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Revenue truth · decision metrics</h2>
+        ${rows.map(([label, value, source]) => `
+          <p style="margin:0 0 8px;font-size:14px;color:#4F5052;line-height:1.6;">
+            <strong style="color:#0D0E10;">${escapeHtml(label)}</strong> · ${escapeHtml(value)} <span style="color:#9A9A9A;">source: ${escapeHtml(source)}</span>
+          </p>
+        `).join("")}
+        <p style="margin:10px 0 0;font-size:12px;color:#818283;line-height:1.6;">Payments are charge rows. Members are active Stripe subscriptions. MRR is net of discounts.</p>
+      </div>`
+}
+
+function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
+  if (!scorecard) return ""
+  const topEmail = scorecard.demandSignals.topEmailConverters[0]
+  const topPrompt = scorecard.demandSignals.topFreePromptCopies[0]
+  return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Work With Me: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
+}
+
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
   const html = `
 <!doctype html>
@@ -454,6 +556,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         <a href="${briefing.links.inbox}" style="color:#0D0E10;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Open inbox</a>
       </div>` : ""}
       ${truthSnapshotHtml(briefing.truthSnapshot)}
+      ${revenueScorecardHtml(briefing.revenueScorecard)}
 
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's working</h2>
@@ -499,7 +602,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

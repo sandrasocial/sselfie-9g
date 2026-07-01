@@ -63,4 +63,22 @@ describe("suite_trial never counts as membership (Admin Data Contract)", () => {
     expect(trialQuery).toContain("(t.is_test_mode = FALSE OR t.is_test_mode IS NULL)")
     expect(trialQuery).toContain("(m.is_test_mode = FALSE OR m.is_test_mode IS NULL)")
   })
+
+  it("legacy Stripe live metrics cannot calculate MRR from payment rows or list price", () => {
+    const src = readFileSync(path.join(process.cwd(), "lib/stripe/stripe-live-metrics.ts"), "utf8")
+
+    expect(src).toContain("getSingleSourceRevenueMetrics")
+    expect(src).toContain("MRR is net of discounts")
+    expect(src).not.toContain("getMRRFromDatabase")
+    expect(src).not.toContain("PRICING_PRODUCTS")
+  })
+
+  it("revenue truth scorecard uses analytics_events event_name and anon_id naming", () => {
+    const src = readFileSync(path.join(process.cwd(), "lib/admin/revenue-truth-scorecard.ts"), "utf8")
+
+    expect(src).toContain("analytics_events")
+    expect(src).toContain("event_name")
+    expect(src).not.toContain("event_type")
+    expect(src).not.toContain("anonymous_id")
+  })
 })

@@ -98,6 +98,56 @@ const truthSnapshot = {
   },
 } as const
 
+const revenueScorecard = {
+  generatedAt: "2026-07-01T08:00:00.000Z",
+  sources: {
+    activeMembersAndMrr: "Stripe live subscriptions via single-source",
+    historicalRevenue: "stripe_payments",
+    checkoutBehavior: "checkout_attribution",
+    audienceBehavior: "analytics_events",
+    workWithMePipeline: "brand_engine_applications",
+  },
+  members: {
+    active: 8,
+    netMrr: 490,
+    netMrrByCurrency: { EUR: 97, USD: 393 },
+    grossMrr: 878,
+    grossMrrByCurrency: { EUR: 194, USD: 684 },
+    discountedMembers: 5,
+    new30d: 2,
+    canceled30d: 1,
+  },
+  trials: {
+    active: 5,
+    expired: 3,
+    claimed30d: 20,
+    firstGeneration30d: 4,
+    downloads30d: 2,
+    paymentFormRendered30d: 1,
+    converted: 1,
+  },
+  products30d: [],
+  funnels30d: [],
+  workWithMe: {
+    applications30d: 3,
+    qualifiedOpen: 2,
+    bookedCalls: 0,
+    paymentLinksSent: 0,
+    won: 0,
+    lost: 0,
+  },
+  demandSignals: {
+    topInstagram: [],
+    topFreePromptCopies: [{ title: "Noir Femme", copies: 44 }],
+    topEmailConverters: [{ emailType: "prompt-vault-recovery", clicks: 9, conversions: 4 }],
+  },
+  notes: [
+    "Payments are charge rows, not active members.",
+    "Members are active Stripe subscriptions only.",
+    "MRR is net of discounts.",
+  ],
+} as const
+
 describe("daily Sandra briefing", () => {
   it("builds the four-section morning brief", () => {
     const briefing = buildDailySandraBriefing(baseReport)
@@ -172,5 +222,22 @@ describe("daily Sandra briefing", () => {
 
     expect(briefing.postToday.join(" ")).toContain("solve confusion")
     expect(briefing.postToday.join(" ")).not.toContain('"confused"')
+  })
+
+  it("shows revenue truth separately from historical payments", () => {
+    const briefing = buildDailySandraBriefing({
+      ...baseReport,
+      revenueScorecard,
+    })
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(briefing.working.join(" ")).toContain("8 active Suite members")
+    expect(briefing.working.join(" ")).toContain("€97 + $393 net MRR")
+    expect(briefing.leaking.join(" ")).toContain("Suite trial activation is weak")
+    expect(briefing.leaking.join(" ")).toContain("Work With Me application")
+    expect(email.html).toContain("Revenue truth")
+    expect(email.html).toContain("Payments are charge rows")
+    expect(email.text).toContain("Members: 8 active · €97 + $393 net MRR")
+    expect(email.text).toContain("Best free prompt: Noir Femme")
   })
 })
