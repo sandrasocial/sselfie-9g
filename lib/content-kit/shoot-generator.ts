@@ -816,7 +816,7 @@ async function ensureSelfieUrlsColumn(): Promise<void> {
   }
 }
 
-export async function createShoot(input: {
+export async function createShootDraft(input: {
   inspirationUrls: string[]
   /** One or more identity references (front, side profiles, full body). */
   selfieUrls: string[]
@@ -896,7 +896,15 @@ export async function createShoot(input: {
             ${story ? "story" : "cohesive"}, ${vibe ?? null})
     RETURNING *
   `) as any[]
-  const shoot = { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
+  return { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
+}
+
+// Renders every draft shot of a freshly created shoot and persists the results. Split out of
+// shoot creation so the route can respond as soon as the plan is saved and run this in the
+// background (after()) - image generation regularly outruns the function timeout otherwise.
+export async function renderShootDraft(shoot: Shoot): Promise<Shoot> {
+  const story = shoot.collectionType === "story"
+  const inspirationUrls = shoot.inspirationUrls
 
   // Story collections: each shot recreates ITS OWN inspiration image (inspo i -> shot i), with no
   // cross-shot continuity, so the set stays varied. Cohesive shoots anchor shots 2+ to shot 1.
@@ -936,6 +944,13 @@ export async function createShoot(input: {
   }
   await saveShots(shoot.id, shoot.shots, shoot.messages)
   return shoot
+}
+
+export async function createShoot(
+  input: Parameters<typeof createShootDraft>[0]
+): Promise<Shoot> {
+  const draft = await createShootDraft(input)
+  return renderShootDraft(draft)
 }
 
 const REFINE_CONTRACT = `Respond with ONLY a JSON object:

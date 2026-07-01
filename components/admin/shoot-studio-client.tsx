@@ -23,6 +23,19 @@ const VIBE_PRESETS: { label: string; value: string }[] = [
   },
 ]
 
+// A timed-out or crashed function returns Vercel's plain-text error page, not JSON. Surface
+// that as a readable message instead of "Unexpected token 'A' ... is not valid JSON".
+async function readJson(response: Response): Promise<any> {
+  const raw = await response.text()
+  try {
+    return JSON.parse(raw)
+  } catch {
+    throw new Error(
+      `The server didn't finish (status ${response.status}). If you were generating photos, they may still be rendering. Refresh in a minute to check.`
+    )
+  }
+}
+
 function CopyChip({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
   return (
@@ -173,7 +186,7 @@ function ShootThread({
           quality: action === "finalize" ? "high" : "medium",
         }),
       })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Re-roll failed")
       onUpdate(data.shoot)
     } catch (err: any) {
@@ -194,7 +207,7 @@ function ShootThread({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "refine", id: shoot.id, message: ask }),
       })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Refine failed")
       onUpdate(data.shoot)
       setMessage("")
@@ -224,7 +237,7 @@ function ShootThread({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "extend", id: shoot.id, count }),
       })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Extend failed")
       onUpdate(data.shoot)
     } catch (err: any) {
@@ -244,7 +257,7 @@ function ShootThread({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "publish", id: shoot.id }),
       })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Publish failed")
       onUpdate(data.shoot)
     } catch (err: any) {
@@ -507,7 +520,7 @@ export function ShootStudioClient({
         .slice(0, maxInspiration)
         .forEach((file) => form.append("files", file))
       const response = await fetch("/api/admin/content-kit/shoots/upload", { method: "POST", body: form })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
       setInspiration((current) => [...current, ...data.urls].slice(0, maxInspiration))
     } catch (err: any) {
@@ -534,7 +547,7 @@ export function ShootStudioClient({
         .slice(0, 6)
         .forEach((file) => form.append("files", file))
       const response = await fetch("/api/admin/content-kit/selfies", { method: "POST", body: form })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
       const urls: string[] = Array.isArray(data.urls) ? data.urls : []
       if (Array.isArray(data.selfies) && data.selfies.length) {
@@ -579,15 +592,41 @@ export function ShootStudioClient({
           vibe: story && vibe.trim() ? vibe.trim() : undefined,
         }),
       })
-      const data = await response.json()
+      const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Shoot failed")
       setShoots((current) => [data.shoot, ...current])
       setInspiration([])
       setNotes("")
+      void pollShootImages(data.shoot.id)
     } catch (err: any) {
       setError(err?.message || "Shoot failed")
     } finally {
       setCreating(false)
+    }
+  }
+
+  // The create response returns before the images render (they finish in the background).
+  // Poll until every shot has an image, the agent reports failed renders, or ~5 minutes pass.
+  async function pollShootImages(id: number) {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 8000))
+      try {
+        const response = await fetch("/api/admin/content-kit/shoots")
+        const data = await readJson(response)
+        const fresh: Shoot | undefined = Array.isArray(data.shoots)
+          ? data.shoots.find((shoot: Shoot) => shoot.id === id)
+          : undefined
+        if (!fresh) return
+        const renderFinished =
+          fresh.shots.some((shot) => shot.imageUrl) ||
+          fresh.messages.some((message) => message.text.includes("didn't render"))
+        if (renderFinished) {
+          setShoots((current) => current.map((shoot) => (shoot.id === id ? fresh : shoot)))
+          return
+        }
+      } catch {
+        // Transient poll failure: keep waiting.
+      }
     }
   }
 

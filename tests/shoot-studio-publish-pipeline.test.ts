@@ -104,7 +104,16 @@ describe("Shoot Studio publish pipeline", () => {
     expect(generator).toContain("renderShotIndicesWithContinuity")
     expect(generator).toContain("isContentPolicyError")
     expect(generator).toContain("parseJsonArray")
-    expect(generator).toContain("const shoot = { ...mapRow(rows[0]), selfieUrls, inspirationUrls }")
+    expect(generator).toContain("return { ...mapRow(rows[0]), selfieUrls, inspirationUrls }")
+    expect(generator).toContain("export async function createShootDraft")
+    expect(generator).toContain("export async function renderShootDraft")
+    // Create must respond before images render; the background pass keeps the request from
+    // outrunning maxDuration and returning Vercel's plain-text error page.
+    expect(route).toContain("createShootDraft({")
+    expect(route).toContain("after(async () => {")
+    expect(route).toContain("renderShootDraft(shoot)")
+    expect(client).toContain("pollShootImages(data.shoot.id)")
+    expect(client).toContain("async function readJson(response: Response)")
     expect(generator).toContain("One or more selected selfies could not be used")
     expect(generator).toContain("FIRST attached inspiration image as the primary guide")
     expect(generator).toContain("SHOT 1 NON-NEGOTIABLE")
