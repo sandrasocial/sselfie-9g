@@ -717,6 +717,18 @@ const FAQS = {
     { question: "Can I cancel?",
       answer: "Anytime, from your account, no forms. Your gallery stays yours." },
   ],
+  visibilityToPaid: [
+    { question: "What if I apply and it's not the right fit?",
+      answer: "Then I'll tell you honestly, and I won't take your money. Every application gets a real reply from me, not a form rejection." },
+    { question: "What if I don't know what my offer even is yet?",
+      answer: "That's normal, and it's one of the first things we work on together. You don't need a finished offer, a clear niche, or a business plan to apply. You just need something real to start from." },
+    { question: "Is this AI photos, or business coaching?",
+      answer: "Neither, exactly. It's your message, your profile, your content direction, and your first offer, made clear enough that people understand why they'd buy from you. Your visuals are part of that. They're not the whole thing." },
+    { question: "What if I spend €2,000 and still don't use it?",
+      answer: "That's exactly why I read applications myself before anyone pays. I'd rather turn down a maybe than take money from someone who isn't ready to do the work." },
+    { question: "There's no case study yet. Why should I trust this?",
+      answer: "Because I'm doing this myself, with the first small group, not handing you a course and disappearing. You're not buying a proven system. You're buying my full attention on your specific situation." },
+  ],
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1336,7 +1348,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
 export function WorkWithMePageContent() {
   const buildItems = [
-    "Your clear what-I-help-with sentence",
+    "One sentence that says what you help with",
     "Your buyer and before/after",
     "Your first simple offer idea",
     "Your profile direction",
@@ -1355,7 +1367,7 @@ export function WorkWithMePageContent() {
   ]
   const processSteps = [
     "Apply",
-    "Sandra reviews your application",
+    "I review your application",
     "If it looks like a fit, you book a short call",
     "If the fit is clear, you receive the private payment link",
     "You leave with your message, first offer, content direction, visual direction, and next step",
@@ -1369,17 +1381,17 @@ export function WorkWithMePageContent() {
       <Hero
         eyebrow="Visibility To Paid Sprint"
         title={<>Make what you already have visible, clear, and easier to buy from.</>}
-        body={<p>For women with a skill, story, service, idea, or expertise who know they need to build online, but do not know what to post, what to say, or what they can sell first.</p>}
+        body={<p>I built this for the woman who already has a skill, a story, a service, or an idea, but doesn&apos;t know what to post, what to say, or what she could actually sell first.</p>}
         primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
         secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
         imageSrc={IMG.founder}
       />
 
       {/* WHAT WE BUILD - cream */}
-      <Section eyebrow="The outcome" title="You already have something real. We make it understandable." dark={false}>
+      <Section eyebrow="The outcome" title="You already have something real. I just help you make it understandable." dark={false}>
         <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>This is not another content course. Sandra looks at the full picture: your story, your skills, your profile, your visuals, your words, and the first thing people could actually buy from you.</p>
-          <p>The goal is simple. Make the first step obvious for you and for the people looking at you online.</p>
+          <p>This isn&apos;t another content course. I look at the full picture: your story, your skills, your profile, your visuals, your words, and the first thing people could actually buy from you.</p>
+          <p>The goal is simple. Make the first step obvious, for you and for the people already looking at you online.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {buildItems.map((item) => (
@@ -1407,8 +1419,9 @@ export function WorkWithMePageContent() {
             <FCard key={step} dark={false} title={`${index + 1}. ${step}`} body="" />
           ))}
         </div>
-        <div className="mf max-w-3xl mt-10" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Applications are reviewed personally. This is not an instant checkout because the work needs to be a real fit. If it is not right, Sandra will not push you into it.</p>
+        <div className="mf max-w-3xl mt-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>I read every application myself. This isn&apos;t an instant checkout, because the work has to be a real fit. If it&apos;s not right, I won&apos;t push you into it.</p>
+          <p>I&apos;m running this personally, with the first small group of women. There&apos;s no long list of case studies yet, because this is new. That&apos;s exactly why I&apos;m doing it hands-on instead of handing you a course and disappearing.</p>
         </div>
       </Section>
 
@@ -1416,13 +1429,18 @@ export function WorkWithMePageContent() {
       <Section eyebrow="Investment" title="Private sprint: €2,000" dark narrow>
         <div className="mf space-y-5" style={{ ...ty("body", true), fontSize: "16px" }}>
           <p><span style={{ color: C.onDarkSub }}>Payment plan:</span> 2 x €1,100</p>
-          <p>Payment is not taken when you apply. If your application looks like a fit, the next step is a short call first.</p>
-          <p style={{ color: C.onDarkMuted }}>This is not a promise of income. It is a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
+          <p>I don&apos;t take payment when you apply. If your application looks like a fit, the next step is a short call first.</p>
+          <p style={{ color: C.onDarkMuted }}>This isn&apos;t a promise of income. It&apos;s a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
           <div className="flex flex-wrap gap-3 pt-3">
             <Btn href="#inquiry" surface="dark">Apply for the Sprint</Btn>
             <Btn href="/join/studio" surface="dark" ghost>See SSELFIE SUITE</Btn>
           </div>
         </div>
+      </Section>
+
+      {/* FAQ - cream */}
+      <Section eyebrow="Questions" title="Before you apply" dark={false} narrow>
+        <FaqAccordion items={FAQS.visibilityToPaid} dark={false} />
       </Section>
 
       {/* INQUIRY FORM - dark */}
@@ -1435,7 +1453,7 @@ export function WorkWithMePageContent() {
             <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand what you already have, what feels unclear, and whether I can help you make it visible and easier to buy from.</p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
-                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application looks like the right fit, Sandra will reply with the next step. Usually that means a short fit call first.
+                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application looks like the right fit, I&apos;ll reply with the next step. Usually that means a short fit call first.
               </p>
             </div>
           </div>
@@ -1517,7 +1535,7 @@ function InquiryForm() {
     return (
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
         <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
-        <p style={ty("body", true)}>Sandra reads every application herself. If it looks like the right fit, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
+        <p style={ty("body", true)}>I read every application myself. If it looks like the right fit, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
         <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>No payment has been taken.</p>
       </div>
     )
