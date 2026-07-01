@@ -1,6 +1,6 @@
 # SELFIE-AI-PHOTOS-KIT-01 — Build The Top-Of-Funnel Paid Kit
 
-Status: Implemented in code, pending Stripe price env + voice QA  
+Status: Implemented in code; Stripe price + Vercel Production env configured; pending voice QA + deploy smoke
 Priority: High  
 Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
 
@@ -190,6 +190,13 @@ Implementation status:
 - delivery email: `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
 - webhook handler: `lib/payments/handlers/selfie-ai-photos-kit.ts`
 
-Remaining launch step:
+Production setup:
 
-- Add `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` to Vercel production after the Stripe $37 price is confirmed.
+- Stripe price confirmed: `price_1ToU3kEVJvME7vkwgeHSeGXc`.
+- Vercel Production env confirmed: `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`.
+
+Remaining launch steps:
+
+- Claude/Sandra voice QA on public page, checkout copy, access page, and delivery email.
+- Merge/deploy.
+- Run a live checkout smoke before sending traffic.

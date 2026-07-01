@@ -28,7 +28,7 @@ Claude can now review the outward-facing voice and tighten the copy without need
 - Added `/checkout/selfie-to-ai-photos-kit` as the dedicated checkout entry point.
 - Added `/access/selfie-to-ai-photos-kit/[token]` as the paid buyer access page.
 - Added the delivery email, webhook fulfillment handler, token resolver, access recovery support, and checkout/success-page support for the AI Photos Kit.
-- The dedicated checkout depends on `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` being present in Vercel production.
+- The dedicated checkout uses `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`, which is now present in Vercel Production.
 - The existing Starter Kit is not the AI Photos Kit.
 - `/starter-kit`, `/checkout/starter-kit`, `/access/starter-kit/[token]`, and `starter_kit` remain the iPhone Selfie Starter Kit path.
 
@@ -119,10 +119,17 @@ Selfie To AI Photos Kit now has a dedicated code path:
 - webhook handler: `lib/payments/handlers/selfie-ai-photos-kit.ts`
 - delivery email: `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
 
-Manual production setup still required:
+Production setup completed:
 
-- Create or confirm the Stripe price for the $37 Selfie To AI Photos Kit.
-- Add `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT` to Vercel production before sending traffic to checkout.
+- Stripe product: `prod_Uo6GAQ9o9wEWeN`.
+- Stripe price: `price_1ToU3kEVJvME7vkwgeHSeGXc`.
+- Vercel Production env: `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`.
+
+Remaining launch setup:
+
+- Claude/Sandra voice QA.
+- Merge/deploy.
+- Live checkout smoke before sending traffic.
 
 Visibility To Paid still uses the existing inquiry flow and does not create an automatic checkout/payment step.
 
@@ -164,10 +171,7 @@ Those were not expanded in this pass because the priority was revenue-path struc
 
 ## Needs Claude / Sandra Review
 
-- Dedicated Selfie To AI Photos Kit production setup:
-  - Stripe price confirmation
-  - Vercel env `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`
-  - final voice pass on the public page, access page, and delivery email
+- Final voice pass on the Selfie To AI Photos Kit public page, checkout copy, access page, success page copy, and delivery email.
 - Final voice pass on the Selfie Starter Kit page copy.
 - Final voice pass on the Visibility To Paid page and application copy.
 - Do not redirect `/starter-kit` to `/selfie-to-ai-photos-kit`.
