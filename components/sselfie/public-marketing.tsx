@@ -681,17 +681,17 @@ function FaqAccordion({ items, dark }: { items: Array<{ question: string; answer
 const FAQS = {
   starterKit: [
     { question: "Do I need Lightroom already?",
-      answer: "No. The editing walkthrough takes you through downloading it and importing the presets step by step. Takes about five minutes." },
+      answer: "No. Lightroom is included as a simple support tool for cleaning up the source selfie. You can still use the AI prompt path without becoming an editing person." },
     { question: "Will this work on my iPhone?",
       answer: "Yes. The kit is built for phone photos. No camera, no desktop software, no complicated setup." },
     { question: "Will this help my AI photos look less fake?",
-      answer: "Yes. Better AI results start with a better original selfie. The kit helps you get cleaner light, stronger angles, better edits, and a more usable photo before you ask any AI tool to restyle it." },
+      answer: "Yes. Better AI results start with a better original selfie. The kit helps you choose the right source photo, write a clearer prompt, and fix the result without changing your whole face." },
     { question: "What apps do I need?",
-      answer: "Lightroom Mobile, Hypic, and CapCut. All free. The walkthrough shows you exactly how to use each one." },
+      answer: "You can use ChatGPT or your preferred AI image tool for the prompts. Lightroom Mobile, Hypic, and CapCut are optional support tools if you want to clean up the source photo or use the result in content." },
     { question: "Is this just presets?",
-      answer: "No. The presets are included, but the kit also gives you the selfie setup, posing guidance, editing walkthrough, caption templates, and a 7-day content starter." },
+      answer: "No. The presets are included, but the main point is the selfie-to-AI-photo path: source selfie, starter prompts, still-you fix prompts, and a small 3-image shoot you can actually use." },
     { question: "What if I'm a complete beginner?",
-      answer: "Good. Start with the selfie guide, then use the posing cheat sheet, camera settings guide, and caption formulas. You do not need to know anything going in." },
+      answer: "Good. Start with the source selfie checklist, then use the first prompt. You do not need to understand AI. You just need one clear photo and the next small step." },
   ],
   masterclass: [
     { question: "Do I need the Starter Kit first?",
@@ -1336,29 +1336,29 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
 export function WorkWithMePageContent() {
   const buildItems = [
-    "Your clear message",
-    "Your first simple offer",
-    "Your homepage or landing page direction",
-    "Your content direction",
-    "Your first sales post",
-    "Warm DM scripts",
-    "Your 30-day content plan",
-    "Your next best move",
+    "Your clear what-I-help-with sentence",
+    "Your buyer and before/after",
+    "Your first simple offer idea",
+    "Your profile direction",
+    "Your content pillars",
+    "Your first 7 posts or story ideas",
+    "Your selfie and AI visual direction",
+    "Your simple CTA and next step",
   ]
   const fitItems = [
-    "You are tired of posting without a clear direction",
-    "You have ideas, but no clear offer",
-    "You know you need to show up, but you do not know what to say",
-    "You want to start selling, but it feels awkward or unclear",
-    "You need someone to look at the full picture",
-    "You want clear, direct, personal guidance instead of another course",
+    "You already have a skill, service, story, idea, or experience",
+    "People cannot clearly understand what you do from your profile yet",
+    "You want to build online, but you do not know what to post or say",
+    "You think you could sell something, but the first offer feels unclear",
+    "You want Sandra's eyes on the full picture before you waste more time",
+    "You want a human plan, not another folder of ideas you never use",
   ]
   const processSteps = [
     "Apply",
     "Sandra reviews your application",
-    "If it is a fit, you receive a payment link",
-    "We work together for 4 weeks",
-    "You leave with your message, offer, content direction, sales path, and next steps",
+    "If it looks like a fit, you book a short call",
+    "If the fit is clear, you receive the private payment link",
+    "You leave with your message, first offer, content direction, visual direction, and next step",
   ]
 
   return (
@@ -1367,18 +1367,19 @@ export function WorkWithMePageContent() {
 
       {/* HERO - dark */}
       <Hero
-        eyebrow="Work With Me"
-        title={<>Four weeks to build your message, offer, content direction, and first sales path with me.</>}
-        body={<p>For women who do not want another course, but want Sandra&apos;s eyes on the full picture: what to say, what to post, what to sell, and what to do next.</p>}
-        primary={{ href: "#inquiry",       label: "Apply to Work With Me" }}
-        secondary={{ href: "/masterclass", label: "Start with the Masterclass" }}
+        eyebrow="Visibility To Paid Sprint"
+        title={<>Make what you already have visible, clear, and easier to buy from.</>}
+        body={<p>For women with a skill, story, service, idea, or expertise who know they need to build online, but do not know what to post, what to say, or what they can sell first.</p>}
+        primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
+        secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
         imageSrc={IMG.founder}
       />
 
       {/* WHAT WE BUILD - cream */}
-      <Section eyebrow="Four weeks, private" title="What we build together" dark={false}>
+      <Section eyebrow="The outcome" title="You already have something real. We make it understandable." dark={false}>
         <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>This is not another content course. Four weeks, private. Sandra looks at the full picture and builds the pieces you actually need to move forward.</p>
+          <p>This is not another content course. Sandra looks at the full picture: your story, your skills, your profile, your visuals, your words, and the first thing people could actually buy from you.</p>
+          <p>The goal is simple. Make the first step obvious for you and for the people looking at you online.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {buildItems.map((item) => (
@@ -1395,31 +1396,31 @@ export function WorkWithMePageContent() {
           ))}
         </div>
         <div className="mt-10">
-          <Btn href="#inquiry" surface="dark">Apply to Work With Me</Btn>
+          <Btn href="#inquiry" surface="dark">Apply for the Sprint</Btn>
         </div>
       </Section>
 
       {/* HOW IT WORKS - cream */}
-      <Section eyebrow="How it works" title="A private application first. Then the sprint." dark={false}>
+      <Section eyebrow="How it works" title="Application first. Fit call second. Payment link only if it makes sense." dark={false}>
         <div className="grid gap-4 md:grid-cols-5">
           {processSteps.map((step, index) => (
             <FCard key={step} dark={false} title={`${index + 1}. ${step}`} body="" />
           ))}
         </div>
         <div className="mf max-w-3xl mt-10" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Applications are reviewed personally. This is not an instant checkout because Sandra only takes a small number of private clients at a time.</p>
+          <p>Applications are reviewed personally. This is not an instant checkout because the work needs to be a real fit. If it is not right, Sandra will not push you into it.</p>
         </div>
       </Section>
 
       {/* INVESTMENT - dark */}
-      <Section eyebrow="Investment" title="Founding private sprint: €2,000" dark narrow>
+      <Section eyebrow="Investment" title="Private sprint: €2,000" dark narrow>
         <div className="mf space-y-5" style={{ ...ty("body", true), fontSize: "16px" }}>
           <p><span style={{ color: C.onDarkSub }}>Payment plan:</span> 2 x €1,100</p>
-          <p>Payment is not taken when you apply. If your application is accepted, Sandra will send you a private payment link.</p>
-          <p style={{ color: C.onDarkMuted }}>This is not a promise of instant income. It is a focused 4-week sprint to build the foundation: message, offer, content direction, and first sales path.</p>
+          <p>Payment is not taken when you apply. If your application looks like a fit, the next step is a short call first.</p>
+          <p style={{ color: C.onDarkMuted }}>This is not a promise of income. It is a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
           <div className="flex flex-wrap gap-3 pt-3">
-            <Btn href="#inquiry" surface="dark">Apply to Work With Me</Btn>
-            <Btn href="/masterclass" surface="dark" ghost>Start with the Masterclass</Btn>
+            <Btn href="#inquiry" surface="dark">Apply for the Sprint</Btn>
+            <Btn href="/join/studio" surface="dark" ghost>See SSELFIE SUITE</Btn>
           </div>
         </div>
       </Section>
@@ -1430,11 +1431,11 @@ export function WorkWithMePageContent() {
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
           <div className="mf">
             <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
-            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply to Work With Me</h2>
-            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand where you are, what you are trying to build, and whether this is the right fit.</p>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply for Visibility To Paid</h2>
+            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand what you already have, what feels unclear, and whether I can help you make it visible and easier to buy from.</p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
-                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application is accepted, Sandra will reply with the next step and a private payment link.
+                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application looks like the right fit, Sandra will reply with the next step. Usually that means a short fit call first.
               </p>
             </div>
           </div>
@@ -1516,7 +1517,7 @@ function InquiryForm() {
     return (
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
         <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
-        <p style={ty("body", true)}>Sandra reads every application herself. If it looks like the right fit, you&apos;ll hear back with the next step and a private payment link.</p>
+        <p style={ty("body", true)}>Sandra reads every application herself. If it looks like the right fit, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
         <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>No payment has been taken.</p>
       </div>
     )
@@ -1537,17 +1538,17 @@ function InquiryForm() {
         </label>
       ))}
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What&apos;s not working right now?</span>
+        <span>What feels unclear or stuck online right now?</span>
         <textarea value={currentBlock} onChange={(e) => setCurrentBlock(e.target.value)} rows={4} required
           style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What do you want in the next 6 months?</span>
+        <span>What do you want people to understand, trust, or buy from you in the next 6 months?</span>
         <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={4} required
           style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What are you currently selling, if anything?</span>
+        <span>What skill, service, offer, story, or idea do you already have?</span>
         <textarea value={currentOffer} onChange={(e) => setCurrentOffer(e.target.value)} rows={3}
           style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
@@ -1555,16 +1556,16 @@ function InquiryForm() {
         <span>What do you want help with most?</span>
         <select value={helpFocus} onChange={(e) => setHelpFocus(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
           <option value="">Choose one</option>
-          <option value="Message">Message</option>
-          <option value="Content">Content</option>
-          <option value="Offer">Offer</option>
-          <option value="Homepage / landing page direction">Homepage / landing page direction</option>
-          <option value="Sales path">Sales path</option>
+          <option value="Message">What to say</option>
+          <option value="Content">What to post</option>
+          <option value="Offer">What to sell first</option>
+          <option value="Profile direction">Making my profile make sense</option>
+          <option value="Visual direction">Photos and visuals that feel like me</option>
           <option value="All of it">All of it</option>
         </select>
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>Are you ready to invest €2,000 if it is the right fit?</span>
+        <span>Are you open to a private €2,000 sprint if it is the right fit?</span>
         <select value={investmentReadiness} onChange={(e) => setInvestmentReadiness(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
           <option value="">Choose one</option>
           <option value="Yes">Yes</option>
@@ -1588,7 +1589,7 @@ function InquiryForm() {
           // Zero border-radius - SSELFIE Agents system
         }}
       >
-        {pending ? "Sending…" : "Apply to Work With Me"}
+        {pending ? "Sending…" : "Apply for the Sprint"}
       </button>
       {error && <p style={{ fontSize: "13px", color: "#f87171", fontFamily: F.sans }}>{error}</p>}
     </form>

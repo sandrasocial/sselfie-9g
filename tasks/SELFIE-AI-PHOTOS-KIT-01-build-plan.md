@@ -1,6 +1,6 @@
 # SELFIE-AI-PHOTOS-KIT-01 — Build The Top-Of-Funnel Paid Kit
 
-Status: Ready for planning/build approval  
+Status: Implemented in code; Stripe price + Vercel Production env configured; pending voice QA + deploy smoke
 Priority: High  
 Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
 
@@ -34,8 +34,16 @@ Sandra must confirm:
 2. Price:
    - recommended: $27 or $37
 3. Infrastructure:
-   - recommended: repackage the existing Starter Kit if safe
-   - alternative: create a new product route if repackaging would confuse existing buyers
+   - required: create a separate product path
+   - do not repackage the existing Starter Kit
+
+## Decision Update — 2026-07-01
+
+The existing `starter_kit` product remains the **Selfie Starter Kit** for the Free Selfie Guide / `KIT` keyword path.
+
+Selfie To AI Photos Kit is a separate Prompt/AI funnel offer and should not use `/checkout/starter-kit`.
+
+`KIT` traffic must keep going to the iPhone selfie product. AI-photo traffic belongs to the Free AI Prompts / `PROMPT` path.
 
 ## Buyer
 
@@ -120,22 +128,9 @@ Before building, inspect:
 
 ## Preferred Implementation Path
 
-### Option A: Repackage Existing Starter Kit
+### Product Path: New Product Route
 
-Use this if existing buyer fulfillment can be preserved safely.
-
-Actions:
-
-- update public positioning
-- update deliverables list
-- keep existing access route working
-- preserve all existing buyers
-- update delivery email
-- add buyer bridge into Prompt Vault and SUITE
-
-### Option B: New Product Route
-
-Use this only if repackaging creates too much confusion.
+Repackaging created too much funnel confusion because the existing Starter Kit has a real job.
 
 Actions:
 
@@ -173,11 +168,11 @@ Do not:
 
 ## Definition Of Done
 
-This task is complete when Sandra has an approved implementation spec with:
+This task is complete when Sandra has:
 
 - final product name
 - price
-- route decision
+- dedicated product route
 - deliverables
 - page copy direction
 - email copy direction
@@ -185,4 +180,23 @@ This task is complete when Sandra has an approved implementation spec with:
 - tracking plan
 - bridge into Prompt Vault and SUITE
 
-Build only after Sandra approves the implementation direction.
+Implementation status:
+
+- product key: `selfie_ai_photos_kit`
+- public route: `/selfie-to-ai-photos-kit`
+- checkout route: `/checkout/selfie-to-ai-photos-kit`
+- buyer access route: `/access/selfie-to-ai-photos-kit/[token]`
+- access-token resolver: `/api/selfie-to-ai-photos-kit/access-token`
+- delivery email: `lib/email/templates/selfie-ai-photos-kit-delivery.ts`
+- webhook handler: `lib/payments/handlers/selfie-ai-photos-kit.ts`
+
+Production setup:
+
+- Stripe price confirmed: `price_1ToU3kEVJvME7vkwgeHSeGXc`.
+- Vercel Production env confirmed: `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`.
+
+Remaining launch steps:
+
+- Claude/Sandra voice QA on public page, checkout copy, access page, and delivery email.
+- Merge/deploy.
+- Run a live checkout smoke before sending traffic.

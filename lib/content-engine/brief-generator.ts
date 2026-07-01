@@ -1,6 +1,7 @@
 import "server-only"
 
 import Anthropic from "@anthropic-ai/sdk"
+import type { ContentBlock, TextBlock, Tool, ToolUnion, ToolUseBlock } from "@anthropic-ai/sdk/resources/messages"
 import {
   collectInstagramPerformance,
   type InstagramPerformanceSnapshot,
@@ -24,6 +25,12 @@ import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
 const RESEARCH_MODEL = "claude-sonnet-4-5"
 const BRIEF_MODEL = "claude-sonnet-4-5"
 
+const WEB_SEARCH_TOOL: ToolUnion = {
+  type: "web_search_20250305",
+  name: "web_search",
+  max_uses: 5,
+}
+
 const MARKET_PATTERN_CONTEXT = `
 Recent SSELFIE market-pattern notes, verified in June 2026:
 - @aivideoskool: useful mechanics are named aesthetic drops, a clear cover system, and showing one concept across multiple recognizable examples. Do not adapt his numbered keyword operating model for SSELFIE; Sandra retired numbered ManyChat keywords because they are too complex.
@@ -46,6 +53,15 @@ SSELFIE demand doctrine, locked 2026-06-26:
 - Studio demand: a monthly personal-brand creation system that turns her face, story, and ideas into images, covers, captions, and content she can post.
 - Starter Kit demand: fix the source-photo problem when she hates every selfie.
 - Selfie to Brand Shoot demand is weaker as a public standalone offer right now; treat it as guided first-shoot support, buyer upsell, onboarding path, or membership bonus unless live data says otherwise.
+`
+
+const FUNNEL_SEGMENTATION_CONTEXT = `
+SSELFIE forward revenue plan, locked 2026-07-01 (docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md):
+- The audience splits into two different jobs. Do not write one undifferentiated content list for both.
+- COLD (funnelStage "cold"): the feed/reel audience finding Sandra through selfie tips, iPhone settings, AI transformation reels, mirror selfie content. Split the CTA by demand: iPhone/selfie tutorials use KIT -> Selfie Starter Kit; AI prompt/photo content uses PROMPT -> AI Prompts -> planned Selfie To AI Photos Kit / Prompt Vault path. Do not send KIT traffic to the AI Photos Kit. This is the reach engine: feed reels and carousels.
+- WARM (funnelStage "warm"): the Story, DM, email, and comment audience already asking deeper questions: how did you make income online, how do I start, how do I know what to post or sell, confidence, time/overwhelm. She already has a skill, service, story, or idea but feels invisible online. Her next paid step is the Visibility To Paid Sprint (apply / reply WORK), not a Kit or the Vault. This content belongs in Stories, DMs, and email, not necessarily the public feed. Anchor every warm piece to a real DM theme or the money/confidence/time poll signal, not a generic "personal branding" angle.
+- ACTIVATION (funnelStage "activation"): content for people already inside the funnel (Vault buyers, trial members) that bridges them into SUITE or deepens Suite usage. This is proof, onboarding, and "here is what you get" content.
+- Every contentPlan piece must be tagged with exactly one funnelStage. Across the week's plan, include at least one cold piece and at least one warm piece pointing at real DM/poll evidence. Do not force a warm sprint sell into a cold reel, and do not force a Kit/Vault sell into warm Story content.
 `
 
 type VaultBriefContext = {
@@ -83,6 +99,7 @@ export type DemandMap = {
 export type ContentBriefPiece = {
   day: string
   format: "reel" | "carousel" | "feed"
+  funnelStage: "cold" | "warm" | "activation"
   title: string
   hook: string
   demandSignal?: string
@@ -144,6 +161,14 @@ export type ContentBrief = {
     frames: Array<{ frame: number; content: string; interaction: string }>
   }
   researchNotes: string
+}
+
+function isTextBlock(block: ContentBlock): block is TextBlock {
+  return block.type === "text"
+}
+
+function isToolUseBlock(block: ContentBlock): block is ToolUseBlock {
+  return block.type === "tool_use"
 }
 
 function getAnthropicClient() {
@@ -283,6 +308,10 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
       ...piece,
       day: safeBriefText(normalizedPiece.day, vault),
       format: normalizedPiece.format === "carousel" || normalizedPiece.format === "feed" ? normalizedPiece.format : "reel",
+      funnelStage:
+        normalizedPiece.funnelStage === "warm" || normalizedPiece.funnelStage === "activation"
+          ? normalizedPiece.funnelStage
+          : "cold",
       title: safeBriefText(normalizedPiece.title, vault),
       hook: safeBriefText(normalizedPiece.hook, vault),
       demandSignal: safeBriefText(normalizedPiece.demandSignal, vault),
@@ -384,7 +413,7 @@ async function researchCurrentHooks(
   const response = await client.messages.create({
     model: RESEARCH_MODEL,
     max_tokens: 2000,
-    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 } as any],
+    tools: [WEB_SEARCH_TOOL],
     messages: [
       {
         role: "user",
@@ -416,14 +445,14 @@ Plain text. No fluff.`,
   })
 
   const text = response.content
-    .filter((block: any) => block.type === "text")
-    .map((block: any) => block.text)
+    .filter(isTextBlock)
+    .map(block => block.text)
     .join("\n")
 
   return text.trim()
 }
 
-const BRIEF_SCHEMA = {
+const BRIEF_SCHEMA: Tool.InputSchema = {
   type: "object",
   properties: {
     performanceRecap: {
@@ -502,6 +531,7 @@ const BRIEF_SCHEMA = {
         properties: {
           day: { type: "string" },
           format: { type: "string", enum: ["reel", "carousel", "feed"] },
+          funnelStage: { type: "string", enum: ["cold", "warm", "activation"] },
           title: { type: "string" },
           hook: { type: "string" },
           demandSignal: { type: "string" },
@@ -530,6 +560,7 @@ const BRIEF_SCHEMA = {
         required: [
           "day",
           "format",
+          "funnelStage",
           "title",
           "hook",
           "demandSignal",
@@ -647,6 +678,8 @@ ${funnelBlock()}
 
 ${DEMAND_CREATION_CONTEXT}
 
+${FUNNEL_SEGMENTATION_CONTEXT}
+
 CONTENT PLAN RULES:
 - Build the brief as a short strategy memo first, not a finished content pack.
 - Do NOT write full posts, full captions, final carousel slides, hashtags, or copy-paste photoshoot prompts. Sandra will take the brief into ChatGPT if she wants finished content. Your job is to give her the strongest direction, context, hooks, visual mechanics, and what to avoid.
@@ -658,13 +691,14 @@ CONTENT PLAN RULES:
 - Exactly 5 short suggestions, spread across the week (e.g. Mon/Tue/Thu/Fri/Sun).
 - At least 2 reels, at least 1 carousel.
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
-- Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM. Anchor at least 2 content pieces to a specific pain point found in the DMs.
+- Tag every contentPlan piece with funnelStage per FUNNEL_SEGMENTATION_CONTEXT above: "cold" (feed reach -> correct first step: KIT for iPhone selfie education, PROMPT for AI photo/prompt content), "warm" (Story/DM/email -> Visibility To Paid Sprint), or "activation" (Vault buyers/trial members -> SUITE). Include at least 1 cold piece and at least 1 warm piece. A warm piece's offerBridge must point at the Visibility To Paid Sprint (apply / reply WORK), never at the Kit or Vault.
+- Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM. Anchor at least 2 content pieces to a specific pain point found in the DMs, and tag those pieces funnelStage "warm".
 - Her own viral DNA and top posts win over the research memo for TOPIC, PILLAR, HOOK MECHANIC, and CTA. They do NOT win for repeating the exact same visual scene. If a top post worked, keep the demand signal and create a new execution.
 - Do not recommend simply reposting Sandra's existing top visual. Do not keep serving the same mirror selfie, dark cafe arrival, window half-light, or car selfie treatment unless the data includes a new specific reason.
 - Every contentPlan piece must include a fresh creative treatment: vary setting, perspective, object/prop, camera distance, proof format, story structure, and content role. Same pillar is fine; same visual execution is not.
 - Use dataPacket.marketPatternContext and researchMemo for creator mechanics from similar creators. Adapt mechanics such as named frameworks, side-by-side proof, one concept across multiple examples, meta-reveal, and proof-stacked covers. Do not recommend numbered ManyChat keywords. Do not copy another creator's positioning, exact visual, or audience promise.
 - Every recommended reel must satisfy all 5 viral DNA elements. Do not recommend known flop formats.
-- Teach the full ladder: Free AI Prompts -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move.
+- Teach the correct ladder for the content type: iPhone/selfie cold pieces use Free Selfie Guide -> Selfie Starter Kit -> SUITE or deeper support; AI prompt/photo cold pieces use Free AI Prompts -> planned Selfie To AI Photos Kit -> Prompt Vault $27 -> SSELFIE SUITE EUR 97/month. For warm pieces, the ladder is Story/DM trust -> Visibility To Paid Sprint (apply / reply WORK), not the Kit or Vault. If vaultActivity shows strong copies but weak purchase behavior, include a clear conversion move on an AI cold piece.
 - dataPacket.growthTruth is the audit truth snapshot. Use it for followers, email list, Suite members/trials, ManyChat captures, Prompt Vault sales, and revenue-by-product. Do not use old figures from memory or prior docs.
 - If dataPacket.growthTruth.leaks is present, contentPlan and demandMap must address the top leak before generic reach advice. If ManyChat captures are high but Prompt Vault purchases are low, recommend conversion/proof/offer bridge content, not "get more reach."
 - If active Suite trials are higher than paid members, include at least one proof or onboarding content angle that helps a trial understand the first selfie upload and first generated result.
@@ -695,13 +729,13 @@ CONTENT PLAN RULES:
       {
         name: "deliver_content_brief",
         description: "Deliver the finished weekly content brief as structured data.",
-        input_schema: BRIEF_SCHEMA as any,
+        input_schema: BRIEF_SCHEMA,
       },
     ],
     tool_choice: { type: "tool", name: "deliver_content_brief" },
   })
 
-  const toolBlock = response.content.find((block: any) => block.type === "tool_use") as any
+  const toolBlock = response.content.find(isToolUseBlock)
   if (!toolBlock?.input) {
     throw new Error("Brief generation returned no structured output")
   }

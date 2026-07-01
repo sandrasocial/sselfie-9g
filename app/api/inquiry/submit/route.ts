@@ -181,23 +181,23 @@ export async function POST(req: NextRequest) {
 
     const adminEmailResult = await sendEmail({
       to: adminEmail,
-      subject: `New Work With Me application from ${name}`,
+      subject: `New Visibility To Paid application from ${name}`,
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
-          <h1 style="margin: 0 0 20px; font-size: 28px; font-weight: 600;">New Work With Me application</h1>
+          <h1 style="margin: 0 0 20px; font-size: 28px; font-weight: 600;">New Visibility To Paid application</h1>
           <p style="margin: 0 0 12px;"><strong>Name:</strong> ${safeName}</p>
           <p style="margin: 0 0 12px;"><strong>Email:</strong> ${safeEmail}</p>
           <p style="margin: 0 0 24px;"><strong>Instagram:</strong> ${safeHandle || "Not provided"}</p>
           <div style="margin: 0 0 20px;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What's not working right now?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What feels unclear or stuck online right now?</p>
             <p style="margin: 0; line-height: 1.7;">${safeChallenge}</p>
           </div>
           <div>
-            <p style="margin: 0 0 8px; font-weight: 600;">What do they want in the next 6 months?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What do they want people to understand, trust, or buy in the next 6 months?</p>
             <p style="margin: 0; line-height: 1.7;">${safeOutcome}</p>
           </div>
           <div style="margin: 20px 0 0;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What are they currently selling?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What skill, service, offer, story, or idea do they already have?</p>
             <p style="margin: 0; line-height: 1.7;">${safeCurrentOffer || "Not provided"}</p>
           </div>
           <div style="margin: 20px 0 0;">
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
             <p style="margin: 0; line-height: 1.7;">${safeHelpFocus || "Not provided"}</p>
           </div>
           <div style="margin: 20px 0 0;">
-            <p style="margin: 0 0 8px; font-weight: 600;">Ready to invest €2,000?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">Open to a private €2,000 sprint?</p>
             <p style="margin: 0; line-height: 1.7;">${safeInvestmentReadiness || "Not provided"}</p>
           </div>
           <div style="margin: 20px 0 0; padding: 16px; background: #f5f5f4; border: 1px solid #e7e5e4;">
@@ -219,24 +219,24 @@ export async function POST(req: NextRequest) {
         </div>
       `,
       text: [
-        "New Work With Me application",
+        "New Visibility To Paid application",
         `Name: ${name}`,
         `Email: ${email}`,
         `Instagram: ${instagramHandle || "Not provided"}`,
         "",
-        "What's not working right now?",
+        "What feels unclear or stuck online right now?",
         currentChallenge,
         "",
-        "What do they want in the next 6 months?",
+        "What do they want people to understand, trust, or buy in the next 6 months?",
         desiredOutcome,
         "",
-        "What are they currently selling?",
+        "What skill, service, offer, story, or idea do they already have?",
         currentOffer || "Not provided",
         "",
         "What do they want help with most?",
         helpFocus || "Not provided",
         "",
-        "Ready to invest €2,000?",
+        "Open to a private €2,000 sprint?",
         investmentReadiness || "Not provided",
         "",
         "Pipeline",
@@ -256,22 +256,22 @@ export async function POST(req: NextRequest) {
 
     await sendEmail({
       to: email,
-      subject: "Your Work With Me application has been received",
+      subject: "Your Visibility To Paid application has been received",
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
           <p>Hi ${safeName},</p>
-          <p>Thank you for applying to work privately with Sandra.</p>
+          <p>Thank you for applying for Visibility To Paid.</p>
           <p>Sandra reviews every application personally. If it looks like the right fit, she will reply with the next best step.</p>
-          <p>For private work, that usually means a short fit call first. No pressure and no payment has been taken.</p>
+          <p>That usually means a short fit call first. No pressure and no payment has been taken.</p>
           <p>Sandra</p>
         </div>
       `,
       text: [
         `Hi ${name},`,
         "",
-        "Thank you for applying to work privately with Sandra.",
+        "Thank you for applying for Visibility To Paid.",
         "Sandra reviews every application personally. If it looks like the right fit, she will reply with the next best step.",
-        "For private work, that usually means a short fit call first. No pressure and no payment has been taken.",
+        "That usually means a short fit call first. No pressure and no payment has been taken.",
         "",
         "Sandra",
       ].join("\n"),

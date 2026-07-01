@@ -18,18 +18,20 @@ export const dynamic = "force-dynamic"
 // the single source for inspiration-image photoshoots.
 
 function Collapsed({
+  id,
   title,
   hint,
   defaultOpen = false,
   children,
 }: {
+  id?: string
   title: string
   hint: string
   defaultOpen?: boolean
   children: React.ReactNode
 }) {
   return (
-    <details open={defaultOpen} className="group mt-3 rounded-2xl border border-stone-200 bg-white">
+    <details id={id} open={defaultOpen} className="group mt-3 scroll-mt-6 rounded-2xl border border-stone-200 bg-white">
       <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
         <span className="font-serif text-lg font-light tracking-tight text-stone-950">{title}</span>
         <span className="text-xs text-stone-400 group-open:hidden">{hint}</span>
@@ -120,7 +122,12 @@ function MemberPulseSection({ pulse }: { pulse: MemberPulse | null }) {
   )
 }
 
-export default async function ContentBriefPage() {
+export default async function ContentBriefPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ open?: string }>
+}) {
+  const openSection = (await searchParams)?.open
   const reports = await getLatestAnalyticsReports({
     reportType: "content_brief_weekly",
     limit: 8,
@@ -190,10 +197,20 @@ export default async function ContentBriefPage() {
           <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
             <VaultDropEmailPreview />
           </Collapsed>
-          <Collapsed title="Carousel kit" hint="Rendered decks, covers, captions">
+          <Collapsed
+            id="carousel-kit"
+            title="Carousel kit"
+            hint="Rendered decks, covers, captions"
+            defaultOpen={openSection === "carousel-kit"}
+          >
             <ContentKitClient initialCarousels={carousels} shoots={shootOptions} />
           </Collapsed>
-          <Collapsed title="Story sequences" hint="Doctrine story slides">
+          <Collapsed
+            id="story-sequences"
+            title="Story sequences"
+            hint="Doctrine story slides"
+            defaultOpen={openSection === "story-sequences"}
+          >
             <ContentStoryClient initialSequences={stories} shoots={shootOptions} />
           </Collapsed>
         </div>

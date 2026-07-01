@@ -22,8 +22,8 @@ export function CopyButton({
   text: string
   promptTitle?: string
   promptNumber?: string
-  trackEvent?: "ai_prompts_prompt_copied" | "prompt_vault_prompt_copied"
-  trackSource?: "ai-prompts" | "prompt-vault"
+  trackEvent?: "ai_prompts_prompt_copied" | "prompt_vault_prompt_copied" | "selfie_ai_photos_kit_prompt_copied"
+  trackSource?: "ai-prompts" | "prompt-vault" | "selfie-ai-photos-kit"
   afterCopyHref?: string
   afterCopyTitle?: string
   afterCopyLabel?: string

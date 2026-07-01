@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import type Stripe from "stripe"
 import { stripe } from "@/lib/stripe"
@@ -15,6 +14,7 @@ import {
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { handlePromptVaultCheckout } from "@/lib/payments/handlers/prompt-vault"
 import { handlePresetsCheckout } from "@/lib/payments/handlers/presets"
+import { handleSelfieAiPhotosKitCheckout } from "@/lib/payments/handlers/selfie-ai-photos-kit"
 import { handleStarterKitCheckout } from "@/lib/payments/handlers/starter-kit"
 import { handleSelfieToBrandShootCheckout } from "@/lib/payments/handlers/selfie-to-brand-shoot"
 import { handleCreditTopupCheckout } from "@/lib/payments/handlers/credit-topup"
@@ -28,7 +28,6 @@ import { handleTransformCheckout, isTransformProductType } from "@/lib/payments/
 import { handleAcademyProductCheckout } from "@/lib/payments/handlers/academy-products"
 import { handleStudioMembershipSubscriptionCheckout } from "@/lib/payments/handlers/studio-membership"
 import {
-  generatePasswordSetupLinkForPurchase,
   markRevenueEnginePurchase,
   markEmailLogConversionForCheckout,
 } from "@/lib/payments/shared"
@@ -170,7 +169,7 @@ function getSessionCustomerId(session: any, paymentIntent?: any | null): string 
 function canFulfillCheckoutWithoutUser(productType?: string | null): boolean {
   // Prompt Vault grants access by email + access token. A buyer should not need an
   // existing app user row before the product handler can deliver their purchase.
-  return productType === "prompt_vault"
+  return productType === "prompt_vault" || productType === "selfie_ai_photos_kit"
 }
 
 async function recordCheckoutSessionRevenue(params: {
@@ -445,6 +444,8 @@ export async function handleCheckoutSessionCompleted(
         productTag = "masterclass"
       } else if (productType === "prompt_vault") {
         productTag = "prompt-vault"
+      } else if (productType === "selfie_ai_photos_kit") {
+        productTag = "selfie-ai-photos-kit"
       } else if (productType === "selfie_to_brand_shoot_system") {
         productTag = "selfie-to-brand-shoot"
       } else if (productType === "visibility_suite") {
@@ -596,6 +597,7 @@ export async function handleCheckoutSessionCompleted(
       source === "visibility_suite_paid" ||
       source === "transform_paid" ||
       source === "prompt_vault_paid" ||
+      source === "selfie_ai_photos_kit_paid" ||
       source === "ai_prompts_access" ||
       source === "selfie_to_brand_shoot_paid" ||
       source === "work_with_me_paid"
@@ -918,6 +920,7 @@ export async function handleCheckoutSessionCompleted(
           productType !== "starter_kit" &&
           productType !== "masterclass" &&
           productType !== "prompt_vault" &&
+          productType !== "selfie_ai_photos_kit" &&
           productType !== "presets_single" &&
           productType !== "presets_bundle" &&
           productType !== "selfie_to_brand_shoot_system" &&
@@ -1060,6 +1063,8 @@ export async function handleCheckoutSessionCompleted(
                       ? "/academy/access/brand-strategy"
                       : productType === "prompt_vault"
                         ? "/prompt-vault"
+                        : productType === "selfie_ai_photos_kit"
+                          ? "/selfie-to-ai-photos-kit"
                         : productType === "presets_single" || productType === "presets_bundle"
                           ? "/presets"
                           : productType === "selfie_to_brand_shoot_system"
@@ -1128,6 +1133,7 @@ export async function handleCheckoutSessionCompleted(
               productType === "starter_kit" ||
               productType === "masterclass" ||
               productType === "prompt_vault" ||
+              productType === "selfie_ai_photos_kit" ||
               productType === "presets_single" ||
               productType === "presets_bundle" ||
               productType === "selfie_to_brand_shoot_system" ||
@@ -1323,6 +1329,16 @@ export async function handleCheckoutSessionCompleted(
           referralPurchaseUserId: referralPurchaseUserId ?? null,
           source,
         })
+      } else if (productType === "selfie_ai_photos_kit") {
+        await handleSelfieAiPhotosKitCheckout({
+          event,
+          session,
+          isPaymentPaid,
+          customerEmail,
+          userId: userId ?? null,
+          referralPurchaseUserId: referralPurchaseUserId ?? null,
+          source,
+        })
       }
 
       await markEventProcessed("stripe", event.id).catch(statusError => {
@@ -1486,6 +1502,16 @@ export async function handleCheckoutSessionCompleted(
       })
     } else if (productType === "prompt_vault") {
       await handlePromptVaultCheckout({
+        event,
+        session,
+        isPaymentPaid,
+        customerEmail,
+        userId,
+        referralPurchaseUserId,
+        source,
+      })
+    } else if (productType === "selfie_ai_photos_kit") {
+      await handleSelfieAiPhotosKitCheckout({
         event,
         session,
         isPaymentPaid,

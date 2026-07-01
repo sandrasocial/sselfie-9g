@@ -60,6 +60,7 @@ export async function createLandingCheckoutSession(
     !isSubscription &&
     product.type !== "prompt_vault" &&
     product.type !== "starter_kit" &&
+    product.type !== "selfie_ai_photos_kit" &&
     product.type !== "presets_single" &&
     product.type !== "presets_bundle"
   const checkoutSource = options?.source?.trim() || "landing_page"
@@ -124,6 +125,7 @@ export async function createLandingCheckoutSession(
     selfie_guide_bundle: "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
     selfie_guide: "STRIPE_PRICE_SELFIE_GUIDE",
     starter_kit: "STRIPE_PRICE_STARTER_KIT",
+    selfie_ai_photos_kit: "STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT",
     masterclass: "STRIPE_PRICE_MASTERCLASS",
     visibility_suite: "STRIPE_PRICE_VISIBILITY_SUITE_LAUNCH",
     sselfie_studio_membership_annual:
@@ -152,6 +154,8 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE
   } else if (product.type === "starter_kit") {
     stripePriceId = process.env.STRIPE_PRICE_STARTER_KIT
+  } else if (product.type === "selfie_ai_photos_kit") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT
   } else if (product.type === "masterclass") {
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   } else if (product.type === "visibility_suite") {

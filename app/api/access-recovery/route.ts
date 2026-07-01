@@ -42,6 +42,8 @@ const PRODUCT_LABEL: Record<string, string> = {
   paid_blueprint: "Legacy Feed Planner Access",
   prompt_vault: "AI Photo Prompt Vault",
   "prompt-vault-paid": "AI Photo Prompt Vault",
+  selfie_ai_photos_kit: "Selfie To AI Photos Kit",
+  "selfie-ai-photos-kit-paid": "Selfie To AI Photos Kit",
   selfie_to_brand_shoot_system: "Selfie to Brand Shoot System",
   "selfie-to-brand-shoot-paid": "Selfie to Brand Shoot System",
 }
@@ -60,6 +62,8 @@ const PRODUCT_ACCESS_URL: Record<string, string> = {
   paid_blueprint: "/feed-planner",
   prompt_vault: "/academy/access/prompt-vault",
   "prompt-vault-paid": "/academy/access/prompt-vault",
+  selfie_ai_photos_kit: "/selfie-to-ai-photos-kit",
+  "selfie-ai-photos-kit-paid": "/selfie-to-ai-photos-kit",
   selfie_to_brand_shoot_system: "/academy/access/selfie-to-brand-shoot",
   "selfie-to-brand-shoot-paid": "/academy/access/selfie-to-brand-shoot",
 }
@@ -116,7 +120,7 @@ export async function POST(req: NextRequest) {
           created_at
         FROM freebie_subscribers
         WHERE LOWER(email) = ${email}
-          AND source IN ('starter-kit-paid', 'selfie-guide-paid', 'selfie_guide_paid', 'prompt-vault-paid', 'selfie-to-brand-shoot-paid')
+          AND source IN ('starter-kit-paid', 'selfie-guide-paid', 'selfie_guide_paid', 'prompt-vault-paid', 'selfie-ai-photos-kit-paid', 'selfie-to-brand-shoot-paid')
         LIMIT 5
       `,
     ])
@@ -145,6 +149,8 @@ export async function POST(req: NextRequest) {
           accessUrl = `${productionUrl}/selfie-guide/access/${encodeURIComponent(p.access_token)}`
         } else if ((p.product_type === "prompt_vault" || p.product_type.includes("prompt-vault")) && p.access_token) {
           accessUrl = `${productionUrl}/access/prompt-vault/${encodeURIComponent(p.access_token)}`
+        } else if ((p.product_type === "selfie_ai_photos_kit" || p.product_type.includes("selfie-ai-photos-kit")) && p.access_token) {
+          accessUrl = `${productionUrl}/access/selfie-to-ai-photos-kit/${encodeURIComponent(p.access_token)}`
         } else if ((p.product_type === "selfie_to_brand_shoot_system" || p.product_type.includes("selfie-to-brand-shoot")) && p.access_token) {
           accessUrl = `${productionUrl}/access/selfie-to-brand-shoot/${encodeURIComponent(p.access_token)}`
         }
