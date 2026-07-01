@@ -21,9 +21,9 @@ export function generateSelfieAiPhotosKitDeliveryEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Selfie To AI Photos Kit is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with the source selfie checklist. Then copy the first prompt and use one clear selfie to create your first AI photo.</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Inside you have the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">The goal is not to look like someone else. The goal is to get a result that feels like you on a clear day.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with the source selfie checklist. Then copy the first prompt and use one clear selfie for your first AI photo.</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Inside you'll find the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">The goal isn't to look like someone else. It's to get a result that feels like you, on a good day.</p>
     ${primaryButton}
     <p style="margin:26px 0 10px;font-size:14px;line-height:1.7;color:#8a8780;">When you want more visual worlds, open the full Prompt Vault:</p>
     <div style="margin:0 0 18px;">${renderStoneButton("Get the Prompt Vault", vaultUrl, "outline")}</div>
@@ -41,7 +41,7 @@ export function generateSelfieAiPhotosKitDeliveryEmail({
     html: renderStoneShell({
       eyebrow: "Selfie To AI Photos Kit",
       title: "Your Kit is ready.",
-      subtitle: "Start with one clear selfie. Keep the result still you.",
+      subtitle: "Start with one clear selfie. Keep it still you.",
       bodyHtml,
       footerLead: "One selfie. One first result. Start there.",
       footerSignoff: "Sandra x",
@@ -51,11 +51,11 @@ export function generateSelfieAiPhotosKitDeliveryEmail({
       "",
       "Your Selfie To AI Photos Kit is ready.",
       "",
-      "Start with the source selfie checklist. Then copy the first prompt and use one clear selfie to create your first AI photo.",
+      "Start with the source selfie checklist. Then copy the first prompt and use one clear selfie for your first AI photo.",
       "",
-      "Inside you have the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.",
+      "Inside you'll find the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.",
       "",
-      "The goal is not to look like someone else. The goal is to get a result that feels like you on a clear day.",
+      "The goal isn't to look like someone else. It's to get a result that feels like you, on a good day.",
       "",
       textPrimaryLine,
       "",

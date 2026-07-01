@@ -45,8 +45,9 @@ export default async function SelfieToAiPhotosKitPage() {
           <p className="eyebrow">SELFIE TO AI PHOTOS KIT · $37</p>
           <h1 className={cormorant.className}>Turn one clear selfie into AI photos that still look like you.</h1>
           <p className="lead">
-            This is the small kit for the woman who wants to try AI photos, but does not want the result
-            to look fake, random, or like a completely different person.
+            I built this for the woman who wants to try AI photos, but doesn&apos;t want to end up
+            looking fake, random, or like a completely different person. One selfie. A few simple
+            prompts. Still you.
           </p>
           <div className="actions">
             <Link href={checkoutHref} className="primary">
@@ -73,18 +74,20 @@ export default async function SelfieToAiPhotosKitPage() {
         <h2 className={cormorant.className}>This is not the iPhone Selfie Starter Kit.</h2>
         <div className="split-copy">
           <p>
-            The Selfie Starter Kit teaches you how to take and edit better phone photos.
+            The Selfie Starter Kit teaches you how to take and edit better phone photos. That&apos;s a
+            different first step, and it&apos;s still there if that&apos;s what you need.
           </p>
           <p>
-            This kit starts after that moment. It shows you how to choose one clear selfie, upload it into
-            your AI image tool, use simple prompts, and fix the result when the face, pose, or mood feels off.
+            This one starts after that moment. Pick one clear selfie, upload it into your AI tool, use
+            a simple prompt, and fix it if the face, pose, or mood feels off. That&apos;s the whole
+            system.
           </p>
         </div>
       </section>
 
       <section className="section dark">
         <p className="eyebrow">WHAT YOU GET</p>
-        <h2 className={cormorant.className}>One small AI photo starter system.</h2>
+        <h2 className={cormorant.className}>One small system. Nothing complicated.</h2>
         <div className="grid">
           {[
             ["Source selfie checklist", "Know which selfie gives AI the best chance of keeping you recognizable."],
@@ -104,7 +107,7 @@ export default async function SelfieToAiPhotosKitPage() {
 
       <section className="section pale">
         <p className="eyebrow">HOW TO USE IT</p>
-        <h2 className={cormorant.className}>Start small. Do not turn this into a giant project.</h2>
+        <h2 className={cormorant.className}>Start small. Don&apos;t turn this into a giant project.</h2>
         <div className="steps">
           {[
             ["01", "Choose one clean selfie."],
@@ -125,8 +128,8 @@ export default async function SelfieToAiPhotosKitPage() {
         <p className="eyebrow">START HERE</p>
         <h2 className={cormorant.className}>One selfie. Three useful AI photos. Still you.</h2>
         <p>
-          If you want the bigger visual worlds later, the Prompt Vault is there. If you want Maya to help you keep
-          creating every month, SUITE is there. This kit is the first simple step.
+          If you want more visual worlds later, the Vault is there. If you want Maya to help you keep
+          creating every month, SUITE is there. This Kit is just the first small step.
         </p>
         <Link href={checkoutHref} className="primary light">
           Get the Kit · $37
@@ -136,8 +139,8 @@ export default async function SelfieToAiPhotosKitPage() {
       <style>{`
         .ai-kit-page {
           min-height: 100vh;
-          background: #f8fafa;
-          color: #111315;
+          background: var(--color-porcelain);
+          color: var(--color-obsidian);
         }
         .nav {
           display: flex;
@@ -145,7 +148,7 @@ export default async function SelfieToAiPhotosKitPage() {
           justify-content: space-between;
           gap: 20px;
           padding: 24px clamp(18px, 5vw, 54px);
-          border-bottom: 1px solid rgba(17, 19, 21, 0.1);
+          border-bottom: 1px solid rgba(10, 10, 10, 0.1);
         }
         .wordmark {
           color: inherit;
@@ -182,7 +185,7 @@ export default async function SelfieToAiPhotosKitPage() {
           font-size: 11px;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: #686c70;
+          color: var(--stone-accent);
         }
         h1, h2 {
           margin: 0;
@@ -202,7 +205,7 @@ export default async function SelfieToAiPhotosKitPage() {
           margin: 26px 0 0;
           font-size: 18px;
           line-height: 1.75;
-          color: #3b3f43;
+          color: var(--stone-quarry);
         }
         .actions {
           display: flex;
@@ -223,19 +226,19 @@ export default async function SelfieToAiPhotosKitPage() {
           font-size: 11px;
         }
         .primary {
-          background: #111315;
-          color: #f8fafa;
-          border: 1px solid #111315;
+          background: var(--color-obsidian);
+          color: var(--color-porcelain);
+          border: 1px solid var(--color-obsidian);
         }
         .secondary {
-          color: #111315;
-          border: 1px solid rgba(17, 19, 21, 0.25);
+          color: var(--color-obsidian);
+          border: 1px solid rgba(10, 10, 10, 0.25);
         }
         .hero-image {
           position: relative;
           min-height: 520px;
           overflow: hidden;
-          background: #dfe4e5;
+          background: var(--stone-pale);
         }
         .hero-image img {
           object-fit: cover;
@@ -244,15 +247,15 @@ export default async function SelfieToAiPhotosKitPage() {
           padding: clamp(54px, 8vw, 110px) clamp(18px, 5vw, 72px);
         }
         .pale {
-          background: #f8fafa;
+          background: var(--color-porcelain);
         }
         .dark {
-          background: #111315;
-          color: #f8fafa;
+          background: var(--color-obsidian);
+          color: var(--color-porcelain);
         }
         .dark .eyebrow,
         .dark p {
-          color: #b8bec2;
+          color: var(--stone-pale);
         }
         .split-copy {
           display: grid;
@@ -266,26 +269,26 @@ export default async function SelfieToAiPhotosKitPage() {
           margin: 0;
           font-size: 17px;
           line-height: 1.75;
-          color: #3b3f43;
+          color: var(--stone-quarry);
         }
         .grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1px;
           margin-top: 34px;
-          border: 1px solid rgba(248, 250, 250, 0.18);
-          background: rgba(248, 250, 250, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.18);
         }
         .item {
           min-height: 190px;
           padding: 28px;
-          background: #111315;
+          background: var(--color-obsidian);
         }
         .item h3 {
           margin: 0 0 12px;
           font-size: 17px;
           font-weight: 500;
-          color: #f8fafa;
+          color: var(--color-porcelain);
         }
         .item p {
           margin: 0;
@@ -297,39 +300,39 @@ export default async function SelfieToAiPhotosKitPage() {
           gap: 1px;
           max-width: 980px;
           margin-top: 34px;
-          border-top: 1px solid rgba(17, 19, 21, 0.14);
+          border-top: 1px solid rgba(10, 10, 10, 0.14);
         }
         .step {
           display: grid;
           grid-template-columns: 84px 1fr;
           align-items: center;
           min-height: 76px;
-          border-bottom: 1px solid rgba(17, 19, 21, 0.14);
+          border-bottom: 1px solid rgba(10, 10, 10, 0.14);
         }
         .step span {
           font-size: 12px;
           letter-spacing: 0.2em;
-          color: #686c70;
+          color: var(--stone-accent);
         }
         .step p {
           margin: 0;
           font-size: 17px;
-          color: #22262a;
+          color: var(--stone-dark);
         }
         .final {
-          background: #111315;
-          color: #f8fafa;
+          background: var(--color-obsidian);
+          color: var(--color-porcelain);
           padding: clamp(54px, 8vw, 110px) clamp(18px, 5vw, 72px);
         }
         .final p {
           max-width: 720px;
           margin: 26px 0 30px;
-          color: #c8ced2;
+          color: var(--stone-pale);
         }
         .primary.light {
-          background: #f8fafa;
-          color: #111315;
-          border-color: #f8fafa;
+          background: var(--color-porcelain);
+          color: var(--color-obsidian);
+          border-color: var(--color-porcelain);
         }
         @media (max-width: 880px) {
           .hero,

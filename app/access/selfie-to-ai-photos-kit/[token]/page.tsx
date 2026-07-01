@@ -151,7 +151,9 @@ export default async function SelfieAiPhotosKitAccessPage({
             {firstName ? `${firstName}, start` : "Start"} with one clear selfie.
           </h1>
           <p className="mt-6 max-w-xl text-base font-light leading-relaxed text-stone-quarry">
-            Use this Kit to create your first three AI photos without losing yourself in the result. Start small: one profile image, one reel cover, one lifestyle image.
+            Start with your source selfie checklist. Then copy one prompt at a time until you have
+            three photos: one profile image, one reel cover, one lifestyle image. Don&apos;t try to do
+            it all at once.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -257,7 +259,8 @@ export default async function SelfieAiPhotosKitAccessPage({
             Open the full Prompt Vault.
           </h2>
           <p className="mt-4 text-sm font-light leading-relaxed text-stone-quarry">
-            This Kit gives you the first result. The Vault gives you full photoshoot worlds when you want more options.
+            This Kit gets you the first result. The Vault gives you full photoshoot worlds whenever you
+            want more.
           </p>
           <SelfieAiKitTrackedLink
             href={vaultUrl}
