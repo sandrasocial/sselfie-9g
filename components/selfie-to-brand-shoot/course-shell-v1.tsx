@@ -8,7 +8,6 @@ import { MayaPromptConcierge } from "./maya-prompt-concierge"
 import { TrackedCourseLink } from "./tracked-course-link"
 import type { CourseBrandStrategy } from "@/lib/selfie-to-brand-shoot/brand-strategy"
 import {
-  Block,
   CourseExperienceProvider,
   CoursePathMap,
   LookPicker,

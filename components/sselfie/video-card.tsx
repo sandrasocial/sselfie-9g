@@ -14,7 +14,7 @@ interface VideoCardProps {
   onDelete?: () => void
 }
 
-export default function VideoCard({ videoUrl, imageSource, motionPrompt, status, progress, onDelete }: VideoCardProps) {
+export default function VideoCard({ videoUrl, motionPrompt, status, progress, onDelete }: VideoCardProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)

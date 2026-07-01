@@ -1,7 +1,7 @@
 import { AdminNav } from "@/components/admin/admin-nav"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { buildMemberPulse, type MemberPulse } from "@/lib/admin/member-pulse"
-import { ContentBriefClient } from "@/components/admin/content-brief-client"
+import { ContentBriefClient, type ContentBriefReportRow } from "@/components/admin/content-brief-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
@@ -185,7 +185,7 @@ export default async function ContentBriefPage() {
             <MemberPulseSection pulse={pulse} />
           </Collapsed>
           <Collapsed title="Weekly brief" hint="Post performance, copies, DMs, hooks">
-            <ContentBriefClient initialReports={reports as any} />
+            <ContentBriefClient initialReports={reports as ContentBriefReportRow[]} />
           </Collapsed>
           <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
             <VaultDropEmailPreview />

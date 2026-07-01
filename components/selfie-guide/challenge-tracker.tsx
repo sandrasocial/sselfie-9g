@@ -75,7 +75,7 @@ export default function ChallengeTracker({
 
   return (
     <div className={inter.className} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {CHALLENGE_DAYS.map((item, index) => {
+      {CHALLENGE_DAYS.map((item) => {
         const isCompleted = completedDays.includes(item.day)
         // Sequential unlock: day N unlocks when day N-1 is done (Day 1 always unlocked)
         const isUnlocked = item.day === 1 || completedDays.includes(item.day - 1) || isCompleted

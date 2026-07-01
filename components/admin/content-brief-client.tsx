@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { ContentBrief, ContentBriefPiece } from "@/lib/content-engine/brief-generator"
 
-type ReportRow = {
+export type ContentBriefReportRow = {
   id: number
   period_start: string
   period_end: string
@@ -393,8 +393,8 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   )
 }
 
-export function ContentBriefClient({ initialReports }: { initialReports: ReportRow[] }) {
-  const [reports, setReports] = useState<ReportRow[]>(initialReports)
+export function ContentBriefClient({ initialReports }: { initialReports: ContentBriefReportRow[] }) {
+  const [reports, setReports] = useState<ContentBriefReportRow[]>(initialReports)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -420,8 +420,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: ReportR
       const refreshed = await fetch("/api/admin/content-brief").then((r) => r.json())
       setReports(refreshed.reports || [])
       setSelectedIndex(0)
-    } catch (e: any) {
-      setError(e?.message || "Generation failed")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Generation failed")
     } finally {
       setGenerating(false)
     }

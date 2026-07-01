@@ -73,7 +73,6 @@ interface MayaHeaderUnifiedProps {
  */
 export default function MayaHeaderUnified({
   proMode,
-  chatTitle,
   showNavMenu,
   onToggleNavMenu,
   libraryCount = 0,

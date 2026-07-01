@@ -28,7 +28,6 @@ export default function StoryHighlightCard({
   onUpdate,
   onRemove,
   userColorTheme,
-  feedId,
   isEditing: parentIsEditing,
 }: StoryHighlightCardProps) {
   const [isEditing, setIsEditing] = useState(!highlight.title)
@@ -119,7 +118,7 @@ export default function StoryHighlightCard({
       console.log("[v0] Cleaning up polling interval")
       clearInterval(pollInterval)
     }
-  }, [predictionId, generationId, isGenerated, index])
+  }, [predictionId, generationId, isGenerated, index, highlight.title, highlight.description, onUpdate])
 
   const addTextOverlay = async (imageUrl: string, text: string): Promise<string> => {
     return new Promise((resolve, reject) => {

@@ -46,10 +46,11 @@ export async function POST() {
     })
 
     return NextResponse.json({ success: true, brief })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[content-brief] manual generation failed:", error)
+    const message = error instanceof Error ? error.message : "Generation failed"
     return NextResponse.json(
-      { success: false, error: error?.message || "Generation failed" },
+      { success: false, error: message },
       { status: 500 },
     )
   }
