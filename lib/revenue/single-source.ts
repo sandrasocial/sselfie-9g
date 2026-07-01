@@ -7,8 +7,12 @@ import { getConfiguredMembershipPriceIds, isMembershipSubscription } from "@/lib
 export interface SingleSourceRevenueMetrics {
   /** Net MRR: what members actually pay after lifetime/forever coupons. */
   mrr: number
+  /** Net MRR split by subscription currency, in major currency units. */
+  mrrByCurrency: Record<string, number>
   /** What MRR would be at list price, before discounts. */
   grossMrr: number
+  /** Gross MRR split by subscription currency, in major currency units. */
+  grossMrrByCurrency: Record<string, number>
   /** Active members on a forever/lifetime percent-off coupon (e.g. BETA 50%). */
   discountedMembers: number
   activeSubscriptions: number
@@ -89,6 +93,13 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     activeMembershipSubs.reduce((sum, sub) => sum + calculateSubscriptionAmount(sub), 0),
   )
 
+  const mrrByCurrency = activeMembershipSubs.reduce<Record<string, number>>((acc, sub) => {
+    const item = sub.items?.data?.[0]
+    const currency = String(item?.price?.currency || "unknown").toUpperCase()
+    acc[currency] = Math.round((acc[currency] || 0) + calculateSubscriptionAmount(sub))
+    return acc
+  }, {})
+
   const grossMrr = Math.round(
     activeMembershipSubs.reduce((sum, sub) => {
       const item = sub.items?.data?.[0]
@@ -99,6 +110,17 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     }, 0),
   )
 
+  const grossMrrByCurrency = activeMembershipSubs.reduce<Record<string, number>>((acc, sub) => {
+    const item = sub.items?.data?.[0]
+    const price = item?.price
+    if (!price?.recurring) return acc
+    const currency = String(price.currency || "unknown").toUpperCase()
+    const base = (Number(price.unit_amount || 0) * Number(item?.quantity || 1)) / 100
+    const monthlyBase = price.recurring.interval === "year" ? base / 12 : base
+    acc[currency] = Math.round((acc[currency] || 0) + monthlyBase)
+    return acc
+  }, {})
+
   const discountedMembers = activeMembershipSubs.filter((sub) => {
     const coupon = getSubscriptionCoupon(sub)
     return Number(coupon?.percent_off || 0) > 0 || Number(coupon?.amount_off || 0) > 0
@@ -106,7 +128,9 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
 
   return {
     mrr,
+    mrrByCurrency,
     grossMrr,
+    grossMrrByCurrency,
     discountedMembers,
     activeSubscriptions,
     totalSubscriptions,

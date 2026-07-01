@@ -90,7 +90,7 @@ function OverlayAssets({ assets }: { assets?: ContentOverlayAsset[] }) {
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={asset.url} width={boxW} height={boxH} style={{ objectFit: "cover" }} />
+            <img src={asset.url} alt="" width={boxW} height={boxH} style={{ objectFit: "cover" }} />
           </div>
         )
       })}
@@ -188,7 +188,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
     return (
       <div style={{ width: WIDTH, height: HEIGHT, display: "flex", backgroundColor: OBSIDIAN }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={slide.imageUrl} width={WIDTH} height={HEIGHT} style={{ objectFit: "cover" }} />
+        <img src={slide.imageUrl} alt="" width={WIDTH} height={HEIGHT} style={{ objectFit: "cover" }} />
       </div>
     )
   }
@@ -234,6 +234,7 @@ function StoryFrame({ slide, index, total }: { slide: StorySlide; index: number;
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={slide.imageUrl}
+          alt=""
           width={WIDTH}
           height={HEIGHT}
           style={{

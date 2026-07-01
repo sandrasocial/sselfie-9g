@@ -3,6 +3,7 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
+import { getRevenueTruthScorecard, type RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
 import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
 import {
   FOUNDING_ANNUAL_CAP,
@@ -25,13 +26,16 @@ export type AdminHomeReport = {
   members: {
     active: number
     mrr: number
+    mrrByCurrency: Record<string, number>
     grossMrr: number
+    grossMrrByCurrency: Record<string, number>
     discountedMembers: number
     new30d: number
     canceled30d: number
     live: boolean
     source: "stripe_live" | "db_fallback"
   }
+  scorecard: RevenueTruthScorecard | null
   studioHealth: StudioMemberHealthReport | null
   // BRIDGE-01: SUITE trials are NOT members and carry no money fields.
   // Counts come from subscriptions suite_trial rows; converted = trial users
@@ -86,7 +90,17 @@ function labelProduct(product: string | null) {
 }
 
 export async function getAdminHomeReport(): Promise<AdminHomeReport> {
-  const [moneyRows, productRows, needsMeRows, memberMetrics, briefReports, trialRows, studioHealth, foundingCount] = await Promise.all([
+  const [
+    moneyRows,
+    productRows,
+    needsMeRows,
+    memberMetrics,
+    scorecard,
+    briefReports,
+    trialRows,
+    studioHealth,
+    foundingCount,
+  ] = await Promise.all([
     sql`
       SELECT
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days')::int AS week_payments,
@@ -118,6 +132,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         (SELECT COUNT(*)::int FROM feedback WHERE status = 'new') AS new_support_threads
     ` as unknown as Promise<any[]>,
     getSingleSourceRevenueMetrics().catch(() => null),
+    getRevenueTruthScorecard().catch((error) => {
+      console.error("[admin-home] revenue truth scorecard failed:", error)
+      return null
+    }),
     getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 }).catch(() => []),
     sql`
       SELECT
@@ -174,13 +192,16 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     members: {
       active: memberMetrics?.activeSubscriptions ?? 0,
       mrr: memberMetrics?.mrr ?? 0,
+      mrrByCurrency: memberMetrics?.mrrByCurrency ?? {},
       grossMrr: memberMetrics?.grossMrr ?? memberMetrics?.mrr ?? 0,
+      grossMrrByCurrency: memberMetrics?.grossMrrByCurrency ?? {},
       discountedMembers: memberMetrics?.discountedMembers ?? 0,
       new30d: memberMetrics?.newSubscribers30d ?? 0,
       canceled30d: memberMetrics?.canceledSubscriptions30d ?? 0,
       live: Boolean(memberMetrics && !memberMetrics.cached) || Boolean(memberMetrics?.cached),
       source: memberMetrics ? "stripe_live" : "db_fallback",
     },
+    scorecard,
     studioHealth,
     trials: {
       active: Number((trialRows as any[])[0]?.active || 0),

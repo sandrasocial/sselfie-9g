@@ -338,7 +338,7 @@ function OverlayAssets({
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={asset.url} width={boxW} height={boxH} style={{ objectFit: fit }} />
+            <img src={asset.url} alt="" width={boxW} height={boxH} style={{ objectFit: fit }} />
             {asset.label ? (
               <div
                 style={{
@@ -402,6 +402,7 @@ function GridFrame({
         <img
           key={index}
           src={url}
+          alt=""
           width={cellW}
           height={cellH}
           style={{
@@ -535,7 +536,7 @@ function PhotoFrame({
     return (
       <div style={{ width, height, display: "flex", backgroundColor: OBSIDIAN }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={slide.imageUrl} width={width} height={height} style={{ objectFit: "cover" }} />
+        <img src={slide.imageUrl} alt="" width={width} height={height} style={{ objectFit: "cover" }} />
       </div>
     )
   }
@@ -555,6 +556,7 @@ function PhotoFrame({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={slide.imageUrl}
+        alt=""
         width={width}
         height={height}
         style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
@@ -797,7 +799,7 @@ function BeforeAfterFrame({
       >
         {beforeUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={beforeUrl} width={imageW} height={imageH} style={{ objectFit: beforeFit }} />
+          <img src={beforeUrl} alt="" width={imageW} height={imageH} style={{ objectFit: beforeFit }} />
         ) : null}
         <div
           style={{
@@ -834,7 +836,7 @@ function BeforeAfterFrame({
       >
         {afterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={afterUrl} width={imageW} height={imageH} style={{ objectFit: "cover" }} />
+          <img src={afterUrl} alt="" width={imageW} height={imageH} style={{ objectFit: "cover" }} />
         ) : null}
         <div
           style={{
