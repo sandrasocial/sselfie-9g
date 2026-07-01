@@ -51,6 +51,78 @@ function safeArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
 }
 
+const FUNNEL_STAGE_META: Record<
+  ContentBriefPiece["funnelStage"],
+  { label: string; description: string; badgeClass: string }
+> = {
+  cold: {
+    label: "Cold · feed reach → Kit",
+    description: "Public feed reels/carousels for the selfie + AI-photo audience. Next step: Selfie To AI Photos Kit, then the Vault.",
+    badgeClass: "bg-stone-100 text-stone-700",
+  },
+  warm: {
+    label: "Warm · Story/DM trust → Visibility To Paid",
+    description: "For the audience already asking how you built this. Belongs in Stories, DMs, and email. Next step: apply / reply WORK for the Visibility To Paid Sprint.",
+    badgeClass: "bg-stone-200 text-stone-800",
+  },
+  activation: {
+    label: "Activation · buyers → SUITE",
+    description: "For people already in the funnel (Vault buyers, trial members). Bridges them into SUITE or deeper Suite use.",
+    badgeClass: "bg-stone-950 text-white",
+  },
+}
+
+function pieceToHandoffTopic(piece: ContentBriefPiece): string {
+  return [piece.hook, piece.shortSuggestion, piece.demandSignal, piece.offerBridge]
+    .filter(Boolean)
+    .join(" — ")
+}
+
+function HandoffButton({
+  label,
+  busyLabel,
+  endpoint,
+  body,
+  redirectTo,
+}: {
+  label: string
+  busyLabel: string
+  endpoint: string
+  body: Record<string, unknown>
+  redirectTo: string
+}) {
+  const [status, setStatus] = useState<"idle" | "busy" | "error">("idle")
+
+  async function send() {
+    setStatus("busy")
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const json = await res.json()
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error || "Could not create draft")
+      }
+      window.location.href = redirectTo
+    } catch {
+      setStatus("error")
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={send}
+      disabled={status === "busy"}
+      className="rounded-full border border-stone-950 bg-white px-3 py-1 text-xs uppercase tracking-wide text-stone-950 transition hover:bg-stone-950 hover:text-white disabled:opacity-50"
+    >
+      {status === "busy" ? busyLabel : status === "error" ? "Failed, try again" : label}
+    </button>
+  )
+}
+
 function compactNumber(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "n/a"
   return value.toLocaleString("en-US")
@@ -211,6 +283,8 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
     "",
     hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
   ].filter(Boolean).join("\n")
+  const stageMeta = FUNNEL_STAGE_META[piece.funnelStage] || FUNNEL_STAGE_META.cold
+  const handoffTopic = pieceToHandoffTopic(piece)
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5">
@@ -223,6 +297,13 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         </span>
         <h3 className="ml-1 font-medium text-stone-950">{piece.title}</h3>
       </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${stageMeta.badgeClass}`}>
+          {stageMeta.label}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-stone-500">{stageMeta.description}</p>
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
 
@@ -389,6 +470,29 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
           <CopyChip label="Copy slides" text={carouselOutline.join("\n")} />
         )}
       </div>
+
+      {(piece.format === "carousel" || piece.funnelStage === "warm") && (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-100 pt-3">
+          {piece.format === "carousel" && (
+            <HandoffButton
+              label="Send to Carousel Kit →"
+              busyLabel="Creating draft…"
+              endpoint="/api/admin/content-kit"
+              body={{ topic: handoffTopic, mode: "standard" }}
+              redirectTo="/admin/content-brief?open=carousel-kit#carousel-kit"
+            />
+          )}
+          {piece.funnelStage === "warm" && (
+            <HandoffButton
+              label="Send to Story Sequences →"
+              busyLabel="Creating draft…"
+              endpoint="/api/admin/content-kit/stories"
+              body={{ topic: handoffTopic }}
+              redirectTo="/admin/content-brief?open=story-sequences#story-sequences"
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -565,11 +669,31 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
           </section>
 
           <section>
-            <h2 className="mb-3 font-serif text-xl text-stone-950">Suggested directions to develop</h2>
-            <div className="space-y-4">
-              {contentPlan.map((piece, index) => (
-                <PieceCard key={index} piece={piece} />
-              ))}
+            <h2 className="mb-1 font-serif text-xl text-stone-950">Suggested directions to develop</h2>
+            <p className="mb-4 text-sm text-stone-600">
+              Cold attention gets the Kit. Warm trust gets Visibility To Paid. Paid activation gets SUITE.
+            </p>
+            <div className="space-y-8">
+              {(["cold", "warm", "activation"] as const).map((stage) => {
+                const pieces = contentPlan.filter((piece) => (piece.funnelStage || "cold") === stage)
+                if (pieces.length === 0) return null
+                const meta = FUNNEL_STAGE_META[stage]
+                return (
+                  <div key={stage}>
+                    <div className="mb-3 flex items-baseline gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${meta.badgeClass}`}>
+                        {meta.label}
+                      </span>
+                      <p className="text-xs text-stone-500">{meta.description}</p>
+                    </div>
+                    <div className="space-y-4">
+                      {pieces.map((piece, index) => (
+                        <PieceCard key={index} piece={piece} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
 

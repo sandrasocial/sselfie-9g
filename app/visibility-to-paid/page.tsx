@@ -6,6 +6,6 @@ export const metadata: Metadata = {
   description: "Apply to work with Sandra on making your expertise, story, offer, profile, and content clearer online.",
 }
 
-export default function WorkWithMePage() {
+export default function VisibilityToPaidPage() {
   return <WorkWithMePageContent />
 }

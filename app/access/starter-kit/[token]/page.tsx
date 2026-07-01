@@ -37,18 +37,16 @@ function upperName(name: string | undefined | null) {
   return value.length > 0 ? value.toUpperCase() : "FRIEND"
 }
 
-function buildSystemUpgradeHref(token: string, email?: string | null) {
+function buildVaultUpgradeHref(token: string, email?: string | null) {
   const params = new URLSearchParams({
     source: "starter_kit_access",
     utm_source: "owned",
     utm_medium: "starter_kit_access",
-    utm_campaign: "starter_kit_to_selfie_to_brand_shoot_system",
-    utm_content: "starter_kit_access_upgrade_block",
-    checkout_source: "starter_kit_buyer_upgrade_credit",
+    utm_campaign: "selfie_ai_kit_to_prompt_vault",
+    utm_content: "kit_access_vault_bridge",
+    checkout_source: "selfie_ai_kit_access",
     cta_keyword: "STARTER_KIT",
     buyer_stage: "micro",
-    starter_kit_credit: "1",
-    upgrade_credit: "3700",
     freebie_token: token,
   })
 
@@ -57,7 +55,28 @@ function buildSystemUpgradeHref(token: string, email?: string | null) {
     params.set("checkout_email", cleanEmail)
   }
 
-  return `/checkout/selfie-to-brand-shoot?${params.toString()}`
+  return `/checkout/prompt-vault?${params.toString()}`
+}
+
+function buildSuiteHref(token: string, email?: string | null) {
+  const params = new URLSearchParams({
+    source: "starter_kit_access",
+    utm_source: "owned",
+    utm_medium: "starter_kit_access",
+    utm_campaign: "selfie_ai_kit_to_suite",
+    utm_content: "kit_access_suite_bridge",
+    checkout_source: "selfie_ai_kit_access",
+    cta_keyword: "STARTER_KIT",
+    buyer_stage: "micro",
+    freebie_token: token,
+  })
+
+  const cleanEmail = email?.trim().toLowerCase()
+  if (cleanEmail) {
+    params.set("checkout_email", cleanEmail)
+  }
+
+  return `/join/studio?${params.toString()}`
 }
 
 async function getStarterKitRecord(token: string): Promise<{
@@ -193,7 +212,8 @@ export default async function StarterKitAccessPage({
 
   const desktopPresetDownloadUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || null
   const guideAccessUrl = `/selfie-guide/access/${token}`
-  const systemUpgradeHref = buildSystemUpgradeHref(token, result.data.email)
+  const vaultUpgradeHref = buildVaultUpgradeHref(token, result.data.email)
+  const suiteHref = buildSuiteHref(token, result.data.email)
 
   // Log access event (fire-and-forget - do not block render)
   logAnalyticsEvent({
@@ -208,27 +228,30 @@ export default async function StarterKitAccessPage({
         <p className="eyebrow">Starter Kit Access</p>
         <h1 className={cormorant.className}>WELCOME, {upperName(result.data.name)}</h1>
         <p className="intro">
-          Your Starter Kit is ready. Start with one cleaner selfie, download your presets, and use
-          the 7-day starter to turn that photo into content.
+          Your Selfie To AI Photos Kit is ready. Start with one clear selfie, use the starter
+          prompts, and keep the result looking like you.
         </p>
       </section>
 
       <section className="system-upgrade">
         <div className="system-upgrade-copy">
-          <p className="eyebrow">YOUR $37 IS A CREDIT</p>
-          <h2 className={cormorant.className}>Ready for the full thing? Your $37 comes off.</h2>
+          <p className="eyebrow">NEXT STEP</p>
+          <h2 className={cormorant.className}>Want more looks after your first result?</h2>
           <p>
-            The Selfie to Brand Shoot System is the complete guided path. Choose your look, build
-            a full shoot from one selfie, and turn it into content. Your Starter Kit credit is
-            already applied, so it&apos;s $160 instead of $197. No code needed.
+            Start here first. Once you see what one clear selfie can do, the Prompt Vault gives
+            you more visual worlds to try. SUITE is there when you want Maya to help you keep
+            creating every month.
           </p>
         </div>
         <div className="system-upgrade-card">
-          <span>$37 credit applied</span>
-          <strong className={cormorant.className}>The Selfie to Brand Shoot System</strong>
-          <p>Your Starter Kit helps create the source photo. The System shows you what to do with it.</p>
-          <Link href={systemUpgradeHref} className="primary-cta">
-            See the System · $160
+          <span>More visual worlds</span>
+          <strong className={cormorant.className}>The Prompt Vault</strong>
+          <p>Your Kit helps you get the first result. The Vault gives you more shoots to try.</p>
+          <Link href={vaultUpgradeHref} className="primary-cta">
+            Open the Vault
+          </Link>
+          <Link href={suiteHref} className="secondary-cta">
+            See SUITE
           </Link>
         </div>
       </section>
@@ -236,22 +259,22 @@ export default async function StarterKitAccessPage({
       <section className="grid">
         <article className="card">
           <p className="card-label">Start Here</p>
-          <h2 className={cormorant.className}>Your first photo to post</h2>
+          <h2 className={cormorant.className}>Your source selfie</h2>
           <ol>
             <li>Open your camera and find a window with soft light.</li>
             <li>Take 10 photos instead of judging the first one.</li>
             <li>Choose one that already feels like you before you edit.</li>
-            <li>Use one preset lightly. Stop before the photo stops feeling real.</li>
-            <li>Write one simple caption: “This is what I am building next.”</li>
+            <li>Use one preset lightly if the photo needs a cleaner edit.</li>
+            <li>Upload it with one starter prompt and fix only the detail that feels off.</li>
           </ol>
         </article>
 
         <article className="card">
           <p className="card-label">Downloads</p>
-          <h2 className={cormorant.className}>Your kit files</h2>
+          <h2 className={cormorant.className}>Your support files</h2>
           <p>
-            The presets are here. Keep them simple. The goal is a photo that looks like you on a
-            good day, not a different person.
+            The presets are here if you want to clean up the source photo first. Keep them simple.
+            The goal is a photo that looks like you on a good day, not a different person.
           </p>
           <div className="format-note">
             <p className="format-label">Which files should I use?</p>
@@ -279,8 +302,8 @@ export default async function StarterKitAccessPage({
           <p className="card-label">PDF Guides</p>
           <h2 className={cormorant.className}>Your kit guides</h2>
           <p>
-            Three guides to support your photos from setup to caption. Download and keep them for
-            reference.
+            Use these when you need posing help, a caption starter, or a simple way to turn the
+            photo into content.
           </p>
           <div className="download-actions">
             <a href={STARTER_KIT_POSING_GUIDE_URL} className="primary-cta" download>
@@ -299,8 +322,8 @@ export default async function StarterKitAccessPage({
           <p className="card-label">7-Day Content Starter</p>
           <h2 className={cormorant.className}>Your first week of content</h2>
           <p>
-            The 7-Day Content Starter lives inside your Selfie Guide: light, angles, confidence,
-            and one post per day for your first week. Open it and start with day one.
+            The 7-Day Content Starter lives inside your Selfie Guide. Use it when your first AI
+            photo is ready and you want to post without staring at a blank screen.
           </p>
           <Link href={guideAccessUrl} className="secondary-cta">
             Open the 7-Day Content Starter

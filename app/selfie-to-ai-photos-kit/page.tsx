@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Start with one clear selfie and use it to create AI photos that still look like you.",
 }
 
-export default async function StarterKitPage({
+export default async function SelfieToAiPhotosKitPage({
   searchParams,
 }: {
   searchParams?: Promise<{ checkout?: string }>

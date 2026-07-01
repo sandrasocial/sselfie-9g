@@ -1,7 +1,7 @@
 import { getEmailHeroImage } from "../email-image-assets"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
-import { selfieToBrandShootCheckoutUrl, starterKitLandingUrl } from "./selfie-education-links"
+import { promptVaultCheckoutUrl, starterKitLandingUrl, studioLandingUrl } from "./selfie-education-links"
 
 export function generateStarterKitDay0DeliveryEmail({
   firstName,
@@ -20,19 +20,26 @@ export function generateStarterKitDay0DeliveryEmail({
 }) {
   const resolvedFallbackUrl = fallbackUrl || starterKitLandingUrl()
   const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
-  const systemUrl = new URL(buildRevenueEmailLink(selfieToBrandShootCheckoutUrl(), {
-    campaign: "starter_kit_day0_system_credit",
-    content: "see_system_160",
+  const vaultUrl = new URL(buildRevenueEmailLink(promptVaultCheckoutUrl(), {
+    campaign: "selfie_ai_kit_day0_vault_bridge",
+    content: "open_vault",
+    emailType: "starter-kit-day0-delivery",
+  }))
+  const suiteUrl = new URL(buildRevenueEmailLink(studioLandingUrl(), {
+    campaign: "selfie_ai_kit_day0_suite_bridge",
+    content: "see_suite",
     emailType: "starter-kit-day0-delivery",
   }))
   if (recipientEmail) {
-    systemUrl.searchParams.set("checkout_email", recipientEmail)
+    vaultUrl.searchParams.set("checkout_email", recipientEmail)
+    suiteUrl.searchParams.set("checkout_email", recipientEmail)
   }
-  systemUrl.searchParams.set("checkout_source", "starter_kit_receipt_credit")
-  systemUrl.searchParams.set("cta_keyword", "STARTER_KIT")
-  systemUrl.searchParams.set("buyer_stage", "micro")
-  systemUrl.searchParams.set("starter_kit_credit", "1")
-  systemUrl.searchParams.set("upgrade_credit", "3700")
+  vaultUrl.searchParams.set("checkout_source", "selfie_ai_kit_receipt")
+  vaultUrl.searchParams.set("cta_keyword", "STARTER_KIT")
+  vaultUrl.searchParams.set("buyer_stage", "micro")
+  suiteUrl.searchParams.set("checkout_source", "selfie_ai_kit_receipt")
+  suiteUrl.searchParams.set("cta_keyword", "STARTER_KIT")
+  suiteUrl.searchParams.set("buyer_stage", "micro")
 
   const kitButton = passwordSetupUrl
     ? `<div style="margin:20px 0 10px;">${renderStoneButton("Set Your Password", passwordSetupUrl)}</div>
@@ -41,24 +48,22 @@ export function generateStarterKitDay0DeliveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You&apos;re in. Your Starter Kit is ready and waiting here:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You&apos;re in. Your Selfie To AI Photos Kit is ready here:</p>
     ${kitButton}
-    <p style="margin:24px 0 16px;font-size:16px;line-height:1.8;">Start with the presets and the setup guide. That&apos;s the fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.</p>
+    <p style="margin:24px 0 16px;font-size:16px;line-height:1.8;">Start with the source selfie checklist. That is the part most people skip, and it is usually why the AI photo starts looking strange.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Then use the starter prompts and the fix prompts. If the result is close, do not start over. Fix the face, light, pose, or crop first.</p>
     <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your kit:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
-      <li>The SSELFIE Presets (phone + desktop)</li>
-      <li>Quick Preset Setup Guide</li>
-      <li>The Posing Playbook</li>
-      <li>The Caption &amp; Content Library</li>
-      <li>The Storytelling Captions</li>
-      <li>The 7-Day Content Starter</li>
-      <li>The Selfie Guide</li>
+      <li>Source selfie checklist</li>
+      <li>Good vs bad source photo guidance</li>
+      <li>AI photo starter prompts</li>
+      <li>Still-you fix prompts</li>
+      <li>3-image starter shoot path</li>
+      <li>Presets, posing help, captions, and your 7-day content starter</li>
     </ul>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">And one more thing, because I want this to keep paying off for you:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I&apos;ve added your <strong>$37 as a credit</strong> to your account. So whenever you&apos;re ready for the full guided path, the Selfie to Brand Shoot System, your $37 comes right off the top. <strong>$197 becomes $160.</strong> No code to remember, no deadline. It&apos;s just there when you want it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">The System is the whole method: how to choose your look, build a full shoot from one selfie, pick the images that still look like you, and turn them into content. The Prompt Vault is included too.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">No rush at all. Enjoy your kit first. I just wanted you to know the credit is waiting.</p>
-    <div style="margin:28px 0 14px;">${renderStoneButton("See the System · your price $160", systemUrl.toString(), "outline")}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">One small note: if you love the first result and want more visual worlds, the Prompt Vault is the next step. If you want Maya to help you keep creating photos, covers, and content every month, SUITE is there too.</p>
+    <div style="margin:28px 0 10px;">${renderStoneButton("Open the Prompt Vault", vaultUrl.toString(), "outline")}</div>
+    <div style="margin:8px 0 14px;">${renderStoneButton("See SSELFIE SUITE", suiteUrl.toString(), "outline")}</div>
     <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#a8a49c;">Can't find this email later? Access your kit anytime at: <a href="${resolvedFallbackUrl}" style="color:#a8a49c;">${resolvedFallbackUrl}</a></p>
     <p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#8a8780;">Questions? Reply to this email or reach us at <a href="mailto:support@sselfie.ai" style="color:#8a8780;">support@sselfie.ai</a></p>
   `
@@ -70,14 +75,14 @@ export function generateStarterKitDay0DeliveryEmail({
   return {
     subject: "you're in (and here's a little something)",
     html: renderStoneShell({
-      eyebrow: "Starter Kit",
+      eyebrow: "Selfie To AI Photos Kit",
       title: "Your kit is ready.",
-      subtitle: "Your $37 is already working for you.",
+      subtitle: "Start with one clear selfie.",
       bodyHtml,
       ...heroImage,
       footerLead: "No rush. Enjoy the kit first.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hey ${firstName},\n\nYou're in. Your Starter Kit is ready and waiting here:\n\n${textKitLine}\nStart with the presets and the setup guide. That's the fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.\n\nInside your kit:\n- The SSELFIE Presets (phone + desktop)\n- Quick Preset Setup Guide\n- The Posing Playbook\n- The Caption & Content Library\n- The Storytelling Captions\n- The 7-Day Content Starter\n- The Selfie Guide\n\nAnd one more thing, because I want this to keep paying off for you:\n\nI've added your $37 as a credit to your account. So whenever you're ready for the full guided path, the Selfie to Brand Shoot System, your $37 comes right off the top. $197 becomes $160. No code to remember, no deadline. It's just there when you want it.\n\nThe System is the whole method: how to choose your look, build a full shoot from one selfie, pick the images that still look like you, and turn them into content. The Prompt Vault is included too.\n\nNo rush at all. Enjoy your kit first. I just wanted you to know the credit is waiting.\n\nSee the System · your price $160:\n${systemUrl.toString()}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hey ${firstName},\n\nYou're in. Your Selfie To AI Photos Kit is ready here:\n\n${textKitLine}\nStart with the source selfie checklist. That is the part most people skip, and it is usually why the AI photo starts looking strange.\n\nThen use the starter prompts and the fix prompts. If the result is close, do not start over. Fix the face, light, pose, or crop first.\n\nInside your kit:\n- Source selfie checklist\n- Good vs bad source photo guidance\n- AI photo starter prompts\n- Still-you fix prompts\n- 3-image starter shoot path\n- Presets, posing help, captions, and your 7-day content starter\n\nOne small note: if you love the first result and want more visual worlds, the Prompt Vault is the next step. If you want Maya to help you keep creating photos, covers, and content every month, SUITE is there too.\n\nOpen the Prompt Vault:\n${vaultUrl.toString()}\n\nSee SSELFIE SUITE:\n${suiteUrl.toString()}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }
