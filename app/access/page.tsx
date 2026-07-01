@@ -34,7 +34,7 @@ export default function AccessRecoveryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmed }),
       })
-      // Always show "sent" — API never reveals whether email existed
+      // Always show "sent" - API never reveals whether email existed
       setStatus("sent")
     } catch {
       setStatus("error")
@@ -64,7 +64,7 @@ export default function AccessRecoveryPage() {
             </h1>
             <p className="text-[15px] font-light leading-7 text-[rgba(240,237,232,0.74)]">
               If that email has a purchase on file, we just sent you the access links. Check your inbox
-              and spam folder — it arrives within a minute.
+              and spam folder - it arrives within a minute.
             </p>
             <p className="text-[13px] font-light leading-6 text-[#8a8780]">
               Still stuck?{" "}
@@ -96,8 +96,8 @@ export default function AccessRecoveryPage() {
                 Recover your access
               </h1>
               <p className="text-[15px] font-light leading-7 text-[rgba(240,237,232,0.74)]">
-                Enter the email you used to purchase. We&apos;ll send your access links — presets,
-                guide, and everything else — straight to your inbox.
+                Enter the email you used to purchase. We&apos;ll send your access links - presets,
+                guide, and everything else - straight to your inbox.
               </p>
             </div>
 

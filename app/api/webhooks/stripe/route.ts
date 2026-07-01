@@ -13,7 +13,7 @@ import { handleCheckoutSessionCompleted } from "@/lib/payments/lifecycle/checkou
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 
 
-/** Stable id for Redis webhook rate limit — never bucket unrelated traffic on "undefined". */
+/** Stable id for Redis webhook rate limit - never bucket unrelated traffic on "undefined". */
 function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<string, unknown> } }): string {
   const obj = event.data?.object ?? {}
   const c = obj.customer
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (idempotencyError: any) {
     console.error("[v0] Idempotency check error:", idempotencyError.message)
-    // Return 500 so Stripe retries — better to delay than risk double credit grants
+    // Return 500 so Stripe retries - better to delay than risk double credit grants
     return NextResponse.json({ error: "Idempotency check failed" }, { status: 500 })
   }
 

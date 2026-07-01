@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const subscription = activeSub[0]
 
     if (!subscription || !subscription.stripe_subscription_id) {
-      // No subscription on record — fall back to creating a new embedded checkout
+      // No subscription on record - fall back to creating a new embedded checkout
       try {
         const clientSecret = await createLandingCheckoutSession(targetTier)
         return NextResponse.json({ requiresCheckout: true, clientSecret })

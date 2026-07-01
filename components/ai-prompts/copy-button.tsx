@@ -50,7 +50,7 @@ export function CopyButton({
         },
       })
     } catch {
-      // tracking is fire-and-forget — never block copy
+      // tracking is fire-and-forget - never block copy
     }
   }
 
@@ -66,7 +66,7 @@ export function CopyButton({
               properties: afterCopyTrackProperties,
             })
           } catch {
-            // Tracking is fire-and-forget — never block copy.
+            // Tracking is fire-and-forget - never block copy.
           }
         }
       }
@@ -102,7 +102,7 @@ export function CopyButton({
         properties: afterCopyTrackProperties,
       })
     } catch {
-      // Tracking is fire-and-forget — never block navigation.
+      // Tracking is fire-and-forget - never block navigation.
     }
   }
 

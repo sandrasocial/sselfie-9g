@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from "react"
 
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
-// ─── Design tokens — mirrors app CSS variables (single design system) ────────
+// ─── Design tokens - mirrors app CSS variables (single design system) ────────
 const C = {
   ink: "var(--app-text-primary, #0a0a0a)",
   inkSoft: "var(--app-glass-bg, #f5f5f5)",
@@ -343,7 +343,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
             </div>
           )}
 
-          {/* Chips — shown before first message */}
+          {/* Chips - shown before first message */}
           {!hasMessages && !isStreaming && (
             <div className="px-5 pt-4 pb-3 space-y-3">
               <p

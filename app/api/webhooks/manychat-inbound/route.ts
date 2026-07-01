@@ -1,4 +1,4 @@
-// DM-RELIEF-01 Layer 2 — ManyChat inbound bridge.
+// DM-RELIEF-01 Layer 2 - ManyChat inbound bridge.
 //
 // Why this exists: Meta only delivers Instagram DMs to the subscribed app, and that app is
 // ManyChat. Polling the mailbox via the Graph API times out (the inbox is too large), and our
@@ -36,7 +36,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 export async function POST(request: NextRequest) {
   const secret = process.env.MANYCHAT_BRIDGE_SECRET?.trim()
   if (!secret) {
-    // Ships dark until the env is set — same kill-switch pattern as every other system.
+    // Ships dark until the env is set - same kill-switch pattern as every other system.
     return NextResponse.json({ error: "Bridge not enabled" }, { status: 503 })
   }
   const body = await request.json().catch(() => null)

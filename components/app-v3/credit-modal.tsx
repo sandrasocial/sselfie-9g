@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — credit top-up modal (MAYA-REBUILD-05 Phase B).
+// SSELFIE Studio 3.0 - credit top-up modal (MAYA-REBUILD-05 Phase B).
 // Graceful path when a generation is blocked by zero credits (the generate route returns
 // 402 insufficient_credits). Routes to the existing /checkout/credits purchase page.
 

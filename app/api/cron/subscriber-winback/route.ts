@@ -21,10 +21,10 @@ import {
 //
 // Engagement truth: email_logs (opened_at / clicked_at via the Resend webhook). Audience is
 // limited to people we actually send cron/lifecycle email to (>=2 sends in 90 days), so
-// broadcast-only contacts — whose opens we don't track in email_logs — are never judged inactive.
+// broadcast-only contacts - whose opens we don't track in email_logs - are never judged inactive.
 //
 // Gates: SUBSCRIBER_WINBACK_ENABLED (sends), SUBSCRIBER_WINBACK_SUNSET_ENABLED (suppression).
-// Any open or click while in the sequence re-qualifies the subscriber automatically — every
+// Any open or click while in the sequence re-qualifies the subscriber automatically - every
 // stage re-checks the same inactivity condition, so engaging exits the sequence.
 
 export const dynamic = "force-dynamic"
@@ -59,7 +59,7 @@ const STAGES: WinbackStage[] = [
 /**
  * Inactive = we've mailed them (>=2 lifecycle sends in 90d, on the list 60d+) and they have
  * zero opens AND zero clicks in 60 days. Excludes active members and anyone who paid in 90d
- * (stripe_payments — money truth), plus anyone already in this win-back round (120d dedupe).
+ * (stripe_payments - money truth), plus anyone already in this win-back round (120d dedupe).
  */
 async function getStageCandidates(stage: WinbackStage): Promise<Array<{ email: string }>> {
   return (await sql`

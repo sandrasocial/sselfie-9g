@@ -22,7 +22,7 @@ interface ReviewEvent {
 }
 
 function formatDate(iso?: string | null) {
-  if (!iso) return "—"
+  if (!iso) return "-"
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
@@ -33,7 +33,7 @@ function formatDate(iso?: string | null) {
 }
 
 function cents(amount: number | null, currency: string | null) {
-  if (!amount || !currency) return "—"
+  if (!amount || !currency) return "-"
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency.toUpperCase(),
@@ -101,7 +101,7 @@ export default function WebhookReviewPage() {
           </h1>
           <p className="mt-3 text-sm text-stone-500">
             Stripe checkout events where email, product type, or metadata was missing.
-            These payments may need manual delivery — check Stripe and resend from the{" "}
+            These payments may need manual delivery - check Stripe and resend from the{" "}
             <a href="/admin/customer-support" className="underline hover:text-stone-900">
               Customer Support
             </a>{" "}
@@ -144,7 +144,7 @@ export default function WebhookReviewPage() {
         ) : events.length === 0 ? (
           <div className="rounded-xl border border-green-200 bg-green-50 p-8 text-center">
             <p className="text-sm font-medium text-green-700">
-              {showResolved ? "No resolved events." : "✓ No flagged events — all payments processed cleanly."}
+              {showResolved ? "No resolved events." : "✓ No flagged events - all payments processed cleanly."}
             </p>
           </div>
         ) : (
@@ -247,7 +247,7 @@ export default function WebhookReviewPage() {
                       <textarea
                         value={resolveNotes}
                         onChange={(e) => setResolveNotes(e.target.value)}
-                        placeholder="Resolution notes (optional) — e.g. 'Delivery resent manually 13 May'"
+                        placeholder="Resolution notes (optional) - e.g. 'Delivery resent manually 13 May'"
                         rows={2}
                         className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-600 focus:outline-none"
                       />

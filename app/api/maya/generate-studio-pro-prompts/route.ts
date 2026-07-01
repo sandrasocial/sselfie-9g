@@ -1,5 +1,5 @@
 /**
- * @deprecated NON-PRIMARY — No active component caller found.
+ * @deprecated NON-PRIMARY - No active component caller found.
  * Studio Pro prompt generation routes through /api/maya/generate-concepts (studioProMode flag)
  * and the Pro Mode concept generation path.
  * Preserved for reference. Audit date: 2026-03-14.

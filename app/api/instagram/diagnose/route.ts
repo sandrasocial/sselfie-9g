@@ -5,9 +5,9 @@ const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'
 const INSTAGRAM_LOGIN_APP_ID = process.env.INSTAGRAM_LOGIN_APP_ID
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
 
-// Admin-only diagnostic endpoint — shows exactly what's configured and what's broken
+// Admin-only diagnostic endpoint - shows exactly what's configured and what's broken
 export async function GET(request: NextRequest) {
-  // Simple admin guard — only accessible if you know the secret or from admin context
+  // Simple admin guard - only accessible if you know the secret or from admin context
   const authHeader = request.headers.get('x-admin-secret')
   const isLocalDev = process.env.VERCEL_ENV === undefined
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   // 1. Check env vars
   checks.INSTAGRAM_APP_ID = FACEBOOK_APP_ID
     ? { status: 'ok', detail: FACEBOOK_APP_ID }
-    : { status: 'missing', detail: 'Not set — using hardcoded fallback 1210263417166165' }
+    : { status: 'missing', detail: 'Not set - using hardcoded fallback 1210263417166165' }
 
   checks.INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET
     ? { status: 'ok', detail: 'Set (hidden)' }
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       status: connections.length > 0 ? 'ok' : 'missing',
       detail: connections.length > 0
         ? `${connections.length} connection(s): ${connections.map((c: any) => `@${c.instagram_username} (${c.is_active ? 'active' : 'inactive'}, expires ${c.token_expires_at ? new Date(c.token_expires_at).toLocaleDateString() : 'unknown'})`).join(', ')}`
-        : 'No Instagram connections saved — OAuth has never completed successfully',
+        : 'No Instagram connections saved - OAuth has never completed successfully',
     }
   } catch (e: any) {
     checks.db_connections = { status: 'error', detail: `DB error: ${e.message}` }

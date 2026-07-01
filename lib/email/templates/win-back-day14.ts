@@ -2,10 +2,10 @@
  * Win-Back Day 14 Email Template
  * Subject: "Last one, I promise"
  *
- * Touch 3 of 3 — The last ask.
+ * Touch 3 of 3 - The last ask.
  * Honest, warm, no pressure. "Door is always open."
  * Frame what SSELFIE does for her specifically.
- * Soft close — if she's not ready now, she will be. Seed the future.
+ * Soft close - if she's not ready now, she will be. Seed the future.
  */
 
 export interface WinBackDay14Params {

@@ -85,7 +85,7 @@ export default function FeedPublishingHub({
     try {
       await navigator.clipboard.writeText(text)
     } catch {
-      // Clipboard API requires a user gesture and secure context — silently ignore.
+      // Clipboard API requires a user gesture and secure context - silently ignore.
     }
     if (type === "caption") {
       setCopiedCaption(true)

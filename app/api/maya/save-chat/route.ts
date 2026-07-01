@@ -1,5 +1,5 @@
 /**
- * @deprecated NON-PRIMARY — No active component caller found.
+ * @deprecated NON-PRIMARY - No active component caller found.
  * Chat creation now flows through /api/maya/new-chat and message persistence
  * through /api/maya/save-message + /api/maya/update-message.
  * Preserved for reference. Audit date: 2026-03-14.

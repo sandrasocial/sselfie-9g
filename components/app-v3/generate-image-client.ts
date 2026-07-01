@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — client engine.
+// SSELFIE Studio 3.0 - client engine.
 // Connects the Concierge "Generate" button to the synchronous OpenAI route. Compiles the
 // prompt(s), fires one call per image (carousels = one call per slide, kept cohesive),
 // and returns the finished image URLs. Conversational edits re-run with the previous

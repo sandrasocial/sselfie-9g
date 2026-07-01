@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — true Edit Mode (MAYA-REBUILD-05 Phase 4, layout fix in 4.1).
+// SSELFIE Studio 3.0 - true Edit Mode (MAYA-REBUILD-05 Phase 4, layout fix in 4.1).
 // "Ask Maya to tweak it" opens THIS, not a chat. The image is attached and shown; one change
 // is applied at a time via /api/app-v3/maya/edit; edits are iterative.
 //
@@ -130,7 +130,7 @@ export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps)
           )}
         </div>
 
-        {/* Edit panel — pinned right on desktop, below (scrollable) on mobile. Always reachable. */}
+        {/* Edit panel - pinned right on desktop, below (scrollable) on mobile. Always reachable. */}
         <div className="max-h-[55dvh] shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-[#0D0E10]/85 p-5 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
           {error && <p className="text-[12px] text-white/80">{error}</p>}
 

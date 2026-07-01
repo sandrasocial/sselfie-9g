@@ -41,9 +41,9 @@ export async function GET(request: Request) {
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
       const neonUser = await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
 
-      // Sync user to Resend Main Audience — idempotent, non-blocking.
+      // Sync user to Resend Main Audience - idempotent, non-blocking.
       // Ensures every signup lands in the email list for nurture sequences.
-      // Runs on every auth callback (safe — Resend upserts, no duplicates created).
+      // Runs on every auth callback (safe - Resend upserts, no duplicates created).
       try {
         const { addOrUpdateResendContact } = await import("@/lib/resend/manage-contact")
         const firstName = (data.user.user_metadata?.name as string | undefined)?.split(" ")[0] ?? null

@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
   }
 
-  // Bridge-originated contacts (mc:<subscriber_id>) send via ManyChat — the app Meta
+  // Bridge-originated contacts (mc:<subscriber_id>) send via ManyChat - the app Meta
   // actually delivers DMs to. Native IG contacts keep the Graph sender.
   const result = igUserId.startsWith("mc:")
     ? await sendManychatDm({ igUserId, message, conversationId, fromType: "sandra" })

@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — load + archive one conversation (MAYA-REBUILD-05 Phase C).
+// SSELFIE Studio 3.0 - load + archive one conversation (MAYA-REBUILD-05 Phase C).
 // GET    -> the conversation's messages (ownership-checked).
 // DELETE -> soft-archive (never hard delete).
 

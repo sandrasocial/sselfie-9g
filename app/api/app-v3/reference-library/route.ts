@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — reference selfie library (isolated /app endpoint).
+// SSELFIE Studio 3.0 - reference selfie library (isolated /app endpoint).
 // Lists the admin's previously uploaded app-v3 reference selfies so they can reuse one
 // without re-uploading. Read-only. Mirrors the upload route's auth + user mapping.
 
@@ -19,7 +19,7 @@ export async function GET() {
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (!neonUserId) return NextResponse.json({ images: [] })
 
-    // All of the user's active FACE selfies (legacy rows included), newest first — so their
+    // All of the user's active FACE selfies (legacy rows included), newest first - so their
     // existing selfies from elsewhere in SSELFIE are reusable here too, not just /app uploads.
     // The optional slots (side-profile/full-body/inspiration) are excluded: a vibe image must
     // never be restored or picked as the member's face.
@@ -36,7 +36,7 @@ export async function GET() {
       .map((r: { image_url?: unknown }) => r.image_url)
       .filter((u: unknown): u is string => typeof u === "string" && u.length > 0)
 
-    // SUITE-UX-02: the optional slots persist too — newest active image per slot, restored
+    // SUITE-UX-02: the optional slots persist too - newest active image per slot, restored
     // alongside the face when Maya opens so nobody re-uploads angles every session.
     const extraRows = await sql`
       SELECT DISTINCT ON (image_type) image_type, image_url

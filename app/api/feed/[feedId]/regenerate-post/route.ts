@@ -138,7 +138,7 @@ async function handleRegeneratePost(
         console.log(`[v0] [REGENERATE-POST] ✅ Regenerated prompt via V2 (${feedLayout.layout_type || 'grid_3x3'})`)
       }
       
-      // Deduct credits BEFORE calling NanoBanana — once generation starts, API cost is incurred
+      // Deduct credits BEFORE calling NanoBanana - once generation starts, API cost is incurred
       const deduction = await deductCredits(
         neonUser.id.toString(),
         getStudioProCreditCost('2K'),

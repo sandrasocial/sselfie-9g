@@ -330,7 +330,7 @@ export function generateWelcomeDay7(params: WelcomeSequenceParams = {}) {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>Feed Designer:</strong> Plan your entire Instagram grid before you post. See how photos work together. No more guessing.</li>
-                <li style="margin-bottom: 12px;"><strong>Video B-Roll:</strong> Turn your photos into animated video clips. Perfect for Reels and Stories. Game changer for engagement.</li>
+                <li style="margin-bottom: 12px;"><strong>Video B-Roll:</strong> Turn your photos into animated video clips. Perfect for Reels and Stories when you want more movement.</li>
                 <li style="margin-bottom: 12px;"><strong>Maya's Smart Prompts:</strong> Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.</li>
                 <li style="margin-bottom: 12px;"><strong>Pro Mode:</strong> Want editorial-quality photos without training a model? Upload reference images and get luxury influencer content instantly.</li>
               </ul>
@@ -383,7 +383,7 @@ Most people give up on new tools after 3 days. But you? You're still here, creat
 
 Now that you've got the basics down, here are some features that'll take your content to the next level:
 - Feed Designer: Plan your entire Instagram grid before you post. See how photos work together. No more guessing.
-- Video B-Roll: Turn your photos into animated video clips. Perfect for Reels and Stories. Game changer for engagement.
+- Video B-Roll: Turn your photos into animated video clips. Perfect for Reels and Stories when you want more movement.
 - Maya's Smart Prompts: Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.
 - Pro Mode: Want editorial-quality photos without training a model? Upload reference images and get luxury influencer content instantly.
 

@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — app-v3 Maya chat (the spine, MAYA-REBUILD-03).
+// SSELFIE Studio 3.0 - app-v3 Maya chat (the spine, MAYA-REBUILD-03).
 //
 // Stage 1 of the two-stage pipeline: Maya (Claude Sonnet 4.5) holds an in-character
 // conversation and, once she understands the request, calls the emit_concepts tool with
@@ -46,7 +46,7 @@ const SHOOT_SHOT_ROLES = [
 
 // Concept turns are token-heavy: Maya's prose + an emit_concepts call with 3 full briefs (and,
 // for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
-// tool call mid-stream — the user watched cards stream in, then they vanished at finish (P0).
+// tool call mid-stream - the user watched cards stream in, then they vanished at finish (P0).
 // app-v3 sets its own budget; the shared map stays untouched for legacy /studio.
 const APP_V3_MAX_OUTPUT_TOKENS = 8192
 
@@ -282,7 +282,7 @@ const conceptSchema = z.object({
       .describe("Exact brand + garment, e.g. 'The Row cream cashmere turtleneck'. Never generic."),
     setting: z.string().describe("A concrete place with real detail."),
     mood: z.string().describe("The emotional register, in a few words."),
-    pose: z.string().describe("One simple, natural pose — a real moment."),
+    pose: z.string().describe("One simple, natural pose - a real moment."),
     cameraSpec: z.string().describe("A NAMED camera body + lens matched to the positioning."),
     lighting: z.string().describe("A NAMED lighting setup, not 'soft light'."),
     shotRole: z
@@ -326,7 +326,7 @@ const emitConcepts = tool({
 })
 
 // SUITE-UX-02 slice 4: conversational format switching. The format chips are shortcuts, not
-// gates — when the user ASKS for a different format mid-chat, Maya calls this and the client
+// gates - when the user ASKS for a different format mid-chat, Maya calls this and the client
 // commits the switch, then auto-pulls fresh directions for it (the existing chip machinery).
 const setFormat = tool({
   description:
@@ -710,7 +710,7 @@ export async function POST(req: Request) {
       memory,
       recentActivity,
       brandContext,
-      // The real Vault shots for the chosen vibe — Maya's styling source of truth. General
+      // The real Vault shots for the chosen vibe - Maya's styling source of truth. General
       // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
       // EVERY generation path carries Vault DNA, never a generic posed-studio default.
       vaultStyleGuide,
@@ -721,7 +721,7 @@ export async function POST(req: Request) {
     }
 
     // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
-    // Server-gated on the admin email — the flag alone does nothing for anyone else.
+    // Server-gated on the admin email - the flag alone does nothing for anyone else.
     let isAdminSession = false
     let adminContentToolContext: Awaited<ReturnType<typeof getAdminContentToolContext>> | null =
       null
@@ -781,7 +781,7 @@ export async function POST(req: Request) {
     }
 
     // SUITE-UX-02: Maya learns as she goes. When the user expresses a lasting brand fact or
-    // style preference, she appends it to cross-session memory (app_v3_memory) herself —
+    // style preference, she appends it to cross-session memory (app_v3_memory) herself -
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
     const remember = tool({
       description:
@@ -1229,7 +1229,7 @@ export async function POST(req: Request) {
       onFinish: ({ finishReason, steps }) => {
         if (finishReason !== "stop" && finishReason !== "tool-calls") {
           console.error(
-            `[app-v3 maya chat] stream ended early: finishReason=${finishReason} format=${format} — concept cards may be lost`
+            `[app-v3 maya chat] stream ended early: finishReason=${finishReason} format=${format} - concept cards may be lost`
           )
         }
         // Member pulse: count what Maya actually did this turn (behavior only, fail-open).

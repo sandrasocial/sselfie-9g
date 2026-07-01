@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — native Account (MAYA-REBUILD-15, QA P0-3).
+// SSELFIE Studio 3.0 - native Account (MAYA-REBUILD-15, QA P0-3).
 // Members manage everything here without leaving /app: membership, credits, billing (Stripe
 // portal), Maya's brand memory (opens the dedicated Memory screen directly, QA P1-6), saved
 // selfies, support, and logout. Trained Flux models now enter through Maya's app-v3 flow,
@@ -50,7 +50,7 @@ export function AccountView({
   firstName?: string | null
   onOpenLibrary?: () => void
   onUseTrainedModel?: () => void
-  /** Set while on a SUITE trial (BRIDGE-01 Phase D) — shows the trial badge. */
+  /** Set while on a SUITE trial (BRIDGE-01 Phase D) - shows the trial badge. */
   trialDaysLeft?: number | null
   /** True when the member has a completed, non-test trained model. Gates the legacy entry. */
   hasTrainedModel?: boolean
@@ -217,7 +217,7 @@ export function AccountView({
           </div>
         </div>
 
-        {/* Your SSELFIE — pointer into the Library tab (BRIDGE-01 Phase C) */}
+        {/* Your SSELFIE - pointer into the Library tab (BRIDGE-01 Phase C) */}
         {onOpenLibrary && (
           <div className={card}>
             <p className={cardTitle}>Your SSELFIE</p>
@@ -232,7 +232,7 @@ export function AccountView({
           </div>
         )}
 
-        {/* Brand & memory — straight to the Memory screen, never a chat (QA P1-6). */}
+        {/* Brand & memory - straight to the Memory screen, never a chat (QA P1-6). */}
         <div className={card}>
           <p className={cardTitle}>Brand &amp; memory</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
@@ -289,7 +289,7 @@ export function AccountView({
           />
         </div>
 
-        {/* Trained model — quiet, discoverable entry into Maya's new app flow. Only
+        {/* Trained model - quiet, discoverable entry into Maya's new app flow. Only
             for members with a completed, non-test trained model (gated server-side). */}
         {hasTrainedModel && onUseTrainedModel && (
           <div className={card}>

@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — "What Maya remembers" editor (MAYA-REBUILD-05 Phase E, +05.1 avatar).
+// SSELFIE Studio 3.0 - "What Maya remembers" editor (MAYA-REBUILD-05 Phase E, +05.1 avatar).
 // View and edit cross-session memory: the agent's name, your profile photo, brand notes, and
 // style preferences. Saved to /api/app-v3/maya/memory and injected into every chat session.
 

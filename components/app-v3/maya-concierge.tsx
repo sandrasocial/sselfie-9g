@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Maya Concierge (MAYA-REBUILD-03: conversational rebuild).
+// SSELFIE Studio 3.0 - Maya Concierge (MAYA-REBUILD-03: conversational rebuild).
 //
 // This is the missing layer Sandra felt. Instead of a form with one Generate button, Maya
 // now holds a real streaming conversation (Claude Sonnet 4.5 via /api/app-v3/maya/chat),
@@ -143,7 +143,7 @@ type GenerationSource = "selfie" | "trained-model"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
  *  `rawInput` is the salvage path: if the tool call finished but failed schema validation (a
- *  truncated stream, a missing field), the SDK clears `input` and keeps the raw payload there —
+ *  truncated stream, a missing field), the SDK clears `input` and keeps the raw payload there -
  *  without this fallback the cards a user watched stream in would vanish when Maya finishes. */
 function extractConcepts(part: any): ConceptCardData[] | null {
   if (!part || typeof part !== "object") return null
@@ -174,7 +174,7 @@ function isConceptToolPart(part: any): boolean {
 }
 
 /** Pull the requested format out of a set_format tool part (SUITE-UX-02: conversational
- *  format switching — "make me a carousel" mid-chat works without tapping a chip). */
+ *  format switching - "make me a carousel" mid-chat works without tapping a chip). */
 function extractFormatSwitch(part: any): OutputFormat | null {
   if (!part || typeof part !== "object") return null
   if (
@@ -587,7 +587,7 @@ export function MayaConcierge({
           setSelfieRestored(true)
           setReferenceSelfieUrl(latest)
         }
-        // Optional slots: restore only into empty state — never clobber something the
+        // Optional slots: restore only into empty state - never clobber something the
         // member just uploaded or removed this session.
         const asUrl = (v: unknown): string | null =>
           typeof v === "string" && v.length > 0 ? v : null
@@ -603,7 +603,7 @@ export function MayaConcierge({
 
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
   // pulls directions automatically. One pull per format; resets on a new chat or new session.
-  // IDENTITY FIRST (P0): nothing streams until the selfie exists — the moment it's added,
+  // IDENTITY FIRST (P0): nothing streams until the selfie exists - the moment it's added,
   // this same effect fires and pulls the committed format, so upload completes the flow.
   useEffect(() => {
     if (!isOpen || !session) return
@@ -631,7 +631,7 @@ export function MayaConcierge({
   }, [admin, generationSource, hasTrainedModel, isOpen, session, isThinking, sendMessage])
 
   // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
-  // ("make me a carousel" typed, no chip), commit the switch here — the auto-pull effect
+  // ("make me a carousel" typed, no chip), commit the switch here - the auto-pull effect
   // above then fetches fresh directions for the new format. Each tool part applies once;
   // loadChat pre-seeds historical parts so reopening an old chat never re-fires a switch.
   useEffect(() => {
@@ -737,7 +737,7 @@ export function MayaConcierge({
   }
 
   // SUITE-UX-02: removing an optional image must stick across refreshes, so clear the
-  // saved copy too (best-effort — local state clears either way).
+  // saved copy too (best-effort - local state clears either way).
   function clearSlot(slot: "side" | "body" | "inspiration") {
     if (slot === "side") setSideProfileUrl(null)
     else if (slot === "body") setFullBodyUrl(null)
@@ -825,7 +825,7 @@ export function MayaConcierge({
       }))
       return
     }
-    // "Make another version" on a finished card is a re-roll — a friction signal the
+    // "Make another version" on a finished card is a re-roll - a friction signal the
     // member pulse tracks server-side (SUITE-UX-02).
     const rerun = genState[key]?.status === "done"
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
@@ -1196,7 +1196,7 @@ export function MayaConcierge({
         }
         className="relative flex h-[100dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
       >
-        {/* Header — one calm row. Actions live in a quiet menu, and Close is always visible
+        {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
           <div className="min-w-0">
@@ -1265,7 +1265,7 @@ export function MayaConcierge({
           </div>
         </header>
 
-        {/* Setup — full block before the conversation starts (the guided beginning), then it
+        {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"
             re-opens it for a format switch or a selfie swap. */}
         {hasStarted && !setupOpen && (
@@ -1312,7 +1312,7 @@ export function MayaConcierge({
             <div className="flex flex-wrap gap-2">
               {FORMAT_OPTIONS.map(opt => {
                 // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
-                // display fallback) — after "New chat" no chip is selected until she picks again.
+                // display fallback) - after "New chat" no chip is selected until she picks again.
                 const selected = outputFormat === opt.id
                 return (
                   <button
@@ -1551,7 +1551,7 @@ export function MayaConcierge({
                 onClick={() => {
                   if (!outputFormat) return
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
-                  // upload — the gated auto-pull then starts the moment her selfie is in.
+                  // upload - the gated auto-pull then starts the moment her selfie is in.
                   handlePickFormat(outputFormat)
                   if (outputFormat === "video" && !videoSourceUrl) {
                     videoInput.current?.click()
@@ -1576,7 +1576,7 @@ export function MayaConcierge({
               </button>
             )}
 
-            {/* Optional extras — tucked away so a single selfie still just works */}
+            {/* Optional extras - tucked away so a single selfie still just works */}
             {format !== "video" && (
               <button
                 type="button"
@@ -1671,7 +1671,7 @@ export function MayaConcierge({
           </div>
         )}
 
-        {/* Thread — the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
+        {/* Thread - the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
         <div className="min-h-0 min-w-0 flex-1 max-w-full space-y-5 overflow-y-auto overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6">
@@ -1847,7 +1847,7 @@ export function MayaConcierge({
               | AdminContentToolResult
               | undefined
             // Maya tried to present directions but none survived (truncated/failed tool call):
-            // never leave a dead end — offer a one-tap re-pull instead.
+            // never leave a dead end - offer a one-tap re-pull instead.
             const conceptsLost =
               !isUser &&
               !isThinking &&
@@ -2082,7 +2082,7 @@ export function MayaConcierge({
           <div ref={threadEndRef} />
         </div>
 
-        {/* Composer — secondary: refinement only, the happy path is the taps above. One clean
+        {/* Composer - secondary: refinement only, the happy path is the taps above. One clean
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
         <div className="min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6">

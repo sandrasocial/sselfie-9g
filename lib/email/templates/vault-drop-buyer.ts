@@ -1,11 +1,11 @@
-// Vault email drop — buyer update.
+// Vault email drop - buyer update.
 //
 // Sent to vault owners (source = 'prompt-vault-paid' or email_tags includes
 // 'prompt-vault-paid'). Tells them new shoots have been added. Links directly
-// to their personal vault access URL — no purchase language anywhere.
+// to their personal vault access URL - no purchase language anywhere.
 //
 // Tone: warm, personal, "welcome back." Not a sales email.
-// Language: shoots / collections / editorials — NEVER "prompts / bundle / product update"
+// Language: shoots / collections / editorials - NEVER "prompts / bundle / product update"
 
 import {
   editorialClosingRow,

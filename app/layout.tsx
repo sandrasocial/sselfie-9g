@@ -122,7 +122,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SSELFIE" />
         <meta name="p:domain_verify" content="2df53c71e4cbd55c3f1b54c34f6661e8" />
-        {/* SoftwareApplication schema — accurate pricing in USD, no fabricated ratings */}
+        {/* SoftwareApplication schema - accurate pricing in USD, no fabricated ratings */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -181,7 +181,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* Organization schema — entity recognition for AI systems */}
+        {/* Organization schema - entity recognition for AI systems */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -206,7 +206,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* FAQPage schema — surfaces SSELFIE in AI answers for common questions */}
+        {/* FAQPage schema - surfaces SSELFIE in AI answers for common questions */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -251,7 +251,7 @@ export default function RootLayout({
                   name: "What is Maya in SSELFIE?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Maya is SSELFIE's AI — the entire interface. Instead of navigating menus and settings, you talk to Maya. She generates photos, plans your feed, writes captions, and remembers your brand preferences across every session.",
+                    text: "Maya is SSELFIE's AI - the entire interface. Instead of navigating menus and settings, you talk to Maya. She generates photos, plans your feed, writes captions, and remembers your brand preferences across every session.",
                   },
                 },
                 {

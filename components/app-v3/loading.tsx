@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — loading primitives (MAYA-REBUILD-05 Phase A).
+// SSELFIE Studio 3.0 - loading primitives (MAYA-REBUILD-05 Phase A).
 // Lifted from the live Studio's loading language (typing dots, spinner, skeleton),
 // reskinned to the /app light editorial palette. Presentational only.
 

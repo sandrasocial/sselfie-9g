@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       `2. Repeat step 1 until response.done.nonBuyer === true`,
       `3. Send buyer batch:     POST /api/vault/email-drop/process  body: { "runId": "${runId}", "audienceType": "buyer" }`,
       `4. Check progress:       GET  /api/vault/email-drop/status?runId=${runId}`,
-      `5. After all done: update lib/vault/drop-log.ts — set includedInEmailDrop: true + droppedAt, reset automationApproved: false`,
+      `5. After all done: update lib/vault/drop-log.ts - set includedInEmailDrop: true + droppedAt, reset automationApproved: false`,
     ],
   })
 }

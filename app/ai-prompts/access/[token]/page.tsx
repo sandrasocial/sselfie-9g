@@ -223,7 +223,7 @@ export default async function AiPromptsAccessPage({
   }
 
   // Fire-and-forget: track that a valid token page was opened.
-  // Never awaited — failure must not delay or block the page render.
+  // Never awaited - failure must not delay or block the page render.
   logAnalyticsEvent({
     eventName: "ai_prompts_access_opened",
     path: "/ai-prompts/access/[token]",
@@ -292,7 +292,7 @@ export default async function AiPromptsAccessPage({
         </div>
       </section>
 
-      {/* 2. Updated Vault preview — the core experience (moved directly under hero) */}
+      {/* 2. Updated Vault preview - the core experience (moved directly under hero) */}
       {freebieCollections.length > 0 && (
         <section id="vault-preview" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">

@@ -114,7 +114,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   // Shared state
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  // Danger zone — delete account
+  // Danger zone - delete account
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)

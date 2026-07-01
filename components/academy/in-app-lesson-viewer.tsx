@@ -4,7 +4,7 @@
  * In-app lesson viewer.
  *
  * Wraps LessonViewerClient (the canonical cream/ink lesson UI) so it can render
- * inside the app shell — no standalone page, no dark modal. It fetches the full
+ * inside the app shell - no standalone page, no dark modal. It fetches the full
  * lesson detail (video URL, content, resources, notes) client-side, then hands
  * everything to LessonViewerClient with callback-based navigation.
  *

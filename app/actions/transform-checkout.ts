@@ -11,13 +11,13 @@ const PLAN_CONFIG = {
   starter: {
     priceId: process.env.STRIPE_PRICE_TRANSFORM_STARTER!,
     credits: 15,
-    name: "SSELFIE Edit Studio — Starter Pack",
+    name: "SSELFIE Edit Studio - Starter Pack",
     description: "15 credits · 5 professional photo edits",
   },
   topup: {
     priceId: process.env.STRIPE_PRICE_TRANSFORM_TOPUP!,
     credits: 15,
-    name: "SSELFIE Edit Studio — Credit Top-up",
+    name: "SSELFIE Edit Studio - Credit Top-up",
     description: "15 credits · 5 professional photo edits",
   },
 }

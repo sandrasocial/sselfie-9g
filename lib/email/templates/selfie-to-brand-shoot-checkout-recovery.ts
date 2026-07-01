@@ -36,7 +36,7 @@ export function generateSelfieToBrandShootCheckoutRecoveryEmail({
       "Inside the System"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Start the System", checkoutUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You don't need a studio, a photographer, or a perfect photo of yourself.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one clear selfie. I will show you what to do with it.</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">Just one clear selfie, one visual direction, and one simple next step.</p>
   `
 
@@ -67,7 +67,7 @@ Inside the System:
 Start the System:
 ${checkoutUrl}
 
-You don't need a studio, a photographer, or a perfect photo of yourself.
+Start with one clear selfie. I will show you what to do with it.
 
 Just one clear selfie, one visual direction, and one simple next step.
 

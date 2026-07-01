@@ -20,7 +20,7 @@ const inter = Inter({
   weight: ["300", "500", "600"],
 })
 
-// ─── Design tokens — single source, maps to app CSS variables ─────────────────
+// ─── Design tokens - single source, maps to app CSS variables ─────────────────
 // All authenticated lesson content uses the studio app design system:
 // white/pearl backgrounds, obsidian text, whisper borders, rounded corners.
 const C = {
@@ -161,7 +161,7 @@ export function LessonViewerClient({
     let active = true
 
     async function bootstrap() {
-      // Enroll + mark started — fire-and-forget, don't block lesson loading
+      // Enroll + mark started - fire-and-forget, don't block lesson loading
       try {
         await Promise.all([
           fetch("/api/academy/enroll", {
@@ -176,12 +176,12 @@ export function LessonViewerClient({
           }),
         ])
       } catch {
-        // Non-fatal — lesson is still viewable even if tracking fails
+        // Non-fatal - lesson is still viewable even if tracking fails
       }
 
       if (!active) return
 
-      // Load saved notes — gracefully degrade with empty state if unavailable
+      // Load saved notes - gracefully degrade with empty state if unavailable
       try {
         const notesResponse = await fetch(`/api/academy/lessons/${lesson.id}/notes`, {
           cache: "no-store",
@@ -198,7 +198,7 @@ export function LessonViewerClient({
           }
         }
       } catch {
-        // Non-fatal — show lesson with empty notes
+        // Non-fatal - show lesson with empty notes
       }
 
       if (!active) return
@@ -654,7 +654,7 @@ export function LessonViewerClient({
   ) : null
 
   // ─── Render ───────────────────────────────────────────────────────────────
-  // When rendered in-app (onBack provided), skip the <main> shell — the app
+  // When rendered in-app (onBack provided), skip the <main> shell - the app
   // already provides the page wrapper and background.
   const Wrapper = onBack ? "div" : "main"
   return (
@@ -710,7 +710,7 @@ export function LessonViewerClient({
               )}
             </div>
 
-            {/* Maya chat is rendered as a floating corner bubble — see bottom of layout */}
+            {/* Maya chat is rendered as a floating corner bubble - see bottom of layout */}
 
             {/* Lesson meta */}
             <div className="space-y-4">

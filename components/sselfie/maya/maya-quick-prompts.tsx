@@ -19,7 +19,7 @@ interface MayaQuickPromptsProps {
 }
 
 /**
- * Maya Quick Prompts Component — Now with Quick Chips variant
+ * Maya Quick Prompts Component - Now with Quick Chips variant
  * 
  * Displays quick prompt suggestion buttons for users to quickly start conversations.
  * Supports multiple variants for different contexts.
@@ -44,7 +44,7 @@ export default function MayaQuickPrompts({
     return null
   }
 
-  // **NEW: Quick Chips variant** — rendered above input in Chat Focus mode
+  // **NEW: Quick Chips variant** - rendered above input in Chat Focus mode
   if (variant === "quick-chips") {
     const INITIAL_VISIBLE_CHIPS = 3
     const visiblePrompts = expanded ? prompts : prompts.slice(0, INITIAL_VISIBLE_CHIPS)

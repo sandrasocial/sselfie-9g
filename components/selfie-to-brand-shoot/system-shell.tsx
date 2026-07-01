@@ -415,7 +415,7 @@ export function SelfieToBrandShootSystemShell({
             <p>
               Your first AI brand shoot starts before the prompt. It starts with
               the photo you upload. This step helps you choose the selfie that
-              gives you the most believable, elevated result.
+              gives you the most believable, polished result.
             </p>
             <a href="#source-selfie-checklist" className="sbs-primary">
               Choose My Source Selfie

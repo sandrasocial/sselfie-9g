@@ -2,7 +2,7 @@
  * Win-Back Day 3 Email Template
  * Subject: "Something I want to say"
  *
- * Touch 1 of 3 — The honest check-in.
+ * Touch 1 of 3 - The honest check-in.
  * Sandra speaking directly. No pitch. "What happened?" energy.
  * Soft CTA to rejoin sits at the bottom, not the headline.
  */

@@ -21,7 +21,7 @@ const PREFERRED_INSTAGRAM_USERNAMES = [
 ].filter(Boolean) as string[]
 
 // State must carry a valid HMAC issued by /api/instagram/connect (session-authed).
-// A missing or forged state yields userId null, which the handler rejects — nobody
+// A missing or forged state yields userId null, which the handler rejects - nobody
 // can attach a connection to an arbitrary userId by crafting the redirect.
 function parseOAuthState(rawState?: string | null) {
   const verified = verifyInstagramOAuthState(rawState)

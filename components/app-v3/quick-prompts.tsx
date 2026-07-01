@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — quick-prompt chips (MAYA-REBUILD-05 Phase B).
+// SSELFIE Studio 3.0 - quick-prompt chips (MAYA-REBUILD-05 Phase B).
 // A tappable row of starter prompts shown before the conversation begins, so a user can
 // get going in one tap. Adapted from the live Studio's quick-chips pattern, light skin.
 

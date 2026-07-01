@@ -1,4 +1,4 @@
-// Stone shell — the single shared wrapper for lifecycle + transactional emails (57 templates).
+// Stone shell - the single shared wrapper for lifecycle + transactional emails (57 templates).
 //
 // EMAIL-01 (2026-06-11): restyled to the Vault editorial language (lib/email/editorial-email.ts),
 // which Sandra locked as THE email design. Same exported API as before, so every template that
@@ -8,9 +8,9 @@
 // centered serif headline, square black CTAs, quiet separators, italic "Sandra x" signature.
 //
 // Email client notes (mirrors editorial-email.ts):
-//   — Inline styles are the layout contract (Outlook, older Gmail).
-//   — The <style> block adds mobile overrides (classes prefixed st- to avoid collisions).
-//   — No web fonts. Georgia / Arial only.
+//   - Inline styles are the layout contract (Outlook, older Gmail).
+//   - The <style> block adds mobile overrides (classes prefixed st- to avoid collisions).
+//   - No web fonts. Georgia / Arial only.
 
 const COLORS = {
   shell: "#F5EFE6", // outer cream
@@ -19,7 +19,7 @@ const COLORS = {
   text: "#0A0A0A", // headlines, primary black
   body: "#3A3632", // body copy charcoal
   muted: "#9B9189", // captions, eyebrows, footer
-  quiet: "#9B9189", // kept as an alias — legacy templates referenced both tones
+  quiet: "#9B9189", // kept as an alias - legacy templates referenced both tones
   line: "#E5DDD4", // separators
   lineSoft: "#E5DDD4",
   cta: "#0A0A0A",
@@ -88,13 +88,13 @@ export function renderStonePanel(contentHtml: string, eyebrow?: string): string 
   return `<div style="margin:26px 0;padding:22px 24px;background:${COLORS.panel};border-left:3px solid ${COLORS.text};">${eyebrowHtml}${normalizeLegacyStoneHtml(contentHtml)}</div>`
 }
 
-// Personal-note format — for recovery and early-nurture emails, where the 2025-26 evidence
+// Personal-note format - for recovery and early-nurture emails, where the 2025-26 evidence
 // says a personal-looking email beats branded HTML (better Primary-tab placement, 21% higher
 // click-to-open). Looks like a note from Sandra: white background, no card, no headline block,
 // serif body, plain underlined links, small italic signoff. Use renderPersonalNote for these;
 // keep renderStoneShell for delivery, offers, drops, and the newsletter.
 export interface PersonalNoteOptions {
-  /** <title> tag + preheader context only — never rendered as a visible headline. */
+  /** <title> tag + preheader context only - never rendered as a visible headline. */
   title: string
   bodyHtml: string
   signoff?: string

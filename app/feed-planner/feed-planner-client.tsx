@@ -258,7 +258,7 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
     }
 
     // Paid users (first-time): Show wizard if missing extension data (skip free example)
-    // Paid blueprint: Skip full wizard entirely — show feed list view with inline "Set up in 30 seconds" card (A-02)
+    // Paid blueprint: Skip full wizard entirely - show feed list view with inline "Set up in 30 seconds" card (A-02)
     if (access.isPaidBlueprint) {
       setWizardMode("none")
       setShowWizard(false)

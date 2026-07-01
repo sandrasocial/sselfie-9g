@@ -109,7 +109,7 @@ const IS_DEV_VIDEO_DEBUG = process.env.NODE_ENV !== "production"
 
 /** Chat chrome: map ad-hoc colors to tokens in [app/globals.css](app/globals.css) (`--text-*`, `--glass-*`, `--color-*`). */
 const MAYA_CHAT_UI = {
-  /** Dev-only video prompt inspector — never shown when IS_DEV_VIDEO_DEBUG is false */
+  /** Dev-only video prompt inspector - never shown when IS_DEV_VIDEO_DEBUG is false */
   videoDebugBorder: "rgba(245,167,66,0.45)",
   videoDebugBg: "rgba(245,167,66,0.08)",
 } as const
@@ -136,7 +136,7 @@ const TOOL_RENDER_TYPES = new Set([
 ])
 
 // Context passed through to every tool renderer
-// NOSONAR — All properties are forwarded to sub-renderer functions via `renderer(part, partIndex, ctx)`.
+// NOSONAR - All properties are forwarded to sub-renderer functions via `renderer(part, partIndex, ctx)`.
 // SonarCloud incorrectly flags these as "unused" because the component body doesn't explicitly access
 // them; they are consumed inside the renderer helpers that receive the full context object.
 interface ToolCtx {
@@ -595,7 +595,7 @@ function parsePromptSuggestions(
   }
 
   const optionPattern =
-    /(?:\*\*)?Option\s+(\d+)[\s-]+([^:]+):\s*(?:"([^"]+)"|`([^`]+)`|```[\s\S]*?```|([^"`\n]+(?:\n[^"`\n]+)*?)(?=\n\n|\nOption|\n\*\*Option|$))/gi // NOSONAR — intentionally complex; simplifying would break prompt extraction
+    /(?:\*\*)?Option\s+(\d+)[\s-]+([^:]+):\s*(?:"([^"]+)"|`([^`]+)`|```[\s\S]*?```|([^"`\n]+(?:\n[^"`\n]+)*?)(?=\n\n|\nOption|\n\*\*Option|$))/gi // NOSONAR - intentionally complex; simplifying would break prompt extraction
   let match
   while ((match = optionPattern.exec(text)) !== null) {
     const optionNum = match[1]
@@ -1380,7 +1380,7 @@ function renderWeekPlanTool(part: any, partIndex: number, ctx: ToolCtx): React.R
         )
       }
       onReplan={() =>
-        ctx.onToolPromptSelect?.("Let's plan my week differently — give me a new theme and direction.")
+        ctx.onToolPromptSelect?.("Let's plan my week differently - give me a new theme and direction.")
       }
     />
   )
@@ -1666,7 +1666,7 @@ function renderVideoStateChooseImage(output: any, partIndex: number, ctx: ToolCt
         subtitle={
           images.length > 0
             ? `${images.length} photo${photoPlural} ready. Scroll down to pick one.`
-            : "Your gallery is right below — pick one to start."
+            : "Your gallery is right below - pick one to start."
         }
         actions={
           <>
@@ -1847,7 +1847,7 @@ function MayaMessageParts(props: Readonly<MayaMessagePartsProps>): React.ReactNo
         >
           {textParts.map((part, idx) => (
             <MayaTextPart
-              key={(part as any).text?.slice(0, 30) || idx} // NOSONAR — text parts don't have stable IDs
+              key={(part as any).text?.slice(0, 30) || idx} // NOSONAR - text parts don't have stable IDs
               part={part}
               idx={idx}
               msg={msg}

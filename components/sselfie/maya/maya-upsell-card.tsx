@@ -12,7 +12,7 @@ interface MayaUpsellCardProps {
 export default function MayaUpsellCard({
   eyebrow,
   description,
-  ctaLabel = "Upgrade to Studio — includes everything →",
+  ctaLabel = "Upgrade to Studio - includes everything →",
   dismissLabel = "Not now",
   onUpgrade,
   onDismiss,

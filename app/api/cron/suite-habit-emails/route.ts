@@ -1,9 +1,9 @@
 // SUITE month-one habit system cron (copy approved 2026-06-10).
 // Runs daily. Three jobs, all deduped via email_logs and gated by SUITE_HABIT_EMAILS_ENABLED:
-//   1. Day 0  — new members (joined < 7 days) get the first-shoot welcome once.
-//   2. +48h   — members 2-30 days in who have generated NOTHING get one gentle nudge.
-//   3. Monday — every active member gets the weekly drop (one look, rotates by ISO week).
-// Older zero-usage members are deliberately excluded — they get Sandra's personal rescue email.
+//   1. Day 0  - new members (joined < 7 days) get the first-shoot welcome once.
+//   2. +48h   - members 2-30 days in who have generated NOTHING get one gentle nudge.
+//   3. Monday - every active member gets the weekly drop (one look, rotates by ISO week).
+// Older zero-usage members are deliberately excluded - they get Sandra's personal rescue email.
 // Test accounts (sselfie.ai addresses, smoke users) are always excluded.
 
 import { NextResponse } from "next/server"

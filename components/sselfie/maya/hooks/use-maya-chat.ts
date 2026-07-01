@@ -265,7 +265,7 @@ export function useMayaChat({
       })
 
       // Caption card trigger detection is handled in maya-chat-screen.tsx via useEffect
-      // (watches messages + status — proven pattern, same as concept cards)
+      // (watches messages + status - proven pattern, same as concept cards)
     },
     onError: (error) => {
       // Simplified error handling - just extract message safely

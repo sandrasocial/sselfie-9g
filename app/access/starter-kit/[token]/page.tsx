@@ -195,7 +195,7 @@ export default async function StarterKitAccessPage({
   const guideAccessUrl = `/selfie-guide/access/${token}`
   const systemUpgradeHref = buildSystemUpgradeHref(token, result.data.email)
 
-  // Log access event (fire-and-forget — do not block render)
+  // Log access event (fire-and-forget - do not block render)
   logAnalyticsEvent({
     eventName: "starter_kit_access_opened",
     path: `/access/starter-kit/${token}`,

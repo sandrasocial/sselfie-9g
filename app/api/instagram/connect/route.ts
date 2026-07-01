@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // admin Connect Instagram button, which is a plain link, not a fetch).
     const wantsRedirect = searchParams.get('redirect') === '1'
 
-    // userId comes from the session, never from the query string — the callback
+    // userId comes from the session, never from the query string - the callback
     // writes an instagram_connections row for this id, so it must be the caller's own.
     const { user: authUser } = await getAuthenticatedUser()
     if (!authUser) {
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     // Every scope here must be enabled on the Meta app (use case: Instagram API,
     // status "Ready for testing" or beyond) or the OAuth dialog rejects the WHOLE
     // request with "Invalid Scopes". pages_messaging (Messenger) was removed
-    // 2026-06-11 for exactly that reason — it isn't part of the Instagram use case.
+    // 2026-06-11 for exactly that reason - it isn't part of the Instagram use case.
     const scope = [
       'pages_show_list',
       'pages_read_engagement',

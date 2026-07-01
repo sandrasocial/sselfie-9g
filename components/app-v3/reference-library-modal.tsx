@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — reference library picker (MAYA-REBUILD-05 Phase B).
+// SSELFIE Studio 3.0 - reference library picker (MAYA-REBUILD-05 Phase B).
 // Pick a previously uploaded selfie instead of re-uploading. Loads the admin's saved
 // app-v3 reference selfies from /api/app-v3/reference-library.
 

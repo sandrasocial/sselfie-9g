@@ -357,7 +357,7 @@ export default function UnifiedOnboardingWizard({
     // Optional step
     if (step.isOptional) return true
     
-    // Selfie upload step — optional, user can always skip to continue
+    // Selfie upload step - optional, user can always skip to continue
     if (step.isSelfieUpload) {
       return true
     }
@@ -413,7 +413,7 @@ export default function UnifiedOnboardingWizard({
     }).catch(() => {})
 
     // Only 3 core fields are required: businessType, idealAudience, feedStyle.
-    // Selfie upload is optional — users can add selfies from Maya later.
+    // Selfie upload is optional - users can add selfies from Maya later.
     const missingCore = !formData.businessType?.trim() || !formData.idealAudience?.trim() || !formData.feedStyle?.trim()
     if (missingCore) {
       alert("Please fill in your brand focus, audience, and choose a feed style to continue.")
@@ -701,7 +701,7 @@ export default function UnifiedOnboardingWizard({
                   </div>
                 )}
 
-                {/* Step 3: You're ready! — single CTA */}
+                {/* Step 3: You're ready! - single CTA */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
@@ -730,7 +730,7 @@ export default function UnifiedOnboardingWizard({
                   </div>
                 )}
 
-                {/* Navigation — only for steps 1 and 2; step 3 has single CTA above */}
+                {/* Navigation - only for steps 1 and 2; step 3 has single CTA above */}
                 {currentStep < 2 && (
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                     {currentStep > 0 && (

@@ -1,4 +1,4 @@
-// Work With Me — post-payment welcome packet. Branded via the locked stone editorial shell.
+// Work With Me - post-payment welcome packet. Branded via the locked stone editorial shell.
 // Sent after a Work With Me payment. Warm, her voice, four steps, the Calendly kickoff button,
 // a compact "your four weeks" plan, and a short intake.
 

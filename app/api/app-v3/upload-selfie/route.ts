@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — reference selfie upload (isolated /app endpoint).
+// SSELFIE Studio 3.0 - reference selfie upload (isolated /app endpoint).
 // Uploads one selfie to Vercel Blob (public host the OpenAI route allowlists) and records
 // it in user_avatar_images for reuse. Returns the blob URL used as referenceImageUrl.
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Clears an optional slot (side profile, full body, inspiration) so "Remove" sticks across
-// refreshes. Face selfies are never deleted here — the member replaces those, and history
+// refreshes. Face selfies are never deleted here - the member replaces those, and history
 // stays available in the past-selfie picker.
 export async function DELETE(request: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser()

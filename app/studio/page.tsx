@@ -56,7 +56,7 @@ export default async function StudioPage({
 
   // Studio 3.0 admin override: send the admin straight to the new /app shell, UNLESS they
   // are impersonating a member or explicitly inspecting legacy with ?legacy=1. This is
-  // admin-only — the 7 active members never match isAdminEmail, so their legacy Studio is
+  // admin-only - the 7 active members never match isAdminEmail, so their legacy Studio is
   // completely untouched.
   if (!impersonatedUserId && params.legacy !== "1" && isAdminEmail(user.email)) {
     redirect("/app")
@@ -109,7 +109,7 @@ export default async function StudioPage({
   // APP_V3_MEMBERS_ENABLED (one-flip rollback), the same ?legacy=1 escape hatch, and the
   // impersonation guard. Uses the same getSuiteAccess check /app uses, so there is no redirect
   // loop; "limited"/"none" (expired trials, one-time owners) stay on legacy Studio.
-  // NOTE: redirect() must run OUTSIDE the try/catch — it throws NEXT_REDIRECT, which a catch
+  // NOTE: redirect() must run OUTSIDE the try/catch - it throws NEXT_REDIRECT, which a catch
   // would swallow.
   if (!impersonatedUserId && params.legacy !== "1" && process.env.APP_V3_MEMBERS_ENABLED === "true") {
     let forwardToApp = false

@@ -5,7 +5,7 @@
  * Fires 10 days after signup for free users who haven't subscribed.
  *
  * Tone: direct, honest, no pressure. Final nudge.
- * This is the last in the free user sequence — clear, generous offer.
+ * This is the last in the free user sequence - clear, generous offer.
  * CTA: upgrade to Studio. The case is made simply and cleanly.
  */
 

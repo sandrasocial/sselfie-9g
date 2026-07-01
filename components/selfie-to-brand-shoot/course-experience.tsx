@@ -310,7 +310,7 @@ export function ResumeHero({ serifClass }: { serifClass: string }) {
           ? "Every step is done. Your brand shoot is ready to become content."
           : nextModule
             ? `Next up: ${nextModule.title}.`
-            : "Turn one selfie into an elevated AI brand shoot, one calm step at a time."}
+            : "Turn one selfie into a cohesive AI brand shoot, one calm step at a time."}
       </p>
 
       <div className="sbs2-progress" aria-label="Course progress">
@@ -343,7 +343,7 @@ export function CoursePathMap() {
     useCourse()
   return (
     <ol className="sbs2-path">
-      {/* Step 0 — Brand Strategy (server truth, not localStorage) */}
+      {/* Step 0 - Brand Strategy (server truth, not localStorage) */}
       <li>
         <a
           href={hasBrandStrategy ? "#step-0" : brandStrategyHref}
@@ -757,7 +757,7 @@ export function LookPicker({
             {status === "saving"
               ? "Saving…"
               : status === "error"
-                ? "Could not save — try again."
+                ? "Could not save - try again."
                 : "Saved. Maya uses this in Module 3."}
           </p>
           <button type="button" className="sbs2-text-link" onClick={() => setTuning(t => !t)}>
@@ -941,7 +941,7 @@ export function PersonalizedContentPlan({
   const pillars = brandStrategy?.pillars ?? []
 
   // Build 7 days from the learner's real pillars when we have them, so the plan is
-  // genuinely theirs — not a generic template.
+  // genuinely theirs - not a generic template.
   const days = buildSevenDays({ lookAdj, audience, positioning, pillars, starters, phrases })
 
   return (
@@ -1026,7 +1026,7 @@ function buildSevenDays(input: PlanInput) {
       use: `Use a ${lookAdj} image with room for a headline.`,
       caption:
         starters[0] ||
-        `One thing I wish ${who} knew: you don't need a studio. You need one clear look you can repeat.`,
+        `One thing I wish ${who} knew: start with one clear look you can repeat.`,
     },
     {
       title: "Show the work",

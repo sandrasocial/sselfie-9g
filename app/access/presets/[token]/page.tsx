@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "Download your SSELFIE Lightroom presets and setup guide.",
 }
 
-// DESIGN + COPY owned by Claude (see tasks/PRESETS-PRODUCT-01.md). Data-fetching/logic owned by Codex — preserved as-is below.
+// DESIGN + COPY owned by Claude (see tasks/PRESETS-PRODUCT-01.md). Data-fetching/logic owned by Codex - preserved as-is below.
 const OBSIDIAN = "#0A0A0A"
 const PORCELAIN = "#FFFFFF"
 const CREAM = "#F5F5F5"
@@ -94,7 +94,7 @@ export default async function PresetsAccessPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
-      {/* START HERE — setup guide */}
+      {/* START HERE - setup guide */}
       <section style={{ maxWidth: 920, margin: "0 auto", padding: "40px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", border: `1px solid ${WHISPER}`, background: CREAM }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 0 }}>

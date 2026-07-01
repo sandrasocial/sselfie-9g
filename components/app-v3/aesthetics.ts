@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — Visual Front Door data.
+// SSELFIE Studio 3.0 - Visual Front Door data.
 // Derives the aesthetic tiles from the existing Prompt Vault collections so the grid
 // always reflects the real vault. Backend reuse only (lib import, no UI coupling).
 

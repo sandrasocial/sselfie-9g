@@ -1,6 +1,6 @@
 /**
- * GET  /api/admin/customer-support?email=...  — look up a customer by email
- * POST /api/admin/customer-support            — resend delivery email for a product
+ * GET  /api/admin/customer-support?email=...  - look up a customer by email
+ * POST /api/admin/customer-support            - resend delivery email for a product
  *
  * Admin-only. This is the canonical customer support surface for purchase
  * access, delivery history, and in-app feedback threads.

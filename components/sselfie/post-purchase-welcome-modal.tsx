@@ -78,7 +78,7 @@ export function PostPurchaseWelcomeModal({ productType, onDismiss, onNavigate }:
     try {
       await fetch("/api/user/pending-welcome", { method: "DELETE" })
     } catch {
-      // non-critical — flag will persist until next clear
+      // non-critical - flag will persist until next clear
     }
   }
 
@@ -88,7 +88,7 @@ export function PostPurchaseWelcomeModal({ productType, onDismiss, onNavigate }:
     if (tabDest && onNavigate) {
       onNavigate(tabDest)
     } else if (productType === "selfie_guide" || productType === "selfie_guide_bundle") {
-      // Guide lives on a separate page — navigate there
+      // Guide lives on a separate page - navigate there
       window.location.href = "/selfie-guide"
     } else if (productType === "visibility_suite") {
       window.location.href = "/academy/access/visibility-suite"

@@ -23,7 +23,7 @@ export function SocialShareButton({ imageUrl, className = "" }: SocialShareButto
   const referralCode = referralData?.referralCode || ""
 
   // Generate caption template
-  const captionTemplate = `Built this in 10 min with @sandra.social — use my link to get 25 free credits: ${referralLink}`
+  const captionTemplate = `Built this in 10 min with @sandra.social - use my link to get 25 free credits: ${referralLink}`
 
   const handleShare = async () => {
     if (!referralLink) {

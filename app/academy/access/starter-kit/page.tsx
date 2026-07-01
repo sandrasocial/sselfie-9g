@@ -12,7 +12,7 @@ import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
  *
  * The token-based route is the canonical Starter Kit experience: it shows
  * presets download, selfie guide link, quick-start checklist, and 7-day
- * content starter — all without requiring an active Studio session.
+ * content starter - all without requiring an active Studio session.
  */
 export default async function AcademyStarterKitAccessPage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/starter-kit")
@@ -43,7 +43,7 @@ export default async function AcademyStarterKitAccessPage() {
     redirect(`/access/starter-kit/${encodeURIComponent(token)}`)
   }
 
-  // Fallback: token not found (e.g. manually granted entitlement) — redirect
+  // Fallback: token not found (e.g. manually granted entitlement) - redirect
   // to the public landing page so the user can contact support.
   redirect("/starter-kit")
 }

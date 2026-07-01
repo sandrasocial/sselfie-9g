@@ -1707,7 +1707,7 @@ export default function AdminAcademyPage() {
                 </Label>
                 <Textarea
                   id="grant-reason"
-                  placeholder="Shopify customer — Editing Masterclass purchase"
+                  placeholder="Shopify customer - Editing Masterclass purchase"
                   value={grantForm.reason}
                   onChange={event => setGrantForm({ ...grantForm, reason: event.target.value })}
                   className="bg-white"

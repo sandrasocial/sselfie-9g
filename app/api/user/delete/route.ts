@@ -14,7 +14,7 @@ import { NextResponse } from "next/server"
  *   1. Authenticate
  *   2. Cancel active Stripe subscription (if any)
  *   3. Delete all Neon data (leaf tables first to respect FK constraints)
- *   4. Delete Supabase auth user (must be last — invalidates the session)
+ *   4. Delete Supabase auth user (must be last - invalidates the session)
  */
 export async function DELETE() {
   try {
@@ -47,7 +47,7 @@ export async function DELETE() {
           console.log(`[delete-account] Cancelled Stripe subscription ${stripeSubscriptionId}`)
         }
       } catch (stripeErr) {
-        // Log but don't block deletion — subscription may already be gone
+        // Log but don't block deletion - subscription may already be gone
         console.warn("[delete-account] Stripe cancellation warning:", stripeErr)
       }
     }
@@ -103,12 +103,12 @@ export async function DELETE() {
 
     console.log(`[delete-account] All Neon data deleted for user ${userId}`)
 
-    // 4. Delete Supabase auth user (last — invalidates the session)
+    // 4. Delete Supabase auth user (last - invalidates the session)
     const adminClient = createAdminClient()
     const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(authUser.id)
     if (authDeleteError) {
       console.error("[delete-account] Supabase auth deletion failed:", authDeleteError)
-      // Data is already gone from Neon — return success anyway so client can redirect
+      // Data is already gone from Neon - return success anyway so client can redirect
     }
 
     console.log(`[delete-account] Account fully deleted for auth user ${authUser.id}`)

@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         ].join("<br/>")}</p>`
       : ""
 
-    // SUITE-UX-02: Member pulse — what members did with Maya this week (source:
+    // SUITE-UX-02: Member pulse - what members did with Maya this week (source:
     // analytics_events behavior + app_v3_memory). Best-effort; never blocks the brief.
     let pulseText = ""
     let pulseHtml = ""

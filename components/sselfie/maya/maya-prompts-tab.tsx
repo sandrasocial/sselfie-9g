@@ -1007,7 +1007,7 @@ export default function MayaPromptsTab({
               onClick={onUpgradeToStudio}
               className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#f0ede8] transition-colors"
             >
-              Upgrade to Studio — includes everything →
+              Upgrade to Studio - includes everything →
             </button>
           </div>
 

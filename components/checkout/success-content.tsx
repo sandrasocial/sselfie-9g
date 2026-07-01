@@ -401,7 +401,7 @@ export function SuccessContent({
   const presetsFailureTrackedRef = useRef(false)
   const selfieToBrandShootResolutionTrackedRef = useRef(false)
   const selfieToBrandShootFailureTrackedRef = useRef(false)
-  // purchaseType (from URL ?type=) is the authoritative source — it reflects what was just
+  // purchaseType (from URL ?type=) is the authoritative source - it reflects what was just
   // purchased. userInfo.productType comes from the subscriptions table (last subscription on
   // the account) and can be a different product entirely for returning users.
   const resolvedProductType = (purchaseType || userInfo?.productType || "") as string
@@ -902,7 +902,7 @@ export function SuccessContent({
     sessionId,
   ])
 
-  // GA4 purchase conversion event — fires once per unique session_id
+  // GA4 purchase conversion event - fires once per unique session_id
   useEffect(() => {
     if (!sessionId || typeof window === "undefined") return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1363,7 +1363,7 @@ export function SuccessContent({
         return
       }
 
-      // Redirect directly to the product — session is now active in cookies
+      // Redirect directly to the product - session is now active in cookies
       router.push(successAction.href)
     } catch {
       setError("Something went wrong. Please try again.")
@@ -1836,7 +1836,7 @@ export function SuccessContent({
                     })
                   }
                   if (!isAuthenticated && userInfo?.hasAccount) {
-                    // Account exists but not logged in in this browser — send to login with returnTo
+                    // Account exists but not logged in in this browser - send to login with returnTo
                     router.push(`/auth/login?returnTo=${encodeURIComponent(successAction.href)}`)
                   } else {
                     router.push(successAction.href)

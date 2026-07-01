@@ -792,7 +792,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                         Your 30-day content plan
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed mb-6">
-                        No more &quot;what should I post today?&quot; moments. Here&apos;s your whole month planned out—just show up and create!
+                        No more &quot;what should I post today?&quot; moments. Here&apos;s your whole month planned out-just show up and create!
                       </p>
 
                       {/* Week Selector */}

@@ -212,8 +212,8 @@ export default async function SelfieToBrandShootLandingPage({
           <p className="sbs-label">SELFIE TO BRAND SHOOT</p>
           <h1 className={cormorant.className}>Turn one selfie into your first AI brand shoot.</h1>
           <p>
-            You do not need a studio. You do not need a photographer. You do not need a perfect
-            photo of yourself.
+            Start with one clear selfie. Bring your real face, your style, and the direction you
+            want people to recognize.
           </p>
           <p>
             You need one clear selfie, the right visual direction, and a simple system that shows

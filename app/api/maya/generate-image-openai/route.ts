@@ -1,5 +1,5 @@
 /**
- * OpenAI Quick Photo — Phase 1
+ * OpenAI Quick Photo - Phase 1
  *
  * Synchronous image generation via OpenAI's GPT image model. No Replicate, no polling,
  * no reconciliation cron. Images appear in gallery immediately.
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
       }
       imageBuffer = Buffer.from(b64, "base64")
     } catch (openaiError) {
-      // Refund credits — user should not be charged for a failed generation
+      // Refund credits - user should not be charged for a failed generation
       await refundCredits(
         neonUser.id,
         CREDIT_COSTS.IMAGE,
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
 
     // ── Upload to Vercel Blob (permanent storage) ──────────────────────────
     // OpenAI base64 is converted to a permanent Blob URL.
-    // This is the URL that gets stored and served — never the raw OpenAI response.
+    // This is the URL that gets stored and served - never the raw OpenAI response.
     let blob: { url: string }
     try {
       const timestamp = Date.now()
@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
       `
       aiImageId = insertResult[0].id
     } catch (dbError) {
-      // DB insert failed but image is already in Blob — log for manual recovery, don't refund
+      // DB insert failed but image is already in Blob - log for manual recovery, don't refund
       console.error("[openai-image] DB insert failed (image saved to Blob):", {
         blobUrl: blob.url,
         userId: neonUser.id,

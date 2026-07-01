@@ -73,7 +73,7 @@ const RESENDABLE_PRODUCTS = [
 ]
 
 function formatDate(iso?: string) {
-  if (!iso) return "—"
+  if (!iso) return "-"
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
@@ -232,7 +232,7 @@ export default function CustomerSupportPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-stone-400">Name</p>
-                    <p className="text-sm text-stone-800">{data.user.full_name || "—"}</p>
+                    <p className="text-sm text-stone-800">{data.user.full_name || "-"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-stone-400">Email</p>
@@ -472,7 +472,7 @@ export default function CustomerSupportPage() {
                   onChange={(e) => setResendProduct(e.target.value)}
                   className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-600 focus:outline-none"
                 >
-                  <option value="">— Select product to resend —</option>
+                  <option value="">- Select product to resend -</option>
                   {RESENDABLE_PRODUCTS.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.label}
@@ -515,7 +515,7 @@ export default function CustomerSupportPage() {
             >
               sutterkr@gmail.com
             </button>{" "}
-            (Kristin Hull — preset access issue).
+            (Kristin Hull - preset access issue).
           </div>
         )}
       </section>

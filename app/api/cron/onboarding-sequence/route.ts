@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
     // Onboarding Email Sequence Automation - Day 0 emails: subscription created in last 24 hours.
     // 24h window (not 2h) so Studio members are caught regardless of what time they subscribed.
-    // Idempotency is handled by the email_logs LEFT JOIN — if the row exists we skip.
+    // Idempotency is handled by the email_logs LEFT JOIN - if the row exists we skip.
     const day0Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -259,7 +259,7 @@ export async function GET(request: Request) {
     }
 
     // Behavioral nudge: users created 24–48h ago who have zero image generations.
-    // Fires regardless of subscription status — targets any user (free or paid) who has
+    // Fires regardless of subscription status - targets any user (free or paid) who has
     // not yet made their first photo. No longer gated on credit_transactions bonus rows,
     // since free signups may receive bonus credits through a direct balance update rather
     // than via a credit_transactions row.

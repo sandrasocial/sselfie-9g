@@ -13,7 +13,7 @@ interface MayaHeaderUnifiedProps {
   chatTitle: string
   showNavMenu: boolean
   onToggleNavMenu: () => void
-  /** Classic → Pro; mode control is on the chat input bar — kept optional for older call sites. */
+  /** Classic → Pro; mode control is on the chat input bar - kept optional for older call sites. */
   onModeSwitch?: (enable: boolean) => void
   
   // Pro Mode props
@@ -169,7 +169,7 @@ export default function MayaHeaderUnified({
         )}
 
         <div className={actionsClusterClass}>
-          {/* Dots Menu Button — desktop quick actions (History, etc.) */}
+          {/* Dots Menu Button - desktop quick actions (History, etc.) */}
           {(onSettings || onHistory || onNavigation) && (
             <div className="relative hidden sm:block" ref={dotsMenuRef}>
               <button
@@ -224,7 +224,7 @@ export default function MayaHeaderUnified({
             </div>
           )}
 
-          {/* Menu Button — omitted when StudioAppTopBar owns ≡ */}
+          {/* Menu Button - omitted when StudioAppTopBar owns ≡ */}
           {!hideMenuButton &&
             (onNavigation ? (
               <button
@@ -554,7 +554,7 @@ export default function MayaHeaderUnified({
                   </>
                 )}
 
-                {/* Photo generation (Flux) — Photos tab, Classic + Pro (mobile menu) */}
+                {/* Photo generation (Flux) - Photos tab, Classic + Pro (mobile menu) */}
                 {onSettings && activeTab === "photos" && (
                   <>
                     <div
@@ -595,7 +595,7 @@ export default function MayaHeaderUnified({
                   </>
                 )}
 
-                {/* Switch Mode — Selfie → My Model (membership, mobile menu) */}
+                {/* Switch Mode - Selfie → My Model (membership, mobile menu) */}
                 {showModeToggle && proMode && onSwitchToClassic && (
                   <>
                     <div

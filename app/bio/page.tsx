@@ -58,7 +58,7 @@ export default function BioPage() {
         </div>
 
         <div className="bio-links">
-          {/* PRIMARY — Free ChatGPT Selfie Prompt Pack (feeds the Vault funnel) */}
+          {/* PRIMARY - Free ChatGPT Selfie Prompt Pack (feeds the Vault funnel) */}
           <Link href="/ai-prompts" className="bio-card bio-card-primary">
             <Image
               src="/images/ai-prompts/dark-feminine-cafe-shot-1.jpg"
@@ -83,7 +83,7 @@ export default function BioPage() {
             </span>
           </Link>
 
-          {/* SECONDARY — Free Selfie-to-Brand Guide */}
+          {/* SECONDARY - Free Selfie-to-Brand Guide */}
           <Link href="/selfie-guide" className="bio-card bio-card-secondary">
             <Image
               src="/images/ai-prompts/quiet-luxury-london-shot-1.jpg"

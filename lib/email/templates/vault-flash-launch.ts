@@ -1,4 +1,4 @@
-// Vault Flash launch (2026-06) — "The Vault grew. The price follows."
+// Vault Flash launch (2026-06) - "The Vault grew. The price follows."
 // Honest urgency: the Vault genuinely grew 92 -> 145 prompts, so $27 -> $37 after the window.
 // Three touches: announce -> proof -> last call. Sandra-approved copy. No em-dashes, No-Fake.
 // These are broadcast-style sends (full list); Sandra fires them, nothing auto-sends.

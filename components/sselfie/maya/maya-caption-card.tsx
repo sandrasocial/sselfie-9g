@@ -20,7 +20,7 @@ export default function MayaCaptionCard({ caption, hashtags = [], loading = fals
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Clipboard requires user gesture + secure context — silently ignore
+      // Clipboard requires user gesture + secure context - silently ignore
     }
   }
 

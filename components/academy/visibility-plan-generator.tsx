@@ -174,7 +174,7 @@ export function VisibilityPlanGenerator() {
       style={{ borderColor: "rgba(15,13,11,0.18)", background: "#EDE9E2" }}
     >
       <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#7A6F63]">
-        Step 04 — Maya Visibility Plan
+        Step 04 - Maya Visibility Plan
       </p>
       <h3 className="mt-4 font-serif text-[clamp(28px,5vw,48px)] uppercase leading-none text-[#0F0D0B]">
         Create your Maya Visibility Plan.

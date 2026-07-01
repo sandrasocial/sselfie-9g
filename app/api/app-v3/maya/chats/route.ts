@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — /app conversation list + upsert (MAYA-REBUILD-05 Phase C).
+// SSELFIE Studio 3.0 - /app conversation list + upsert (MAYA-REBUILD-05 Phase C).
 // GET  -> the admin's saved conversations (id, title, updatedAt).
 // POST -> upsert one conversation { id, messages, title } (called by the client on each
 //         completed turn). Isolated; admin reaches it via the admin-gated /app shell.

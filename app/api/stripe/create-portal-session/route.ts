@@ -94,7 +94,7 @@ async function handleCreatePortalSession({
       const body = (await request.json()) as { returnPath?: string } | null
       if (body?.returnPath === "/app") returnPath = "/app"
     } catch {
-      // No/invalid JSON body — legacy caller, default return path stands.
+      // No/invalid JSON body - legacy caller, default return path stands.
     }
 
     console.log("[v0] Create portal session: Creating Stripe session for customer:", stripeCustomerId)

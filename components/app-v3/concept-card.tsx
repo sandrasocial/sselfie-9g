@@ -1,8 +1,8 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Concept Card (03, restyled 05A, multi-image 05D, guided 05F).
+// SSELFIE Studio 3.0 - Concept Card (03, restyled 05A, multi-image 05D, guided 05F).
 // One of the 3 directions Maya pulls. Maya-guided + tap-first: BEFORE generating it is a clean
-// text card (title + one line + "Generate this") — no empty image frame that looks broken.
+// text card (title + one line + "Generate this") - no empty image frame that looks broken.
 // While generating, a framed spinner. When done, the result (tap to open) with a confident
 // success state: Use/Download primary, Regenerate secondary, "Ask Maya to tweak" tiny.
 
@@ -19,7 +19,7 @@ export interface ConceptGenState {
   aiImageIds?: Array<number | null>
   videoUrl?: string
   error?: string
-  /** Progressive partial frame (data URL) while streaming — the photo "develops" in place. */
+  /** Progressive partial frame (data URL) while streaming - the photo "develops" in place. */
   previewUrl?: string
 }
 
@@ -66,7 +66,7 @@ export function ConceptCard({
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
-      {/* Visual area ONLY exists once we're generating or done — never an empty placeholder box. */}
+      {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {(isGenerating || isDone || isVideoDone) && (
         <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
           {isVideoDone ? (

@@ -16,7 +16,7 @@
  *    → image saved
  *    → image rendered in UI
  * 
- * FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+ * FEED PLANNER - DO NOT USE LEGACY PROMPT BUILDERS
  * 
  * DO NOT CALL:
  * - nano-banana-adapter
@@ -643,13 +643,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       })
       const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
       
-      // ❄️ FROZEN — DO NOT MODIFY PROMPTS HERE
+      // ❄️ FROZEN - DO NOT MODIFY PROMPTS HERE
       // Prompt is already final from prompt-shaper.ts (THE AUTHORITY)
       // cleanBlueprintPrompt is legacy and should not mutate Feed Planner prompts
       // Feed Planner prompts from prompt-shaper.ts are already correct
       const cleanedPrompt = finalPrompt // Use prompt as-is from authority
       
-      // Deduct credits BEFORE calling NanoBanana — once generation starts, API cost is incurred
+      // Deduct credits BEFORE calling NanoBanana - once generation starts, API cost is incurred
       const deduction = await deductCredits(
         user.id.toString(),
         getStudioProCreditCost('2K'),

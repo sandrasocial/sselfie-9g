@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — /app gallery (MAYA-REBUILD-05 Phase H).
+// SSELFIE Studio 3.0 - /app gallery (MAYA-REBUILD-05 Phase H).
 // Lists the user's generated images from ai_images plus legacy Studio generated_images.
 // New /app generation writes ai_images; pre-cutover Studio and trained-model flows may only
 // have generated_images rows. Keep this endpoint read-only so migrated members keep their work.

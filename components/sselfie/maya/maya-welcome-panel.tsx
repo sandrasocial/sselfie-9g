@@ -28,7 +28,7 @@ interface MayaWelcomePanelProps {
   uploadHint?: string
   actions: MayaWelcomeAction[]
   previewImageUrls?: string[]
-  /** Called when user taps a theme chip — sends the pre-built message */
+  /** Called when user taps a theme chip - sends the pre-built message */
   onThemeChipClick?: (message: string) => void
 }
 
@@ -117,7 +117,7 @@ export default function MayaWelcomePanel({
             </p>
           ) : null}
 
-          {/* This week&apos;s themes — tapping one starts the weekly ritual */}
+          {/* This week&apos;s themes - tapping one starts the weekly ritual */}
           {themes.length > 0 && onThemeChipClick ? (
             <div>
               <div className="flex items-center gap-2 mb-3">

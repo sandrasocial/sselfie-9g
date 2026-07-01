@@ -1,6 +1,6 @@
 /**
- * GET  /api/admin/webhook-review          — list unresolved needs_review events
- * PATCH /api/admin/webhook-review         — mark an event resolved
+ * GET  /api/admin/webhook-review          - list unresolved needs_review events
+ * PATCH /api/admin/webhook-review         - mark an event resolved
  *
  * Admin-only. Secured by checking session email against ADMIN_EMAIL.
  */

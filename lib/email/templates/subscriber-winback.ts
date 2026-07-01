@@ -1,10 +1,10 @@
-// Subscriber win-back (EMAIL-03, 2026-06-11) — 4 personal notes over ~3 weeks for subscribers
+// Subscriber win-back (EMAIL-03, 2026-06-11) - 4 personal notes over ~3 weeks for subscribers
 // with no opens or clicks in 60+ days. Research basis: win-back recovers 10-20% of dormant
 // subscribers; suppressing the rest protects deliverability for everyone else. Personal-note
 // format on purpose (re-engagement reads as Sandra, never as a brand blast). No discounts:
 // value first, honest sunset last. Copy is Sandra-approval-gated behind SUBSCRIBER_WINBACK_ENABLED.
 //
-// NOT the same thing as win-back-day3/7/14.ts (member churn win-back) — this is list hygiene
+// NOT the same thing as win-back-day3/7/14.ts (member churn win-back) - this is list hygiene
 // for free subscribers who stopped opening.
 
 import { buildRevenueEmailLink } from "./revenue-links"
@@ -69,7 +69,7 @@ export function generateWinback2Email({
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
     <p style="margin:0 0 18px;">No pitch today. Just the thing people thank me for most.</p>
-    <p style="margin:0 0 18px;">One selfie, one prompt, ten minutes in ChatGPT: a photo that looks like it came from a brand shoot. Still your face. Still you. Just elevated.</p>
+    <p style="margin:0 0 18px;">One selfie, one prompt, ten minutes in ChatGPT: a photo that looks like it came from a brand shoot. Still your face. Still you. Just clearer.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("The free prompt is here", promptsUrl)}.</p>
     <p style="margin:0;">Try it on a selfie you already have. That's it.</p>
   `
@@ -81,7 +81,7 @@ export function generateWinback2Email({
 
 No pitch today. Just the thing people thank me for most.
 
-One selfie, one prompt, ten minutes in ChatGPT: a photo that looks like it came from a brand shoot. Still your face. Still you. Just elevated.
+One selfie, one prompt, ten minutes in ChatGPT: a photo that looks like it came from a brand shoot. Still your face. Still you. Just clearer.
 
 The free prompt is here:
 ${promptsUrl}

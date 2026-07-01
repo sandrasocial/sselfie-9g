@@ -88,7 +88,7 @@ function buildFinalPrompt(
  * manual scale value.
  *
  * Priority: user's explicit realismStrength always beats toggle/keyword
- * detection — so if the user has set a value we honour it even when the
+ * detection - so if the user has set a value we honour it even when the
  * authenticity toggle is on.
  */
 function resolveLoraDecision(

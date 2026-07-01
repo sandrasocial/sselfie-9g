@@ -254,7 +254,7 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
       },
       {
         src: "/images/selfie-guide/sg-editing-04.png",
-        alt: "What not to do when editing — over-smoothing, saturation, inconsistent filters",
+        alt: "What not to do when editing - over-smoothing, saturation, inconsistent filters",
         caption: "Keep the skin real. Pull back before you post.",
         width: 1122,
         height: 1402,
@@ -594,7 +594,7 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
     label: "WHAT NOT TO DO",
     caption: "Over-smoothed, over-saturated, over-filtered. Pull back before you post.",
     src: "/images/selfie-guide/sg-editing-04.png",
-    alt: "What not to do when editing: over-smoothing, pushing saturation, and inconsistent filters — with a before/after comparison",
+    alt: "What not to do when editing: over-smoothing, pushing saturation, and inconsistent filters - with a before/after comparison",
   },
   "feed-post-3.png": {
     label: "THE RESULT",
@@ -1260,7 +1260,7 @@ export default function SelfieGuideExperience({
             )}
           </header>
 
-          {/* Chapter images — editorial pair */}
+          {/* Chapter images - editorial pair */}
           {currentChapterMood && <ChapterImages spec={currentChapterMood} />}
 
           {/* Chapter body prose */}
@@ -1364,7 +1364,7 @@ export default function SelfieGuideExperience({
             <div className="sg-funnel-product-img">
               <Image
                 src="/images/selfie-guide/sg-cta-01.png"
-                alt="The Selfie Starter Kit — presets, editing walkthroughs, and a 7-day content starter"
+                alt="The Selfie Starter Kit - presets, editing walkthroughs, and a 7-day content starter"
                 width={1448}
                 height={1086}
                 style={{ width: "100%", height: "auto", borderRadius: "8px", display: "block" }}
@@ -1932,7 +1932,7 @@ export default function SelfieGuideExperience({
         }
 
         .prose-li::before {
-          content: "—";
+          content: "-";
           position: absolute;
           left: 0;
           color: var(--c-smoke);

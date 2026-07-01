@@ -1,4 +1,4 @@
-// Founding Annual launch (2026-06) — the $20K engine. Sandra-approved 2026-06-22.
+// Founding Annual launch (2026-06) - the $20K engine. Sandra-approved 2026-06-22.
 // €697/year founding rate, lifetime-locked, first 25. 5 touches: open -> proof ->
 // value -> objection -> last call. No em-dashes, No-Fake, real scarcity. Broadcast
 // sends are Sandra's (after Codex builds the €697 price + trial fix). Nothing auto-sends.

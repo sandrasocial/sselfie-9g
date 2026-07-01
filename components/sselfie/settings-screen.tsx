@@ -370,7 +370,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                     disabled={isApplyingDiscount}
                     className="w-full rounded-xl bg-[#f0ede8] text-[#0d0c0b] text-sm font-medium py-3.5 transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
-                    {isApplyingDiscount ? "Applying..." : "Yes — give me 50% off next month"}
+                    {isApplyingDiscount ? "Applying..." : "Yes - give me 50% off next month"}
                   </button>
                   <button
                     onClick={() => setShowCancelIntercept(false)}

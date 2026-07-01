@@ -2,7 +2,7 @@
  * Win-Back Day 7 Email Template
  * Subject: "This is different now"
  *
- * Touch 2 of 3 — The thing that changed.
+ * Touch 2 of 3 - The thing that changed.
  * Lead with what's specifically improved since they left.
  * Frame each change as "you get X without having to Y."
  * CTA: Come back and try it free (7-day free trial restart or credit bonus).

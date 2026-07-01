@@ -19,7 +19,7 @@ const STONE = "#8A8780"
 
 const WIDTH = 1080
 const HEIGHT = 1920
-// STORY-OVERLAY-01 — Instagram Story safe zones. IG overlays avatar/name/clock up top and the
+// STORY-OVERLAY-01 - Instagram Story safe zones. IG overlays avatar/name/clock up top and the
 // reply bar + reactions at the bottom, so critical text must stay inside this band.
 const SIDE = 80
 const HEADER_TOP = 150

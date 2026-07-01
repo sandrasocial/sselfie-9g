@@ -1,4 +1,4 @@
-// BRIDGE-01 Phase D — SUITE trial claim (the spine of the trial: Vault/Kit buyers bought
+// BRIDGE-01 Phase D - SUITE trial claim (the spine of the trial: Vault/Kit buyers bought
 // via token email, most have no password yet). The claim link arrives in the trial-unlock
 // email; opening it resolves the buyer (freebie_subscribers.access_token), makes sure she
 // has an auth account + Neon user, grants the one-ever 7-day trial with 20 credits, and

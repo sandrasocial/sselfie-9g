@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — shared types.
+// SSELFIE Studio 3.0 - shared types.
 // Strict, self-contained. This tree must NOT import from components/sselfie/.
 
 /** The output format the user is creating. The OpenAI engine renders all of these

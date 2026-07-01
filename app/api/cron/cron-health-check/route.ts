@@ -17,7 +17,7 @@ const ANOMALY_THRESHOLDS = {
 
 // AI provider credits: Maya chat dies silently when OpenRouter prepaid credits hit zero
 // (every reply reserves an 8k-token budget), and the content briefs die with Anthropic.
-// Happened 2026-06-11 — members saw "Maya hit a snag" with zero warning.
+// Happened 2026-06-11 - members saw "Maya hit a snag" with zero warning.
 const AI_CREDITS_THRESHOLD_USD = Number(process.env.AI_CREDITS_ALERT_THRESHOLD_USD || 5)
 
 async function checkOpenRouterBalance(): Promise<{ remaining: number } | null> {
@@ -41,7 +41,7 @@ async function checkOpenRouterBalance(): Promise<{ remaining: number } | null> {
 /**
  * 1-token canary against the Anthropic API. There is no balance endpoint, so a real
  * (sub-cent) call is the only reliable signal. Only a billing/credit error counts as
- * failure — transient overloads must not page Sandra.
+ * failure - transient overloads must not page Sandra.
  */
 async function checkAnthropicCanary(): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY

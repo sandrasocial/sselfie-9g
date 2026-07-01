@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-// This page requires authentication and shows private generated content — do not index
+// This page requires authentication and shows private generated content - do not index
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }

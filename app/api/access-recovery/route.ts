@@ -8,7 +8,7 @@
  * - Rate-limited at the Vercel edge (via config.maxDuration + Vercel WAF)
  * - Response time is constant regardless of whether email exists (prevents enumeration)
  * - Logs every attempt for admin review
- * - Never reveals whether an email has a purchase — always says "check your email"
+ * - Never reveals whether an email has a purchase - always says "check your email"
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     if (purchases.length === 0) {
       await logRecoveryAttempt(email, "no_purchase_found", logData)
-      // Still return ok — don't tell them the email wasn't found
+      // Still return ok - don't tell them the email wasn't found
       return NextResponse.json({ ok: true })
     }
 
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     const bodyHtml = `
       <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-      <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Here are your access links — click to open your purchase directly.</p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Here are your access links - click to open your purchase directly.</p>
       <div style="margin:28px 0 14px;">${renderStoneButton(primaryProduct.label, primaryProduct.accessUrl)}</div>
       ${productLines.length > 1 ? productButtons.replace(renderStoneButton(primaryProduct.label, primaryProduct.accessUrl, "outline"), "") : ""}
       <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#a8a49c;">
@@ -240,6 +240,6 @@ async function logRecoveryAttempt(
       )
     `
   } catch {
-    // Non-fatal — don't let logging errors break the recovery flow
+    // Non-fatal - don't let logging errors break the recovery flow
   }
 }

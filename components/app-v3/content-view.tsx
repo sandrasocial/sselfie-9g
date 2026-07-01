@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Content / Daily Relevance (MAYA-REBUILD-05 Phase 5, visual in 5.1).
+// SSELFIE Studio 3.0 - Content / Daily Relevance (MAYA-REBUILD-05 Phase 5, visual in 5.1).
 // Maya recommends what to post today, and she SHOWS it. Each recommendation is a visual card
 // (her own Library photo when she has one, the editorial Vault imagery as the aspirational
 // fallback), because the audience responds to seeing, not reading. Tapping starts Maya on that

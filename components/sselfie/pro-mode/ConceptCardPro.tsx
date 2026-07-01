@@ -1321,9 +1321,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           </div>
         )}
 
-        {/* Category / aesthetic: available inside View Prompt — keeps card surface aligned with Classic concept cards */}
+        {/* Category / aesthetic: available inside View Prompt - keeps card surface aligned with Classic concept cards */}
 
-        {/* Action buttons — same row layout / rhythm as Classic ConceptCard */}
+        {/* Action buttons - same row layout / rhythm as Classic ConceptCard */}
         <div className="flex flex-wrap gap-2 pt-2">
           <button
             type="button"

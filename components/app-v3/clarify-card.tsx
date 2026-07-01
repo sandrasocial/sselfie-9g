@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — inline clarify card (MAYA-REBUILD-05 Phase G).
+// SSELFIE Studio 3.0 - inline clarify card (MAYA-REBUILD-05 Phase G).
 // The Content Requirements Engine surface: when Maya is missing one required detail (e.g. the
 // reel topic), she asks here with tappable options instead of generating something generic or
 // dropping the user into a form. Tapping an option answers Maya and she continues to concepts.

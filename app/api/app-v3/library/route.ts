@@ -1,9 +1,9 @@
-// SSELFIE Studio 3.0 — /app Library (BRIDGE-01 Phase C).
+// SSELFIE Studio 3.0 - /app Library (BRIDGE-01 Phase C).
 // Surfaces everything she owns (courses with progress, one-time products, weekly drops)
 // plus locked previews of what she doesn't. D3: members have every product open, so for an
 // active member every catalog entry resolves to owned. Data comes from the same entitlement
 // layer Academy uses; links point at the existing /academy and /access routes (v3-native
-// rendering of lesson content is a later iteration — surfacing comes first).
+// rendering of lesson content is a later iteration - surfacing comes first).
 
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"

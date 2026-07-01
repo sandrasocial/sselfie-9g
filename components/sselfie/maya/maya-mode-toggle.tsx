@@ -57,8 +57,8 @@ export default function MayaModeToggle({
           aria-pressed={myModelActive}
           aria-label={
             myModelActive
-              ? "My Look — active. Photos can keep your look consistent."
-              : "Switch to My Look — photos can keep your look consistent."
+              ? "My Look - active. Photos can keep your look consistent."
+              : "Switch to My Look - photos can keep your look consistent."
           }
           title="My Look: use your saved photo setup for more consistent results."
           disabled={!isProMode}
@@ -83,8 +83,8 @@ export default function MayaModeToggle({
           aria-pressed={selfieActive}
           aria-label={
             selfieActive
-              ? "Photo mode — active. Use selfies, references, and uploads in chat."
-              : "Switch to Photo mode — use selfies, references, and uploads in chat."
+              ? "Photo mode - active. Use selfies, references, and uploads in chat."
+              : "Switch to Photo mode - use selfies, references, and uploads in chat."
           }
           title="Photo: use selfies, references, and uploads. No setup required."
           disabled={isProMode}
@@ -121,8 +121,8 @@ export default function MayaModeToggle({
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-[rgba(175,170,162,0.10)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] min-h-[36px]"
         aria-label={
           isClassicMode
-            ? "Switch to Photo mode — selfies, references, and uploads in chat"
-            : "Switch to My Look — consistent photo setup"
+            ? "Switch to Photo mode - selfies, references, and uploads in chat"
+            : "Switch to My Look - consistent photo setup"
         }
         title={
           isClassicMode

@@ -10,7 +10,7 @@ import type { PromptSuggestion, NanoBananaCapability } from '@/lib/maya/prompt-g
 
 interface PromptSuggestionCardProps {
   suggestion: PromptSuggestion
-  /** Optional; COPY still copies to clipboard — called after a successful copy when provided */
+  /** Optional; COPY still copies to clipboard - called after a successful copy when provided */
   onCopyToWorkbench?: (prompt: string) => void
   onUseInWorkbench: (prompt: string) => void
 }
@@ -40,7 +40,7 @@ export function PromptSuggestionCard({
       await navigator.clipboard.writeText(suggestion.prompt)
       onCopyToWorkbench?.(suggestion.prompt)
     } catch {
-      // Clipboard API requires a user gesture and secure context — silently ignore.
+      // Clipboard API requires a user gesture and secure context - silently ignore.
     }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)

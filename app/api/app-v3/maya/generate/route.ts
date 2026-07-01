@@ -1,8 +1,8 @@
-// SSELFIE Studio 3.0 — app-v3 Maya concept generation (synchronous, MAYA-REBUILD-03).
+// SSELFIE Studio 3.0 - app-v3 Maya concept generation (synchronous, MAYA-REBUILD-03).
 //
 // Stage 2 finalize + render. Fired when the user clicks a concept card. Compiles the chosen
 // CreativeBrief into a production prompt in Nano Banana order, then calls gpt-image via the
-// EDIT endpoint with the user's selfie attached — this is the identity anchor mechanism
+// EDIT endpoint with the user's selfie attached - this is the identity anchor mechanism
 // (non-negotiable, per spec). Synchronous: one round-trip, no polling. Persists to the
 // gallery (ai_images) exactly like the live OpenAI route.
 //
@@ -326,7 +326,7 @@ async function normalizeReferenceForOpenAI(buffer: Buffer): Promise<Buffer> {
 
 /**
  * Normalize a concept brief, tolerating salvaged ones (a truncated concept stream can lose the
- * tail fields). Only outfit + setting are hard requirements — the compiler drops empty lines and
+ * tail fields). Only outfit + setting are hard requirements - the compiler drops empty lines and
  * has NAMED fallbacks for camera/lighting, so a partial brief still produces a Vault-level shot.
  */
 function normalizeBrief(brief: unknown): CreativeBrief | null {
@@ -578,7 +578,7 @@ export async function POST(request: NextRequest) {
           })
         }
       } catch {
-        // behavior tracking only — never block generation
+        // behavior tracking only - never block generation
       }
     }
 
@@ -673,7 +673,7 @@ export async function POST(request: NextRequest) {
         ]
       : []
 
-    // One edit call: prompt + image input(s) — the selfie(s), or the prior pass's clean photo.
+    // One edit call: prompt + image input(s) - the selfie(s), or the prior pass's clean photo.
     const runEdit = async (
       promptText: string,
       images: Awaited<ReturnType<typeof toFile>>[]

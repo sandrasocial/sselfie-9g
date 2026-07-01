@@ -55,7 +55,7 @@ export default async function MiniProductAccessPage({
     },
   })
 
-  // Redirect into the in-app studio shell — same pattern as courses.
+  // Redirect into the in-app studio shell - same pattern as courses.
   // MiniProductWorkspace renders inside the Academy tab via academy_workbook param.
   redirect(`/studio?tab=academy&academy_view=workbook&academy_workbook=${product.slug}`)
 }

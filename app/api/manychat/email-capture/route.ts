@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   // --- Shared secret (same mechanism + env as /api/webhooks/manychat-inbound) ---
   const secret = process.env.MANYCHAT_BRIDGE_SECRET?.trim()
   if (!secret) {
-    // Ships dark until the env is set — same kill-switch pattern as the inbound bridge.
+    // Ships dark until the env is set - same kill-switch pattern as the inbound bridge.
     return NextResponse.json({ error: "Bridge not enabled" }, { status: 503 })
   }
 
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         source: SOURCE,
         status: "lead",
         journey: "nurture",
-        // "curious" is the closest valid AiPhotoshootIntent — these are warm DM leads but
+        // "curious" is the closest valid AiPhotoshootIntent - these are warm DM leads but
         // not yet buyers; the valid intents are curious/activated/buyer/powerUser/abandoned.
         ...buildAiPhotoshootResendTags("curious"),
         signup_date: signupDate,
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     `
 
     if (existing.length > 0) {
-      // Already a known lead — top up attribution without clobbering existing values.
+      // Already a known lead - top up attribution without clobbering existing values.
       await sql`
         UPDATE freebie_subscribers
         SET
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
       `
     }
 
-    // --- Analytics — fire and forget (behavior only) ---
+    // --- Analytics - fire and forget (behavior only) ---
     logAnalyticsEvent({
       eventName: "manychat_vault_email_captured",
       path: "/api/manychat/email-capture",
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    // Never 500 on a handled-but-bad input — ManyChat would error-loop the request.
+    // Never 500 on a handled-but-bad input - ManyChat would error-loop the request.
     console.error("[manychat/email-capture] unhandled error:", error)
     return NextResponse.json({ success: true, skipped: "error" })
   }

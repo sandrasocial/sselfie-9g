@@ -12,7 +12,7 @@
 //   vault_drop_{short_hash}_buyer     (buyers)
 //
 // This means:
-//   - Calling /process twice with the same runId is safe — duplicates are skipped
+//   - Calling /process twice with the same runId is safe - duplicates are skipped
 //   - A completely separate run for the same collections is also safe
 //   - Only 'failed' records are eligible for retry (no 'sent' guard)
 //
@@ -166,7 +166,7 @@ async function updateRecipientClaim(
   `
 }
 
-// ── Segment queries — only pending (not yet sent) recipients ───────────────
+// ── Segment queries - only pending (not yet sent) recipients ───────────────
 
 async function fetchPendingNonBuyers(
   dropEmailType: string,
@@ -326,7 +326,7 @@ async function processBatch(
     } else {
       if (!subscriber.access_token) {
         console.warn(
-          `[vault/process] buyer ${subscriber.email} has no access_token — skipping`,
+          `[vault/process] buyer ${subscriber.email} has no access_token - skipping`,
         )
         result.skipped++
         await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "skipped", "Missing access token")
@@ -361,7 +361,7 @@ async function processBatch(
         sendResult.error?.includes("complained") ||
         sendResult.error?.includes("bounced")
       ) {
-        // Suppressed by marketing rules — counts as intentionally skipped
+        // Suppressed by marketing rules - counts as intentionally skipped
         result.skipped++
         await updateRecipientClaim(run.id, dropEmailType, subscriber.email, "suppressed", sendResult.error)
       } else {

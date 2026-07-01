@@ -28,15 +28,15 @@ interface StudioProImageUploadModuleProps {
 }
 
 const CATEGORIES = [
-  { value: "brand-content", label: "Brand Content", prompt: "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement." },
-  { value: "beauty-self-care", label: "Beauty & Self-Care", prompt: "I want a beauty skincare routine morning glow — dewy skin, natural light, clean girl aesthetic." },
-  { value: "selfie-styles", label: "Selfie Styles", prompt: "I want a clean girl selfie aesthetic — mirror selfies, golden hour, natural beauty moments." },
-  { value: "travel-lifestyle", label: "Travel & Lifestyle", prompt: "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee." },
-  { value: "tech-work", label: "Tech & Work", prompt: "I want tech home office productivity content — modern workspace, laptop, coffee, professional vibes." },
-  { value: "fashion-editorial", label: "Fashion Editorial", prompt: "I want luxury fashion editorial photos in Chanel style — sophisticated, elegant, timeless aesthetic." },
-  { value: "wellness-content", label: "Wellness Content", prompt: "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments." },
-  { value: "seasonal-holiday", label: "Seasonal Holiday", prompt: "I want Christmas holiday cozy vibes — warm lighting, festive atmosphere, elegant winter aesthetic." },
-  { value: "luxury-travel", label: "Luxury Travel", prompt: "I want luxury destination travel photos — Venice canals, Thailand beaches, sophisticated travel moments." },
+  { value: "brand-content", label: "Brand Content", prompt: "I want Studio Pro outfit photos that feel like Alo Yoga - premium athletic outfits, neutral colors and natural movement." },
+  { value: "beauty-self-care", label: "Beauty & Self-Care", prompt: "I want a beauty skincare routine morning glow - dewy skin, natural light, clean girl aesthetic." },
+  { value: "selfie-styles", label: "Selfie Styles", prompt: "I want a clean girl selfie aesthetic - mirror selfies, golden hour, natural beauty moments." },
+  { value: "travel-lifestyle", label: "Travel & Lifestyle", prompt: "I want an airport it girl travel photo - lounge or gate setting with suitcase, headphones and coffee." },
+  { value: "tech-work", label: "Tech & Work", prompt: "I want tech home office productivity content - modern workspace, laptop, coffee, professional vibes." },
+  { value: "fashion-editorial", label: "Fashion Editorial", prompt: "I want luxury fashion editorial photos in Chanel style - sophisticated, elegant, timeless aesthetic." },
+  { value: "wellness-content", label: "Wellness Content", prompt: "I want Studio Pro wellness content in Alo Yoga style - yoga, stretching and calm movement in soft neutral environments." },
+  { value: "seasonal-holiday", label: "Seasonal Holiday", prompt: "I want Christmas holiday cozy vibes - warm lighting, festive atmosphere, elegant winter aesthetic." },
+  { value: "luxury-travel", label: "Luxury Travel", prompt: "I want luxury destination travel photos - Venice canals, Thailand beaches, sophisticated travel moments." },
   { value: "carousels-reels", label: "Carousels & Reels", prompt: "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro." },
 ]
 
@@ -641,7 +641,7 @@ export default function StudioProImageUploadModule({
             className="w-full h-24 px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-stone-400 resize-none text-sm font-light text-stone-900"
           />
           <p className="text-[10px] text-stone-500 font-light">
-            Optional — leave blank to let Maya analyze and create automatically
+            Optional - leave blank to let Maya analyze and create automatically
           </p>
         </div>
 

@@ -184,7 +184,7 @@ export default function WelcomeWizard({
       })
     }
 
-    // Step 2: How it works (combined — generate photos + captions/strategy)
+    // Step 2: How it works (combined - generate photos + captions/strategy)
     stepList.push({
       title: "How it works",
       subtitle: "Step 2 of 3",
@@ -202,14 +202,14 @@ export default function WelcomeWizard({
       ),
     })
 
-    // Step 3: You're ready — single CTA per content doc
+    // Step 3: You're ready - single CTA per content doc
     stepList.push({
       title: "You're ready!",
       subtitle: "Step 3 of 3",
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Your first 60 credits are ready — create your first feed below.
+            Your first 60 credits are ready - create your first feed below.
           </p>
           <Button
             onClick={handleComplete}

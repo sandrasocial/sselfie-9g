@@ -152,7 +152,7 @@ function selfieToBrandShootAccessUrl(candidate: { access_token: string | null })
     : `${SITE_URL}/academy/access/selfie-to-brand-shoot`
 }
 
-// BRIDGE-01: the 7-day SUITE trial claim link (one trial per person, ever — the claim
+// BRIDGE-01: the 7-day SUITE trial claim link (one trial per person, ever - the claim
 // page enforces it, so sending the link repeatedly is safe).
 function suiteTrialClaimUrl(candidate: { access_token: string | null }): string | undefined {
   const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
@@ -714,7 +714,7 @@ function starterKitAccessUrl(_candidate: StarterKitCandidate): string {
 }
 
 function masterclassAccessUrl(_candidate: MasterclassCandidate): string {
-  // Masterclass content lives inside the authenticated Academy — send buyers there, not back to the landing page
+  // Masterclass content lives inside the authenticated Academy - send buyers there, not back to the landing page
   return `${SITE_URL}/academy`
 }
 
@@ -1130,7 +1130,7 @@ export async function GET(request: Request) {
       await sleep(150)
     }
 
-    // Day 3, 7, 14, 21 timed touches — skip Day 0 (index 0) since it's handled above
+    // Day 3, 7, 14, 21 timed touches - skip Day 0 (index 0) since it's handled above
     const selfieGuideTouchResultKeys = [
       "selfieGuideDay3",
       "selfieGuideDay7",

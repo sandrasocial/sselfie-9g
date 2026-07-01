@@ -384,7 +384,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
     return (
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
-        {/* Placeholder State — paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
+        {/* Placeholder State - paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-12">
           <div className="w-full max-w-md space-y-6 rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-6 text-center shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px]">
             {/* Icon */}
@@ -392,7 +392,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Feed</span>
             </div>
 
-            {/* Heading — paid blueprint: "Set up in 30 seconds" per §1.4 */}
+            {/* Heading - paid blueprint: "Set up in 30 seconds" per §1.4 */}
             <div className="space-y-2">
               <h2 
                 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-2xl"
@@ -407,7 +407,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               </p>
             </div>
 
-            {/* CTA — paid blueprint: single prominent "Create my first feed →" per content doc */}
+            {/* CTA - paid blueprint: single prominent "Create my first feed →" per content doc */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
               <button
                 onClick={handleCreateManualFeedClick}

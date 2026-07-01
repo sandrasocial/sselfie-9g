@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
-/** Sales copy: eight ## PART sections in content-templates/selfie-guide-content-v3.md — keep in sync. */
+/** Sales copy: eight ## PART sections in content-templates/selfie-guide-content-v3.md - keep in sync. */
 /** On #0a0a0a backgrounds, use light text only (no gray hex) for WCAG contrast. */
 const ON_DARK = "#ffffff"
 const ON_DARK_MUTED = "rgba(255, 255, 255, 0.88)"
@@ -40,7 +40,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
         <div className="hero-bg-wrap">
           <Image
             src="/images/selfie-guide/window-editorial-portrait.jpg"
-            alt="Natural window-light portrait — Selfie Guide"
+            alt="Natural window-light portrait - Selfie Guide"
             fill
             priority
             sizes="100vw"
@@ -60,7 +60,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
       </section>
 
       <section className="section">
-        <p className="section-label">01 — GET INSTANT ACCESS</p>
+        <p className="section-label">01 - GET INSTANT ACCESS</p>
 
         <div className="capture-split">
           <div className="intro-panel">
@@ -77,14 +77,14 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
             <div className="intro-body">
               <p className="intro-eyebrow">WHAT&apos;S INSIDE</p>
               <h2 className={`intro-heading ${cormorant.className}`}>
-                Eight guided parts — the same structure as inside the course.
+                Eight guided parts - the same structure as inside the course.
               </h2>
               <ul className="intro-list">
                 <li>iPhone camera settings that actually matter</li>
-                <li>Light that flatters — window, golden hour, and what to skip</li>
+                <li>Light that flatters - window, golden hour, and what to skip</li>
                 <li>Angles, poses, and presence (without feeling fake)</li>
                 <li>A simple edit workflow that still looks like you</li>
-                <li>Confidence on camera — the part no one teaches</li>
+                <li>Confidence on camera - the part no one teaches</li>
                 <li>Turning one selfie session into a week of content</li>
                 <li>A 7-day challenge to lock in the habit</li>
                 <li>When you&apos;re ready: the next step if the words still feel hard</li>
@@ -119,7 +119,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
       </section>
 
       <section className="section section-journey">
-        <p className="section-label">02 — WHAT HAPPENS NEXT</p>
+        <p className="section-label">02 - WHAT HAPPENS NEXT</p>
         <div className="journey-grid">
           <article className="journey-card">
             <p className="journey-step">STEP 1</p>
@@ -130,14 +130,14 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
             <p className="journey-step">STEP 2</p>
             <h3 className={`journey-title ${cormorant.className}`}>Master the selfie system</h3>
             <p className="journey-copy">
-              Walk the eight-part guide at your pace — checklists, images, and prompts you can use today.
+              Walk the eight-part guide at your pace - checklists, images, and prompts you can use today.
             </p>
           </article>
           <article className="journey-card">
             <p className="journey-step">STEP 3</p>
             <h3 className={`journey-title ${cormorant.className}`}>Keep showing up</h3>
             <p className="journey-copy">
-              Finish the 7-day challenge with photos you&apos;re willing to post — and a repeatable rhythm for the next
+              Finish the 7-day challenge with photos you&apos;re willing to post - and a repeatable rhythm for the next
               round.
             </p>
           </article>
@@ -156,7 +156,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
       </section>
 
       <section className="section section-peek" aria-label="Look inside the guide">
-        <p className="section-label">03 — LOOK INSIDE</p>
+        <p className="section-label">03 - LOOK INSIDE</p>
         <div className="peek-grid">
           <figure className="peek-card">
             <div className="peek-image-wrap">
@@ -168,7 +168,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
                 className="peek-image"
               />
             </div>
-            <figcaption className="peek-caption">Settings checklist — start before you shoot.</figcaption>
+            <figcaption className="peek-caption">Settings checklist - start before you shoot.</figcaption>
           </figure>
           <figure className="peek-card">
             <div className="peek-image-wrap">
@@ -180,7 +180,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
                 className="peek-image"
               />
             </div>
-            <figcaption className="peek-caption">The four lights worth knowing — pulled straight from Part 2.</figcaption>
+            <figcaption className="peek-caption">The four lights worth knowing - pulled straight from Part 2.</figcaption>
           </figure>
         </div>
       </section>

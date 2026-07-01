@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — Daily Relevance Engine (MAYA-REBUILD-05 Phase 5).
+// SSELFIE Studio 3.0 - Daily Relevance Engine (MAYA-REBUILD-05 Phase 5).
 // Maya recommends what the creator should post today, grounded in her brand profile, memory,
 // and recent activity. Powers the Content surface ("Good morning Sandra, here's what I'd
 // create today"). Returns a warm greeting + 3 to 5 creator-specific ideas, each with a format.

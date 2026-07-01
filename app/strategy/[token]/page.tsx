@@ -249,7 +249,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
     return (
       <StrategyStatus
         title="MAYA IS STILL WRITING"
-        body="Your strategy is still being prepared — refresh in a moment."
+        body="Your strategy is still being prepared - refresh in a moment."
       />
     )
   }
@@ -352,7 +352,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
       </section>
 
       <section className="section">
-        <p className="section-label">01 — YOUR POSITIONING</p>
+        <p className="section-label">01 - YOUR POSITIONING</p>
         <div className="positioning-split">
           <div className="positioning-image-wrap">
             <Image src="/assets/brand-strategy/journals.png" alt="Journals" fill sizes="(max-width: 700px) 100vw, 40vw" className="cover-image" />
@@ -405,7 +405,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
       <hr className="divider" />
 
       <section className="section">
-        <p className="section-label">02 — YOUR CONTENT PILLARS</p>
+        <p className="section-label">02 - YOUR CONTENT PILLARS</p>
         <div className="pillars-grid">
           {safePillars.map((pillar, index) => (
             <article key={`${pillar.name || "pillar"}-${index}`} className="pillar-card">
@@ -441,7 +441,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
       <hr className="divider" />
 
       <section className="section">
-        <p className="section-label">03 — CAPTION STARTERS</p>
+        <p className="section-label">03 - CAPTION STARTERS</p>
         <div className="starters-grid">
           {safeCaptionStarters.map((starter, index) => (
             <div key={`${starter}-${index}`} className="starter-chip">
@@ -454,7 +454,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
       <hr className="divider" />
 
       <section className="section">
-        <p className="section-label">04 — EXAMPLE POSTS</p>
+        <p className="section-label">04 - EXAMPLE POSTS</p>
         {safeExamplePosts.map((post, index) => (
           <article key={`${post.hook || "post"}-${index}`} className="post-card">
             <div className="post-meta-label">HOOK</div>

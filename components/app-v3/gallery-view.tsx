@@ -174,7 +174,7 @@ const AssetTile = memo(function AssetTile({
       </button>
 
       {/* Overlays live OUTSIDE the tap button (a button can't nest a button) and sit above it. */}
-      {/* Quiet type label — only in the mixed "All" view, where it actually disambiguates. */}
+      {/* Quiet type label - only in the mixed "All" view, where it actually disambiguates. */}
       {showLabel && (
         <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/55 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-white backdrop-blur-sm">
           {assetLabel(asset)}

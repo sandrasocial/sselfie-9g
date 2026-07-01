@@ -50,7 +50,7 @@ interface MayaUnifiedInputProps {
   isUploadingImage?: boolean
   onRemoveImage?: () => void
   
-  /** When true, shows a visible "Photo generation" control (Photos tab — opens generation settings). */
+  /** When true, shows a visible "Photo generation" control (Photos tab - opens generation settings). */
   showSettingsButton?: boolean
   onSettingsClick?: () => void
 
@@ -62,7 +62,7 @@ interface MayaUnifiedInputProps {
   onNewProject?: () => void
   onHistory?: () => void
 
-  /** Photos tab — My Model / Selfie toggle (same as former header control). */
+  /** Photos tab - My Model / Selfie toggle (same as former header control). */
   showModeToggle?: boolean
   onModeSwitch?: (enablePro: boolean) => void | Promise<void>
   onSwitchToClassic?: () => void | Promise<void>
@@ -257,7 +257,7 @@ export default function MayaUnifiedInput({
         )}
 
         <div className={`flex min-w-0 ${proMode ? "items-end gap-2 sm:gap-3" : "items-end gap-2"}`}>
-          {/* Text input — full width on the main row for a calmer bar */}
+          {/* Text input - full width on the main row for a calmer bar */}
           <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}

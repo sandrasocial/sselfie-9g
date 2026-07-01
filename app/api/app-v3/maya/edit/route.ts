@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — true Edit Mode (MAYA-REBUILD-05 Phase 4).
+// SSELFIE Studio 3.0 - true Edit Mode (MAYA-REBUILD-05 Phase 4).
 // Image-to-image refinement: the GENERATED image is the input, and one instruction is applied
 // ("make my blazer black", "brighter", "change the background"), keeping everything else.
 // Distinct from /generate (which uses the selfie). Synchronous, credit-metered, persists to

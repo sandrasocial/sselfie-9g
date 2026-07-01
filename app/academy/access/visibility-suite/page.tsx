@@ -329,7 +329,7 @@ export default async function VisibilitySuitePage() {
                         className="flex gap-2 text-[12px] leading-[1.6]"
                         style={{ color: C.onCreamSub, fontWeight: 400 }}
                       >
-                        <span style={{ color: C.stone, flexShrink: 0 }}>—</span>
+                        <span style={{ color: C.stone, flexShrink: 0 }}>-</span>
                         {item}
                       </li>
                     ))}

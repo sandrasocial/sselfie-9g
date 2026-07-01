@@ -239,7 +239,7 @@ export default function SselfieApp({
   }, [feedPlannerProMode])
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  /** Maya ≡ slide menu — control lives in StudioAppTopBar while on Maya tab */
+  /** Maya ≡ slide menu - control lives in StudioAppTopBar while on Maya tab */
   const [mayaNavMenuOpen, setMayaNavMenuOpen] = useState(false)
   const [activeMayaSubTab, setActiveMayaSubTab] = useState<MayaSubTab>(readInitialMayaSubTab)
   const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
@@ -900,7 +900,7 @@ export default function SselfieApp({
 
   // Redirect academy-only buyers to the Academy tab on first load.
   // Placed here (after isAcademyOnlyUser is declared) to avoid a TDZ crash
-  // — dep arrays are evaluated immediately when the function body executes.
+  // - dep arrays are evaluated immediately when the function body executes.
   useEffect(() => {
     if (!myProductsData) return // wait for SWR to resolve
     if (hasRedirectedToAcademyRef.current) return // only run once
@@ -1080,7 +1080,7 @@ export default function SselfieApp({
         </div>
       )}
 
-      {/* Past-due billing banner — shown to users whose payment failed */}
+      {/* Past-due billing banner - shown to users whose payment failed */}
       {subscriptionStatus === "past_due" && (
         <div className="relative z-50 flex items-center justify-between gap-3 bg-[rgba(180,80,60,0.18)] border-b border-[rgba(220,100,80,0.35)] px-4 py-2.5">
           <p className="text-xs text-[color:var(--color-porcelain)] leading-snug">
@@ -1096,7 +1096,7 @@ export default function SselfieApp({
         </div>
       )}
 
-      {/* Zero-credit upgrade banner — shown to non-members who've run out of credits */}
+      {/* Zero-credit upgrade banner - shown to non-members who've run out of credits */}
       {creditBalance === 0 && subscriptionStatus !== "active" && subscriptionStatus !== "trialing" && subscriptionStatus !== "past_due" && (
         <div className="relative z-50 flex items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--color-porcelain)_6%,transparent)] border-b border-[color-mix(in_srgb,var(--color-porcelain)_12%,transparent)] px-4 py-2.5">
           <p className="text-xs text-[color:var(--color-whisper)] leading-snug">
@@ -1112,7 +1112,7 @@ export default function SselfieApp({
         </div>
       )}
 
-      {/* First-photo celebration toast — fires once when the first credit is spent */}
+      {/* First-photo celebration toast - fires once when the first credit is spent */}
       {showFirstPhotoToast && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-[color:var(--app-overlay)] backdrop-blur-[42px] border-b border-[color:var(--glass-border-subtle)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
           <div>
@@ -1499,7 +1499,7 @@ export default function SselfieApp({
             Wrapping it in a motion.div (even with opacity-only animation) causes
             Framer Motion to apply will-change/transform, which creates a new
             compositing layer. On iOS Safari this traps position:fixed children
-            relative to the layer instead of the viewport — clipping the header
+            relative to the layer instead of the viewport - clipping the header
             and misplacing the input bar on real devices.
           */}
           {activeTab === "maya" && (
@@ -1550,7 +1550,7 @@ export default function SselfieApp({
                     <StudioHubScreen />
                   )}
                   {activeTab === "gallery" && (
-                    // Gallery is always accessible — users must be able to view their images
+                    // Gallery is always accessible - users must be able to view their images
                     // even when credits are exhausted or subscription has lapsed.
                     // canUseGenerators only gates NEW generation, not viewing existing images.
                     <GalleryScreen

@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic"
 // When new collections are added to VAULT_COLLECTION_META (newest-first),
 // the hero background and preview cards update automatically.
 
-/** Two-word short label for the preview strip — e.g. "Dark Feminine" */
+/** Two-word short label for the preview strip - e.g. "Dark Feminine" */
 function collectionShortLabel(fullName: string): string {
   return fullName.split(/\s+/).slice(0, 2).join(" ")
 }
@@ -350,7 +350,7 @@ export default async function AiPromptsOptInPage() {
           box-shadow: 0 28px 70px rgba(13, 14, 16, 0.28);
         }
 
-        /* ── Form fields — used by OptInForm client component ─────────── */
+        /* ── Form fields - used by OptInForm client component ─────────── */
         .opt-form-header {
           margin: 0 0 20px;
           font-size: 12px;

@@ -1,9 +1,9 @@
 /**
- * Blueprint Follow-Up Sequence — 3-touch automated email flow for Feed Planner buyers
+ * Blueprint Follow-Up Sequence - 3-touch automated email flow for Feed Planner buyers
  *
- * Touch 1 (Day 1) → "Your Feed Blueprint is ready — start here"   — get them into the app
- * Touch 2 (Day 3) → "The one thing that makes feed planning click" — content theme tip
- * Touch 3 (Day 7) → "One week in — what's next?"                  — soft Studio upsell
+ * Touch 1 (Day 1) → "Your Feed Blueprint is ready - start here"   - get them into the app
+ * Touch 2 (Day 3) → "The one thing that makes feed planning click" - content theme tip
+ * Touch 3 (Day 7) → "One week in - what's next?"                  - soft Studio upsell
  *
  * GET /api/cron/blueprint-followup-sequence
  * Protected by CRON_SECRET header (Bearer token, set by Vercel automatically for cron jobs)
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fail fast if segment IDs are missing — better than sending to wrong audience
+    // Fail fast if segment IDs are missing - better than sending to wrong audience
     if (isProduction) {
       const missing: string[] = []
       if (!MARKETING_SEGMENTS.paidBlueprintDay1) missing.push("RESEND_SEGMENT_PAID_BLUEPRINT_DAY_1")

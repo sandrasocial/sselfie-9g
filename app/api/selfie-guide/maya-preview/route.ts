@@ -21,7 +21,7 @@ const FALLBACK: MayaConcept = {
   caption: "This is what showing up with intention looks like.",
 }
 
-// Simple in-memory rate limiter — max 3 requests per token per hour
+// Simple in-memory rate limiter - max 3 requests per token per hour
 interface RateLimitEntry {
   count: number
   resetAt: number
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     const token = typeof body.token === "string" ? body.token.trim() : ""
 
     if (token) {
-      // Validate token if provided (non-blocking — still serve on invalid)
+      // Validate token if provided (non-blocking - still serve on invalid)
       await validateToken(token)
 
       if (isRateLimited(token)) {
@@ -116,14 +116,14 @@ export async function POST(request: Request) {
         },
       ],
       system:
-        "You are Maya, a visual brand strategist for SSELFIE Studio. You help women create professional selfie-based brand photography. Given a scene description, return a structured photography concept as valid JSON only — no other text.",
+        "You are Maya, a visual brand strategist for SSELFIE Studio. You help women create professional selfie-based brand photography. Given a scene description, return a structured photography concept as valid JSON only - no other text.",
     })
 
     const concept = parseConcept(text) ?? FALLBACK
     return NextResponse.json({ concept })
   } catch (error) {
     console.error("[selfie-guide/maya-preview] error:", error)
-    // Always return a concept — never a 500 to the client
+    // Always return a concept - never a 500 to the client
     return NextResponse.json({ concept: FALLBACK })
   }
 }

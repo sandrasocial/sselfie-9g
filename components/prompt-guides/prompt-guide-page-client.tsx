@@ -131,7 +131,7 @@ export default function PromptGuidePageClient({
       {page.welcome_message ? (
         <>
           <section className="section">
-            <p className="section-label">01 — GUIDE INTRO</p>
+            <p className="section-label">01 - GUIDE INTRO</p>
             <div className="intro-split">
               <div className="intro-image-wrap">
                 <Image src={introImage} alt="Guide intro image" fill sizes="(max-width: 700px) 100vw, 40vw" className="cover-image" />
@@ -147,7 +147,7 @@ export default function PromptGuidePageClient({
       ) : null}
 
       <section className="section">
-        <p className="section-label">{page.welcome_message ? "02 — PROMPTS" : "01 — PROMPTS"}</p>
+        <p className="section-label">{page.welcome_message ? "02 - PROMPTS" : "01 - PROMPTS"}</p>
         <div className="prompts-grid">
           {items.map((item, index) => (
             <PromptCard

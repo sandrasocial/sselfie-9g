@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — floating Maya launcher (CLAUDE-MAYA-UI-UX-01 Workstream A).
+// SSELFIE Studio 3.0 - floating Maya launcher (CLAUDE-MAYA-UI-UX-01 Workstream A).
 // Maya is the relationship, so when the drawer is closed she stays reachable as her own face,
 // framed in obsidian with a small chat badge. One tap reopens the current conversation, or
 // starts a blank general session (handled by ConciergeProvider.open). No second chat system.

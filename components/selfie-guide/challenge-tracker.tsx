@@ -163,7 +163,7 @@ export default function ChallengeTracker({
             >
               <Image
                 src={item.image}
-                alt={`Day ${item.day} — ${item.title}`}
+                alt={`Day ${item.day} - ${item.title}`}
                 fill
                 sizes="72px"
                 style={{ objectFit: "cover", objectPosition: "top center" }}

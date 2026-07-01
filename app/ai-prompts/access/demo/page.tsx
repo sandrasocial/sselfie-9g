@@ -74,8 +74,8 @@ const MAIN_LOOKS: PromptCard[] = [
     id: "mirror-selfie-upgrade",
     title: "Expensive Mirror Selfie Upgrade",
     whenToUse:
-      "You took a mirror selfie but the lighting or background isn't working. You want the same moment, elevated.",
-    mood: "clean · elevated · natural · editorial",
+      "You took a mirror selfie but the lighting or background isn't working. You want the same moment, just clearer and more polished.",
+    mood: "clean · polished · natural · editorial",
     prompt:
       "Use my uploaded mirror selfie as the reference image. Keep my face, body, hair, outfit, phone, and pose as close to the original as possible. Improve the lighting so it is soft and even, straighten the composition, clean up the background so it is minimal and neutral, and sharpen the iPhone detail. Keep the skin texture realistic. The final image should look like a polished editorial mirror selfie, not a heavily filtered one.",
   },
@@ -107,7 +107,7 @@ const BONUS_LOOKS: PromptCard[] = [
     title: "Bathroom Selfie to Magazine Shot",
     whenToUse:
       "You have a bathroom selfie you like but it isn't quite there yet. Keep the moment, improve everything around it.",
-    mood: "editorial · clean · elevated · influencer quality",
+    mood: "editorial · clean · polished · influencer quality",
     prompt:
       "Use my uploaded bathroom selfie as the reference image. Keep my face, hair, outfit, phone, pose, and body shape as close to the original as possible. Improve the lighting so it is soft and even, straighten the lines, reduce background clutter, and give the photo clean neutral tones. The result should feel like a high-end editorial bathroom mirror photo. Do not change my face, body, or outfit.",
   },
@@ -157,7 +157,7 @@ const WORKFLOW_PROMPTS: PromptCard[] = [
 ]
 
 // ---------------------------------------------------------------------------
-// Prompt card component (server — CopyButton is the only client leaf)
+// Prompt card component (server - CopyButton is the only client leaf)
 // ---------------------------------------------------------------------------
 
 function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boolean }) {
@@ -657,7 +657,7 @@ export default function AiPromptsDemoPage() {
           justify-content: flex-end;
         }
 
-        /* Copy button — also used in starter card */
+        /* Copy button - also used in starter card */
         .copy-btn {
           padding: 8px 18px;
           background: transparent;
@@ -752,7 +752,7 @@ export default function AiPromptsDemoPage() {
         }
 
         /* ------------------------------------------------------------------ */
-        /* Bridge — Free Selfie Guide                                          */
+        /* Bridge - Free Selfie Guide                                          */
         /* ------------------------------------------------------------------ */
         .ap-bridge {
           background: #FFFFFF;
@@ -883,7 +883,7 @@ export default function AiPromptsDemoPage() {
             gap: 20px;
           }
 
-          /* Main looks: 5 cards — last one spans full width */
+          /* Main looks: 5 cards - last one spans full width */
           .ap-cards.ap-main-grid > .pc:last-child {
             grid-column: 1 / -1;
           }

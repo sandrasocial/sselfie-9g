@@ -1,6 +1,6 @@
 "use client"
 
-// The SUITE door — the membership invitation placed where the warmest audiences already are
+// The SUITE door - the membership invitation placed where the warmest audiences already are
 // (the free AI-prompts access page and the Vault buyer access page). Self-contained on purpose:
 // it carries its own styles so it drops into any page without touching that page's CSS, fires a
 // view event once when it actually scrolls into sight (IntersectionObserver, mirrors
@@ -91,7 +91,7 @@ export function SuiteDoor({
         </Link>
         {footnote && <p className="suite-door-footnote">{footnote}</p>}
       </div>
-      {/* Plain global style tag (namespaced classes) — matches the host pages' convention;
+      {/* Plain global style tag (namespaced classes) - matches the host pages' convention;
           the app has no styled-jsx registry, so <style jsx> would not SSR. */}
       <style>{`
         .suite-door {

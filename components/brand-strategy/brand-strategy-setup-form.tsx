@@ -175,7 +175,7 @@ export default function BrandStrategySetupForm({ setupToken, email, displayName 
           <div className="form-field">
             <label className="form-label" htmlFor="transformationStory">
               What transformation do you create?{" "}
-              <span className="form-label-hint">(optional — makes the strategy richer)</span>
+              <span className="form-label-hint">(optional - makes the strategy richer)</span>
             </label>
             <textarea
               id="transformationStory"

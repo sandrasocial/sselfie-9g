@@ -1,7 +1,7 @@
 // GET /api/vault/email-drop/status?runId=<uuid>
 //
 // Returns current progress for a vault drop run.
-// Safe to call at any time — read-only.
+// Safe to call at any time - read-only.
 //
 // Also supports ?latest=true to return the most recent run (any status).
 //

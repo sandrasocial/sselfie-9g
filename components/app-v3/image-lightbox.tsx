@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — image lightbox (MAYA-REBUILD-05 Phase A).
+// SSELFIE Studio 3.0 - image lightbox (MAYA-REBUILD-05 Phase A).
 // Lean fullscreen viewer for a generated result. Adapted from the live Studio lightbox, but
 // stripped of gallery/feed/favorite coupling and kept icon-free to match /app's clean look.
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.

@@ -89,7 +89,7 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
     ctaLabel: "Open prompts",
   },
   visibility_suite: {
-    subText: "What To Say, Show Up, and Get Paid — your full visibility path.",
+    subText: "What To Say, Show Up, and Get Paid - your full visibility path.",
     ctaLabel: "Open suite",
   },
   prompt_vault: {
@@ -97,7 +97,7 @@ const PRODUCT_ACCESS_COPY: Record<string, { subText: string; ctaLabel: string }>
     ctaLabel: "Open vault",
   },
   selfie_to_brand_shoot_system: {
-    subText: "Your guided path from one selfie to elevated brand images.",
+    subText: "Your guided path from one selfie to polished brand images.",
     ctaLabel: "Open system",
   },
   selfie_guide: {
@@ -326,7 +326,7 @@ export default function AcademyScreen() {
     data: templatesData,
     error: templatesError,
     isLoading: templatesLoading,
-    // Only call if the user is a Studio member — non-members get 403 from this endpoint.
+    // Only call if the user is a Studio member - non-members get 403 from this endpoint.
   } = useSWR(hasStudioMembership ? "/api/academy/templates" : null, fetcher)
   const {
     data: monthlyDropsData,
@@ -337,7 +337,7 @@ export default function AcademyScreen() {
     data: flatlayImagesData,
     error: flatlayImagesError,
     isLoading: flatlayImagesLoading,
-    // Only call if the user is a Studio member — non-members get 403 from this endpoint.
+    // Only call if the user is a Studio member - non-members get 403 from this endpoint.
   } = useSWR(hasStudioMembership ? "/api/academy/flatlay-images" : null, fetcher)
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
@@ -894,7 +894,7 @@ export default function AcademyScreen() {
     )
   }
 
-  // ── Workbook view — embeds the correct static workbook HTML via iframe ────────
+  // ── Workbook view - embeds the correct static workbook HTML via iframe ────────
   // Maps product slug → the static workbook URL (served from /public/academy/*)
   const WORKBOOK_IFRAME_URLS: Record<string, string> = {
     "what-to-say": "/academy/what_to_say/",

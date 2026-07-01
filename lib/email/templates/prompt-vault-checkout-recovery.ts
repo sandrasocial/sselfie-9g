@@ -9,7 +9,7 @@ import {
 } from "./stone-email"
 
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE = "prompt-vault-checkout-recovery"
-// Follow-up touches (EMAIL-02, 2026-06-11): 3-email recovery is the benchmark — Klaviyo data
+// Follow-up touches (EMAIL-02, 2026-06-11): 3-email recovery is the benchmark - Klaviyo data
 // shows 6.5x the recovered revenue of a single email. Stage 2 at +24h (what it feels like to
 // use it), stage 3 at +72h (a quiet last note). Personal-note format on purpose: recovery
 // converts best when it reads like Sandra, not like a brand.

@@ -52,7 +52,7 @@ export function generatePromptVaultLaunchBroadcast({
     { path: "/images/ai-prompts/denim-street-shot-9.jpg",   alt: "Street editorial. Confident pose, soft denim, city light." },
   ]
 
-  // ── Collections list (inline HTML — no helper needed) ──────────────────────
+  // ── Collections list (inline HTML - no helper needed) ──────────────────────
   const collectionsRow = `
   <tr>
     <td style="padding:36px 40px 16px;background:#FFFFFF;border-top:1px solid #E5DDD4;">

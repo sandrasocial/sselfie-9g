@@ -31,7 +31,7 @@ interface StudioAppTopBarProps {
 }
 
 /**
- * Fixed primary navigation (Maya, Studio, Gallery, …) — mobile-first horizontal scroll.
+ * Fixed primary navigation (Maya, Studio, Gallery, …) - mobile-first horizontal scroll.
  * Replaces the legacy bottom nav; height is observed into `--studio-app-header-height`.
  */
 export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
@@ -139,7 +139,7 @@ export const StudioAppTopBar = forwardRef<HTMLElement, StudioAppTopBarProps>(
                         } ${isLocked ? "opacity-40" : ""}`}
                         aria-label={
                           isLocked
-                            ? `${tab.label} — ${tab.lockMessage ?? "requires an upgrade"}`
+                            ? `${tab.label} - ${tab.lockMessage ?? "requires an upgrade"}`
                             : `Open ${tab.label}`
                         }
                         aria-current={isActive ? "page" : undefined}

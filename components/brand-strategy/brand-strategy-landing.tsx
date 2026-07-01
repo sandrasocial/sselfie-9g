@@ -48,14 +48,14 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
             starters in minutes. Yours to keep forever.
           </p>
           <a href="/masterclass" className="bs-btn-primary">
-            GET YOUR STRATEGY — $19 →
+            GET YOUR STRATEGY - $19 →
           </a>
         </div>
       </section>
 
-      {/* SECTION 01 — WHAT'S INSIDE */}
+      {/* SECTION 01 - WHAT'S INSIDE */}
       <section className="bs-section">
-        <p className="bs-section-label">01 — WHAT&apos;S INSIDE</p>
+        <p className="bs-section-label">01 - WHAT&apos;S INSIDE</p>
 
         <div className="bs-split">
           <div className="bs-preview-panel">
@@ -75,9 +75,9 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
                 Everything you need to show up consistently and sound like yourself.
               </h2>
               <ul className="bs-feature-list">
-                <li>Positioning statement — what you do, who it&apos;s for, why it matters</li>
+                <li>Positioning statement - what you do, who it&apos;s for, why it matters</li>
                 <li>Three content pillars tailored to your business and audience</li>
-                <li>Voice guide — your tone, what to say, what to avoid</li>
+                <li>Voice guide - your tone, what to say, what to avoid</li>
                 <li>Caption starters you can use this week</li>
                 <li>Example posts written in your voice</li>
               </ul>
@@ -91,7 +91,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
               <span className="bs-price-label">one-time · no subscription</span>
             </div>
             <p className="bs-purchase-desc">
-              Answer four short questions. Maya does the rest. Your strategy is ready in minutes —
+              Answer four short questions. Maya does the rest. Your strategy is ready in minutes -
               not days.
             </p>
 
@@ -100,7 +100,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
             ) : null}
 
             <a href="/masterclass" className="bs-btn-primary">
-              GET YOUR STRATEGY — $19 →
+              GET YOUR STRATEGY - $19 →
             </a>
 
             <ul className="bs-trust-list">
@@ -113,13 +113,13 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
         </div>
       </section>
 
-      {/* SECTION 02 — HOW IT WORKS */}
+      {/* SECTION 02 - HOW IT WORKS */}
       <section className="bs-section bs-section-steps">
-        <p className="bs-section-label">02 — HOW IT WORKS</p>
+        <p className="bs-section-label">02 - HOW IT WORKS</p>
         <div className="bs-steps-grid">
           <article className="bs-step-card">
             <p className="bs-step-num">STEP 1</p>
-            <h3 className={`bs-step-title ${cormorant.className}`}>Pay once — $19</h3>
+            <h3 className={`bs-step-title ${cormorant.className}`}>Pay once - $19</h3>
             <p className="bs-step-copy">
               Secure checkout via Stripe. No subscription, no upsell hidden behind a paywall.
             </p>
@@ -142,9 +142,9 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
         </div>
       </section>
 
-      {/* SECTION 03 — SANDRA'S NOTE */}
+      {/* SECTION 03 - SANDRA'S NOTE */}
       <section className="bs-section bs-section-note">
-        <p className="bs-section-label">03 — FROM SANDRA</p>
+        <p className="bs-section-label">03 - FROM SANDRA</p>
         <div className="bs-note-wrap">
           <div className="bs-note-image-wrap">
             <Image
@@ -159,7 +159,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
           <div className="bs-note-body">
             <p className="bs-note-text">
               &ldquo;I spent two years trying to explain what I do. I had all these ideas in my
-              head — who I help, what I stand for, why it matters — but I couldn&apos;t get it into
+              head - who I help, what I stand for, why it matters - but I couldn&apos;t get it into
               words that actually landed.
             </p>
             <p className="bs-note-text">
@@ -171,9 +171,9 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
               That&apos;s what this strategy does for you. It puts language to everything
               you&apos;ve been trying to say.&rdquo;
             </p>
-            <p className="bs-note-sig">— Sandra, Founder of SSELFIE</p>
+            <p className="bs-note-sig">- Sandra, Founder of SSELFIE</p>
             <a href="/masterclass" className="bs-btn-outline">
-              GET YOUR STRATEGY — $19 →
+              GET YOUR STRATEGY - $19 →
             </a>
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function BrandStrategyLanding({ checkoutFailed }: Props) {
           font-weight: 300;
         }
         .bs-feature-list li::before {
-          content: "—";
+          content: "-";
           position: absolute;
           left: 0;
           color: #6b6762;

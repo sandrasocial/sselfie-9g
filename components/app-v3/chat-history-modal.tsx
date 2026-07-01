@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — chat history (MAYA-REBUILD-05 Phase C).
+// SSELFIE Studio 3.0 - chat history (MAYA-REBUILD-05 Phase C).
 // Lists the admin's saved conversations, with select + soft-delete. New Chat lives in the
 // concierge header. Loads from /api/app-v3/maya/chats.
 

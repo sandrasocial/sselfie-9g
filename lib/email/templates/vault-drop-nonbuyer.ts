@@ -1,10 +1,10 @@
-// Vault email drop — non-buyer upsell.
+// Vault email drop - non-buyer upsell.
 //
 // Sent to freebie subscribers who have NOT yet purchased the vault.
 // Copy scales automatically to the number of new collections (2, 3, or more).
 //
 // Tone: intimate, feminine, warm. "I want to become this version of myself."
-// Language: shoots / collections / editorials — NEVER "prompts / bundle / product update"
+// Language: shoots / collections / editorials - NEVER "prompts / bundle / product update"
 
 import {
   editorialClosingRow,

@@ -1,6 +1,6 @@
 /**
  * Client-safe utilities for the Academy UI.
- * No server-only imports — safe to use in "use client" components.
+ * No server-only imports - safe to use in "use client" components.
  */
 
 export type LessonContent = {

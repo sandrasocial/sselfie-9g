@@ -97,7 +97,7 @@ export default function MayaSettingsPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
           <div className="space-y-6">
-            {/* Flux / LoRA sliders — Classic (My Model) only; hidden in Studio Pro / Selfie + Pro cards */}
+            {/* Flux / LoRA sliders - Classic (My Model) only; hidden in Studio Pro / Selfie + Pro cards */}
             {!studioProMode && (
               <>
                 <div>
@@ -151,7 +151,7 @@ export default function MayaSettingsPanel({
               </>
             )}
 
-            {/* Aspect Ratio — Radix select so list items are readable (native select can be white-on-white in dark UI) */}
+            {/* Aspect Ratio - Radix select so list items are readable (native select can be white-on-white in dark UI) */}
             <div>
               <label className="text-xs tracking-wider uppercase text-white/65 mb-2 block">Aspect Ratio</label>
               <Select value={aspectValue} onValueChange={onAspectRatioChange}>

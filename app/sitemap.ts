@@ -9,7 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
     priority: number
   }> = [
-    // Core funnel — highest priority
+    // Core funnel - highest priority
     { path: "/", changeFrequency: "daily", priority: 1.0 },
     { path: "/selfie-guide", changeFrequency: "weekly", priority: 0.95 },
     { path: "/starter-kit", changeFrequency: "weekly", priority: 0.95 },

@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — isolated layout for the /app route.
+// SSELFIE Studio 3.0 - isolated layout for the /app route.
 // Loads the brand display + body fonts and scopes a serif mapping so headings render in
 // Cormorant Garamond per the design system, without touching global Tailwind config.
 

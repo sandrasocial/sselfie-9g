@@ -486,7 +486,7 @@ export default async function PromptVaultAccessPage({
           </div>
         </div>
 
-        {/* Hero image strip — 3 shots from different collections */}
+        {/* Hero image strip - 3 shots from different collections */}
         <div className="pva-hero-strip">
           {[
             "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
@@ -705,7 +705,7 @@ export default async function PromptVaultAccessPage({
         </div>
       </section>
 
-      {/* ── THE SUITE DOOR — the membership invitation for proven buyers ── */}
+      {/* ── THE SUITE DOOR - the membership invitation for proven buyers ── */}
       <SuiteDoor
         eyebrow="Your next step"
         title="You've done it the manual way."

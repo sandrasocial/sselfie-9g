@@ -245,7 +245,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 fontFamily: "'Cormorant Garamond', serif",
               }}
             >
-              Brand photos, feed plans, and captions — done by an AI that knows you.
+              Brand photos, feed plans, and captions - done by an AI that knows you.
             </h1>
 
             <p
@@ -255,7 +255,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 textShadow: "0 1px 8px rgba(0,0,0,0.55)",
               }}
             >
-              Meet Maya. Your personal brand AI. Upload a selfie, and she creates photos, plans your feed, and writes your captions — all in your style.
+              Meet Maya. Your personal brand AI. Upload a selfie, and she creates photos, plans your feed, and writes your captions - all in your style.
             </p>
 
             <div
@@ -274,7 +274,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 onClick={() => trackSelfieGuideEntryClick("hero")}
                 className="btn shadow-xl"
               >
-                Start with the Selfie Guide — {selfieGuidePrice}
+                Start with the Selfie Guide - {selfieGuidePrice}
               </Link>
               <a
                 href="#membership"
@@ -428,7 +428,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 <p>
                   <strong style={{ color: "var(--color-whisper)" }}>2. She creates your photo library.</strong>
                   <br />
-                  Brand-ready images that actually look like you — no photoshoot needed.
+                  Brand-ready images that actually look like you - no photoshoot needed.
                 </p>
                 <p>
                   <strong style={{ color: "var(--color-whisper)" }}>3. Plan and post with confidence.</strong>
@@ -545,7 +545,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   Your next 9 posts, planned and captioned.
                 </h3>
                 <p className="text-stone text-xs md:text-sm font-light leading-relaxed">
-                  Maya builds your feed strategy, writes your captions, and keeps your grid looking cohesive — without the Sunday-night stress.
+                  Maya builds your feed strategy, writes your captions, and keeps your grid looking cohesive - without the Sunday-night stress.
                 </p>
               </div>
             </div>
@@ -647,7 +647,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   className="description text-sm md:text-base italic"
                   style={{ color: "var(--stone)", fontSize: "14px" }}
                 >
-                  If you&apos;ve been overthinking every post — SSELFIE gives you a clear, repeatable system.
+                  If you&apos;ve been overthinking every post - SSELFIE gives you a clear, repeatable system.
                 </p>
               </div>
             </div>
@@ -806,7 +806,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• Maya — your AI that learns and remembers your brand</p>
+                    <p>• Maya - your AI that learns and remembers your brand</p>
                     <p>• Fresh brand photos every month</p>
                     <p>• Feed Planner + captions for your whole grid</p>
                     <p>• Academy courses included</p>
@@ -853,7 +853,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
               >
                 <img
                   src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png"
-                  alt="Sandra — Founder of SSELFIE"
+                  alt="Sandra - Founder of SSELFIE"
                   className="w-full h-full object-cover"
                   loading="lazy"
                   style={{ display: "block" }}
@@ -867,12 +867,12 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                 />
               </div>
               <p className="description mb-4" style={{ color: "var(--stone)", maxWidth: "480px" }}>
-                I was tired of hiding behind my logo and filters. I wanted something that helped me — and other women — feel confident and consistent online without needing a whole production.
+                I was tired of hiding behind my logo and filters. I wanted something that helped me - and other women - feel confident and consistent online without needing a whole production.
                 <br /><br />
                 That&apos;s what SSELFIE Studio is. I use it myself, every week.
               </p>
               <p className="text-xs mt-2" style={{ color: "var(--color-smoke)" }}>
-                — Sandra, Founder
+                - Sandra, Founder
               </p>
             </div>
           </div>
@@ -991,7 +991,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         ))}
       </div>
 
-      {/* Sticky Footer — shows after hero */}
+      {/* Sticky Footer - shows after hero */}
       {showStickyFooter && (
         <div
           className="fixed bottom-0 left-0 right-0 z-50 py-4 sm:py-5 shadow-lg"
@@ -1024,7 +1024,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
                   color: "var(--color-whisper)",
                 }}
               >
-                Selfie Guide — {selfieGuidePrice}
+                Selfie Guide - {selfieGuidePrice}
               </Link>
               <button
                 onClick={() => {

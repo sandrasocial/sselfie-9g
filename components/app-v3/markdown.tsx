@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — inline styled markdown (MAYA-REBUILD-05 Phase A).
+// SSELFIE Studio 3.0 - inline styled markdown (MAYA-REBUILD-05 Phase A).
 // Maya's streamed replies render with real hierarchy (serif headings, bold, bullets) instead
 // of a plain text blob. Mapping lifted from the live Studio chat, reskinned light editorial.
 

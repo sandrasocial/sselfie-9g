@@ -216,7 +216,7 @@ export default function FeedStyleModal({
     })
   }
 
-  // Portal target — avoids stacking-context traps from Framer Motion wrappers
+  // Portal target - avoids stacking-context traps from Framer Motion wrappers
   // (motion.div with will-change creates a new stacking context that traps fixed children)
   const [portalTarget, setPortalTarget] = useState<Element | null>(null)
   useEffect(() => { setPortalTarget(document.body) }, [])
@@ -257,7 +257,7 @@ export default function FeedStyleModal({
                 <span className="text-[10px] uppercase tracking-[0.18em]">Close</span>
               </button>
 
-              {/* Scrollable content — flex-1 so sticky footer stays anchored */}
+              {/* Scrollable content - flex-1 so sticky footer stays anchored */}
               <div className={`overflow-y-auto flex-1 min-h-0 ${DesignClasses.spacing.padding.lg}`}>
                 <div className="space-y-8 py-6">
                   {/* Title - matching unified wizard typography */}
@@ -448,7 +448,7 @@ export default function FeedStyleModal({
                 </div>
               </div>
 
-              {/* Sticky Action Buttons — outside scroll area, always visible */}
+              {/* Sticky Action Buttons - outside scroll area, always visible */}
               <div className="flex flex-shrink-0 items-center justify-between border-t border-white/15 px-6 sm:px-8 py-4">
                 <Button
                   variant="ghost"

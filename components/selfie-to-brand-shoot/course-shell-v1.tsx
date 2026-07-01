@@ -376,7 +376,7 @@ const brandWorldCards = [
     lighting: "Evening light, balcony shadows, city glow, interior-to-exterior contrast.",
     wardrobe: "Black slip dress or evening styling, sunglasses, glossy hair.",
     background: "Balcony, city view, windows, night streets, apartment edge.",
-    emotionalSignal: "Magnetic, intimate, elevated, private, cinematic.",
+    emotionalSignal: "Magnetic, intimate, polished, private, cinematic.",
     chooseIf:
       "You want your audience to feel like they are watching the private cinematic version of your life.",
     hero: "/images/ai-prompts/dark-balcony-shot-6.png",
@@ -392,7 +392,7 @@ const brandWorldCards = [
       lighting: "Evening shadows, balcony glow, interior-to-exterior contrast.",
       wardrobe: "Black slip dress, evening styling, glossy hair, sunglasses.",
       background: "Balcony, windows, city view, private apartment edges.",
-      signal: "Magnetic, private, elevated, new-era confidence.",
+      signal: "Magnetic, private, polished, new-era confidence.",
       repeat: "Night scenes, reflective glass, black styling, private-life framing.",
       avoid: "Flat daylight, bright beach palettes, casual denim-heavy styling.",
     },
@@ -433,7 +433,7 @@ const brandWorldCards = [
     feeling: "The woman whose everyday content feels like a polished lifestyle editorial.",
     colorMood: "Marble white, black, wine red, candlelight, elegant neutrals.",
     lighting: "Soft indoor cafe light, candlelit shadows, polished evening atmosphere.",
-    wardrobe: "Dark blazer, elevated evening styling, wine-glass elegance.",
+    wardrobe: "Dark blazer, polished evening styling, wine-glass elegance.",
     background: "Marble cafe, wine table, candlelit corners, polished stone.",
     emotionalSignal: "Refined, elegant, composed, social, expensive.",
     chooseIf: "You want your brand to feel polished, refined, elegant, and socially magnetic.",
@@ -448,7 +448,7 @@ const brandWorldCards = [
     visualCode: {
       colors: "Marble white, black, wine red, candlelight, refined neutrals.",
       lighting: "Soft indoor cafe light, evening shadows, polished warmth in imagery.",
-      wardrobe: "Dark blazer, elevated evening styling, elegant accessories.",
+      wardrobe: "Dark blazer, polished evening styling, elegant accessories.",
       background: "Marble cafe, wine table, candlelit corner, polished stone.",
       signal: "Expensive, refined, composed, social, elegant.",
       repeat: "Marble, wine/coffee table moments, dark styling, composed posture.",
@@ -489,12 +489,12 @@ const brandWorldCards = [
     name: "Cozy & Textured",
     swatches: ["#1C1A18", "#79695A", "#A89A88", "#8A8780"],
     signal: "Warm confidence, lifestyle polish.",
-    feeling: "The woman who feels grounded, tactile, and elevated - like her life has texture.",
+    feeling: "The woman who feels grounded, tactile, and polished - like her life has texture.",
     colorMood: "Black leather, soft knit, muted browns, mirror light, texture-forward contrast.",
     lighting: "Soft indoor light, mirror reflections, gentle lifestyle shadows.",
     wardrobe: "Leather jacket, oversized knit, simple base layers, lived-in polish.",
     background: "Bedroom, hallway, mirror, bed, textures, getting-ready spaces.",
-    emotionalSignal: "Grounded, warm, tactile, confident, lived-in, elevated.",
+    emotionalSignal: "Grounded, warm, tactile, confident, lived-in, polished.",
     chooseIf: "You want your brand to feel stylish, textured, human, cozy, and quietly confident.",
     hero: "/images/ai-prompts/cozy-leather-shot-1.png",
     supporting: [
@@ -509,7 +509,7 @@ const brandWorldCards = [
       lighting: "Soft indoor light, mirror reflections, gentle lifestyle shadows.",
       wardrobe: "Leather jacket, oversized knit, simple base layers, lived-in polish.",
       background: "Bedroom, mirror, hallway, bed, tactile home textures.",
-      signal: "Grounded, warm, tactile, confident, elevated lifestyle.",
+      signal: "Grounded, warm, tactile, confident, polished lifestyle.",
       repeat: "Leather/knit texture, mirror moments, soft indoor scenes, relaxed posture.",
       avoid: "Beach scenes, hard corporate styling, neon color, glossy tech feeling.",
     },
@@ -664,7 +664,7 @@ Compose it as a premium vertical Reel cover with strong negative space for text 
 
 Preserve my facial identity and keep the image believable. Use the same color mood, lighting, wardrobe direction, background world, and emotional signal from my Look.
 
-Show a natural movement or real-life brand moment, such as coffee, laptop, walking, mirror, getting ready, or quiet lifestyle detail. Make it feel candid, elevated, cohesive, and usable for Stories or soft-sell content. Vertical 4:5. No text, no logo, no extra people.`,
+Show a natural movement or real-life brand moment, such as coffee, laptop, walking, mirror, getting ready, or quiet lifestyle detail. Make it feel candid, polished, cohesive, and usable for Stories or soft-sell content. Vertical 4:5. No text, no logo, no extra people.`,
   },
 ]
 
@@ -1094,7 +1094,7 @@ function LessonSection({
   children: ReactNode
   open?: boolean
 }) {
-  // Inline editorial block (the old accordion is gone — modules now collapse at the
+  // Inline editorial block (the old accordion is gone - modules now collapse at the
   // module level, so each lesson reads like a calm magazine section, not a control panel).
   void open
   return (
@@ -4532,7 +4532,7 @@ export function SelfieToBrandShootCourseShell({
 
       <style>{`
         /* ====================================================================
-           Editorial redesign (sbs2-*) — calm light-luxury course experience.
+           Editorial redesign (sbs2-*) - calm light-luxury course experience.
            Layered on top of the legacy block CSS above, which still styles the
            interactive lesson blocks (prompt cards, grids, checklists, etc).
         ==================================================================== */

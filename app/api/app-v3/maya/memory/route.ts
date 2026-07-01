@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — /app memory read + write (MAYA-REBUILD-05 Phase E).
+// SSELFIE Studio 3.0 - /app memory read + write (MAYA-REBUILD-05 Phase E).
 // GET -> what Maya remembers (agent name, brand notes, preferences).
 // PUT -> patch any of those fields (empty string clears; absent leaves unchanged).
 // Admin reaches it through the admin-gated /app shell; schema is member-ready.

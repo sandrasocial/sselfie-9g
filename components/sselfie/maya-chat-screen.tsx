@@ -1367,7 +1367,7 @@ export default function MayaChatScreen({
       (p: any) => p.type === "tool-generateCaptions" && p.output?.state === "ready",
     )
     if (alreadyHasCaption) {
-      // Already restored from DB — mark processed so we don't regenerate
+      // Already restored from DB - mark processed so we don't regenerate
       processedCaptionMessagesRef.current.add(messageKey)
     }
     const captionMatch = textContent.match(/\[GENERATE_CAPTIONS\](?:\s+context="([^"]*)")?/i)
@@ -1635,7 +1635,7 @@ export default function MayaChatScreen({
           // selfie-based generation AND we have a real selfie reference.
           // If not, fall back to Classic for users with a trained model instead
           // of sending them to a dead upload/retrain path.
-          // NOTE: check imageLibrary directly — hasImageLibrary is gated on proMode
+          // NOTE: check imageLibrary directly - hasImageLibrary is gated on proMode
           // and would always be false in Classic mode, defeating the purpose.
           const latestUserMsgText = userMessages[0] ? getMessageText(userMessages[0]) : ""
           const SELFIE_SIGNAL_RE = /\b(selfie|selfies|my selfies|use selfies|my photos|my uploads|my references)\b/i
@@ -3725,7 +3725,7 @@ export default function MayaChatScreen({
   const showProEmptyState = !showReturningMemberHome && !isLoadingChat && !hasVisibleMessages && hasProFeatures && !isTyping
   const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
-  /** Welcome / home surfaces already include starters — hide duplicate chip row above input */
+  /** Welcome / home surfaces already include starters - hide duplicate chip row above input */
   const showInputBarQuickPrompts =
     shouldShowInputPrompts && !((activeMayaTab === "photos" || activeMayaTab === "plan") && showAnyEmptyState)
   const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
@@ -3805,7 +3805,7 @@ export default function MayaChatScreen({
       style={{
         background:
           "radial-gradient(80% 55% at 20% 0%, color-mix(in srgb, var(--color-porcelain) 54%, transparent) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, color-mix(in srgb, var(--color-whisper) 56%, transparent) 0%, transparent 72%), linear-gradient(180deg, var(--app-surface) 0%, var(--app-bg) 58%, var(--color-whisper) 100%)",
-        // No paddingBottom here — the messages container handles its own input-bar
+        // No paddingBottom here - the messages container handles its own input-bar
         // clearance. Adding it here was creating a stacked empty gap on mobile.
       }}
       onDragEnter={handleDragEnter}
@@ -4201,7 +4201,7 @@ export default function MayaChatScreen({
           }}
         >
           <div className="mx-auto w-full max-w-5xl">
-            {/* [STABILIZATION] Calendar suggestion banner hidden — content calendar feature not stable */}
+            {/* [STABILIZATION] Calendar suggestion banner hidden - content calendar feature not stable */}
             {/* showCalendarSuggestion && (...) */}
 
             {chatError && (
@@ -4271,7 +4271,7 @@ export default function MayaChatScreen({
       )}
 
       {/* Tab Content - Videos Tab */}
-      {/* Pure gallery surface — pick a photo, tap Animate, done. No chat or text input here. */}
+      {/* Pure gallery surface - pick a photo, tap Animate, done. No chat or text input here. */}
       {activeMayaTab === "videos" && (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div
@@ -4455,13 +4455,13 @@ export default function MayaChatScreen({
                   </h3>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">
-                      <span className="text-xs text-[color:var(--app-text-secondary)] mt-0.5">—</span>
+                      <span className="text-xs text-[color:var(--app-text-secondary)] mt-0.5">-</span>
                       <p className="text-xs text-[color:var(--app-text-secondary)] leading-relaxed flex-1">
                         Click the three-dot menu on any concept to view or edit the detailed prompt
                       </p>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-xs text-[color:var(--app-text-secondary)] mt-0.5">—</span>
+                      <span className="text-xs text-[color:var(--app-text-secondary)] mt-0.5">-</span>
                       <p className="text-xs text-[color:var(--app-text-secondary)] leading-relaxed flex-1">
                         Your first image should be your main photo. Additional images can be style references
                       </p>

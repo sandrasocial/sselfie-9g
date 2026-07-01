@@ -39,7 +39,7 @@ export const EDITORIAL_PRESETS: Record<
   quote: {
     label: "Quote",
     headline: "“Your voice is\nthe strategy.”",
-    subtext: "— Sandra",
+    subtext: "- Sandra",
   },
   offer: {
     label: "Offer",

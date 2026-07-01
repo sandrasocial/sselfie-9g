@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — inline card primitive (MAYA-REBUILD-05 Phase A).
+// SSELFIE Studio 3.0 - inline card primitive (MAYA-REBUILD-05 Phase A).
 // The premium card language from the live Studio (eyebrow, serif light title, subtitle,
 // content slot, actions slot), reskinned to the /app light editorial palette. The base for
 // concept, caption, and asset cards that render inline in Maya's thread.

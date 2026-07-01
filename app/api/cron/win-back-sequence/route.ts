@@ -1,9 +1,9 @@
 /**
- * Win-Back Sequence — 3-Touch Automated Email Flow
+ * Win-Back Sequence - 3-Touch Automated Email Flow
  *
- * Touch 1 (Day 3)  → "Something I want to say"  — honest check-in, takes ownership, no pitch
- * Touch 2 (Day 7)  → "This is different now"     — what's changed, soft offer
- * Touch 3 (Day 14) → "Leaving the door open"     — final, no pressure
+ * Touch 1 (Day 3)  → "Something I want to say"  - honest check-in, takes ownership, no pitch
+ * Touch 2 (Day 7)  → "This is different now"     - what's changed, soft offer
+ * Touch 3 (Day 14) → "Leaving the door open"     - final, no pressure
  *
  * GET /api/cron/win-back-sequence
  * Protected by CRON_SECRET header
@@ -365,7 +365,7 @@ export async function GET(request: Request) {
     const totalFailed = results.day3.failed + results.day7.failed + results.day14.failed + dormantResults.failed
 
     console.log(
-      `[win-back] ✅ Complete — Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found} | Dormant: ${dormantResults.sent}/${dormantResults.found}`,
+      `[win-back] ✅ Complete - Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found} | Dormant: ${dormantResults.sent}/${dormantResults.found}`,
     )
 
     await cronLogger.success({

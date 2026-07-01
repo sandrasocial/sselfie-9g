@@ -74,7 +74,7 @@ export default function TestimonialCarousel() {
 
   return (
     <div className="w-full flex flex-col items-center gap-5">
-      {/* Card — single at a time, swipeable */}
+      {/* Card - single at a time, swipeable */}
       <div
         className="w-full max-w-[420px] mx-auto"
         onTouchStart={onTouchStart}
@@ -90,7 +90,7 @@ export default function TestimonialCarousel() {
         />
       </div>
 
-      {/* Controls — only shown when there's more than one */}
+      {/* Controls - only shown when there's more than one */}
       {testimonials.length > 1 && (
         <div className="flex items-center gap-4">
           <button

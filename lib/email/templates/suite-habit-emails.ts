@@ -1,7 +1,7 @@
-// SUITE month-one habit system — the three lifecycle emails that turn "joined" into "weekly
+// SUITE month-one habit system - the three lifecycle emails that turn "joined" into "weekly
 // habit". Copy approved by Sandra 2026-06-10 (docs/email/SUITE_HABIT_EMAILS_DRAFTS_2026-06-10.md
 // on studio-v3-staging). Why this exists: average member lifetime is ~102 days, churn clusters
-// at month 3, and credits pile up unused — the product's job is the weekly habit, not the tool.
+// at month 3, and credits pile up unused - the product's job is the weekly habit, not the tool.
 
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
@@ -11,7 +11,7 @@ export const SUITE_WEEKLY_DROP_EMAIL_TYPE = "suite-weekly-drop"
 
 const STUDIO_URL = "https://sselfie.ai/app"  // APP-CUTOVER-01: members now land in the new app
 
-/** Day 0 — right after joining. One action: first brand shoot today. */
+/** Day 0 - right after joining. One action: first brand shoot today. */
 export function generateSuiteDay0Email({ firstName }: { firstName: string }) {
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
@@ -56,7 +56,7 @@ Sandra x`,
   }
 }
 
-/** +48h — ONLY if she still hasn't generated anything. */
+/** +48h - ONLY if she still hasn't generated anything. */
 export function generateSuiteNudgeEmail({ firstName }: { firstName: string }) {
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
@@ -91,7 +91,7 @@ Sandra x`,
   }
 }
 
-/** The Monday weekly drop — the habit anchor. The look rotates by ISO week. */
+/** The Monday weekly drop - the habit anchor. The look rotates by ISO week. */
 export interface WeeklyDropLook {
   name: string
   oneLiner: string

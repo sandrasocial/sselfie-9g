@@ -103,7 +103,7 @@ Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
   return { html, text, subject }
 }
 
-// EMAIL 2: Still hasn't updated (Day 3 — last nudge before access ends)
+// EMAIL 2: Still hasn't updated (Day 3 - last nudge before access ends)
 export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
   const { firstName, email, planName = "SSELFIE SUITE membership" } = params
   const displayName = firstName || email.split("@")[0]

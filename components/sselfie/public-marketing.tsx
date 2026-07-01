@@ -32,7 +32,7 @@ const IMG = {
   skBaDarkMoody:   "/images/starter-kit/ba-dark-moody.png",
 }
 
-// SUITE landing assets — Sandra-approved vault collection images (BRIDGE-01 Phase B)
+// SUITE landing assets - Sandra-approved vault collection images (BRIDGE-01 Phase B)
 const SUITE_IMG = {
   monday:      "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
   photoshoots: "/images/ai-prompts/coastal-white-shot-2.jpg",
@@ -43,7 +43,7 @@ const SUITE_IMG = {
   honest:      "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
 }
 
-// ─── Design tokens — SSELFIE workbook system ─────────────────────────────────
+// ─── Design tokens - SSELFIE workbook system ─────────────────────────────────
 const C = {
   // Core surfaces
   ink:          "var(--color-obsidian)",
@@ -254,7 +254,7 @@ function Btn({
     width:           full ? "100%" : "fit-content",
     opacity:         disabled ? 0.5 : 1,
     whiteSpace:      "nowrap",
-    // Zero border-radius — SSELFIE Agents system
+    // Zero border-radius - SSELFIE Agents system
   }
 
   if (href) return <Link href={href} style={base}>{children}</Link>
@@ -731,7 +731,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
     <PublicPageShell>
       <PublicNav loginHref={login} />
 
-      {/* HERO — dark */}
+      {/* HERO - dark */}
       <Hero
         eyebrow="Personal branding by Sandra"
         title={<>Your iPhone is already in your hand.</>}
@@ -743,7 +743,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imageSrc={IMG.homeHero}
       />
 
-      {/* RECOGNITION — cream */}
+      {/* RECOGNITION - cream */}
       <Section
         eyebrow="Sound familiar?"
         title={<>You are not invisible because you are not good enough.</>}
@@ -757,7 +757,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </div>
       </Section>
 
-      {/* WHAT THIS ACTUALLY IS — dark */}
+      {/* WHAT THIS ACTUALLY IS - dark */}
       <Split
         eyebrow="What this actually is"
         title={<>It starts with the selfie. Everything builds from there.</>}
@@ -772,7 +772,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         dark
       />
 
-      {/* THE PATH — cream */}
+      {/* THE PATH - cream */}
       <Section eyebrow="The SSELFIE Path" title={<>Know what to say, post, show, sell, and do next.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-4">
           {[
@@ -790,7 +790,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </div>
       </Section>
 
-      {/* WHY SELFIES STILL MATTER — dark */}
+      {/* WHY SELFIES STILL MATTER - dark */}
       <Split
         eyebrow="Start with the selfie"
         title={<>Your selfie is doing more than you think.</>}
@@ -806,7 +806,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         cta={<Btn href={r("/ai-prompts")} surface="dark" ghost>Start with the free AI prompts</Btn>}
       />
 
-      {/* OFFER LADDER — cream */}
+      {/* OFFER LADDER - cream */}
       <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
@@ -831,7 +831,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </div>
       </Section>
 
-      {/* FROM SANDRA — cream */}
+      {/* FROM SANDRA - cream */}
       <Split
         eyebrow="From Sandra"
         title={<>I built my visibility with my phone, my story, and a lot of figuring it out as I went.</>}
@@ -847,7 +847,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         cta={<Btn href={r("/join/studio")} surface="cream">See the SUITE</Btn>}
       />
 
-      {/* CTA CLOSE — dark */}
+      {/* CTA CLOSE - dark */}
       <CtaClose
         title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
         primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
@@ -918,7 +918,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </section>
       )}
 
-      {/* HERO — dark */}
+      {/* HERO - dark */}
       <Hero
         eyebrow="Starter Kit · $37"
         title={<>Stop fighting with every photo of yourself.</>}
@@ -928,7 +928,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         imageSrc={IMG.skHero}
       />
 
-      {/* THE SYSTEM — cream */}
+      {/* THE SYSTEM - cream */}
       <Section eyebrow="Why it works" title={<>The problem is not your face. It is the photo you are starting from.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually feels random too.</p>
@@ -937,7 +937,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* WHAT IS INSIDE — dark, split with mockup */}
+      {/* WHAT IS INSIDE - dark, split with mockup */}
       <Split
         eyebrow="What is inside"
         title={<>The first step before the AI brand shoot.</>}
@@ -968,7 +968,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Starter Kit · $37</Btn>}
       />
 
-      {/* BEFORE AND AFTER — cream */}
+      {/* BEFORE AND AFTER - cream */}
       <Section eyebrow="Preset results" title={<>Three styles. See them in use.</>} dark={false}>
         <div className="grid gap-6 md:grid-cols-3">
           {[
@@ -983,7 +983,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* EDITING WALKTHROUGHS — dark */}
+      {/* EDITING WALKTHROUGHS - dark */}
       <Section eyebrow="The editing walkthrough" title={<>Make the original photo easier to use.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
@@ -1003,7 +1003,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* PRESET COLLECTION — cream, split */}
+      {/* PRESET COLLECTION - cream, split */}
       <Split
         eyebrow="The preset collection"
         title={<>Cleaner phone photos. Better starting points.</>}
@@ -1030,7 +1030,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         dark={false}
       />
 
-      {/* ALSO INCLUDED — dark */}
+      {/* ALSO INCLUDED - dark */}
       <Section eyebrow="Also included" title={<>The rest of the kit.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile, and simple direction so your input photo looks intentional before AI touches it." />
@@ -1042,12 +1042,12 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* FAQ — cream */}
+      {/* FAQ - cream */}
       <Section eyebrow="FAQ" title={<>A few things people ask.</>} dark={false}>
         <FaqAccordion items={FAQS.starterKit} dark={false} />
       </Section>
 
-      {/* CTA — dark */}
+      {/* CTA - dark */}
       <CtaClose
         title={<>Start with one photo you can actually use.</>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
@@ -1069,7 +1069,7 @@ export function MasterclassPageContent() {
     <PublicPageShell>
       <PublicNav />
 
-      {/* HERO — dark */}
+      {/* HERO - dark */}
       <Hero
         eyebrow="Masterclass · $147"
         title={<>You showed up. You took the selfie. Now build what comes next.</>}
@@ -1079,7 +1079,7 @@ export function MasterclassPageContent() {
         imageSrc={IMG.pricingBg}
       />
 
-      {/* CLARITY — cream */}
+      {/* CLARITY - cream */}
       <Section eyebrow="What's actually happening" title={<>It&apos;s not that you need more motivation. You need positioning before content.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
@@ -1088,7 +1088,7 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* MODULES — dark */}
+      {/* MODULES - dark */}
       <Section eyebrow="Inside the course" title="Start with clarity. Then content, confidence, and execution." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
@@ -1101,7 +1101,7 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* IMPLEMENTATION MAP — cream */}
+      {/* IMPLEMENTATION MAP - cream */}
       <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
@@ -1129,7 +1129,7 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* FOUNDER SPLIT — dark */}
+      {/* FOUNDER SPLIT - dark */}
       <Split
         title={<>I built a 100K+ personal brand without a photographer, a studio, or a clue about what I was doing at the start.</>}
         body={
@@ -1144,7 +1144,7 @@ export function MasterclassPageContent() {
         dark
       />
 
-      {/* WHO IT'S FOR — cream */}
+      {/* WHO IT'S FOR - cream */}
       <Section eyebrow="Who this is for" title="You want to build something. You just haven't had a clear starting point." dark={false}>
         <div className="grid gap-4 md:grid-cols-3">
           {[
@@ -1159,7 +1159,7 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* WHAT YOU LEAVE WITH — dark */}
+      {/* WHAT YOU LEAVE WITH - dark */}
       <Section eyebrow="After the course" title="What you'll have that you don't have now." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <FCard dark title="Your Foundation" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
@@ -1172,12 +1172,12 @@ export function MasterclassPageContent() {
         </p>
       </Section>
 
-      {/* FAQ — cream */}
+      {/* FAQ - cream */}
       <Section eyebrow="FAQ" title="A few things before you enroll." dark={false}>
         <FaqAccordion items={FAQS.masterclass} dark={false} />
       </Section>
 
-      {/* CTA — dark */}
+      {/* CTA - dark */}
       <CtaClose
         title="Do this once. Then you'll know exactly what you're building."
         primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
@@ -1201,7 +1201,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
     <PublicPageShell>
       <PublicNav />
 
-      {/* HERO — dark */}
+      {/* HERO - dark */}
       <Hero
         eyebrow="SSELFIE SUITE · €97/mo"
         title={<>Your monthly system for showing up online.</>}
@@ -1211,7 +1211,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         imageSrc={IMG.feed}
       />
 
-      {/* THE PAIN — cream */}
+      {/* THE PAIN - cream */}
       <Section
         eyebrow="Sound familiar?"
         title={<>You already know you should be posting. That&apos;s not the problem.</>}
@@ -1225,7 +1225,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* YOUR NEW MONDAY — dark */}
+      {/* YOUR NEW MONDAY - dark */}
       <div id="how-it-works">
         <Split
           eyebrow="How it works"
@@ -1244,7 +1244,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         />
       </div>
 
-      {/* WHAT MAYA MAKES — cream */}
+      {/* WHAT MAYA MAKES - cream */}
       <Section eyebrow="What Maya makes" title={<>One selfie in. A clearer brand out.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <ImgCard src={SUITE_IMG.photoshoots} title="Photoshoots" body="Brand images from one selfie. Recognizably you, in every shot." />
@@ -1255,7 +1255,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* EVERYTHING INCLUDED — dark */}
+      {/* EVERYTHING INCLUDED - dark */}
       <Section eyebrow="Everything included" title={<>Everything you need to keep creating.</>}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <FCard title="Maya" body="Your creative director, plus 200 photos a month." />
@@ -1269,7 +1269,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </p>
       </Section>
 
-      {/* HONEST AI — dark */}
+      {/* HONEST AI - dark */}
       <Split
         eyebrow="The honest part"
         title={<>These photos will look like you. That&apos;s the point.</>}
@@ -1284,7 +1284,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         dark
       />
 
-      {/* PROOF — cream (real customer words, before the price) */}
+      {/* PROOF - cream (real customer words, before the price) */}
       <Section eyebrow="Real customer words" title={<>Still you. And they feel it.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-3">
           {[
@@ -1302,7 +1302,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* PRICING — cream */}
+      {/* PRICING - cream */}
       <Section eyebrow="Pricing" title={<>€97 a month. Your brand creation system.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>200 photos a month. Maya. The Vault. The Starter Kit. The course library. Cancel anytime, no forms.</p>
@@ -1314,12 +1314,12 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* FAQ — cream */}
+      {/* FAQ - cream */}
       <Section eyebrow="FAQ" title="A few things before you join." dark={false}>
         <FaqAccordion items={FAQS.studio} dark={false} />
       </Section>
 
-      {/* CTA — dark */}
+      {/* CTA - dark */}
       <CtaClose
         title="Stop trying to build your brand from a blank screen."
         body={<p>Maya&apos;s ready. Start with one selfie, one direction, and one next post.</p>}
@@ -1365,7 +1365,7 @@ export function WorkWithMePageContent() {
     <PublicPageShell>
       <PublicNav />
 
-      {/* HERO — dark */}
+      {/* HERO - dark */}
       <Hero
         eyebrow="Work With Me"
         title={<>Four weeks to build your message, offer, content direction, and first sales path with me.</>}
@@ -1375,7 +1375,7 @@ export function WorkWithMePageContent() {
         imageSrc={IMG.founder}
       />
 
-      {/* WHAT WE BUILD — cream */}
+      {/* WHAT WE BUILD - cream */}
       <Section eyebrow="Four weeks, private" title="What we build together" dark={false}>
         <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>This is not another content course. Four weeks, private. Sandra looks at the full picture and builds the pieces you actually need to move forward.</p>
@@ -1387,7 +1387,7 @@ export function WorkWithMePageContent() {
         </div>
       </Section>
 
-      {/* WHO IT IS FOR — dark */}
+      {/* WHO IT IS FOR - dark */}
       <Section eyebrow="Who it is for" title="This is for you if" dark>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {fitItems.map((item) => (
@@ -1399,7 +1399,7 @@ export function WorkWithMePageContent() {
         </div>
       </Section>
 
-      {/* HOW IT WORKS — cream */}
+      {/* HOW IT WORKS - cream */}
       <Section eyebrow="How it works" title="A private application first. Then the sprint." dark={false}>
         <div className="grid gap-4 md:grid-cols-5">
           {processSteps.map((step, index) => (
@@ -1411,7 +1411,7 @@ export function WorkWithMePageContent() {
         </div>
       </Section>
 
-      {/* INVESTMENT — dark */}
+      {/* INVESTMENT - dark */}
       <Section eyebrow="Investment" title="Founding private sprint: €2,000" dark narrow>
         <div className="mf space-y-5" style={{ ...ty("body", true), fontSize: "16px" }}>
           <p><span style={{ color: C.onDarkSub }}>Payment plan:</span> 2 x €1,100</p>
@@ -1424,7 +1424,7 @@ export function WorkWithMePageContent() {
         </div>
       </Section>
 
-      {/* INQUIRY FORM — dark */}
+      {/* INQUIRY FORM - dark */}
       <section id="inquiry" style={{ position: "relative", background: C.ink, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
         <PaperTexture dark />
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
@@ -1585,7 +1585,7 @@ function InquiryForm() {
           boxShadow: pending ? "none" : "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
           cursor: pending ? "not-allowed" : "pointer",
           width: "100%",
-          // Zero border-radius — SSELFIE Agents system
+          // Zero border-radius - SSELFIE Agents system
         }}
       >
         {pending ? "Sending…" : "Apply to Work With Me"}

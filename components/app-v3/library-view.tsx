@@ -1,7 +1,7 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Library (BRIDGE-01 Phase C).
-// "Your SSELFIE" — every product she owns in one place: courses with progress, one-time
+// SSELFIE Studio 3.0 - Library (BRIDGE-01 Phase C).
+// "Your SSELFIE" - every product she owns in one place: courses with progress, one-time
 // products, and the weekly drops. Locked previews for what she doesn't own yet, with one
 // upgrade CTA (D3: members own everything, so members never see a lock). Editorial tiles,
 // same visual language as Content. Course/product links open the existing Academy and

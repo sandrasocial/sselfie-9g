@@ -988,9 +988,9 @@ ${userContext}
 ${!isProMode ? `
 **CRITICAL - CLASSIC MODE (CUSTOM FLUX LoRA):**
 
-Every concept \`prompt\` is **one FLUX-ready string**: **trigger token once** at the start (\`${triggerWord},\`), then **1–2 short paragraphs of storytelling prose** that weave scene, outfit, pose, light, camera, palette, and mood — see FLUX PROMPTING MASTERY below.
+Every concept \`prompt\` is **one FLUX-ready string**: **trigger token once** at the start (\`${triggerWord},\`), then **1–2 short paragraphs of storytelling prose** that weave scene, outfit, pose, light, camera, palette, and mood - see FLUX PROMPTING MASTERY below.
 
-❌ **Do NOT** output \`[TRIGGER WORD]\`, \`[SCENE]\`, \`[CAMERA]\`, or any \`[ALL CAPS]\` labels — those are **planning aids only**, never user-facing prompt text.
+❌ **Do NOT** output \`[TRIGGER WORD]\`, \`[SCENE]\`, \`[CAMERA]\`, or any \`[ALL CAPS]\` labels - those are **planning aids only**, never user-facing prompt text.
 ❌ **Do NOT** repeat the trigger token, gender/ethnicity, or the same camera line twice.
 ❌ **Do NOT** use legacy one-liners that are only \`IMG_XXXX.HEIC\` tags.
 ✅ **Do** write **~90–150 words** of vivid, non-repetitive narrative after the trigger comma.
@@ -1524,13 +1524,13 @@ ${getFluxPromptingPrinciples()}
 
 ---
 
-## CLASSIC CONCEPT CARDS — OUTPUT CONTRACT
+## CLASSIC CONCEPT CARDS - OUTPUT CONTRACT
 
 Each concept \`prompt\` = **\`${triggerWord},\` + storytelling body** (one flowing paragraph or two tight paragraphs). **No** \`[BRACKET]\` section headers in the string.
 
-**Gender / ethnicity / physical preferences:** Fold into the narrative **once** each where needed; convert instruction phrasing per PHYSICAL PREFERENCES rules — never strip user intent.
+**Gender / ethnicity / physical preferences:** Fold into the narrative **once** each where needed; convert instruction phrasing per PHYSICAL PREFERENCES rules - never strip user intent.
 
-**Length:** **90–150 words** after the trigger comma. Thin, repetitive drafts are invalid — add **new** sensory detail instead of restating the same clause.
+**Length:** **90–150 words** after the trigger comma. Thin, repetitive drafts are invalid - add **new** sensory detail instead of restating the same clause.
 
 **Hard reject:** Any literal \`[SCENE]\`, \`[CAMERA]\`, etc.; trigger token appearing twice; duplicate gender line; same camera specs repeated; keyword list then paraphrased list.
 
@@ -1545,12 +1545,12 @@ ${
 
 **TRIGGER TOKEN:** "${triggerWord}," **once** at the very start of every \`prompt\`.
 **GENDER:** "${userGender}"
-${userEthnicity ? `**ETHNICITY:** "${userEthnicity}" — mention **at most once** in the narrative if needed.` : ''}
-${physicalPreferences ? `**PHYSICAL PREFERENCES:** "${physicalPreferences}" — weave into the story as description; never drop user intent.` : ''}
+${userEthnicity ? `**ETHNICITY:** "${userEthnicity}" - mention **at most once** in the narrative if needed.` : ''}
+${physicalPreferences ? `**PHYSICAL PREFERENCES:** "${physicalPreferences}" - weave into the story as description; never drop user intent.` : ''}
 
-**FORMAT:** Storytelling prose only — **zero** \`[LABEL]\` lines.
+**FORMAT:** Storytelling prose only - **zero** \`[LABEL]\` lines.
 
-**LENGTH CHECK:** ~90–150 words after the trigger comma; if short, deepen scene/outfit/light — do **not** repeat prior sentences.
+**LENGTH CHECK:** ~90–150 words after the trigger comma; if short, deepen scene/outfit/light - do **not** repeat prior sentences.
 
 **QUALITY CHECK:**
 ✅ No bracket tags in the output?
@@ -1587,7 +1587,7 @@ ${
   - "keep my natural hair color" → Convert to "natural hair color" (preserve the intent, don't just omit)
   - "dont change the face" → keep as guidance, don't remove (face is preserved by trigger word, but user intent matters)
 - Weave them into the **narrative body** after the trigger (Classic storytelling prompts), not as instruction prefixes
-- Format: one natural sentence or clause that carries converted descriptors (e.g. natural hair color, body cues) alongside "${userGender}"${userEthnicity ? ` / ${userEthnicity} when relevant` : ""} — **once**, not repeated
+- Format: one natural sentence or clause that carries converted descriptors (e.g. natural hair color, body cues) alongside "${userGender}"${userEthnicity ? ` / ${userEthnicity} when relevant` : ""} - **once**, not repeated
 - Examples of correct conversion:
   - "Always keep my natural features, dont change the face" → Keep as guidance, preserve any specific feature descriptions
   - "keep my natural hair color" → "natural hair color" (preserve intent, don't just omit)
@@ -1610,7 +1610,7 @@ ${
    - OR: "Maintain exactly the characteristics of the person in the attachment (face, body, skin tone, hair and visual identity). Do not copy the original photo."
    - Never write: "A White woman, long dark brown hair" or similar assumptions
    - Always write: "Woman, maintaining exactly the characteristics from Image 1" or "Maintain exactly the characteristics of the person in the attachment"`
-    : `1. **Trigger line:** Start every Classic prompt with "${triggerWord}," then continue in **storytelling prose** — no \`[SECTION]\` labels, no second copy of the trigger.
+    : `1. **Trigger line:** Start every Classic prompt with "${triggerWord}," then continue in **storytelling prose** - no \`[SECTION]\` labels, no second copy of the trigger.
 
    **Person / prefs:** Fold "${userGender}"${userEthnicity ? `, ${userEthnicity}` : ""}${physicalPreferences ? `, and converted physical preferences` : ""} into the narrative **once** using descriptive prose only.`
 }
@@ -1784,7 +1784,7 @@ ${
 `
     : studioProMode
       ? `**STUDIO PRO (non-carousel, default concept cards):** Follow the Nano Banana Pro instructions in "YOUR NANO BANANA PRO PROMPTING MASTERY" above. No LoRA trigger token. No FLUX bracket layout. Keep prompts as natural-language photography briefs unless a workflow type adds overlays.`
-      : `**CLASSIC / FLUX CUSTOM LoRA:** \`${triggerWord},\` then **storytelling prose** per FLUX PROMPTING MASTERY — **no** \`[SCENE]\`/\`[CAMERA]\` tags.
+      : `**CLASSIC / FLUX CUSTOM LoRA:** \`${triggerWord},\` then **storytelling prose** per FLUX PROMPTING MASTERY - **no** \`[SCENE]\`/\`[CAMERA]\` tags.
 
 1. Trigger **once**, comma, then narrative
 2. Gender, ethnicity, prefs woven **once** where needed
@@ -2114,18 +2114,18 @@ Return ONLY valid JSON array, no markdown:
         : `COMPLETE FINAL PROMPT for image generation (Classic Mode - LoRA/Flux)
 
 **PROMPT REQUIREMENTS (Classic Mode):**
-- **Format:** **${triggerWord},** + **1–2 paragraphs of storytelling prose** — **zero** \`[LABEL]\` section headers in the string (see FLUX PROMPTING MASTERY + PERFECT EXAMPLES).
+- **Format:** **${triggerWord},** + **1–2 paragraphs of storytelling prose** - **zero** \`[LABEL]\` section headers in the string (see FLUX PROMPTING MASTERY + PERFECT EXAMPLES).
 - **Trigger:** **Exactly once** at the start; never repeated mid-prompt.
-- **Person / prefs:** ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? ` — merge converted preferences into the story once (strip instruction phrases)` : ""} — no duplicate demographic lines.
+- **Person / prefs:** ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? ` - merge converted preferences into the story once (strip instruction phrases)` : ""} - no duplicate demographic lines.
 - **Length:** **90-150 words** after the trigger comma. Thin or copy-paste repeated clauses are invalid.
 - **Camera / look:** Candid + iPhone rules from principles, **said once** in the narrative, unless reference/user overrides.
 - **NO** bare \`IMG_XXXX.HEIC\`-only prompts, **NO** text overlays for default cards.
 
 **DIVERSITY & VARIETY:** Vary scenes, outfits, activities across concepts while keeping **story** format (not repeated templates).
 
-**SELFIE HANDLING:** Weave front-camera / mirror beats into the story (e.g. arm extended with phone, mirror edge visible) — **do not** use "ultra-realistic".
+**SELFIE HANDLING:** Weave front-camera / mirror beats into the story (e.g. arm extended with phone, mirror edge visible) - **do not** use "ultra-realistic".
 
-**CRITICAL:** Prompt must be FINAL for Replicate/Flux — no downstream rewriting.`
+**CRITICAL:** Prompt must be FINAL for Replicate/Flux - no downstream rewriting.`
     }"
   }
 ]`
@@ -2275,7 +2275,7 @@ Same quality/luxury/styling as professional concepts, but with:
 
 2. MIRROR SELFIE: "ultra-realistic iPhone 15 Pro mirror selfie reflection, standing before mirror holding phone at chest level, full body reflection, mirror visible in frame, authentic selfie aesthetic"
 
-3. ELEVATED SELFIE: "ultra-realistic iPhone 15 Pro elevated selfie setup, phone on tripod with ring light, face to upper body, professional influencer content quality"
+3. TRIPOD SELFIE: "ultra-realistic iPhone 15 Pro tripod selfie setup, phone on tripod with ring light, face to upper body, professional influencer content quality"
 
 **SELFIE RULES:**
 ✅ Maintain same outfit quality and setting quality

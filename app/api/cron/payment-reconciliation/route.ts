@@ -22,7 +22,7 @@ export const maxDuration = 300
  * makes that class of failure visible within a day.
  *
  * Admin Data Contract: money truth = stripe_payments + live Stripe API only.
- * Alert-only — sends nothing when the books match.
+ * Alert-only - sends nothing when the books match.
  */
 
 const WINDOW_HOURS = 48
@@ -89,7 +89,7 @@ async function findMissingCheckouts(cutoffSec: number, graceSec: number): Promis
     })
     for (const session of batch.data) {
       // mode === "subscription" sessions produce an invoice and are covered by
-      // findMissingInvoices — only one-time product payments are checked here.
+      // findMissingInvoices - only one-time product payments are checked here.
       if (!session.livemode || session.mode !== "payment") continue
       if (session.payment_status !== "paid") continue
       if (!session.amount_total || session.amount_total <= 0) continue
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true, missing: 0 })
     }
 
-    // ?dryRun=1 — report findings without alerting (manual testing).
+    // ?dryRun=1 - report findings without alerting (manual testing).
     if (request.nextUrl.searchParams.get("dryRun") === "1") {
       await cronLogger.success({ dryRun: true, missing: missing.length })
       return NextResponse.json({ ok: false, dryRun: true, missing })
@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
       alertEmailSent: emailResult.success,
     }
 
-    // Missing money is an error state even though the cron itself ran fine —
+    // Missing money is an error state even though the cron itself ran fine -
     // log it loudly so it shows up in cron health checks too.
     await cronLogger.error(new Error(`${missing.length} Stripe payment(s) missing from stripe_payments`), summary)
 

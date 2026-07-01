@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — brand-context diagnostic (admin-only).
+// SSELFIE Studio 3.0 - brand-context diagnostic (admin-only).
 // Lets us SEE exactly what Maya knows about the creator (the validation the reviewer asked
 // for: don't build the recommendation engine until "Maya knows me" is proven). Returns the
 // raw getUserContextForMaya output + whether it reads as a real profile. Admin-only since it

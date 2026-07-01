@@ -1,4 +1,4 @@
-// SSELFIE Studio 3.0 — native Account data (isolated /app endpoint, MAYA-REBUILD-15 / QA P0-3).
+// SSELFIE Studio 3.0 - native Account data (isolated /app endpoint, MAYA-REBUILD-15 / QA P0-3).
 // One read for the Account tab: membership (plan, status, renewal), credit balance, email.
 // Reuses the existing credit + subscription sources; nothing here writes.
 

@@ -7,7 +7,7 @@ import { getISOWeek } from "date-fns"
  * GET /api/maya/week-plan
  *
  * Returns 3 suggested weekly themes for the current ISO week.
- * No AI call — pure rotation from the themes data file.
+ * No AI call - pure rotation from the themes data file.
  * Used by the welcome panel to surface theme chips.
  */
 export async function GET() {

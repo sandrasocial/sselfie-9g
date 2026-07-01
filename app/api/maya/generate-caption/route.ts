@@ -13,7 +13,7 @@ export const maxDuration = 60
  * profile and the quality rules from the caption writer (word count, anti-AI
  * patterns, hashtag limits).
  *
- * Body: { topic?: string }  — optional 1-sentence context from Maya's [GENERATE_CAPTIONS] marker
+ * Body: { topic?: string }  - optional 1-sentence context from Maya's [GENERATE_CAPTIONS] marker
  * Returns: { caption: string, hashtags: string[] }
  */
 export async function POST(req: Request) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}))
     const topic: string = body.topic || "personal branding"
 
-    // Load brand profile from Neon — SELECT * avoids errors if optional columns don't exist yet
+    // Load brand profile from Neon - SELECT * avoids errors if optional columns don't exist yet
     const [brandProfile] = await sql`
       SELECT *
       FROM user_personal_brand
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       ? extractHashtagsFromCaption(lastBlock)
       : extractHashtagsFromCaption(caption)
 
-    console.log(`[generate-caption] Done — ${captionBody.split(/\s+/).length} words, ${hashtags.length} hashtags`)
+    console.log(`[generate-caption] Done - ${captionBody.split(/\s+/).length} words, ${hashtags.length} hashtags`)
 
     return NextResponse.json({ caption: captionBody, hashtags })
   } catch (error) {

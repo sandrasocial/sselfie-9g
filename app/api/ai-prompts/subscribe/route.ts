@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
       emailError = err instanceof Error ? err.message : "Unknown email error"
     }
 
-    // Analytics — fire and forget
+    // Analytics - fire and forget
     logAnalyticsEvent({
       eventName: "ai_prompts_subscribed",
       path: landing_path || (deliveryContext === "single_prompt" && promptNumber ? `/p/${promptNumber}` : "/ai-prompts"),
@@ -469,7 +469,7 @@ export async function POST(request: NextRequest) {
       console.error("[ai-prompts/subscribe] analytics error:", err)
     })
 
-    console.log("[ai-prompts/subscribe] complete — emailSent:", emailSent)
+    console.log("[ai-prompts/subscribe] complete - emailSent:", emailSent)
     return NextResponse.json({ success: true, accessUrl, emailSent, emailError })
   } catch (error) {
     console.error("[ai-prompts/subscribe] unhandled error:", error)

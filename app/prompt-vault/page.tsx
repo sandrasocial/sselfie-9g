@@ -216,7 +216,7 @@ export default async function PromptVaultPage({
         </section>
       )}
 
-      {/* ── HERO — editorial split ── */}
+      {/* ── HERO - editorial split ── */}
       <section className="pvf-hero">
         {/* Left: text */}
         <div className="pvf-hero-text">
@@ -843,7 +843,7 @@ export default async function PromptVaultPage({
           line-height: 1.75;
         }
 
-        /* Hero — split desktop layout */
+        /* Hero - split desktop layout */
         .pvf-hero {
           display: grid;
           grid-template-columns: 1fr 1fr;

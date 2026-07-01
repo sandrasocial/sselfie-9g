@@ -52,7 +52,7 @@ export function getAccessState({
   }
 
   // Free users: allow Maya access while they have bonus credits.
-  // The API deducts credits and returns 402 when exhausted — that triggers the upgrade modal.
+  // The API deducts credits and returns 402 when exhausted - that triggers the upgrade modal.
   // Hard-blocking the tab before they try creates a wall before the value is demonstrated.
   const hasCredits = credits > 0
   return {

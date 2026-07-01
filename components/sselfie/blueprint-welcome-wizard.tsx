@@ -72,7 +72,7 @@ export default function BlueprintWelcomeWizard({
                     {userName ? `You're in, ${userName}.` : "You're in."}
                   </h2>
                   <p className="text-sm text-[#8a8780] max-w-md mx-auto leading-relaxed">
-                    You have 60 credits. That&apos;s 30 AI brand photos. Let&apos;s use them — upload a selfie and Maya creates your first photo in under 2 minutes.
+                    You have 60 credits. That&apos;s 30 AI brand photos. Let&apos;s use them - upload a selfie and Maya creates your first photo in under 2 minutes.
                   </p>
                 </div>
 

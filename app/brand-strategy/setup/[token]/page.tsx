@@ -28,7 +28,7 @@ export default async function BrandStrategySetupPage({ params }: PageProps) {
   `.catch(() => [] as any[])
 
   if (!rows || rows.length === 0) {
-    // Token not found or expired — send to landing with error
+    // Token not found or expired - send to landing with error
     redirect("/brand-strategy?setup=invalid")
   }
 

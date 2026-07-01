@@ -64,7 +64,7 @@ function List({ items, tone = "light" }: { items?: string[]; tone?: "light" | "d
             tone === "dark" ? "text-white/64" : "text-stone-dark"
           }`}
         >
-          <span className="text-stone-soft">—</span>
+          <span className="text-stone-soft">-</span>
           <span>{item}</span>
         </li>
       ))}
@@ -283,7 +283,7 @@ export default async function VisibilityPlanPage({ params }: PageProps) {
             <ul className="mt-4 space-y-2">
               {(plan.content?.batchingChecklist || []).map((item, index) => (
                 <li key={`${item}-${index}`} className="flex gap-3 text-sm leading-6 text-white/64">
-                  <span className="text-stone-soft">—</span>
+                  <span className="text-stone-soft">-</span>
                   <span>{item}</span>
                 </li>
               ))}

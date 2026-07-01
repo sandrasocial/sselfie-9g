@@ -1,4 +1,4 @@
-// FUNNEL-2026-06-11 — membership checkout abandonment → 7-day trial offer.
+// FUNNEL-2026-06-11 - membership checkout abandonment → 7-day trial offer.
 //
 // Someone who reached the €97 checkout and walked away is the highest-intent lead in the
 // funnel; before this cron they got silence. Mirrors prompt-vault-checkout-recovery:

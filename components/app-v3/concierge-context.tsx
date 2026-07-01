@@ -1,6 +1,6 @@
 "use client"
 
-// SSELFIE Studio 3.0 — Concierge Handoff state.
+// SSELFIE Studio 3.0 - Concierge Handoff state.
 // Clicking an aesthetic tile opens Maya with that vibe preloaded. This context holds
 // that session so the front door and the concierge panel stay in sync.
 
