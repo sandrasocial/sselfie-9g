@@ -55,6 +55,7 @@
     "audit:maya-quality": "tsx scripts/maya-quality-audit.ts",
     "audit:maya-ui-health": "node scripts/maya-ui-health-engine.mjs",
     "audit:brand-consistency": "tsx scripts/brand-consistency-audit.ts",
+    "audit:context-drift": "tsx scripts/audit/sselfie-context-drift-scanner.ts",
     "audit:integration-health": "tsx scripts/audit/integration-health-check.ts",
     "audit:architecture-simplifier": "tsx scripts/audit/architecture-simplifier.ts",
     "audit:upgrade-readiness": "tsx scripts/audit/upgrade-readiness-check.ts",

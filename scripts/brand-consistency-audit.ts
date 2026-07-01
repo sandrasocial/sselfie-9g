@@ -31,13 +31,24 @@ const EXCLUDED_PATH_PARTS = [
 ]
 
 const BANNED_PHRASES = [
-  "unlock",
+  "unlock your potential",
+  "leverage",
+  "utilize",
+  "optimize",
   "game-changer",
   "level up",
+  "strategic visibility",
   "transform your life overnight",
   "robust solution",
+  "robust",
+  "scalable",
   "synergy",
   "dear valued customer",
+  "new face",
+  "AI headshot",
+  "headshot app",
+  "AI photo app",
+  "prompt marketplace",
 ]
 
 const FONT_DRIFT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
@@ -173,6 +184,7 @@ async function main() {
   lines.push("## Scope")
   lines.push(`- Files scanned: ${files.length}`)
   lines.push("- Surfaces: public paid routes, supporting public components, and live email templates")
+  lines.push("- Voice source: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
   lines.push("")
   lines.push("## Findings")
   if (findings.length === 0) {

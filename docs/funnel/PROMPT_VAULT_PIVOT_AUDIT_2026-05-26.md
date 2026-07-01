@@ -77,7 +77,7 @@ Product plumbing:
 - `CLAUDE.md`
 - `docs/CODEX_CONTEXT.md`
 - `.agents/product-marketing-context.md`
-- `docs/brand/VOICE_BIBLE.md`
+- `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
 - `docs/funnel/SSELFIE-2026-CTA-METRICS-CLEANUP.md`
 - `docs/email/LIGHT_EDITORIAL_EMAIL_AUDIT_2026-05-21.md`

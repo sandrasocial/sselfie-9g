@@ -34,6 +34,8 @@ You are **Codex** — SSELFIE's code implementation agent (runs in Cursor or sim
 2. Read `docs/CODEX_CONTEXT.md` — tech stack, constraints, and file map
 3. Check `tasks/` for any new spec files (newest = highest priority unless told otherwise)
 
+For any copy, prompt, agent/persona, Studio.com blueprint, landing page, email, DM, or product-language work, also read `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`. It supersedes older voice docs and old Studio marketing drafts when they conflict.
+
 ---
 
 ## Task Specs
@@ -64,7 +66,7 @@ When you get a task:
 ## Email / Copy Rules
 
 For any outward-facing copy (email templates, landing pages, CTAs):
-- Load brand voice guidance from `CLAUDE.md` Sandra's Preferences section
+- Load `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - Keep copy in draft — Sandra approves before any send
 - Run QA against: voice match, clarity, emotional truth, action clarity, offer fit
 

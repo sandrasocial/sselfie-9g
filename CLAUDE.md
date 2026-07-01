@@ -1,12 +1,29 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-06-13 — Read this at the start of every session*
+*Last updated: 2026-06-29 — Read this at the start of every session*
 
 ---
 
 ## Me — Sandra (The Selfie Queen)
-Founder of SSELFIE Studio. Single mother, Iceland/Norway. ~30 active paying customers, 180K+ followers, 3K+ email list. Building AI-powered personal branding platform. Live at **sselfie.ai**.
+Founder of SSELFIE Studio. Single mother, Iceland/Norway. **8 active Suite members** (35 canceled, 14 active trials), **110,835 Instagram followers** (verified live 2026-06-29 via Graph API), 6,839 subscribed email contacts. Building AI-powered personal branding platform. Live at **sselfie.ai**.
 
 **For current MRR + exact paying counts — always pull from Stripe. Don't trust stale numbers in docs.**
+
+## Current Voice / Audience Source Of Truth (LOCKED 2026-06-27)
+
+Before writing or editing any outward-facing copy, prompts, Studio.com blueprint text, landing-page copy, emails, DMs, product descriptions, Maya/persona language, or content-generation rules, read:
+
+**`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`**
+
+Its source files live in `docs/brand/source/2026-06-27/`.
+
+The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
+
+Core lock:
+- AI is not the hero. The woman is.
+- The selfie is where we start. Visibility is where it leads.
+- Sandra writes like a real woman texting another woman: simple, warm, direct, human.
+- Do not drift into generic AI/photo-tool, corporate personal-brand, or motivational-coach language.
+- Do not use old Studio marketing drafts as current copy.
 
 ---
 
@@ -218,7 +235,7 @@ from `stripe_payments` / Stripe API only — never analytics events.
 | What | Value |
 |------|-------|
 | Resend Main Audience ID | `3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd` |
-| Resend total contacts | 6,589 in Main Audience (6,295 subscribed) — verified via API 2026-06-11; re-verify before broadcasts |
+| Resend total contacts | 7,484 in Main Audience (6,839 subscribed) — verified via Resend API 2026-06-29; re-verify before broadcasts |
 | Neon DB users | 603 unique emails (verified 2026-03-02) |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
@@ -254,7 +271,7 @@ from `stripe_payments` / Stripe API only — never analytics events.
 
 | Segment | Count | Notes |
 |---------|-------|-------|
-| Main Audience | 6,589 (6,295 subscribed) | ✅ Use for all broadcasts |
+| Main Audience | 7,484 (6,839 subscribed) | ✅ Use for all broadcasts |
 | AI Photoshoot Audience | 2,798 (2,701 subscribed) | Prompt-funnel segment |
 | Cold Users | 2,754 (2,556 subscribed) | Imported/cold — low engagement expected |
 | Brand Blueprint (legacy) | 901 | Legacy freebie downloaders — no new entries |

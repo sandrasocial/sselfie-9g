@@ -6,6 +6,18 @@
 - Surface the operational constraints (Vercel-only, live users, low budget) and current priorities (marketing automation, email reliability, monitoring).
 - Offer a reusable "State Summary Template" so future threads can quickly resume context without rereading every message.
 
+## Current SSELFIE Voice / Audience Source Of Truth
+
+As of 2026-06-27, all voice, audience, story, expertise, product-positioning, and Studio.com copy work must start from:
+
+`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+
+Fresh source files are stored in `docs/brand/source/2026-06-27/`.
+
+The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
+
+Do not reuse old Studio marketing copy or generic AI/headshot positioning. SSELFIE's current lock: AI is a tool, the woman is the point, the selfie is the first step, visibility is the transformation, and Sandra's voice is simple, warm, direct, and human.
+
 ## Tech stack overview
 
 - **Frontend**: Next.js 16, React 19, Sonner for notifications, Recharts for charts, Tailwind + custom typography.

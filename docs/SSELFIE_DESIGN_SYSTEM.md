@@ -228,7 +228,8 @@ These files currently control active styling and should not be archived:
 Active:
 
 - `docs/SSELFIE_DESIGN_SYSTEM.md`
-- `docs/brand/VOICE_BIBLE.md`
+- `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- `docs/brand/source/2026-06-27/`
 - `CLAUDE.md` for business context and Sandra preferences
 - `docs/CODEX_CONTEXT.md` for implementation context
 
