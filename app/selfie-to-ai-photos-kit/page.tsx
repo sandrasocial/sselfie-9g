@@ -1,16 +1,14 @@
 import type { Metadata } from "next"
-import { StarterKitPageContent } from "@/components/sselfie/public-marketing"
+import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
   title: "Selfie To AI Photos Kit | SSELFIE",
-  description: "Start with one clear selfie and use it to create AI photos that still look like you.",
+  description:
+    "The Selfie To AI Photos Kit belongs to the AI prompts funnel. Start with the free AI prompts while the dedicated kit path is prepared.",
 }
 
-export default async function SelfieToAiPhotosKitPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ checkout?: string }>
-}) {
-  const params = searchParams ? await searchParams : {}
-  return <StarterKitPageContent checkoutFailed={params.checkout === "failed"} />
+export default function SelfieToAiPhotosKitPage() {
+  redirect(
+    "/ai-prompts?source=selfie_to_ai_photos_kit&funnel=prompt&offer_status=planned",
+  )
 }

@@ -34,8 +34,16 @@ Sandra must confirm:
 2. Price:
    - recommended: $27 or $37
 3. Infrastructure:
-   - recommended: repackage the existing Starter Kit if safe
-   - alternative: create a new product route if repackaging would confuse existing buyers
+   - required: create a separate product path
+   - do not repackage the existing Starter Kit
+
+## Decision Update — 2026-07-01
+
+The existing `starter_kit` product remains the **Selfie Starter Kit** for the Free Selfie Guide / `KIT` keyword path.
+
+Selfie To AI Photos Kit is a separate Prompt/AI funnel offer and should not use `/checkout/starter-kit`.
+
+`KIT` traffic must keep going to the iPhone selfie product. AI-photo traffic belongs to the Free AI Prompts / `PROMPT` path.
 
 ## Buyer
 
@@ -120,22 +128,9 @@ Before building, inspect:
 
 ## Preferred Implementation Path
 
-### Option A: Repackage Existing Starter Kit
+### Product Path: New Product Route
 
-Use this if existing buyer fulfillment can be preserved safely.
-
-Actions:
-
-- update public positioning
-- update deliverables list
-- keep existing access route working
-- preserve all existing buyers
-- update delivery email
-- add buyer bridge into Prompt Vault and SUITE
-
-### Option B: New Product Route
-
-Use this only if repackaging creates too much confusion.
+Repackaging created too much funnel confusion because the existing Starter Kit has a real job.
 
 Actions:
 

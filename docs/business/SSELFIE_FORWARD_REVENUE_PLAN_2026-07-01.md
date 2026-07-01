@@ -25,6 +25,19 @@ Both are real.
 
 They need different offers.
 
+## Product Separation Lock
+
+Do not collapse the selfie education funnel and the AI prompts funnel into one product.
+
+- **Free Selfie Guide -> Selfie Starter Kit** is for the woman who wants to take better iPhone photos and better selfies.
+- **Free AI Prompts / PROMPT funnel -> Selfie To AI Photos Kit** is for the woman who wants to turn one clear selfie into AI photos that still look like her.
+
+The existing `starter_kit` product, `/starter-kit`, `/checkout/starter-kit`, `/access/starter-kit/[token]`, and the `KIT` keyword remain the **Selfie Starter Kit** path.
+
+Do not send people who comment `KIT` to the AI Photos Kit.
+
+The Selfie To AI Photos Kit needs its own approved product/checkout path before it is sold. Until then, it belongs to the Prompt/AI funnel strategy, not the live Starter Kit checkout.
+
 ## The Plan Going Forward
 
 ### 1. Top Of Funnel Offer
@@ -204,9 +217,12 @@ Cold content path:
   - Selfie To AI Photos Kit
 - Confirm price:
   - $27 or $37
-- Confirm whether this replaces or repackages the current Starter Kit.
+- Confirm new product infrastructure:
+  - new product key
+  - new checkout path
+  - new access/delivery path
 
-Recommended: use the current Starter Kit infrastructure if safe, but rewrite and repackage the deliverables so it sells the AI-photo outcome more directly.
+Decision update: **do not repackage the existing Starter Kit.** The existing Starter Kit is the iPhone selfie offer from the Free Selfie Guide / `KIT` keyword path.
 
 #### Phase 2: Deliverables
 
@@ -421,7 +437,7 @@ Document this plan as the operating source of truth.
 
 ### Second
 
-Build the Selfie To AI Photos Kit plan/spec using existing Starter Kit or low-ticket infrastructure where possible.
+Build the Selfie To AI Photos Kit plan/spec as a separate Prompt/AI funnel product. Do not reuse the existing Starter Kit checkout.
 
 ### Third
 
@@ -439,7 +455,8 @@ Update the admin brief so it separates:
 
 Run only focused campaigns:
 
-- cold reels -> Kit
+- iPhone/selfie cold reels -> Selfie Starter Kit
+- AI prompt/photo cold reels -> PROMPT / AI Prompts / planned AI Photos Kit path
 - AI prompt users -> Vault
 - Vault buyers -> SUITE
 - warm stories/emails -> Visibility To Paid application
@@ -458,7 +475,7 @@ Do not:
 
 ## Decision Metrics
 
-### Selfie To AI Photos Kit
+### Selfie Starter Kit
 
 Track:
 
@@ -467,6 +484,19 @@ Track:
 - kit checkout completion
 - kit access opens
 - refunds/support
+- Vault upgrade clicks
+- SUITE trial clicks
+
+### Selfie To AI Photos Kit
+
+Track after the dedicated product path exists:
+
+- AI Prompts opt-ins
+- AI Photos Kit checkout starts
+- AI Photos Kit purchases
+- AI Photos Kit access opens
+- prompt copies
+- fix prompt copies
 - Vault upgrade clicks
 - SUITE trial clicks
 
@@ -533,7 +563,9 @@ From this point forward, every SSELFIE funnel decision should ask:
 
 If the answer is unclear, the offer will feel unclear.
 
-Cold attention gets the Kit.
+Cold iPhone/selfie attention gets the Selfie Starter Kit.
+
+Cold AI-photo attention gets PROMPT and the planned Selfie To AI Photos Kit path.
 
 Warm trust gets Visibility To Paid.
 

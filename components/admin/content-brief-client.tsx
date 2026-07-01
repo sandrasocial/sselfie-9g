@@ -56,8 +56,9 @@ const FUNNEL_STAGE_META: Record<
   { label: string; description: string; badgeClass: string }
 > = {
   cold: {
-    label: "Cold · feed reach → Kit",
-    description: "Public feed reels/carousels for the selfie + AI-photo audience. Next step: Selfie To AI Photos Kit, then the Vault.",
+    label: "Cold · feed reach → right first step",
+    description:
+      "Selfie/iPhone tutorials use KIT → Selfie Starter Kit. AI prompt/photo content uses PROMPT → AI Prompts, then the planned Selfie To AI Photos Kit / Vault path.",
     badgeClass: "bg-stone-100 text-stone-700",
   },
   warm: {

@@ -11,9 +11,10 @@ This pass created the first implementation layer for the new revenue path:
 - Warm trust -> Visibility To Paid Sprint
 - Paid activation -> SUITE
 
-The work reuses existing, safer infrastructure instead of creating new payment products:
+Correction added after Sandra review:
 
-- Selfie To AI Photos Kit uses the existing `starter_kit` product, checkout, token access, and email sequence.
+- The existing `starter_kit` product must remain the iPhone Selfie Starter Kit.
+- Selfie To AI Photos Kit is a separate Prompt/AI funnel product and must not use `/checkout/starter-kit`.
 - Visibility To Paid Sprint uses the existing Work With Me page and inquiry form.
 
 Claude can now review the outward-facing voice and tighten the copy without needing structural changes first.
@@ -22,19 +23,21 @@ Claude can now review the outward-facing voice and tighten the copy without need
 
 ### Selfie To AI Photos Kit
 
-- Added `/selfie-to-ai-photos-kit` as a clean public route.
-- Reframed the existing Starter Kit around:
-  - one clear source selfie
-  - AI photo starter prompts
-  - still-you fix prompts
-  - a 3-image starter shoot path
-  - presets, captions, and a 7-day content starter
-- Kept `/starter-kit` live as an existing route.
-- Kept the existing `/checkout/starter-kit` checkout route and `starter_kit` product id.
-- Updated Starter Kit checkout, success, access, and lifecycle email copy to match the new Kit positioning.
-- Removed the visible Selfie to Brand Shoot credit bridge from Starter Kit access and replaced it with:
-  - Prompt Vault as the next prompt library step
-  - SUITE as the monthly creation system step
+- Added `/selfie-to-ai-photos-kit` as a safe placeholder route.
+- The route redirects into `/ai-prompts` with Prompt funnel attribution until a dedicated AI Photos Kit product/checkout path is approved.
+- The existing Starter Kit is not the AI Photos Kit.
+- `/starter-kit`, `/checkout/starter-kit`, `/access/starter-kit/[token]`, and `starter_kit` remain the iPhone Selfie Starter Kit path.
+
+### Selfie Starter Kit
+
+- Preserved the existing iPhone selfie product role:
+  - better phone selfies
+  - presets
+  - source photo guidance
+  - posing
+  - captions
+  - 7-day content starter
+- `KIT` traffic should continue to point here, not to AI Photos Kit.
 
 ### Visibility To Paid Sprint
 
@@ -94,7 +97,9 @@ No entitlement logic was changed.
 
 No checkout fulfillment logic was changed.
 
-The Kit still uses the existing `starter_kit` infrastructure and price.
+The existing Selfie Starter Kit still uses the existing `starter_kit` infrastructure and price.
+
+Selfie To AI Photos Kit does not have a live checkout yet.
 
 Visibility To Paid still uses the existing inquiry flow and does not create an automatic checkout/payment step.
 
@@ -109,7 +114,7 @@ Passed:
 
 Build completed successfully and includes:
 
-- `/selfie-to-ai-photos-kit`
+- `/selfie-to-ai-photos-kit` redirects to `/ai-prompts` for now
 - `/visibility-to-paid`
 - `/starter-kit`
 - `/work-with-me`
@@ -134,8 +139,12 @@ Those were not expanded in this pass because the priority was revenue-path struc
 
 ## Needs Claude / Sandra Review
 
-- Final voice pass on the new Kit page copy.
+- Dedicated Selfie To AI Photos Kit product decision:
+  - product key
+  - price
+  - checkout path
+  - access/delivery path
+- Final voice pass on the Selfie Starter Kit page copy.
 - Final voice pass on the Visibility To Paid page and application copy.
-- Final decision on whether `/starter-kit` remains visible as an alias or eventually redirects to `/selfie-to-ai-photos-kit`.
+- Do not redirect `/starter-kit` to `/selfie-to-ai-photos-kit`.
 - Final decision on whether the old email template filenames containing `masterclass` should be renamed in a separate compatibility-safe cleanup.
-

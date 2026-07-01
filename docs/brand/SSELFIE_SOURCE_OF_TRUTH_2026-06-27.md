@@ -189,6 +189,17 @@ Use the full SSELFIE ecosystem, not an AI-prompt-only ladder.
 
 Do not reduce the business to AI prompts or AI photos.
 
+## Product Separation Rule
+
+The Selfie Starter Kit and Selfie To AI Photos Kit are not the same product.
+
+- **Selfie Starter Kit** is the iPhone/selfie education product. It follows the Free Selfie Guide and the `KIT` keyword. It helps her take, edit, pose, and use better phone photos.
+- **Selfie To AI Photos Kit** is the planned Prompt/AI funnel product. It follows the Free AI Prompts / `PROMPT` path. It helps her use one clear selfie to create AI photos that still look like her.
+
+Do not send `KIT` traffic to the AI Photos Kit.
+
+Do not repurpose the existing `starter_kit` checkout unless Sandra explicitly approves replacing the iPhone selfie offer.
+
 ## Current Revenue Direction
 
 Current operating plan:

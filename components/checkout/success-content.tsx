@@ -48,7 +48,7 @@ function getProductLabel(productType: string | undefined) {
     case "selfie_guide_bundle":
       return "Selfie Guide + Strategy Bundle"
     case "starter_kit":
-      return "Selfie To AI Photos Kit"
+      return "Selfie Starter Kit"
     case "prompt_vault":
       return "The AI Photo Prompt Vault"
     case "presets_single":
@@ -135,9 +135,9 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
   if (productType === "starter_kit") {
     return {
       href: "/academy/access/starter-kit",
-      label: "Open your Kit",
+      label: "Open your Starter Kit",
       helper:
-        "Your source selfie guide, AI photo prompts, fix prompts, presets, and 7-day content starter are ready. Open the kit and start with one clear selfie.",
+        "Your Lightroom presets, Selfie Guide, and 7-day content starter are ready. Open the kit to download your presets first.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Starter%20Kit%20access",
       secondaryLabel: "Need help? Email support",
     }

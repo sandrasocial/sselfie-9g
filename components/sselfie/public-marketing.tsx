@@ -920,36 +920,36 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
 
       {/* HERO - dark */}
       <Hero
-        eyebrow="Selfie To AI Photos Kit · $37"
-        title={<>Turn one clear selfie into AI photos that still look like you.</>}
-        body={<p>If you found me through a selfie tip or an AI photo reel, this is the simple next step. I&apos;ll show you what selfie to use, what to write, and what to fix when the result starts looking fake.</p>}
-        primary={{ href: starterKitCheckoutHref, label: "Get the Kit · $37" }}
+        eyebrow="Starter Kit · $37"
+        title={<>Stop fighting with every photo of yourself.</>}
+        body={<p>If the source photo feels off, everything after it feels harder too. The Starter Kit helps you take, edit, and use one clear selfie so your content has a better place to start.</p>}
+        primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
         imageSrc={IMG.skHero}
       />
 
       {/* THE SYSTEM - cream */}
-      <Section eyebrow="Why it works" title={<>AI needs a clear photo of you before it can create a good result.</>} dark={false} narrow>
+      <Section eyebrow="Why it works" title={<>The problem is not your face. It is the photo you are starting from.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually feels random too.</p>
-          <p>The Kit helps you create a better source selfie first. Then it gives you the simple prompts and fix lines to turn that selfie into AI photos that still feel like you.</p>
-          <p>One clear selfie. One small starter shoot. No guessing from zero.</p>
+          <p>The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your visuals stop feeling fake, flat, or disconnected from you.</p>
+          <p>One clearer photo. One cleaner edit. One week of content. No starting from zero.</p>
         </div>
       </Section>
 
       {/* WHAT IS INSIDE - dark, split with mockup */}
       <Split
         eyebrow="What is inside"
-        title={<>The small kit for your first AI photo result.</>}
+        title={<>The first step before the AI brand shoot.</>}
         body={
           <div>
             {[
-              { label: "Source Selfie Checklist",      note: "Know exactly what kind of selfie gives AI the best chance of keeping you recognizable." },
-              { label: "Good vs Bad Source Photo Rules", note: "See why some selfies create strange AI results and what to fix before you upload." },
-              { label: "AI Photo Starter Prompts",     note: "Simple prompts for a profile image, reel cover, and lifestyle image from one selfie." },
-              { label: "Still-You Fix Prompts",        note: "Use these when the image is close, but the face, skin, pose, or mood feels off." },
-              { label: "Presets + Phone Setup",        note: "Clean up your source photo without editing yourself into someone else." },
-              { label: "7-Day Content Starter",        note: "Use the photos instead of letting them sit in your camera roll." },
+              { label: "16 Lightroom Presets",         note: "A clean starting point for selfies, AI input photos, and everyday brand visuals." },
+              { label: "Selfie Guide",                 note: "Light, angles, phone setup, and simple rules for photos that look stronger before editing." },
+              { label: "Posing And Editing Guidance",  note: "Mirror poses, full body, profile, phone edits, Hypic, CapCut, and Lightroom Mobile." },
+              { label: "Caption Templates",            note: "30 ready-to-edit captions for women who have the photo but do not know what to say." },
+              { label: "Storytelling Guide",           note: "Five post types that turn one photo session into content people can understand." },
+              { label: "7-Day Content Starter",        note: "One session. Seven posts. A full week of content planned and ready to use." },
             ].map((item, i) => (
               <div key={item.label} style={{
                 borderTop: `1px solid ${C.divDark}`,
@@ -965,7 +965,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         imgSrc={IMG.skMockup}
         imgFirst
         dark
-        cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Kit · $37</Btn>}
+        cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Starter Kit · $37</Btn>}
       />
 
       {/* BEFORE AND AFTER - cream */}
@@ -984,15 +984,15 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       </Section>
 
       {/* EDITING WALKTHROUGHS - dark */}
-      <Section eyebrow="Source photo setup" title={<>Make the selfie easier for AI to understand.</>} dark>
+      <Section eyebrow="The editing walkthrough" title={<>Make the original photo easier to use.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
-            { num: "01", title: "Find clean light",         body: "Use soft window light so your face, skin tone, and features are easy for AI to read." },
-            { num: "02", title: "Keep your face visible",   body: "No heavy shadows, sunglasses, filters, or angles that hide the features you want preserved." },
-            { num: "03", title: "Use a simple edit",        body: "Clean the photo without smoothing yourself into someone else." },
-            { num: "04", title: "Choose the right crop",    body: "Give AI enough face, hair, shoulders, and styling information to work with." },
-            { num: "05", title: "Write the prompt clearly", body: "Tell AI what to keep, what to change, and what kind of photo you want back." },
-            { num: "06", title: "Fix, do not restart",      body: "If the result is close, fix the face, pose, lighting, or crop before changing the whole idea." },
+            { num: "01", title: "Lightroom with presets",   body: "Import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
+            { num: "02", title: "iPhone native editing",    body: "Exposure, brilliance, highlights, shadows, and vignette. Clean up the photo before you use it anywhere." },
+            { num: "03", title: "Hypic for portraits",      body: "Get a polished portrait feel without smoothing your face into someone else." },
+            { num: "04", title: "CapCut for video",         body: "Use the same clean visual direction on simple video clips and reels." },
+            { num: "05", title: "Save a custom preset",     body: "Create your own repeatable edit so future selfies start from the right look." },
+            { num: "06", title: "Apply edits in bulk",      body: "Copy one edit and paste it to every photo in your session. Your camera roll gets cleaner fast." },
           ].map((m) => (
             <article key={m.num} className="mf" style={{ ...cardSx(true), padding: "22px 26px" }}>
               <p style={{ ...ty("eyebrow", true), marginBottom: "12px" }}>{m.num}</p>
@@ -1005,17 +1005,17 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
 
       {/* PRESET COLLECTION - cream, split */}
       <Split
-        eyebrow="The first shoot path"
-        title={<>Three useful AI photos from one selfie.</>}
+        eyebrow="The preset collection"
+        title={<>Cleaner phone photos. Better starting points.</>}
         body={
           <div className="space-y-4">
-            <p>The Kit gives you a tiny starter shoot, not a giant folder you never open.</p>
-            <p>Start with one profile-style photo, one stronger reel-cover image, and one softer lifestyle image. That is enough to see what is possible without getting lost.</p>
+            <p>Presets do not replace a good photo. They help you make the photo cleaner, more consistent, and easier to use as personal brand content.</p>
+            <p>Use them before posting, before building a carousel, or before sending the image into an AI tool.</p>
             <div className="grid gap-2 mt-2">
               {[
-                { name: "Profile image", desc: "A clear first-impression photo people can recognize." },
-                { name: "Reel cover",    desc: "A stronger image with space for a hook or title." },
-                { name: "Lifestyle image", desc: "A softer image for stories, posts, and everyday brand content." },
+                { name: "Scandinavian Light and Dreamy", desc: "Bright, airy, soft tones. Timeless natural light." },
+                { name: "Nordic Deep Urban",             desc: "Cool, desaturated, cinematic. Urban edge." },
+                { name: "Scandinavian Dark and Moody",   desc: "Deep, warm, dramatic. Moody and timeless." },
               ].map((p) => (
                 <div key={p.name} style={{ borderBottom: `1px solid ${C.divCream}`, paddingBottom: "10px" }}>
                   <p style={{ ...ty("h3", false), fontSize: "14px", marginBottom: "2px" }}>{p.name}</p>
@@ -1031,14 +1031,14 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       />
 
       {/* ALSO INCLUDED - dark */}
-      <Section eyebrow="Also included" title={<>The support pieces are still here.</>} dark>
+      <Section eyebrow="Also included" title={<>The rest of the kit.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile, and simple direction so your source photo looks intentional before AI touches it." />
-          <FCard dark title="Lightroom Presets" body="Clean edits for the source photo and everyday brand photos. Use lightly. Stay recognizable." />
-          <FCard dark title="Fix Prompt Bank" body="Lines for making the face more realistic, the pose more natural, or the lighting softer." />
-          <FCard dark title="Caption Templates" body="For the moment when the photo is ready but your brain goes blank." />
-          <FCard dark title="7-Day Content Starter" body="Use your new photos in posts, stories, and simple offers instead of letting them sit in your camera roll." />
-          <FCard dark title="Instant Access" body="Start right after checkout with the prompts, presets, guides, and starter path." />
+          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile, and simple direction so your input photo looks intentional before AI touches it." />
+          <FCard dark title="Caption Templates" body="30 ready-to-edit captions for the moment when the photo is ready but your brain goes blank." />
+          <FCard dark title="Storytelling Guide" body="Five post types that turn one photo session into a full content arc: proof, story, teaching, behind the scenes, and invitation." />
+          <FCard dark title="7-Day Content Starter" body="Turn one session into seven posts. A full week of content from a single afternoon." />
+          <FCard dark title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
+          <FCard dark title="Instant Access" body="Start right after checkout with the presets, guides, caption templates, and your 7-day starter." />
         </div>
       </Section>
 
@@ -1049,8 +1049,8 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
 
       {/* CTA - dark */}
       <CtaClose
-        title={<>Start with one clear selfie. Then see what AI can do with it.</>}
-        primary={{ href: starterKitCheckoutHref, label: "Get the Kit · $37" }}
+        title={<>Start with one photo you can actually use.</>}
+        primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
         secondary={{ href: "/ai-prompts",          label: "Try the free AI prompts" }}
         dark
       />

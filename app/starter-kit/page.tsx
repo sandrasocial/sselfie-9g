@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { StarterKitPageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
-  title: "Selfie To AI Photos Kit | SSELFIE",
-  description: "Start with one clear selfie and use it to create AI photos that still look like you.",
+  title: "Starter Kit | SSELFIE",
+  description: "Make your source photo cleaner, stronger, and easier to use before you post or create AI brand images.",
 }
 
 export default async function StarterKitPage({

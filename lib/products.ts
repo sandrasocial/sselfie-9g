@@ -171,21 +171,21 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
   },
   {
     id: "starter_kit",
-    name: "Selfie To AI Photos Kit",
-    displayName: "Selfie To AI Photos Kit",
+    name: "Selfie Starter Kit",
+    displayName: "Selfie Starter Kit",
     description:
-      "The simple kit for taking one clear source selfie and using it to create AI photos that still look like you.",
+      "The guide, presets, captions, and 7-day starter that help you make one source photo cleaner, stronger, and easier to use.",
     priceInCents: 3700, // $37 one-time
     type: "starter_kit",
     tag: "bought_starter_kit",
     features: [
       "Source selfie checklist",
-      "Good vs bad source photo examples",
-      "Phone setup guide",
-      "AI photo starter prompts",
-      "Still-you fix prompts",
-      "3-image starter shoot path",
-      "Presets, captions, and 7-day content starter",
+      "SSELFIE presets for phone and desktop",
+      "Quick preset setup guide",
+      "Posing playbook",
+      "Caption and content library",
+      "7-day content starter",
+      "Camera settings cheat sheet",
     ],
   },
   {
