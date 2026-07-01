@@ -14,9 +14,11 @@ import {
   validatePrompt,
 } from "@/lib/generation/prompt"
 
-export default {
+const promptAuthority = {
   generatePrompt,
   validatePrompt,
   generateBatch,
   auditLogMayaChatGeneration,
 }
+
+export default promptAuthority

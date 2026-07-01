@@ -2386,9 +2386,11 @@ export async function generateConceptCardsViaAuthority<T extends { prompt?: stri
 // EXPORTS
 // ============================================================================
 
-export default {
+const legacyPromptAuthority = {
   generatePrompt,
   validatePrompt,
   generateBatch,
   auditLogMayaChatGeneration,
 }
+
+export default legacyPromptAuthority

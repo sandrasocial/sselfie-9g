@@ -40,7 +40,6 @@ export default function ImageGalleryModal({
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [offset, setOffset] = useState(0)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const isLoadingRef = useRef(false) // Prevent duplicate requests
   const offsetRef = useRef(0) // Ref to track current offset for loadMore
@@ -58,7 +57,6 @@ export default function ImageGalleryModal({
 
     if (isInitial) {
       setIsLoading(true)
-      setOffset(0) // Reset offset on initial load
     } else {
       setIsLoadingMore(true)
     }
@@ -91,15 +89,10 @@ export default function ImageGalleryModal({
         if (isInitial) {
           setAllImages(mappedImages)
           const newOffset = mappedImages.length
-          setOffset(newOffset)
           offsetRef.current = newOffset
         } else {
           setAllImages((prev) => [...prev, ...mappedImages])
-          setOffset((prev) => {
-            const newOffset = prev + mappedImages.length
-            offsetRef.current = newOffset
-            return newOffset
-          })
+          offsetRef.current += mappedImages.length
         }
 
         setHasMore(data.hasMore || false)
@@ -129,10 +122,9 @@ export default function ImageGalleryModal({
     } else {
       setAllImages(providedImages)
       setHasMore(false) // No pagination when using provided images
-      setOffset(0)
       offsetRef.current = 0
     }
-  }, [fetchImages, loadImages]) // Removed providedImages from deps to avoid re-fetching
+  }, [fetchImages, loadImages, providedImages])
 
   // Intersection observer for infinite scroll
   useEffect(() => {
