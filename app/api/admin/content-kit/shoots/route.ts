@@ -1,9 +1,8 @@
-import { after, type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
 import {
   createShootDraft,
-  renderShootDraft,
   extendShoot,
   getShoot,
   listShoots,
@@ -74,22 +73,16 @@ export async function POST(request: NextRequest) {
         : body.selfieUrl
           ? [String(body.selfieUrl)]
           : []
-      // Plan + save the shoot in-request, but render the images AFTER the response is sent.
-      // Rendering 6-9 gpt-image-2 shots regularly outruns maxDuration, and a timed-out request
-      // returns Vercel's plain-text error page (the "not valid JSON" failure in the admin UI).
+      // Plan + save the shoot only. Images are rendered by the CLIENT, one regenerate call per
+      // shot: a 6-9 shot batch outruns maxDuration in ANY single invocation (sync or after()),
+      // and the batch renderers only persist at the end, so a kill lost every image. Per-shot
+      // requests each fit the limit easily and persist atomically as they finish.
       const shoot = await createShootDraft({
         inspirationUrls: Array.isArray(body.inspirationUrls) ? body.inspirationUrls : [],
         selfieUrls,
         notes: typeof body.notes === "string" ? body.notes : undefined,
         collectionType: body.collectionType === "story" ? "story" : "cohesive",
         vibe: typeof body.vibe === "string" ? body.vibe : undefined,
-      })
-      after(async () => {
-        try {
-          await renderShootDraft(shoot)
-        } catch (error) {
-          console.error(`[shoot-studio] background render failed for shoot ${shoot.id}:`, error)
-        }
       })
       return NextResponse.json({ success: true, shoot, rendering: true })
     }

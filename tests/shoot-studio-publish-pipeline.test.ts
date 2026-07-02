@@ -106,13 +106,14 @@ describe("Shoot Studio publish pipeline", () => {
     expect(generator).toContain("parseJsonArray")
     expect(generator).toContain("return { ...mapRow(rows[0]), selfieUrls, inspirationUrls }")
     expect(generator).toContain("export async function createShootDraft")
-    expect(generator).toContain("export async function renderShootDraft")
-    // Create must respond before images render; the background pass keeps the request from
-    // outrunning maxDuration and returning Vercel's plain-text error page.
+    // Per-shot renders persist atomically - whole-array saves clobber parallel renders.
+    expect(generator).toContain("async function saveShotPatch")
+    expect(generator).toContain("await saveShotPatch(shoot.id, shoot.shots[idx].id, patch)")
+    // Create only plans + saves; the client renders one regenerate request per shot. Any
+    // whole-batch render (sync or background) outruns maxDuration and loses every image.
     expect(route).toContain("createShootDraft({")
-    expect(route).toContain("after(async () => {")
-    expect(route).toContain("renderShootDraft(shoot)")
-    expect(client).toContain("pollShootImages(data.shoot.id)")
+    expect(route).not.toContain("renderShootDraft")
+    expect(client).toContain("renderDraftShots(data.shoot)")
     expect(client).toContain("async function readJson(response: Response)")
     expect(generator).toContain("One or more selected selfies could not be used")
     expect(generator).toContain("FIRST attached inspiration image as the primary guide")

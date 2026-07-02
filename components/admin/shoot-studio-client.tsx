@@ -597,7 +597,7 @@ export function ShootStudioClient({
       setShoots((current) => [data.shoot, ...current])
       setInspiration([])
       setNotes("")
-      void pollShootImages(data.shoot.id)
+      void renderDraftShots(data.shoot)
     } catch (err: any) {
       setError(err?.message || "Shoot failed")
     } finally {
@@ -605,29 +605,53 @@ export function ShootStudioClient({
     }
   }
 
-  // The create response returns before the images render (they finish in the background).
-  // Poll until every shot has an image, the agent reports failed renders, or ~5 minutes pass.
-  async function pollShootImages(id: number) {
-    for (let attempt = 0; attempt < 40; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 8000))
-      try {
-        const response = await fetch("/api/admin/content-kit/shoots")
-        const data = await readJson(response)
-        const fresh: Shoot | undefined = Array.isArray(data.shoots)
-          ? data.shoots.find((shoot: Shoot) => shoot.id === id)
-          : undefined
-        if (!fresh) return
-        const renderFinished =
-          fresh.shots.some((shot) => shot.imageUrl) ||
-          fresh.messages.some((message) => message.text.includes("didn't render"))
-        if (renderFinished) {
-          setShoots((current) => current.map((shoot) => (shoot.id === id ? fresh : shoot)))
-          return
-        }
-      } catch {
-        // Transient poll failure: keep waiting.
-      }
+  // The create response returns the planned shoot with no images. Render each shot through its
+  // own regenerate request: a whole 6-9 shot batch outruns the server's time limit in a single
+  // invocation, but one shot per request fits easily and each image persists as it finishes.
+  async function renderShotViaApi(shootId: number, shotId: string): Promise<ShootShot | null> {
+    try {
+      const response = await fetch("/api/admin/content-kit/shoots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerate", id: shootId, shotId, quality: "medium" }),
+      })
+      const data = await readJson(response)
+      if (!response.ok || !data.success) return null
+      const rendered = (data.shoot as Shoot | undefined)?.shots.find((shot) => shot.id === shotId)
+      return rendered?.imageUrl ? rendered : null
+    } catch {
+      return null
     }
+  }
+
+  async function renderDraftShots(shoot: Shoot) {
+    const applyShot = (rendered: ShootShot | null, shotId: string) => {
+      if (!rendered) return
+      setShoots((current) =>
+        current.map((item) =>
+          item.id === shoot.id
+            ? {
+                ...item,
+                shots: item.shots.map((s) => (s.id === shotId ? { ...s, ...rendered } : s)),
+              }
+            : item
+        )
+      )
+    }
+    const pending = shoot.shots.filter((shot) => !shot.imageUrl)
+    // Cohesive shoots anchor shots 2+ to shot 1's image, so shot 1 renders before the rest.
+    const [first, ...rest] = pending
+    if (first) applyShot(await renderShotViaApi(shoot.id, first.id), first.id)
+    const queue = [...rest]
+    await Promise.all(
+      Array.from({ length: 3 }, async () => {
+        while (queue.length > 0) {
+          const shot = queue.shift()
+          if (!shot) return
+          applyShot(await renderShotViaApi(shoot.id, shot.id), shot.id)
+        }
+      })
+    )
   }
 
   function updateShoot(next: Shoot) {

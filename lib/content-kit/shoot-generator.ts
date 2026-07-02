@@ -594,39 +594,6 @@ export async function generateShotImage(input: {
   return blob.url
 }
 
-// Story collections: render every shot in parallel, each from its OWN inspiration image, with no
-// continuity anchor and full close-recreation, so each shot keeps its own world.
-async function renderStoryShots(input: {
-  shots: ShootShot[]
-  selfieUrls: string[]
-  inspirationUrls: string[]
-  quality: ImgQuality
-}): Promise<{ shots: ShootShot[]; failures: Array<{ index: number; reason: unknown }> }> {
-  const shots = [...input.shots]
-  const failures: Array<{ index: number; reason: unknown }> = []
-  const results = await Promise.allSettled(
-    shots.map((shot, index) =>
-      generateShotImage({
-        selfieUrls: input.selfieUrls,
-        inspirationUrls: [input.inspirationUrls[index] ?? input.inspirationUrls[0]],
-        continuityUrls: [],
-        prompt: shot.prompt,
-        shotRole: normalizeShotRole(shot.shotRole, index),
-        quality: input.quality,
-        closeRecreate: true,
-      })
-    )
-  )
-  results.forEach((result, index) => {
-    if (result.status === "fulfilled") {
-      shots[index] = { ...shots[index], imageUrl: result.value }
-    } else {
-      failures.push({ index, reason: result.reason })
-    }
-  })
-  return { shots, failures }
-}
-
 async function renderShotIndicesWithContinuity(input: {
   shots: ShootShot[]
   indices: number[]
@@ -740,6 +707,24 @@ function mapRow(row: any): Shoot {
     messages: parseJsonArray(row.messages) as ShootMessage[],
     createdAt: new Date(row.created_at).toISOString(),
   }
+}
+
+// Atomically merges a patch into ONE shot inside the shots JSONB array. Concurrent per-shot
+// renders each touch only their own element - saveShots would write the whole array from a
+// stale in-memory snapshot and clobber renders that finished in parallel.
+async function saveShotPatch(id: number, shotId: string, patch: Partial<ShootShot>) {
+  await sql`
+    UPDATE content_shoots
+    SET shots = (
+      SELECT jsonb_agg(
+        CASE WHEN shot->>'id' = ${shotId} THEN shot || ${JSON.stringify(patch)}::jsonb ELSE shot END
+        ORDER BY ord
+      )
+      FROM jsonb_array_elements(shots) WITH ORDINALITY AS t(shot, ord)
+    ),
+    updated_at = NOW()
+    WHERE id = ${id}
+  `
 }
 
 async function saveShots(id: number, shots: ShootShot[], messages?: ShootMessage[]) {
@@ -899,59 +884,11 @@ export async function createShootDraft(input: {
   return { ...mapRow(rows[0]), selfieUrls, inspirationUrls }
 }
 
-// Renders every draft shot of a freshly created shoot and persists the results. Split out of
-// shoot creation so the route can respond as soon as the plan is saved and run this in the
-// background (after()) - image generation regularly outruns the function timeout otherwise.
-export async function renderShootDraft(shoot: Shoot): Promise<Shoot> {
-  const story = shoot.collectionType === "story"
-  const inspirationUrls = shoot.inspirationUrls
-
-  // Story collections: each shot recreates ITS OWN inspiration image (inspo i -> shot i), with no
-  // cross-shot continuity, so the set stays varied. Cohesive shoots anchor shots 2+ to shot 1.
-  const rendered = story
-    ? await renderStoryShots({
-        shots: shoot.shots,
-        selfieUrls: shoot.selfieUrls,
-        inspirationUrls,
-        quality: "medium",
-      })
-    : await renderShotIndicesWithContinuity({
-    shots: shoot.shots,
-    indices: shoot.shots.map((_, index) => index),
-    selfieUrls: shoot.selfieUrls,
-    inspirationUrls,
-    quality: "medium",
-  })
-  shoot.shots = rendered.shots
-  const failures = rendered.failures.length
-  if (failures > 0) {
-    rendered.failures.forEach(({ index, reason }) => {
-      console.error(
-        `[shoot-studio] shot ${shoot.shots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
-      )
-    })
-    console.error(
-      `[shoot-studio] ${failures}/${shoot.shots.length} shot generations failed for shoot ${shoot.id}`
-    )
-    shoot.messages = [
-      ...shoot.messages,
-      {
-        role: "agent",
-        text: `${failures} shot${failures > 1 ? "s" : ""} didn't render. Hit regenerate on the empty card${failures > 1 ? "s" : ""} and I'll re-run ${failures > 1 ? "them" : "it"}.`,
-        at: new Date().toISOString(),
-      },
-    ]
-  }
-  await saveShots(shoot.id, shoot.shots, shoot.messages)
-  return shoot
-}
-
-export async function createShoot(
-  input: Parameters<typeof createShootDraft>[0]
-): Promise<Shoot> {
-  const draft = await createShootDraft(input)
-  return renderShootDraft(draft)
-}
+// NOTE: there is intentionally no whole-shoot batch renderer. Rendering 6-9 shots in one
+// invocation (synchronous or after()) outruns maxDuration and, because batch renderers only
+// persisted at the end, a kill lost every image (shoots 44-46, 2026-07-01/02). Initial renders
+// go through regenerateShot - one shot per request, persisted atomically per shot - driven by
+// the client's renderDraftShots queue in components/admin/shoot-studio-client.tsx.
 
 const REFINE_CONTRACT = `Respond with ONLY a JSON object:
 {
@@ -1057,13 +994,13 @@ export async function regenerateShot(
     quality,
     closeRecreate: isStory,
   })
-  shoot.shots[idx] = {
-    ...shoot.shots[idx],
+  const patch = {
     shotRole,
     imageUrl,
     status: quality === "high" ? shoot.shots[idx].status : "draft",
   }
-  await saveShots(shoot.id, shoot.shots)
+  shoot.shots[idx] = { ...shoot.shots[idx], ...patch }
+  await saveShotPatch(shoot.id, shoot.shots[idx].id, patch)
   return shoot
 }
 
