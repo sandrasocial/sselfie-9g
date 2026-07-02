@@ -87,6 +87,9 @@ export interface ConceptGraphicSpec {
   }[]
   /** Carousel design system id (lib/app-v3/maya/carousel-design-systems). Maya picks per concept. */
   designSystem?: string
+  /** Text-overlay style id (lib/app-v3/text-overlay). Maya picks per concept when the
+   *  composited overlay layer is on; the member can switch it after generation. */
+  overlayStyle?: string
 }
 
 /**

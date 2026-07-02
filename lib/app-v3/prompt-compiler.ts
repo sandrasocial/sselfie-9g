@@ -735,6 +735,8 @@ export function compileConceptJobs(
               role,
               format: "carousel",
               designSystem: g?.designSystem,
+              overlayStyle: g?.overlayStyle,
+              emotion: brief.mood,
             })
           : undefined,
         passes: [
@@ -781,6 +783,8 @@ export function compileConceptJobs(
                 ? format
                 : "carousel",
             designSystem: g?.designSystem,
+            overlayStyle: g?.overlayStyle,
+            emotion: brief.mood,
           })
         : undefined,
       passes: [

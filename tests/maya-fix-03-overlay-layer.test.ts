@@ -5,13 +5,20 @@ import { describe, expect, it, vi } from "vitest"
 
 import {
   computeOverlayLayout,
+  getOverlayStyleGuide,
   makeTextOverlaySpec,
+  OVERLAY_SIZE_MULTIPLIERS,
   OVERLAY_STYLE_PRESETS,
   OVERLAY_TOKENS,
+  pickOverlayStyle,
+  resolveOverlayStyle,
   safeZoneFor,
   sanitizeTextOverlaySpec,
   wrapOverlayText,
+  type OverlayStyleId,
+  type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
+import { CAROUSEL_DESIGN_SYSTEMS } from "@/lib/app-v3/maya/carousel-design-systems"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
 const brief: CreativeBrief = {
@@ -26,6 +33,27 @@ const brief: CreativeBrief = {
     subline: "Three quiet styling moves",
     designSystem: "cutout-editorial",
   },
+}
+
+const measure = (text: string) => text.length * 24
+
+const FIVE_STYLES: OverlayStyleId[] = [
+  "editorial-serif-center",
+  "lower-third-accent",
+  "top-band-minimal",
+  "quote-statement",
+  "series-cover",
+]
+
+function specFor(style: OverlayStyleId, overrides?: Partial<TextOverlaySpec>): TextOverlaySpec {
+  return {
+    headline: "Look expensive without trying",
+    subline: "Three quiet styling moves",
+    position: "bottom",
+    style,
+    format: "reel-cover",
+    ...overrides,
+  }
 }
 
 describe("MAYA-FIX-03 composited overlay layer", () => {
@@ -62,7 +90,7 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
       role: "value",
       format: "reel-cover",
     })
-    const layout = computeOverlayLayout(spec, 1080, 1920, text => text.length * 24)
+    const layout = computeOverlayLayout(spec, 1080, 1920, measure)
     const safe = safeZoneFor("reel-cover")
     const minY = 1920 * safe.top
     const maxY = 1920 * (1 - safe.bottom)
@@ -87,7 +115,7 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     delete process.env.APP_V3_TEXT_OVERLAY_LAYER
   })
 
-  it("attaches a per-slide overlay spec on flag-on carousels, in the slide's design system", async () => {
+  it("attaches a per-slide overlay spec on flag-on carousels, mapped from the design system", async () => {
     vi.resetModules()
     process.env.APP_V3_TEXT_OVERLAY_LAYER = "true"
     const { compileConceptJobs } = await import("@/lib/app-v3/prompt-compiler")
@@ -108,12 +136,191 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
 
     expect(jobs).toHaveLength(3)
     expect(jobs.every(job => job.textOverlaySpec?.headline)).toBe(true)
-    expect(jobs[0]?.textOverlaySpec?.style).toBe("soft-minimal")
+    // soft-minimal (design system) maps to the top-band-minimal overlay style, which owns
+    // its position: quiet line across the top on every slide.
+    expect(jobs[0]?.textOverlaySpec?.style).toBe("top-band-minimal")
     expect(jobs[0]?.textOverlaySpec?.position).toBe("top")
-    expect(jobs[2]?.textOverlaySpec?.position).toBe("center")
+    expect(jobs[2]?.textOverlaySpec?.position).toBe("top")
     expect(prompts).toMatch(/Do not render any text/i)
     expect(prompts).not.toMatch(/Render this exact headline inside the image/)
     delete process.env.APP_V3_TEXT_OVERLAY_LAYER
+  })
+
+  it("ports Sandra's five named styles as presets with distinct geometry", () => {
+    const presets = FIVE_STYLES.map(id => resolveOverlayStyle(id))
+    for (let i = 0; i < presets.length; i++) {
+      expect(presets[i].id).toBe(FIVE_STYLES[i])
+    }
+    // Each style owns a distinct type scale - never one flat look.
+    const fracs = new Set(presets.map(p => p.headlineFrac))
+    expect(fracs.size).toBe(FIVE_STYLES.length)
+    // The lower third is the only left-aligned member style.
+    expect(presets.find(p => p.id === "lower-third-accent")?.align).toBe("left")
+    expect(presets.filter(p => p.align === "center")).toHaveLength(4)
+    // Serif headlines over photos are never lighter than 500.
+    for (const preset of presets) {
+      expect(preset.headlineWeight).toBeGreaterThanOrEqual(500)
+    }
+    // Distinct scrim treatments: floor fade, local band, and deliberate none all exist.
+    const scrims = new Set(presets.map(p => p.scrim))
+    expect(scrims.has("floor")).toBe(true)
+    expect(scrims.has("band")).toBe(true)
+    expect(scrims.has("none")).toBe(true)
+  })
+
+  it("renders the default cover at magazine-cover confidence (1080x1920)", () => {
+    const layout = computeOverlayLayout(specFor("editorial-serif-center"), 1080, 1920, measure)
+    const headline = layout.lines.find(line => line.kind === "headline")
+    expect(headline).toBeDefined()
+    expect(headline!.fontPx).toBeGreaterThanOrEqual(100)
+    expect(headline!.fontPx).toBeLessThanOrEqual(115)
+    expect(headline!.fontWeight).toBeGreaterThanOrEqual(500)
+    // The hairline rule between headline and uppercase label is part of the design.
+    expect(layout.rule).not.toBeNull()
+  })
+
+  it("applies the member S/M/L size multiplier to the layout", () => {
+    const sizes = (["s", "m", "l"] as const).map(size => {
+      const layout = computeOverlayLayout(
+        specFor("editorial-serif-center", { size }),
+        1080,
+        1920,
+        measure
+      )
+      return layout.lines[0].fontPx
+    })
+    expect(sizes[0]).toBeLessThan(sizes[1])
+    expect(sizes[1]).toBeLessThan(sizes[2])
+    expect(sizes[2] / sizes[1]).toBeCloseTo(OVERLAY_SIZE_MULTIPLIERS.l, 1)
+  })
+
+  it("renders the *word* emphasis marker as italic plus a hand-drawn underline", () => {
+    const layout = computeOverlayLayout(
+      specFor("lower-third-accent", { headline: "I stopped hiding and got *visible*" }),
+      1080,
+      1920,
+      measure
+    )
+    const segments = layout.lines.filter(l => l.kind === "headline").flatMap(l => l.segments)
+    const emphasized = segments.filter(s => s.emphasized)
+    expect(emphasized.length).toBe(1)
+    expect(emphasized[0].text).toBe("visible")
+    expect(emphasized[0].italic).toBe(true)
+    // No marker characters ever reach the rendered text.
+    for (const segment of segments) expect(segment.text).not.toContain("*")
+    const underlines = layout.accents.filter(a => a.kind === "underline")
+    expect(underlines).toHaveLength(1)
+    expect(underlines[0].color).toBe(OVERLAY_TOKENS.porcelain)
+    expect(underlines[0].d).toMatch(/^M /)
+  })
+
+  it("shows marked words plain in styles without an accent treatment", () => {
+    const layout = computeOverlayLayout(
+      specFor("editorial-serif-center", { headline: "I stopped hiding and got *visible*" }),
+      1080,
+      1920,
+      measure
+    )
+    const text = layout.lines
+      .filter(l => l.kind === "headline")
+      .map(l => l.text)
+      .join(" ")
+    expect(text).toBe("I stopped hiding and got visible")
+    expect(layout.accents).toHaveLength(0)
+    expect(layout.lines.flatMap(l => l.segments).every(s => !s.strip)).toBe(true)
+  })
+
+  it("builds Sandra's cutout reference: one strip line, circled subline words, arrow", () => {
+    const layout = computeOverlayLayout(
+      {
+        headline: "5 Selfie Mistakes *Making Your Photos* Look Cheap",
+        subline: "Save this before your *next shoot*",
+        position: "top",
+        style: "cutout-editorial",
+        format: "carousel",
+      },
+      1080,
+      1080,
+      measure
+    )
+    const headlineSegments = layout.lines.filter(l => l.kind === "headline").flatMap(l => l.segments)
+    const stripped = headlineSegments.filter(s => s.strip)
+    const plain = headlineSegments.filter(s => !s.strip)
+    // ONLY the marked phrase sits on a cut-paper strip; the rest is plain cream serif.
+    expect(stripped.length).toBeGreaterThanOrEqual(1)
+    expect(plain.length).toBeGreaterThanOrEqual(1)
+    for (const segment of stripped) {
+      expect(segment.color).toBe(OVERLAY_TOKENS.obsidian)
+      expect(segment.strip!.color).toBe(OVERLAY_TOKENS.pearl)
+      expect(segment.strip!.width).toBeGreaterThan(segment.width)
+    }
+    for (const segment of plain) expect(segment.color).toBe(OVERLAY_TOKENS.porcelain)
+    // The marked subline words get the loose hand-drawn ellipse; the arrow points at her.
+    const circles = layout.accents.filter(a => a.kind === "circle")
+    const arrows = layout.accents.filter(a => a.kind === "arrow")
+    expect(circles).toHaveLength(1)
+    expect(arrows).toHaveLength(1)
+    for (const accent of [...circles, ...arrows]) {
+      expect(accent.color).toBe(OVERLAY_TOKENS.porcelain)
+      expect(accent.thickness).toBeGreaterThanOrEqual(2)
+      expect(accent.thickness).toBeLessThanOrEqual(3)
+    }
+    // No scrim: the collage image owns the mood; the strip carries the contrast.
+    expect(layout.scrim).toBeNull()
+  })
+
+  it("keeps left-aligned styles inside the safe zone on both edges", () => {
+    for (const style of ["lower-third-accent", "cutout-editorial"] as const) {
+      const spec = specFor(style, {
+        headline: "I rebuilt my whole brand with one *honest* selfie",
+        format: "reel-cover",
+      })
+      const layout = computeOverlayLayout(spec, 1080, 1920, measure)
+      const safe = safeZoneFor("reel-cover")
+      expect(layout.align).toBe("left")
+      for (const line of layout.lines) {
+        expect(line.x).toBeGreaterThanOrEqual(1080 * safe.side - 0.5)
+        expect(line.x + line.width).toBeLessThanOrEqual(1080 * (1 - safe.side) + 0.5)
+      }
+    }
+  })
+
+  it("locks the series cover position so the grid stays recognizable", () => {
+    const spec = makeTextOverlaySpec({
+      heading: "Prompt My Selfie",
+      body: "Part 3",
+      role: "hook",
+      format: "reel-cover",
+    })
+    // A "Part 3" label reads as a series and locks to center even for a hook slide.
+    expect(spec.style).toBe("series-cover")
+    expect(spec.position).toBe("center")
+    const sanitized = sanitizeTextOverlaySpec({ ...spec, position: "top" })
+    expect(sanitized?.position).toBe("center")
+  })
+
+  it("picks the starting style from Maya's pick, the design system, or the emotion", () => {
+    // Maya's explicit pick wins.
+    expect(
+      pickOverlayStyle({ format: "reel-cover", overlayStyle: "quote-statement", emotion: "calm" })
+    ).toBe("quote-statement")
+    // Carousel design systems map to their matching overlay world.
+    expect(pickOverlayStyle({ format: "carousel", designSystem: "cutout-editorial" })).toBe(
+      "cutout-editorial"
+    )
+    expect(pickOverlayStyle({ format: "carousel", designSystem: "full-bleed-editorial" })).toBe(
+      "quote-statement"
+    )
+    // Emotion nudges single covers; the default stays the editorial cover.
+    expect(pickOverlayStyle({ format: "reel-cover", emotion: "raw, vulnerable, honest" })).toBe(
+      "lower-third-accent"
+    )
+    expect(pickOverlayStyle({ format: "reel-cover", emotion: "dramatic, moody" })).toBe(
+      "quote-statement"
+    )
+    expect(pickOverlayStyle({ format: "reel-cover", emotion: "calm, assured" })).toBe(
+      "editorial-serif-center"
+    )
   })
 
   it("uses only approved design-system tokens in every layer preset", () => {
@@ -121,40 +328,39 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     for (const preset of OVERLAY_STYLE_PRESETS) {
       expect(approved.has(preset.headlineColor)).toBe(true)
       expect(approved.has(preset.sublineColor)).toBe(true)
-      expect(approved.has(preset.backdropColor)).toBe(true)
+      expect(approved.has(preset.scrimColor)).toBe(true)
+      if (preset.stripColor) expect(approved.has(preset.stripColor)).toBe(true)
+      if (preset.stripTextColor) expect(approved.has(preset.stripTextColor)).toBe(true)
       // Retired gold accent must never come back.
       expect(preset.headlineColor.toLowerCase()).not.toBe("#c9a96e")
     }
   })
 
-  it("guarantees a contrast backdrop for every preset", () => {
-    const measure = (text: string) => text.length * 30
+  it("guarantees contrast unless the style deliberately relies on calm negative space", () => {
+    // Styles without a scrim carry explicit placement guidance for Maya instead.
+    const deliberateNone = new Set(["top-band-minimal", "cutout-editorial"])
     for (const preset of OVERLAY_STYLE_PRESETS) {
-      const spec = makeTextOverlaySpec({
-        heading: "Still you, at your best",
-        body: "Save this one",
-        role: "value",
-        format: "story-slide",
-      })
-      const layout = computeOverlayLayout({ ...spec, style: preset.id }, 1080, 1920, measure)
-      const hasScrim = layout.scrim !== null
-      const hasStrips = layout.lines.every(line => !!line.strip)
-      // Fade/panel presets draw a scrim; the cutout preset carries a solid strip per line.
-      expect(hasScrim || hasStrips).toBe(true)
+      if (preset.scrim === "none") {
+        expect(deliberateNone.has(preset.id)).toBe(true)
+        continue
+      }
+      const layout = computeOverlayLayout(specFor(preset.id, { format: "story-slide" }), 1080, 1920, measure)
+      expect(layout.scrim).not.toBeNull()
+      expect(layout.scrim!.alpha).toBeGreaterThan(0)
     }
   })
 
   it("wraps a long headline instead of overflowing the safe width", () => {
-    const measure = (text: string) => text.length * 40
+    const wideMeasure = (text: string) => text.length * 40
     const lines = wrapOverlayText(
       "Look like yourself on your very best day",
       500,
       "400 80px serif",
-      measure
+      wideMeasure
     )
     expect(lines.length).toBeGreaterThan(1)
     for (const line of lines) {
-      expect(measure(line)).toBeLessThanOrEqual(500)
+      expect(wideMeasure(line)).toBeLessThanOrEqual(500)
     }
     expect(lines.join(" ")).toBe("Look like yourself on your very best day")
   })
@@ -169,13 +375,71 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
       subline: "Three quiet moves",
       position: "sideways",
       style: "not-a-style",
+      size: "xl",
       format: "reel-cover",
     })
     expect(clean).not.toBeNull()
     expect(clean?.headline).toBe("Look expensive without trying")
     expect(clean?.position).toBe("bottom")
-    expect(clean?.style).toBe("editorial-cover")
+    expect(clean?.style).toBe("editorial-serif-center")
     expect(clean?.format).toBe("reel-cover")
+    expect(clean?.size).toBeUndefined()
+
+    const sized = sanitizeTextOverlaySpec({
+      headline: "Hi there",
+      position: "top",
+      style: "lower-third-accent",
+      size: "l",
+      format: "story-slide",
+    })
+    expect(sized?.size).toBe("l")
+  })
+
+  it("migrates old stored style ids to the new named styles", () => {
+    const cases: [string, OverlayStyleId][] = [
+      ["editorial-cover", "editorial-serif-center"],
+      ["soft-minimal", "top-band-minimal"],
+      ["full-bleed-editorial", "quote-statement"],
+      ["cutout-editorial", "cutout-editorial"],
+    ]
+    for (const [legacy, expected] of cases) {
+      expect(resolveOverlayStyle(legacy).id).toBe(expected)
+      const spec = sanitizeTextOverlaySpec({
+        headline: "Still you, at your best",
+        position: "bottom",
+        style: legacy,
+        format: "reel-cover",
+      })
+      expect(spec?.style).toBe(expected)
+    }
+  })
+
+  it("keeps the overlay-mode cutout image free of baked ink marks (the layer owns them)", () => {
+    const cutout = CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === "cutout-editorial")
+    expect(cutout).toBeDefined()
+    expect(cutout!.textFreeSetDna).toMatch(/NO hand-drawn marks/i)
+    expect(cutout!.textFreeSetDna).not.toMatch(/a small arrow, a loose circle/)
+    // The baked-text path keeps its accents (flag off, nothing changes).
+    expect(cutout!.setDna).toMatch(/Hand-drawn accents/)
+  })
+
+  it("teaches Maya the style library and wires it into the persona", () => {
+    const guide = getOverlayStyleGuide()
+    for (const id of FIVE_STYLES) expect(guide).toContain(id)
+    expect(guide).toContain("cutout-editorial")
+    expect(guide).toContain("brief.graphic.overlayStyle")
+    const persona = readFileSync("lib/app-v3/maya/persona.ts", "utf8")
+    expect(persona).toContain("getOverlayStyleGuide")
+    expect(persona).toContain("isTextOverlayLayerEnabled")
+  })
+
+  it("gives the member style, size, and position controls in the editor", () => {
+    const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
+    expect(editor).toContain("OVERLAY_STYLE_PRESETS.map")
+    expect(editor).toContain("Text size")
+    expect(editor).toMatch(/onChange\(\{ \.\.\.spec, size: size\.id \}\)/)
+    // The live layer and the export both come from computeOverlayLayout (always match).
+    expect(editor.split("computeOverlayLayout").length).toBeGreaterThan(2)
   })
 
   it("keeps the generate route wired for clean-background graphics + overlay specs", () => {

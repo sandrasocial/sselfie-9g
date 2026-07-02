@@ -47,12 +47,16 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "(sticker style) and place her over a softly blurred or flat editorial background from the scene. She is " +
       "medium-small in the frame (about one third), leaving generous space for the headline and one handwritten accent. " +
       "A soft drop shadow under the cutout makes it feel pasted on.",
+    // Overlay mode: the app layer owns EVERY ink mark (strip, circle, arrow), positioned
+    // exactly around the real words. A baked circle around nothing would fight the layer,
+    // so the text-free image keeps only the collage world: sticker cutout, grain, moodboard.
     textFreeSetDna:
       "Design system: editorial collage, like a curated moodboard page. One muted palette across the whole set " +
-      "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Hand-drawn accents in " +
-      "thin white or charcoal ink at most: a small arrow, a loose circle, a short underline. Subtle film grain, soft " +
-      "shadows under cutout elements so the collage feels physical. Calm, premium, never cluttered: at most two " +
-      "decorations per slide. No emojis, no clip-art, no gradients, no neon, no Canva-template look.",
+      "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Subtle film grain, " +
+      "soft shadows under cutout elements so the collage feels physical. Calm, premium, never cluttered. " +
+      "Absolutely NO hand-drawn marks of any kind: no arrows, no circles, no underlines, no ink accents, no label " +
+      "strips, no stickers beyond the subject cutout itself. No emojis, no clip-art, no gradients, no neon, " +
+      "no Canva-template look.",
   },
   {
     id: "full-bleed-editorial",
