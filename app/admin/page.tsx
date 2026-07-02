@@ -400,6 +400,15 @@ export default async function AdminPage({
         <section className="mt-8">
           <h2 className="text-xs uppercase tracking-wide text-stone-500">Your next content move</h2>
           <Link
+            href="/admin/content-brief#post-now"
+            className="mt-3 block rounded-2xl border border-stone-950 bg-stone-950 p-5 transition hover:bg-stone-800"
+          >
+            <p className="font-serif text-lg text-white">I need something to post now</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-stone-400">
+              Three ready-tonight options from your winners and this week&apos;s brief →
+            </p>
+          </Link>
+          <Link
             href="/admin/content-brief"
             className="mt-3 block rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-stone-950"
           >
