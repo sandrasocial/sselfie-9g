@@ -76,7 +76,7 @@ const FUNNEL_STAGE_META: Record<
 function pieceToHandoffTopic(piece: ContentBriefPiece): string {
   return [piece.hook, piece.shortSuggestion, piece.demandSignal, piece.offerBridge]
     .filter(Boolean)
-    .join(" — ")
+    .join(" · ")
 }
 
 function HandoffButton({
