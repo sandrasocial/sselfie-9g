@@ -197,6 +197,7 @@ export function ConceptCard({
               {firstOverlay && onOverlayChange && !isCarousel && !isVideoDone && (
                 <TextOverlayEditor
                   spec={firstOverlay}
+                  imageUrl={images[0]}
                   onChange={spec => onOverlayChange(0, spec)}
                 />
               )}

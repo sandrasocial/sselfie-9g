@@ -106,7 +106,11 @@ export function ImageLightbox({
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
         {overlay && onOverlayChange && (
           <div className="w-full max-w-sm">
-            <TextOverlayEditor spec={overlay} onChange={spec => onOverlayChange(index, spec)} />
+            <TextOverlayEditor
+              spec={overlay}
+              imageUrl={url}
+              onChange={spec => onOverlayChange(index, spec)}
+            />
           </div>
         )}
         <div className="flex items-center justify-center gap-4">
