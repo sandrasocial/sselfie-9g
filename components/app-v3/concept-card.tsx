@@ -9,12 +9,19 @@
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
+import {
+  downloadImageWithOverlay,
+  TextOverlayEditor,
+  TextOverlayLayer,
+} from "./text-overlay-layer"
+import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
 export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
+  textOverlaySpecs?: TextOverlaySpec[]
   aiImageId?: number | null
   aiImageIds?: Array<number | null>
   videoUrl?: string
@@ -32,6 +39,8 @@ interface ConceptCardProps {
   onOpen?: (imageUrls: string[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
+  /** Update one editable text layer without regenerating the background image. */
+  onOverlayChange?: (index: number, spec: TextOverlaySpec) => void
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
   disabled?: boolean
@@ -54,6 +63,7 @@ export function ConceptCard({
   onGenerate,
   onOpen,
   onEdit,
+  onOverlayChange,
   promptAssetId,
   disabled,
 }: ConceptCardProps) {
@@ -63,6 +73,7 @@ export function ConceptCard({
   const isDone = gen.status === "done" && images.length > 0
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
+  const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
@@ -90,6 +101,7 @@ export function ConceptCard({
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
+              {firstOverlay && <TextOverlayLayer spec={firstOverlay} />}
               {isCarousel && (
                 <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
                   {images.length} slides
@@ -162,11 +174,8 @@ export function ConceptCard({
                   View all slides
                 </button>
               ) : (
-                <a
-                  href={images[0]}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
                   onClick={() => {
                     // Member pulse: a download is the strongest "she loved it" signal (SUITE-UX-02).
                     import("@/lib/analytics/client")
@@ -177,11 +186,19 @@ export function ConceptCard({
                         })
                       )
                       .catch(() => {})
+                    if (firstOverlay) void downloadImageWithOverlay(images[0], firstOverlay)
+                    else window.open(images[0], "_blank", "noreferrer")
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download
-                </a>
+                </button>
+              )}
+              {firstOverlay && onOverlayChange && !isCarousel && !isVideoDone && (
+                <TextOverlayEditor
+                  spec={firstOverlay}
+                  onChange={spec => onOverlayChange(0, spec)}
+                />
               )}
               {onEdit && !isCarousel && !isVideoDone && (
                 <button
