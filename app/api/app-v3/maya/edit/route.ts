@@ -14,7 +14,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
-import { ELEVATION } from "@/lib/app-v3/maya/ingredients"
+import { AVOID_LIST, ELEVATION } from "@/lib/app-v3/maya/ingredients"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 export const maxDuration = 300
@@ -22,6 +22,41 @@ export const maxDuration = 300
 const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+
+// Matches qualityForFormat in the generate route (MEASURED there): SUITE renders at MEDIUM with
+// the same env override, so refining a photo never silently changes its quality tier.
+type ImgQuality = "low" | "medium" | "high"
+const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
+const EDIT_IMAGE_QUALITY: ImgQuality =
+  QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high"
+    ? QUALITY_OVERRIDE
+    : "medium"
+
+// MAYA-FIX-02: edits used to feed only the PRIOR generated image back in, so each pass drifted
+// the face further from the member's real likeness. Re-attach her real selfie as an identity
+// reference on every edit. Prefer the URL the client sends; fall back to her active selfie.
+async function resolveIdentitySelfieUrl(
+  neonUserId: string | number,
+  bodyUrl: unknown
+): Promise<string | null> {
+  if (isAllowedImageUrl(bodyUrl)) return bodyUrl
+  try {
+    const rows = await sql`
+      SELECT image_url FROM user_avatar_images
+      WHERE user_id = ${String(neonUserId)} AND image_type = 'selfie' AND is_active = true
+      ORDER BY uploaded_at DESC
+      LIMIT 1
+    `
+    const url = rows[0]?.image_url
+    return isAllowedImageUrl(url) ? url : null
+  } catch {
+    return null
+  }
+}
+
+// Vanity-drift asks ("flawless", "make me slimmer/younger") get a doctrine guard appended:
+// her at her natural best, never a different face or body. AI should not erase you.
+const VANITY_DRIFT_PATTERN = /\b(flawless|perfect|younger|slimmer|thinner|airbrush|photoshop)\w*/i
 
 function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
   return size === "1024x1024" ? "1024x1024" : "1024x1536"
@@ -65,14 +100,28 @@ async function normalize(buffer: Buffer): Promise<Buffer> {
     .toBuffer()
 }
 
-function buildEditPrompt(instruction: string, safer = false): string {
+function buildEditPrompt(
+  instruction: string,
+  safer = false,
+  hasIdentityReference = false
+): string {
   const base =
-    "Refine the attached image. Keep the same person, likeness, framing, composition, background, " +
+    "Refine the first attached image. Keep the same person, likeness, framing, composition, background, " +
     "and overall look. Apply ONLY this change: "
+  const identity = hasIdentityReference
+    ? " The last attached image is her real reference selfie. Use it only to keep her face, facial " +
+      "structure, skin tone, natural skin texture, body proportions, and age true to the real person. " +
+      "Do not copy its pose, framing, lighting, or background."
+    : ""
+  const doctrine = VANITY_DRIFT_PATTERN.test(instruction)
+    ? " Interpret that change as showing her at her natural best: keep her real facial structure, " +
+      "body proportions, age, and natural skin texture. No beauty-filter smoothing, no face slimming, " +
+      "no de-aging. Still clearly recognizable as the same woman."
+    : ""
   const tail = safer
     ? " Keep it tasteful, fully clothed, and modest."
-    : ` Keep it natural and editorial. ${ELEVATION}`
-  return `${base}${instruction.trim()}.${tail}`
+    : ` Keep it natural and editorial. ${ELEVATION} ${AVOID_LIST}`
+  return `${base}${instruction.trim()}.${identity}${doctrine}${tail}`
 }
 
 export async function POST(request: NextRequest) {
@@ -90,7 +139,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = (await request.json().catch(() => null)) as
-      | { imageUrl?: string; instruction?: string; format?: OutputFormat }
+      | { imageUrl?: string; instruction?: string; format?: OutputFormat; referenceSelfieUrl?: string }
       | null
     if (!body || !isAllowedImageUrl(body.imageUrl)) {
       return NextResponse.json({ error: "A valid image to edit is required" }, { status: 400 })
@@ -147,14 +196,48 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: openaiApiKey })
     const sourceFile = await toFile(await normalize(await loadImage(body.imageUrl)), "maya-edit-source.png", { type: "image/png" })
 
+    // Re-attach her real selfie so likeness is anchored to the person, not the previous
+    // generation. Best effort: if no selfie is resolvable, the edit still runs (old behavior).
+    const identitySelfieUrl = await resolveIdentitySelfieUrl(neonUser.id, body.referenceSelfieUrl)
+    let editImages = [sourceFile]
+    if (identitySelfieUrl) {
+      try {
+        const selfieFile = await toFile(
+          await normalize(await loadImage(identitySelfieUrl)),
+          "maya-edit-identity.png",
+          { type: "image/png" }
+        )
+        editImages = [sourceFile, selfieFile]
+      } catch (selfieError) {
+        console.error("[app-v3 edit] identity selfie attach skipped:", selfieError)
+      }
+    }
+    const hasIdentityReference = editImages.length > 1
+
+    const logEditFailure = (reason: string, detail: unknown) =>
+      import("@/lib/analytics/events")
+        .then(({ logAnalyticsEvent }) =>
+          logAnalyticsEvent({
+            eventName: "suite_generation_failed",
+            userId: String(neonUser.id),
+            properties: {
+              source: "app-v3-edit",
+              format,
+              reason,
+              detail: (detail instanceof Error ? detail.message : String(detail)).slice(0, 300),
+            },
+          }),
+        )
+        .catch(() => {})
+
     const runEdit = async (promptText: string): Promise<Buffer> => {
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
-        image: sourceFile,
+        image: editImages.length === 1 ? editImages[0] : editImages,
         prompt: promptText,
         n: 1,
         size,
-        quality: "medium",
+        quality: EDIT_IMAGE_QUALITY,
         output_format: "png",
       }
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
@@ -166,22 +249,25 @@ export async function POST(request: NextRequest) {
 
     let imageBuffer: Buffer
     try {
-      imageBuffer = await runEdit(buildEditPrompt(instruction))
+      imageBuffer = await runEdit(buildEditPrompt(instruction, false, hasIdentityReference))
     } catch (firstError) {
       if (isContentPolicyError(firstError)) {
         try {
-          imageBuffer = await runEdit(buildEditPrompt(instruction, true))
+          imageBuffer = await runEdit(buildEditPrompt(instruction, true, hasIdentityReference))
         } catch (retryError) {
           await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef).catch(() => {})
           if (isContentPolicyError(retryError)) {
+            await logEditFailure("content_policy", retryError)
             return NextResponse.json({ error: "That change isn't available. Try wording it differently.", code: "content_policy" }, { status: 400 })
           }
           console.error("[app-v3 edit] edit failed on retry:", retryError)
+          await logEditFailure("retry_failed", retryError)
           return NextResponse.json({ error: "Couldn't make that change. Please try again." }, { status: 500 })
         }
       } else {
         await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef).catch(() => {})
         console.error("[app-v3 edit] edit failed:", firstError)
+        await logEditFailure("edit_failed", firstError)
         return NextResponse.json({ error: "Couldn't make that change. Please try again." }, { status: 500 })
       }
     }

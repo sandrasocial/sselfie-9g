@@ -916,6 +916,20 @@ export async function POST(request: NextRequest) {
               refundRef
             ).catch(() => {})
             console.error("[app-v3 generate] Streaming generation failed:", err)
+            import("@/lib/analytics/events")
+              .then(({ logAnalyticsEvent }) =>
+                logAnalyticsEvent({
+                  eventName: "suite_generation_failed",
+                  userId: String(neonUser.id),
+                  properties: {
+                    source: "app-v3-generate-stream",
+                    format,
+                    reason: isContentPolicyError(err) ? "content_policy" : "generation_failed",
+                    detail: (err instanceof Error ? err.message : String(err)).slice(0, 300),
+                  },
+                }),
+              )
+              .catch(() => {})
             controller.enqueue(
               sse({
                 type: "error",
@@ -1013,6 +1027,23 @@ export async function POST(request: NextRequest) {
       await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(
         () => {}
       )
+      // Failures were console-only before, so member-facing failure rates were invisible.
+      const failureReason = isContentPolicyError(genError) ? "content_policy" : "generation_failed"
+      import("@/lib/analytics/events")
+        .then(({ logAnalyticsEvent }) =>
+          logAnalyticsEvent({
+            eventName: "suite_generation_failed",
+            userId: String(neonUser.id),
+            properties: {
+              source: "app-v3-generate",
+              format,
+              reason: failureReason,
+              detail: (genError instanceof Error ? genError.message : String(genError)).slice(0, 300),
+              image_count: imageCount,
+            },
+          }),
+        )
+        .catch(() => {})
       if (isContentPolicyError(genError)) {
         return NextResponse.json(
           {
