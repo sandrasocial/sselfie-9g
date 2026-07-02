@@ -275,6 +275,41 @@ function DemandMapSection({ brief }: { brief: ContentBrief }) {
   )
 }
 
+function TrendRadarSection({ brief }: { brief: ContentBrief }) {
+  const entries = safeArray(brief.trendRadar)
+  if (entries.length === 0) return null
+
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-5">
+      <p className="text-xs uppercase tracking-[0.24em] text-stone-500">Trend radar</p>
+      <h2 className="mt-2 font-serif text-xl text-stone-950">The waves moving this week</h2>
+      <p className="mt-1 text-sm text-stone-600">
+        Current AI-photo trends and how to ride each one while staying still you, never fake.
+      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {entries.map((entry, index) => (
+          <div key={index} className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-sm font-medium text-stone-950">{entry.trend}</p>
+            <p className="mt-2 text-xs leading-relaxed text-stone-600">{entry.whyItsMoving}</p>
+            <p className="mt-2 text-sm leading-relaxed text-stone-800">{entry.howSandraRidesIt}</p>
+            <p className="mt-2 text-xs leading-relaxed text-stone-500">
+              <span className="uppercase tracking-wide">No-fake guardrail: </span>
+              {entry.noFakeGuardrail}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const ENGAGEMENT_LABEL: Record<string, string> = {
+  save: "Engineered for saves",
+  share: "Engineered for shares",
+  comment: "Engineered for comments",
+  follow: "Engineered for follows",
+}
+
 function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   const carouselOutline = safeArray(piece.carouselOutline)
   const onScreenText = safeArray(piece.onScreenText)
@@ -303,8 +338,19 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${stageMeta.badgeClass}`}>
           {stageMeta.label}
         </span>
+        {piece.engineeredFor && (
+          <span className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs uppercase tracking-wide text-stone-700">
+            {ENGAGEMENT_LABEL[piece.engineeredFor] || piece.engineeredFor}
+          </span>
+        )}
       </div>
       <p className="mt-1 text-xs text-stone-500">{stageMeta.description}</p>
+      {piece.engagementMechanic && (
+        <p className="mt-1 text-xs text-stone-500">
+          <span className="uppercase tracking-wide">Earn it with: </span>
+          {piece.engagementMechanic}
+        </p>
+      )}
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
 
@@ -512,6 +558,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
   const hookIntelligence = safeArray(brief?.hookIntelligence)
   const contentPlan = safeArray(brief?.contentPlan)
   const storyFrames = safeArray(brief?.storySequence?.frames)
+  const audienceQuestions = safeArray(brief?.demandMap?.audienceQuestions)
 
   async function generateNow() {
     setGenerating(true)
@@ -587,6 +634,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
 
           <DemandMapSection brief={brief} />
 
+          <TrendRadarSection brief={brief} />
+
           <section>
             <h2 className="mb-3 font-serif text-xl text-stone-950">What worked last week</h2>
             <div className="space-y-2">
@@ -643,6 +692,21 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
                 </ul>
               </div>
             </div>
+            {audienceQuestions.length > 0 && (
+              <div className="mt-3 rounded-xl border border-stone-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  Questions your audience actually asked
+                </p>
+                <ul className="mt-2 space-y-2 text-sm text-stone-800">
+                  {audienceQuestions.map((entry, index) => (
+                    <li key={index}>
+                      <span className="font-medium">&quot;{entry.question}&quot;</span>
+                      <span className="block text-stone-600">Answer it with: {entry.suggestedAnswerContent}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
 
           <section>

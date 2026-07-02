@@ -1,5 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { buildDailySandraBriefing, generateDailySandraBriefingEmail } from "@/lib/admin/daily-sandra-briefing"
+import {
+  buildDailyBriefingSnapshot,
+  generateDailyBriefingIntelligence,
+  getLatestWeeklyContentBrief,
+  getYesterdayBriefingSnapshot,
+  storeDailyBriefingSnapshot,
+} from "@/lib/admin/daily-briefing-intelligence"
 import { getGrowthIntelligenceReport } from "@/lib/admin/growth-intelligence"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
@@ -57,19 +64,41 @@ export async function GET(request: NextRequest) {
     ])
 
     const money = moneyRows[0] || {}
-    const briefing = buildDailySandraBriefing(report, {
-      money: {
-        yesterdayPayments: Number(money.yesterday_payments || 0),
-        yesterdayRevenue: Number(money.yesterday_cents || 0) / 100,
-        monthPayments: Number(money.month_payments || 0),
-        monthRevenue: Number(money.month_cents || 0) / 100,
-      },
+    const moneyInput = {
+      yesterdayPayments: Number(money.yesterday_payments || 0),
+      yesterdayRevenue: Number(money.yesterday_cents || 0) / 100,
+      monthPayments: Number(money.month_payments || 0),
+      monthRevenue: Number(money.month_cents || 0) / 100,
+    }
+    let briefing = buildDailySandraBriefing(report, {
+      money: moneyInput,
       inboxFlagged: flaggedRows.map((row) => ({
         username: String(row.username || "unknown"),
         message: String(row.message || "").slice(0, 180),
       })),
       inboxFlaggedCount: flaggedRows.length,
     })
+
+    // Intelligence layer: today's move from the stored weekly brief, a genuine
+    // day-over-day diff against yesterday's snapshot, and the one thing to
+    // watch. On ANY failure the email still sends with the template sections,
+    // marked so silence is never mistaken for health.
+    try {
+      const [weeklyBrief, yesterday] = await Promise.all([
+        getLatestWeeklyContentBrief(),
+        getYesterdayBriefingSnapshot(),
+      ])
+      const intelligence = await generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday })
+      briefing = { ...briefing, intelligence, intelligenceNote: null }
+    } catch (intelligenceError) {
+      console.error("[daily-sandra-briefing] intelligence layer failed, using template fallback:", intelligenceError)
+      briefing = {
+        ...briefing,
+        intelligence: null,
+        intelligenceNote: "Intelligence layer unavailable today. These are the standard template suggestions, not fresh analysis.",
+      }
+    }
+
     const email = generateDailySandraBriefingEmail(briefing)
     const result = await sendEmail({
       to: ADMIN_EMAIL,
@@ -81,10 +110,19 @@ export async function GET(request: NextRequest) {
       tags: ["growth-intelligence", "daily-briefing"],
     })
 
+    // Store today's compact snapshot so tomorrow's run can diff against real
+    // yesterday numbers. Best effort: never blocks the email.
+    try {
+      await storeDailyBriefingSnapshot(buildDailyBriefingSnapshot(briefing, moneyInput))
+    } catch (snapshotError) {
+      console.error("[daily-sandra-briefing] failed to store daily snapshot:", snapshotError)
+    }
+
     await logger.success({
       sent: result.success,
       messageId: result.messageId || null,
       error: result.error || null,
+      intelligence: briefing.intelligence ? "generated" : "fallback",
       priorities: briefing.codexNext.length + briefing.sandraNext.length,
     })
 

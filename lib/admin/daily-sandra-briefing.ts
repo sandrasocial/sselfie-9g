@@ -82,11 +82,25 @@ export type DailyBriefingExtras = {
   inboxFlaggedCount?: number
 }
 
+export type DailyBriefingIntelligenceSections = {
+  todaysMove: string
+  whatChanged: string
+  watchThis: string
+}
+
 export type DailySandraBriefing = {
   generatedAt: string
   windowDays: number
   subject: string
   moneyHeader: string | null
+  /**
+   * Real intelligence sections (today's move from the weekly plan, genuine
+   * day-over-day changes, the one thing to watch). Null when the intelligence
+   * layer was unavailable; the email then falls back to the template sections
+   * below and says so via intelligenceNote.
+   */
+  intelligence: DailyBriefingIntelligenceSections | null
+  intelligenceNote: string | null
   truthSnapshot: GrowthTruthSnapshot | null
   revenueScorecard: RevenueTruthScorecard | null
   inboxFlagged: Array<{ username: string; message: string }>
@@ -401,6 +415,8 @@ export function buildDailySandraBriefing(
     windowDays: report.windowDays,
     subject: "today's SSELFIE briefing",
     moneyHeader,
+    intelligence: null,
+    intelligenceNote: null,
     truthSnapshot: report.truthSnapshot || null,
     revenueScorecard: report.revenueScorecard || null,
     inboxFlagged: (extras.inboxFlagged || []).slice(0, 5),
@@ -535,6 +551,56 @@ function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
   return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Work With Me: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
 }
 
+function adviceSectionsHtml(briefing: DailySandraBriefing): string {
+  if (briefing.intelligence) {
+    const sections: Array<[string, string]> = [
+      ["Today's move · from this week's brief", briefing.intelligence.todaysMove],
+      ["What changed since yesterday", briefing.intelligence.whatChanged],
+      ["Watch this", briefing.intelligence.watchThis],
+    ]
+    return sections
+      .map(
+        ([title, body]) => `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">${escapeHtml(title)}</h2>
+        <p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">${escapeHtml(body)}</p>
+      </div>`,
+      )
+      .join("")
+  }
+
+  const fallbackNote = briefing.intelligenceNote
+    ? `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:14px 22px;margin:0 0 14px;">
+        <p style="margin:0;color:#818283;font-size:13px;line-height:1.6;">${escapeHtml(briefing.intelligenceNote)}</p>
+      </div>`
+    : ""
+
+  return `${fallbackNote}
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What to post today</h2>
+        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.postToday)}</ul>
+      </div>
+
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Codex should fix next</h2>
+        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.codexNext)}</ul>
+      </div>
+
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 24px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Sandra does</h2>
+        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.sandraNext)}</ul>
+      </div>`
+}
+
+function adviceSectionsText(briefing: DailySandraBriefing): string {
+  if (briefing.intelligence) {
+    return `\n\nToday's move (from this week's brief)\n${briefing.intelligence.todaysMove}\n\nWhat changed since yesterday\n${briefing.intelligence.whatChanged}\n\nWatch this\n${briefing.intelligence.watchThis}`
+  }
+  const note = briefing.intelligenceNote ? `\n\n${briefing.intelligenceNote}` : ""
+  return `${note}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}`
+}
+
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
   const html = `
 <!doctype html>
@@ -573,20 +639,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         ${supportThreadsHtml(briefing.supportThreads)}
       </div>
 
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What to post today</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.postToday)}</ul>
-      </div>
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Codex should fix next</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.codexNext)}</ul>
-      </div>
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 24px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Sandra does</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.sandraNext)}</ul>
-      </div>
+      ${adviceSectionsHtml(briefing)}
 
       <p style="margin:0 0 12px;">
         <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open your admin</a>
@@ -602,7 +655,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}${adviceSectionsText(briefing)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,
