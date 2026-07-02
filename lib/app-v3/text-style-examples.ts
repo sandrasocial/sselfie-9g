@@ -22,12 +22,18 @@ import {
  * Empty string = no example yet -> the picker card falls back to the CSS mini-preview.
  */
 export const TEXT_STYLE_EXAMPLE_IMAGES: Record<OverlayStyleId, string> = {
-  "editorial-serif-center": "",
-  "lower-third-accent": "",
-  "top-band-minimal": "",
-  "quote-statement": "",
-  "series-cover": "",
-  "cutout-editorial": "",
+  "editorial-serif-center":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/editorial-serif-center.png",
+  "lower-third-accent":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/lower-third-accent.png",
+  "top-band-minimal":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/top-band-minimal.png",
+  "quote-statement":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/quote-statement.png",
+  "series-cover":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/series-cover.png",
+  "cutout-editorial":
+    "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/app-v3/text-style-examples/cutout-editorial.png",
 }
 
 /** The example cover URL for a style, or null when the card should use the CSS fallback. */

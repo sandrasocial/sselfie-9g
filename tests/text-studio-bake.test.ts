@@ -169,7 +169,9 @@ describe("bake route wiring (app/api/app-v3/maya/bake-text)", () => {
     expect(route).toContain("isAllowedImageUrl(body.cleanImageUrl)")
     expect(route).toContain("loadImage(cleanImageUrl)")
     expect(route).not.toMatch(/body\.bakedUrl/)
-    expect(route).toContain("buildBakePrompt(spec)")
+    expect(route).toContain(
+      "buildBakePrompt(spec, styleAdjustments ? { styleAdjustments } : undefined)"
+    )
     expect(route).toContain("sanitizeTextOverlaySpec(body.spec)")
   })
 

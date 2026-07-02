@@ -207,10 +207,10 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 const FORMAT_OPENER: Record<OutputFormat, string> = {
   photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
   photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
-  "reel-cover": "Hit create and I'll pull a few reel angles from your brand. You just tap the one that fits.",
-  carousel: "Hit create and I'll pull a few carousel angles from your brand. You just tap the one that feels like you.",
-  "story-slide": "Hit create and I'll pull a few story ideas: a poll, a sale, a quick reminder. You just tap one.",
-  "story-sequence": "Hit create and I'll pull a few story angles from your brand. You just tap the one you want to tell.",
+  "reel-cover": "Hit create and I'll show you six cover styles. Tap the one you love and I'll take it from there.",
+  carousel: "Hit create and I'll show you six text styles. Tap the one that feels like you and I'll build the slides.",
+  "story-slide": "Hit create and I'll show you six styles. Tap the one you love, then pick the story idea that fits.",
+  "story-sequence": "Hit create and I'll show you six styles. Tap the one that feels like you and I'll build the sequence.",
   video: "Add or choose the image you want to move, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
@@ -219,11 +219,13 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photoshoot:
     "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
   "reel-cover":
-    "Your selfie's in, and it's still you. Hit create and I'll pull a few reel angles. Just tap one.",
-  carousel: "Your selfie's in, and it's still you. Hit create and tap the angle that feels like you.",
-  "story-slide": "Your selfie's in, and it's still you. Hit create and tap the story idea that fits.",
+    "Your selfie's in, and it's still you. Hit create and tap the cover style you love. I'll do the rest.",
+  carousel:
+    "Your selfie's in, and it's still you. Hit create and tap the text style that feels like you.",
+  "story-slide":
+    "Your selfie's in, and it's still you. Hit create and tap the style you love. Then pick your story idea.",
   "story-sequence":
-    "Your selfie's in, and it's still you. Hit create and tap the story you want to tell.",
+    "Your selfie's in, and it's still you. Hit create and tap the style that feels like you.",
   video: "Your image is in. Hit create and pick the motion that feels most natural.",
 }
 
@@ -424,6 +426,12 @@ export function MayaConcierge({
   )
   // set_format tool parts already acted on (`${messageId}:${format}`), so a switch fires once.
   const formatSwitchAppliedRef = useRef<Set<string>>(new Set())
+  // MAYA-GUIDED-TEXT-01 (Sandra 2026-07-02): for graphic formats the text style is the FIRST
+  // tap. Until she picks one, the concept pull is held and the six example cards sit inline in
+  // the thread. The choice rides every generation in this chat; the chip above the direction
+  // cards swaps it later.
+  const [textStyleChoice, setTextStyleChoice] = useState<OverlayStyleId | null>(null)
+  const [styleSwapOpen, setStyleSwapOpen] = useState(false)
   const sessionStartRef = useRef<number | null>(restoredDraft ? (session?.startedAt ?? null) : null)
   // "New chat" retires the session's seeded idea (a Content recommendation) without mutating
   // the session itself; a genuinely new session re-arms it.
@@ -683,6 +691,8 @@ export function MayaConcierge({
     sessionStartRef.current = session.startedAt
     lastPulledFormatRef.current = null
     seedRetiredRef.current = false
+    setTextStyleChoice(null)
+    setStyleSwapOpen(false)
   }, [session])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
@@ -734,6 +744,8 @@ export function MayaConcierge({
       hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
     if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
+    // Graphic formats wait for the style tap: the template picker is on screen instead.
+    if (isGraphicOutputFormat(fmt) && !textStyleChoice) return
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
@@ -749,7 +761,7 @@ export function MayaConcierge({
           ? "Let's create photos using my trained model."
           : FORMAT_PHRASE[fmt]
     sendMessage({ text })
-  }, [admin, generationSource, hasTrainedModel, isOpen, session, isThinking, sendMessage])
+  }, [admin, generationSource, hasTrainedModel, isOpen, session, isThinking, sendMessage, textStyleChoice])
 
   // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
   // ("make me a carousel" typed, no chip), commit the switch here - the auto-pull effect
@@ -887,6 +899,8 @@ export function MayaConcierge({
     setSetupOpen(false)
     savedCountRef.current = 0
     lastPulledFormatRef.current = null
+    setTextStyleChoice(null)
+    setStyleSwapOpen(false)
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
     restoredDraftRef.current = null
     appliedDraftSessionRef.current = null
@@ -1039,7 +1053,9 @@ export function MayaConcierge({
         return
       }
 
-      const wantsBakedText = Boolean(overlayStyle && isGraphicOutputFormat(targetFormat))
+      // The chat-level style choice rides every graphic generation unless a card passes its own.
+      const bakeStyle = overlayStyle ?? (isGraphicOutputFormat(targetFormat) ? textStyleChoice : null)
+      const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1052,7 +1068,7 @@ export function MayaConcierge({
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
           rerun,
-          ...(overlayStyle ? { overlayStyle } : {}),
+          ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
           ...(wantsBakedText ? { autoBake: true } : {}),
           // Single-image formats stream progressive previews; carousels keep the JSON path.
           // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
@@ -2325,9 +2341,29 @@ export function MayaConcierge({
 
                 {conceptPart && conceptPart.length > 0 && conceptFormat !== "photoshoot" && (
                   <div className="min-w-0 max-w-full space-y-3 [overflow-x:clip]">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
-                      Choose your direction
-                    </p>
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
+                        Choose your direction
+                      </p>
+                      {isGraphicOutputFormat(conceptFormat) && textStyleChoice && (
+                        <button
+                          type="button"
+                          onClick={() => setStyleSwapOpen(open => !open)}
+                          className="shrink-0 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
+                        >
+                          {resolveOverlayStyle(textStyleChoice).name} · change
+                        </button>
+                      )}
+                    </div>
+                    {isGraphicOutputFormat(conceptFormat) && styleSwapOpen && (
+                      <TextStyleTemplatePicker
+                        format={conceptFormat}
+                        onPick={style => {
+                          setTextStyleChoice(style)
+                          setStyleSwapOpen(false)
+                        }}
+                      />
+                    )}
                     {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
                       const gen = genState[key] ?? { status: "idle" as const }
@@ -2338,17 +2374,6 @@ export function MayaConcierge({
                           gen={gen}
                           format={conceptFormat}
                           onGenerate={() => void generateConcept(key, concept, conceptFormat)}
-                          idleAction={
-                            isGraphicOutputFormat(conceptFormat) ? (
-                              <TextStyleTemplatePicker
-                                format={conceptFormat}
-                                disabled={!referenceSelfieUrl}
-                                onPick={style =>
-                                  void generateConcept(key, concept, conceptFormat, style)
-                                }
-                              />
-                            ) : undefined
-                          }
                           onOpen={urls =>
                             setLightbox({
                               key,
@@ -2375,6 +2400,24 @@ export function MayaConcierge({
               </div>
             )
           })}
+
+          {/* MAYA-GUIDED-TEXT-01: the style tap comes FIRST for graphic formats. The concept
+              pull is held until she picks, so these six example cards are the next step in the
+              conversation, not a control panel. */}
+          {outputFormat &&
+            isGraphicOutputFormat(outputFormat) &&
+            !textStyleChoice &&
+            lastPulledFormatRef.current !== outputFormat && (
+              <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
+                <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+                <div className="min-w-0 max-w-[calc(100%-2.25rem)] flex-1 sm:max-w-[88%]">
+                  <TextStyleTemplatePicker
+                    format={outputFormat}
+                    onPick={style => setTextStyleChoice(style)}
+                  />
+                </div>
+              </div>
+            )}
 
           {showBrandPrompt && (
             <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
