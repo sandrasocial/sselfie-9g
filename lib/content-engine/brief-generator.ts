@@ -478,10 +478,12 @@ Return a research memo with exactly these four sections:
 
 Plain text. No fluff.`
 
+  // Web-search tool results count against max_tokens, so the memo needs far more headroom
+  // than its own text: 3000 truncated twice in the first live run (2026-07-03).
   const runResearch = (extraInstruction?: string) =>
     client.messages.create({
       model: RESEARCH_MODEL,
-      max_tokens: 3000,
+      max_tokens: 8000,
       tools: [WEB_SEARCH_TOOL],
       messages: [
         {
@@ -494,7 +496,7 @@ Plain text. No fluff.`
   let response = await runResearch()
   if (response.stop_reason === "max_tokens") {
     response = await runResearch(
-      "Your previous memo ran out of room. Be more concise: keep all four sections but use shorter sentences and cut anything that is not directly usable."
+      "Your previous memo ran out of room. Keep all four sections but cap the whole memo at 700 words: run fewer searches, use shorter sentences, and cut anything that is not directly usable."
     )
     if (response.stop_reason === "max_tokens") {
       throw new Error("Research memo truncated at max_tokens twice. Refusing to build a brief on a cut-off memo.")
