@@ -3,7 +3,7 @@
 // a single image; one prompt per slide for a carousel. CAROUSEL-03: graphic formats return
 // finished, image-model-designed slides with text baked into the pixels. Pure + unit-testable.
 
-import type { GraphicTextSpec, OutputFormat } from "@/components/app-v3/types"
+import type { OutputFormat } from "@/components/app-v3/types"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import {
@@ -58,28 +58,7 @@ import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
 export type RequestSize = "1024x1024" | "1024x1792"
 
-export interface CompileInput {
-  aestheticIntent: string
-  aestheticName: string
-  outputFormat: OutputFormat
-  userText?: string
-  graphicText?: GraphicTextSpec | null
-  /** True when refining a previous image (conversational edit). */
-  isEdit?: boolean
-}
-
-export interface CompiledPrompt {
-  prompts: string[]
-  size: RequestSize
-}
-
 export const MAX_CAROUSEL_SLIDES = 9
-
-const BRAND_PHOTO_STYLE =
-  "Editorial brand photograph. Keep the person's face and likeness from the reference image accurate and natural. " +
-  "Soft, flattering light, refined styling, calm composition, premium magazine quality. Natural skin texture, not plastic. " +
-  "No added text, no logos, no graphic overlays. " +
-  SSELFIE_PHOTO_STYLE_PROMPT
 
 const BRAND_GRAPHIC_STYLE = SSELFIE_GRAPHIC_STYLE_PROMPT
 
@@ -790,71 +769,4 @@ export function conceptOpenAISize(format: OutputFormat): string {
   // (high @ 1024-class: ~191s, fits. medium: ~82s.) Env overrides remain for experiments.
   if (format === "carousel") return process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
   return process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
-}
-
-export function compileMayaPrompt(input: CompileInput): CompiledPrompt {
-  const { aestheticIntent, outputFormat, userText, graphicText } = input
-  const extra = clean(userText)
-  const editPrefix = input.isEdit
-    ? "Refine the attached image. Keep the same person, likeness, framing, and overall look. Apply only this change: "
-    : ""
-
-  switch (outputFormat) {
-    case "photo": {
-      const prompt = editPrefix
-        ? `${editPrefix}${extra}. ${BRAND_PHOTO_STYLE}`
-        : `${aestheticIntent} ${BRAND_PHOTO_STYLE}${extra ? ` Extra direction: ${extra}.` : ""}`
-      return { prompts: [prompt], size: "1024x1792" }
-    }
-
-    case "photoshoot": {
-      const prompt = editPrefix
-        ? `${editPrefix}${extra}. ${BRAND_PHOTO_STYLE}`
-        : `${aestheticIntent} Cohesive editorial photoshoot set. ${BRAND_PHOTO_STYLE}${extra ? ` Extra direction: ${extra}.` : ""}`
-      return { prompts: [prompt], size: "1024x1792" }
-    }
-
-    case "video": {
-      const prompt =
-        `${aestheticIntent} Create a short image-to-video motion direction for the attached image. ` +
-        `Motion only: subject motion, camera motion, environment motion, pace, and stability. ${extra}`
-      return { prompts: [prompt], size: "1024x1792" }
-    }
-
-    case "reel-cover":
-    case "story-slide": {
-      const headline = clean(graphicText?.headline) || extra || "Your headline here"
-      const subline = clean(graphicText?.subline)
-      const prompt =
-        `${aestheticIntent} A vertical ${outputFormat === "reel-cover" ? "Reel cover" : "Story slide"} featuring the person from the reference image. ` +
-        `${BRAND_GRAPHIC_STYLE} Render this exact headline inside the image: "${headline}".` +
-        (subline ? ` Render this exact supporting line too: "${subline}".` : "") +
-        " Render all text spelled exactly as written." +
-        (input.isEdit && extra ? ` Apply this change: ${extra}.` : "")
-      return { prompts: [prompt], size: "1024x1792" }
-    }
-
-    case "story-sequence":
-    case "carousel": {
-      const slides = (graphicText?.slides ?? []).slice(0, MAX_CAROUSEL_SLIDES)
-      const safeSlides = slides.length > 0 ? slides : [{ heading: clean(extra) || "Slide 1" }]
-      const cohesion =
-        `Part of a cohesive ${safeSlides.length}-slide carousel. Keep the SAME palette, type treatment, and ${input.aestheticName} aesthetic across every slide so they read as one set. ` +
-        BRAND_GRAPHIC_STYLE
-      const prompts = safeSlides.map((slide, i) => {
-        const isCover = i === 0
-        const base = isCover
-          ? `${aestheticIntent} Carousel COVER slide featuring the person from the reference image. `
-          : `Carousel slide ${i + 1} of ${safeSlides.length}, designed around the person from the reference image when it feels natural. `
-        return (
-          `${base}${cohesion} Render this exact heading inside the image: "${clean(slide.heading)}".` +
-          (slide.body ? ` Render this exact body line too: "${clean(slide.body)}".` : "") +
-          " Render all text spelled exactly as written."
-        )
-      })
-      // Square keeps text safe from cropping (per product decision); covers stay vertical-friendly
-      // via layout. A story sequence renders vertical 9:16 instead.
-      return { prompts, size: outputFormat === "story-sequence" ? "1024x1792" : "1024x1024" }
-    }
-  }
 }

@@ -50,6 +50,33 @@ const PROMPT_LEAK_MARKERS: RegExp[] = [
   /output[:\s]only the caption/i,
 ]
 
+// Sandra's locked banned words (CLAUDE.md voice rules). A caption containing any of
+// these must never ship: it gets flagged for a rewrite pass.
+const SANDRA_BANNED_WORD_PATTERNS: RegExp[] = [
+  /\bleverage\b/i,
+  /\bsynergy\b/i,
+  /\btransform(?:s|ed|ing)?\b/i,
+  /game.changer/i,
+  /\bskyrocket/i,
+  /unlock your potential/i,
+  /\belevate(?:d)?\b/i,
+]
+
+const EM_DASH_PATTERN = /—/
+
+/** True when a caption contains Sandra's banned words or an em-dash. */
+export function hasBannedCaptionLanguage(caption: string): boolean {
+  const raw = String(caption || "")
+  if (EM_DASH_PATTERN.test(raw)) return true
+  return SANDRA_BANNED_WORD_PATTERNS.some((pattern) => pattern.test(raw))
+}
+
+/** Em-dashes never ship (locked voice rule). Normalize to a colon separator. */
+function normalizeEmDashes(value: string): string {
+  return String(value || "")
+    .replace(/\s*—+\s*/g, ": ")
+}
+
 function formatBrandContext(brandProfile: any): string {
   if (!brandProfile) return "Personal Brand"
   const lines: string[] = []
@@ -137,9 +164,11 @@ export function enforceCaptionPublishingRules(input: {
   caption: string
   strategyHashtags?: string[]
 }): string {
-  const noLeakText = removePromptLeakLines(input.caption || "")
-    .replace(/\\n/g, "\n")
-    .replace(/\r/g, "")
+  const noLeakText = normalizeEmDashes(
+    removePromptLeakLines(input.caption || "")
+      .replace(/\\n/g, "\n")
+      .replace(/\r/g, "")
+  )
 
   const cleanedBody = stripHashtags(noLeakText)
   const strategyTags = Array.isArray(input.strategyHashtags) ? input.strategyHashtags : []
@@ -162,6 +191,7 @@ export function shouldRegenerateCaption(caption: string | null | undefined): boo
   const lowered = raw.toLowerCase()
   if (CAPTION_PLACEHOLDER_MARKERS.some((marker) => lowered.includes(marker))) return true
   if (PROMPT_LEAK_MARKERS.some((pattern) => pattern.test(raw))) return true
+  if (hasBannedCaptionLanguage(raw)) return true
 
   const hashtags = extractHashtagsFromCaption(raw)
   if (hashtags.length > 5) return true
@@ -349,6 +379,8 @@ ${researchContext}
    - ✅ Mix up sentence rhythm: Short. Then long. Then something in between.
    - ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
    - ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey", "delve into"
+   - ✅ Sandra's banned words (NEVER use any of these): "leverage", "synergy", "transform", "game-changer", "skyrocket", "unlock your potential", "elevate"
+   - ✅ NEVER use the em dash character. Use a period, a colon, or a middle dot instead.
    - ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments, casual language
    - ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
 
@@ -365,7 +397,7 @@ ${researchContext}
 
 7. **Formatting**:
    - Double line breaks (\\n\\n) between sections
-   - 2-3 emojis TOTAL, naturally placed (max 3)
+   - 0-2 emojis TOTAL, only if they feel natural (never forced, none is fine)
    - Include up to 5 strategic hashtags at the end (MAX 5)
 
 8. **Length**: 90-170 words (optimal for engagement)
@@ -406,9 +438,9 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
     strategyHashtags,
   })
 
-  // If output is still too short after cleanup, ask for one rewrite pass.
+  // If output is still too short (or carries banned language) after cleanup, ask for one rewrite pass.
   const bodyWordCount = countWords(stripHashtags(caption))
-  if (bodyWordCount < 70) {
+  if (bodyWordCount < 70 || hasBannedCaptionLanguage(caption)) {
     const { text: revised } = await generateText({
       model: createMayaOpenRouterModel("instagram_caption"),
       system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
@@ -420,6 +452,8 @@ Rules:
 - Hook -> story/context -> one ask.
 - No prompt notes, no sections, no meta text.
 - Maximum 5 hashtags.
+- Never use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevate.
+- Never use the em dash character. Use a period, a colon, or a middle dot instead.
 
 Caption to rewrite:
 ${caption}`,

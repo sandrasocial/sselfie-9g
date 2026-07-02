@@ -107,10 +107,10 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 const FORMAT_OPENER: Record<OutputFormat, string> = {
   photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
   photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
-  "reel-cover": "Tell me what your reel's about and I'll design the cover.",
-  carousel: "Give me the topic and I'll build slides that feel like you.",
-  "story-slide": "Tell me the goal, a poll, a sale, a quick reminder, and I'll design the slide.",
-  "story-sequence": "Give me the story angle and I'll build a full sequence that feels like you.",
+  "reel-cover": "Hit create and I'll pull a few reel angles from your brand. You just tap the one that fits.",
+  carousel: "Hit create and I'll pull a few carousel angles from your brand. You just tap the one that feels like you.",
+  "story-slide": "Hit create and I'll pull a few story ideas: a poll, a sale, a quick reminder. You just tap one.",
+  "story-sequence": "Hit create and I'll pull a few story angles from your brand. You just tap the one you want to tell.",
   video: "Add or choose the image you want to move, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
@@ -119,11 +119,11 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photoshoot:
     "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
   "reel-cover":
-    "Your selfie's in, and it's still you. Hit create, then tell me what the reel's about.",
-  carousel: "Your selfie's in, and it's still you. Hit create, then give me the topic.",
-  "story-slide": "Your selfie's in, and it's still you. Hit create, then tell me the goal.",
+    "Your selfie's in, and it's still you. Hit create and I'll pull a few reel angles. Just tap one.",
+  carousel: "Your selfie's in, and it's still you. Hit create and tap the angle that feels like you.",
+  "story-slide": "Your selfie's in, and it's still you. Hit create and tap the story idea that fits.",
   "story-sequence":
-    "Your selfie's in, and it's still you. Hit create, then give me the story angle.",
+    "Your selfie's in, and it's still you. Hit create and tap the story you want to tell.",
   video: "Your image is in. Hit create and pick the motion that feels most natural.",
 }
 

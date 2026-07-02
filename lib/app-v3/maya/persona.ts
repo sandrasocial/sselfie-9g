@@ -3,10 +3,12 @@
 // This module re-exports it and owns ONLY the app-v3 system-prompt assembly + the
 // concept-card output contract. No personality prose is duplicated here, and nothing
 // Flux/LoRA/trigger-word related leaks in (gpt-image is instruction-following).
+// Members get the SLIM brain (voice + intelligence rules, no static brand encyclopedia,
+// no mission-statement register); the full legacy block stays /studio-only.
 
 import {
   MAYA_VOICE,
-  MAYA_CORE_INTELLIGENCE,
+  MAYA_CORE_INTELLIGENCE_SLIM,
   MAYA_PROMPT_PHILOSOPHY,
 } from "@/lib/maya/core-personality"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -16,7 +18,7 @@ import { getCarouselDesignGuide } from "./carousel-design-systems"
 import { SSELFIE_GRAPHIC_STYLE_PROMPT, SSELFIE_VISUAL_IDENTITY } from "./visual-rules"
 
 // Re-export the brain so app-v3 imports it from one place.
-export { MAYA_VOICE, MAYA_CORE_INTELLIGENCE, MAYA_PROMPT_PHILOSOPHY }
+export { MAYA_VOICE, MAYA_CORE_INTELLIGENCE_SLIM, MAYA_PROMPT_PHILOSOPHY }
 
 export interface AppV3SystemPromptContext {
   aestheticName: string
@@ -92,12 +94,14 @@ const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
 const FORMAT_OPEN_VARIABLE: Record<OutputFormat, string> = {
   photo: "Usually nothing is missing: the look plus her selfie is enough. Create.",
   photoshoot: "Usually nothing is missing: the look plus her selfie is enough. Create the shoot plan.",
-  "reel-cover": "The only thing you might not know is the reel's specific topic.",
-  carousel: "The only thing you might not know is the topic and its teaching angle.",
+  "reel-cover":
+    "The only thing you might not know is the reel's specific topic. If she hasn't given one, do NOT ask her to type it: LEAD with ask_clarify and 3 to 5 tappable topic options you inferred from her brand profile and recent activity, plus a 'Something else'. If she already gave the topic, skip the options and create.",
+  carousel:
+    "The only thing you might not know is the topic and its teaching angle. If she hasn't given one, do NOT ask her to type it: LEAD with ask_clarify and 3 to 5 tappable angle options you inferred from her brand profile and recent activity, plus a 'Something else'. If she already gave the topic, skip the options and create.",
   "story-slide":
-    "The only thing you might not know is the objective (a poll, engagement, a sale, or a story moment).",
+    "The only thing you might not know is the objective (a poll, engagement, a sale, or a story moment). If she hasn't told you, do NOT ask an open question: LEAD with ask_clarify and 3 to 5 tappable objective options grounded in her brand and recent activity, plus a 'Something else'. If she already told you the goal, skip the options and create.",
   "story-sequence":
-    "The only thing you might not know is the story's emotional angle and how many beats she wants (default 5).",
+    "The only thing you might not know is the story's emotional angle (default 5 beats). If she hasn't given one, do NOT ask her to type it: LEAD with ask_clarify and 3 to 5 tappable story-angle options pulled from her brand profile and recent activity, plus a 'Something else'. If she already gave the angle, skip the options and create.",
   video:
     "Usually nothing is missing once she has an image. If she asks for a specific motion, use it. Otherwise offer 3 motion options: subtle editorial push-in, soft natural movement, or cinematic atmosphere.",
 }
@@ -267,7 +271,7 @@ function stripEmDashes(text: string): string {
 export function getAppV3MayaSystemPrompt(ctx: AppV3SystemPromptContext): string {
   const assembled = [
     MAYA_VOICE,
-    MAYA_CORE_INTELLIGENCE,
+    MAYA_CORE_INTELLIGENCE_SLIM,
     MAYA_PROMPT_PHILOSOPHY,
     memoryBlock(ctx.memory),
     appV3OutputContract(ctx),
