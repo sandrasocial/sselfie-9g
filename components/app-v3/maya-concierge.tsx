@@ -21,6 +21,7 @@ import { AdminContentToolCard, type AdminContentToolResult } from "./admin-conte
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
+import { TextStudio } from "./text-studio"
 import { CreditModal } from "./credit-modal"
 import { TrialCapOffer } from "./trial-cap-offer"
 import { ReferenceLibraryModal } from "./reference-library-modal"
@@ -352,6 +353,8 @@ export function MayaConcierge({
     url: string
     format: OutputFormat
   } | null>(null)
+  // TEXT-STUDIO-01: which generated graphic the full-screen Text Studio is open on.
+  const [textStudio, setTextStudio] = useState<{ key: string; index: number } | null>(null)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
     open: false,
@@ -1222,11 +1225,33 @@ export function MayaConcierge({
       if (!current || current.status !== "done" || !current.imageUrls?.length) return state
       const nextSpecs = [...(current.textOverlaySpecs ?? [])]
       nextSpecs[index] = spec
+      // A baked render carries the OLD words in its pixels; changing the design retires it
+      // so no surface shows stale text. The clean base is untouched; re-apply bakes fresh.
+      const nextBaked = current.bakedImageUrls ? [...current.bakedImageUrls] : undefined
+      if (nextBaked) nextBaked[index] = null
       return {
         ...state,
         [key]: {
           ...current,
           textOverlaySpecs: nextSpecs,
+          ...(nextBaked ? { bakedImageUrls: nextBaked } : {}),
+        },
+      }
+    })
+  }
+
+  // TEXT-STUDIO-01: a bake landed; store it next to the clean base (index-aligned).
+  function updateBakedImage(key: string, index: number, bakedUrl: string) {
+    setGenState(state => {
+      const current = state[key]
+      if (!current || current.status !== "done" || !current.imageUrls?.length) return state
+      const nextBaked = [...(current.bakedImageUrls ?? [])]
+      nextBaked[index] = bakedUrl
+      return {
+        ...state,
+        [key]: {
+          ...current,
+          bakedImageUrls: nextBaked,
         },
       }
     })
@@ -2064,7 +2089,7 @@ export function MayaConcierge({
                               textOverlaySpecs: genState[key]?.textOverlaySpecs,
                             })
                           }
-                          onOverlayChange={(index, spec) => updateTextOverlaySpec(key, index, spec)}
+                          onOpenTextStudio={() => setTextStudio({ key, index: 0 })}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format: conceptFormat })
@@ -2225,22 +2250,43 @@ export function MayaConcierge({
         <ImageLightbox
           images={lightbox.images}
           textOverlaySpecs={lightbox.textOverlaySpecs}
-          onOverlayChange={
+          bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
+          onOpenTextStudio={
             lightbox.key
-              ? (index, spec) => {
-                  updateTextOverlaySpec(lightbox.key as string, index, spec)
-                  setLightbox(current => {
-                    if (!current) return current
-                    const nextSpecs = [...(current.textOverlaySpecs ?? [])]
-                    nextSpecs[index] = spec
-                    return { ...current, textOverlaySpecs: nextSpecs }
-                  })
-                }
+              ? index => setTextStudio({ key: lightbox.key as string, index })
               : undefined
           }
           onClose={() => setLightbox(null)}
         />
       )}
+
+      {/* TEXT-STUDIO-01: full-screen text studio (pinned preview + scrollable controls).
+          Renders above the lightbox so "Edit text" from a slide lands right on top of it. */}
+      {textStudio &&
+        (() => {
+          const gen = genState[textStudio.key]
+          const cleanUrl = gen?.imageUrls?.[textStudio.index]
+          const spec = gen?.textOverlaySpecs?.[textStudio.index]
+          if (!cleanUrl || !spec) return null
+          return (
+            <TextStudio
+              cleanImageUrl={cleanUrl}
+              spec={spec}
+              bakedUrl={gen?.bakedImageUrls?.[textStudio.index] ?? null}
+              onSpecChange={next => {
+                updateTextOverlaySpec(textStudio.key, textStudio.index, next)
+                setLightbox(current => {
+                  if (!current || current.key !== textStudio.key) return current
+                  const nextSpecs = [...(current.textOverlaySpecs ?? [])]
+                  nextSpecs[textStudio.index] = next
+                  return { ...current, textOverlaySpecs: nextSpecs }
+                })
+              }}
+              onBaked={url => updateBakedImage(textStudio.key, textStudio.index, url)}
+              onClose={() => setTextStudio(null)}
+            />
+          )
+        })()}
 
       <CreditModal
         open={creditModal.open}

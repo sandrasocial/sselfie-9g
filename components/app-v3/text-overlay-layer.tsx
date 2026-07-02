@@ -242,7 +242,9 @@ export function TextOverlayEditor({
       <div className="mb-1.5 text-[11px] text-[#818283]">
         Tap a style to see your words on your photo.
       </div>
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      {/* Sandra's 2026-07-02 feedback: Cutout Editorial was scrolling off a horizontal row.
+          All SIX styles stay visible in a 2-row grid, three per row, no hunting. */}
+      <div className="grid grid-cols-3 gap-2 pb-1">
         {OVERLAY_STYLE_PRESETS.map(style => {
           const selected = preset.id === style.id
           // The card IS the explanation: her real image + her real words in that style.
@@ -256,7 +258,7 @@ export function TextOverlayEditor({
               key={style.id}
               type="button"
               onClick={() => onChange(previewSpec)}
-              className="w-[108px] shrink-0 text-left"
+              className="min-w-0 text-left"
             >
               <span
                 className={`relative block overflow-hidden rounded-[6px] bg-[#F1F2F2] ${thumbAspect} ${

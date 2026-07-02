@@ -34,6 +34,8 @@ export type ServerConceptGenState = {
   status: string
   imageUrls?: string[]
   textOverlaySpecs?: TextOverlaySpec[]
+  /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. */
+  bakedImageUrls?: Array<string | null>
   videoUrl?: string
   error?: string
   previewUrl?: string
@@ -127,10 +129,17 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
             .map(sanitizeTextOverlaySpec)
             .filter((spec): spec is TextOverlaySpec => Boolean(spec))
         : undefined
+      // TEXT-STUDIO-01: baked renders survive with their specs (index-aligned, https only).
+      const bakedImageUrls = Array.isArray(state.bakedImageUrls)
+        ? state.bakedImageUrls.map(url =>
+            typeof url === "string" && url.startsWith("https://") ? url : null
+          )
+        : undefined
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
+        ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
       }
     } else if (
       state.status === "idle" ||
