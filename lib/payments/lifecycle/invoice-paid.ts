@@ -131,6 +131,20 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   }
 
   if (!sub) {
+    // Brand-new buyers race this event: checkout.session.completed creates the user and
+    // subscription rows a few seconds AFTER the first invoice's payment event arrives, so the
+    // lookups above find nothing. Throw so the webhook returns 500 and Stripe redelivers once
+    // fulfillment has created those rows (failed events are re-claimable in lib/events).
+    // Silently skipping here dropped the 2026-07-02 697 EUR founding-annual payment from
+    // stripe_payments and left the buyer without webhook-granted credits.
+    const invoiceAgeMs = Date.now() - (invoice.created || 0) * 1000
+    const isFreshFirstPayment =
+      invoice.billing_reason === "subscription_create" && invoiceAgeMs < 48 * 60 * 60 * 1000
+    if (isFreshFirstPayment) {
+      throw new Error(
+        `Subscription ${subscriptionId} not in database yet for fresh subscription_create invoice ${invoice.id} - failing so Stripe retries after checkout fulfillment`
+      )
+    }
     console.log(
       `[v0] ⚠️ No subscription found in database for ${subscriptionId} and could not create it. Skipping credit grant.`
     )
